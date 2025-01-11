@@ -7,14 +7,13 @@ import json
 from pathlib import Path
 import csv
 
-from .mouse_tracker import MouseTracker
-from .keyboard_tracker import KeyboardTracker
-# from .keyboard_tracker import KeyActivityTracker
+from .console_logger import ConsoleLogger
 
 
 # TODO: Report mouse, keyboard, program, chrome tabs, every 15 sec, to the db.
 # TODO: report only closed loops of mouse, if unclosed, move to next cycle
 
+# TODO: report programs that aren't in the apps list.
 
 class ProgramTracker:
     def __init__(self, data_dir):
@@ -54,6 +53,7 @@ class ProgramTracker:
         self.current_window = None
         self.start_time = None
         self.session_data = []  # holds sessions
+        self.console_logger = ConsoleLogger()
         
         # Get the project root (parent of src directory)
         current_file = Path(__file__)  # This gets us surveillance/src/productivity_tracker.py
@@ -122,18 +122,19 @@ class ProgramTracker:
             if not window_info:
                 return
 
-            current_window = f"{window_info['process_name']} - {window_info['title']}"
+            newly_detected_window = f"{window_info['process_name']} - {window_info['title']}"
             
             # If window has changed, log the previous session
-            if self.current_window and current_window != self.current_window:
+            if self.current_window and newly_detected_window != self.current_window:
                 self.log_session()
+                self.console_logger.log_active_program(newly_detected_window)
                 self.start_time = datetime.now()
 
             # Initialize start time if this is the first window
             if not self.start_time:
                 self.start_time = datetime.now()
             
-            self.current_window = current_window
+            self.current_window = newly_detected_window
             
         except Exception as e:
             print(f"Error tracking window: {e}")
@@ -159,6 +160,10 @@ class ProgramTracker:
         
         self.session_data.append(session)  # is only used to let surveillanceManager gather the session
         self.save_session(session)
+
+    def report_missing_program(self, title):
+        """For when the program isn't found in the productive apps list"""
+        print(title)  # temp
 
     def save_session(self, session):
         """Save session data to CSV file."""

@@ -35,8 +35,10 @@ surveillance_state = SurveillanceState()
 
 async def track_productivity():
     while surveillance_state.is_running:
-        print(surveillance_state.manager.program_tracker, "38rm")
+        # fixme: should this really poll every second?
+        print("38rm")
         surveillance_state.manager.program_tracker.track_window()
+        
         await asyncio.sleep(1)
 
 @asynccontextmanager
@@ -68,12 +70,12 @@ async def lifespan(app: FastAPI):
         except asyncio.CancelledError:
             pass
     
-    if surveillance_state.tracker:
+    if surveillance_state.manager.program_tracker:
         # Log final session
-        surveillance_state.tracker.log_session()
+        surveillance_state.manager.program_tracker.log_session()
         
         # Clean up
-        surveillance_state.tracker.cleanup()
+        surveillance_state.manager.program_tracker.stop()
 
 app = FastAPI(lifespan=lifespan)
 
@@ -92,10 +94,10 @@ async def get_productivity_report(db: Session = Depends(get_db)):
 
 @app.get("/mouse-report", response_model=MouseReport)
 async def get_mouse_report(db: Session = Depends(get_db)):
-    if not surveillance_state.program_tracker:
+    if not surveillance_state.manager.mouse_tracker:
         raise HTTPException(status_code=500, detail="Tracker not initialized")
     
-    report = surveillance_state.manager.program_tracker.mouse_tracker.generate_movement_report()
+    report = surveillance_state.manager.mouse_tracker.generate_movement_report()
     if not isinstance(report, dict):
         raise HTTPException(status_code=500, detail="Failed to generate mouse report")
     
@@ -107,7 +109,7 @@ async def get_mouse_report(db: Session = Depends(get_db)):
 
 @app.get("/keyboard-report", response_model=KeyboardReport)
 async def get_keyboard_report(db: Session = Depends(get_db)):
-    if not surveillance_state.tracker:
+    if not surveillance_state.manager.keyboard_tracker:
         raise HTTPException(status_code=500, detail="Tracker not initialized")
     
     report = surveillance_state.manager.keyboard_tracker.generate_keyboard_report()
