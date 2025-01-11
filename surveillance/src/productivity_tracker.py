@@ -8,6 +8,8 @@ from pathlib import Path
 import csv
 
 from .mouse_tracker import MouseTracker
+from .keyboard_tracker import KeyboardTracker
+# from .keyboard_tracker import KeyActivityTracker
 
 
 class ProductivityTracker:
@@ -55,6 +57,9 @@ class ProductivityTracker:
         self.data_dir.mkdir(exist_ok=True)
 
         self.mouse_tracker = MouseTracker(self.data_dir)
+        self.keyboard_tracker = KeyboardTracker(self.data_dir)
+        # self.key_tracker = KeyActivityTracker(self.data_dir)
+        # self.key_tracker.start()
 
 
     def get_active_window_info(self):
@@ -235,3 +240,4 @@ class ProductivityTracker:
     def cleanup(self):  # Add this method to ProductivityTracker
         """Clean up resources before exit."""
         self.mouse_tracker.stop()
+        self.keyboard_tracker.stop()

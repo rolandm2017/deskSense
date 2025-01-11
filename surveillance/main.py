@@ -40,6 +40,14 @@ def main():
             print(f"Average movement duration: {mouse_report['avg_movement_duration']} seconds")
             print(f"Total movement time: {mouse_report['total_movement_time']} seconds")
 
+        # Generate and display keyboard report
+        keyboard_report = tracker.keyboard_tracker.generate_keyboard_report()
+        if isinstance(keyboard_report, dict):
+            print("\nKeyboard Input Report:")
+            print(f"Total keystrokes: {keyboard_report['total_inputs']}")
+        else:
+            print("Failed to get keyboard report")
+
         # Clean up
         tracker.cleanup()  # This will call mouse_tracker.stop()
 
