@@ -7,13 +7,13 @@ interface DataPoint {
     y: number
 }
 
-interface D3ChartProps {
+interface LineChartProps {
     data?: DataPoint[]
     width?: number
     height?: number
 }
 
-const D3Chart: React.FC<D3ChartProps> = ({
+const LineChart: React.FC<LineChartProps> = ({
     data = Array.from({ length: 10 }, (_, i) => ({
         x: i,
         y: Math.random() * 100,
@@ -106,4 +106,4 @@ const D3Chart: React.FC<D3ChartProps> = ({
     )
 }
 
-export default D3Chart
+export default LineChart

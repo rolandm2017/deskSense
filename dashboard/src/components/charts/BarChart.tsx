@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react"
 import * as d3 from "d3"
 
-export default function BarChart() {
+const BarChart: React.FC<{}> = ({}) => {
     const [data, setData] = useState([
         { name: "A", value: 50 },
         { name: "B", value: 20 },
@@ -68,3 +68,5 @@ export default function BarChart() {
         ></svg>
     )
 }
+
+export default BarChart
