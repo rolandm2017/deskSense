@@ -10,6 +10,8 @@ import threading
 import ctypes
 from ctypes import wintypes
 
+from .console_logger import ConsoleLogger
+
 class MouseEvent(str, Enum):
     START = "start"
     STOP = "stop"
@@ -27,6 +29,7 @@ class MouseTracker:
         self.movement_start = None
         self.last_position = None
         self.is_moving = False
+        self.console_logger = ConsoleLogger()
 
         # Store session data to report on intervals
         self.session_data = []
@@ -91,6 +94,7 @@ class MouseTracker:
             self.movement_start = datetime.now()
             self.last_position = current_position
             self._log_movement(MouseEvent.START, current_position)
+            self.console_logger.log_mouse_move(current_position)
             
             # Start a timer to detect when movement stops
             threading.Timer(0.1, self._check_if_stopped).start()
