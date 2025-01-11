@@ -3,6 +3,7 @@ import keyboard
 import csv
 from threading import Thread
 import time
+import signal
 
 DELAY_TO_AVOID_CPU_HOGGING = 0.01
 
@@ -10,6 +11,12 @@ class KeyboardTracker:
     def __init__(self, data_dir):
         self.events = []
         self.data_dir = data_dir
+
+        # so surveillanceManager can grab the interval data
+        self.session_data = []
+
+        signal.signal(signal.SIGINT, self._handle_interrupt)  # avoid capturing interrupt
+
         self.is_running = False
         self.monitor_thread = None
         self.start()
@@ -47,6 +54,17 @@ class KeyboardTracker:
                 'date': date_str,
                 'timestamp': current_time
             })
+
+    def gather_session(self):
+        current = self.session_data
+        self.session_data = []
+        return current
+    
+    def _handle_interrupt(self, signum, frame):
+        print("\nReceived interrupt signal. Cleaning up...")
+        self.stop()
+        # Re-raise the signal after cleanup
+        signal.default_int_handler(signum, frame)
 
     def stop(self):
         self.is_running = False

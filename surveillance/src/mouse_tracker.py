@@ -2,12 +2,18 @@
 import win32api
 import win32gui
 import win32con
+from enum import Enum, auto
 from datetime import datetime
 import csv
 from pathlib import Path
 import threading
 import ctypes
 from ctypes import wintypes
+
+class MouseEvent(str, Enum):
+    START = "start"
+    STOP = "stop"
+    MOVE = "move"
 
 class MouseTracker:
     def __init__(self, data_dir):
@@ -21,6 +27,9 @@ class MouseTracker:
         self.movement_start = None
         self.last_position = None
         self.is_moving = False
+
+        # Store session data to report on intervals
+        self.session_data = []
         
         # Create an event to safely stop the listener thread
         self.stop_event = threading.Event()
@@ -81,7 +90,7 @@ class MouseTracker:
             self.is_moving = True
             self.movement_start = datetime.now()
             self.last_position = current_position
-            self._log_movement('start', current_position)
+            self._log_movement(MouseEvent.START, current_position)
             
             # Start a timer to detect when movement stops
             threading.Timer(0.1, self._check_if_stopped).start()
@@ -93,7 +102,7 @@ class MouseTracker:
             if current_position == self.last_position:
                 # Mouse has stopped
                 self.is_moving = False
-                self._log_movement('stop', current_position)
+                self._log_movement(MouseEvent.STOP, current_position)
             else:
                 # Mouse is still moving, check again
                 self.last_position = current_position
@@ -117,15 +126,30 @@ class MouseTracker:
                 writer.writeheader()
         
         # Log the event
-        with open(file_path, 'a', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=['timestamp', 'event_type', 'x_position', 'y_position'])
-            writer.writerow({
+        event = {
                 'timestamp': datetime.now().isoformat(),
                 'event_type': event_type,
                 'x_position': position[0],
                 'y_position': position[1]
-            })
+            }
+        with open(file_path, 'a', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=['timestamp', 'event_type', 'x_position', 'y_position'])
+            writer.writerow(event)
 
+        self.session_data.append(event)
+
+    def gather_session(self):
+        current = self.session_data
+        self.session_data = self.preserve_open_events(current)  # todo: make currently open mouse movements not be reported, move them to the next interval
+        return current
+    
+    def preserve_open_events(self, current_batch):
+        # There can be one or zero open events, not 2.
+        to_preserve = []
+        if current_batch[-1]["event_type"] == MouseEvent.START:
+            to_preserve.append(current_batch[-1])
+        return to_preserve
+        
     def stop(self):
         """Stop the mouse tracker and clean up."""
         self.stop_event.set()

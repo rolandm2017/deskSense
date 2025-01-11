@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 import tempfile
 import csv
-from src.productivity_tracker import ProductivityTracker
+from surveillance.src.surveillance_manager import ProductivityTracker
 
 @pytest.fixture
 def temp_dir():

@@ -12,8 +12,13 @@ from .keyboard_tracker import KeyboardTracker
 # from .keyboard_tracker import KeyActivityTracker
 
 
-class ProductivityTracker:
-    def __init__(self):
+# TODO: Report mouse, keyboard, program, chrome tabs, every 15 sec, to the db.
+# TODO: report only closed loops of mouse, if unclosed, move to next cycle
+
+
+class ProgramTracker:
+    def __init__(self, data_dir):
+        self.data_dir = data_dir
         # Define productive applications
         self.productive_apps = {
             'code.exe': 'VSCode',
@@ -48,7 +53,7 @@ class ProductivityTracker:
         # Initialize tracking data
         self.current_window = None
         self.start_time = None
-        self.session_data = []
+        self.session_data = []  # holds sessions
         
         # Get the project root (parent of src directory)
         current_file = Path(__file__)  # This gets us surveillance/src/productivity_tracker.py
@@ -58,8 +63,6 @@ class ProductivityTracker:
         self.data_dir = project_root / 'productivity_data'
         self.data_dir.mkdir(exist_ok=True)
 
-        self.mouse_tracker = MouseTracker(self.data_dir)
-        self.keyboard_tracker = KeyboardTracker(self.data_dir)
         # self.key_tracker = KeyActivityTracker(self.data_dir)
         # self.key_tracker.start()
 
@@ -125,7 +128,7 @@ class ProductivityTracker:
             if self.current_window and current_window != self.current_window:
                 self.log_session()
                 self.start_time = datetime.now()
-            
+
             # Initialize start time if this is the first window
             if not self.start_time:
                 self.start_time = datetime.now()
@@ -154,7 +157,7 @@ class ProductivityTracker:
             'productive': is_productive
         }
         
-        self.session_data.append(session)
+        self.session_data.append(session)  # is only used to let surveillanceManager gather the session
         self.save_session(session)
 
     def save_session(self, session):
@@ -172,6 +175,11 @@ class ProductivityTracker:
         with open(file_path, 'a', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=['start_time', 'end_time', 'duration', 'window', 'productive'])
             writer.writerow(session)
+
+    def gather_session(self):
+        current = self.session_data
+        self.session_data = []  # reset
+        return current
 
     def generate_report(self, date_str=None):
         """Generate a productivity report for a specific date."""
@@ -240,7 +248,7 @@ class ProductivityTracker:
             'app_times': app_times
         }
     
-    def cleanup(self):  # Add this method to ProductivityTracker
-        """Clean up resources before exit."""
-        self.mouse_tracker.stop()
-        self.keyboard_tracker.stop()
+    def stop(self):
+        pass  # might need later
+    
+   
