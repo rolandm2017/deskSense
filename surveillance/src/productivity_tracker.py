@@ -41,6 +41,8 @@ class ProductivityTracker:
             'docs.',
             'jira.',
             'confluence.',
+            'claude.ai',
+            'chatgpt.com'
         ]
 
         # Initialize tracking data
@@ -98,7 +100,8 @@ class ProductivityTracker:
             if productivity is None:
                 # For Chrome, check if the title contains any productive sites
                 if app_name == 'Chrome':
-                    print("near any", window_title, self.productive_sites)
+                    print("near any")
+                    print(window_title, "::", self.productive_sites)
                     return any(site in window_title.lower() for site in self.productive_sites)
                 # For Discord, consider it productive only if specific channels/servers are active
                 elif app_name == 'Discord':
