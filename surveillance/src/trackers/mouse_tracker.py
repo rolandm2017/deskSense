@@ -237,8 +237,10 @@ class MouseTracker:
         """Stop the mouse tracker and clean up."""
         self.stop_event.set()
         if self.end_program_func:
+            print("here 240rm")
             self.end_program_func(self.generate_movement_report())
         if self.hook_thread.is_alive():
+            print("here 243rm")
             self.hook_thread.join()
 
     def generate_movement_report(self, date_str=None):

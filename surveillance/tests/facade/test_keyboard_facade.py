@@ -7,20 +7,21 @@ import time
 from src.facade.keyboard_facade import KeyboardApiFacade
 
 @pytest.fixture
-def keyboard():
+def keyboard(monkeypatch):
+    """
+    Modified fixture that doesn't use real listener or sleeps
+    """
     kb = KeyboardApiFacade()
-    # Give listener thread time to start
-    time.sleep(0.1)
-    yield kb
-    # Cleanup after tests
-    kb.listener.stop()
+    # Mock the listener to avoid actual thread creation
+    mock_listener = Mock()
+    monkeypatch.setattr(kb, 'listener', mock_listener)
+    return kb
 
-def simulate_typing(keyboard, word):
-    print(word, 'goes into keyboard 18rm')
-    for char in word:
-        # Simulate key press by directly calling the callback
-        keyboard._on_press(KeyCode.from_char(char))
-        time.sleep(0.05)  # Small delay to prevent events from getting lost
+def simulate_keypress(keyboard, char):
+    """One char at a time"""
+    # Simulate key press by directly calling the callback
+    keyboard._on_press(KeyCode.from_char(char))
+    time.sleep(0.02)  # Small delay to prevent events from getting lost
 
 @pytest.mark.parametrize("key,expecting", [
     (22, 22),
@@ -36,14 +37,13 @@ def test_read_event(key, expecting):
     assert event == expecting
 
 @pytest.mark.parametrize("key,expecting", [
-    (2, True),
-    (3, True),
-    (4, True),
-    (None, False)
-])
-def test_event_is_key_down(key, expecting):
-    facade = KeyboardApiFacade()
-    assert facade.event_type_is_key_down(key) == expecting
+        (2, True),
+        (3, True),
+        (4, True),
+        (None, False)
+    ])
+def test_event_is_key_down(keyboard, key, expecting):
+    assert keyboard.event_type_is_key_down(key) == expecting
 
 
 #
@@ -62,11 +62,12 @@ def mock_keyboard(monkeypatch):
 @pytest.mark.parametrize("test_word", [
     'food',
     'paint',
-    'sound',
+    'spaghetti',
 ])
 def test_typing_words_with_stub(mock_keyboard, test_word):
     keyboard, mock_on_press = mock_keyboard
-    simulate_typing(keyboard, test_word)
+    for char in test_word:
+        simulate_keypress(keyboard, char)
     
     # Verify that _on_press was called for each character
     expected_calls = [Mock(call(KeyCode.from_char(char))) for char in test_word]
@@ -84,59 +85,41 @@ def test_typing_words_with_stub(mock_keyboard, test_word):
     'chime',
 ])
 def test_keyboard_read_event(keyboard, test_word):
-    simulate_typing(keyboard, test_word)
-    
-    print(test_word, 'should be word 33rm')
-    expected_chars = list(test_word)
-
-    assert len(expected_chars) == len(test_word)  # testing the test
-    
     events = []
-    print(events, expected_chars, '95rm')
-    for _ in range(len(expected_chars)):
+    for char in test_word:
+        simulate_keypress(keyboard, char)
         event = keyboard.read_event()
         events.append(event)
-    
-    print(events, '99rm')
+
+    expected_chars = list(test_word)
+    assert len(expected_chars) == len(test_word)  # testing the test
     assert all(x is not None for x in events), "Array contains None values"
 
-# @pytest.mark.parametrize("test_word", [
-#     'spaghetti',
-#     'domino',
-#     'chemistry',
-# ])
-# def test_typing_words(keyboard, test_word):
-#     simulate_typing(keyboard, test_word)
-    
-#     print(test_word, 'should be word 33rm')
-#     expected_chars = list(test_word)
-#     received_chars = []
+@pytest.mark.parametrize("test_word", [
+    'spaghetti',
+    'domino',
+    'chemistry',
+])
+def test_typing_words(keyboard, test_word):
+    events = []
+    for char in test_word:
+        simulate_keypress(keyboard, char)
+        event = keyboard.read_event()
+        events.append(event)
 
-#     assert len(expected_chars) == len(test_word)  # testing the test
+    received_chars = [event.char for event in events]
+    expected_chars = list(test_word)
     
-#     events = []
-#     for _ in range(len(expected_chars)):
-#         event = keyboard.read_event()
-#         events.append(event)
+    assert all(x.isalpha() for x in received_chars), "Array contains non-alphabetical characters"        
+    assert received_chars == expected_chars
     
-#     for event in events:
-#         received_chars.append(event.char)
-#         print(event, '46rm')
-    
-#     assert all(x.isalpha() for x in received_chars), "Array contains non-alphabetical characters"
-        
-#     print(received_chars, expected_chars, '44rm')
-#     assert received_chars == expected_chars
-    
-#     # Verify no more events
-#     next_event = keyboard.read_event()
-#     print(next_event, '49rm')
-#     assert next_event is None
+    next_event = keyboard.read_event()
+    assert next_event is None, "An unexpected event occurred"
 
-# def test_no_events_when_empty(keyboard):
-#     event = keyboard.read_event()
-#     assert event is None
-#     assert not keyboard.event_type_is_key_down(event)
+def test_no_events_when_empty(keyboard):
+    event = keyboard.read_event()
+    assert event is None
+    assert not keyboard.event_type_is_key_down(event)
 
 # def test_event_clearing(keyboard):
 #     simulate_typing(keyboard, 'a')
