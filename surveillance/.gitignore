@@ -1,7 +1,13 @@
+# virtual envs
+.venv-linux
 .venv
+# pycache
 **/__pycache__
+**/__pycache__/
+
 .pytest_cache
 
 productivity_data/*
 
 .env
+deskSense.egg-info
