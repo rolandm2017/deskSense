@@ -1,13 +1,9 @@
-import win32gui
-import win32process
-import psutil
-import time
-from datetime import datetime, timedelta
-import json
+from datetime import datetime
 from pathlib import Path
 import csv
 
 from .console_logger import ConsoleLogger
+from facade.program_facade import ProgramApiFacade
 
 
 # TODO: Report mouse, keyboard, program, chrome tabs, every 15 sec, to the db.
@@ -16,8 +12,9 @@ from .console_logger import ConsoleLogger
 # TODO: report programs that aren't in the apps list.
 
 class ProgramTracker:
-    def __init__(self, data_dir):
+    def __init__(self, data_dir, program_api_facade):
         self.data_dir = data_dir
+        self.program_facade: ProgramApiFacade = program_api_facade
         # Define productive applications
         self.productive_apps = {
             'code.exe': 'VSCode',
@@ -70,15 +67,16 @@ class ProgramTracker:
     def get_active_window_info(self):
         """Get information about the currently active window."""
         try:
-            window = win32gui.GetForegroundWindow()
-            pid = win32process.GetWindowThreadProcessId(window)[1]
-            process = psutil.Process(pid)
-            window_title = win32gui.GetWindowText(window)
+            # window = win32gui.GetForegroundWindow()
+            # pid = win32process.GetWindowThreadProcessId(window)[1]
+            # process = psutil.Process(pid)
+            # window_title = win32gui.GetWindowText(window)
+            window_info = self.program_facade.read_current_program_info()
             
             return {
-                'title': window_title,
-                'process_name': process.name().lower(),
-                'pid': pid,
+                'title': window_info["window_title"],
+                'process_name': window_info["process"].name().lower(),
+                'pid': window_info["pid"],
                 'timestamp': datetime.now()
             }
         except Exception as e:

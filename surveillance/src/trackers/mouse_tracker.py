@@ -1,16 +1,12 @@
-
-import win32api
-import win32gui
 import win32con
 from enum import Enum, auto
 from datetime import datetime
 import csv
-from pathlib import Path
 import threading
 import ctypes
-from ctypes import wintypes
 
 from .console_logger import ConsoleLogger
+from facade.mouse_facade import MouseApiFacade
 
 class MouseEvent(str, Enum):
     START = "start"
@@ -18,13 +14,14 @@ class MouseEvent(str, Enum):
     MOVE = "move"
 
 class MouseTracker:
-    def __init__(self, data_dir):
+    def __init__(self, data_dir, mouse_api_facade):
         """
         Initialize the MouseTracker with Windows event hooks.
         
         Args:
             data_dir (Path): Directory where tracking data will be stored
         """
+        self.mouse_facade: MouseApiFacade = mouse_api_facade
         self.data_dir = data_dir
         self.movement_start = None
         self.last_position = None
@@ -75,7 +72,7 @@ class MouseTracker:
             raise Exception('Failed to set mouse hook')
         
         # Message loop to keep the hook active
-        msg = wintypes.MSG()
+        msg = ctypes.wintypes.MSG()
         while not self.stop_event.is_set():
             if ctypes.windll.user32.PeekMessageA(ctypes.byref(msg), None, 0, 0, win32con.PM_REMOVE):
                 ctypes.windll.user32.TranslateMessage(ctypes.byref(msg))
@@ -86,7 +83,7 @@ class MouseTracker:
 
     def _handle_mouse_move(self):
         """Handle mouse movement events."""
-        current_position = win32api.GetCursorPos()
+        current_position = self.mouse_facade.get_cursor_pos()
         
         if not self.is_moving:
             # Movement just started
@@ -102,7 +99,7 @@ class MouseTracker:
     def _check_if_stopped(self):
         """Check if mouse has stopped moving."""
         if self.is_moving:
-            current_position = win32api.GetCursorPos()
+            current_position = self.mouse_facade.get_cursor_pos()
             if current_position == self.last_position:
                 # Mouse has stopped
                 self.is_moving = False

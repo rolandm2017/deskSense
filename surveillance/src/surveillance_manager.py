@@ -7,9 +7,13 @@ import json
 from pathlib import Path
 import csv
 
-from .mouse_tracker import MouseTracker
-from .keyboard_tracker import KeyboardTracker
-from .program_tracker import ProgramTracker
+from trackers.mouse_tracker import MouseTracker
+from trackers.keyboard_tracker import KeyboardTracker
+from trackers.program_tracker import ProgramTracker
+from facade.keyboard_facade import KeyboardApiFacade
+from facade.mouse_facade import MouseApiFacade
+from facade.program_facade import ProgramApiFacade
+from util.interrupt_handler import InterruptHandler
 # from .keyboard_tracker import KeyActivityTracker
 
 
@@ -33,9 +37,14 @@ class SurveillanceManager:
         self.data_dir = project_root / 'productivity_data'
         self.data_dir.mkdir(exist_ok=True)
 
-        self.program_tracker = ProgramTracker(self.data_dir)
-        self.mouse_tracker = MouseTracker(self.data_dir)
-        self.keyboard_tracker = KeyboardTracker(self.data_dir)
+        keyboard_facade = KeyboardApiFacade()  # FIXME: one of these 3 is supposed to be initialized in the tracker, with an argument? I think?
+        mouse_facade = MouseApiFacade()
+        program_facade = ProgramApiFacade()
+        interrupt_handler = InterruptHandler
+
+        self.program_tracker = ProgramTracker(self.data_dir, program_api_facade=program_facade)
+        self.mouse_tracker = MouseTracker(self.data_dir, mouse_api_facade=mouse_facade)
+        self.keyboard_tracker = KeyboardTracker(self.data_dir, keyboard_facade, interrupt_handler)
         # self.key_tracker = KeyActivityTracker(self.data_dir)
         # self.key_tracker.start()
     
