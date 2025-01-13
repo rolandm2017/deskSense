@@ -1,26 +1,29 @@
 from datetime import datetime, timedelta
-import keyboard
 import csv
 from threading import Thread
 import time
-import signal
 
 from .console_logger import ConsoleLogger
+from facade.keyboard_facade import KeyboardApiFacade
+from .util import InterruptHandler
 
 DELAY_TO_AVOID_CPU_HOGGING = 0.01
 
 class KeyboardTracker:
-    def __init__(self, data_dir):
+    def __init__(self, data_dir, keyboard_api_facade, interrupt_handler):
         self.events = []
         self.data_dir = data_dir
-
+        
         # so surveillanceManager can grab the interval data
         self.session_data = []
         self.console_logger = ConsoleLogger()
         self.recent_count = 0
         self.time_of_last_terminal_out = datetime.now()
 
-        signal.signal(signal.SIGINT, self._handle_interrupt)  # avoid capturing interrupt
+        self.keyboard_facade: KeyboardApiFacade = keyboard_api_facade
+
+        # Initialize interrupt handler with cleanup callback
+        self.interrupt_handler = interrupt_handler(cleanup_callback=self.stop)
 
         self.is_running = False
         self.monitor_thread = None
@@ -34,8 +37,8 @@ class KeyboardTracker:
 
     def _monitor_keyboard(self):
         while self.is_running:
-            event = keyboard.read_event()
-            if event.event_type == keyboard.KEY_DOWN:
+            event = self.keyboard_facade.read_event()
+            if self.keyboard_facade.event_type_is_key_down(event.event_type):
                 current_time = datetime.now()
                 self._log_event_to_csv(current_time)
                 self.recent_count += 1  # per keystroke
@@ -77,12 +80,6 @@ class KeyboardTracker:
         current = self.session_data
         self.session_data = []
         return current
-    
-    def _handle_interrupt(self, signum, frame):
-        print("\nReceived interrupt signal. Cleaning up...")
-        self.stop()
-        # Re-raise the signal after cleanup
-        signal.default_int_handler(signum, frame)
 
     def stop(self):
         self.is_running = False
