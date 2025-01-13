@@ -1,6 +1,8 @@
-# pynput is superior to the keyboard module, because pynput is "truly cross platform"
 
 from pynput import keyboard
+#
+# pynput is superior to the keyboard module, because pynput is "truly cross platform"
+#
 
 class KeyboardApiFacade:
     def __init__(self):

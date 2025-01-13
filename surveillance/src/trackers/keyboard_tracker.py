@@ -2,6 +2,8 @@ from datetime import datetime, timedelta
 import csv
 from threading import Thread
 import time
+from pathlib import Path
+
 
 from ..console_logger import ConsoleLogger
 from ..facade.keyboard_facade import KeyboardApiFacade
@@ -80,7 +82,6 @@ class KeyboardTracker:
         return (current_time - self.time_of_last_terminal_out) >= timedelta(seconds=3)
         
     def gather_session(self):
-        print(self.session_data, 'vvvvvvvvvvvvvvvvvvv s87rm')
         current = self.session_data
         self.session_data = []
         return current
@@ -89,18 +90,16 @@ class KeyboardTracker:
         print("Stopping program")
         self.is_running = False
         if self.end_program_func:
-            print("here 91rm")
             report = self.generate_keyboard_report()
-            print(report, '93rm')
             self.end_program_func(report)
-        if self.monitor_thread:  # FIXME: what's this do?
+        active_thread = self.monitor_thread is not None
+        if active_thread:  # FIXME: what's this do?
             # FIXME: does it really clean up? how could i prove it? what does it mean to clean up?
             self.monitor_thread.join()
 
     def generate_keyboard_report(self):
         return {"total_inputs": len(self.events)}
     
-from pathlib import Path
 
 
 def end_program_readout(report):

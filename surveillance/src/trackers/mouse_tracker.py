@@ -1,12 +1,23 @@
-import win32con
+
+# if os_type.startswith("Windows"):
+#     # Windows
+    
+# if os_type.startswith("Ubuntu"):
+#     # Linux
+    
+
+
 from enum import Enum, auto
 from datetime import datetime
 import csv
+from pathlib import Path
 import threading
-import ctypes
+import time
 
-from .console_logger import ConsoleLogger
-from facade.mouse_facade import MouseApiFacade
+
+from ..util.detect_os import get_os_info
+from ..console_logger import ConsoleLogger
+from ..facade.mouse_facade import MouseApiFacade, UbuntuMouseApiFacade, WindowsMouseApiFacade
 
 class MouseEvent(str, Enum):
     START = "start"
@@ -14,15 +25,29 @@ class MouseEvent(str, Enum):
     MOVE = "move"
 
 class MouseTracker:
-    def __init__(self, data_dir, mouse_api_facade):
+    def __init__(self, data_dir, mouse_api_facade, end_program_routine=None):
         """
         Initialize the MouseTracker with Windows event hooks.
+
+        Note that the program starts when the Tracker object is initialized.
         
         Args:
             data_dir (Path): Directory where tracking data will be stored
         """
         self.mouse_facade: MouseApiFacade = mouse_api_facade
         self.data_dir = data_dir
+        self.end_program_func = end_program_routine
+
+        environment = get_os_info()
+
+        if environment.startswith("Ubuntu") or environment.startswith("Linux"):
+            target_hook = self._start_hook_ubuntu
+        elif environment.startswith("Windows"):
+            target_hook = self._start_hook_windows
+        else:
+            print(environment)
+            raise ValueError("OS string must start with 'Ubuntu' or 'Windows'")
+
         self.movement_start = None
         self.last_position = None
         self.is_moving = False
@@ -35,12 +60,68 @@ class MouseTracker:
         self.stop_event = threading.Event()
         
         # Start mouse hook in a separate thread
-        self.hook_thread = threading.Thread(target=self._start_hook)
+        self.hook_thread = threading.Thread(target=target_hook)
         self.hook_thread.daemon = True
         self.hook_thread.start()
 
-    def _start_hook(self):
+
+    def _start_hook_ubuntu(self):
+        """Start the X11 mouse hook."""
+        from Xlib import display, X
+        from Xlib.ext import record
+        from Xlib.protocol import rq
+        # Get the display and create recording context
+        self.display = display.Display()
+        self.ctx = self.display.record_create_context(
+            0,
+            [record.AllClients],
+            [{
+                'core_requests': (0, 0),
+                'core_replies': (0, 0),
+                'ext_requests': (0, 0, 0, 0),
+                'ext_replies': (0, 0, 0, 0),
+                'delivered_events': (0, 0),
+                'device_events': (X.MotionNotify, X.MotionNotify),
+                'errors': (0, 0),
+                'client_started': False,
+                'client_died': False,
+            }]
+        )
+        def callback(reply):
+            """Handle X11 events."""
+            if reply.category != record.FromServer:
+                return
+            
+            if reply.client_swapped:
+                return
+
+            if not len(reply.data) or reply.data[0] < 2:
+                return
+
+            data = reply.data
+            while len(data):
+                event, data = rq.EventField(None).parse_binary_value(
+                    data, self.display.display, None, None)
+                
+                if event.type == X.MotionNotify:
+                    self._handle_mouse_move()
+
+        # Enable recording context and start processing events
+        self.display.record_enable_context(self.ctx, callback)
+        
+        # Keep processing events until stop_event is set
+        while not self.stop_event.is_set():
+            # Process X events
+            self.display.process_events()
+        
+        # Clean up
+        self.display.record_free_context(self.ctx)
+        self.display.close()
+
+    def _start_hook_windows(self):
         """Start the Windows mouse hook."""
+        import win32con
+        import ctypes
         # Define the mouse hook callback
         def mouse_callback(nCode, wParam, lParam):
             """
@@ -84,6 +165,7 @@ class MouseTracker:
     def _handle_mouse_move(self):
         """Handle mouse movement events."""
         current_position = self.mouse_facade.get_cursor_pos()
+        print(current_position, '168rm')
         
         if not self.is_moving:
             # Movement just started
@@ -125,7 +207,7 @@ class MouseTracker:
             with open(file_path, 'w', newline='') as f:
                 writer = csv.DictWriter(f, fieldnames=['timestamp', 'event_type', 'x_position', 'y_position'])
                 writer.writeheader()
-        
+        print(position, '209rm')
         # Log the event
         event = {
                 'timestamp': datetime.now().isoformat(),
@@ -154,6 +236,8 @@ class MouseTracker:
     def stop(self):
         """Stop the mouse tracker and clean up."""
         self.stop_event.set()
+        if self.end_program_func:
+            self.end_program_func(self.generate_movement_report())
         if self.hook_thread.is_alive():
             self.hook_thread.join()
 
@@ -202,3 +286,30 @@ class MouseTracker:
             'avg_movement_duration': round(sum(movement_sessions) / len(movement_sessions), 2),
             'total_movement_time': round(sum(movement_sessions), 2)
         }
+    
+
+
+def end_program_readout(report):
+    # prints the generated report
+    print(report)
+
+
+if __name__ == "__main__":
+    os_type = get_os_info()
+    if os_type.startswith("Linux"):
+        facade_type = UbuntuMouseApiFacade
+    elif os_type.startswith("Windows"):
+        facade_type = WindowsMouseApiFacade
+    api_facade = facade_type()
+    folder = Path("/tmp")
+
+        
+    try:
+        instance = MouseTracker(folder, api_facade, end_program_readout)
+        # Add a way to keep the main thread alive
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        instance.stop()
+        # Give the thread time to clean up
+        time.sleep(0.5)
