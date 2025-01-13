@@ -39,6 +39,7 @@ class KeyboardTracker:
     def _monitor_keyboard(self):
         while self.is_running:
             event = self.keyboard_facade.read_event()
+            # TODO: Remove or replace print statements with proper logging
             print(event, '41rm')
             if self.keyboard_facade.event_type_is_key_down(event):
                 current_time = datetime.now()
@@ -52,13 +53,12 @@ class KeyboardTracker:
                     self.recent_count = 0
                     self.time_of_last_terminal_out = current_time
 
-            time.sleep(DELAY_TO_AVOID_CPU_HOGGING)  # Small sleep to prevent CPU hogging
+                time.sleep(DELAY_TO_AVOID_CPU_HOGGING)
 
     def _log_event_to_csv(self, current_time):
         self.events.append(current_time)
 
         date_str = current_time.strftime('%Y-%m-%d')
-        print(date_str, self.data_dir, '60rm')
         file_path = self.data_dir / f'key_logging_{date_str}.csv'
 
         # Create file with headers if it doesn't exist
@@ -80,14 +80,19 @@ class KeyboardTracker:
         return (current_time - self.time_of_last_terminal_out) >= timedelta(seconds=3)
         
     def gather_session(self):
+        print(self.session_data, 'vvvvvvvvvvvvvvvvvvv s87rm')
         current = self.session_data
         self.session_data = []
         return current
 
     def stop(self):
+        print("Stopping program")
         self.is_running = False
         if self.end_program_func:
-            self.end_program_func(self.gather_session())
+            print("here 91rm")
+            report = self.generate_keyboard_report()
+            print(report, '93rm')
+            self.end_program_func(report)
         if self.monitor_thread:  # FIXME: what's this do?
             # FIXME: does it really clean up? how could i prove it? what does it mean to clean up?
             self.monitor_thread.join()
