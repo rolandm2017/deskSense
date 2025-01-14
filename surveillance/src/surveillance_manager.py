@@ -14,6 +14,7 @@ from facade.keyboard_facade import KeyboardApiFacade
 from facade.mouse_facade import MouseApiFacade
 from facade.program_facade import ProgramApiFacade
 from util.interrupt_handler import InterruptHandler
+from util.detect_os import OperatingSystemInfo
 # from .keyboard_tracker import KeyActivityTracker
 
 
@@ -37,9 +38,11 @@ class SurveillanceManager:
         self.data_dir = project_root / 'productivity_data'
         self.data_dir.mkdir(exist_ok=True)
 
+        current_os = OperatingSystemInfo()
+
         keyboard_facade = KeyboardApiFacade()  # FIXME: one of these 3 is supposed to be initialized in the tracker, with an argument? I think?
         mouse_facade = MouseApiFacade()
-        program_facade = ProgramApiFacade()
+        program_facade = ProgramApiFacade(current_os)
         interrupt_handler = InterruptHandler
 
         self.program_tracker = ProgramTracker(self.data_dir, program_api_facade=program_facade)

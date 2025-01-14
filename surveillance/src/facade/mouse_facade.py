@@ -1,8 +1,8 @@
-from ..util.detect_os import get_os_info
-os_type = get_os_info()
-if os_type.startswith("Windows"):
+from ..util.detect_os import OperatingSystemInfo
+os_type = OperatingSystemInfo()
+if os_type.is_windows:
     from win32api import GetCursorPos
-if os_type.startswith("Ubuntu") or os_type.startswith("Linux"):
+if os_type.is_ubuntu:
     from Xlib import display
 
 class MouseApiFacade:
