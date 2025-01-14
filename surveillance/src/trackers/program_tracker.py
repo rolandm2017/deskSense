@@ -2,7 +2,7 @@ from datetime import datetime
 from pathlib import Path
 import csv
 
-from .console_logger import ConsoleLogger
+from ..console_logger import ConsoleLogger
 from facade.program_facade import ProgramApiFacade
 
 

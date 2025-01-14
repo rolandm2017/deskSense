@@ -15,7 +15,7 @@ import threading
 import time
 
 
-from ..util.detect_os import get_os_info
+from ..util.detect_os import OperatingSystemInfo
 from ..console_logger import ConsoleLogger
 from ..facade.mouse_facade import MouseApiFacade, UbuntuMouseApiFacade, WindowsMouseApiFacade
 
@@ -38,15 +38,15 @@ class MouseTracker:
         self.data_dir = data_dir
         self.end_program_func = end_program_routine
 
-        environment = get_os_info()
+        self.environment = OperatingSystemInfo()
 
-        if environment.startswith("Ubuntu") or environment.startswith("Linux"):
+        if self.environment.is_ubuntu:
             target_hook = self._start_hook_ubuntu
-        elif environment.startswith("Windows"):
+        elif self.environment.is_windows:
             target_hook = self._start_hook_windows
         else:
-            print(environment)
-            raise ValueError("OS string must start with 'Ubuntu' or 'Windows'")
+            print(self.environment)
+            raise ValueError("Neither OS detected")
 
         self.movement_start = None
         self.last_position = None
@@ -172,7 +172,7 @@ class MouseTracker:
             self.is_moving = True
             self.movement_start = datetime.now()
             self.last_position = current_position
-            self._log_movement(MouseEvent.START, current_position)
+            self._log_movement_to_csv(MouseEvent.START, current_position)
             self.console_logger.log_mouse_move(current_position)
             
             # Start a timer to detect when movement stops
@@ -185,13 +185,13 @@ class MouseTracker:
             if current_position == self.last_position:
                 # Mouse has stopped
                 self.is_moving = False
-                self._log_movement(MouseEvent.STOP, current_position)
+                self._log_movement_to_csv(MouseEvent.STOP, current_position)
             else:
                 # Mouse is still moving, check again
                 self.last_position = current_position
                 threading.Timer(0.1, self._check_if_stopped).start()
 
-    def _log_movement(self, event_type, position):
+    def _log_movement_to_csv(self, event_type, position):
         """
         Log mouse movement events to CSV.
         
@@ -204,10 +204,11 @@ class MouseTracker:
         
         # Create file with headers if it doesn't exist
         if not file_path.exists():
+            file_path.parent.mkdir(parents=True, exist_ok=True)  # Create directories if needed
             with open(file_path, 'w', newline='') as f:
                 writer = csv.DictWriter(f, fieldnames=['timestamp', 'event_type', 'x_position', 'y_position'])
                 writer.writeheader()
-        print(position, '209rm')
+        
         # Log the event
         event = {
                 'timestamp': datetime.now().isoformat(),
@@ -229,8 +230,9 @@ class MouseTracker:
     def preserve_open_events(self, current_batch):
         # There can be one or zero open events, not 2.
         to_preserve = []
-        if current_batch[-1]["event_type"] == MouseEvent.START:
-            to_preserve.append(current_batch[-1])
+        if current_batch:
+            if current_batch[-1]["event_type"] == MouseEvent.START:
+                to_preserve.append(current_batch[-1])
         return to_preserve
         
     def stop(self):

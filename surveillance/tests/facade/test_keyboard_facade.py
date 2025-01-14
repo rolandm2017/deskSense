@@ -45,12 +45,7 @@ def test_read_event(key, expecting):
 def test_event_is_key_down(keyboard, key, expecting):
     assert keyboard.event_type_is_key_down(key) == expecting
 
-
-#
-# #
 # # # Complex tests
-# #
-#
 
 @pytest.fixture
 def mock_keyboard(monkeypatch):
@@ -121,35 +116,29 @@ def test_no_events_when_empty(keyboard):
     assert event is None
     assert not keyboard.event_type_is_key_down(event)
 
-# def test_event_clearing(keyboard):
-#     simulate_typing(keyboard, 'a')
+def test_event_clearing(keyboard):
+    simulate_keypress(keyboard, 'a')
     
-#     # First read should return the event
-#     event1 = keyboard.read_event()
-#     assert keyboard.event_type_is_key_down(event1)
-#     assert event1.char == 'a'
+    event1 = keyboard.read_event()  # First read should return the event
+    assert keyboard.event_type_is_key_down(event1)
+    assert event1.char == 'a'
     
-#     # Second read should return None
-#     event2 = keyboard.read_event()
-#     assert event2 is None
-#     assert not keyboard.event_type_is_key_down(event2)
+    event2 = keyboard.read_event()  # Second read should return None
+    assert event2 is None
+    assert not keyboard.event_type_is_key_down(event2)
 
-# def test_special_keys(keyboard):
-#     keyboard._on_press(Key.space)
-#     event = keyboard.read_event()
-#     assert keyboard.event_type_is_key_down(event)
-#     assert event == Key.space
-
-# def test_rapid_typing(keyboard):
-#     test_word = 'fast'
-#     # Type without delays
-#     for char in test_word:
-#         keyboard._on_press(KeyCode.from_char(char))
+def test_rapid_typing(keyboard):
+    test_word = 'fast'
+    # Type without delays
+    events = []
+    for char in test_word:
+        keyboard._on_press(KeyCode.from_char(char))
+        evt = keyboard.read_event()
+        events.append(evt)
     
-#     received_chars = []
-#     for _ in range(len(test_word)):
-#         event = keyboard.read_event()
-#         assert keyboard.event_type_is_key_down(event)
-#         received_chars.append(event.char)
+    received_chars = []
+    for e in events:
+        assert keyboard.event_type_is_key_down(e)
+        received_chars.append(e.char)
     
-#     assert received_chars == list(test_word)
+    assert received_chars == list(test_word)
