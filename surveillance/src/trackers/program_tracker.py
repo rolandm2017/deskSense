@@ -88,7 +88,8 @@ class ProgramTracker:
             return False
 
         process_name = window_info['process_name']
-        window_title = window_info['title']
+        window_title = window_info['window_title']
+        print(process_name, '92fl')
 
         # Check if it's a known application
         if process_name in self.productive_apps:
@@ -118,9 +119,8 @@ class ProgramTracker:
             window_info = self.get_active_window_info()
             if not window_info:
                 return
-
-
-            newly_detected_window = f"{window_info['process_name']} - {window_info['title']}"
+            print(window_info, '122fl')
+            newly_detected_window = f"{window_info['process_name']} - {window_info['window_title']}"
             
             # If window has changed, log the previous session
             if self.current_window and newly_detected_window != self.current_window:
@@ -135,6 +135,7 @@ class ProgramTracker:
             self.current_window = newly_detected_window
             
         except Exception as e:
+            print(e)
             print(f"Error tracking window: {e}")
 
     def log_session(self):

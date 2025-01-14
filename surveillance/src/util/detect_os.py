@@ -6,11 +6,11 @@ class OperatingSystemInfo:
         self.is_ubuntu = None
         self.current_os = self.get_os_info()
         if self.current_os.startswith("Windows"):
-            self.os_is_windows = True
-            self.os_is_ubuntu = False
+            self.is_windows = True
+            self.is_ubuntu = False
         else:
-            self.os_is_windows = False
-            self.os_is_ubuntu = True
+            self.is_windows = False
+            self.is_ubuntu = True
 
     def get_os_info(self):
         system = platform.system()

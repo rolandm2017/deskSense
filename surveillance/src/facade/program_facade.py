@@ -1,52 +1,50 @@
-import win32gui
-import win32process
 import psutil
-
-# class ActiveProgramInfo:
-#     def __init__(self, process_name, title, pid, timestamp):
-#         self.process_name = process_name
-#         self.title = title
-#         self.pid = pid
+from typing import Dict, Optional
+import platform
 
 class ProgramApiFacade:
-
     def __init__(self, os):
-        self.read_current_program_info = None
-        if os.is_windows:
-            self.read_current_program_info = self.read_current_program_info_windows
-        else:
-            self.read_current_program_info = self.read_current_program_info_ubuntu
-
-    def read_current_program_info_windows(self):
-        window = win32gui.GetForegroundWindow()
-        pid = win32process.GetWindowThreadProcessId(window)[1]
-        process = psutil.Process(pid)
-        window_title = win32gui.GetWindowText(window)
-
-        # "window": window, -> not used
-        return { "os": "windows", "pid": pid, "process_name": process, "window_title": window_title}    
-
-    def read_current_program_info_ubuntu(self):
-        # Get all running processes
-        processes = []
-        for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-            try:
-                # Get process info
-                process_info = proc.info
-                
-                print(process_info, '37rm')
-                # Filter out system processes and get user applications
-                if process_info['cmdline'] and process_info['name']:
-                    # 'cmdline': ' '.join(process_info['cmdline'])
-                    print(' '.join(process_info['cmdline']))
-                    processes.append({
-                        "os": "ubuntu",
-                        'pid': process_info['pid'],
-                        'process_name': process_info['name'],
-                        'window_title': "TODO"
-                        
-                    })
-            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                pass
+        self.is_windows = os.is_windows
+        if self.is_windows:
+            import win32gui
+            import win32process
+            self.win32gui = win32gui
+            self.win32process = win32process
         
-        return processes
+
+    def read_current_program_info(self) -> Dict:
+        if self.is_windows:
+            return self._read_windows()
+        return self._read_ubuntu()
+    
+    def _read_windows(self) -> Dict:
+        window = self.win32gui.GetForegroundWindow()
+        pid = self.win32process.GetWindowThreadProcessId(window)[1]
+        process = psutil.Process(pid)
+        return {
+            "os": "windows",
+            "pid": pid,
+            "process_name": process.name(),
+            "window_title": self.win32gui.GetWindowText(window)
+        }
+
+    def _read_ubuntu(self) -> Dict:
+        # Ubuntu implementation using wmctrl or xdotool could go here
+        # For now, returning active process info
+        active = self._get_active_window_ubuntu()
+        return {
+            "os": "ubuntu",
+            "pid": active["pid"] if active else None,
+            "process_name": active["name"] if active else None,
+            "window_title": None  # Would need wmctrl/xdotool for this
+        }
+
+    def _get_active_window_ubuntu(self) -> Optional[Dict]:
+        # Basic implementation - could be enhanced with window manager tools
+        for proc in psutil.process_iter(['pid', 'name']):
+            try:
+                if proc.status() == 'running':
+                    return {"pid": proc.pid, "name": proc.name()}
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+        return None
