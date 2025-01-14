@@ -299,10 +299,10 @@ def end_program_readout(report):
 
 
 if __name__ == "__main__":
-    os_type = get_os_info()
-    if os_type.startswith("Linux"):
+    os_type = OperatingSystemInfo()
+    if os_type.is_ubuntu:
         facade_type = UbuntuMouseApiFacade
-    elif os_type.startswith("Windows"):
+    elif os_type.is_windows:
         facade_type = WindowsMouseApiFacade
     api_facade = facade_type()
     folder = Path("/tmp")

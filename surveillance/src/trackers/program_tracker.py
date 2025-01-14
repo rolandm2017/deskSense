@@ -1,9 +1,11 @@
 from datetime import datetime
 from pathlib import Path
 import csv
+import time
 
 from ..console_logger import ConsoleLogger
-from facade.program_facade import ProgramApiFacade
+from ..facade.program_facade import ProgramApiFacade
+from ..util.detect_os import OperatingSystemInfo
 
 
 # TODO: Report mouse, keyboard, program, chrome tabs, every 15 sec, to the db.
@@ -67,18 +69,15 @@ class ProgramTracker:
     def get_active_window_info(self):
         """Get information about the currently active window."""
         try:
-            # window = win32gui.GetForegroundWindow()
-            # pid = win32process.GetWindowThreadProcessId(window)[1]
-            # process = psutil.Process(pid)
-            # window_title = win32gui.GetWindowText(window)
             window_info = self.program_facade.read_current_program_info()
-            
-            return {
-                'title': window_info["window_title"],
-                'process_name': window_info["process"].name().lower(),
-                'pid': window_info["pid"],
-                'timestamp': datetime.now()
-            }
+            window_info["timestamp"] = datetime.now()
+            return window_info
+            # return {
+            #     'title': window_info["window_title"],
+            #     'process_name': window_info["process"].name().lower(),
+            #     'pid': window_info["pid"],
+            #     'timestamp': datetime.now()
+            # }
         except Exception as e:
             print(f"Error getting window info: {e}")
             return None
@@ -119,6 +118,7 @@ class ProgramTracker:
             window_info = self.get_active_window_info()
             if not window_info:
                 return
+
 
             newly_detected_window = f"{window_info['process_name']} - {window_info['title']}"
             
@@ -254,4 +254,29 @@ class ProgramTracker:
     def stop(self):
         pass  # might need later
     
-   
+
+# TODO: make it work when run as a script
+
+def end_program_readout():
+    print("Ending program tracking...")
+
+if __name__ == "__main__":
+    os_type = OperatingSystemInfo()
+    program_api_facade = ProgramApiFacade(os_type)
+        
+    folder = Path("/tmp")
+
+    try:
+        instance = ProgramTracker(folder, program_api_facade)
+        print("Starting program tracking...")
+        
+        # Main tracking loop
+        while True:
+            instance.track_window()
+            time.sleep(1)
+            
+    except KeyboardInterrupt:
+        instance.stop()
+        end_program_readout()
+        # Give time for cleanup
+        time.sleep(0.5)
