@@ -1,7 +1,7 @@
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Boolean
+from sqlalchemy import  Column, Integer, String, DateTime,  Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker, Session, relationship
+from sqlalchemy.orm import sessionmaker
 from typing import Generator
 from dotenv import load_dotenv
 from datetime import datetime
@@ -55,19 +55,6 @@ class MouseMove(Base):
 class Keystroke(Base):
     id = Column(Integer, primary_key=True, index=True)
     timestamp = Column(DateTime)
-
-# Database dependency
-# def get_db() -> Generator[Session, None, None]:
-#     """
-#     Dependency that creates a new SQLAlchemy SessionLocal
-#     that will be used in a single request, then closes it
-#     once the request is finished
-#     """
-#     db = SessionLocal()
-#     try:
-#         yield db
-#     finally:
-#         db.close()
 
 async def get_db():
     async with AsyncSessionLocal() as session:
