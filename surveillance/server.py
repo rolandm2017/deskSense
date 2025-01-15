@@ -1,3 +1,7 @@
+from uvicorn.config import Config
+from uvicorn.server import Server
+import signal
+
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Depends
 from contextlib import asynccontextmanager
 import asyncio
@@ -35,11 +39,8 @@ surveillance_state = SurveillanceState()
 
 async def track_productivity():
     while surveillance_state.is_running:
-        # fixme: should this really poll every second?
-        print("38rm")
-        surveillance_state.manager.program_tracker.track_window()
-        
-        await asyncio.sleep(1)
+        surveillance_state.manager.program_tracker.track_window()        
+        await asyncio.sleep(1)  # FIXME: should this really poll every second?
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -51,31 +52,19 @@ async def lifespan(app: FastAPI):
     
     print("Starting productivity tracking...")
     # Pass the session to SurveillanceManager
-    surveillance_state.manager = SurveillanceManager(surveillance_state.db_session)
+    surveillance_state.manager = SurveillanceManager(surveillance_state.db_session, shutdown_signal="TODO")
     surveillance_state.is_running = True
     
     # Start tracking in background
     surveillance_state.tracking_task = asyncio.create_task(track_productivity())
     
     yield
-    
+
     # Shutdown
     print("Shutting down productivity tracking...")
-    surveillance_state.is_running = False
-    
-    if surveillance_state.tracking_task:
-        surveillance_state.tracking_task.cancel()
-        try:
-            await surveillance_state.tracking_task
-        except asyncio.CancelledError:
-            pass
-    
-    if surveillance_state.manager.program_tracker:
-        # Log final session
-        surveillance_state.manager.program_tracker.log_session()
-        
-        # Clean up
-        surveillance_state.manager.program_tracker.stop()
+    if surveillance_state.manager:
+        await surveillance_state.manager.cleanup()  # Make sure SurveillanceManager.stop() is async
+
 
 app = FastAPI(lifespan=lifespan)
 
@@ -120,6 +109,48 @@ async def get_keyboard_report(db: Session = Depends(get_db)):
         total_inputs=report['total_inputs']
     )
 
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+# if __name__ == "__main__":
+#     config = Config(app=app, host="0.0.0.0", port=8000)
+#     server = Server(config=config)
+    
+#     async def shutdown(signame):
+#         print(f"Received {signame}")
+#         # FIXME: GOAL: i want ctrl + c to NOT vomit five stack traces, instead to present 2 to 6 lines of "see ya"
+#         await server.shutdown()
+    
+#     # Move SurveillanceManager initialization here
+#     async def startup():
+#         surveillance_state.db_session = AsyncSessionLocal()
+#         surveillance_state.manager = SurveillanceManager(surveillance_state.db_session, shutdown_signal=shutdown)
+#         surveillance_state.is_running = True
+#         surveillance_state.tracking_task = asyncio.create_task(track_productivity())
+    
+#     # Modify lifespan
+#     @asynccontextmanager
+#     async def lifespan(app: FastAPI):
+#         await startup()
+#         yield
+#         # Shutdown
+#         print("Shutting down productivity tracking...")
+#         surveillance_state.is_running = False
+        
+#         if surveillance_state.tracking_task:
+#             surveillance_state.tracking_task.cancel()
+#             try:
+#                 await surveillance_state.tracking_task
+#             except asyncio.CancelledError:
+#                 pass
+        
+#         if surveillance_state.manager.program_tracker:
+#             # Log final session
+#             surveillance_state.manager.program_tracker.log_session()
+            
+#             # Clean up
+#             surveillance_state.manager.program_tracker.stop()
+    
+#     app = FastAPI(lifespan=lifespan)

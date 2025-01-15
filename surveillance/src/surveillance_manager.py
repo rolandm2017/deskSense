@@ -27,7 +27,7 @@ from .util.detect_os import OperatingSystemInfo
 
 
 class SurveillanceManager:
-    def __init__(self, db_conn):
+    def __init__(self, db_conn, shutdown_signal=None):
         self.db = db_conn
         # Initialize tracking data
         self.current_window = None
@@ -49,10 +49,10 @@ class SurveillanceManager:
         program_facade = ProgramApiFacade(current_os)
         interrupt_handler = InterruptHandler
 
-        self.mouse_dao = MouseDao()
-        self.keyboard_dao = KeyboardDao()
-        self.program_dao = ProgramDao()
-        self.chrome_dao = ChromeDao()
+        self.mouse_dao = MouseDao(self.db)
+        self.keyboard_dao = KeyboardDao(self.db)
+        self.program_dao = ProgramDao(self.db)
+        self.chrome_dao = ChromeDao(self.db)
 
         self.program_tracker = ProgramTracker(self.data_dir, program_facade, self.program_dao)
         self.mouse_tracker = MouseTracker(self.data_dir, mouse_facade, self.mouse_dao)
@@ -67,8 +67,10 @@ class SurveillanceManager:
     def report_loop_to_db(self, loop_content):
         self.db.record(loop_content)
     
-    def cleanup(self):  # Add this method to ProductivityTracker
+    async def cleanup(self):  # Add this method to ProductivityTracker
         """Clean up resources before exit."""
+        print("cleaning up")
+        # TODO: Set the while loop's condiitons to False
         self.mouse_tracker.stop()
         self.keyboard_tracker.stop()
         self.program_tracker.stop()  # TODO: implement
