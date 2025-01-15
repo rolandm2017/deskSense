@@ -21,6 +21,6 @@ class KeyboardApiFacade:
         return event
     
     def event_type_is_key_down(self, event):
-        print(event, event is not None, "21rm")
+        print(event, event is not None, "21vv")
         return event is not None  # If event exists, it was a key press
     

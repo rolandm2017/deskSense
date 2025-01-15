@@ -9,12 +9,21 @@ from ..console_logger import ConsoleLogger
 from ..facade.keyboard_facade import KeyboardApiFacade
 from ..util.interrupt_handler import InterruptHandler
 
-DELAY_TO_AVOID_CPU_HOGGING = 0.01
+average_char_per_word = 5
+wpm = 90
+char_per_min = 540  # 5 char per word * 90 word per min -> 540 char per min
+char_per_sec = 9  # 540 char / 60 sec -> 9 char per sec
+required_delay_per_char = 0.08  # 1 sec / 9 char -> 0.111 sec per char
+
+DELAY_TO_AVOID_CPU_HOGGING = required_delay_per_char
 
 class KeyboardTracker:
-    def __init__(self, data_dir, keyboard_api_facade, interrupt_handler, end_program_routine=None):
+    def __init__(self, data_dir, keyboard_api_facade, dao, interrupt_handler, end_program_routine=None):
         self.events = []
         self.data_dir = data_dir
+        self.keyboard_facade: KeyboardApiFacade = keyboard_api_facade
+        self.dao = dao
+
         self.end_program_func = end_program_routine
         
         # so surveillanceManager can grab the interval data
@@ -23,7 +32,6 @@ class KeyboardTracker:
         self.recent_count = 0
         self.time_of_last_terminal_out = datetime.now()
 
-        self.keyboard_facade: KeyboardApiFacade = keyboard_api_facade
 
         # Initialize interrupt handler with cleanup callback
         self.interrupt_handler = interrupt_handler(cleanup_callback=self.stop)
@@ -42,7 +50,7 @@ class KeyboardTracker:
         while self.is_running:
             event = self.keyboard_facade.read_event()
             # TODO: Remove or replace print statements with proper logging
-            print(event, '41rm')
+            print(event, '41vv')
             if self.keyboard_facade.event_type_is_key_down(event):
                 current_time = datetime.now()
                 self.log_keystroke_to_db(current_time)
@@ -56,7 +64,7 @@ class KeyboardTracker:
                     self.recent_count = 0
                     self.time_of_last_terminal_out = current_time
 
-                time.sleep(DELAY_TO_AVOID_CPU_HOGGING)
+            time.sleep(DELAY_TO_AVOID_CPU_HOGGING)
 
     def log_keystroke_to_db(self, current_time):
         self.dao.create(current_time)

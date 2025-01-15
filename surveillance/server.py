@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session
 
 from pydantic import BaseModel
 
-from .db.database import get_db, AsyncSessionLocal
-from .surveillance_manager import SurveillanceManager
+from src.db.database import get_db, AsyncSessionLocal
+from src.surveillance_manager import SurveillanceManager
 
 class ProductivityReport(BaseModel):
     date: str
@@ -119,3 +119,7 @@ async def get_keyboard_report(db: Session = Depends(get_db)):
     return KeyboardReport(
         total_inputs=report['total_inputs']
     )
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

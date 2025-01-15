@@ -21,40 +21,6 @@ AsyncSessionLocal = sessionmaker(
 
 Base = declarative_base()
 
-# Define your models
-class Program(Base):
-    # 'start_time', 'end_time', 'duration', 'window', 'productive'
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    window = Column(String, unique=False, index=True)    
-    start_time = Column(DateTime)
-    end_time = Column(DateTime)
-    productive = Column(Boolean)
-    created_at = Column(DateTime, default=datetime.now)
-    
-    # Relationship
-    # items = relationship("Item", back_populates="owner")
-
-class Chrome(Base):
-    __tablename__ = "items"
-
-    id = Column(Integer, primary_key=True, index=True)
-    tab_title = Column(String, index=True)
-    start_time = Column(DateTime)
-    end_time = Column(DateTime)
-    productive = Column(Boolean)
-    # Relationship
-    # owner = relationship("User", back_populates="items")
-
-class MouseMove(Base):
-    id = Column(Integer, primary_key=True, index=True)
-    start_time = Column(DateTime)
-    end_time = Column(DateTime)
-
-class Keystroke(Base):
-    id = Column(Integer, primary_key=True, index=True)
-    timestamp = Column(DateTime)
 
 async def get_db():
     async with AsyncSessionLocal() as session:

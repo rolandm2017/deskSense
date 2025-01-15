@@ -7,14 +7,18 @@
 from pathlib import Path
 # import csv
 
-from trackers.mouse_tracker import MouseTracker
-from trackers.keyboard_tracker import KeyboardTracker
-from trackers.program_tracker import ProgramTracker
-from facade.keyboard_facade import KeyboardApiFacade
-from facade.mouse_facade import MouseApiFacade
-from facade.program_facade import ProgramApiFacade
-from util.interrupt_handler import InterruptHandler
-from util.detect_os import OperatingSystemInfo
+from .db.dao.mouse_dao import MouseDao
+from .db.dao.keyboard_dao import KeyboardDao
+from .db.dao.chrome_dao import ChromeDao
+from .db.dao.program_dao import ProgramDao
+from .trackers.mouse_tracker import MouseTracker
+from .trackers.keyboard_tracker import KeyboardTracker
+from .trackers.program_tracker import ProgramTracker
+from .facade.keyboard_facade import KeyboardApiFacade
+from .facade.mouse_facade import MouseApiFacade
+from .facade.program_facade import ProgramApiFacade
+from .util.interrupt_handler import InterruptHandler
+from .util.detect_os import OperatingSystemInfo
 # from .keyboard_tracker import KeyActivityTracker
 
 
@@ -45,9 +49,14 @@ class SurveillanceManager:
         program_facade = ProgramApiFacade(current_os)
         interrupt_handler = InterruptHandler
 
-        self.program_tracker = ProgramTracker(self.data_dir, program_api_facade=program_facade)
-        self.mouse_tracker = MouseTracker(self.data_dir, mouse_api_facade=mouse_facade)
-        self.keyboard_tracker = KeyboardTracker(self.data_dir, keyboard_facade, interrupt_handler)
+        self.mouse_dao = MouseDao()
+        self.keyboard_dao = KeyboardDao()
+        self.program_dao = ProgramDao()
+        self.chrome_dao = ChromeDao()
+
+        self.program_tracker = ProgramTracker(self.data_dir, program_facade, self.program_dao)
+        self.mouse_tracker = MouseTracker(self.data_dir, mouse_facade, self.mouse_dao)
+        self.keyboard_tracker = KeyboardTracker(self.data_dir, keyboard_facade, self.keyboard_dao, interrupt_handler)
         # self.key_tracker = KeyActivityTracker(self.data_dir)
         # self.key_tracker.start()
     

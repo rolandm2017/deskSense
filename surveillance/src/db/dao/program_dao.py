@@ -1,21 +1,19 @@
-
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import  AsyncSession
-
+from sqlalchemy.ext.asyncio import AsyncSession
 import datetime
 
-from .database import Program, AsyncSession
+from ..models import Program
+from ..database import AsyncSession
 
 class ProgramDao:
-    def __init__(self):
-        pass
+    def __init__(self, db: AsyncSession):
+        self.db = db
 
-    async def create(self, db: AsyncSession, session: dict):
+    async def create(self, session: dict):
         """
         Create a new Program entry
         
         Args:
-            db (AsyncSession): The database session
             session (dict): Dictionary containing:
                 - start_time (str): ISO formatted datetime
                 - end_time (str): ISO formatted datetime
@@ -33,35 +31,34 @@ class ProgramDao:
             productive=session['productive']
         )
         
-        db.add(new_program)
-        await db.commit()
-        await db.refresh(new_program)
+        self.db.add(new_program)
+        await self.db.commit()
+        await self.db.refresh(new_program)
         return new_program
 
-    async def read(self, db: AsyncSession, program_id: int = None):
+    async def read(self, program_id: int = None):
         """
         Read Program entries. If program_id is provided, return specific program,
         otherwise return all programs.
         """
         if program_id:
-            return await db.get(Program, program_id)
+            return await self.db.get(Program, program_id)
         
-        result = await db.execute(select(Program))
+        result = await self.db.execute(select(Program))
         return result.scalars().all()
 
-    async def delete(self, db: AsyncSession, program_id: int):
+    async def delete(self, program_id: int):
         """Delete a Program entry by ID"""
-        program = await db.get(Program, program_id)
+        program = await self.db.get(Program, program_id)
         if program:
-            await db.delete(program)
-            await db.commit()
+            await self.db.delete(program)
+            await self.db.commit()
         return program
     
-# Example usage
 async def example_usage():
-    program_dao = ProgramDao()
-    
     async for db in get_db():
+        program_dao = ProgramDao(db)
+        
         # Create example
         session_data = {
             'start_time': datetime.now().isoformat(),
@@ -70,11 +67,11 @@ async def example_usage():
             'window': 'Visual Studio Code',
             'productive': True
         }
-        new_program = await program_dao.create(db, session_data)
+        new_program = await program_dao.create(session_data)
         
         # Read example
-        all_programs = await program_dao.read(db)
-        specific_program = await program_dao.read(db, program_id=1)
+        all_programs = await program_dao.read()
+        specific_program = await program_dao.read(program_id=1)
         
         # Delete example
-        deleted_program = await program_dao.delete(db, program_id=1)
+        deleted_program = await program_dao.delete(program_id=1)

@@ -46,12 +46,12 @@ def mock_mouse_facade():
 @pytest.fixture
 def tracker(temp_data_dir, mock_mouse_facade):
     """Create a MouseTracker instance with mocked dependencies."""
-    print("49rm")
+    print("49vv")
     with patch('src.trackers.mouse_tracker.OperatingSystemInfo') as mock_os_info, \
          patch.dict('sys.modules', {'win32con': Mock(), 'ctypes': Mock()}):
         mock_os_info.return_value.is_windows = True
         mock_os_info.return_value.is_ubuntu = False
-        print("53rm")
+        print("53rvv")
         tracker = MouseTracker(temp_data_dir, mock_mouse_facade)
         yield tracker
         tracker.stop()
@@ -65,7 +65,7 @@ def test_tracker_initialization(tracker, temp_data_dir):
 
 def test_log_movement_creates_csv(tracker, temp_data_dir):
     """Test that _log_movement creates a CSV file with correct headers."""
-    print("66rm")
+    print("66vv")
     position = (100, 200)
     date_str = datetime.now().strftime('%Y-%m-%d')
     expected_file = temp_data_dir / f'mouse_tracking_{date_str}.csv'
