@@ -167,9 +167,10 @@ class MouseTracker:
     def _handle_mouse_move(self):
         """Handle mouse movement events."""
         current_position = self.mouse_facade.get_cursor_pos()
-        print(current_position, '168rm')
+        print(current_position, '168vv')
         
-        if not self.is_moving:
+        is_stationary = not self.is_moving
+        if is_stationary:
             # Movement just started
             self.is_moving = True
             self.movement_start = datetime.now()

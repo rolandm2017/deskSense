@@ -1,7 +1,8 @@
 
 class ChromeDao:
     # TODO
-    def __init__(self):
+    def __init__(self, db):
+        self.db = db
         pass
 
     def create(self):
