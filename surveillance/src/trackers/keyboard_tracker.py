@@ -45,7 +45,8 @@ class KeyboardTracker:
             print(event, '41rm')
             if self.keyboard_facade.event_type_is_key_down(event):
                 current_time = datetime.now()
-                self._log_event_to_csv(current_time)
+                self.log_keystroke_to_db(current_time)
+                # self._log_event_to_csv(current_time)
                 self.recent_count += 1  # per keystroke
                 if self._is_ready_to_log_to_console(current_time): 
                     # @@@@
@@ -56,6 +57,9 @@ class KeyboardTracker:
                     self.time_of_last_terminal_out = current_time
 
                 time.sleep(DELAY_TO_AVOID_CPU_HOGGING)
+
+    def log_keystroke_to_db(self, current_time):
+        self.dao.create(current_time)
 
     def _log_event_to_csv(self, current_time):
         self.events.append(current_time)

@@ -124,7 +124,8 @@ class ProgramTracker:
             
             # If window has changed, log the previous session
             if self.current_window and newly_detected_window != self.current_window:
-                self.log_session()
+                # self.log_session()
+                self.log_program_to_db()
                 self.console_logger.log_active_program(newly_detected_window)
                 self.start_time = datetime.now()
 
@@ -158,11 +159,16 @@ class ProgramTracker:
         }
         
         self.session_data.append(session)  # is only used to let surveillanceManager gather the session
-        self.save_session(session)
+        self.log_program_to_db(session)
+        # self.save_session(session)
 
     def report_missing_program(self, title):
         """For when the program isn't found in the productive apps list"""
         print(title)  # temp
+
+    def log_program_to_db(self, session):
+        # start_time, end_time, duration, window, productive
+        self.dao.create(session)
 
     def save_session(self, session):
         """Save session data to CSV file."""

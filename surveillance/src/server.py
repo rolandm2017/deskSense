@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from pydantic import BaseModel
 
-from .database import get_db, AsyncSessionLocal
+from .db.database import get_db, AsyncSessionLocal
 from .surveillance_manager import SurveillanceManager
 
 class ProductivityReport(BaseModel):

@@ -172,7 +172,8 @@ class MouseTracker:
             self.is_moving = True
             self.movement_start = datetime.now()
             self.last_position = current_position
-            self._log_movement_to_csv(MouseEvent.START, current_position)
+            # self._log_movement_to_csv(MouseEvent.START, current_position)
+            self.log_movement_to_db(MouseEvent.START, current_position)
             self.console_logger.log_mouse_move(current_position)
             
             # Start a timer to detect when movement stops
@@ -185,11 +186,15 @@ class MouseTracker:
             if current_position == self.last_position:
                 # Mouse has stopped
                 self.is_moving = False
-                self._log_movement_to_csv(MouseEvent.STOP, current_position)
+                # self._log_movement_to_csv(MouseEvent.STOP, current_position)
+                self.log_movement_to_db(MouseEvent.STOP, current_position)
             else:
                 # Mouse is still moving, check again
                 self.last_position = current_position
                 threading.Timer(0.1, self._check_if_stopped).start()
+
+    def log_movement_to_db(self, event_type, position):
+        self.dao.create(event_type, position)
 
     def _log_movement_to_csv(self, event_type, position):
         """
@@ -199,6 +204,7 @@ class MouseTracker:
             event_type (str): Either 'start' or 'stop'
             position (tuple): (x, y) coordinates of mouse position
         """
+        # print("Not intended for use")
         date_str = datetime.now().strftime('%Y-%m-%d')
         file_path = self.data_dir / f'mouse_tracking_{date_str}.csv'
         
