@@ -59,7 +59,7 @@ class ProgramTracker:
         project_root = current_file.parent.parent  # Goes up two levels to surveillance/
         
         # Create data directory if it doesn't exist
-        self.data_dir = project_root / 'productivity_data'
+        self.data_dir = project_root / 'productivity_logs'
         self.data_dir.mkdir(exist_ok=True)
 
         # self.key_tracker = KeyActivityTracker(self.data_dir)

@@ -1,3 +1,4 @@
+import traceback
 import psutil
 from typing import Dict, Optional
 from datetime import datetime
@@ -6,6 +7,10 @@ import platform
 class ProgramApiFacade:
     def __init__(self, os):
         self.is_windows = os.is_windows
+        self.is_ubuntu: os.is_ubuntu
+        self.Xlib = None
+        self.display = None
+        self.X = None
         if self.is_windows:
             import win32gui
             import win32process
@@ -27,7 +32,7 @@ class ProgramApiFacade:
         pid = self.win32process.GetWindowThreadProcessId(window)[1]
         process = psutil.Process(pid)
         return {
-            "os": "windows",
+            "os": "Windows",
             "pid": pid,
             "process_name": process.name(),
             "window_title": self.win32gui.GetWindowText(window)
@@ -37,15 +42,16 @@ class ProgramApiFacade:
         # Ubuntu implementation using wmctrl or xdotool could go here
         # For now, returning active process info
         active = self._get_active_window_ubuntu()
-        print(self.read_active_window(), '41vv')
+        window_name = self._read_active_window_name_ubuntu()
+        print(active, window_name, '41vv')
         return {
-            "os": "ubuntu",
+            "os": "Ubuntu",
             "pid": active["pid"] if active else None,
             "process_name": active["name"] if active else None,
-            "window_title": None  # Would need wmctrl/xdotool for this
+            "window_title": window_name
         }
     
-    def read_active_window(self):
+    def _read_active_window_name_ubuntu(self):
         try:
             # Connect to the X server
             d = self.display.Display()
@@ -62,12 +68,15 @@ class ProgramApiFacade:
                 d.intern_atom('_NET_WM_NAME'), 0
             )
 
+            # print("\n===\n===")
+            # print(window_name.value, '========= 66vv')
+
             if window_name:
                 return window_name.value
             else:
                 return "Unnamed window"
         except Exception as e:
-            print(e.__traceback__)
+            print(traceback.format_exc())
             return f"Error: {str(e)}"
 
     def _get_active_window_ubuntu(self) -> Optional[Dict]:
