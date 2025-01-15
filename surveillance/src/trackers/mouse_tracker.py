@@ -25,7 +25,7 @@ class MouseEvent(str, Enum):
     MOVE = "move"
 
 class MouseTracker:
-    def __init__(self, data_dir, mouse_api_facade, end_program_routine=None):
+    def __init__(self, data_dir, mouse_api_facade, dao, end_program_routine=None):
         """
         Initialize the MouseTracker with Windows event hooks.
 
@@ -34,8 +34,10 @@ class MouseTracker:
         Args:
             data_dir (Path): Directory where tracking data will be stored
         """
-        self.mouse_facade: MouseApiFacade = mouse_api_facade
         self.data_dir = data_dir
+        self.mouse_facade: MouseApiFacade = mouse_api_facade
+        self.dao = dao
+
         self.end_program_func = end_program_routine
 
         self.environment = OperatingSystemInfo()
@@ -245,10 +247,10 @@ class MouseTracker:
         """Stop the mouse tracker and clean up."""
         self.stop_event.set()
         if self.end_program_func:
-            print("here 240rm")
+            print("here 240rvv")
             self.end_program_func(self.generate_movement_report())
         if self.hook_thread.is_alive():
-            print("here 243rm")
+            print("here 243vv")
             self.hook_thread.join()
 
     def generate_movement_report(self, date_str=None):

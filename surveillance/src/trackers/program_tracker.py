@@ -14,9 +14,10 @@ from ..util.detect_os import OperatingSystemInfo
 # TODO: report programs that aren't in the apps list.
 
 class ProgramTracker:
-    def __init__(self, data_dir, program_api_facade):
+    def __init__(self, data_dir, program_api_facade, dao):
         self.data_dir = data_dir
         self.program_facade: ProgramApiFacade = program_api_facade
+        self.dao = dao
         # Define productive applications
         self.productive_apps = {
             'code.exe': 'VSCode',
