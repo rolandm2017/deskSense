@@ -117,9 +117,4 @@ async def get_keyboard_report(db: Session = Depends(get_db)):
 
 if __name__ == "__main__":
     import uvicorn
-    try:
-        uvicorn.run(app, host="0.0.0.0", port=8000)
-    except asyncio.CancelledError as e:
-        current = asyncio.current_task()
-        print(f"Task {current.get_name()} was cancelled")
-        print(f"Stack trace: {e.__traceback__}")
+    uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -63,7 +63,6 @@
 # ])
 # def test_is_productive(tracker, window_info, expected):
 #     """Test productivity classification for different windows"""
-#     print(window_info, "66vv")
 #     assert tracker.is_productive(window_info) == expected
 
 # def test_track_window_new_session(tracker):

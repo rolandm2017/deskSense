@@ -20,7 +20,6 @@ class KeyboardApiFacade:
     def read_event(self):
         event = self.current_event
         # FIXME: if read event is called after 4 presses, you get only the final entering. so press => Read, press => Read will work
-        # print(event, 'in facade 16vv')
         self.current_event = None
         return event
     

@@ -63,14 +63,16 @@ class KeyboardTracker:
                     # @@@@
                     # Please never log the actual key pressed
                     # @@@@
-                    self.console_logger.log_key_presses(self.recent_count)
+                    # self.console_logger.log_key_presses(self.recent_count)
                     self.recent_count = 0
                     self.time_of_last_terminal_out = current_time
 
             time.sleep(DELAY_TO_AVOID_CPU_HOGGING)
 
     def log_keystroke_to_db(self, current_time):
-        print(current_time)
+        # print(current_time)
+        self.console_logger.log_key_press(current_time)
+        pass
         # asyncio.create_task(self.dao.create(current_time))
         
 
