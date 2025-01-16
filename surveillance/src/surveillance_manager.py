@@ -15,7 +15,7 @@ from .trackers.mouse_tracker import MouseTracker
 from .trackers.keyboard_tracker import KeyboardTracker
 from .trackers.program_tracker import ProgramTracker
 from .facade.keyboard_facade import KeyboardApiFacade
-from .facade.mouse_facade import MouseApiFacade
+from .facade.mouse_facade import MouseApiFacade, UbuntuMouseApiFacade
 from .facade.program_facade import ProgramApiFacade
 from .util.interrupt_handler import InterruptHandler
 from .util.detect_os import OperatingSystemInfo
@@ -45,7 +45,7 @@ class SurveillanceManager:
         current_os = OperatingSystemInfo()
 
         keyboard_facade = KeyboardApiFacade()  # FIXME: one of these 3 is supposed to be initialized in the tracker, with an argument? I think?
-        mouse_facade = MouseApiFacade()
+        mouse_facade = UbuntuMouseApiFacade()  # TODO: choose the mouseApi facade based on OS
         program_facade = ProgramApiFacade(current_os)
         # interrupt_handler = InterruptHandler
 
