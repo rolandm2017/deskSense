@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import asyncio
 import csv
 from threading import Thread
 import time
@@ -18,7 +19,7 @@ required_delay_per_char = 0.08  # 1 sec / 9 char -> 0.111 sec per char
 DELAY_TO_AVOID_CPU_HOGGING = required_delay_per_char
 
 class KeyboardTracker:
-    def __init__(self, data_dir, keyboard_api_facade, dao, interrupt_handler, end_program_routine=None):
+    def __init__(self, data_dir, keyboard_api_facade, dao, end_program_routine=None):
         self.events = []
         self.data_dir = data_dir
         self.keyboard_facade: KeyboardApiFacade = keyboard_api_facade
@@ -34,13 +35,13 @@ class KeyboardTracker:
 
 
         # Initialize interrupt handler with cleanup callback
-        self.interrupt_handler = interrupt_handler(cleanup_callback=self.stop)
+        # self.interrupt_handler = interrupt_handler(cleanup_callback=self.stop)
 
         self.is_running = False
         self.monitor_thread = None
         self.start()
 
-    def start(self):
+    def start(self):  # The source of "start" method
         self.is_running = True
         self.monitor_thread = Thread(target=self._monitor_keyboard)
         self.monitor_thread.daemon = True  # Thread will exit when main program exits
@@ -50,7 +51,9 @@ class KeyboardTracker:
         while self.is_running:
             event = self.keyboard_facade.read_event()
             # TODO: Remove or replace print statements with proper logging
-            print(event, '41vv')
+            # print(event, '41vv')
+            if self.keyboard_facade.is_ctrl_c(event):
+                self.keyboard_facade.trigger_ctrl_c()
             if self.keyboard_facade.event_type_is_key_down(event):
                 current_time = datetime.now()
                 self.log_keystroke_to_db(current_time)
@@ -67,7 +70,9 @@ class KeyboardTracker:
             time.sleep(DELAY_TO_AVOID_CPU_HOGGING)
 
     def log_keystroke_to_db(self, current_time):
-        self.dao.create(current_time)
+        print(current_time)
+        # asyncio.create_task(self.dao.create(current_time))
+        
 
     def _log_event_to_csv(self, current_time):
         self.events.append(current_time)

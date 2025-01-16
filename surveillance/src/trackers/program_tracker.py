@@ -1,7 +1,11 @@
 from datetime import datetime
 from pathlib import Path
+import asyncio
+
 import csv
 import time
+import threading
+from threading import Thread
 
 from ..console_logger import ConsoleLogger
 from ..facade.program_facade import ProgramApiFacade
@@ -66,6 +70,12 @@ class ProgramTracker:
         # self.key_tracker = KeyActivityTracker(self.data_dir)
         # self.key_tracker.start()
 
+    def start(self):  # copied 'start' method over from keyboard_tracker
+        self.is_running = True
+        self.monitor_thread = Thread(target=self.track_window)
+        self.monitor_thread.daemon = True  # Thread will exit when main program exits
+        self.monitor_thread.start()
+
 
     def get_active_window_info(self):
         """Get information about the currently active window."""
@@ -120,13 +130,12 @@ class ProgramTracker:
             window_info = self.get_active_window_info()
             if not window_info:
                 return
-            print(window_info, '122fl')
+            # print(window_info, '122fl')
             newly_detected_window = f"{window_info['process_name']} - {window_info['window_title']}"
             
             # If window has changed, log the previous session
             if self.current_window and newly_detected_window != self.current_window:
-                # self.log_session()
-                self.log_program_to_db()
+                self.log_program_to_db(self.session_data)
                 self.console_logger.log_active_program(newly_detected_window)
                 self.start_time = datetime.now()
 
@@ -169,7 +178,8 @@ class ProgramTracker:
 
     def log_program_to_db(self, session):
         # start_time, end_time, duration, window, productive
-        self.dao.create(session)
+        print(session)
+        # asyncio.create_task(self.dao.create(session))
 
     def save_session(self, session):
         """Save session data to CSV file."""

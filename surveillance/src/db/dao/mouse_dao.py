@@ -10,16 +10,7 @@ class MouseDao:
         self.db = db
 
     async def create(self, start_time: datetime, end_time: datetime):
-        """
-        Create a new MouseMove entry
-        
-        Args:
-            start_time (datetime): When the mouse movement started
-            end_time (datetime): When the mouse movement ended
-        
-        Returns:
-            MouseMove: The created MouseMove instance
-        """
+        print("creating mouse move event", start_time)
         new_mouse_move = MouseMove(
             start_time=start_time,
             end_time=end_time

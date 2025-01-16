@@ -1,17 +1,16 @@
-
-# if os_type.startswith("Windows"):
-#     # Windows
+from Xlib import display, X  # might have to cram into a ubuntu specific conditional import
+from Xlib.ext import record  # might have to cram into a ubuntu specific conditional import
+from Xlib.protocol import rq # might have to cram into a ubuntu specific conditional import
     
-# if os_type.startswith("Ubuntu"):
-#     # Linux
-    
-
 
 from enum import Enum, auto
 from datetime import datetime
 import csv
+import asyncio
+
 from pathlib import Path
 import threading
+from threading import Thread
 import time
 
 
@@ -43,9 +42,9 @@ class MouseTracker:
         self.environment = OperatingSystemInfo()
 
         if self.environment.is_ubuntu:
-            target_hook = self._start_hook_ubuntu
+            self.target_hook = self._start_hook_ubuntu
         elif self.environment.is_windows:
-            target_hook = self._start_hook_windows
+            self.target_hook = self._start_hook_windows
         else:
             print(self.environment)
             raise ValueError("Neither OS detected")
@@ -60,14 +59,15 @@ class MouseTracker:
         
         # Create an event to safely stop the listener thread
         self.stop_event = threading.Event()
-        
+
+    def start(self):  # copied 'start' method over from keyboard_tracker
         # Start mouse hook in a separate thread
-        self.hook_thread = threading.Thread(target=target_hook)
+        self.is_running = True
+        self.hook_thread = threading.Thread(target=self.target_hook)
         self.hook_thread.daemon = True
         self.hook_thread.start()
 
-
-    def _start_hook_ubuntu(self):
+    def _start_hook_ubuntu_v1(self):
         """Start the X11 mouse hook."""
         from Xlib import display, X
         from Xlib.ext import record
@@ -108,6 +108,8 @@ class MouseTracker:
                 if event.type == X.MotionNotify:
                     self._handle_mouse_move()
 
+        print(self.ctx, '106vm')
+
         # Enable recording context and start processing events
         self.display.record_enable_context(self.ctx, callback)
         
@@ -119,6 +121,48 @@ class MouseTracker:
         # Clean up
         self.display.record_free_context(self.ctx)
         self.display.close()
+
+    def _x11_callback(self, reply):
+        
+        if reply.category != record.FromServer or reply.client_swapped:
+            return
+        if not len(reply.data) or reply.data[0] < 2:
+            return
+        data = reply.data
+        while len(data):
+            event, data = rq.EventField(None).parse_binary_value(data, self.display.display, None, None)
+            if event.type == X.MotionNotify:
+                self._handle_mouse_move()
+
+    def _start_hook_ubuntu(self):
+        
+        try:
+            self.display = display.Display()
+            self.ctx = self.display.record_create_context(
+                0,
+                [record.AllClients],
+                [{
+                    'core_requests': (0, 0),
+                    'core_replies': (0, 0),
+                    'ext_requests': (0, 0, 0, 0),
+                    'ext_replies': (0, 0, 0, 0),
+                    'delivered_events': (0, 0),
+                    'device_events': (X.MotionNotify, X.MotionNotify),
+                    'errors': (0, 0),
+                    'client_started': False,
+                    'client_died': False,
+                }]
+            )
+            
+            self.display.record_enable_context(self.ctx, self._x11_callback)
+            while not self.stop_event.is_set():
+                if self.display:
+                    self.display.process_events()
+        finally:
+            if hasattr(self, 'ctx') and self.ctx:
+                self.display.record_free_context(self.ctx)
+            if hasattr(self, 'display') and self.display:
+                self.display.close()
 
     def _start_hook_windows(self):
         """Start the Windows mouse hook."""
@@ -167,7 +211,7 @@ class MouseTracker:
     def _handle_mouse_move(self):
         """Handle mouse movement events."""
         current_position = self.mouse_facade.get_cursor_pos()
-        print(current_position, '168vv')
+        # print(current_position, '168vv')
         
         is_stationary = not self.is_moving
         if is_stationary:
@@ -197,7 +241,8 @@ class MouseTracker:
                 threading.Timer(0.1, self._check_if_stopped).start()
 
     def log_movement_to_db(self, event_type, position):
-        self.dao.create(event_type, position)
+        print(event_type, position)
+        # asyncio.create_task(self.dao.create(event_type, position))
 
     def _log_movement_to_csv(self, event_type, position):
         """
@@ -250,9 +295,16 @@ class MouseTracker:
         if self.end_program_func:
             print("here 240rvv")
             self.end_program_func(self.generate_movement_report())
+         # Add this for Ubuntu
+        if self.environment.is_ubuntu:
+            pass
+            # self.display.close()  # Force close X display connection
+        if self.environment.is_windows:
+            import win32gui  # shouldn't be a problem on ubuntu to not have this installed # type: ignore[import]
+            win32gui.PostQuitMessage(0)
         if self.hook_thread.is_alive():
             print("here 243vv")
-            self.hook_thread.join()
+            self.hook_thread.join(timeout=1)
 
     def generate_movement_report(self, date_str=None):
         """

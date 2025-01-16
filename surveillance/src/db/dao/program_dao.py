@@ -10,31 +10,21 @@ class ProgramDao:
         self.db = db
 
     async def create(self, session: dict):
-        """
-        Create a new Program entry
-        
-        Args:
-            session (dict): Dictionary containing:
-                - start_time (str): ISO formatted datetime
-                - end_time (str): ISO formatted datetime
-                - duration (int): Duration in seconds
-                - window (str): Window name
-                - productive (bool): Whether the session was productive
-        
-        Returns:
-            Program: The created Program instance
-        """
-        new_program = Program(
-            window=session['window'],
-            start_time=datetime.fromisoformat(session['start_time']),
-            end_time=datetime.fromisoformat(session['end_time']),
-            productive=session['productive']
-        )
-        
-        self.db.add(new_program)
-        await self.db.commit()
-        await self.db.refresh(new_program)
-        return new_program
+        print(session, '13vv')
+        if isinstance(session, dict):
+            print("creating program row", session['start_time'])
+            new_program = Program(
+                window=session['window'],
+                start_time=datetime.fromisoformat(session['start_time']),
+                end_time=datetime.fromisoformat(session['end_time']),
+                productive=session['productive']
+            )
+            
+            self.db.add(new_program)
+            await self.db.commit()
+            await self.db.refresh(new_program)
+            return new_program
+        return None
 
     async def read(self, program_id: int = None):
         """

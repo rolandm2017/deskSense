@@ -6,23 +6,14 @@ from sqlalchemy.orm import sessionmaker
 import datetime
 
 from ..models import Keystroke
-from ..database import AsyncSession
+from ..database import AsyncSession, get_db
 
 class KeyboardDao:
     def __init__(self, db: AsyncSession):
         self.db = db
 
     async def create(self, event_time: datetime):
-        """
-        Create a new Keystroke entry
-        
-        Args:
-            db (AsyncSession): The database session
-            event_time (datetime): When the keystroke occurred
-        
-        Returns:
-            Keystroke: The created Keystroke instance
-        """
+        print("adding keystroke ", event_time)
         new_keystroke = Keystroke(
             timestamp=event_time
         )
