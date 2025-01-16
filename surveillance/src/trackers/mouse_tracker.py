@@ -220,7 +220,7 @@ class MouseTracker:
             self.movement_start = datetime.now()
             self.last_position = current_position
             # self._log_movement_to_csv(MouseEvent.START, current_position)
-            self.log_movement_to_db(MouseEvent.START, current_position)
+            # self.log_movement_to_db(MouseEvent.START, current_position)
             self.console_logger.log_mouse_move(current_position)
             
             # Start a timer to detect when movement stops
@@ -234,14 +234,14 @@ class MouseTracker:
                 # Mouse has stopped
                 self.is_moving = False
                 # self._log_movement_to_csv(MouseEvent.STOP, current_position)
-                self.log_movement_to_db(MouseEvent.STOP, current_position)
+                # self.log_movement_to_db(MouseEvent.STOP, current_position)
             else:
                 # Mouse is still moving, check again
                 self.last_position = current_position
                 threading.Timer(0.1, self._check_if_stopped).start()
 
     def log_movement_to_db(self, event_type, position):
-        print(event_type, position)
+        self.console_logger.log_blue_multiple(event_type, position)
         # asyncio.create_task(self.dao.create(event_type, position))
 
     def _log_movement_to_csv(self, event_type, position):
@@ -356,7 +356,7 @@ class MouseTracker:
 
 def end_program_readout(report):
     # prints the generated report
-    print(report)
+    ConsoleLogger.log_red(report)
 
 
 if __name__ == "__main__":

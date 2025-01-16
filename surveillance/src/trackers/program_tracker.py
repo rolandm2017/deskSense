@@ -67,15 +67,33 @@ class ProgramTracker:
         self.data_dir = project_root / 'productivity_logs'
         self.data_dir.mkdir(exist_ok=True)
 
+        
+
         # self.key_tracker = KeyActivityTracker(self.data_dir)
         # self.key_tracker.start()
 
     def start(self):  # copied 'start' method over from keyboard_tracker
         self.is_running = True
-        self.monitor_thread = Thread(target=self.track_window)
+        self.monitor_thread = Thread(target=self.attach_listener)
         self.monitor_thread.daemon = True  # Thread will exit when main program exits
         self.monitor_thread.start()
 
+    def attach_listener(self):
+        for window_change in self.program_facade.listen_for_window_changes():
+            newly_detected_window = f"{window_change['process_name']} - {window_change['window_title']}"
+            self.console_logger.log_green_multiple(newly_detected_window, self.session_data)
+                
+            # If window has changed, log the previous session
+            if self.current_window and newly_detected_window != self.current_window:
+                self.log_program_to_db(self.session_data)
+                self.console_logger.log_active_program(newly_detected_window)
+                self.start_time = datetime.now()
+
+            # Initialize start time if this is the first window
+            if not self.start_time:
+                self.start_time = datetime.now()
+            
+            self.current_window = newly_detected_window
 
     def get_active_window_info(self):
         """Get information about the currently active window."""
@@ -106,14 +124,13 @@ class ProgramTracker:
         if process_name in self.productive_apps:
             app_name = self.productive_apps[process_name]
             productivity = self.productive_categories[app_name]
-            print("process name in productive apps")
-            print("productivity", productivity, app_name)
+            self.console_logger.log_green("process name in productive apps")
+            self.console_logger.log_green_multiple("productivity", productivity, app_name)
             # If productivity is None, we need to check the window title
             if productivity is None:
                 # For Chrome, check if the title contains any productive sites
                 if app_name == 'Chrome':
-                    print("near any")
-                    print(window_title, "::", self.productive_sites)
+                    self.console_logger.log_green_multiple(window_title, "::", self.productive_sites)
                     return any(site in window_title.lower() for site in self.productive_sites)
                 # For Discord, consider it productive only if specific channels/servers are active
                 elif app_name == 'Discord':
@@ -126,28 +143,30 @@ class ProgramTracker:
 
     def track_window(self, interval=1):
         """Track window activity and productivity."""
-        try:
-            window_info = self.get_active_window_info()
-            if not window_info:
-                return
-            # print(window_info, '122fl')
-            newly_detected_window = f"{window_info['process_name']} - {window_info['window_title']}"
-            
-            # If window has changed, log the previous session
-            if self.current_window and newly_detected_window != self.current_window:
-                self.log_program_to_db(self.session_data)
-                self.console_logger.log_active_program(newly_detected_window)
-                self.start_time = datetime.now()
+        while self.is_running:
+            try:
+                window_info = self.get_active_window_info()
+                if not window_info:
+                    return
+                # print(window_info, '122fl')
+                newly_detected_window = f"{window_info['process_name']} - {window_info['window_title']}"
+                print(newly_detected_window, self.session_data)
+                
+                # If window has changed, log the previous session
+                if self.current_window and newly_detected_window != self.current_window:
+                    self.log_program_to_db(self.session_data)
+                    self.console_logger.log_active_program(newly_detected_window)
+                    self.start_time = datetime.now()
 
-            # Initialize start time if this is the first window
-            if not self.start_time:
-                self.start_time = datetime.now()
-            
-            self.current_window = newly_detected_window
-            
-        except Exception as e:
-            print(e)
-            print(f"Error tracking window: {e}")
+                # Initialize start time if this is the first window
+                if not self.start_time:
+                    self.start_time = datetime.now()
+                
+                self.current_window = newly_detected_window
+                
+            except Exception as e:
+                print(e)
+                print(f"Error tracking window: {e}")
 
     def log_session(self):
         """Log the current session data."""
@@ -174,11 +193,11 @@ class ProgramTracker:
 
     def report_missing_program(self, title):
         """For when the program isn't found in the productive apps list"""
-        print(title)  # temp
+        self.console_logger.log_yellow(title)  # temp
 
     def log_program_to_db(self, session):
         # start_time, end_time, duration, window, productive
-        print(session)
+        self.console_logger.log_blue(session)
         # asyncio.create_task(self.dao.create(session))
 
     def save_session(self, session):
@@ -276,7 +295,7 @@ class ProgramTracker:
 # TODO: make it work when run as a script
 
 def end_program_readout():
-    print("Ending program tracking...")
+    ConsoleLogger.system_message("Ending program tracking...")
 
 if __name__ == "__main__":
     os_type = OperatingSystemInfo()
