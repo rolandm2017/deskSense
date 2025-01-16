@@ -1,17 +1,17 @@
-from uvicorn.config import Config
-from uvicorn.server import Server
-import signal
+# from uvicorn.config import Config
+# from uvicorn.server import Server
+# import signal
 
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Depends
 from contextlib import asynccontextmanager
 import asyncio
-import time
+# import time
 from typing import Optional
 from sqlalchemy.orm import Session
 
 from pydantic import BaseModel
 
-from src.db.database import get_db, AsyncSessionLocal
+from src.db.database import get_db, init_db, AsyncSessionLocal
 from src.surveillance_manager import SurveillanceManager
 
 class ProductivityReport(BaseModel):
@@ -43,13 +43,14 @@ def track_productivity():
         surveillance_state.manager.program_tracker.track_window()        
         # await asyncio.sleep(1)  # FIXME: should this really poll every second?
 
-# @asynccontextmanager
-def lifespan(app: FastAPI):
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     # Startup: Initialize application-wide resources
     print("Starting up...")
-    
+  
     # Create a dedicated session for the SurveillanceManager
     surveillance_state.db_session = AsyncSessionLocal()
+    await init_db()
     
     print("Starting productivity tracking...")
     # Pass the session to SurveillanceManager

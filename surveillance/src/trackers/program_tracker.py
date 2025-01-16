@@ -21,7 +21,9 @@ class ProgramTracker:
     def __init__(self, data_dir, program_api_facade, dao):
         self.data_dir = data_dir
         self.program_facade: ProgramApiFacade = program_api_facade
-        self.dao = dao
+        self.program_dao = dao
+        self.loop = asyncio.get_event_loop()
+
         # Define productive applications
         self.productive_apps = {
             'code.exe': 'VSCode',
@@ -198,7 +200,7 @@ class ProgramTracker:
     def log_program_to_db(self, session):
         # start_time, end_time, duration, window, productive
         self.console_logger.log_blue(session)
-        # asyncio.create_task(self.dao.create(session))
+        self.loop.create_task(self.program_dao.create(session))
 
     def save_session(self, session):
         """Save session data to CSV file."""
@@ -289,7 +291,7 @@ class ProgramTracker:
         }
     
     def stop(self):
-        pass  # might need later
+        pass  # might need later  # TODO: implement - since jan 15
     
 
 # TODO: make it work when run as a script

@@ -1,5 +1,5 @@
 
-# app/models.py
+# src/db/models.py
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from sqlalchemy.sql import func
 from datetime import datetime

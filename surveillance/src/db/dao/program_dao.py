@@ -1,15 +1,28 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from asyncio import Queue
+import asyncio
 import datetime
 
 from ..models import Program
 from ..database import AsyncSession
 
 class ProgramDao:
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, batch_size=100, flush_interval=5):
         self.db = db
+        self.queue = Queue()
+        self.batch_size = batch_size
+        self.flush_interval = flush_interval
+        self.processing = False
 
     async def create(self, session: dict):
+        if isinstance(session, dict):
+            await self.queue.put(session)
+            if not self.processing:
+                self.processing = True
+                asyncio.create_task(self.process_queue())
+
+    async def create_without_queue(self, session: dict):
         print(session, '13vv')
         if isinstance(session, dict):
             print("creating program row", session['start_time'])
@@ -45,23 +58,31 @@ class ProgramDao:
             await self.db.commit()
         return program
     
-async def example_usage():
-    async for db in get_db():
-        program_dao = ProgramDao(db)
-        
-        # Create example
-        session_data = {
-            'start_time': datetime.now().isoformat(),
-            'end_time': datetime.now().isoformat(),
-            'duration': 3600,  # 1 hour in seconds
-            'window': 'Visual Studio Code',
-            'productive': True
-        }
-        new_program = await program_dao.create(session_data)
-        
-        # Read example
-        all_programs = await program_dao.read()
-        specific_program = await program_dao.read(program_id=1)
-        
-        # Delete example
-        deleted_program = await program_dao.delete(program_id=1)
+    async def process_queue(self):
+        while True:
+            batch = []
+            try:
+                while len(batch) < self.batch_size:
+                    if self.queue.empty():
+                        if batch:
+                            await self._save_batch(batch)
+                        await asyncio.sleep(self.flush_interval)
+                        continue
+
+                    session = await self.queue.get()
+                    batch.append(Program(
+                        window=session['window'],
+                        start_time=datetime.fromisoformat(session['start_time']),
+                        end_time=datetime.fromisoformat(session['end_time']),
+                        productive=session['productive']
+                    ))
+
+                if batch:
+                    await self._save_batch(batch)
+
+            except Exception as e:
+                print(f"Error processing batch: {e}")
+
+    async def _save_batch(self, batch):
+        async with self.db.begin():
+            self.db.add_all(batch)

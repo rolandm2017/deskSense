@@ -23,7 +23,8 @@ class KeyboardTracker:
         self.events = []
         self.data_dir = data_dir
         self.keyboard_facade: KeyboardApiFacade = keyboard_api_facade
-        self.dao = dao
+        self.keyboard_dao = dao
+        self.loop = asyncio.get_event_loop()
 
         self.end_program_func = end_program_routine
         
@@ -72,8 +73,8 @@ class KeyboardTracker:
     def log_keystroke_to_db(self, current_time):
         # print(current_time)
         self.console_logger.log_key_press(current_time)
-        pass
-        # asyncio.create_task(self.dao.create(current_time))
+        # pass
+        self.loop.create_task(self.keyboard_dao.create(current_time))
         
 
     def _log_event_to_csv(self, current_time):

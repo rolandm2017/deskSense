@@ -1,16 +1,28 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from asyncio import Queue
+import asyncio
 import datetime
 
 from ..models import MouseMove
 from ..database import AsyncSession
 
 class MouseDao:
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, batch_size=100, flush_interval=5):
         self.db = db
+        self.queue = Queue()
+        self.batch_size = batch_size
+        self.flush_interval = flush_interval
+        self.processing = False
 
     async def create(self, start_time: datetime, end_time: datetime):
-        print("creating mouse move event", start_time)
+        await self.queue.put((start_time, end_time))
+        if not self.processing:
+            self.processing = True
+            asyncio.create_task(self.process_queue())
+
+    async def create_without_queue(self, start_time: datetime, end_time: datetime):
+        # print("creating mouse move event", start_time)
         new_mouse_move = MouseMove(
             start_time=start_time,
             end_time=end_time
@@ -40,18 +52,27 @@ class MouseDao:
             await self.db.commit()
         return mouse_move
 
-async def example_usage():
-    async for db in get_db():
-        mouse_dao = MouseDao(db)
-        
-        # Create example
-        start = datetime.now()
-        end = datetime.now()  # In real usage, this would be later than start
-        new_movement = await mouse_dao.create(start, end)
-        
-        # Read example
-        all_movements = await mouse_dao.read()
-        specific_movement = await mouse_dao.read(mouse_move_id=1)
-        
-        # Delete example
-        deleted_movement = await mouse_dao.delete(mouse_move_id=1)
+
+    async def process_queue(self):
+        while True:
+            batch = []
+            try:
+                while len(batch) < self.batch_size:
+                    if self.queue.empty():
+                        if batch:
+                            await self._save_batch(batch)
+                        await asyncio.sleep(self.flush_interval)
+                        continue
+                        
+                    start_time, end_time = await self.queue.get()
+                    batch.append(MouseMove(start_time=start_time, end_time=end_time))
+                    
+                if batch:
+                    await self._save_batch(batch)
+                    
+            except Exception as e:
+                print(f"Error processing batch: {e}")
+
+    async def _save_batch(self, batch):
+        async with self.db.begin():
+            self.db.add_all(batch)
