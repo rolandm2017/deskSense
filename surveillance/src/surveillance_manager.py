@@ -47,7 +47,7 @@ class SurveillanceManager:
         keyboard_facade = KeyboardApiFacade()  # FIXME: one of these 3 is supposed to be initialized in the tracker, with an argument? I think?
         mouse_facade = MouseApiFacade()
         program_facade = ProgramApiFacade(current_os)
-        interrupt_handler = InterruptHandler
+        # interrupt_handler = InterruptHandler
 
         self.mouse_dao = MouseDao(self.db)
         self.keyboard_dao = KeyboardDao(self.db)
@@ -56,9 +56,11 @@ class SurveillanceManager:
 
         self.program_tracker = ProgramTracker(self.data_dir, program_facade, self.program_dao)
         self.mouse_tracker = MouseTracker(self.data_dir, mouse_facade, self.mouse_dao)
-        self.keyboard_tracker = KeyboardTracker(self.data_dir, keyboard_facade, self.keyboard_dao, interrupt_handler)
+        self.keyboard_tracker = KeyboardTracker(self.data_dir, keyboard_facade, self.keyboard_dao)
         # self.key_tracker = KeyActivityTracker(self.data_dir)
-        # self.key_tracker.start()
+        self.keyboard_tracker.start()
+        self.mouse_tracker.start()
+        self.program_tracker.start()
     
 
     def gather_data_from_loop(self):
@@ -67,7 +69,7 @@ class SurveillanceManager:
     def report_loop_to_db(self, loop_content):
         self.db.record(loop_content)
     
-    async def cleanup(self):  # Add this method to ProductivityTracker
+    def cleanup(self):  # Add this method to ProductivityTracker
         """Clean up resources before exit."""
         print("cleaning up")
         # TODO: Set the while loop's condiitons to False

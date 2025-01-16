@@ -1,4 +1,5 @@
 import signal
+import sys
 from typing import Callable, Optional
 
 class InterruptHandler:
@@ -14,6 +15,7 @@ class InterruptHandler:
     
     def _setup_signal_handling(self):
         """Set up the SIGINT signal handler."""
+        
         signal.signal(signal.SIGINT, self._handle_interrupt)
     
     def _handle_interrupt(self, signum: int, frame) -> None:
@@ -30,6 +32,7 @@ class InterruptHandler:
             self.cleanup_callback()
             
         # Re-raise the signal after cleanup
+        
         signal.default_int_handler(signum, frame)
     
     def register_cleanup_callback(self, callback: Callable) -> None:
@@ -39,4 +42,5 @@ class InterruptHandler:
         Args:
             callback: Function to be called during cleanup
         """
+        
         self.cleanup_callback = callback
