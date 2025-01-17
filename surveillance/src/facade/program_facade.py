@@ -2,10 +2,12 @@ import traceback
 import psutil
 from typing import Dict, Optional
 from datetime import datetime
+from ..console_logger import ConsoleLogger
 import platform
 
 class ProgramApiFacade:
     def __init__(self, os):
+        self.console_logger = ConsoleLogger()
         self.is_windows = os.is_windows
         self.is_ubuntu: os.is_ubuntu
         self.Xlib = None
@@ -58,8 +60,6 @@ class ProgramApiFacade:
         # For now, returning active process info
         active = self._get_active_window_ubuntu()
         window_name = self._read_active_window_name_ubuntu()
-        print(active,'61vv')
-        print(window_name,'62vv')
         return {
             "os": "Ubuntu",
             "pid": active["pid"] if active else None,
@@ -85,10 +85,12 @@ class ProgramApiFacade:
             )
 
             if window_name:
-                return window_name.value
+                window_name_as_string = window_name.value.decode()
+                return window_name_as_string  # might need to specify encoding
             else:
                 return "Unnamed window"
         except Exception as e:
+            # Will always be:
             # <class 'Xlib.error.BadWindow'>: 
             #     code = 3, resource_id = <Resource 0x00000000>, 
             #     sequence_number = 22, major_opcode = 20, minor_opcode = 0 []

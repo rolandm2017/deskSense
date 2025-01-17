@@ -1,6 +1,6 @@
 class ConsoleLogger:
     def __init__(self):
-        self.active = False  # changed manually
+        self.active = True  # changed manually
 
     def log_mouse_move(self, win32_cursor_pos):     
         if self.active:
@@ -50,6 +50,8 @@ class ConsoleLogger:
 
     def log_red_multiple(self, *args):
         if self.active:
+            # for arg in args:
+                # print(self.log_red(arg))
             print(f"\033[91m{' '.join(str(arg) for arg in args)}\033[0m")
 
     def log_green_multiple(self, *args):
