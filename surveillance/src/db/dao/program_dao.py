@@ -49,6 +49,18 @@ class ProgramDao:
         
         result = await self.db.execute(select(Program))
         return result.scalars().all()
+    
+    async def read_past_24h_events(self):
+        """
+        Read program activity events that ended within the past 24 hours.
+        Returns all program sessions ordered by their end time.
+        """
+        query = select(Program).where(
+            Program.end_time >= datetime.datetime.now() - datetime.timedelta(days=1)
+        ).order_by(Program.end_time.desc())
+        
+        result = await self.db.execute(query)
+        return result.scalars().all()
 
     async def delete(self, program_id: int):
         """Delete a Program entry by ID"""

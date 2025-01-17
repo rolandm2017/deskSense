@@ -43,6 +43,18 @@ class MouseDao:
         
         result = await self.db.execute(select(MouseMove))
         return result.scalars().all()
+    
+    async def read_past_24h_events(self):
+        """
+        Read mouse movement events that ended within the past 24 hours.
+        Returns all movements ordered by their end time.
+        """
+        query = select(MouseMove).where(
+            MouseMove.end_time >= datetime.datetime.now() - datetime.timedelta(days=1)
+        ).order_by(MouseMove.end_time.desc())
+        
+        result = await self.db.execute(query)
+        return result.scalars().all()
 
     async def delete(self, mouse_move_id: int):
         """Delete a MouseMove entry by ID"""
