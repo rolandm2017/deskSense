@@ -24,7 +24,7 @@ class KeyboardService:
     
     async def get_all_events(self) -> List[Keystroke]:
         """Mostly for debugging"""
-        return self.dao.read()
+        return await self.dao.read()
 
 class MouseService:
     def __init__(self, dao: MouseDao = Depends()):
