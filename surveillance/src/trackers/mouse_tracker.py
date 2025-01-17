@@ -69,7 +69,7 @@ class MouseTracker:
                     self.is_moving = True
                     self.movement_start = datetime.now()
                     self.last_position = current_position
-                    self.console_logger.log_mouse_move(current_position)
+                    # self.console_logger.log_mouse_move(current_position)
             else:
                 if current_position == self.last_position:
                     self._handle_mouse_stop(current_position)
@@ -96,7 +96,7 @@ class MouseTracker:
                     self.last_position = current_position
                     # self._log_movement_to_csv(MouseEvent.START, current_position)
                     # self.log_movement_to_db(MouseEvent.START, current_position)  # FIXME: logging the mouse, happen when the loop closes.
-                    self.console_logger.log_mouse_move(current_position)
+                    # self.console_logger.log_mouse_move(current_position)
                     
                     # Start a timer to detect when movement stops
             threading.Timer(0.1, self._check_if_stopped).start()
@@ -123,7 +123,7 @@ class MouseTracker:
         self.last_position = final_position
 
     def log_movement_to_db(self, start_time, end_time):
-        self.console_logger.log_blue_multiple(start_time, end_time)
+        # self.console_logger.log_blue_multiple(start_time, end_time)
         self.loop.create_task(self.mouse_dao.create(start_time, end_time))
 
     def _log_movement_to_csv(self, event_type, position):

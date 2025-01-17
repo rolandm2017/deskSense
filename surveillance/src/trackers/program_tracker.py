@@ -61,46 +61,11 @@ class ProgramTracker:
         self.session_data = []  # holds sessions
         self.console_logger = ConsoleLogger()
         
-        # Get the project root (parent of src directory)
         current_file = Path(__file__)  # This gets us surveillance/src/productivity_tracker.py
         project_root = current_file.parent.parent  # Goes up two levels to surveillance/
         
-        # Create data directory if it doesn't exist
         self.data_dir = project_root / 'productivity_logs'
         self.data_dir.mkdir(exist_ok=True)
-
-    def package_window_into_db_entry(self):
-        # what we have:
-        # {'os': 'Ubuntu', 'pid': 2467, 'process_name': 'Xorg', 'window_title': b'program_tracker.py - deskSense - Visual Studio Code'}
-        # what we want, but as a dict:
-        # window = Column(String, unique=False, index=True)    
-        # start_time = Column(DateTime)
-        # end_time = Column(DateTime)
-        # productive = Column(Boolean)
-        package = {"window": None,
-                   "start_time": None,  # exists
-                   "end_time": None,
-                   "productive": None
-                   }
-        if not self.current_window or not self.start_time:
-            return
-
-        end_time = datetime.now()
-        duration = (end_time - self.start_time).total_seconds()
-        
-        window_info = self.get_active_window_info()
-        is_productive = self.is_productive(window_info) if window_info else False
-        
-        session = {
-            'start_time': self.start_time.isoformat(),
-            'end_time': end_time.isoformat(),
-            'duration': duration,
-            'window': self.current_window,
-            'productive': is_productive  # doot
-        }
-        return session
-        
-
 
     def start(self):  # copied 'start' method over from keyboard_tracker
         self.is_running = True
@@ -110,17 +75,19 @@ class ProgramTracker:
 
     def attach_listener(self):
         for window_change in self.program_facade.listen_for_window_changes():
-            print("WINDOW CHANGE:", window_change, type(window_change))
+            # window_is_chrome = self.window_is_chrome(window_change)
+            # if window_is_chrome:  # TEMP logging
+            #     self.console_logger.log_blue("Writing to csv")
+            #     self.save_session(self.package_given_window_for_csv(window_change), "foo_")
+
             newly_detected_window = f"{window_change['process_name']} - {window_change['window_title']}"
-            self.console_logger.log_green_multiple(newly_detected_window, self.session_data)
                 
-            # If window has changed, log the previous session
             on_a_different_window = newly_detected_window != self.current_window  # doot
-            print(self.current_window, newly_detected_window, on_a_different_window, '++++\n____\n90ru')
+            # print(self.current_window, newly_detected_window, on_a_different_window, '++++\n____\n90ru')
             if self.current_window and on_a_different_window:
-                print("HERE 93ru")
+                # print("HERE 93ru")
                 self.log_program_to_db(self.package_window_into_db_entry(), 500)
-                self.console_logger.log_active_program(newly_detected_window)
+                self.console_logger.log_active_program(newly_detected_window)  # FIXME: Program None - rlm@kingdom: ~/Code/deskSense/surveillance
                 self.start_time = datetime.now()
 
             # Initialize start time if this is the first window
@@ -135,15 +102,16 @@ class ProgramTracker:
             window_info = self.program_facade.read_current_program_info()
             window_info["timestamp"] = datetime.now()
             return window_info
-            # return {
-            #     'title': window_info["window_title"],
-            #     'process_name': window_info["process"].name().lower(),
-            #     'pid': window_info["pid"],
-            #     'timestamp': datetime.now()
-            # }
         except Exception as e:
             print(f"Error getting window info: {e}")
+            raise e
             return None
+        
+    def window_is_chrome(self, new_window):
+        # example: 'Fixing datetime.fromisoformat() error - Claude - Google Chrome'
+        window_title = new_window["window_title"]
+        return window_title.endswith('Google Chrome')
+        
 
     def is_productive(self, window_info):
         """Determine if the current window represents productive time."""
@@ -152,13 +120,12 @@ class ProgramTracker:
 
         process_name = window_info['process_name']
         window_title = window_info['window_title']
-        print(process_name, '92fl')
 
         # Check if it's a known application
         if process_name in self.productive_apps:
             app_name = self.productive_apps[process_name]
             productivity = self.productive_categories[app_name]
-            self.console_logger.log_green("process name in productive apps")
+            # self.console_logger.log_green("process name in productive apps")
             self.console_logger.log_green_multiple("productivity", productivity, app_name)
             # If productivity is None, we need to check the window title
             if productivity is None:
@@ -189,6 +156,7 @@ class ProgramTracker:
                 # If window has changed, log the previous session
                 if self.current_window and newly_detected_window != self.current_window:
                     self.log_program_to_db(self.package_window_into_db_entry(), 99)
+                    print("168ru")
                     self.console_logger.log_active_program(newly_detected_window)
                     self.start_time = datetime.now()
 
@@ -201,6 +169,41 @@ class ProgramTracker:
             except Exception as e:
                 print(e)
                 print(f"Error tracking window: {e}")
+
+    # FIXME: convert bytestring -> plain string as soon as it enters the system. don't let it leave the facade
+        
+    def package_given_window_for_csv(self, window):
+        end_time = datetime.now()
+        duration = (end_time - self.start_time).total_seconds()        
+        is_productive = self.is_productive(window)
+        print(window, '188ru')
+        session = {
+            'start_time': self.start_time.isoformat(),
+            'end_time': end_time.isoformat(),
+            'duration': duration,
+            'window': window["window_title"],
+            'productive': is_productive  # doot
+        }
+        return session
+
+    def package_window_into_db_entry(self):
+        if not self.current_window or not self.start_time:
+            return
+
+        end_time = datetime.now()
+        duration = (end_time - self.start_time).total_seconds()
+        
+        window_info = self.get_active_window_info()
+        is_productive = self.is_productive(window_info) if window_info else False
+        # print("current window:", self.current_window, "81ru")
+        session = {
+            'start_time': self.start_time.isoformat(),
+            'end_time': end_time.isoformat(),
+            'duration': duration,
+            'window': self.current_window.split(" - ", maxsplit=1)[1],
+            'productive': is_productive  # doot
+        }
+        return session
 
     def log_session(self):
         """Log the current session data."""
@@ -233,14 +236,15 @@ class ProgramTracker:
     def log_program_to_db(self, session: dict, source=0):
         #  {'os': 'Ubuntu', 'pid': 70442, 'process_name': 'pgadmin4', 'window_title': 'Alt-tab window'} 
         # start_time, end_time, duration, window, productive
-        print(session, source, "206ru")
-        self.console_logger.log_blue(session)
+        # print(session, "206ru")
+        # self.console_logger.log_blue(session)
         self.loop.create_task(self.program_dao.create(session))
 
-    def save_session(self, session):
+    def save_session(self, session, special=""):
         """Save session data to CSV file."""
+        self.console_logger.log_green("Logging to csv: " + session['window'])
         date_str = datetime.now().strftime('%Y-%m-%d')
-        file_path = self.data_dir / f'productivity_{date_str}.csv'
+        file_path = self.data_dir / f'{special}productivity_{date_str}.csv'
         
         # Create file with headers if it doesn't exist
         if not file_path.exists():

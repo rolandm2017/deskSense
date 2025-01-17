@@ -3,10 +3,10 @@ import * as d3 from "d3"
 
 const BarChart: React.FC<{}> = ({}) => {
     const [data, setData] = useState([
-        { name: "A", value: 50 },
-        { name: "B", value: 20 },
-        { name: "C", value: 40 },
-        { name: "D", value: 70 },
+        { name: "Chrome", value: 6.5 },
+        { name: "Discord", value: 3.3 },
+        { name: "VSCode", value: 2.2 },
+        { name: "Postman", value: 4.8 },
     ])
     // Set up dimensions
     const margin = { top: 0, right: 100, bottom: 30, left: 100 }

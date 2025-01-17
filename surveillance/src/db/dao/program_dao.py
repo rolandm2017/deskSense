@@ -16,7 +16,7 @@ class ProgramDao:
         self.processing = False
 
     async def create(self, session: dict):
-        print("progam dao - creating...", session)
+        print("program dao - creating...", session['window'])  # FIXME: window is often a bunk string - clean it up
         # Example:
         # {'os': 'Ubuntu', 'pid': 2467, 'process_name': 'Xorg', 'window_title': b'program_tracker.py - deskSense - Visual Studio Code'}
         if isinstance(session, dict):

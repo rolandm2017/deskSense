@@ -70,7 +70,7 @@ class KeyboardTracker:
             time.sleep(DELAY_TO_AVOID_CPU_HOGGING)
 
     def log_keystroke_to_db(self, current_time):
-        self.console_logger.log_key_press(current_time)
+        # self.console_logger.log_key_press(current_time)
         self.loop.create_task(self.keyboard_dao.create(current_time))
         
 
