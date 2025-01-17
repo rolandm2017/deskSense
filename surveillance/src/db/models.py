@@ -36,7 +36,7 @@ class Keystroke(Base):
     __tablename__ = "keystroke"
     
     id = Column(Integer, primary_key=True, index=True)
-    timestamp = Column(DateTime)
+    timestamp = Column(DateTime)  # FIXME: EVERY keytroke = like 50,000 keystrokes a day. Grouping into sessions, probably 5000
 
 # class Item(Base):
 #     __tablename__ = "items"

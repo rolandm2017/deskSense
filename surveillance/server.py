@@ -1,29 +1,44 @@
-# from uvicorn.config import Config
-# from uvicorn.server import Server
-# import signal
-
+# server.py
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Depends
 from contextlib import asynccontextmanager
 import asyncio
 # import time
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy.orm import Session
+from datetime import datetime
 
 from pydantic import BaseModel
 
-from src.db.database import get_db, init_db, AsyncSessionLocal
+from src.services import MouseService, KeyboardService, ProgramService
+from src.db.database import get_db, init_db, AsyncSessionLocal, AsyncSession
+from src.db.dao.mouse_dao import MouseDao
+from src.db.dao.keyboard_dao import KeyboardDao
+from src.db.dao.program_dao import ProgramDao
 from src.surveillance_manager import SurveillanceManager
 
-class ProductivityReport(BaseModel):
+# Add these dependency functions at the top of your file
+async def get_program_service(db: AsyncSession = Depends(get_db)) -> ProgramService:
+    return ProgramService(ProgramDao(db))
+
+async def get_mouse_service(db: AsyncSession = Depends(get_db)) -> MouseService:
+    return MouseService(MouseDao(db))
+
+async def get_keyboard_service(db: AsyncSession = Depends(get_db)) -> KeyboardService:
+    return KeyboardService(KeyboardDao(db))
+
+class ProgramActivityReport(BaseModel):
     date: str
     productive_time: float
     unproductive_time: float
     productive_percentage: float
 
 class MouseReport(BaseModel):
-    total_movements: int
-    avg_movement_duration: float
-    total_movement_time: float
+    mouse_event_id: int
+    start_time: datetime
+    end_time: datetime
+    # total_movements: int
+    # avg_movement_duration: float
+    # total_movement_time: float
 
 class KeyboardReport(BaseModel):
     total_inputs: int
@@ -74,25 +89,52 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-@app.get("/report", response_model=ProductivityReport)
-async def get_productivity_report(db: Session = Depends(get_db)):
-    if not surveillance_state.tracker:
+
+@app.get("/report/keyboard", response_model=KeyboardReport)
+async def get_keyboard_report(keyboard_service: KeyboardService = Depends(get_keyboard_service)):
+# async def get_keyboard_report(db: Session = Depends(get_db)):
+    if not surveillance_state.manager.keyboard_tracker:
         raise HTTPException(status_code=500, detail="Tracker not initialized")
     
-    report = surveillance_state.manager.program_tracker.generate_report()
-    return ProductivityReport(
-        date=report['date'],
-        productive_time=report['productive_time'],
-        unproductive_time=report['unproductive_time'],
-        productive_percentage=report['productive_percentage']
+    # reports = await keyboard_service.get_past_days_events()
+    reports = {
+        "total_inputs": 9
+    }
+    print(reports, '99vm')
+    if not isinstance(reports, dict):
+        raise HTTPException(status_code=500, detail="Failed to generate keyboard report")
+    
+    return KeyboardReport(
+        total_inputs=reports['total_inputs']
     )
 
-@app.get("/mouse-report", response_model=MouseReport)
-async def get_mouse_report(db: Session = Depends(get_db)):
+def make_mouse_report(r):
+    return MouseReport(total_movements=)
+
+@app.get("/report/mouse/all", response_model=List[MouseReport])
+async def get_all_mouse_reports(mouse_service: MouseService = Depends(get_mouse_service)):
     if not surveillance_state.manager.mouse_tracker:
         raise HTTPException(status_code=500, detail="Tracker not initialized")
     
-    report = surveillance_state.manager.mouse_tracker.generate_movement_report()
+    reports = await mouse_service.get_all_events()
+    print(reports, '116vm')
+    if not isinstance(reports, list):
+        raise HTTPException(status_code=500, detail="Failed to generate mouse report")
+    
+    return [make_mouse_report(r) for r in reports]
+    # return MouseReport(
+    #     total_movements=report['total_movements'],
+    #     avg_movement_duration=report['avg_movement_duration'],
+    #     total_movement_time=report['total_movement_time']
+    # )
+
+@app.get("/report/mouse", response_model=MouseReport)
+async def get_mouse_report(mouse_service: MouseService = Depends(get_mouse_service)):
+# async def get_mouse_report(db: Session = Depends(get_db)):
+    if not surveillance_state.manager.mouse_tracker:
+        raise HTTPException(status_code=500, detail="Tracker not initialized")
+    
+    report = await mouse_service.get_past_days_events()
     if not isinstance(report, dict):
         raise HTTPException(status_code=500, detail="Failed to generate mouse report")
     
@@ -102,17 +144,33 @@ async def get_mouse_report(db: Session = Depends(get_db)):
         total_movement_time=report['total_movement_time']
     )
 
-@app.get("/keyboard-report", response_model=KeyboardReport)
-async def get_keyboard_report(db: Session = Depends(get_db)):
-    if not surveillance_state.manager.keyboard_tracker:
+@app.get("/report/program/all", response_model=ProgramActivityReport)
+async def get_all_program_reports(program_service: ProgramService = Depends(get_program_service)):
+    if not surveillance_state.manager.program_tracker:
         raise HTTPException(status_code=500, detail="Tracker not initialized")
     
-    report = surveillance_state.manager.keyboard_tracker.generate_keyboard_report()
-    if not isinstance(report, dict):
-        raise HTTPException(status_code=500, detail="Failed to generate keyboard report")
+    report = await program_service.get_all_events()
+    print(report, '135vm')
+    return ProgramActivityReport(
+        date=report['date'],
+        productive_time=report['productive_time'],
+        unproductive_time=report['unproductive_time'],
+        productive_percentage=report['productive_percentage']
+    )
+
+@app.get("/report/program", response_model=ProgramActivityReport)
+async def get_program_activity_report(program_service: ProgramService = Depends(get_program_service)):
+# async def get_productivity_report(db: Session = Depends(get_db)):
+    if not surveillance_state.manager.program_tracker:
+        raise HTTPException(status_code=500, detail="Tracker not initialized")
     
-    return KeyboardReport(
-        total_inputs=report['total_inputs']
+    report = await program_service.get_past_days_events()
+    print(report, '135vm')
+    return ProgramActivityReport(
+        date=report['date'],
+        productive_time=report['productive_time'],
+        unproductive_time=report['unproductive_time'],
+        productive_percentage=report['productive_percentage']
     )
 
 

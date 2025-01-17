@@ -1,9 +1,10 @@
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import  AsyncSession
 from asyncio import Queue
 import asyncio
-from datetime import datetime
+
+from datetime import datetime, timedelta
 
 from ..models import Keystroke
 from ..database import AsyncSession, get_db
@@ -43,6 +44,30 @@ class KeyboardDao:
         
         result = await self.db.execute(select(Keystroke))
         return result.scalars().all()
+    
+    async def read_past_24h_events(self):
+        """
+        Read keystroke events from the past 24 hours, grouped into 5-minute sessions.
+        Returns the count of keystrokes per session.
+        """
+        # Round timestamp to 5-minute intervals for grouping
+        timestamp_interval = func.date_trunc('hour', Keystroke.timestamp) + \
+                            func.floor(func.date_part('minute', Keystroke.timestamp) / 5) * \
+                            timedelta(minutes=5)
+        
+        query = select(
+            timestamp_interval.label('session_start'),
+            func.count(Keystroke.id).label('keystroke_count')
+        ).where(
+            Keystroke.timestamp >= datetime.now() - timedelta(days=1)
+        ).group_by(
+            timestamp_interval
+        ).order_by(
+            timestamp_interval.desc()
+        )
+        
+        result = await self.db.execute(query)
+        return result.all()
 
     async def delete(self,keystroke_id: int):
         """Delete a Keystroke entry by ID"""

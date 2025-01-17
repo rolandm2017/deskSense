@@ -51,13 +51,12 @@ class KeyboardTracker:
     def _monitor_keyboard(self):
         while self.is_running:
             event = self.keyboard_facade.read_event()
-            # TODO: Remove or replace print statements with proper logging
-            # print(event, '41vv')
             if self.keyboard_facade.is_ctrl_c(event):
                 self.keyboard_facade.trigger_ctrl_c()
             if self.keyboard_facade.event_type_is_key_down(event):
                 current_time = datetime.now()
                 self.log_keystroke_to_db(current_time)
+                # TODO: 'If no keystroke within 300 ms, end sesion; report session to db'
                 # self._log_event_to_csv(current_time)
                 self.recent_count += 1  # per keystroke
                 if self._is_ready_to_log_to_console(current_time): 
@@ -71,15 +70,12 @@ class KeyboardTracker:
             time.sleep(DELAY_TO_AVOID_CPU_HOGGING)
 
     def log_keystroke_to_db(self, current_time):
-        # print(current_time)
         self.console_logger.log_key_press(current_time)
-        # pass
         self.loop.create_task(self.keyboard_dao.create(current_time))
         
 
     def _log_event_to_csv(self, current_time):
         self.events.append(current_time)
-
         date_str = current_time.strftime('%Y-%m-%d')
         file_path = self.data_dir / f'key_logging_{date_str}.csv'
 
@@ -119,11 +115,9 @@ class KeyboardTracker:
 
     def generate_keyboard_report(self):
         return {"total_inputs": len(self.events)}
-    
 
 
 def end_program_readout(report):
-    # prints the generated report
     print(report)
 
 
@@ -142,5 +136,3 @@ if __name__ == "__main__":
         instance.stop()
         # Give the thread time to clean up
         time.sleep(0.5)
-
-    # interrupt handler will close program for us

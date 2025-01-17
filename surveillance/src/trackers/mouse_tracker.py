@@ -160,7 +160,7 @@ class MouseTracker:
 
     def gather_session(self):
         current = self.session_data
-        self.session_data = self.preserve_open_events(current)  # todo: make currently open mouse movements not be reported, move them to the next interval
+        self.session_data = self.preserve_open_events(current)  # TODO: make currently open mouse movements not be reported, move them to the next interval
         return current
     
     def preserve_open_events(self, current_batch):
@@ -181,23 +181,6 @@ class MouseTracker:
             
         if self.hook_thread.is_alive():
             self.hook_thread.join(timeout=1)
-
-    # def stop(self):
-    #     """Stop the mouse tracker and clean up."""
-    #     self.stop_event.set()
-    #     if self.end_program_func:
-    #         print("here 240rvv")
-    #         self.end_program_func(self.generate_movement_report())
-    #      # Add this for Ubuntu
-    #     if self.environment.is_ubuntu:
-    #         pass
-    #         # self.display.close()  # Force close X display connection
-    #     if self.environment.is_windows:
-    #         import win32gui  # shouldn't be a problem on ubuntu to not have this installed # type: ignore[import]
-    #         win32gui.PostQuitMessage(0)
-    #     if self.hook_thread.is_alive():
-    #         print("here 243vv")
-    #         self.hook_thread.join(timeout=1)
 
     def generate_movement_report(self, date_str=None):
         """

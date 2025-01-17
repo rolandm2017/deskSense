@@ -1,6 +1,6 @@
 class ConsoleLogger:
     def __init__(self):
-        self.active = True
+        self.active = False  # changed manually
 
     def log_mouse_move(self, win32_cursor_pos):     
         if self.active:
