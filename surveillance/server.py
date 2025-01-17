@@ -35,25 +35,25 @@ class KeyboardReport(BaseModel):
     count: int
     keyboard_logs: List[KeyboardLog]
 
-class MouseReport(BaseModel):
+class MouseLog(BaseModel):
     mouse_event_id: int
     start_time: datetime
     end_time: datetime
 
-class MouseReportSummary(BaseModel):
+class MouseReport(BaseModel):
     count: int
-    mouse_reports: List[MouseReport]
+    mouse_reports: List[MouseLog]
 
-class ProgramActivityReport(BaseModel):
+class ProgramActivityLog(BaseModel):
     program_event_id: int
     window: str
     start_time: datetime
     end_time: datetime
     productive: bool
 
-class ProgramActivityReportSummary(BaseModel):
+class ProgramActivityReport(BaseModel):
     count: int
-    program_reports: List[ProgramActivityReport]
+    program_reports: List[ProgramActivityLog]
 
 
 class SurveillanceState:
@@ -67,9 +67,7 @@ surveillance_state = SurveillanceState()
 
 def track_productivity():
     while surveillance_state.is_running:
-        # TODO: Put the track window on a separate thread so it's not async 
         surveillance_state.manager.program_tracker.track_window()        
-        # await asyncio.sleep(1)  # FIXME: should this really poll every second?
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -99,30 +97,19 @@ app = FastAPI(lifespan=lifespan)
 
 
 def make_keyboard_log(r: Keystroke):
-    if not isinstance(r, Keystroke):
-        print(r)
-        raise ValueError("Wasn't as described")
-    # return KeyboardReport(keyboard_event_id=r.id, timestamp=r.timestamp)
-    try:
-        return KeyboardLog(keyboard_event_id=r.id, timestamp=r.timestamp)
-    except Exception as e:
-        print(e)
-        raise ValueError("not as described")
+    return KeyboardLog(keyboard_event_id=r.id, timestamp=r.timestamp)
 
 def make_mouse_report(r: MouseMove):
-    return MouseReport(mouse_event_id=r.id, start_time=r.start_time, end_time=r.end_time)
+    return MouseLog(mouse_event_id=r.id, start_time=r.start_time, end_time=r.end_time)
 
 def make_program_report(r: Program):
-    return ProgramActivityReport()  # TODO
-#  id = Column(Integer, primary_key=True, index=True)
-#     window = Column(String, unique=False, index=True)    
-#     start_time = Column(DateTime)
-#     end_time = Column(DateTime)
-#     productive = Column(Boolean)
-
-# # Modified return statements for each endpoint:
-# # For keyboard endpoint:
-# return KeyboardReportSummary(count=1, keyboard_reports=[KeyboardReport(total_inputs=reports['total_inputs'])])
+    return ProgramActivityLog(
+        program_event_id=r.id,
+        window=r.window,
+        start_time=r.start_time,
+        end_time=r.end_time,
+        productive=r.productive
+    )
 
 @app.get("/report/keyboard/all", response_model=KeyboardReport)
 async def get_all_keyboard_reports(keyboard_service: KeyboardService = Depends(get_keyboard_service)):
@@ -153,21 +140,21 @@ async def get_keyboard_report(keyboard_service: KeyboardService = Depends(get_ke
     logs = [make_keyboard_log(e) for e in events]
     return KeyboardReport(count=len(events), keyboard_logs=logs)
 
-@app.get("/report/mouse/all", response_model=MouseReportSummary)
+@app.get("/report/mouse/all", response_model=MouseReport)
 async def get_all_mouse_reports(mouse_service: MouseService = Depends(get_mouse_service)):
     if not surveillance_state.manager.mouse_tracker:
         raise HTTPException(status_code=500, detail="Tracker not initialized")
     
     events = await mouse_service.get_all_events()
-    print(events, '116vm')
+    print(len(events), '116vm')
     if not isinstance(events, list):
         raise HTTPException(status_code=500, detail="Failed to generate mouse report")
     
     reports = [make_mouse_report(e) for e in events]
-    return MouseReportSummary(count=len(reports), mouse_reports=reports)
+    return MouseReport(count=len(reports), mouse_reports=reports)
     
 
-@app.get("/report/mouse", response_model=MouseReportSummary)
+@app.get("/report/mouse", response_model=MouseReport)
 async def get_mouse_report(mouse_service: MouseService = Depends(get_mouse_service)):
 # async def get_mouse_report(db: Session = Depends(get_db)):
     if not surveillance_state.manager.mouse_tracker:
@@ -179,10 +166,10 @@ async def get_mouse_report(mouse_service: MouseService = Depends(get_mouse_servi
     print(len(events), '173vm')
     reports = [make_mouse_report(e) for e in events]
     print(len(reports), '175vm')
-    return MouseReportSummary(count=len(reports), mouse_reports=reports)
+    return MouseReport(count=len(reports), mouse_reports=reports)
    
 
-@app.get("/report/program/all", response_model=ProgramActivityReportSummary)
+@app.get("/report/program/all", response_model=ProgramActivityReport)
 async def get_all_program_reports(program_service: ProgramService = Depends(get_program_service)):
     if not surveillance_state.manager.program_tracker:
         raise HTTPException(status_code=500, detail="Tracker not initialized")
@@ -192,9 +179,9 @@ async def get_all_program_reports(program_service: ProgramService = Depends(get_
         raise HTTPException(status_code=500, detail="Failed to generate program report")
     print(events, '135vm')
     reports = [make_program_report(e) for e in events]
-    return ProgramActivityReportSummary(count=1, program_reports=reports)
+    return ProgramActivityReport(count=1, program_reports=reports)
 
-@app.get("/report/program", response_model=ProgramActivityReportSummary)
+@app.get("/report/program", response_model=ProgramActivityReport)
 async def get_program_activity_report(program_service: ProgramService = Depends(get_program_service)):
 # async def get_productivity_report(db: Session = Depends(get_db)):
     if not surveillance_state.manager.program_tracker:
@@ -211,7 +198,7 @@ async def get_program_activity_report(program_service: ProgramService = Depends(
     #     productive_percentage=event['productive_percentage']
     # )
     reports = [make_program_report(e) for e in events]
-    return ProgramActivityReportSummary(count=1, program_reports=reports)
+    return ProgramActivityReport(count=1, program_reports=reports)
 
 
 if __name__ == "__main__":

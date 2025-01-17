@@ -69,10 +69,38 @@ class ProgramTracker:
         self.data_dir = project_root / 'productivity_logs'
         self.data_dir.mkdir(exist_ok=True)
 
+    def package_window_into_db_entry(self):
+        # what we have:
+        # {'os': 'Ubuntu', 'pid': 2467, 'process_name': 'Xorg', 'window_title': b'program_tracker.py - deskSense - Visual Studio Code'}
+        # what we want, but as a dict:
+        # window = Column(String, unique=False, index=True)    
+        # start_time = Column(DateTime)
+        # end_time = Column(DateTime)
+        # productive = Column(Boolean)
+        package = {"window": None,
+                   "start_time": None,  # exists
+                   "end_time": None,
+                   "productive": None
+                   }
+        if not self.current_window or not self.start_time:
+            return
+
+        end_time = datetime.now()
+        duration = (end_time - self.start_time).total_seconds()
+        
+        window_info = self.get_active_window_info()
+        is_productive = self.is_productive(window_info) if window_info else False
+        
+        session = {
+            'start_time': self.start_time.isoformat(),
+            'end_time': end_time.isoformat(),
+            'duration': duration,
+            'window': self.current_window,
+            'productive': is_productive  # doot
+        }
+        return session
         
 
-        # self.key_tracker = KeyActivityTracker(self.data_dir)
-        # self.key_tracker.start()
 
     def start(self):  # copied 'start' method over from keyboard_tracker
         self.is_running = True
@@ -82,12 +110,16 @@ class ProgramTracker:
 
     def attach_listener(self):
         for window_change in self.program_facade.listen_for_window_changes():
+            print("WINDOW CHANGE:", window_change, type(window_change))
             newly_detected_window = f"{window_change['process_name']} - {window_change['window_title']}"
             self.console_logger.log_green_multiple(newly_detected_window, self.session_data)
                 
             # If window has changed, log the previous session
-            if self.current_window and newly_detected_window != self.current_window:
-                self.log_program_to_db(self.session_data)
+            on_a_different_window = newly_detected_window != self.current_window  # doot
+            print(self.current_window, newly_detected_window, on_a_different_window, '++++\n____\n90ru')
+            if self.current_window and on_a_different_window:
+                print("HERE 93ru")
+                self.log_program_to_db(self.package_window_into_db_entry(), 500)
                 self.console_logger.log_active_program(newly_detected_window)
                 self.start_time = datetime.now()
 
@@ -156,7 +188,7 @@ class ProgramTracker:
                 
                 # If window has changed, log the previous session
                 if self.current_window and newly_detected_window != self.current_window:
-                    self.log_program_to_db(self.session_data)
+                    self.log_program_to_db(self.package_window_into_db_entry(), 99)
                     self.console_logger.log_active_program(newly_detected_window)
                     self.start_time = datetime.now()
 
@@ -186,19 +218,22 @@ class ProgramTracker:
             'end_time': end_time.isoformat(),
             'duration': duration,
             'window': self.current_window,
-            'productive': is_productive
+            'productive': is_productive  # doot
         }
         
         self.session_data.append(session)  # is only used to let surveillanceManager gather the session
-        self.log_program_to_db(session)
+        print(session, "is an empty array right, 197ru")
+        self.log_program_to_db(session, 1)
         # self.save_session(session)
 
     def report_missing_program(self, title):
         """For when the program isn't found in the productive apps list"""
         self.console_logger.log_yellow(title)  # temp
 
-    def log_program_to_db(self, session):
+    def log_program_to_db(self, session: dict, source=0):
+        #  {'os': 'Ubuntu', 'pid': 70442, 'process_name': 'pgadmin4', 'window_title': 'Alt-tab window'} 
         # start_time, end_time, duration, window, productive
+        print(session, source, "206ru")
         self.console_logger.log_blue(session)
         self.loop.create_task(self.program_dao.create(session))
 
