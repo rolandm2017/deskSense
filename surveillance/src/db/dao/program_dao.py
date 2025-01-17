@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from asyncio import Queue
 import asyncio
-import datetime
+from datetime import datetime
 
 from ..models import Program
 from ..database import AsyncSession
@@ -16,6 +16,9 @@ class ProgramDao:
         self.processing = False
 
     async def create(self, session: dict):
+        print("progam dao - creating...", session)
+        # Example:
+        # {'os': 'Ubuntu', 'pid': 2467, 'process_name': 'Xorg', 'window_title': b'program_tracker.py - deskSense - Visual Studio Code'}
         if isinstance(session, dict):
             await self.queue.put(session)
             if not self.processing:
