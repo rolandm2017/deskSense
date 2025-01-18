@@ -1,4 +1,4 @@
-# mouse_tracker.py
+# src/trackers/mouse_tracker.py
 from enum import Enum, auto
 
 import asyncio
@@ -35,12 +35,6 @@ class MouseMoveWindow:
 
 class MouseTrackerCore:
     def __init__(self, clock, mouse_api_facade, event_handlers, end_program_routine=None):
-        """
-        Initialize the MouseTracker with Windows event hooks.
-
-        Note that the program starts when the Tracker object is initialized.
-        
-        """
         self.clock = clock
         self.mouse_facade: UbuntuMouseApiFacadeCore = mouse_api_facade
         self.event_handlers = event_handlers
@@ -59,6 +53,7 @@ class MouseTrackerCore:
 
     def get_mouse_position(self):
         coords = self.mouse_facade.get_position_coords()
+        print(coords, '56ru')
         coords.timestamp = self.clock.now()
         return coords  
         
@@ -84,6 +79,24 @@ class MouseTrackerCore:
         self.console_logger.log_green("[LOG] End movement window")
         self.is_moving = False
         return MouseMoveWindow(self.movement_start_time, latest_result.timestamp)
+    
+    def run_tracking_loop(self):
+        latest_result = self.get_mouse_position()
+        if self.is_moving: 
+            has_stopped = self.position_is_same_as_before(latest_result)
+            if has_stopped:
+                window = self.close_and_retrieve_window(latest_result)
+                self.session_data.append(window)
+                self.apply_handlers(window)
+                self.reset()
+            else:
+                self.keep_window_open_and_update(latest_result)
+        else:
+            if self.last_position is None or self.mouse_is_moving(latest_result):
+                self.start_tracking_movement(latest_result)
+
+    def reset(self):
+        self.movement_start_time = None
 
     def monitor_mouse(self):
         """The original from before the thread-tracker separation"""
@@ -105,24 +118,21 @@ class MouseTrackerCore:
     def handle_mouse_stop(self, latest_result):
         return self.close_and_retrieve_window(latest_result)  # Alias
 
-    # def log_movement_to_db(self, start_time, end_time):
-    #     # TODO: DO the Log Movement to DB method when "Mouse Stop" closes the loop
-    #     self.loop.create_task(self.mouse_dao.create(start_time, end_time))
-
     def apply_handlers(self, content):
         if isinstance(self.event_handlers, list):
             for handler in self.event_handlers:
                 handler(content)  # emit an event
         else:
-            self.event_handlers(content)  # is a single func
-                
+            self.event_handlers(content)  # is a single func                
 
     def gather_session(self):
         current = self.session_data
-        self.session_data = self.preserve_open_events(current)  # TODO: make currently open mouse movements not be reported, move them to the next interval
         return current
+        # self.session_data = self.preserve_open_events(current)  # TODO: make currently open mouse movements not be reported, move them to the next interval
+        # return current
     
     def preserve_open_events(self, current_batch):
+        # FIXME: convert to accept .start_time, .end_time events
         # There can be one or zero open events, not 2.
         to_preserve = []
         if current_batch:
@@ -133,6 +143,8 @@ class MouseTrackerCore:
     def stop(self):
         if self.end_program_func:
             self.end_program_func(self.generate_movement_report())
+
+    
 
 
 class ThreadedMouseTracker:
@@ -152,17 +164,18 @@ class ThreadedMouseTracker:
         
     def _monitor_mouse(self):
         while not self.stop_event.is_set():
-            latest_result = self.core.get_mouse_position()
-            if self.core.is_moving: 
-                has_stopped = self.core.position_is_same_as_before(latest_result)
-                if has_stopped:
-                    window = self.core.close_and_retrieve_window(latest_result)
-                    self.core.apply_handlers(window)
-                else:
-                    self.core.keep_window_open_and_update(latest_result)
-            else:
-                if self.core.last_position is None or self.core.mouse_is_moving(latest_result):
-                    self.core.start_tracking_movement(latest_result)
+            self.core.run_tracking_loop()
+            # latest_result = self.core.get_mouse_position()
+            # if self.core.is_moving: 
+            #     has_stopped = self.core.position_is_same_as_before(latest_result)
+            #     if has_stopped:
+            #         window = self.core.close_and_retrieve_window(latest_result)
+            #         self.core.apply_handlers(window)
+            #     else:
+            #         self.core.keep_window_open_and_update(latest_result)
+            # else:
+            #     if self.core.last_position is None or self.core.mouse_is_moving(latest_result):
+            #         self.core.start_tracking_movement(latest_result)
             
             time.sleep(0.1)
 
