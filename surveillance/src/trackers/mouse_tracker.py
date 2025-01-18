@@ -92,7 +92,9 @@ class MouseTrackerCore:
             else:
                 self.keep_window_open_and_update(latest_result)
         else:
-            if self.last_position is None or self.mouse_is_moving(latest_result):
+            if self.last_position is None:
+                self.last_position = latest_result
+            if self.mouse_is_moving(latest_result):
                 self.start_tracking_movement(latest_result)
 
     def reset(self):
@@ -142,7 +144,7 @@ class MouseTrackerCore:
 
     def stop(self):
         if self.end_program_func:
-            self.end_program_func(self.generate_movement_report())
+            self.end_program_func(None)
 
     
 
@@ -164,25 +166,14 @@ class ThreadedMouseTracker:
         
     def _monitor_mouse(self):
         while not self.stop_event.is_set():
-            self.core.run_tracking_loop()
-            # latest_result = self.core.get_mouse_position()
-            # if self.core.is_moving: 
-            #     has_stopped = self.core.position_is_same_as_before(latest_result)
-            #     if has_stopped:
-            #         window = self.core.close_and_retrieve_window(latest_result)
-            #         self.core.apply_handlers(window)
-            #     else:
-            #         self.core.keep_window_open_and_update(latest_result)
-            # else:
-            #     if self.core.last_position is None or self.core.mouse_is_moving(latest_result):
-            #         self.core.start_tracking_movement(latest_result)
-            
+            self.core.run_tracking_loop()            
             time.sleep(0.1)
 
     def stop(self):
         self.stop_event.set()
         if self.hook_thread is not None and self.hook_thread.is_alive():
             self.hook_thread.join(timeout=1)
+        self.is_running = False
 
 
 def handler(v, k):
