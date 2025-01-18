@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 
 from ..models import Program
 from ..database import AsyncSession
+from ...console_logger import ConsoleLogger
 
 class ProgramDao:
     def __init__(self, db: AsyncSession, batch_size=100, flush_interval=5):
@@ -16,8 +17,11 @@ class ProgramDao:
         self.flush_interval = flush_interval
         self.processing = False
 
+        self.logger = ConsoleLogger()
+
     async def create(self, session: dict):
-        print("program dao - creating...", session['window'])  # FIXME: window is often a bunk string - clean it up
+        self.logger.log_blue("[LOG] Program event: " + session['window'])
+        # print("program dao - creating...", session['window'])  # FIXME: window is often a bunk string - clean it up
         # Example:
         # {'os': 'Ubuntu', 'pid': 2467, 'process_name': 'Xorg', 'window_title': b'program_tracker.py - deskSense - Visual Studio Code'}
         if isinstance(session, dict):
