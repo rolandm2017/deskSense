@@ -61,3 +61,11 @@ class ConsoleLogger:
     def log_blue_multiple(self, *args):
         if self.active:
             print(f"\033[94m{' '.join(str(arg) for arg in args)}\033[0m")
+
+    def log_purple(self, message):
+        if self.active:
+            print(f"\033[95m{message}\033[0m")
+
+    def log_purple_multiple(self, *args):
+        if self.active:
+            print(f"\033[95m{' '.join(str(arg) for arg in args)}\033[0m")

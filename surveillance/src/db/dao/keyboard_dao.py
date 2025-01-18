@@ -6,6 +6,7 @@ import asyncio
 
 from datetime import datetime, timedelta
 
+
 from ..models import Keystroke
 from ..database import AsyncSession, get_db
 from ...console_logger import ConsoleLogger
@@ -13,6 +14,14 @@ from ...console_logger import ConsoleLogger
 def get_rid_of_ms(time):
     return str(time).split(".")[0]
 
+class KeystrokeDto:
+
+    id: int
+    timestamp: datetime
+    def __init__(self, id, timestamp):
+        self.id = id
+        self.timestamp = timestamp
+    
 class KeyboardDao:
     def __init__(self, db: AsyncSession, batch_size=100, flush_interval=5):
         self.db = db
@@ -50,7 +59,9 @@ class KeyboardDao:
             return await self.db.get(Keystroke, keystroke_id)
         
         result = await self.db.execute(select(Keystroke))
-        return result.scalars().all()
+        result = result.scalars.all()
+        # print(len(result), type(result[0]), result[0], "53ru")
+        return [KeystrokeDto(e[0], e[1]) for e in result]
     
     async def read_past_24h_events(self):
         """
@@ -74,7 +85,9 @@ class KeyboardDao:
         )
         
         result = await self.db.execute(query)
-        return result.all()
+        result = result.all()
+        # print(len(result), type(result[0]), result[0], "78ru")
+        return [KeystrokeDto(e[0], e[1]) for e in result]
 
     async def delete(self,keystroke_id: int):
         """Delete a Keystroke entry by ID"""
