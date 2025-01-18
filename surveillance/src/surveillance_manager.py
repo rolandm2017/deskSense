@@ -58,10 +58,12 @@ class SurveillanceManager:
         self.mouse_tracker = MouseTracker(self.data_dir, mouse_facade, self.mouse_dao)
         self.keyboard_tracker = KeyboardTracker(self.data_dir, keyboard_facade, self.keyboard_dao)
         # self.key_tracker = KeyActivityTracker(self.data_dir)
+    
+    def start_trackers(self):
+        self.is_running = True
         self.keyboard_tracker.start()
         self.mouse_tracker.start()
         self.program_tracker.start()
-    
 
     def gather_data_from_loop(self):
         return [self.program_tracker.gather_session(), self.mouse_tracker.gather_session(), self.keyboard_tracker.gather_session()]

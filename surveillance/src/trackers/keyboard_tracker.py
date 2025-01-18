@@ -5,7 +5,7 @@ from threading import Thread
 import time
 from pathlib import Path
 
-
+from ..util.end_program_routine import end_program_readout
 from ..console_logger import ConsoleLogger
 from ..facade.keyboard_facade import KeyboardApiFacade
 from ..util.interrupt_handler import InterruptHandler
@@ -95,10 +95,6 @@ class KeyboardTracker:
 
     def generate_keyboard_report(self):
         return {"total_inputs": len(self.events)}
-
-
-def end_program_readout(report):
-    print(report)
 
 
 if __name__ == "__main__":
