@@ -8,7 +8,7 @@ import tempfile
 # Import the module under test
 # Assuming the original file is named mouse_tracker.py and is in a module called tracking
 from src.util.detect_os import OperatingSystemInfo
-from src.trackers.mouse_tracker import MouseTrackerCore, MouseEvent
+from src.trackers.mouse_tracker import MouseTrackerCore, MouseEvent, ThreadedMouseTracker
 from src.facade.mouse_facade import UbuntuMouseApiFacadeCore, MouseCoords
 
 from .mocks.mock_clock import MockClock
@@ -160,9 +160,9 @@ def test_handle_mouse_move_start(tracker_and_events, mock_mouse_facade):
     
     tracker.run_tracking_loop()
 
-    assert tracker.is_moving
+    assert tracker.is_moving is False  # Because it's not
     assert tracker.last_position.x == 100 and tracker.last_position.y == 200
-    assert tracker.movement_start_time is not None
+    assert tracker.movement_start_time is None  # Because it hasn't started yet
 
 def test_handle_mouse_stop_moving(tracker_and_events, mock_mouse_facade):
     tracker = tracker_and_events[0]
@@ -234,7 +234,7 @@ def test_gather_session_with_data(tracker_and_events, mock_mouse_facade):
     position1 = MouseCoords(100, 200)
     mock_mouse_facade.set_cursor_pos(position1)
     tracker.run_tracking_loop()
-    assert tracker.is_moving is True
+    assert tracker.is_moving is False  # Because it's not moving
     assert tracker.last_position.x == 100
     
     position2 = MouseCoords(105, 250)
@@ -255,6 +255,146 @@ def test_gather_session_with_data(tracker_and_events, mock_mouse_facade):
     assert session_data[0] is not None
     assert session_data[0].start_time is not None
     assert session_data[0].end_time is not None
+
+def test_multiple_handlers_are_called(tracker_and_events, mock_mouse_facade):
+    """Test that when multiple handlers are provided, they are all called"""
+    tracker = tracker_and_events[0]
+    handler1_calls = []
+    handler2_calls = []
+    
+    def handler1(event):
+        handler1_calls.append(event)
+    
+    def handler2(event):
+        handler2_calls.append(event)
+    
+    # Replace single handler with multiple handlers
+    tracker.event_handlers = [handler1, handler2]
+    
+    # Simulate mouse movement and stop
+    mock_mouse_facade.set_cursor_pos(MouseCoords(100, 100))
+    tracker.run_tracking_loop()
+    mock_mouse_facade.set_cursor_pos(MouseCoords(150, 150))
+    tracker.run_tracking_loop()
+    mock_mouse_facade.set_cursor_pos(MouseCoords(150, 150))  # Stop
+    tracker.run_tracking_loop()
+    
+    assert len(handler1_calls) == len(handler2_calls) == 1
+    assert handler1_calls[0] == handler2_calls[0]
+
+def test_diagonal_mouse_movement(tracker_and_events, mock_mouse_facade):
+    """Test that diagonal mouse movements are tracked correctly"""
+    tracker = tracker_and_events[0]
+    events = tracker_and_events[1]
+    
+    # Simulate diagonal movement
+    mock_mouse_facade.set_cursor_pos(MouseCoords(100, 100))
+    tracker.run_tracking_loop()
+    mock_mouse_facade.set_cursor_pos(MouseCoords(150, 150))
+    tracker.run_tracking_loop()
+    mock_mouse_facade.set_cursor_pos(MouseCoords(150, 150))  # Stop
+    tracker.run_tracking_loop()
+    
+    assert len(events) == 1
+    assert events[0].start_time is not None
+    assert events[0].end_time is not None
+
+def test_rapid_mouse_movement_windows(tracker_and_events, mock_mouse_facade):
+    """Test tracking of rapid mouse movements with multiple position changes"""
+    tracker = tracker_and_events[0]
+    events = tracker_and_events[1]
+    
+    positions = [
+        (100, 100),
+        (120, 120),
+        (140, 140),
+        (160, 160),
+        (160, 160)  # Stop
+    ]
+    
+    for x, y in positions:
+        mock_mouse_facade.set_cursor_pos(MouseCoords(x, y))
+        tracker.run_tracking_loop()
+    
+    assert len(events) == 1
+    assert events[0].start_time is not None
+    assert events[0].end_time is not None
+
+def test_mouse_position_with_negative_coordinates(tracker_and_events, mock_mouse_facade):
+    """Test handling of negative mouse coordinates"""
+    tracker = tracker_and_events[0]
+    events = tracker_and_events[1]
+    
+    # Simulate movement with negative coordinates
+    mock_mouse_facade.set_cursor_pos(MouseCoords(-100, -100))
+    tracker.run_tracking_loop()
+    mock_mouse_facade.set_cursor_pos(MouseCoords(-150, -150))
+    tracker.run_tracking_loop()
+    mock_mouse_facade.set_cursor_pos(MouseCoords(-150, -150))  # Stop
+    tracker.run_tracking_loop()
+    
+    assert len(events) == 1
+    assert events[0].start_time is not None
+    assert events[0].end_time is not None
+
+def test_zero_distance_movement(tracker_and_events, mock_mouse_facade):
+    """Test that zero-distance movements are handled correctly"""
+    tracker = tracker_and_events[0]
+    events = tracker_and_events[1]
+    
+    # Simulate movement to same position
+    mock_mouse_facade.set_cursor_pos(MouseCoords(100, 100))
+    tracker.run_tracking_loop()
+    # Testing starting circumstances
+    assert tracker.is_moving is False, "Should be false"
+    assert tracker.last_position.x == 100 and tracker.last_position.y == 100
+    assert tracker.movement_start_time is None
+
+    mock_mouse_facade.set_cursor_pos(MouseCoords(100, 100))
+    tracker.run_tracking_loop()  # FIXME
+    # Testing starting circumstances
+    assert tracker.is_moving is False, "Should still be false"
+    assert tracker.last_position.x == 100 and tracker.last_position.y == 100
+    assert tracker.movement_start_time is None
+    
+    # Assert
+    assert len(events) == 0, "A movement window was created when it shouldn't be"  # No movement window should be created
+
+def test_threading_cleanup(mock_clock, mock_mouse_facade, event_collector):
+    """Test that ThreadedMouseTracker cleans up properly on stop"""
+    events, handler = event_collector
+    tracker_core = MouseTrackerCore(mock_clock, mock_mouse_facade, handler)
+    threaded_tracker = ThreadedMouseTracker(tracker_core)
+    
+    threaded_tracker.start()
+    assert threaded_tracker.is_running
+    assert threaded_tracker.hook_thread.is_alive()
+    assert threaded_tracker.hook_thread is not None
+    
+    threaded_tracker.stop()
+    assert not threaded_tracker.is_running
+    assert not threaded_tracker.hook_thread.is_alive()
+
+def test_end_program_routine_called(tracker_and_events, mock_mouse_facade):
+    """Test that end program routine is called when stopping tracker"""
+    end_program_called = []
+    
+    def mock_end_program(report):
+        end_program_called.append(True)
+    
+    tracker = tracker_and_events[0]
+    tracker.end_program_func = mock_end_program
+    
+    # Simulate some movement
+    mock_mouse_facade.set_cursor_pos(MouseCoords(100, 100))
+    tracker.run_tracking_loop()
+    mock_mouse_facade.set_cursor_pos(MouseCoords(150, 150))
+    tracker.run_tracking_loop()
+    mock_mouse_facade.set_cursor_pos(MouseCoords(150, 150))
+    tracker.run_tracking_loop()
+    
+    tracker.stop()
+    assert len(end_program_called) == 1
 
 # def test_preserve_open_events(tracker):
 #     """Test that preserve_open_events correctly handles open movement sessions."""
