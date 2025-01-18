@@ -1,7 +1,7 @@
 # mouse_tracker.py
 from enum import Enum, auto
 from datetime import datetime
-import csv
+
 import asyncio
 
 from pathlib import Path
@@ -17,7 +17,6 @@ from ..facade.mouse_facade import MouseApiFacade, UbuntuMouseApiFacade, WindowsM
 class MouseEvent(str, Enum):
     START = "start"
     STOP = "stop"
-    MOVE = "move"
 
 class MouseTracker:
     def __init__(self, data_dir, mouse_api_facade, dao, end_program_routine=None):
@@ -83,38 +82,6 @@ class MouseTracker:
     def log_movement_to_db(self, start_time, end_time):
         self.loop.create_task(self.mouse_dao.create(start_time, end_time))
 
-    def _log_movement_to_csv(self, event_type, position):
-        """
-        Log mouse movement events to CSV.
-        
-        Args:
-            event_type (str): Either 'start' or 'stop'
-            position (tuple): (x, y) coordinates of mouse position
-        """
-        # print("Not intended for use")
-        date_str = datetime.now().strftime('%Y-%m-%d')
-        file_path = self.data_dir / f'mouse_tracking_{date_str}.csv'
-        
-        # Create file with headers if it doesn't exist
-        if not file_path.exists():
-            file_path.parent.mkdir(parents=True, exist_ok=True)  # Create directories if needed
-            with open(file_path, 'w', newline='') as f:
-                writer = csv.DictWriter(f, fieldnames=['timestamp', 'event_type', 'x_position', 'y_position'])
-                writer.writeheader()
-        
-        # Log the event
-        event = {
-                'timestamp': datetime.now().isoformat(),
-                'event_type': event_type,
-                'x_position': position[0],
-                'y_position': position[1]
-            }
-        with open(file_path, 'a', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=['timestamp', 'event_type', 'x_position', 'y_position'])
-            writer.writerow(event)
-
-        self.session_data.append(event)
-
     def gather_session(self):
         current = self.session_data
         self.session_data = self.preserve_open_events(current)  # TODO: make currently open mouse movements not be reported, move them to the next interval
@@ -138,53 +105,6 @@ class MouseTracker:
             
         if self.hook_thread is not None and self.hook_thread.is_alive():
             self.hook_thread.join(timeout=1)
-
-    def generate_movement_report(self, date_str=None):
-        """
-        Generate a report of mouse movement patterns for a specific date.
-        
-        Args:
-            date_str (str): Date in format 'YYYY-MM-DD'. If None, uses current date.
-        
-        Returns:
-            dict: Report containing movement statistics
-        """
-        if not date_str:
-            date_str = datetime.now().strftime('%Y-%m-%d')
-            
-        file_path = self.data_dir / f'mouse_tracking_{date_str}.csv'
-        if not file_path.exists():
-            return "No mouse tracking data available for this date."
-            
-        movement_sessions = []
-        start_time = None
-        
-        with open(file_path, 'r') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                if row['event_type'] == 'start':
-                    start_time = datetime.fromisoformat(row['timestamp'])
-                elif row['event_type'] == 'stop' and start_time:
-                    end_time = datetime.fromisoformat(row['timestamp'])
-                    duration = (end_time - start_time).total_seconds()
-                    movement_sessions.append(duration)
-                    start_time = None
-        
-        if not movement_sessions:
-            return {
-                'date': date_str,
-                'total_movements': 0,
-                'avg_movement_duration': 0,
-                'total_movement_time': 0
-            }
-            
-        return {
-            'date': date_str,
-            'total_movements': len(movement_sessions),
-            'avg_movement_duration': round(sum(movement_sessions) / len(movement_sessions), 2),
-            'total_movement_time': round(sum(movement_sessions), 2)
-        }
-    
 
 
 def end_program_readout(report):

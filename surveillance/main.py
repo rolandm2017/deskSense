@@ -25,7 +25,7 @@ def main():
         surveillance_manager.program_tracker.log_session()
         
         # Generate and display productivity report
-        report = surveillance_manager.program_tracker.generate_report()
+        report = surveillance_manager.program_tracker.generate_report()  # deprecated
         print("\nToday's Productivity Report:")
         print(f"Date: {report['date']}")
         print(f"Productive Time: {report['productive_time']} hours")

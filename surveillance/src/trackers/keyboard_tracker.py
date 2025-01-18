@@ -72,26 +72,6 @@ class KeyboardTracker:
     def log_keystroke_to_db(self, current_time):
         # self.console_logger.log_key_press(current_time)
         self.loop.create_task(self.keyboard_dao.create(current_time))
-        
-
-    def _log_event_to_csv(self, current_time):
-        self.events.append(current_time)
-        date_str = current_time.strftime('%Y-%m-%d')
-        file_path = self.data_dir / f'key_logging_{date_str}.csv'
-
-        # Create file with headers if it doesn't exist
-        if not file_path.exists():
-            with open(file_path, 'w', newline='') as f:
-                writer = csv.DictWriter(f, fieldnames=['date', 'timestamp'])
-                writer.writeheader()
-        
-        # Log the event
-        with open(file_path, 'a', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=['date', 'timestamp'])
-            writer.writerow({
-                'date': date_str,
-                'timestamp': current_time
-            })
 
     def _is_ready_to_log_to_console(self, current_time):
         # log key presses every 3 sec
@@ -123,9 +103,8 @@ def end_program_readout(report):
 
 if __name__ == "__main__":
     api_facade = KeyboardApiFacade()
-    interrupter = InterruptHandler
     folder = Path("/tmp")
-    instance = KeyboardTracker(folder, api_facade, interrupter, end_program_readout)
+    instance = KeyboardTracker(folder, api_facade, end_program_readout)
     
     try:
         instance.start()
