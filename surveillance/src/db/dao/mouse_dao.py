@@ -7,23 +7,32 @@ import datetime
 from ..models import MouseMove
 from ..database import AsyncSession
 from ...trackers.mouse_tracker import MouseMoveWindow
+from ...console_logger import ConsoleLogger
+
+
+def get_rid_of_ms(time):
+    return str(time).split(".")[0]
+
 
 class MouseDao:
     def __init__(self, db: AsyncSession, batch_size=100, flush_interval=5):
         self.db = db
         self.queue = Queue()
+        self.logger = ConsoleLogger()
         self.batch_size = batch_size
         self.flush_interval = flush_interval
         self.processing = False
 
     async def create_from_start_end_times(self, start_time: datetime, end_time: datetime):
         await self.queue.put((start_time, end_time))
+        self.logger.log_blue_multiple("[LOG]" + get_rid_of_ms(start_time) + " :: " + get_rid_of_ms(end_time))
         if not self.processing:
             self.processing = True
             asyncio.create_task(self.process_queue())
 
     async def create_from_window(self, window: MouseMoveWindow):
         await self.queue.put((window.start_time, window.end_time))
+        self.logger.log_blue("[LOG] " + get_rid_of_ms(window))
         if not self.processing:
             self.processing = True
             asyncio.create_task(self.process_queue())
@@ -85,6 +94,7 @@ class MouseDao:
                         continue
                         
                     start_time, end_time = await self.queue.get()
+                    # FIXME: what if it's a MouseMoveWindow?
                     batch.append(MouseMove(start_time=start_time, end_time=end_time))
                     
                 if batch:

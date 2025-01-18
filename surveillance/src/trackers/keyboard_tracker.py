@@ -42,7 +42,7 @@ class KeyboardTrackerCore:
             self.keyboard_facade.trigger_ctrl_c()  # stop program
         if self.keyboard_facade.event_type_is_key_down(event):
             current_time = self.clock.now()
-            self.apply_handlers(event)
+            self.apply_handlers(current_time)
             # TODO: 'If no keystroke within 300 ms, end sesion; report session to db'
             self.recent_count += 1  # per keystroke
             # print("Increasing recent count, 47ru")
@@ -58,7 +58,7 @@ class KeyboardTrackerCore:
         self.time_of_last_terminal_out = new_time
 
     def apply_handlers(self, content):
-        print("Applying handlers, 58ru")
+        print(content, "Applying handlers, 58ru")
         if isinstance(self.event_handlers, list):
             for handler in self.event_handlers:
                 print("Handler applied, 61ru")

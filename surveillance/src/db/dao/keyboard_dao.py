@@ -8,6 +8,10 @@ from datetime import datetime, timedelta
 
 from ..models import Keystroke
 from ..database import AsyncSession, get_db
+from ...console_logger import ConsoleLogger
+
+def get_rid_of_ms(time):
+    return str(time).split(".")[0]
 
 class KeyboardDao:
     def __init__(self, db: AsyncSession, batch_size=100, flush_interval=5):
@@ -17,8 +21,11 @@ class KeyboardDao:
         self.flush_interval = flush_interval
         self.processing = False
 
+        self.logger = ConsoleLogger()
+
     async def create(self, event_time: datetime):
         await self.queue.put(event_time)
+        self.logger.log_blue("[LOG] Keyboard event: " + get_rid_of_ms(event_time))  # FIXME: event time should be just month :: date :: HH:MM:SS
         if not self.processing:
             self.processing = True
             asyncio.create_task(self.process_queue())
