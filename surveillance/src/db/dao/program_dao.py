@@ -9,6 +9,16 @@ from ..models import Program
 from ..database import AsyncSession
 from ...console_logger import ConsoleLogger
 
+
+class ProgramDto:
+    def __init__(self, id, window, start, end, productive):
+        self.id = id
+        self.window = window
+        self.start_time = start
+        self.end_time = end
+        self.productive = productive
+
+
 class ProgramDao:
     def __init__(self, db: AsyncSession, batch_size=100, flush_interval=5):
         self.db = db
