@@ -1,11 +1,3 @@
-# def test_log_movement():
-#     pass
-#     # todo: stub csv.DictWriter
-
-# def test_generate_movement_report():
-#     pass
-#     # todo: need a csv with content
-
 import pytest
 from unittest.mock import Mock, patch
 from pathlib import Path
@@ -17,16 +9,26 @@ from enum import Enum, auto
 # Import the module under test
 # Assuming the original file is named mouse_tracker.py and is in a module called tracking
 from src.trackers.mouse_tracker import MouseTracker, MouseEvent, MouseApiFacade
+from src.db.dao.mouse_dao import MouseDao
+
+from .mocks.mock_mouse_dao import MockMouseDao  # Add import
 
 class MockMouseFacade(MouseApiFacade):
     def __init__(self):
         self.cursor_pos = (0, 0)
+        self.hook_thread = None
     
     def get_cursor_pos(self):
         return self.cursor_pos
     
     def set_cursor_pos(self, pos):
         self.cursor_pos = pos
+
+    def get_position(self):
+        return self.cursor_pos
+
+    def stop(self):
+        print("Stopping fake facade")
 
 @pytest.fixture
 def temp_data_dir():
@@ -50,8 +52,10 @@ def tracker(temp_data_dir, mock_mouse_facade):
          patch.dict('sys.modules', {'win32con': Mock(), 'ctypes': Mock()}):
         mock_os_info.return_value.is_windows = True
         mock_os_info.return_value.is_ubuntu = False
-        tracker = MouseTracker(temp_data_dir, mock_mouse_facade)
+        mouse_dao = MockMouseDao()  # New line
+        tracker = MouseTracker(temp_data_dir, mock_mouse_facade, mouse_dao)
         yield tracker
+        print("Stopping tracker")
         tracker.stop()
 
 def test_tracker_initialization(tracker, temp_data_dir):
@@ -80,17 +84,20 @@ def test_handle_mouse_move_start(tracker, mock_mouse_facade):
     """Test that _handle_mouse_move correctly handles movement start."""
     mock_mouse_facade.set_cursor_pos((100, 200))
     
-    tracker._handle_mouse_move()
     
     assert tracker.is_moving
     assert tracker.last_position == (100, 200)
     assert tracker.movement_start is not None
 
+    print("Doesn't print")
+
+    assert True is False
+
+    tracker._handle_mouse_stop()
+
 def test_gather_session_empty(tracker):
     """Test that gather_session returns empty list when no movements recorded."""
     assert tracker.gather_session() == []
-
-# # read to here - rm jan 13
 
 def test_gather_session_with_data(tracker):
     """Test that gather_session returns recorded movements."""
@@ -110,7 +117,9 @@ def test_preserve_open_events(tracker):
     events = [
         {'event_type': MouseEvent.START, 'x_position': 100, 'y_position': 200},
         {'event_type': MouseEvent.STOP, 'x_position': 150, 'y_position': 250},
-        {'event_type': MouseEvent.START, 'x_position': 150, 'y_position': 250}
+        {'event_type': MouseEvent.START, 'x_position': 150, 'y_position': 250},
+        {'event_type': MouseEvent.STOP, 'x_position': 210, 'y_position': 250},
+        {'event_type': MouseEvent.START, 'x_position': 210, 'y_position': 290}
     ]
     
     preserved = tracker.preserve_open_events(events)

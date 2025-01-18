@@ -2,7 +2,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from asyncio import Queue
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
+
 
 from ..models import Program
 from ..database import AsyncSession
@@ -59,7 +60,7 @@ class ProgramDao:
         Returns all program sessions ordered by their end time.
         """
         query = select(Program).where(
-            Program.end_time >= datetime.datetime.now() - datetime.timedelta(days=1)
+            Program.end_time >= datetime.now() - timedelta(days=1)  # This line is fixed
         ).order_by(Program.end_time.desc())
         
         result = await self.db.execute(query)

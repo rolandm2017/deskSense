@@ -27,8 +27,9 @@ async def get_mouse_service(db: AsyncSession = Depends(get_db)) -> MouseService:
 async def get_program_service(db: AsyncSession = Depends(get_db)) -> ProgramService:
     return ProgramService(ProgramDao(db))
 
+
 class KeyboardLog(BaseModel):
-    keyboard_event_id: int
+    keyboard_event_id: Optional[int] = None
     timestamp: datetime
 
 class KeyboardReport(BaseModel):
@@ -36,7 +37,7 @@ class KeyboardReport(BaseModel):
     keyboard_logs: List[KeyboardLog]
 
 class MouseLog(BaseModel):
-    mouse_event_id: int
+    mouse_event_id: Optional[int] = None
     start_time: datetime
     end_time: datetime
 
@@ -45,7 +46,7 @@ class MouseReport(BaseModel):
     mouse_reports: List[MouseLog]
 
 class ProgramActivityLog(BaseModel):
-    program_event_id: int
+    program_event_id: Optional[int] = None
     window: str
     start_time: datetime
     end_time: datetime
@@ -93,23 +94,56 @@ async def lifespan(app: FastAPI):
         # time.sleep(2)
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, root_path="/api")
 
 
 def make_keyboard_log(r: Keystroke):
-    return KeyboardLog(keyboard_event_id=r.id, timestamp=r.timestamp)
+    if not hasattr(r, "timestamp"):
+    #    if :
+        print(isinstance(r, Keystroke), '102ru')
+        print(r, "102ru")
+        raise AttributeError("Timestamp field not found")
+    try:
+        return KeyboardLog(
+            keyboard_event_id=r.id if hasattr(r, 'id') else None,
+            timestamp=r.timestamp
+        )
+    except AttributeError as e:
+        print(r, '107ru')
+        raise e
+        return KeyboardLog(keyboard_event_id=None, timestamp=r.timestamp)
 
 def make_mouse_report(r: MouseMove):
-    return MouseLog(mouse_event_id=r.id, start_time=r.start_time, end_time=r.end_time)
+    try:
+        return MouseLog(
+            mouse_event_id=r.id if hasattr(r, 'id') else None,
+            start_time=r.start_time,
+            end_time=r.end_time
+        )
+    except AttributeError as e:
+        print(r, '119ru')
+        raise e
+        return MouseLog(mouse_event_id=None, start_time=r.start_time, end_time=r.end_time)
 
 def make_program_report(r: Program):
-    return ProgramActivityLog(
-        program_event_id=r.id,
-        window=r.window,
-        start_time=r.start_time,
-        end_time=r.end_time,
-        productive=r.productive
-    )
+    try:
+        return ProgramActivityLog(
+            program_event_id=r.id if hasattr(r, 'id') else None,
+            window=r.window,
+            start_time=r.start_time,
+            end_time=r.end_time,
+            productive=r.productive
+        )
+    except AttributeError as e:
+        print(r, '133ru')
+        raise e
+        return ProgramActivityLog(
+            program_event_id=None,
+            window=r.window,
+            start_time=r.start_time,
+            end_time=r.end_time,
+            productive=r.productive
+        )
 
 @app.get("/report/keyboard/all", response_model=KeyboardReport)
 async def get_all_keyboard_reports(keyboard_service: KeyboardService = Depends(get_keyboard_service)):
@@ -133,7 +167,7 @@ async def get_keyboard_report(keyboard_service: KeyboardService = Depends(get_ke
     
     events = await keyboard_service.get_past_days_events()
     
-    print(events, '99vm')
+    # print(events, '99vm')
     if not isinstance(events, list):
         raise HTTPException(status_code=500, detail="Failed to generate keyboard report")
     
