@@ -8,7 +8,8 @@ import tempfile
 # Import the module under test
 # Assuming the original file is named mouse_tracker.py and is in a module called tracking
 from src.util.detect_os import OperatingSystemInfo
-from src.trackers.mouse_tracker import MouseTrackerCore, MouseEvent, ThreadedMouseTracker
+from src.util.threaded_tracker import ThreadedTracker
+from src.trackers.mouse_tracker import MouseTrackerCore, MouseEvent
 from src.facade.mouse_facade import UbuntuMouseApiFacadeCore, MouseCoords
 
 from .mocks.mock_clock import MockClock
@@ -136,25 +137,10 @@ def test_make_sure_handler_actually_handles(tracker_and_events, mock_mouse_facad
 
     # Only check that the stops were logged, because they signal a closed window
     assert len(events) == len([x3,x5,x7]), "Some mouse events were not recorded"
-# def test_log_movement_creates_csv(temp_data_dir, tracker_and_events):
-#     """Test that _log_movement creates a CSV file with correct headers."""
-#     tracker = tracker_and_events[0]
-#     position = (100, 200)
-#     date_str = datetime.now().strftime('%Y-%m-%d')
-#     expected_file = temp_data_dir / f'mouse_tracking_{date_str}.csv'
-    
-#     tracker._log_movement_to_csv(MouseEvent.START, position)
-    
-#     assert expected_file.exists()
-    
-#     with open(expected_file, 'r') as f:
-#         reader = csv.DictReader(f)
-#         headers = reader.fieldnames
-#         assert headers == ['timestamp', 'event_type', 'x_position', 'y_position']
 
 def test_handle_mouse_move_start(tracker_and_events, mock_mouse_facade):
     """Test that _handle_mouse_move correctly handles movement start."""
-    tracker = tracker_and_events[0]
+    tracker, events = tracker_and_events
     
     mock_mouse_facade.set_cursor_pos(MouseCoords(100, 200))  # primed for retrieval  # Might be an object
     
@@ -163,9 +149,10 @@ def test_handle_mouse_move_start(tracker_and_events, mock_mouse_facade):
     assert tracker.is_moving is False  # Because it's not
     assert tracker.last_position.x == 100 and tracker.last_position.y == 200
     assert tracker.movement_start_time is None  # Because it hasn't started yet
+    assert len(events) == 0  # none completed
 
 def test_handle_mouse_stop_moving(tracker_and_events, mock_mouse_facade):
-    tracker = tracker_and_events[0]
+    tracker, events = tracker_and_events
     
     mock_mouse_facade.set_cursor_pos(MouseCoords(100, 200))  # primed for retrieval  # Might be an object
     
@@ -185,7 +172,9 @@ def test_handle_mouse_stop_moving(tracker_and_events, mock_mouse_facade):
 
     assert tracker.is_moving is False
     assert tracker.last_position.x == 100 and tracker.last_position.y == 250
-    assert tracker.movement_start_time is None  # FIXME: SHOULD or shouldnt this be none?
+    assert tracker.movement_start_time is None
+    assert len(events) == 1
+    assert events[0].start_time is not None and events[0].end_time is not None
 
 def test_handle_start_stop_start(tracker_and_events, mock_mouse_facade):
     tracker = tracker_and_events[0]
@@ -364,7 +353,7 @@ def test_threading_cleanup(mock_clock, mock_mouse_facade, event_collector):
     """Test that ThreadedMouseTracker cleans up properly on stop"""
     events, handler = event_collector
     tracker_core = MouseTrackerCore(mock_clock, mock_mouse_facade, handler)
-    threaded_tracker = ThreadedMouseTracker(tracker_core)
+    threaded_tracker = ThreadedTracker(tracker_core)
     
     threaded_tracker.start()
     assert threaded_tracker.is_running

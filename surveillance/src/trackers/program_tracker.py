@@ -1,16 +1,14 @@
-from datetime import datetime
 from pathlib import Path
-import asyncio
 
-import csv
 import time
 import threading
-from threading import Thread
 
 from ..console_logger import ConsoleLogger
-from ..facade.program_facade import ProgramApiFacade
+from ..facade.program_facade import ProgramApiFacadeCore
 from ..util.detect_os import OperatingSystemInfo
-from ..util.end_program_routine import end_program_readout
+from ..util.end_program_routine import end_program_readout, pretend_report_event
+from ..util.clock import Clock
+from ..util.threaded_tracker import ThreadedTracker
 
 
 # TODO: Report mouse, keyboard, program, chrome tabs, every 15 sec, to the db.
@@ -18,12 +16,11 @@ from ..util.end_program_routine import end_program_readout
 
 # TODO: report programs that aren't in the apps list.
 
-class ProgramTracker:
-    def __init__(self, data_dir, program_api_facade, dao):
-        self.data_dir = data_dir
+class ProgramTrackerCore:
+    def __init__(self, clock, program_api_facade, event_handlers):
+        self.clock = clock
         self.program_facade: ProgramApiFacade = program_api_facade
-        self.program_dao = dao
-        self.loop = asyncio.get_event_loop()
+        self.event_handlers = event_handlers
 
         # Define productive applications
         self.productive_apps = {
@@ -61,47 +58,60 @@ class ProgramTracker:
         self.start_time = None
         self.session_data = []  # holds sessions
         self.console_logger = ConsoleLogger()
-        
-        current_file = Path(__file__)  # This gets us surveillance/src/productivity_tracker.py
-        project_root = current_file.parent.parent  # Goes up two levels to surveillance/
-        
-        self.data_dir = project_root / 'productivity_logs'
-        self.data_dir.mkdir(exist_ok=True)
-
-    def start(self):  # copied 'start' method over from keyboard_tracker
-        self.is_running = True
-        self.monitor_thread = Thread(target=self.attach_listener)
-        self.monitor_thread.daemon = True  # Thread will exit when main program exits
-        self.monitor_thread.start()
 
     def attach_listener(self):
         for window_change in self.program_facade.listen_for_window_changes():
-            # window_is_chrome = self.window_is_chrome(window_change)
-            # if window_is_chrome:  # TEMP logging
-            #     self.console_logger.log_blue("Writing to csv")
-            #     self.save_session(self.package_given_window_for_csv(window_change), "foo_")
-
-            newly_detected_window = f"{window_change['process_name']} - {window_change['window_title']}"
-                
-            on_a_different_window = newly_detected_window != self.current_window  # doot
-            # print(self.current_window, newly_detected_window, on_a_different_window, '++++\n____\n90ru')
+            newly_detected_window = f"{window_change['process_name']} - {window_change['window_title']}"                
+            on_a_different_window = newly_detected_window != self.current_window 
             if self.current_window and on_a_different_window:
-                # print("HERE 93ru")
-                self.log_program_to_db(self.package_window_into_db_entry(), 500)
+                self.apply_handlers(self.package_window_into_db_entry(), 500)
                 self.console_logger.log_active_program(newly_detected_window)  # FIXME: Program None - rlm@kingdom: ~/Code/deskSense/surveillance
-                self.start_time = datetime.now()
+                self.start_time = self.clock.now()
 
             # Initialize start time if this is the first window
             if not self.start_time:
-                self.start_time = datetime.now()
+                self.start_time = self.clock.now()
             
             self.current_window = newly_detected_window
+
+    def run_tracking_loop(self):
+        self.attach_listener()
+
+    # def track_window(self):
+    #     """Track window activity and productivity."""
+    #     try:
+    #         window_info = self.get_active_window_info()
+    #         if not window_info:
+    #             return
+    #         # print(window_info, '122fl')
+    #         newly_detected_window = f"{window_info['process_name']} - {window_info['window_title']}"
+    #         print(newly_detected_window, self.session_data)
+            
+    #         # If window has changed, log the previous session
+    #         on_a_different_window = newly_detected_window != self.current_window 
+    #         if self.current_window and on_a_different_window:
+    #             self.apply_handlers(self.package_window_into_db_entry(), 99)
+    #             self.console_logger.log_active_program(newly_detected_window)
+    #             self.start_time = self.clock.now()
+
+    #         # Initialize start time if this is the first window
+    #         if not self.start_time:
+    #             self.start_time = self.clock.now()
+            
+    #         self.current_window = newly_detected_window
+            
+    #     except Exception as e:
+    #         print(e)
+    #         print(f"Error tracking window: {e}")
+
+    # # FIXME: convert bytestring -> plain string as soon as it enters the system. don't let it leave the facade
+    
 
     def get_active_window_info(self):
         """Get information about the currently active window."""
         try:
             window_info = self.program_facade.read_current_program_info()
-            window_info["timestamp"] = datetime.now()
+            window_info["timestamp"] = self.clock.now()
             return window_info
         except Exception as e:
             print(f"Error getting window info: {e}")
@@ -126,7 +136,6 @@ class ProgramTracker:
         if process_name in self.productive_apps:
             app_name = self.productive_apps[process_name]
             productivity = self.productive_categories[app_name]
-            # self.console_logger.log_green("process name in productive apps")
             self.console_logger.log_green_multiple("productivity", productivity, app_name)
             # If productivity is None, we need to check the window title
             if productivity is None:
@@ -143,38 +152,9 @@ class ProgramTracker:
 
         return False
 
-    def track_window(self, interval=1):
-        """Track window activity and productivity."""
-        while self.is_running:
-            try:
-                window_info = self.get_active_window_info()
-                if not window_info:
-                    return
-                # print(window_info, '122fl')
-                newly_detected_window = f"{window_info['process_name']} - {window_info['window_title']}"
-                print(newly_detected_window, self.session_data)
-                
-                # If window has changed, log the previous session
-                if self.current_window and newly_detected_window != self.current_window:
-                    self.log_program_to_db(self.package_window_into_db_entry(), 99)
-                    print("168ru")
-                    self.console_logger.log_active_program(newly_detected_window)
-                    self.start_time = datetime.now()
-
-                # Initialize start time if this is the first window
-                if not self.start_time:
-                    self.start_time = datetime.now()
-                
-                self.current_window = newly_detected_window
-                
-            except Exception as e:
-                print(e)
-                print(f"Error tracking window: {e}")
-
-    # FIXME: convert bytestring -> plain string as soon as it enters the system. don't let it leave the facade
         
     def package_given_window_for_csv(self, window):
-        end_time = datetime.now()
+        end_time = self.clock.now()
         duration = (end_time - self.start_time).total_seconds()        
         is_productive = self.is_productive(window)
         print(window, '188ru')
@@ -191,7 +171,7 @@ class ProgramTracker:
         if not self.current_window or not self.start_time:
             return
 
-        end_time = datetime.now()
+        end_time = self.clock.now()
         duration = (end_time - self.start_time).total_seconds()
         
         window_info = self.get_active_window_info()
@@ -211,7 +191,7 @@ class ProgramTracker:
         if not self.current_window or not self.start_time:
             return
 
-        end_time = datetime.now()
+        end_time = self.clock.now()
         duration = (end_time - self.start_time).total_seconds()
         
         window_info = self.get_active_window_info()
@@ -227,18 +207,20 @@ class ProgramTracker:
         
         self.session_data.append(session)  # is only used to let surveillanceManager gather the session
         print(session, "is an empty array right, 197ru")
-        self.log_program_to_db(session, 1)
+        self.apply_handlers(session, 1)
 
     def report_missing_program(self, title):
         """For when the program isn't found in the productive apps list"""
         self.console_logger.log_yellow(title)  # temp
 
-    def log_program_to_db(self, session: dict, source=0):
+    def apply_handlers(self, session: dict, source=0):
         #  {'os': 'Ubuntu', 'pid': 70442, 'process_name': 'pgadmin4', 'window_title': 'Alt-tab window'} 
         # start_time, end_time, duration, window, productive
-        # print(session, "206ru")
-        # self.console_logger.log_blue(session)
-        self.loop.create_task(self.program_dao.create(session))
+        if isinstance(self.event_handlers, list):
+            for handler in self.event_handlers:
+                handler(session)  # emit an event
+        else:
+            self.event_handlers(session)  # is a single func                
 
     def gather_session(self):
         current = self.session_data
@@ -247,25 +229,27 @@ class ProgramTracker:
     
     def stop(self):
         pass  # might need later 
-    
+
+
 
 if __name__ == "__main__":
     os_type = OperatingSystemInfo()
-    program_api_facade = ProgramApiFacade(os_type)
+    program_api_facade = ProgramApiFacadeCore(os_type)
         
-    folder = Path("/tmp")
+    # folder = Path("/tmp")
 
-    try:
-        instance = ProgramTracker(folder, program_api_facade)
-        print("Starting program tracking...")
+
+    clock = Clock()
         
-        # Main tracking loop
+    try:
+
+        tracker = ProgramTrackerCore(clock, program_api_facade, [end_program_readout, pretend_report_event])
+        thread_handler = ThreadedTracker(tracker)
+        thread_handler.start()
+        # Add a way to keep the main thread alive
         while True:
-            instance.track_window()
-            time.sleep(1)
-            
+            time.sleep(0.3)
     except KeyboardInterrupt:
-        instance.stop()
-        end_program_readout()
-        # Give time for cleanup
-        time.sleep(0.5)
+        thread_handler.stop()
+        # Give the thread time to clean up
+        time.sleep(0.3)

@@ -18,7 +18,8 @@ def main():
     
     try:
         while True:
-            surveillance_manager.program_tracker.track_window()
+            # surveillance_manager.program_tracker.track_window()
+            surveillance_manager.program_tracker.attach_listener()
             time.sleep(1)  # Check every second
     except KeyboardInterrupt:
          # Log final session before exiting

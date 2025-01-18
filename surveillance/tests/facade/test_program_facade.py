@@ -1,5 +1,5 @@
 import pytest
-from src.facade.program_facade import ProgramApiFacade
+from src.facade.program_facade import ProgramApiFacadeCore
 from src.util.detect_os import OperatingSystemInfo
 
 @pytest.mark.skipif(
@@ -8,7 +8,7 @@ from src.util.detect_os import OperatingSystemInfo
 )
 def test_program_facade_on_ubuntu():
     os_info = OperatingSystemInfo()
-    facade = ProgramApiFacade(os_info)
+    facade = ProgramApiFacadeCore(os_info)
 
     program_info = facade._read_ubuntu()
 
@@ -23,7 +23,7 @@ def test_program_facade_on_ubuntu():
 )
 def test_program_facade_on_windows():
     os_info = OperatingSystemInfo()
-    facade = ProgramApiFacade(os_info)
+    facade = ProgramApiFacadeCore(os_info)
 
     program_info = facade._read_windows()
 

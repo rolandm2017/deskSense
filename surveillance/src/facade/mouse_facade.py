@@ -95,41 +95,41 @@ class UbuntuMouseApiFacadeCore:
         query = self.display.screen().root.query_pointer()
         return MouseCoords(query.root_x, query.root_y)    
 
-class UbuntuMouseApiFacade:
-    def __init__(self):
-        from Xlib import display
-        from threading import Thread
-        import time
+# class UbuntuMouseApiFacade:
+#     def __init__(self):
+#         from Xlib import display
+#         from threading import Thread
+#         import time
 
-        self.running = False
-        self.current_position = (0, 0)
-        self.thread = None
+#         self.running = False
+#         self.current_position = (0, 0)
+#         self.thread = None
 
-        self.display = display.Display()
-        self.Thread = Thread
-        self.sleep = time.sleep
+#         self.display = display.Display()
+#         self.Thread = Thread
+#         self.sleep = time.sleep
 
-    def _track_mouse(self):
-        """Private method to continuously update the mouse position in a separate thread."""
-        while self.running:
-            query = self.display.screen().root.query_pointer()
-            self.current_position = (query.root_x, query.root_y)
-            self.sleep(0.1)  # Polling delay to reduce CPU usage
+#     def _track_mouse(self):
+#         """Private method to continuously update the mouse position in a separate thread."""
+#         while self.running:
+#             query = self.display.screen().root.query_pointer()
+#             self.current_position = (query.root_x, query.root_y)
+#             self.sleep(0.1)  # Polling delay to reduce CPU usage
 
-    def start(self):
-        """Start tracking the mouse position in a separate thread."""
-        if not self.running:
-            self.running = True
-            self.thread = self.Thread(target=self._track_mouse, daemon=True)
-            self.thread.start()
+#     def start(self):
+#         """Start tracking the mouse position in a separate thread."""
+#         if not self.running:
+#             self.running = True
+#             self.thread = self.Thread(target=self._track_mouse, daemon=True)
+#             self.thread.start()
 
-    def stop(self):
-        """Stop tracking the mouse position and clean up resources."""
-        if self.running:
-            self.running = False
-            self.thread.join()
+#     def stop(self):
+#         """Stop tracking the mouse position and clean up resources."""
+#         if self.running:
+#             self.running = False
+#             self.thread.join()
 
-    def get_position(self):
-        """Get the current mouse position as a tuple (x, y)."""
-        return self.current_position
+#     def get_position(self):
+#         """Get the current mouse position as a tuple (x, y)."""
+#         return self.current_position
 

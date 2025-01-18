@@ -11,6 +11,7 @@ import time
 from ..util.clock import Clock
 from ..util.detect_os import OperatingSystemInfo
 from ..util.end_program_routine import end_program_readout, pretend_report_event
+from ..util.threaded_tracker import ThreadedTracker
 from ..console_logger import ConsoleLogger
 from ..facade.mouse_facade import UbuntuMouseApiFacadeCore, WindowsMouseApiFacade
 
@@ -53,7 +54,7 @@ class MouseTrackerCore:
 
     def get_mouse_position(self):
         coords = self.mouse_facade.get_position_coords()
-        print(coords, '56ru')
+        # print(coords, '56ru')
         coords.timestamp = self.clock.now()
         return coords  
         
@@ -100,23 +101,6 @@ class MouseTrackerCore:
     def reset(self):
         self.movement_start_time = None
 
-    def monitor_mouse(self):
-        """The original from before the thread-tracker separation"""
-        current_position = self.mouse_facade.get_position_coords()
-        # assign time here
-        
-        if self.is_moving: # avoid reading a negation
-            has_stopped = current_position == self.last_position
-            if has_stopped:
-                self._handle_mouse_stop(current_position)
-            else:
-                self.last_position = current_position
-        else:
-            if self.last_position is None or current_position != self.last_position:
-                self.is_moving = True
-                self.movement_start_time = self.clock.now()
-                self.last_position = current_position
-    
     def handle_mouse_stop(self, latest_result):
         return self.close_and_retrieve_window(latest_result)  # Alias
 
@@ -130,11 +114,12 @@ class MouseTrackerCore:
     def gather_session(self):
         current = self.session_data
         return current
-        # self.session_data = self.preserve_open_events(current)  # TODO: make currently open mouse movements not be reported, move them to the next interval
+        # TODO: make currently open mouse movements not be reported, move them to the next interval
+        # self.session_data = self.preserve_open_events(current)  
         # return current
     
     def preserve_open_events(self, current_batch):
-        # FIXME: convert to accept .start_time, .end_time events
+        # FIXME: convert to accept .start_time, .end_time events. is this needed?
         # There can be one or zero open events, not 2.
         to_preserve = []
         if current_batch:
@@ -145,35 +130,6 @@ class MouseTrackerCore:
     def stop(self):
         if self.end_program_func:
             self.end_program_func(None)
-
-    
-
-
-class ThreadedMouseTracker:
-    """Wrapper that adds threading behavior"""
-    def __init__(self, core_tracker):
-        self.core = core_tracker
-        self.stop_event = threading.Event()
-        self.hook_thread = None
-        self.is_running = False
-
-    def start(self):
-        """Start the mouse tracker's threading."""
-        self.hook_thread = threading.Thread(target=self._monitor_mouse)
-        self.hook_thread.daemon = True
-        self.hook_thread.start()
-        self.is_running = True
-        
-    def _monitor_mouse(self):
-        while not self.stop_event.is_set():
-            self.core.run_tracking_loop()            
-            time.sleep(0.1)
-
-    def stop(self):
-        self.stop_event.set()
-        if self.hook_thread is not None and self.hook_thread.is_alive():
-            self.hook_thread.join(timeout=1)
-        self.is_running = False
 
 
 def handler(v, k):
@@ -193,7 +149,7 @@ if __name__ == "__main__":
         
     try:
         tracker = MouseTrackerCore(clock, api_facade, [end_program_readout, pretend_report_event])
-        thread_handler = ThreadedMouseTracker(tracker)
+        thread_handler = ThreadedTracker(tracker)
         thread_handler.start()
         # Add a way to keep the main thread alive
         while True:

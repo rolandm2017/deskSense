@@ -5,6 +5,15 @@ from datetime import datetime
 class KeyboardCsvWriter:
     def __init__(self):
         pass
+
+    def path_stuff(self):
+        """A graveyard method for storage"""
+        current_file = Path(__file__)  # This gets us surveillance/src/productivity_tracker.py
+        project_root = current_file.parent.parent  # Goes up two levels to surveillance/
+        
+        self.data_dir = project_root / 'productivity_logs'
+        self.data_dir.mkdir(exist_ok=True)
+
     
     def _log_event_to_csv(self, current_time):
         self.events.append(current_time)

@@ -68,7 +68,8 @@ surveillance_state = SurveillanceState()
 
 def track_productivity():
     while surveillance_state.is_running:
-        surveillance_state.manager.program_tracker.track_window()        
+        # surveillance_state.manager.program_tracker.track_window()        
+        surveillance_state.manager.program_tracker.attach_listener()        
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -80,7 +81,7 @@ async def lifespan(app: FastAPI):
     
     print("Starting productivity tracking...")
     surveillance_state.manager = SurveillanceManager(surveillance_state.db_session, shutdown_signal="TODO")
-    surveillance_state.start_trackers()
+    surveillance_state.manager.start_trackers()
         
     yield
     

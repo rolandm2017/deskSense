@@ -6,7 +6,7 @@ import os
 # pynput is superior to the keyboard module, because pynput is "truly cross platform"
 #
 
-class KeyboardApiFacade:
+class KeyboardApiFacadeCore:
     def __init__(self):
         self.current_event = None
         self.listener = keyboard.Listener(on_press=self._on_press)
@@ -20,6 +20,9 @@ class KeyboardApiFacade:
     def read_event(self):
         event = self.current_event
         # FIXME: if read event is called after 4 presses, you get only the final entering. so press => Read, press => Read will work
+        if isinstance(event, keyboard.KeyCode):
+            # Prevent accidentally logging your password!
+            event = keyboard.KeyCode(char='')  # Create new KeyCode with empty char - No keylogging!
         self.current_event = None
         return event
     
