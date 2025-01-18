@@ -33,6 +33,9 @@ class MouseTracker:
         self.mouse_facade: UbuntuMouseApiFacade = mouse_api_facade
         self.mouse_dao = dao
         self.loop = asyncio.get_event_loop()
+        # Create a new event loop for this instance
+        # self.loop = asyncio.new_event_loop()
+        # asyncio.set_event_loop(self.loop)
 
         self.end_program_func = end_program_routine
         self.environment = OperatingSystemInfo()
@@ -44,6 +47,8 @@ class MouseTracker:
         self.console_logger = ConsoleLogger()
 
         self.session_data = []
+        self.hook_thread = None  # For thread
+        self.mouse_movement_window = "Closed"
         
         self.stop_event = threading.Event()
 
@@ -65,65 +70,17 @@ class MouseTracker:
             is_stopped = not self.is_moving  # avoid reading a negation
             if is_stopped:
                 if self.last_position is None or current_position != self.last_position:
-                    # Movement started
                     self.is_moving = True
                     self.movement_start = datetime.now()
                     self.last_position = current_position
-                    # self.console_logger.log_mouse_move(current_position)
             else:
                 if current_position == self.last_position:
                     self._handle_mouse_stop(current_position)
                 else:
                     self.last_position = current_position
-            
             time.sleep(0.1)  # Polling interval
-        
-    def _handle_mouse_move(self):
-        """Handle mouse movement events."""
-        while True:
-            if self.mouse_movement_window == "Closed":
-                self.mouse_movement_window == "Open"
-                # print("++++++\n++++++\n++++++\n++++++\n215vm")
-                current_position = self.mouse_facade.get_position()
-                # print(current_position, 'current pos 234vm')
-                
-                is_stationary = not self.is_moving
-                print(self.is_moving, is_stationary, '239vm')
-                if is_stationary:
-                    # Movement just started
-                    self.is_moving = True
-                    self.movement_start = datetime.now()
-                    self.last_position = current_position
-                    # self._log_movement_to_csv(MouseEvent.START, current_position)
-                    # self.log_movement_to_db(MouseEvent.START, current_position)  # FIXME: logging the mouse, happen when the loop closes.
-                    # self.console_logger.log_mouse_move(current_position)
-                    
-                    # Start a timer to detect when movement stops
-            threading.Timer(0.1, self._check_if_stopped).start()
-    
-    def _check_if_stopped(self):
-        """Check if mouse has stopped moving."""
-        print(self.is_moving, "check if stopped 253vm")
-        if self.is_moving:
-            current_position = self.mouse_facade.get_position()
-            print(current_position, self.last_position, " Positions")
-            mouse_has_stopped = current_position == self.last_position
-            if mouse_has_stopped:
-                self._handle_mouse_stop()
-            else:
-                # Mouse is still moving, check again
-                self.last_position = current_position
-                threading.Timer(0.1, self._check_if_stopped).start()
-    
-    def _handle_mouse_stop(self, final_position):
-        """Handle mouse movement stop event."""
-        self.is_moving = False
-        end_time = datetime.now()
-        self.log_movement_to_db(self.movement_start, end_time)
-        self.last_position = final_position
 
     def log_movement_to_db(self, start_time, end_time):
-        # self.console_logger.log_blue_multiple(start_time, end_time)
         self.loop.create_task(self.mouse_dao.create(start_time, end_time))
 
     def _log_movement_to_csv(self, event_type, position):
@@ -179,7 +136,7 @@ class MouseTracker:
         if self.end_program_func:
             self.end_program_func(self.generate_movement_report())
             
-        if self.hook_thread.is_alive():
+        if self.hook_thread is not None and self.hook_thread.is_alive():
             self.hook_thread.join(timeout=1)
 
     def generate_movement_report(self, date_str=None):

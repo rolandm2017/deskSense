@@ -1,8 +1,7 @@
 # src/db/database.py
 from sqlalchemy import  Column, Integer, String, DateTime,  Boolean
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
 from typing import Generator
 from dotenv import load_dotenv
 from datetime import datetime
