@@ -10,6 +10,7 @@ from threading import Thread
 from ..console_logger import ConsoleLogger
 from ..facade.program_facade import ProgramApiFacade
 from ..util.detect_os import OperatingSystemInfo
+from ..util.end_program_routine import end_program_readout
 
 
 # TODO: Report mouse, keyboard, program, chrome tabs, every 15 sec, to the db.
@@ -243,15 +244,10 @@ class ProgramTracker:
         current = self.session_data
         self.session_data = []  # reset
         return current
-
     
     def stop(self):
         pass  # might need later 
     
-
-
-def end_program_readout():
-    ConsoleLogger.system_message("Ending program tracking...")
 
 if __name__ == "__main__":
     os_type = OperatingSystemInfo()

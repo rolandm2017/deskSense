@@ -80,7 +80,7 @@ async def lifespan(app: FastAPI):
     
     print("Starting productivity tracking...")
     surveillance_state.manager = SurveillanceManager(surveillance_state.db_session, shutdown_signal="TODO")
-    surveillance_state.is_running = True
+    surveillance_state.start_trackers()
         
     yield
     
