@@ -227,7 +227,6 @@ class ProgramTracker:
         self.session_data.append(session)  # is only used to let surveillanceManager gather the session
         print(session, "is an empty array right, 197ru")
         self.log_program_to_db(session, 1)
-        # self.save_session(session)
 
     def report_missing_program(self, title):
         """For when the program isn't found in the productive apps list"""
@@ -240,100 +239,16 @@ class ProgramTracker:
         # self.console_logger.log_blue(session)
         self.loop.create_task(self.program_dao.create(session))
 
-    def save_session(self, session, special=""):
-        """Save session data to CSV file."""
-        self.console_logger.log_green("Logging to csv: " + session['window'])
-        date_str = datetime.now().strftime('%Y-%m-%d')
-        file_path = self.data_dir / f'{special}productivity_{date_str}.csv'
-        
-        # Create file with headers if it doesn't exist
-        if not file_path.exists():
-            with open(file_path, 'w', newline='') as f:
-                writer = csv.DictWriter(f, fieldnames=['start_time', 'end_time', 'duration', 'window', 'productive'])
-                writer.writeheader()
-        
-        # Append session data
-        with open(file_path, 'a', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=['start_time', 'end_time', 'duration', 'window', 'productive'])
-            writer.writerow(session)
-
     def gather_session(self):
         current = self.session_data
         self.session_data = []  # reset
         return current
 
-    def generate_report(self, date_str=None):
-        """Generate a productivity report for a specific date."""
-        if not date_str:
-            date_str = datetime.now().strftime('%Y-%m-%d')
-        
-        file_path = self.data_dir / f'productivity_{date_str}.csv'
-        if not file_path.exists():
-            return "No data available for this date."
-        
-        productive_time = 0
-        unproductive_time = 0
-        app_times = {}
-        chrome_sites = {}
-        
-        with open(file_path, 'r') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                duration = float(row['duration'])
-                window = row['window']
-                
-                # Track productive/unproductive time
-                if row['productive'].lower() == 'true':
-                    productive_time += duration
-                else:
-                    unproductive_time += duration
-                
-                # Parse application and site data
-                parts = window.split(' - ', 1)
-                app = parts[0].lower()
-                
-                # Convert duration to hours
-                duration_hours = duration / 3600
-                
-                # Handle Chrome sites separately
-                if app == 'chrome.exe' and len(parts) > 1:
-                    title = parts[1].lower()
-                    # Extract domain from title (simple version)
-                    for site in self.productive_sites:
-                        if site in title:
-                            chrome_sites[site] = chrome_sites.get(site, 0) + duration_hours
-                    # If not a productive site, group under "other"
-                    if not any(site in title for site in self.productive_sites):
-                        chrome_sites["other"] = chrome_sites.get("other", 0) + duration_hours
-                
-                # Group by application
-                app_name = self.productive_apps.get(app, app)
-                app_times[app_name] = app_times.get(app_name, 0) + duration_hours
-        
-        total_time = productive_time + unproductive_time
-        productive_percentage = (productive_time / total_time * 100) if total_time > 0 else 0
-        
-        # Round all times to 2 decimal places
-        app_times = {k: round(v, 2) for k, v in app_times.items()}
-        chrome_sites = {k: round(v, 2) for k, v in chrome_sites.items()}
-        
-        # If Chrome exists in app_times and we have site data, nest it
-        if 'Chrome' in app_times and chrome_sites:
-            app_times['Chrome'] = {'total': app_times['Chrome'], 'sites': chrome_sites}
-        
-        return {
-            'date': date_str,
-            'productive_time': round(productive_time / 3600, 2),
-            'unproductive_time': round(unproductive_time / 3600, 2),
-            'productive_percentage': round(productive_percentage, 1),
-            'app_times': app_times
-        }
     
     def stop(self):
-        pass  # might need later  # TODO: implement - since jan 15
+        pass  # might need later 
     
 
-# TODO: make it work when run as a script
 
 def end_program_readout():
     ConsoleLogger.system_message("Ending program tracking...")

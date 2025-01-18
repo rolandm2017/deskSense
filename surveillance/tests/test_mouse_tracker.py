@@ -83,7 +83,8 @@ def test_log_movement_creates_csv(tracker, temp_data_dir):
 def test_handle_mouse_move_start(tracker, mock_mouse_facade):
     """Test that _handle_mouse_move correctly handles movement start."""
     mock_mouse_facade.set_cursor_pos((100, 200))
-    
+
+    tracker.foo()    
     
     assert tracker.is_moving
     assert tracker.last_position == (100, 200)
