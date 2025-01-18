@@ -15,7 +15,7 @@ class ConsoleLogger:
 
     def log_key_presses(self, count):
         if self.active:
-            self.log_green(f"Recorded {count} key presses in the past 3 sec")
+            self.log_green(f"[LOG] Recorded {count} key presses in the past 3 sec")
 
     def log_active_program(self, title):
         if self.active:

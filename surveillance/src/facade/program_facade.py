@@ -5,7 +5,7 @@ from datetime import datetime
 from ..console_logger import ConsoleLogger
 import platform
 
-class ProgramApiFacade:
+class ProgramApiFacadeCore:
     def __init__(self, os):
         self.console_logger = ConsoleLogger()
         self.is_windows = os.is_windows

@@ -6,6 +6,7 @@ import datetime
 
 from ..models import MouseMove
 from ..database import AsyncSession
+from ...trackers.mouse_tracker import MouseMoveWindow
 
 class MouseDao:
     def __init__(self, db: AsyncSession, batch_size=100, flush_interval=5):
@@ -15,11 +16,18 @@ class MouseDao:
         self.flush_interval = flush_interval
         self.processing = False
 
-    async def create(self, start_time: datetime, end_time: datetime):
+    async def create_from_start_end_times(self, start_time: datetime, end_time: datetime):
         await self.queue.put((start_time, end_time))
         if not self.processing:
             self.processing = True
             asyncio.create_task(self.process_queue())
+
+    async def create_from_window(self, window: MouseMoveWindow):
+        await self.queue.put((window.start_time, window.end_time))
+        if not self.processing:
+            self.processing = True
+            asyncio.create_task(self.process_queue())
+
 
     async def create_without_queue(self, start_time: datetime, end_time: datetime):
         # print("creating mouse move event", start_time)
