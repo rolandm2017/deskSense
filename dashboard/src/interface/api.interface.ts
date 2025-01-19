@@ -1,11 +1,12 @@
-export interface KeyboardLog {
+export interface TypingSessionLog {
     keyboardEventId: number;
-    timestamp: string; // ISO 8601 datetime string  // FIXME: should be uh, uh, start_time, end_time
+    startTime: string; // ISO 8601 datetime string
+    endTime: string; // ISO 8601 datetime string
 }
 
-export interface KeyboardReport {
+export interface TypingSessionsReport {
     count: number;
-    keyboardLogs: KeyboardLog[];
+    keyboardLogs: TypingSessionLog[];
 }
 
 export interface MouseLog {

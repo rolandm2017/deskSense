@@ -10,7 +10,7 @@ import {
 } from "./api/getData.api";
 import { BarChartColumn } from "./interface/misc.interface";
 import {
-    KeyboardReport,
+    TypingSessionsReport,
     MouseReport,
     ProgramActivityLog,
     ProgramActivityReport,
@@ -18,7 +18,7 @@ import {
 import TimelineWrapper from "./components/charts/Timeline";
 
 function App() {
-    const [keyboardReport, setKeyboardReport] = useState<KeyboardReport|null>(null) // prettier-ignore
+    const [typingReport, setTypingReport] = useState<TypingSessionsReport|null>(null) // prettier-ignore
     const [mouseReport, setMouseReport] = useState<MouseReport|null>(null) // prettier-ignore
     const [programReport, setProgramReport] = useState<ProgramActivityReport|null>(null); // prettier-ignore
 
@@ -88,13 +88,13 @@ function App() {
     }, [barsInput, programReport]);
 
     useEffect(() => {
-        if (keyboardReport === null) {
+        if (typingReport === null) {
             getKeyboardReport().then((report) => {
-                setKeyboardReport(report);
+                setTypingReport(report);
                 console.log(report.count);
             });
         }
-    }, [keyboardReport]);
+    }, [typingReport]);
 
     useEffect(() => {
         if (mouseReport === null) {
@@ -126,10 +126,17 @@ function App() {
                 </div>
                 <div>
                     <h2>
-                        Keyboard & Mouse: {keyboardReport?.count},{" "}
+                        Keyboard & Mouse: {typingReport?.count},{" "}
                         {mouseReport?.count}
                     </h2>
-                    <TimelineWrapper />
+                    {typingReport !== null && mouseReport !== null ? (
+                        <TimelineWrapper
+                            typingSessionLogsInput={typingReport.keyboardLogs}
+                            mouseLogsInput={mouseReport.mouseLogs}
+                        />
+                    ) : (
+                        <p>Loading...</p>
+                    )}
                 </div>
             </div>
         </>
