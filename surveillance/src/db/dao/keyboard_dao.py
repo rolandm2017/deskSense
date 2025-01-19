@@ -7,7 +7,7 @@ import asyncio
 from datetime import datetime, timedelta
 
 
-from ..models import Keystroke
+from ..models import TypingSession
 from ..database import AsyncSession, get_db
 from ...object.classes import KeyboardAggregateDatabaseEntryDeliverable
 from ...object.dto import KeystrokeDto
@@ -27,23 +27,24 @@ class KeyboardDao:
 
         self.logger = ConsoleLogger()
 
-    async def create(self, event_time: KeyboardAggregateDatabaseEntryDeliverable):
-        await self.queue.put(event_time)
-        self.logger.log_blue("[LOG] Keyboard event: " + str(event_time))  # event time should be just month :: date :: HH:MM:SS
+    async def create(self, session: KeyboardAggregateDatabaseEntryDeliverable):
+        await self.queue.put(session)
+        self.logger.log_blue("[LOG] Keyboard event: " + str(session))  # event time should be just month :: date :: HH:MM:SS
         if not self.processing:
             self.processing = True
             asyncio.create_task(self.process_queue())
 
-    async def create_without_queue(self, event_time: datetime):
-        print("adding keystroke ", event_time)
-        new_keystroke = Keystroke(
-            timestamp=event_time
+    async def create_without_queue(self, session: KeyboardAggregateDatabaseEntryDeliverable):
+        print("adding keystroke ", str(session))
+        new_session = TypingSession(
+            start_time=session.session_start_time,
+            end_time=session.session_end_time
         )
         
-        self.db.add(new_keystroke)
+        self.db.add(new_session)
         await self.db.commit()
-        await self.db.refresh(new_keystroke)
-        return new_keystroke
+        await self.db.refresh(new_session)
+        return new_session
 
     async def read(self, keystroke_id: int = None):
         """
@@ -51,28 +52,30 @@ class KeyboardDao:
         otherwise return all keystrokes.
         """
         if keystroke_id:
-            return await self.db.get(Keystroke, keystroke_id)
+            return await self.db.get(TypingSession, keystroke_id)
         
-        result = await self.db.execute(select(Keystroke))
+        result = await self.db.execute(select(TypingSession))
         result = result.scalars.all()
         # print(len(result), type(result[0]), result[0], "53ru")
         return [KeystrokeDto(e[0], e[1]) for e in result]
     
     async def read_past_24h_events(self):
         """
-        Read keystroke events from the past 24 hours, grouped into 5-minute sessions.
-        Returns the count of keystrokes per session.
+        Read typing sessions from the past 24 hours, grouped into 5-minute intervals.
+        Returns the count of sessions per interval.
         """
-        # Round timestamp to 5-minute intervals for grouping
-        timestamp_interval = func.date_trunc('hour', Keystroke.timestamp) + \
-                            func.floor(func.date_part('minute', Keystroke.timestamp) / 5) * \
+        # Round start_time to 5-minute intervals for grouping
+        timestamp_interval = func.date_trunc('hour', TypingSession.start_time) + \
+                            func.floor(func.date_part('minute', TypingSession.start_time) / 5) * \
                             timedelta(minutes=5)
+        
+        twenty_four_hours_ago = datetime.now() - timedelta(hours=24)
         
         query = select(
             timestamp_interval.label('session_start'),
-            func.count(Keystroke.id).label('keystroke_count')
+            func.count(TypingSession.id).label('session_count')
         ).where(
-            Keystroke.timestamp >= datetime.now() - timedelta(days=1)
+            TypingSession.start_time >= twenty_four_hours_ago
         ).group_by(
             timestamp_interval
         ).order_by(
@@ -81,12 +84,11 @@ class KeyboardDao:
         
         result = await self.db.execute(query)
         result = result.all()
-        # print(len(result), type(result[0]), result[0], "78ru")
         return [KeystrokeDto(e[0], e[1]) for e in result]
 
     async def delete(self,keystroke_id: int):
         """Delete a Keystroke entry by ID"""
-        keystroke = await self.db.get(Keystroke, keystroke_id)
+        keystroke = await self.db.get(TypingSession, keystroke_id)
         if keystroke:
             await self.db.delete(keystroke)
             await self.db.commit()
@@ -104,7 +106,7 @@ class KeyboardDao:
                        continue
                    
                    event_time = await self.queue.get()
-                   batch.append(Keystroke(timestamp=event_time))
+                   batch.append(TypingSession(timestamp=event_time))
                    
                if batch:
                    await self._save_batch(batch)

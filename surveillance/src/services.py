@@ -5,7 +5,7 @@ from datetime import datetime
 from .db.dao.keyboard_dao import KeyboardDao
 from .db.dao.program_dao import ProgramDao
 from .db.dao.mouse_dao import MouseDao
-from .db.models import Keystroke, Program, MouseMove
+from .db.models import TypingSession, Program, MouseMove
 from .db.database import get_db, AsyncSession
 
 
@@ -14,17 +14,17 @@ class KeyboardService:
     def __init__(self, dao: KeyboardDao = Depends()):
         self.dao = dao
     
-    async def get_past_days_events(self) -> List[Keystroke]:
+    async def get_past_days_events(self) -> List[TypingSession]:
         """
         Returns all keystroke events from the last 24 hours.
         Each keystroke contains a timestamp.
         """
         events = await self.dao.read_past_24h_events()
         print("####\n333\n3333\n####")
-        print(all(isinstance(entry, Keystroke) for entry in events), '23ru')
+        print(all(isinstance(entry, TypingSession) for entry in events), '23ru')
         return events
     
-    async def get_all_events(self) -> List[Keystroke]:
+    async def get_all_events(self) -> List[TypingSession]:
         """Mostly for debugging"""
         return await self.dao.read()
 
@@ -59,7 +59,6 @@ class ProgramService:
         and productive flag.
         """
         events = await self.dao.read_past_24h_events()
-        print(events, '48vm')
         return events
     
     async def get_all_events(self) -> List[Program]:
