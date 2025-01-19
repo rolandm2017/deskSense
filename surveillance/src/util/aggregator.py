@@ -37,6 +37,7 @@ class EventAggregator:
 
         next_added_timestamp_difference = timestamp - self.current_aggregation.end_time 
         if next_added_timestamp_difference > self.timeout:
+            # "If no keystroke within 300 ms, end sesion; report session to db"
             completed = self.current_aggregation
             self.current_aggregation = Aggregation(timestamp, timestamp, [timestamp])
             

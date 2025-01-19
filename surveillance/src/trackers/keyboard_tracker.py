@@ -4,6 +4,7 @@ import time
 from ..util.end_program_routine import end_program_readout, pretend_report_event
 from ..util.clock import Clock
 from ..util.threaded_tracker import ThreadedTracker
+from ..util.aggregator import EventAggregator
 from ..console_logger import ConsoleLogger
 from ..facade.keyboard_facade import KeyboardApiFacadeCore
 
@@ -30,15 +31,18 @@ class KeyboardTrackerCore:
         self.recent_count = 0
         self.time_of_last_terminal_out = clock.now()
 
+        self.aggregator = EventAggregator(timeout_ms=1000)  # one sec of no typing => close session
+
     def run_tracking_loop(self):
         event = self.keyboard_facade.read_event()
         if self.keyboard_facade.is_ctrl_c(event):
             self.keyboard_facade.trigger_ctrl_c()  # stop program
         if self.keyboard_facade.event_type_is_key_down(event):
             current_time = self.clock.now()
-            self.apply_handlers(current_time)
-            # TODO: 'If no keystroke within 300 ms, end sesion; report session to db'
             self.recent_count += 1  # per keystroke
+            aggregation = self.aggregator.add_event(current_time)
+            if aggregation is not None:
+                self.apply_handlers(aggregation)
             # print("Increasing recent count, 47ru")
             if self._is_ready_to_log_to_console(current_time): 
                 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -71,6 +75,9 @@ class KeyboardTrackerCore:
 
     def stop(self):
         print("Stopping program")
+        final_aggregate = self.aggregator.force_complete()
+        if final_aggregate:
+            self.apply_handlers(final_aggregate)
         if self.end_program_func:
             report = self.generate_keyboard_report()
             self.end_program_func(report)
