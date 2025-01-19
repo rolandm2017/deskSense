@@ -28,14 +28,14 @@ class MouseDao:
 
     async def create_from_start_end_times(self, start_time: datetime, end_time: datetime):
         await self.queue.put((start_time, end_time))
-        self.logger.log_blue_multiple("[LOG]" + get_rid_of_ms(start_time) + " :: " + get_rid_of_ms(end_time))
+        # self.logger.log_blue_multiple("[LOG]" + get_rid_of_ms(start_time) + " :: " + get_rid_of_ms(end_time))
         if not self.processing:
             self.processing = True
             asyncio.create_task(self.process_queue())
 
     async def create_from_window(self, window: MouseMoveWindow):
         await self.queue.put((window.start_time, window.end_time))
-        self.logger.log_blue("[LOG] " + get_rid_of_ms(window))
+        # self.logger.log_blue("[LOG] " + get_rid_of_ms(window))
         if not self.processing:
             self.processing = True
             asyncio.create_task(self.process_queue())
@@ -62,7 +62,7 @@ class MouseDao:
             return await self.db.get(MouseMove, mouse_move_id)
         
         result = await self.db.execute(select(MouseMove))
-        return result.scalars().all()
+        return result.scalars().all()  # TODO: return Dtos
     
     async def read_past_24h_events(self):
         """
@@ -74,7 +74,7 @@ class MouseDao:
         ).order_by(MouseMove.end_time.desc())
         
         result = await self.db.execute(query)
-        return result.scalars().all()
+        return result.scalars().all()  # TODO: return Dtos
 
     async def delete(self, mouse_move_id: int):
         """Delete a MouseMove entry by ID"""

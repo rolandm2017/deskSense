@@ -53,7 +53,7 @@ class MouseTrackerCore:
         return is_still_moving
     
     def start_tracking_movement(self, latest_result):
-        self.console_logger.log_green("[LOG] Start movement window")
+        # self.console_logger.log_green("[LOG] Start movement window")
         self.is_moving = True
         self.last_position = latest_result
         self.movement_start_time = self.clock.now()
@@ -63,7 +63,7 @@ class MouseTrackerCore:
 
     def close_and_retrieve_window(self, latest_result):
         """Handle the mouse stopping."""
-        self.console_logger.log_green("[LOG] End movement window")
+        # self.console_logger.log_green("[LOG] End movement window")
         self.is_moving = False
         return MouseMoveWindow(self.movement_start_time, latest_result.timestamp)
     

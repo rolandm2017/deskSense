@@ -60,7 +60,7 @@ class ProgramDao:
             return await self.db.get(Program, program_id)
         
         result = await self.db.execute(select(Program))
-        return result.scalars().all()
+        return result.scalars().all() # TODO: return Dtos
     
     async def read_past_24h_events(self):
         """
@@ -72,7 +72,7 @@ class ProgramDao:
         ).order_by(Program.end_time.desc())
         
         result = await self.db.execute(query)
-        return result.scalars().all()
+        return result.scalars().all()  # TODO: return Dtos
 
     async def delete(self, program_id: int):
         """Delete a Program entry by ID"""

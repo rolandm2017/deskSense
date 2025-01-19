@@ -2,13 +2,14 @@ from datetime import datetime
 
 
 
-class KeystrokeDto:
-
+class TypingSessionDto:
     id: int
-    timestamp: datetime
-    def __init__(self, id, timestamp):
+    start_time: datetime
+    end_time: datetime
+    def __init__(self, id, start_time, end_time):
         self.id = id
-        self.timestamp = timestamp
+        self.start_time = start_time
+        self.end_time = end_time
 
 class MouseMoveDto:
     def __init__(self, id, start_time, end_time):
