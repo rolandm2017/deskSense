@@ -27,6 +27,7 @@ class ProgramDao:
         # self.logger.log_blue("[LOG] Program event: " + session['window'])
         # print("program dao - creating...", session['window'])  # FIXME: window is often a bunk string - clean it up
         # Example:
+        # NOTE: now has a 'window' and 'detail' field
         # {'os': 'Ubuntu', 'pid': 2467, 'process_name': 'Xorg', 'window_title': b'program_tracker.py - deskSense - Visual Studio Code'}
         if isinstance(session, dict):
             await self.queue.put(session)
@@ -95,6 +96,7 @@ class ProgramDao:
                     session = await self.queue.get()
                     batch.append(Program(
                         window=session['window'],
+                        detail=session['detail'],
                         start_time=datetime.fromisoformat(session['start_time']),
                         end_time=datetime.fromisoformat(session['end_time']),
                         productive=session['productive']

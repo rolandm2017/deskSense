@@ -29,6 +29,7 @@ class Program(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     window = Column(String, unique=False, index=True)    
+    detail = Column(String)  # TODO: As of Jan 19, I am unsure that I need this column. Could take it out.
     start_time = Column(DateTime)
     end_time = Column(DateTime)
     productive = Column(Boolean)

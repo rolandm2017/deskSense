@@ -77,34 +77,12 @@ class ProgramTrackerCore:
     def run_tracking_loop(self):
         self.attach_listener()
 
-    # def track_window(self):
-    #     """Track window activity and productivity."""
-    #     try:
-    #         window_info = self.get_active_window_info()
-    #         if not window_info:
-    #             return
-    #         # print(window_info, '122fl')
-    #         newly_detected_window = f"{window_info['process_name']} - {window_info['window_title']}"
-    #         print(newly_detected_window, self.session_data)
-            
-    #         # If window has changed, log the previous session
-    #         on_a_different_window = newly_detected_window != self.current_window 
-    #         if self.current_window and on_a_different_window:
-    #             self.apply_handlers(self.package_window_into_db_entry(), 99)
-    #             self.console_logger.log_active_program(newly_detected_window)
-    #             self.start_time = self.clock.now()
+    # FIXME: the the ... VSCode is being split differently, PER TAB. Chrome is being split differently, PER TAB.
+    # FIXME: Solution statement:
+    # Chrome tabs goes into a special Chrome-only DB. For now you will just write, "Which tabs names?" without processing"
+    # Program - VSCode, will be split, the text cleaned up.
 
-    #         # Initialize start time if this is the first window
-    #         if not self.start_time:
-    #             self.start_time = self.clock.now()
-            
-    #         self.current_window = newly_detected_window
-            
-    #     except Exception as e:
-    #         print(e)
-    #         print(f"Error tracking window: {e}")
-
-    # # FIXME: convert bytestring -> plain string as soon as it enters the system. don't let it leave the facade
+    
     
 
     def get_active_window_info(self):
@@ -176,13 +154,14 @@ class ProgramTrackerCore:
         
         window_info = self.get_active_window_info()
         is_productive = self.is_productive(window_info) if window_info else False
-        # print("current window:", self.current_window, "81ru")
+        the_junk_string, window_name = self.current_window.rsplit(" - ", 1)
         session = {
             'start_time': self.start_time.isoformat(),
             'end_time': end_time.isoformat(),
             'duration': duration,
-            'window': self.current_window.split(" - ", maxsplit=1)[1],
-            'productive': is_productive  # doot
+            'window': window_name,
+            'detail': the_junk_string,
+            'productive': is_productive
         }
         return session
 
@@ -197,12 +176,15 @@ class ProgramTrackerCore:
         window_info = self.get_active_window_info()
         is_productive = self.is_productive(window_info) if window_info else False
         
+        the_junk_string, window_name = self.current_window.rsplit(" - ", 1)
+
         session = {
             'start_time': self.start_time.isoformat(),
             'end_time': end_time.isoformat(),
             'duration': duration,
-            'window': self.current_window,
-            'productive': is_productive  # doot
+            'window': window_name,
+            'detail': the_junk_string,
+            'productive': is_productive
         }
         
         self.session_data.append(session)  # is only used to let surveillanceManager gather the session

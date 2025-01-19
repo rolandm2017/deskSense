@@ -19,7 +19,7 @@ class ConsoleLogger:
 
     def log_active_program(self, title):
         if self.active:
-            self.log_green(f"Program {title} is active")
+            self.log_green(f"[action] Program '{title}' is active")
 
     def log_chrome_tab(self, title):
         if self.active:

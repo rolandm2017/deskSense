@@ -37,32 +37,32 @@ const mouseEventsRoute = baseRoute + "/mouse";
 const programsRoute = baseRoute + "/program";
 const chromeRoute = baseRoute + "/chrome";
 
-const withErrorHandlingAsync = <T>(fn: () => Promise<AxiosResponse<T>>) => {
-    return async (): Promise<T> => {
-        try {
-            const response = await fn();
-            return response.data;
-        } catch (error) {
-            if (axios.isAxiosError(error)) {
-                console.error("Error:", error.response?.data);
-                throw new Error(`Failed to execute: ${error.message}`);
-            }
-            throw error;
-        }
-    };
-};
+// const withErrorHandlingAsync = <T>(fn: () => Promise<AxiosResponse<T>>) => {
+//     return async (): Promise<T> => {
+//         try {
+//             const response = await fn();
+//             return response.data;
+//         } catch (error) {
+//             if (axios.isAxiosError(error)) {
+//                 console.error("Error:", error.response?.data);
+//                 throw new Error(`Failed to execute: ${error.message}`);
+//             }
+//             throw error;
+//         }
+//     };
+// };
 
-const getKeyboardReportAsync = withErrorHandlingAsync<KeyboardReport>(
-    async () => api.get("/keyboard")
-);
+// const getKeyboardReportAsync = withErrorHandlingAsync<KeyboardReport>(
+//     async () => api.get("/keyboard")
+// );
 
-const getMouseReportAsync = withErrorHandlingAsync<MouseReport>(async () =>
-    api.get("/mouse")
-);
+// const getMouseReportAsync = withErrorHandlingAsync<MouseReport>(async () =>
+//     api.get("/mouse")
+// );
 
-const getProgramReportAsync = withErrorHandlingAsync<ProgramActivityReport>(
-    async () => api.get("/program")
-);
+// const getProgramReportAsync = withErrorHandlingAsync<ProgramActivityReport>(
+//     async () => api.get("/program")
+// );
 
 const withErrorHandling = <T>(fn: () => Promise<AxiosResponse<T>>) => {
     return (): Promise<T> => {
@@ -93,21 +93,5 @@ const getMouseReport = withErrorHandling<MouseReport>(() => api.get("/mouse"));
 const getProgramReport = withErrorHandling<ProgramActivityReport>(() =>
     api.get("/program")
 );
-
-// // GET request with error handling
-// async function getKeyboardReport(): Promise<KeyboardReport> {
-//     const response: AxiosResponse<KeyboardReport> = await api.get("/keyboard");
-//     return response.data;
-// }
-
-// async function getMouseReport(): Promise<MouseReport> {
-//     const response: AxiosResponse<MouseReport> = await api.get("/mouse");
-//     return response.data;
-// }
-
-// async function getProgramReport(): Promise<ProgramActivityReport> {
-//     const response: AxiosResponse<ProgramActivityReport> = await api.get("/program");
-//     return response.data;
-// }
 
 export { getKeyboardReport, getMouseReport, getProgramReport };

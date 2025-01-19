@@ -8,34 +8,25 @@ interface BarChartProps {
 }
 
 const BarChart: React.FC<BarChartProps> = ({ barsInput }) => {
-    // TODO: foo foo, get inputs. { barTitle: programName, hoursSpent: float }
-    // TODO: make the array
-
-    const oldData = [
-        { programName: "Chrome", hoursSpent: 6.5 },
-        { programName: "Discord", hoursSpent: 3.3 },
-        { programName: "VSCode", hoursSpent: 2.2 },
-        { programName: "Postman", hoursSpent: 4.8 },
-    ];
     const [bars, setBars] = useState<BarChartColumn[]>([]);
 
     // Set up dimensions
-    const margin = { top: 0, right: 100, bottom: 30, left: 100 };
+    const margin = { top: 0, right: 100, bottom: 60, left: 100 }; // Increased bottom margin
     const width = 800 - margin.left - margin.right;
     const height = 300 - margin.top - margin.bottom;
     const svgRef = useRef<SVGSVGElement>(null);
 
     useEffect(() => {
-        console.log(barsInput.length, "19ru");
         if (barsInput.length !== 0) {
-            console.log("setting bars input", "31ru");
             setBars(barsInput);
         }
     }, [barsInput]);
 
     useEffect(() => {
-        // Create SVG container
         if (svgRef.current) {
+            // Clear previous SVG content
+            d3.select(svgRef.current).selectAll("*").remove();
+
             const svg = d3.select(svgRef.current);
 
             // Create scales
@@ -62,12 +53,19 @@ const BarChart: React.FC<BarChartProps> = ({ barsInput }) => {
                 .attr("transform", "translate(30, 10)")
                 .attr("fill", "steelblue");
 
-            // Create x-axis
+            // Create x-axis with rotated labels
+            const labelRotation = "-45";
             const xAxis = d3.axisBottom(xScale);
             svg.append("g")
                 .attr("class", "x-axis")
                 .attr("transform", `translate(30,${height + 10})`)
-                .call(xAxis);
+                .call(xAxis)
+                .selectAll("text") // Select all x-axis text elements
+                .style("text-anchor", "end") // Anchor point for the text
+                .attr("dx", "-.8em") // Shift text position
+                .attr("dy", ".15em") // Shift text position
+                .attr("font-size", "1.3em")
+                .attr("transform", `rotate(${labelRotation})`); // Rotate text 45 degrees
 
             // Create y-axis
             const yAxis = d3.axisLeft(yScale);
@@ -81,7 +79,11 @@ const BarChart: React.FC<BarChartProps> = ({ barsInput }) => {
     return (
         <svg
             ref={svgRef}
-            style={{ padding: "100px" }}
+            style={{
+                padding: "100px 100px 200px 100px",
+                border: "3px solid red",
+                overflow: "visible",
+            }}
             width={width + margin.left + margin.right}
             height={height + margin.top + margin.bottom}
         ></svg>

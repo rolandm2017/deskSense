@@ -85,6 +85,7 @@ class ProgramApiFacadeCore:
             )
 
             if window_name:
+                # convert bytestring -> plain string as soon as it enters the system. don't let it leave the facade
                 window_name_as_string = window_name.value.decode()
                 return window_name_as_string  # might need to specify encoding
             else:
