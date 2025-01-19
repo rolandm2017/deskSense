@@ -15,7 +15,7 @@ from src.db.database import get_db, init_db, AsyncSessionLocal, AsyncSession
 from src.db.dao.mouse_dao import MouseDao
 from src.db.dao.keyboard_dao import KeyboardDao
 from src.db.dao.program_dao import ProgramDao
-from src.db.models import Keystroke, MouseMove, Program
+from src.db.models import TypingSession, MouseMove, Program
 from src.surveillance_manager import SurveillanceManager
 from src.console_logger import ConsoleLogger
 
@@ -111,7 +111,7 @@ app.add_middleware(
 )
 
 
-def make_keyboard_log(r: Keystroke):
+def make_keyboard_log(r: TypingSession):
     if not hasattr(r, "timestamp"):
         raise AttributeError("Timestamp field not found")
     try:
