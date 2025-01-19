@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 from src.trackers.keyboard_tracker import KeyboardTrackerCore
 from src.util.threaded_tracker import ThreadedTracker
+from src.object.classes import KeyboardAggregateDatabaseEntryDeliverable
 from .mocks.mock_clock import MockClock
 
 class MockKeyboardFacade:
@@ -109,8 +110,11 @@ def test_key_press_tracking(tracker_and_events, mock_keyboard_facade):
 
         assert tracker.recent_count == 4, "A B C D is four events"
         assert len(events) == 1
-        my_times = events[0]   # Note "events[0]"
-        assert all(isinstance(some_time, datetime) for some_time in my_times)
+        deliverable_for_db = events[0]   # Note "events[0]"
+        assert isinstance(deliverable_for_db, KeyboardAggregateDatabaseEntryDeliverable)
+        assert deliverable_for_db.session_start_time is not None
+        assert deliverable_for_db.session_end_time is not None
+        # assert all(isinstance(some_time, datetime) for some_time in my_times)
 
 
 def test_multiple_key_presses(tracker_and_events, mock_keyboard_facade):
@@ -142,12 +146,16 @@ def test_multiple_key_presses(tracker_and_events, mock_keyboard_facade):
 
     t2 = tracker.time_of_last_aggregator_update
     
-    assert tracker.recent_count == 5, "Recent count didn't pick up the exact number of keypresses"
+    assert tracker.recent_count == len(keys), "Recent count didn't pick up the exact number of keypresses"
 
     mock_keyboard_facade.set_event("f")
     tracker.run_tracking_loop()  # Should close the aggregator loop
 
-    assert len(events[0]) == len(keys), "Failed to record the right number of events"
+    assert isinstance(events[0], KeyboardAggregateDatabaseEntryDeliverable)
+    assert events[0].session_start_time is not None
+    assert events[0].session_end_time is not None
+    assert len(events) == 1
+    # assert len(events[0]) == len(keys), "Failed to record the right number of events"
 
 def test_ctrl_c_handling(tracker_and_events, mock_keyboard_facade):
     """Test that Ctrl+C is handled correctly."""

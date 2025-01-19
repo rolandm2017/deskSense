@@ -3,6 +3,8 @@ from Xlib.ext import record  # might have to cram into a ubuntu specific conditi
 from Xlib.protocol import rq # might have to cram into a ubuntu specific conditional import
 
 from ..util.detect_os import OperatingSystemInfo
+from ..object.classes import MouseCoords
+
 os_type = OperatingSystemInfo()
 if os_type.is_windows:
     from win32api import GetCursorPos
@@ -76,13 +78,6 @@ some_dict = {
                 'client_died': False,
             }
 
-
-
-class MouseCoords:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.timestamp = None
 
 class UbuntuMouseApiFacadeCore:
     def __init__(self):

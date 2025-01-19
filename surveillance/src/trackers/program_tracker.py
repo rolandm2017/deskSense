@@ -19,7 +19,7 @@ from ..util.threaded_tracker import ThreadedTracker
 class ProgramTrackerCore:
     def __init__(self, clock, program_api_facade, event_handlers):
         self.clock = clock
-        self.program_facade: ProgramApiFacade = program_api_facade
+        self.program_facade: ProgramApiFacadeCore = program_api_facade
         self.event_handlers = event_handlers
 
         # Define productive applications

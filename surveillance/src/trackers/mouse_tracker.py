@@ -12,27 +12,13 @@ from ..util.clock import Clock
 from ..util.detect_os import OperatingSystemInfo
 from ..util.end_program_routine import end_program_readout, pretend_report_event
 from ..util.threaded_tracker import ThreadedTracker
+from ..object.classes import MouseMoveWindow
 from ..console_logger import ConsoleLogger
 from ..facade.mouse_facade import UbuntuMouseApiFacadeCore, WindowsMouseApiFacade
 
 class MouseEvent(str, Enum):
     START = "start"
     STOP = "stop"
-
-class MouseMovementEvent:
-    def __init__(self, event_type, position, timestamp):
-        self.event_type = event_type
-        self.position = position
-        self.timestamp = timestamp
-
-class MouseMoveWindow:
-    def __init__(self, start_of_window, end_of_window):
-        """Where the mouse was is irrelevant. From when to when it was moving is the important part."""
-        self.start_time = start_of_window
-        self.end_time = end_of_window
-
-    def __str__(self):
-        return f"Mouse movement from {self.start_time} to {self.end_time}"
 
 class MouseTrackerCore:
     def __init__(self, clock, mouse_api_facade, event_handlers, end_program_routine=None):

@@ -7,16 +7,10 @@ from datetime import datetime, timedelta
 
 from ..models import Program
 from ..database import AsyncSession
+from ...object.dto import ProgramDto
 from ...console_logger import ConsoleLogger
 
 
-class ProgramDto:
-    def __init__(self, id, window, start, end, productive):
-        self.id = id
-        self.window = window
-        self.start_time = start
-        self.end_time = end
-        self.productive = productive
 
 
 class ProgramDao:
