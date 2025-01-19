@@ -1,13 +1,7 @@
 # keyboard_tracker.py
-# from datetime import datetime, timedelta
-# import asyncio
-# import csv
-import threading
 import time
-# from pathlib import Path
 
 from ..util.end_program_routine import end_program_readout, pretend_report_event
-# from ..util.interrupt_handler import InterruptHandler
 from ..util.clock import Clock
 from ..util.threaded_tracker import ThreadedTracker
 from ..console_logger import ConsoleLogger
@@ -91,7 +85,7 @@ if __name__ == "__main__":
     api_facade = KeyboardApiFacadeCore()
     clock = Clock()
     # instance = KeyboardTracker(clock, api_facade, [end_program_readout, pretend_report_event])
-    instance = KeyboardTracker(clock, api_facade, [pretend_report_event])  # uncomment other line to do way too much logging - plus it keylogs
+    instance = KeyboardTrackerCore(clock, api_facade, [pretend_report_event])  # uncomment other line to do way too much logging - plus it keylogs
     
     try:
         thread_handler = ThreadedTracker(instance)
