@@ -6,15 +6,11 @@ import datetime
 
 from ..models import MouseMove
 from ..database import AsyncSession
+from ...object.dto import MouseMoveDto
 from ...trackers.mouse_tracker import MouseMoveWindow
 from ...console_logger import ConsoleLogger
 
 
-class MouseMoveDto:
-    def __init__(self, id, start_time, end_time):
-        self.id = id
-        self.start_time = start_time
-        self.end_time = end_time
 
 
 def get_rid_of_ms(time):

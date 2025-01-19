@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from time import time
 from typing import List
 
+from ..object.classes import KeyboardAggregateDatabaseEntryDeliverable
+
 @dataclass
 class Aggregation:
     start_time: float
@@ -26,14 +28,11 @@ class EventAggregator:
         if timestamp is None:
             raise TypeError("Timestamp cannot be None")
         if timestamp > time() + 1:  # 1 second buffer for clock skew
-            print(timestamp, '28ru')
-            raise ValueError("Timestamp cannot be in the future")
-            
+            raise ValueError("Timestamp cannot be in the future")            
         if self.current_aggregation and timestamp < self.current_aggregation.end_time:
             raise ValueError("Timestamps must be in chronological order")
         
         if not self.current_aggregation:
-            print("VV 36ru")
             self.current_aggregation = Aggregation(timestamp, timestamp, [timestamp])
             return None
 
@@ -52,7 +51,6 @@ class EventAggregator:
             
         self.current_aggregation.end_time = timestamp
         self.current_aggregation.events.append(timestamp)
-        print("VV 52ru")
         return None
     
     def force_complete(self):
@@ -65,6 +63,16 @@ class EventAggregator:
         if self._on_aggregation_complete:
             self._on_aggregation_complete(completed)
         return completed
+    
+    def package_aggregate_for_db(self, aggregate):
+        """
+        Aggregate comes out as an array of datetimes. 
+        The DB must get an obj with start_time, end_time.
+        """
+        start = aggregate[0]
+        end = aggregate[-1]
+        return KeyboardAggregateDatabaseEntryDeliverable(start, end)
+
 
 # # Example usage:
 # def on_session_complete(session: Aggregation):

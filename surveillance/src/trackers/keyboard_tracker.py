@@ -47,7 +47,8 @@ class KeyboardTrackerCore:
 
             print(aggregation, '45ru')  # FIXME: is 
             if aggregation is not None:
-                self.apply_handlers(aggregation)
+                session = self.aggregator.package_aggregate_for_db(aggregation)
+                self.apply_handlers(session)
             # print("Increasing recent count, 47ru")
             if self._is_ready_to_log_to_console(current_time): 
                 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
