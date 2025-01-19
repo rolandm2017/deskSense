@@ -30,6 +30,7 @@ class KeyboardTrackerCore:
         self.console_logger = ConsoleLogger()
         self.recent_count = 0
         self.time_of_last_terminal_out = clock.now()
+        self.time_of_last_aggregator_update = None
 
         self.aggregator = EventAggregator(timeout_ms=1000)  # one sec of no typing => close session
 
@@ -40,7 +41,11 @@ class KeyboardTrackerCore:
         if self.keyboard_facade.event_type_is_key_down(event):
             current_time = self.clock.now()
             self.recent_count += 1  # per keystroke
-            aggregation = self.aggregator.add_event(current_time)
+            print(current_time, '43ru')
+            self.time_of_last_aggregator_update = current_time
+            aggregation = self.aggregator.add_event(current_time.timestamp())
+
+            print(aggregation, '45ru')  # FIXME: is 
             if aggregation is not None:
                 self.apply_handlers(aggregation)
             # print("Increasing recent count, 47ru")

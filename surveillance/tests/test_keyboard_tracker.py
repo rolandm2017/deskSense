@@ -1,8 +1,7 @@
+# test_keyboard_tracker.py
 import pytest
 from unittest.mock import Mock, patch
 from datetime import datetime, timedelta
-import tempfile
-from pathlib import Path
 
 from src.trackers.keyboard_tracker import KeyboardTrackerCore
 from src.util.threaded_tracker import ThreadedTracker
@@ -71,24 +70,56 @@ def test_tracker_initialization(tracker_and_events):
     assert isinstance(tracker.session_data, list)
     assert tracker.time_of_last_terminal_out is not None
 
+
 def test_key_press_tracking(tracker_and_events, mock_keyboard_facade):
     """Test that key presses are tracked correctly."""
     tracker = tracker_and_events[0]
     events = tracker_and_events[1]
     
-    # Simulate a key press
-    mock_keyboard_facade.set_event('a')
-    tracker.run_tracking_loop()
+    with patch.object(tracker.aggregator, 'add_event', wraps=tracker.aggregator.add_event) as mock_add_event:
+        mock_keyboard_facade.set_event('A')
+        tracker.run_tracking_loop()
+        
+        mock_keyboard_facade.set_event("B") 
+        tracker.run_tracking_loop()
+        
+        assert mock_add_event.call_count == 2
+        # You can also check the specific calls if needed:
+        call_args = [call[0][0] for call in mock_add_event.call_args_list]
+        assert len(call_args) == 2
     
-    assert tracker.recent_count == 1
-    assert len(events) == 1
-    assert events[0] == 'a'
+        # Simulate a key press
+        mock_keyboard_facade.set_event('C')
+        tracker.run_tracking_loop()
+
+        t1 = tracker.time_of_last_aggregator_update
+
+        assert len(tracker.aggregator.current_aggregation.events) == 3
+        assert len(events) == 0  # Handler wasn't called because the aggregator didn't respond
+        
+        seconds = 2
+        tracker.clock.advance_time(seconds)
+
+        mock_keyboard_facade.set_event("D")
+        tracker.run_tracking_loop()
+
+        t2 = tracker.time_of_last_aggregator_update
+
+        assert t1 + timedelta(seconds=seconds) == t2
+
+        assert tracker.recent_count == 4, "A B C D is four events"
+        assert len(events) == 1
+        my_times = events[0]   # Note "events[0]"
+        assert all(isinstance(some_time, datetime) for some_time in my_times)
+
 
 def test_multiple_key_presses(tracker_and_events, mock_keyboard_facade):
     """Test tracking of multiple key presses."""
     tracker = tracker_and_events[0]
     events = tracker_and_events[1]
-    t1 = tracker.time_of_last_terminal_out
+
+    t1_start = tracker.clock.now()
+    assert isinstance(t1_start, datetime)
     # print(t1, '88ru')
     
     # Simulate multiple key presses
@@ -96,11 +127,27 @@ def test_multiple_key_presses(tracker_and_events, mock_keyboard_facade):
     for key in keys:
         mock_keyboard_facade.set_event(key)
         tracker.run_tracking_loop()
-    t2 = tracker.time_of_last_terminal_out
-    # print(t2, '96ru')
+
+    t1 = tracker.time_of_last_aggregator_update
+    assert t1 == t1_start
+    
+    assert len(tracker.aggregator.current_aggregation.events) == 5, "Failed to load an event into aggregation"
+
+    time_change_in_seconds = 3  # sec
+
+    tracker.clock.advance_time(time_change_in_seconds)  # 3,000 ms, past the window
+
+    t2_start = tracker.clock.now()
+    assert t2_start == t1_start + timedelta(seconds=time_change_in_seconds)
+
+    t2 = tracker.time_of_last_aggregator_update
+    
     assert tracker.recent_count == 5, "Recent count didn't pick up the exact number of keypresses"
-    assert len(events) == 5, "Failed to record the right number of events"
-    assert events == keys
+
+    mock_keyboard_facade.set_event("f")
+    tracker.run_tracking_loop()  # Should close the aggregator loop
+
+    assert len(events[0]) == len(keys), "Failed to record the right number of events"
 
 def test_ctrl_c_handling(tracker_and_events, mock_keyboard_facade):
     """Test that Ctrl+C is handled correctly."""
@@ -139,9 +186,11 @@ def test_multiple_handlers_are_called(tracker_and_events, mock_keyboard_facade):
     handler2_calls = []
     
     def handler1(event):
+        print("called 1 ", event)
         handler1_calls.append(event)
     
     def handler2(event):
+        print("called 2 ", event)
         handler2_calls.append(event)
     
     tracker.event_handlers = [handler1, handler2]
@@ -149,8 +198,17 @@ def test_multiple_handlers_are_called(tracker_and_events, mock_keyboard_facade):
     mock_keyboard_facade.set_event('x')
     tracker.run_tracking_loop()
     
+    assert len(handler1_calls) == len(handler2_calls) == 0
+
+    tracker.clock.advance_time(5)
+
+    mock_keyboard_facade.set_event('y')
+    tracker.run_tracking_loop()
+
     assert len(handler1_calls) == len(handler2_calls) == 1
-    assert handler1_calls[0] == handler2_calls[0] == 'x'
+    assert handler1_calls[0] == handler2_calls[0]
+
+
 
 def test_gather_session(tracker_and_events, mock_keyboard_facade):
     """Test that gather_session returns and clears session data."""
