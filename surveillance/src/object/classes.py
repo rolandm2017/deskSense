@@ -8,7 +8,7 @@ class KeyboardAggregateDatabaseEntryDeliverable:
         self.session_end_time = session_end_time
 
     def __str__(self):
-        return f"Keyboard session from {self.session_start_time} to {self.session_end_time}"
+        return f"Keyboard aggregate from {self.session_start_time} to {self.session_end_time}"
 
 
 class MouseCoords:

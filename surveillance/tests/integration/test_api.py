@@ -11,7 +11,7 @@ from surveillance.server import (
     get_keyboard_service, get_mouse_service, get_program_service
 )
 from surveillance.server import app, KeyboardService, MouseService, ProgramService
-from surveillance.src.db.dao.keyboard_dao import KeystrokeDto
+from surveillance.src.db.dao.keyboard_dao import TypingSessionDto
 from surveillance.src.db.dao.mouse_dao import MouseMoveDto
 from surveillance.src.db.dao.program_dao import ProgramDto
 
@@ -24,7 +24,7 @@ def mock_keyboard_events():
     base_time = datetime.now()
     events = []
     for i in range(12):  # 12, 14, 16
-        event = KeystrokeDto(i, base_time - timedelta(minutes=i*5))
+        event = TypingSessionDto(i, base_time - timedelta(minutes=i*5))
         events.append(event)
     return events
 

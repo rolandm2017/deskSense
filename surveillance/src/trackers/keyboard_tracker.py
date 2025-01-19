@@ -41,11 +41,9 @@ class KeyboardTrackerCore:
         if self.keyboard_facade.event_type_is_key_down(event):
             current_time = self.clock.now()
             self.recent_count += 1  # per keystroke
-            print(current_time, '43ru')
             self.time_of_last_aggregator_update = current_time
             aggregation = self.aggregator.add_event(current_time.timestamp())
 
-            print(aggregation, '45ru')  # FIXME: is 
             if aggregation is not None:
                 session = self.aggregator.package_aggregate_for_db(aggregation)
                 self.apply_handlers(session)

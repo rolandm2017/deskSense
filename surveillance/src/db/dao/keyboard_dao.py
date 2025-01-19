@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from ..models import TypingSession
 from ..database import AsyncSession, get_db
 from ...object.classes import KeyboardAggregateDatabaseEntryDeliverable
-from ...object.dto import KeystrokeDto
+from ...object.dto import TypingSessionDto
 from ...console_logger import ConsoleLogger
 
 def get_rid_of_ms(time):
@@ -55,10 +55,17 @@ class KeyboardDao:
             return await self.db.get(TypingSession, keystroke_id)
         
         result = await self.db.execute(select(TypingSession))
-        result = result.scalars.all()
+        result = result.all()
         # print(len(result), type(result[0]), result[0], "53ru")
-        return [KeystrokeDto(e[0], e[1]) for e in result]
-    
+        # print(result[0], isinstance(result[0][0], TypingSession), '60ru')
+        # print([type(x)[0].__name__ for x in result], '61ru')
+
+        assert all(isinstance(r[0], TypingSession) for r in result)  # consider disabling for performance
+
+        dtos = [TypingSessionDto(x[0].id, x[0].start_time, x[0].end_time) for x in result]
+
+        return dtos
+        
     async def read_past_24h_events(self):
         """
         Read typing sessions from the past 24 hours, grouped into 5-minute intervals.
@@ -84,7 +91,14 @@ class KeyboardDao:
         
         result = await self.db.execute(query)
         result = result.all()
-        return [KeystrokeDto(e[0], e[1]) for e in result]
+        
+        assert all(isinstance(r[0], TypingSession) for r in result)  # consider disabling for performance
+        
+
+        dtos = [TypingSessionDto(x[0].id, x[0].start_time, x[0].end_time) for x in result]
+
+        return dtos
+        
 
     async def delete(self,keystroke_id: int):
         """Delete a Keystroke entry by ID"""
@@ -105,8 +119,9 @@ class KeyboardDao:
                        await asyncio.sleep(self.flush_interval)
                        continue
                    
-                   event_time = await self.queue.get()
-                   batch.append(TypingSession(timestamp=event_time))
+                   aggregate = await self.queue.get()
+                   print(aggregate, '109ru')
+                   batch.append(TypingSession(start_time=aggregate.session_start_time, end_time=aggregate.session_end_time))
                    
                if batch:
                    await self._save_batch(batch)

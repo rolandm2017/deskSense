@@ -10,12 +10,13 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from src.services import MouseService, KeyboardService, ProgramService
 from src.db.database import get_db, init_db, AsyncSessionLocal, AsyncSession
 from src.db.dao.mouse_dao import MouseDao
 from src.db.dao.keyboard_dao import KeyboardDao
 from src.db.dao.program_dao import ProgramDao
-from src.db.models import TypingSession, MouseMove, Program
+from src.db.models import MouseMove, Program
+from src.services import MouseService, KeyboardService, ProgramService
+from src.object.dto import TypingSessionDto, MouseMoveDto, ProgramDto
 from src.surveillance_manager import SurveillanceManager
 from src.console_logger import ConsoleLogger
 
@@ -35,7 +36,8 @@ async def get_program_service(db: AsyncSession = Depends(get_db)) -> ProgramServ
 
 class KeyboardLog(BaseModel):
     keyboard_event_id: Optional[int] = None
-    timestamp: datetime
+    start_time: datetime
+    end_time: datetime
 
 class KeyboardReport(BaseModel):
     count: int
@@ -111,19 +113,20 @@ app.add_middleware(
 )
 
 
-def make_keyboard_log(r: TypingSession):
-    if not hasattr(r, "timestamp"):
-        raise AttributeError("Timestamp field not found")
+def make_keyboard_log(r: TypingSessionDto):
+    if not hasattr(r, "start_time") or not hasattr(r, "end_time"):
+        raise AttributeError("A timestamp field was missing")
     try:
         return KeyboardLog(
             keyboard_event_id=r.id if hasattr(r, 'id') else None,
-            timestamp=r.timestamp
+            start_time = r.start_time,
+            end_time = r.end_time,
         )
     except AttributeError as e:
         print(r, '107ru')
         raise e
 
-def make_mouse_report(r: MouseMove):
+def make_mouse_report(r: MouseMoveDto):
     try:
         return MouseLog(
             mouse_event_id=r.id if hasattr(r, 'id') else None,
@@ -133,7 +136,7 @@ def make_mouse_report(r: MouseMove):
     except AttributeError as e:
         raise e
 
-def make_program_report(r: Program):
+def make_program_report(r: ProgramDto):
     try:
         return ProgramActivityLog(
             program_event_id=r.id if hasattr(r, 'id') else None,
