@@ -1,3 +1,4 @@
+# mock_clock.py
 from datetime import datetime, timedelta
 from typing import Iterator
 
@@ -9,6 +10,8 @@ class MockClock(ClockProtocol):
         self._current_time = None
 
     def now(self) -> datetime:
+        if self._current_time is not None:
+            return self._current_time
         try:
             self._current_time = next(self.times)
             return self._current_time
@@ -22,6 +25,8 @@ class MockClock(ClockProtocol):
 
     def advance_time(self, seconds: int):
         """Advance the clock by specified number of seconds."""
+        print(self._current_time, seconds, '25ru')
         if self._current_time is None:
             self._current_time = self.now()
         self._current_time += timedelta(seconds=seconds)
+        print(self._current_time, '29ru')

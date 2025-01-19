@@ -1,3 +1,4 @@
+# test_aggregator.py
 import pytest
 from time import time
 from typing import List
@@ -46,9 +47,10 @@ def test_timeout_creates_new_aggregation(monkeypatch):
     completed = aggregator.add_event(base_time + 1.8)  # > 1000ms timeout
     
     assert completed is not None
-    assert len(completed.events) == 1
-    assert completed.start_time == base_time
-    assert completed.end_time == base_time
+    assert len(completed) == 1
+    assert isinstance(completed, list)
+    assert completed[0].timestamp() == base_time
+    assert completed[0].timestamp() == base_time
 
 def test_callback_execution(monkeypatch):
     current_time = 1000000.0
@@ -70,7 +72,8 @@ def test_callback_execution(monkeypatch):
     
     assert callback_executed
     assert completed_aggregation is not None
-    assert len(completed_aggregation.events) == 1
+    print(completed_aggregation, '73ru')
+    assert len(completed_aggregation) == 1
 
 def test_force_complete():
     aggregator = EventAggregator(timeout_ms=1000)

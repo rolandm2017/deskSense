@@ -1,3 +1,4 @@
+from datetime import datetime
 from dataclasses import dataclass
 from time import time
 from typing import List
@@ -32,13 +33,17 @@ class EventAggregator:
             raise ValueError("Timestamps must be in chronological order")
         
         if not self.current_aggregation:
+            print("VV 36ru")
             self.current_aggregation = Aggregation(timestamp, timestamp, [timestamp])
             return None
 
         next_added_timestamp_difference = timestamp - self.current_aggregation.end_time 
-        if next_added_timestamp_difference > self.timeout:
+        # print(timestamp, self.current_aggregation.end_time, '41ru')
+        # print(next_added_timestamp_difference > self.timeout, '42ru')
+        session_window_has_elapsed = next_added_timestamp_difference > self.timeout
+        if session_window_has_elapsed:
             # "If no keystroke within 300 ms, end sesion; report session to db"
-            completed = self.current_aggregation
+            completed = [datetime.fromtimestamp(t) for t in self.current_aggregation.events]
             self.current_aggregation = Aggregation(timestamp, timestamp, [timestamp])
             
             if self._on_aggregation_complete:
@@ -47,6 +52,7 @@ class EventAggregator:
             
         self.current_aggregation.end_time = timestamp
         self.current_aggregation.events.append(timestamp)
+        print("VV 52ru")
         return None
     
     def force_complete(self):
