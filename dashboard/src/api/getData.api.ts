@@ -1,4 +1,9 @@
 import axios, { AxiosError, AxiosResponse } from "axios";
+import {
+    KeyboardReport,
+    MouseReport,
+    ProgramActivityReport,
+} from "../interface/api.interface";
 
 const baseRoute = import.meta.env.VITE_API_URL + "/api/report";
 
@@ -31,40 +36,6 @@ const keyboardEventsRoute = baseRoute + "/keyboard";
 const mouseEventsRoute = baseRoute + "/mouse";
 const programsRoute = baseRoute + "/program";
 const chromeRoute = baseRoute + "/chrome";
-
-export interface KeyboardLog {
-    keyboard_event_id: number;
-    timestamp: string; // ISO 8601 datetime string
-}
-
-export interface KeyboardReport {
-    count: number;
-    keyboard_logs: KeyboardLog[];
-}
-
-export interface MouseLog {
-    mouse_event_id: number;
-    start_time: string; // ISO 8601 datetime string
-    end_time: string; // ISO 8601 datetime string
-}
-
-export interface MouseReport {
-    count: number;
-    mouse_reports: MouseLog[];
-}
-
-export interface ProgramActivityLog {
-    program_event_id: number;
-    window: string;
-    start_time: string; // ISO 8601 datetime string
-    end_time: string; // ISO 8601 datetime string
-    productive: boolean;
-}
-
-export interface ProgramActivityReport {
-    count: number;
-    program_reports: ProgramActivityLog[]; //
-}
 
 const withErrorHandlingAsync = <T>(fn: () => Promise<AxiosResponse<T>>) => {
     return async (): Promise<T> => {
@@ -99,10 +70,8 @@ const withErrorHandling = <T>(fn: () => Promise<AxiosResponse<T>>) => {
             "Fetching:",
             fn.toString().match(/api\.get\("([^"]+)"\)/)?.[1]
         );
-        // console.log('Fetching:', fn.toString().match(/api\.get\("([^"]+)"\)/)?.[1]);
         return fn()
             .then((response) => {
-                console.log(response.data, "100ru");
                 return response.data;
             })
             .catch((error) => {
