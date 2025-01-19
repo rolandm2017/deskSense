@@ -119,7 +119,7 @@ function App() {
                 <div>
                     <h1>DeskSense Dashboard</h1>
                 </div>
-                <div>
+                <div style={{ border: "5px solid black" }}>
                     <h2>Programs {programReport?.count.toString()}</h2>
                     <BarChart barsInput={barsInput} />
                 </div>

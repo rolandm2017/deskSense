@@ -54,7 +54,8 @@ class MouseReport(BaseModel):
 
 class ProgramActivityLog(BaseModel):
     programEventId: Optional[int] = None
-    window: str
+    window: str  # TODO: could add 'detail' just to check it out
+    detail: str
     startTime: datetime
     endTime: datetime
     productive: bool
@@ -123,7 +124,6 @@ def make_keyboard_log(r: TypingSessionDto):
             endTime = r.end_time,
         )
     except AttributeError as e:
-        print(r, '107ru')
         raise e
 
 def make_mouse_log(r: MouseMoveDto):
@@ -141,6 +141,7 @@ def make_program_log(r: ProgramDto):
         return ProgramActivityLog(
             programEventId=r.id if hasattr(r, 'id') else None,
             window=r.window,
+            detail=r.detail,
             startTime=r.start_time,
             endTime=r.end_time,
             productive=r.productive
@@ -167,12 +168,10 @@ async def get_all_keyboard_reports(keyboard_service: KeyboardService = Depends(g
 async def get_keyboard_report(keyboard_service: KeyboardService = Depends(get_keyboard_service)):
 # async def get_keyboard_report(db: Session = Depends(get_db)):
     logger.log_purple("[LOG] keyboard report")
-    print(surveillance_state, surveillance_state.manager, '166ru')
     if not surveillance_state.manager.keyboard_tracker:
         raise HTTPException(status_code=500, detail="Tracker not initialized")
     
     events = await keyboard_service.get_past_days_events()
-    print(type(events), len(events), "this prints 171ru")
     
     if not isinstance(events, list):
         raise HTTPException(status_code=500, detail="Failed to generate keyboard report")
