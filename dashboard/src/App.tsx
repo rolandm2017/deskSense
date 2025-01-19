@@ -15,6 +15,7 @@ import {
     ProgramActivityLog,
     ProgramActivityReport,
 } from "./interface/api.interface";
+import TimelineWrapper from "./components/charts/Timeline";
 
 function App() {
     const [keyboardReport, setKeyboardReport] = useState<KeyboardReport|null>(null) // prettier-ignore
@@ -128,7 +129,7 @@ function App() {
                         Keyboard & Mouse: {keyboardReport?.count},{" "}
                         {mouseReport?.count}
                     </h2>
-                    <LineChart />
+                    <TimelineWrapper />
                 </div>
             </div>
         </>
