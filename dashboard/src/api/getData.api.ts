@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosResponse } from "axios";
 import {
-    KeyboardReport,
+    TypingSessionsReport,
     MouseReport,
     ProgramActivityReport,
 } from "../interface/api.interface";
@@ -84,7 +84,7 @@ const withErrorHandling = <T>(fn: () => Promise<AxiosResponse<T>>) => {
     };
 };
 
-const getKeyboardReport = withErrorHandling<KeyboardReport>(() =>
+const getKeyboardReport = withErrorHandling<TypingSessionsReport>(() =>
     api.get("/keyboard")
 );
 
