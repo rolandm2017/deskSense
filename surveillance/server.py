@@ -35,33 +35,33 @@ async def get_program_service(db: AsyncSession = Depends(get_db)) -> ProgramServ
 
 
 class KeyboardLog(BaseModel):
-    keyboard_event_id: Optional[int] = None
-    start_time: datetime
-    end_time: datetime
+    keyboardEventId: Optional[int] = None
+    startTime: datetime
+    endTime: datetime
 
 class KeyboardReport(BaseModel):
     count: int
-    keyboard_logs: List[KeyboardLog]
+    keyboardLogs: List[KeyboardLog]
 
 class MouseLog(BaseModel):
-    mouse_event_id: Optional[int] = None
-    start_time: datetime
-    end_time: datetime
+    mouseEventId: Optional[int] = None
+    startTime: datetime
+    endTime: datetime
 
 class MouseReport(BaseModel):
     count: int
-    mouse_reports: List[MouseLog]
+    mouseLogs: List[MouseLog]
 
 class ProgramActivityLog(BaseModel):
-    program_event_id: Optional[int] = None
+    programEventId: Optional[int] = None
     window: str
-    start_time: datetime
-    end_time: datetime
+    startTime: datetime
+    endTime: datetime
     productive: bool
 
 class ProgramActivityReport(BaseModel):
     count: int
-    program_reports: List[ProgramActivityLog]
+    programLogs: List[ProgramActivityLog]
 
 
 class SurveillanceState:
@@ -118,31 +118,31 @@ def make_keyboard_log(r: TypingSessionDto):
         raise AttributeError("A timestamp field was missing")
     try:
         return KeyboardLog(
-            keyboard_event_id=r.id if hasattr(r, 'id') else None,
-            start_time = r.start_time,
-            end_time = r.end_time,
+            keyboardEventId=r.id if hasattr(r, 'id') else None,
+            startTime = r.start_time,
+            endTime = r.end_time,
         )
     except AttributeError as e:
         print(r, '107ru')
         raise e
 
-def make_mouse_report(r: MouseMoveDto):
+def make_mouse_log(r: MouseMoveDto):
     try:
         return MouseLog(
-            mouse_event_id=r.id if hasattr(r, 'id') else None,
-            start_time=r.start_time,
-            end_time=r.end_time
+            mouseEventId=r.id if hasattr(r, 'id') else None,
+            startTime=r.start_time,
+            endTime=r.end_time
         )
     except AttributeError as e:
         raise e
 
-def make_program_report(r: ProgramDto):
+def make_program_log(r: ProgramDto):
     try:
         return ProgramActivityLog(
-            program_event_id=r.id if hasattr(r, 'id') else None,
+            programEventId=r.id if hasattr(r, 'id') else None,
             window=r.window,
-            start_time=r.start_time,
-            end_time=r.end_time,
+            startTime=r.start_time,
+            endTime=r.end_time,
             productive=r.productive
         )
     except AttributeError as e:
@@ -159,9 +159,9 @@ async def get_all_keyboard_reports(keyboard_service: KeyboardService = Depends(g
     if not isinstance(events, list):
         raise HTTPException(status_code=500, detail="Failed to generate keyboard report")
     
-    logs= [make_keyboard_log(e) for e in events]  # FIXME: reports -> logs
+    logs= [make_keyboard_log(e) for e in events]
     print(type(logs), type(logs[1]))
-    return KeyboardReport(count=len(events), keyboard_logs=logs)
+    return KeyboardReport(count=len(events), keyboardLogs=logs)
 
 @app.get("/report/keyboard", response_model=KeyboardReport)
 async def get_keyboard_report(keyboard_service: KeyboardService = Depends(get_keyboard_service)):
@@ -178,7 +178,7 @@ async def get_keyboard_report(keyboard_service: KeyboardService = Depends(get_ke
         raise HTTPException(status_code=500, detail="Failed to generate keyboard report")
     
     logs = [make_keyboard_log(e) for e in events]
-    return KeyboardReport(count=len(events), keyboard_logs=logs)
+    return KeyboardReport(count=len(events), keyboardLogs=logs)
 
 @app.get("/report/mouse/all", response_model=MouseReport)
 async def get_all_mouse_reports(mouse_service: MouseService = Depends(get_mouse_service)):
@@ -190,8 +190,8 @@ async def get_all_mouse_reports(mouse_service: MouseService = Depends(get_mouse_
     if not isinstance(events, list):
         raise HTTPException(status_code=500, detail="Failed to generate mouse report")
     
-    reports = [make_mouse_report(e) for e in events]
-    return MouseReport(count=len(reports), mouse_reports=reports)
+    reports = [make_mouse_log(e) for e in events]
+    return MouseReport(count=len(reports), mouseLogs=reports)
     
 
 @app.get("/report/mouse", response_model=MouseReport)
@@ -204,8 +204,8 @@ async def get_mouse_report(mouse_service: MouseService = Depends(get_mouse_servi
     if not isinstance(events, list):
         raise HTTPException(status_code=500, detail="Failed to generate mouse report")
 
-    reports = [make_mouse_report(e) for e in events]
-    return MouseReport(count=len(reports), mouse_reports=reports)
+    reports = [make_mouse_log(e) for e in events]
+    return MouseReport(count=len(reports), mouseLogs=reports)
    
 
 @app.get("/report/program/all", response_model=ProgramActivityReport)
@@ -217,8 +217,8 @@ async def get_all_program_reports(program_service: ProgramService = Depends(get_
     if not isinstance(events, list):
         raise HTTPException(status_code=500, detail="Failed to generate program report")
 
-    reports = [make_program_report(e) for e in events]
-    return ProgramActivityReport(count=len(reports), program_reports=reports)
+    reports = [make_program_log(e) for e in events]
+    return ProgramActivityReport(count=len(reports), programLogs=reports)
 
 @app.get("/report/program", response_model=ProgramActivityReport)
 async def get_program_activity_report(program_service: ProgramService = Depends(get_program_service)):
@@ -229,8 +229,8 @@ async def get_program_activity_report(program_service: ProgramService = Depends(
     if not isinstance(events, list):
         raise HTTPException(status_code=500, detail="Failed to generate program report")
 
-    reports = [make_program_report(e) for e in events]
-    return ProgramActivityReport(count=len(reports), program_reports=reports)
+    reports = [make_program_log(e) for e in events]
+    return ProgramActivityReport(count=len(reports), programLogs=reports)
 
 
 if __name__ == "__main__":

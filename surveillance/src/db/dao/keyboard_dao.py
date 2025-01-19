@@ -112,7 +112,7 @@ class KeyboardDao:
                        continue
                    
                    aggregate = await self.queue.get()
-                   print(aggregate, '109ru')
+                #    print(aggregate, '109ru')
                    batch.append(TypingSession(start_time=aggregate.session_start_time, end_time=aggregate.session_end_time))
                    
                if batch:
