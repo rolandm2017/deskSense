@@ -78,22 +78,14 @@ class KeyboardDao:
         
         twenty_four_hours_ago = datetime.now() - timedelta(hours=24)
         
-        query = select(
-            timestamp_interval.label('session_start'),
-            func.count(TypingSession.id).label('session_count')
-        ).where(
+        query = select(TypingSession).where(
             TypingSession.start_time >= twenty_four_hours_ago
-        ).group_by(
-            timestamp_interval
-        ).order_by(
-            timestamp_interval.desc()
-        )
+        ).order_by(TypingSession.start_time.desc())
         
         result = await self.db.execute(query)
         result = result.all()
-        
+
         assert all(isinstance(r[0], TypingSession) for r in result)  # consider disabling for performance
-        
 
         dtos = [TypingSessionDto(x[0].id, x[0].start_time, x[0].end_time) for x in result]
 
