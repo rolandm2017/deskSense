@@ -24,7 +24,7 @@ class ProgramDao:
         self.logger = ConsoleLogger()
 
     async def create(self, session: dict):
-        self.logger.log_blue("[LOG] Program event: " + session['window'])
+        # self.logger.log_blue("[LOG] Program event: " + session['window'])
         # print("program dao - creating...", session['window'])  # FIXME: window is often a bunk string - clean it up
         # Example:
         # {'os': 'Ubuntu', 'pid': 2467, 'process_name': 'Xorg', 'window_title': b'program_tracker.py - deskSense - Visual Studio Code'}
@@ -35,7 +35,6 @@ class ProgramDao:
                 asyncio.create_task(self.process_queue())
 
     async def create_without_queue(self, session: dict):
-        print(session, '13vv')
         if isinstance(session, dict):
             print("creating program row", session['start_time'])
             new_program = Program(

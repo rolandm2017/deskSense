@@ -60,10 +60,10 @@ class KeyboardTrackerCore:
         self.time_of_last_terminal_out = new_time
 
     def apply_handlers(self, content):
-        print(content, "Applying handlers, 58ru")
+        # print(content, "Applying handlers, 58ru")
         if isinstance(self.event_handlers, list):
             for handler in self.event_handlers:
-                print("Handler applied, 61ru")
+                # print("Handler applied, 61ru")
                 handler(content)  # emit an event
         else:
             self.event_handlers(content)  # is a single func                

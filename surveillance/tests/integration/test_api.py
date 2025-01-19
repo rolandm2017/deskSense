@@ -24,7 +24,7 @@ def mock_keyboard_events():
     base_time = datetime.now()
     events = []
     for i in range(12):  # 12, 14, 16
-        event = TypingSessionDto(i, base_time - timedelta(minutes=i*5))
+        event = TypingSessionDto(i, base_time + timedelta(minutes=i*1), base_time + timedelta(minutes=i*2))
         events.append(event)
     return events
 
@@ -68,7 +68,7 @@ async def test_get_keyboard_report(test_client, mock_keyboard_events, mock_surve
         assert response.status_code == 200
         data = response.json()
         assert data["count"] == 12
-        assert len(data["keyboard_logs"]) == 12
+        assert len(data["keyboardLogs"]) == 12
         # assert 1 == 2
     finally:
         app.dependency_overrides.clear()
@@ -88,7 +88,7 @@ async def test_get_mouse_report(test_client, mock_mouse_events, mock_surveillanc
         assert response.status_code == 200
         data = response.json()
         assert data["count"] == 14
-        assert len(data["mouse_reports"]) == 14
+        assert len(data["mouseLogs"]) == 14
     finally:
         app.dependency_overrides.clear()
 
@@ -107,7 +107,7 @@ async def test_get_program_report(test_client, mock_program_events, mock_surveil
         assert response.status_code == 200
         data = response.json()
         assert data["count"] == 16
-        assert len(data["program_reports"]) == 16
+        assert len(data["programLogs"]) == 16
     finally:
         app.dependency_overrides.clear()
 
@@ -126,7 +126,7 @@ async def test_get_all_keyboard_reports(test_client, mock_keyboard_events, mock_
         assert response.status_code == 200
         data = response.json()
         assert data["count"] == 12
-        assert len(data["keyboard_logs"]) == 12
+        assert len(data["keyboardLogs"]) == 12
     finally:
         app.dependency_overrides.clear()
 
@@ -145,7 +145,7 @@ async def test_get_all_mouse_reports(test_client, mock_mouse_events, mock_survei
         assert response.status_code == 200
         data = response.json()
         assert data["count"] == 14
-        assert len(data["mouse_reports"]) == 14
+        assert len(data["mouseLogs"]) == 14
     finally:
         app.dependency_overrides.clear()
 
@@ -164,6 +164,6 @@ async def test_get_all_program_reports(test_client, mock_program_events, mock_su
         assert response.status_code == 200
         data = response.json()
         assert data["count"] == 16
-        assert len(data["program_reports"]) == 16
+        assert len(data["programLogs"]) == 16
     finally:
         app.dependency_overrides.clear()
