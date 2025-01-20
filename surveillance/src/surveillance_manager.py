@@ -1,13 +1,9 @@
-# import win32gui
-# import win32process
-# import psutil
-# import time
-# from datetime import datetime, timedelta
-# import json
 from pathlib import Path
-# import csv
 
 import asyncio
+
+from sqlalchemy.ext.asyncio import async_sessionmaker
+
 
 from .db.dao.mouse_dao import MouseDao
 from .db.dao.keyboard_dao import KeyboardDao
@@ -33,8 +29,8 @@ from .util.threaded_tracker import ThreadedTracker
 
 
 class SurveillanceManager:
-    def __init__(self, db_conn, shutdown_signal=None):
-        self.db = db_conn
+    def __init__(self, session_maker: async_sessionmaker, shutdown_signal=None):
+        self.session_maker = session_maker
         # Initialize tracking data
         self.current_window = None
         self.start_time = None
@@ -56,12 +52,12 @@ class SurveillanceManager:
         program_facade = ProgramApiFacadeCore(current_os)
 
         self.loop = asyncio.get_event_loop()
-        self.mouse_dao = MouseDao(self.db)
-        self.summary_dao = DailySummaryDao(self.db)
-        self.timeline_dao = TimelineEntryDao(self.db)
-        self.keyboard_dao = KeyboardDao(self.db)
-        self.program_dao = ProgramDao(self.db)
-        self.chrome_dao = ChromeDao(self.db)
+        self.mouse_dao = MouseDao(self.session_maker)
+        self.summary_dao = DailySummaryDao(self.session_maker)
+        self.timeline_dao = TimelineEntryDao(self.session_maker)
+        self.keyboard_dao = KeyboardDao(self.session_maker)
+        self.program_dao = ProgramDao(self.session_maker)
+        self.chrome_dao = ChromeDao(self.session_maker)
 
         clock = Clock()
 

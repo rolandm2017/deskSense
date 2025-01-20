@@ -1,9 +1,7 @@
 # timeline_entry_dao.py
-# TODO
 from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
-from asyncio import Queue
-import asyncio
+from sqlalchemy.ext.asyncio import async_sessionmaker
+
 from datetime import datetime, timedelta
 
 from .base_dao import BaseQueueingDao
@@ -15,8 +13,8 @@ from ...console_logger import ConsoleLogger
 
 
 class TimelineEntryDao(BaseQueueingDao):
-    def __init__(self, db: AsyncSession, batch_size=100, flush_interval=5):
-        super().__init__(db, batch_size, flush_interval)
+    def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+        super().__init__(session_maker, batch_size, flush_interval)
         self.logger = ConsoleLogger()
 
     async def create_from_keyboard_aggregate(self, content: KeyboardAggregate):
@@ -85,8 +83,9 @@ class TimelineEntryDao(BaseQueueingDao):
 
     async def delete(self, id: int):
         """Delete an entry by ID"""
-        entry = await self.db.get(TimelineEntryObj, id)
-        if entry:
-            await self.db.delete(entry)
-            await self.db.commit()
-        return entry
+        async with self.session_maker() as session:
+            entry = await session.get(TimelineEntryObj, id)
+            if entry:
+                await session.delete(entry)
+                await session.commit()
+            return entry

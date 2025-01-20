@@ -1,40 +1,41 @@
-# src/db/database.py
-from sqlalchemy import Column, Integer, String, DateTime,  Boolean
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker, declarative_base
-from typing import Generator
+from sqlalchemy import Column, Integer, String, DateTime, Boolean
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.orm import declarative_base
+from typing import AsyncGenerator
 from dotenv import load_dotenv
-from datetime import datetime
 import os
 
 load_dotenv()
 
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 
-engine = create_async_engine(SQLALCHEMY_DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Create async engine
+engine = create_async_engine(
+    SQLALCHEMY_DATABASE_URL,
+    echo=False,  # Set to True for SQL query logging
+)
 
-# Create async session factory
-AsyncSessionLocal = sessionmaker(
-    engine, class_=AsyncSession, expire_on_commit=False
+# Create async session maker
+async_session_maker = async_sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False
 )
 
 Base = declarative_base()
 
+# Dependency for FastAPI endpoints
 
-async def get_db():
-    async with AsyncSessionLocal() as session:
+
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with async_session_maker() as session:
         try:
             yield session
         finally:
             await session.close()
 
 
-async def init_db():
-    """
-    Initialize the database by creating all tables if they don't exist.
-    This should be called when your application starts.
-    """
+async def init_db() -> None:
+    """Initialize the database by creating all tables if they don't exist."""
     async with engine.begin() as conn:
-        # print("Creating database tables")
         await conn.run_sync(Base.metadata.create_all)

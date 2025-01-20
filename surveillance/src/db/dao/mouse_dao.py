@@ -1,12 +1,11 @@
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import async_sessionmaker
+
 import datetime
-from copy import deepcopy
 
 from .base_dao import BaseQueueingDao
 
 from ..models import MouseMove
-from ..database import AsyncSession
 from ...object.dto import MouseMoveDto
 from ...trackers.mouse_tracker import MouseMoveWindow
 from ...console_logger import ConsoleLogger
@@ -17,9 +16,8 @@ def get_rid_of_ms(time):
 
 
 class MouseDao(BaseQueueingDao):
-    def __init__(self, db: AsyncSession, batch_size=100, flush_interval=5):
-        super().__init__(db, batch_size, flush_interval)
-
+    def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+        super().__init__(session_maker, batch_size, flush_interval)
         self.logger = ConsoleLogger()
 
     async def create_from_start_end_times(self, start_time: datetime, end_time: datetime):
@@ -77,10 +75,11 @@ class MouseDao(BaseQueueingDao):
         result = await self.db.execute(query)
         return result.scalars().all()  # TODO: return Dtos
 
-    async def delete(self, mouse_move_id: int):
-        """Delete a MouseMove entry by ID"""
-        mouse_move = await self.db.get(MouseMove, mouse_move_id)
-        if mouse_move:
-            await self.db.delete(mouse_move)
-            await self.db.commit()
-        return mouse_move
+    async def delete(self, id: int):
+        """Delete an entry by ID"""
+        async with self.session_maker() as session:
+            entry = await session.get(MouseMove, id)
+            if entry:
+                await session.delete(entry)
+                await session.commit()
+            return entry
