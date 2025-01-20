@@ -35,6 +35,7 @@ async def test_create_happy_path(program_dao):
     await program_dao.create(session)
 
     # Assert
+
     program_dao.queue_item.assert_called_once_with(session)
 
 

@@ -93,7 +93,8 @@ class SurveillanceManager:
         self.loop.create_task(self.keyboard_dao.create(event))
 
     def handle_mouse_ready_for_db(self, event):
-        self.loop.create_task(self.timeline_dao.create(event))
+        self.loop.create_task(
+            self.timeline_dao.create_from_mouse_move_window(event))
         self.loop.create_task(self.mouse_dao.create_from_window(event))
 
     def handle_program_ready_for_db(self, event):

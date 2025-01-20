@@ -59,7 +59,7 @@ class MouseTrackerCore:
     def keep_window_open_and_update(self, latest_reading):
         self.last_position = latest_reading  # I think this is enough
 
-    def close_and_retrieve_window(self, latest_result):
+    def close_and_retrieve_window(self, latest_result) -> MouseMoveWindow:
         """Handle the mouse stopping."""
         # self.console_logger.log_green("[LOG] End movement window")
         self.is_moving = False
@@ -70,7 +70,8 @@ class MouseTrackerCore:
         if self.is_moving:
             has_stopped = self.position_is_same_as_before(latest_result)
             if has_stopped:
-                window = self.close_and_retrieve_window(latest_result)
+                window: MouseMoveWindow = self.close_and_retrieve_window(
+                    latest_result)
                 self.session_data.append(window)
                 self.apply_handlers(window)
                 self.reset()
