@@ -24,11 +24,15 @@ from src.console_logger import ConsoleLogger
 logger = ConsoleLogger()
 
 # Add these dependency functions at the top of your file
+
+
 async def get_keyboard_service(db: AsyncSession = Depends(get_db)) -> KeyboardService:
     return KeyboardService(KeyboardDao(db))
 
+
 async def get_mouse_service(db: AsyncSession = Depends(get_db)) -> MouseService:
     return MouseService(MouseDao(db))
+
 
 async def get_program_service(db: AsyncSession = Depends(get_db)) -> ProgramService:
     return ProgramService(ProgramDao(db))
@@ -39,30 +43,50 @@ class KeyboardLog(BaseModel):
     startTime: datetime
     endTime: datetime
 
+
 class KeyboardReport(BaseModel):
     count: int
     keyboardLogs: List[KeyboardLog]
+
 
 class MouseLog(BaseModel):
     mouseEventId: Optional[int] = None
     startTime: datetime
     endTime: datetime
 
+
 class MouseReport(BaseModel):
     count: int
     mouseLogs: List[MouseLog]
 
+
 class ProgramActivityLog(BaseModel):
     programEventId: Optional[int] = None
-    window: str  # TODO: could add 'detail' just to check it out
+    window: str
     detail: str
     startTime: datetime
     endTime: datetime
     productive: bool
 
+
 class ProgramActivityReport(BaseModel):
     count: int
     programLogs: List[ProgramActivityLog]
+
+
+class BarChartProgramColumn(BaseModel):
+    programName: str
+    hoursSpent: float
+
+
+class TimelineEntryObj(BaseModel):
+    # ex: `mouse-${log.mouseEventId}`, ex2: `keyboard-${log.keyboardEventId}`,
+    id: str
+    group: str  # "mouse" or "keyboard"
+    # ex: `Mouse Event ${log.mouseEventId}`, ex2: `Typing Session ${log.keyboardEventId}`,
+    content: str
+    start: datetime
+    end: datetime  # TOD: make it *come out of the db* ready to go
 
 
 class SurveillanceState:
@@ -72,27 +96,31 @@ class SurveillanceState:
         self.is_running: bool = False
         self.db_session = None
 
+
 surveillance_state = SurveillanceState()
+
 
 def track_productivity():
     while surveillance_state.is_running:
-        # surveillance_state.manager.program_tracker.track_window()        
-        surveillance_state.manager.program_tracker.attach_listener()        
+        # surveillance_state.manager.program_tracker.track_window()
+        surveillance_state.manager.program_tracker.attach_listener()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Initialize application-wide resources
     print("Starting up...")
-  
+
     surveillance_state.db_session = AsyncSessionLocal()
     await init_db()
-    
+
     print("Starting productivity tracking...")
-    surveillance_state.manager = SurveillanceManager(surveillance_state.db_session, shutdown_signal="TODO")
+    surveillance_state.manager = SurveillanceManager(
+        surveillance_state.db_session, shutdown_signal="TODO")
     surveillance_state.manager.start_trackers()
-        
+
     yield
-    
+
     # Shutdown
     surveillance_state.is_running = False
 
@@ -120,11 +148,12 @@ def make_keyboard_log(r: TypingSessionDto):
     try:
         return KeyboardLog(
             keyboardEventId=r.id if hasattr(r, 'id') else None,
-            startTime = r.start_time,
-            endTime = r.end_time,
+            startTime=r.start_time,
+            endTime=r.end_time,
         )
     except AttributeError as e:
         raise e
+
 
 def make_mouse_log(r: MouseMoveDto):
     try:
@@ -135,6 +164,7 @@ def make_mouse_log(r: MouseMoveDto):
         )
     except AttributeError as e:
         raise e
+
 
 def make_program_log(r: ProgramDto):
     try:
@@ -149,49 +179,55 @@ def make_program_log(r: ProgramDto):
     except AttributeError as e:
         raise e
 
+
 @app.get("/report/keyboard/all", response_model=KeyboardReport)
 async def get_all_keyboard_reports(keyboard_service: KeyboardService = Depends(get_keyboard_service)):
     logger.log_purple("[LOG] keyboard report - all")
     if not surveillance_state.manager.keyboard_tracker:
         raise HTTPException(status_code=500, detail="Tracker not initialized")
-    
+
     events = await keyboard_service.get_all_events()
     print(len(events), '127ru')
     if not isinstance(events, list):
-        raise HTTPException(status_code=500, detail="Failed to generate keyboard report")
-    
-    logs= [make_keyboard_log(e) for e in events]
+        raise HTTPException(
+            status_code=500, detail="Failed to generate keyboard report")
+
+    logs = [make_keyboard_log(e) for e in events]
     print(type(logs), type(logs[1]))
     return KeyboardReport(count=len(events), keyboardLogs=logs)
 
+
 @app.get("/report/keyboard", response_model=KeyboardReport)
 async def get_keyboard_report(keyboard_service: KeyboardService = Depends(get_keyboard_service)):
-# async def get_keyboard_report(db: Session = Depends(get_db)):
+    # async def get_keyboard_report(db: Session = Depends(get_db)):
     logger.log_purple("[LOG] keyboard report")
     if not surveillance_state.manager.keyboard_tracker:
         raise HTTPException(status_code=500, detail="Tracker not initialized")
-    
+
     events = await keyboard_service.get_past_days_events()
-    
+
     if not isinstance(events, list):
-        raise HTTPException(status_code=500, detail="Failed to generate keyboard report")
-    
+        raise HTTPException(
+            status_code=500, detail="Failed to generate keyboard report")
+
     logs = [make_keyboard_log(e) for e in events]
     return KeyboardReport(count=len(events), keyboardLogs=logs)
+
 
 @app.get("/report/mouse/all", response_model=MouseReport)
 async def get_all_mouse_reports(mouse_service: MouseService = Depends(get_mouse_service)):
     logger.log_purple("[LOG] mouse report - all")
     if not surveillance_state.manager.mouse_tracker:
         raise HTTPException(status_code=500, detail="Tracker not initialized")
-    
+
     events = await mouse_service.get_all_events()
     if not isinstance(events, list):
-        raise HTTPException(status_code=500, detail="Failed to generate mouse report")
-    
+        raise HTTPException(
+            status_code=500, detail="Failed to generate mouse report")
+
     reports = [make_mouse_log(e) for e in events]
     return MouseReport(count=len(reports), mouseLogs=reports)
-    
+
 
 @app.get("/report/mouse", response_model=MouseReport)
 async def get_mouse_report(mouse_service: MouseService = Depends(get_mouse_service)):
@@ -201,32 +237,36 @@ async def get_mouse_report(mouse_service: MouseService = Depends(get_mouse_servi
 
     events = await mouse_service.get_past_days_events()
     if not isinstance(events, list):
-        raise HTTPException(status_code=500, detail="Failed to generate mouse report")
+        raise HTTPException(
+            status_code=500, detail="Failed to generate mouse report")
 
     reports = [make_mouse_log(e) for e in events]
     return MouseReport(count=len(reports), mouseLogs=reports)
-   
+
 
 @app.get("/report/program/all", response_model=ProgramActivityReport)
 async def get_all_program_reports(program_service: ProgramService = Depends(get_program_service)):
     if not surveillance_state.manager.program_tracker:
         raise HTTPException(status_code=500, detail="Tracker not initialized")
-    
+
     events = await program_service.get_all_events()
     if not isinstance(events, list):
-        raise HTTPException(status_code=500, detail="Failed to generate program report")
+        raise HTTPException(
+            status_code=500, detail="Failed to generate program report")
 
     reports = [make_program_log(e) for e in events]
     return ProgramActivityReport(count=len(reports), programLogs=reports)
+
 
 @app.get("/report/program", response_model=ProgramActivityReport)
 async def get_program_activity_report(program_service: ProgramService = Depends(get_program_service)):
     if not surveillance_state.manager.program_tracker:
         raise HTTPException(status_code=500, detail="Tracker not initialized")
-    
+
     events = await program_service.get_past_days_events()
     if not isinstance(events, list):
-        raise HTTPException(status_code=500, detail="Failed to generate program report")
+        raise HTTPException(
+            status_code=500, detail="Failed to generate program report")
 
     reports = [make_program_log(e) for e in events]
     return ProgramActivityReport(count=len(reports), programLogs=reports)
