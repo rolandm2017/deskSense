@@ -9,6 +9,7 @@ from ..util.detect_os import OperatingSystemInfo
 from ..util.end_program_routine import end_program_readout, pretend_report_event
 from ..util.clock import Clock
 from ..util.threaded_tracker import ThreadedTracker
+from ..object.classes import SessionData
 
 
 # TODO: Report mouse, keyboard, program, chrome tabs, every 15 sec, to the db.
@@ -31,7 +32,7 @@ class ProgramTrackerCore:
             'postman.exe': 'Postman',
             'explorer.exe': 'File Explorer'
         }
-        
+
         # Configuration for what's considered productive
         self.productive_categories = {
             'VSCode': True,
@@ -61,17 +62,19 @@ class ProgramTrackerCore:
 
     def attach_listener(self):
         for window_change in self.program_facade.listen_for_window_changes():
-            newly_detected_window = f"{window_change['process_name']} - {window_change['window_title']}"                
-            on_a_different_window = newly_detected_window != self.current_window 
+            newly_detected_window = f"{
+                window_change['process_name']} - {window_change['window_title']}"
+            on_a_different_window = newly_detected_window != self.current_window
             if self.current_window and on_a_different_window:
                 self.apply_handlers(self.package_window_into_db_entry(), 500)
-                self.console_logger.log_active_program(newly_detected_window)  # FIXME: Program None - rlm@kingdom: ~/Code/deskSense/surveillance
+                # FIXME: Program None - rlm@kingdom: ~/Code/deskSense/surveillance
+                self.console_logger.log_active_program(newly_detected_window)
                 self.start_time = self.clock.now()
 
             # Initialize start time if this is the first window
             if not self.start_time:
                 self.start_time = self.clock.now()
-            
+
             self.current_window = newly_detected_window
 
     def run_tracking_loop(self):
@@ -81,9 +84,6 @@ class ProgramTrackerCore:
     # FIXME: Solution statement:
     # Chrome tabs goes into a special Chrome-only DB. For now you will just write, "Which tabs names?" without processing"
     # Program - VSCode, will be split, the text cleaned up.
-
-    
-    
 
     def get_active_window_info(self):
         """Get information about the currently active window."""
@@ -95,12 +95,11 @@ class ProgramTrackerCore:
             print(f"Error getting window info: {e}")
             raise e
             return None
-        
+
     def window_is_chrome(self, new_window):
         # example: 'Fixing datetime.fromisoformat() error - Claude - Google Chrome'
         window_title = new_window["window_title"]
         return window_title.endswith('Google Chrome')
-        
 
     def is_productive(self, window_info):
         """Determine if the current window represents productive time."""
@@ -114,26 +113,27 @@ class ProgramTrackerCore:
         if process_name in self.productive_apps:
             app_name = self.productive_apps[process_name]
             productivity = self.productive_categories[app_name]
-            self.console_logger.log_green_multiple("productivity", productivity, app_name)
+            self.console_logger.log_green_multiple(
+                "productivity", productivity, app_name)
             # If productivity is None, we need to check the window title
             if productivity is None:
                 # For Chrome, check if the title contains any productive sites
                 if app_name == 'Chrome':
-                    self.console_logger.log_green_multiple(window_title, "::", self.productive_sites)
+                    self.console_logger.log_green_multiple(
+                        window_title, "::", self.productive_sites)
                     return any(site in window_title.lower() for site in self.productive_sites)
                 # For Discord, consider it productive only if specific channels/servers are active
                 elif app_name == 'Discord':
                     productive_channels = ['work-', 'team-', 'project-']
                     return any(channel in window_title.lower() for channel in productive_channels)
-            
+
             return productivity
 
         return False
 
-        
     def package_given_window_for_csv(self, window):
         end_time = self.clock.now()
-        duration = (end_time - self.start_time).total_seconds()        
+        duration = (end_time - self.start_time).total_seconds()
         is_productive = self.is_productive(window)
         print(window, '188ru')
         session = {
@@ -151,11 +151,12 @@ class ProgramTrackerCore:
 
         end_time = self.clock.now()
         duration = (end_time - self.start_time).total_seconds()
-        
+
         window_info = self.get_active_window_info()
-        is_productive = self.is_productive(window_info) if window_info else False
+        is_productive = self.is_productive(
+            window_info) if window_info else False
         the_junk_string, window_name = self.current_window.rsplit(" - ", 1)
-        session = {
+        session: SessionData = {
             'start_time': self.start_time.isoformat(),
             'end_time': end_time.isoformat(),
             'duration': duration,
@@ -172,13 +173,16 @@ class ProgramTrackerCore:
 
         end_time = self.clock.now()
         duration = (end_time - self.start_time).total_seconds()
-        
+
         window_info = self.get_active_window_info()
-        is_productive = self.is_productive(window_info) if window_info else False
-        
+        is_productive = self.is_productive(
+            window_info) if window_info else False
+
         the_junk_string, window_name = self.current_window.rsplit(" - ", 1)
 
-        session = {
+        session: SessionData = {
+            # FIXME: VSCode is in "False" productivity, uNproductive. It should be TRUE
+            # FIXME: SOlution is to move the "window rsplit" thing to early early, before the isProductive check.
             'start_time': self.start_time.isoformat(),
             'end_time': end_time.isoformat(),
             'duration': duration,
@@ -186,8 +190,9 @@ class ProgramTrackerCore:
             'detail': the_junk_string,
             'productive': is_productive
         }
-        
-        self.session_data.append(session)  # is only used to let surveillanceManager gather the session
+
+        # is only used to let surveillanceManager gather the session
+        self.session_data.append(session)
         print(session, "is an empty array right, 197ru")
         self.apply_handlers(session, 1)
 
@@ -196,36 +201,35 @@ class ProgramTrackerCore:
         self.console_logger.log_yellow(title)  # temp
 
     def apply_handlers(self, session: dict, source=0):
-        #  {'os': 'Ubuntu', 'pid': 70442, 'process_name': 'pgadmin4', 'window_title': 'Alt-tab window'} 
+        #  {'os': 'Ubuntu', 'pid': 70442, 'process_name': 'pgadmin4', 'window_title': 'Alt-tab window'}
         # start_time, end_time, duration, window, productive
         if isinstance(self.event_handlers, list):
             for handler in self.event_handlers:
                 handler(session)  # emit an event
         else:
-            self.event_handlers(session)  # is a single func                
+            self.event_handlers(session)  # is a single func
 
     def gather_session(self):
         current = self.session_data
         self.session_data = []  # reset
         return current
-    
-    def stop(self):
-        pass  # might need later 
 
+    def stop(self):
+        pass  # might need later
 
 
 if __name__ == "__main__":
     os_type = OperatingSystemInfo()
     program_api_facade = ProgramApiFacadeCore(os_type)
-        
+
     # folder = Path("/tmp")
 
-
     clock = Clock()
-        
+
     try:
 
-        tracker = ProgramTrackerCore(clock, program_api_facade, [end_program_readout, pretend_report_event])
+        tracker = ProgramTrackerCore(clock, program_api_facade, [
+                                     end_program_readout, pretend_report_event])
         thread_handler = ThreadedTracker(tracker)
         thread_handler.start()
         # Add a way to keep the main thread alive

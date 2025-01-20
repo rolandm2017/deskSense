@@ -1,8 +1,20 @@
 # classes.py
 # For various classes
+from typing import TypedDict, NotRequired
 
 
-class KeyboardAggregateDatabaseEntryDeliverable:
+class SessionData(TypedDict):
+    start_time: str
+    end_time: str
+    duration: float
+    window: str
+    detail: NotRequired[str]  # This field is optional
+    productive: bool
+
+
+class KeyboardAggregate:
+    """A deliverable that becomes a database entry."""
+
     def __init__(self, session_start_time, session_end_time):
         self.session_start_time = session_start_time
         self.session_end_time = session_end_time
@@ -23,6 +35,7 @@ class MouseMovementEvent:
         self.event_type = event_type
         self.position = position
         self.timestamp = timestamp
+
 
 class MouseMoveWindow:
     def __init__(self, start_of_window, end_of_window):

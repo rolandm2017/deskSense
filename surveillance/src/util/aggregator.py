@@ -3,13 +3,15 @@ from dataclasses import dataclass
 from time import time
 from typing import List
 
-from ..object.classes import KeyboardAggregateDatabaseEntryDeliverable
+from ..object.classes import KeyboardAggregate
+
 
 @dataclass
 class Aggregation:
     start_time: float
     end_time: float
     events: List[float]
+
 
 class EventAggregator:
     def __init__(self, timeout_ms: int):
@@ -18,60 +20,63 @@ class EventAggregator:
         self.timeout = timeout_ms / 1000
         self.current_aggregation = None
         self._on_aggregation_complete = None
-    
+
     def set_callback(self, callback):
         self._on_aggregation_complete = callback
-    
+
     def add_event(self, timestamp: float):
         if not isinstance(timestamp, (int, float)):
             raise TypeError("Timestamp must be a number")
         if timestamp is None:
             raise TypeError("Timestamp cannot be None")
         if timestamp > time() + 1:  # 1 second buffer for clock skew
-            raise ValueError("Timestamp cannot be in the future")            
+            raise ValueError("Timestamp cannot be in the future")
         if self.current_aggregation and timestamp < self.current_aggregation.end_time:
             raise ValueError("Timestamps must be in chronological order")
-        
+
         if not self.current_aggregation:
-            self.current_aggregation = Aggregation(timestamp, timestamp, [timestamp])
+            self.current_aggregation = Aggregation(
+                timestamp, timestamp, [timestamp])
             return None
 
-        next_added_timestamp_difference = timestamp - self.current_aggregation.end_time 
+        next_added_timestamp_difference = timestamp - self.current_aggregation.end_time
         # print(timestamp, self.current_aggregation.end_time, '41ru')
         # print(next_added_timestamp_difference > self.timeout, '42ru')
         session_window_has_elapsed = next_added_timestamp_difference > self.timeout
         if session_window_has_elapsed:
             # "If no keystroke within 300 ms, end sesion; report session to db"
-            completed = [datetime.fromtimestamp(t) for t in self.current_aggregation.events]
-            self.current_aggregation = Aggregation(timestamp, timestamp, [timestamp])
-            
+            completed = [datetime.fromtimestamp(
+                t) for t in self.current_aggregation.events]
+            self.current_aggregation = Aggregation(
+                timestamp, timestamp, [timestamp])
+
             if self._on_aggregation_complete:
                 self._on_aggregation_complete(completed)
             return completed
-            
+
         self.current_aggregation.end_time = timestamp
         self.current_aggregation.events.append(timestamp)
         return None
-    
+
     def force_complete(self):
         if not self.current_aggregation:
             return None
-            
+
         completed = self.current_aggregation
         self.current_aggregation = None
-        
+
         if self._on_aggregation_complete:
             self._on_aggregation_complete(completed)
         return completed
-    
-    def package_aggregate_for_db(self, aggregate):
+
+    def package_aggregate_for_db(self, aggregate) -> KeyboardAggregate:
         """
         Aggregate comes out as an array of datetimes. 
         The DB must get an obj with start_time, end_time.
         """
         start = aggregate[0]
         end = aggregate[-1]
-        return KeyboardAggregateDatabaseEntryDeliverable(start, end)
+        return KeyboardAggregate(start, end)
 
 
 # # Example usage:
