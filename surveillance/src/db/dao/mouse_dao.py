@@ -24,14 +24,23 @@ class MouseDao(BaseQueueingDao):
         self.logger = ConsoleLogger()
 
     async def create_from_start_end_times(self, start_time: datetime, end_time: datetime):
-        mouse_move = (start_time, end_time)
-        # self.logger.log_blue_multiple("[LOG]" + get_rid_of_ms(start_time) + " :: " + get_rid_of_ms(end_time))
-        self.queue_item(mouse_move)
+        mouse_move = MouseMove(start_time=start_time, end_time=end_time)
+        if isinstance(mouse_move, MouseMoveWindow):
+            raise ValueError("mouse move window found!")
+        self.logger.log_red("Queuing " + str(mouse_move) + ' 28ru')
+        # FIXME: A "MouseMove" goes in, but the Queue receives a MouseMoveWindow!
+        await self.queue_item(mouse_move, MouseMove)
 
     async def create_from_window(self, window: MouseMoveWindow):
-        mouse_move = (window.start_time, window.end_time)
-        # self.logger.log_blue("[LOG] " + get_rid_of_ms(window))
-        self.queue_item(mouse_move)
+        mouse_move = MouseMove(
+            start_time=window.start_time,
+            end_time=window.end_time
+        )
+        if isinstance(mouse_move, MouseMoveWindow):
+            raise ValueError("mouse move window found")
+        self.logger.log_red("Queuing " + str(mouse_move) + ' 36ru')
+        # FIXME: A "MouseMove" goes in, but the Queue receives a MouseMoveWindow!
+        await self.queue_item(mouse_move, MouseMove)
 
     async def create_without_queue(self, start_time: datetime, end_time: datetime):
         # print("creating mouse move event", start_time)

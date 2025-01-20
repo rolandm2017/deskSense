@@ -6,6 +6,7 @@ from asyncio import Queue
 import asyncio
 from datetime import datetime, timedelta
 
+from .base_dao import BaseQueueingDao
 from ..models import DailyProgramSummary
 from ...console_logger import ConsoleLogger
 from ...object.classes import SessionData
@@ -15,9 +16,9 @@ from ...object.classes import SessionData
 # @@@@ @@@@ @@@@ @@@@ @@@@
 
 
-class DailySummaryDao:  # NOTE: Does not use BaseQueueDao
-    def __init__(self, db: AsyncSession, batch_size=100, flush_interval=5):
-        super().__init__(db, batch_size, flush_interval)
+class DailySummaryDao():  # NOTE: Does not use BaseQueueDao
+    def __init__(self, db: AsyncSession):
+        self.db = db
         self.logger = ConsoleLogger()
 
     async def create_if_new_else_update(self, session: SessionData):

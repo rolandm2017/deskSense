@@ -27,7 +27,7 @@ class KeyboardDao(BaseQueueingDao):
     async def create(self, session: KeyboardAggregate):
         # event time should be just month :: date :: HH:MM:SS
         self.logger.log_blue("[LOG] Keyboard event: " + str(session))
-        self.queue_item(session)
+        await self.queue_item(session)
 
     async def create_without_queue(self, session: KeyboardAggregate):
         print("adding keystroke ", str(session))
@@ -41,23 +41,20 @@ class KeyboardDao(BaseQueueingDao):
         await self.db.refresh(new_session)
         return new_session
 
-    async def read(self, keystroke_id: int = None):
+    async def read_by_id(self, keystroke_id: int):
         """
-        Read Keystroke entries. If keystroke_id is provided, return specific keystroke,
-        otherwise return all keystrokes.
+        Read Keystroke entries. 
         """
-        if keystroke_id:
-            return await self.db.get(TypingSession, keystroke_id)
+        return await self.db.get(TypingSession, keystroke_id)
+
+    async def read_all(self):
+        """Return all keystrokes."""
 
         result = await self.db.execute(select(TypingSession))
         result = result.all()
-        # print(len(result), type(result[0]), result[0], "53ru")
-        # print(result[0], isinstance(result[0][0], TypingSession), '60ru')
-        # print([type(x)[0].__name__ for x in result], '61ru')
-
-        assert all(isinstance(r[0], TypingSession)
-                   for r in result)  # consider disabling for performance
-
+        # assert all(isinstance(r[0], TypingSession)
+        #    for r in result)  # consider disabling for performance
+        print(result, '60ru')
         dtos = [TypingSessionDto(
             x[0].id, x[0].start_time, x[0].end_time) for x in result]
 
@@ -68,27 +65,29 @@ class KeyboardDao(BaseQueueingDao):
         Read typing sessions from the past 24 hours, grouped into 5-minute intervals.
         Returns the count of sessions per interval.
         """
-        # Round start_time to 5-minute intervals for grouping
-        timestamp_interval = func.date_trunc('hour', TypingSession.start_time) + \
-            func.floor(func.date_part('minute', TypingSession.start_time) / 5) * \
-            timedelta(minutes=5)
+        try:
+            twenty_four_hours_ago = datetime.now() - timedelta(hours=24)
 
-        twenty_four_hours_ago = datetime.now() - timedelta(hours=24)
+            query = select(TypingSession).where(
+                TypingSession.start_time >= twenty_four_hours_ago
+            ).order_by(TypingSession.start_time.desc())
 
-        query = select(TypingSession).where(
-            TypingSession.start_time >= twenty_four_hours_ago
-        ).order_by(TypingSession.start_time.desc())
+            result = await self.db.execute(query)
+            rows = result.all()
 
-        result = await self.db.execute(query)
-        result = result.all()
+            if not rows:  # Handle no results
+                return []
 
-        assert all(isinstance(r[0], TypingSession)
-                   for r in result)  # consider disabling for performance
-
-        dtos = [TypingSessionDto(
-            x[0].id, x[0].start_time, x[0].end_time) for x in result]
-
-        return dtos
+            dtos = [
+                TypingSessionDto(x[0].id, x[0].start_time, x[0].end_time)
+                for x in rows
+                if x[0] is not None  # Avoid invalid row structures
+            ]
+            return dtos
+        except Exception as e:
+            # Handle database exceptions gracefully
+            print(f"Error reading events: {e}")
+            raise RuntimeError("Failed to read typing sessions") from e
 
     async def delete(self, keystroke_id: int):
         """Delete a Keystroke entry by ID"""

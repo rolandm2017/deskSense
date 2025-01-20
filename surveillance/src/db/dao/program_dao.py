@@ -6,8 +6,6 @@ from datetime import datetime, timedelta
 
 from .base_dao import BaseQueueingDao
 from ..models import Program
-from .daily_summary_dao import DailySummaryDao
-from ...object.dto import ProgramDto
 from ...object.classes import SessionData
 from ...console_logger import ConsoleLogger
 
@@ -27,11 +25,11 @@ class ProgramDao(BaseQueueingDao):
         # 'window': window_name,
         # 'detail': the_junk_string,
         # 'productive': is_productive
-        if isinstance(session, SessionData):
-            self.queue_item(session)
+        if isinstance(session, dict):
+            await self.queue_item(session)
 
     async def create_without_queue(self, session: SessionData):
-        if isinstance(session, SessionData):
+        if isinstance(session, dict):
             print("creating program row", session['start_time'])
             new_program = Program(
                 window=session['window'],
