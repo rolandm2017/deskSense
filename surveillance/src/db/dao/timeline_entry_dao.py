@@ -58,18 +58,25 @@ class TimelineEntryDao(BaseQueueingDao):
         max_id = result.scalar()
         return max_id or 0  # Return 0 if table is empty
 
-    async def read_day(self, day: datetime):
+    async def read_day(self, day: datetime, event_type: ChartEventType):
         """Read all entries for the given day"""
         start_of_day = datetime.combine(day.date(), datetime.min.time())
         end_of_day = start_of_day + timedelta(days=1)
 
         query = select(TimelineEntryObj).where(
             TimelineEntryObj.start >= start_of_day,
-            TimelineEntryObj.start < end_of_day
+            TimelineEntryObj.start < end_of_day,
+            TimelineEntryObj.group == event_type
         ).order_by(TimelineEntryObj.start)
 
         result = await self.db.execute(query)
         return result.scalars().all()
+
+    async def read_day_mice(self, day: datetime):
+        return self.read_day(day, ChartEventType.MOUSE)
+
+    async def read_day_keyboard(self, day: datetime):
+        return self.read_day(day, ChartEventType.KEYBOARD)
 
     async def read_all(self):
         """Read all timeline entries"""

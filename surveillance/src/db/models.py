@@ -76,6 +76,9 @@ class TimelineEntryObj(Base):
     Note: This table uses camelCase column names (rather than snake_case) 
     to avoid expensive case conversion of thousands of records before sending 
     to the client. This is an intentional performance optimization.
+
+    It *intentionally* has the same name and fields as the server.py Pydantic model.
+    Both *intentionally* have the same fields as the client's interface.
     """
     __tablename__ = "client_timeline_entries"
 
