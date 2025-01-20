@@ -13,7 +13,8 @@ from surveillance.server import (
 from surveillance.server import app, KeyboardService, MouseService, ProgramService
 from surveillance.src.db.dao.keyboard_dao import TypingSessionDto
 from surveillance.src.db.dao.mouse_dao import MouseMoveDto
-from surveillance.src.db.dao.program_dao import ProgramDto
+from surveillance.src.db.dao.program_dao import ProgramDao
+from surveillance.src.object.dto import ProgramDto
 
 
 @pytest.fixture
