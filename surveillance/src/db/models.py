@@ -1,4 +1,4 @@
-
+# models.py
 from sqlalchemy import Enum as SQLAlchemyEnum
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float
 from sqlalchemy.sql import func

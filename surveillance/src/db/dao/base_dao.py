@@ -2,6 +2,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from asyncio import Queue
 import asyncio
+import traceback
 
 
 class BaseQueueingDao:
@@ -12,8 +13,13 @@ class BaseQueueingDao:
         self.queue = Queue()
         self.processing = False
 
-    async def queue_item(self, item):
+    async def queue_item(self, item, type=None):
         """Common method to queue items and start processing if needed"""
+        print(item, '18ru')
+        if type:
+            if not isinstance(item, type):
+                print(item, type, '20ru')
+                raise ValueError("Mismatch found")
         await self.queue.put(item)
         if not self.processing:
             self.processing = True
@@ -27,6 +33,7 @@ class BaseQueueingDao:
                 while len(batch) < self.batch_size:
                     if self.queue.empty():
                         if batch:
+                            print(batch, '31ru')
                             await self._save_batch(batch)
                         await asyncio.sleep(self.flush_interval)
                         continue
@@ -38,6 +45,8 @@ class BaseQueueingDao:
                     await self._save_batch(batch)
 
             except Exception as e:
+                traceback.print_exc()
+
                 print(f"Error processing batch: {e}")
 
     async def _save_batch(self, batch):
