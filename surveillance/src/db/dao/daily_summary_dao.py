@@ -1,10 +1,9 @@
 # daily_summary_dao.py
-# TODO
 from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import datetime, timedelta
+from sqlalchemy.ext.asyncio import async_sessionmaker
+from asyncio import Queue
+from datetime import datetime
 
-from .base_dao import BaseQueueingDao
 from ..models import DailyProgramSummary
 from ...console_logger import ConsoleLogger
 from ...object.classes import SessionData
@@ -15,8 +14,12 @@ from ...object.classes import SessionData
 
 
 class DailySummaryDao:  # NOTE: Does not use BaseQueueDao
-    def __init__(self, db: AsyncSession):
-        self.db = db
+    def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+        self.session_maker = session_maker  # Store the session maker instead of db
+        self.batch_size = batch_size
+        self.flush_interval = flush_interval
+        self.queue = Queue()
+        self.processing = False
         self.logger = ConsoleLogger()
 
     async def create_if_new_else_update(self, session: SessionData):
@@ -80,8 +83,9 @@ class DailySummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def delete(self, id: int):
         """Delete an entry by ID"""
-        entry = await self.db.get(DailyProgramSummary, id)
-        if entry:
-            await self.db.delete(entry)
-            await self.db.commit()
-        return entry
+        async with self.session_maker() as session:
+            entry = await session.get(DailyProgramSummary, id)
+            if entry:
+                await session.delete(entry)
+                await session.commit()
+            return entry

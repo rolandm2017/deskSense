@@ -10,7 +10,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from src.db.database import get_db, init_db, AsyncSessionLocal, AsyncSession
+from src.db.database import get_db, init_db, AsyncSession, async_session_maker
 from src.db.dao.mouse_dao import MouseDao
 from src.db.dao.keyboard_dao import KeyboardDao
 from src.db.dao.program_dao import ProgramDao
@@ -29,19 +29,19 @@ logger = ConsoleLogger()
 
 
 async def get_keyboard_service(db: AsyncSession = Depends(get_db)) -> KeyboardService:
-    return KeyboardService(KeyboardDao(db))
+    return KeyboardService(KeyboardDao(async_session_maker))
 
 
 async def get_mouse_service(db: AsyncSession = Depends(get_db)) -> MouseService:
-    return MouseService(MouseDao(db))
+    return MouseService(MouseDao(async_session_maker))
 
 
 async def get_program_service(db: AsyncSession = Depends(get_db)) -> ProgramService:
-    return ProgramService(ProgramDao(db))
+    return ProgramService(ProgramDao(async_session_maker))
 
 
 async def get_dashboard_service(db: AsyncSession = Depends(get_db)) -> DashboardService:
-    return DashboardService(TimelineEntryDao, DailySummaryDao)
+    return DashboardService(TimelineEntryDao(async_session_maker), DailySummaryDao(async_session_maker))
 
 
 class KeyboardLog(BaseModel):
@@ -124,14 +124,12 @@ def track_productivity():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Initialize application-wide resources
-    # print("Starting up...")
-
-    surveillance_state.db_session = AsyncSessionLocal()
     await init_db()
 
-    # print("Starting productivity tracking...")
+    # Use the session_maker directly
     surveillance_state.manager = SurveillanceManager(
-        surveillance_state.db_session, shutdown_signal="TODO")
+        # Pass session_maker instead of get_db()
+        async_session_maker, shutdown_signal="TODO")
     surveillance_state.manager.start_trackers()
 
     yield

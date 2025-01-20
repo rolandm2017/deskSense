@@ -1,12 +1,12 @@
 
 from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import async_sessionmaker
+
 
 from datetime import datetime, timedelta
 
 from .base_dao import BaseQueueingDao
 from ..models import TypingSession
-from ..database import AsyncSession, get_db
 from ...object.classes import KeyboardAggregate
 from ...object.dto import TypingSessionDto
 from ...console_logger import ConsoleLogger
@@ -17,9 +17,8 @@ def get_rid_of_ms(time):
 
 
 class KeyboardDao(BaseQueueingDao):
-    def __init__(self, db: AsyncSession, batch_size=100, flush_interval=5):
-        super().__init__(db, batch_size, flush_interval)
-
+    def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+        super().__init__(session_maker, batch_size, flush_interval)
         self.logger = ConsoleLogger()
 
     async def create(self, session: KeyboardAggregate):
@@ -87,10 +86,11 @@ class KeyboardDao(BaseQueueingDao):
             print(f"Error reading events: {e}")
             raise RuntimeError("Failed to read typing sessions") from e
 
-    async def delete(self, keystroke_id: int):
-        """Delete a Keystroke entry by ID"""
-        keystroke = await self.db.get(TypingSession, keystroke_id)
-        if keystroke:
-            await self.db.delete(keystroke)
-            await self.db.commit()
-        return keystroke
+    async def delete(self, id: int):
+        """Delete an entry by ID"""
+        async with self.session_maker() as session:
+            entry = await session.get(TypingSession, id)
+            if entry:
+                await session.delete(entry)
+                await session.commit()
+            return entry

@@ -1,7 +1,6 @@
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from asyncio import Queue
-import asyncio
+from sqlalchemy.ext.asyncio import async_sessionmaker
+
 from datetime import datetime, timedelta
 
 from .base_dao import BaseQueueingDao
@@ -11,8 +10,8 @@ from ...console_logger import ConsoleLogger
 
 
 class ProgramDao(BaseQueueingDao):
-    def __init__(self, db: AsyncSession, batch_size=100, flush_interval=5):
-        super().__init__(db, batch_size, flush_interval)
+    def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+        super().__init__(session_maker, batch_size, flush_interval)
         self.logger = ConsoleLogger()
 
     async def create(self, session: SessionData):
