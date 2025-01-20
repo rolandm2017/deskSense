@@ -9,4 +9,3 @@ class MouseEvent(str, Enum):
 class ChartEventType(Enum):
     MOUSE = "mouse"
     KEYBOARD = "keyboard"
-    TERMINAL = "terminal"

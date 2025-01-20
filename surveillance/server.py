@@ -14,8 +14,10 @@ from src.db.database import get_db, init_db, AsyncSessionLocal, AsyncSession
 from src.db.dao.mouse_dao import MouseDao
 from src.db.dao.keyboard_dao import KeyboardDao
 from src.db.dao.program_dao import ProgramDao
+from src.db.dao.timeline_entry_dao import TimelineEntryDao
+from src.db.dao.daily_summary_dao import DailySummaryDao
 from src.db.models import MouseMove, Program
-from src.services import MouseService, KeyboardService, ProgramService
+from src.services import MouseService, KeyboardService, ProgramService, DashboardService
 from src.object.dto import TypingSessionDto, MouseMoveDto, ProgramDto
 from src.surveillance_manager import SurveillanceManager
 from src.console_logger import ConsoleLogger
@@ -36,6 +38,10 @@ async def get_mouse_service(db: AsyncSession = Depends(get_db)) -> MouseService:
 
 async def get_program_service(db: AsyncSession = Depends(get_db)) -> ProgramService:
     return ProgramService(ProgramDao(db))
+
+
+async def get_dashboard_service(db: AsyncSession = Depends(get_db)) -> DashboardService:
+    return DashboardService(TimelineEntryDao, DailySummaryDao)
 
 
 class KeyboardLog(BaseModel):
@@ -74,12 +80,7 @@ class ProgramActivityReport(BaseModel):
     programLogs: List[ProgramActivityLog]
 
 
-class BarChartProgramColumn(BaseModel):
-    programName: str
-    hoursSpent: float
-
-
-class TimelineEntryObj(BaseModel):
+class TimelineEntry(BaseModel):
     # ex: `mouse-${log.mouseEventId}`, ex2: `keyboard-${log.keyboardEventId}`,
     id: str
     group: str  # "mouse" or "keyboard"
@@ -87,6 +88,20 @@ class TimelineEntryObj(BaseModel):
     content: str
     start: datetime
     end: datetime  # TOD: make it *come out of the db* ready to go
+
+
+class TimelineRows(BaseModel):
+    mouseRows: List[TimelineEntry]
+    keyboardRows: List[TimelineEntry]
+
+
+class BarChartProgramEntry(BaseModel):
+    programName: str
+    hoursSpent: float
+
+
+class BarChartContent(BaseModel):
+    columns: List[BarChartProgramEntry]
 
 
 class SurveillanceState:
@@ -270,6 +285,26 @@ async def get_program_activity_report(program_service: ProgramService = Depends(
 
     reports = [make_program_log(e) for e in events]
     return ProgramActivityReport(count=len(reports), programLogs=reports)
+
+
+@app.get("/dashboard/timeline", response_model=TimelineRows)
+async def get_timeline_for_dashboard(dashboard_service: DashboardService = Depends(get_dashboard_service)):
+    mouse_rows, keyboard_rows = await dashboard_service.get_timeline()
+    if not isinstance(mouse_rows, list) or not isinstance(keyboard_rows, list):
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve timeline info")
+
+    return TimelineRows(mouseRows=mouse_rows, keyboardRows=keyboard_rows)
+
+
+@app.get("/dashboard/programs", response_model=BarChartContent)
+async def get_program_time_for_dashboard(dashboard_service: DashboardService = Depends(get_dashboard_service)):
+    program_data = await dashboard_service.get_program_summary()
+    if not isinstance(program_data, list):
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve bar chart info")
+
+    return BarChartContent(columns=program_data)
 
 
 if __name__ == "__main__":
