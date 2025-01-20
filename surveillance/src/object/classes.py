@@ -38,10 +38,13 @@ class MouseMovementEvent:
 
 
 class MouseMoveWindow:
-    def __init__(self, start_of_window, end_of_window):
+    def __init__(self, start_of_window, end_of_window, source=None):
         """Where the mouse was is irrelevant. From when to when it was moving is the important part."""
         self.start_time = start_of_window
         self.end_time = end_of_window
+        self.source = source
 
     def __str__(self):
-        return f"Mouse movement from {self.start_time} to {self.end_time}"
+        if self.source:
+            return f"Mouse movement from {self.start_time} to {self.end_time} - {self.source} - {str(self.count)}"
+        return f"Mouse movement from {self.start_time} to {self.end_time} : nameless"

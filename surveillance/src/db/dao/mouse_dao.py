@@ -1,8 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from asyncio import Queue
-import asyncio
 import datetime
+from copy import deepcopy
 
 from .base_dao import BaseQueueingDao
 
@@ -25,6 +24,7 @@ class MouseDao(BaseQueueingDao):
 
     async def create_from_start_end_times(self, start_time: datetime, end_time: datetime):
         mouse_move = MouseMove(start_time=start_time, end_time=end_time)
+
         if isinstance(mouse_move, MouseMoveWindow):
             raise ValueError("mouse move window found!")
         self.logger.log_red("Queuing " + str(mouse_move) + ' 28ru')
@@ -32,10 +32,10 @@ class MouseDao(BaseQueueingDao):
         await self.queue_item(mouse_move, MouseMove)
 
     async def create_from_window(self, window: MouseMoveWindow):
+        # Create dict first, to avoid MouseMoveWindow "infesting" a MouseMove object.
+        # See SHA 52d3c13c3150c5859243b909d47d609f5b2b8600 to experience the issue.
         mouse_move = MouseMove(
-            start_time=window.start_time,
-            end_time=window.end_time
-        )
+            start_time=window.start_time, end_time=window.end_time)
         if isinstance(mouse_move, MouseMoveWindow):
             raise ValueError("mouse move window found")
         self.logger.log_red("Queuing " + str(mouse_move) + ' 36ru')

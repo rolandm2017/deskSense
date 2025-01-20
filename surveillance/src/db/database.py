@@ -1,5 +1,5 @@
 # src/db/database.py
-from sqlalchemy import  Column, Integer, String, DateTime,  Boolean
+from sqlalchemy import Column, Integer, String, DateTime,  Boolean
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 from typing import Generator
@@ -29,11 +29,12 @@ async def get_db():
         finally:
             await session.close()
 
+
 async def init_db():
     """
     Initialize the database by creating all tables if they don't exist.
     This should be called when your application starts.
     """
     async with engine.begin() as conn:
-        print("Creating database tables")
+        # print("Creating database tables")
         await conn.run_sync(Base.metadata.create_all)

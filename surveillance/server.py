@@ -124,12 +124,12 @@ def track_productivity():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Initialize application-wide resources
-    print("Starting up...")
+    # print("Starting up...")
 
     surveillance_state.db_session = AsyncSessionLocal()
     await init_db()
 
-    print("Starting productivity tracking...")
+    # print("Starting productivity tracking...")
     surveillance_state.manager = SurveillanceManager(
         surveillance_state.db_session, shutdown_signal="TODO")
     surveillance_state.manager.start_trackers()

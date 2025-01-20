@@ -49,7 +49,7 @@ class TimelineEntryDao(BaseQueueingDao):
         await self.create(new_row)
 
     async def create(self, new_row: TimelineEntryObj):
-        await self.queue_item(new_row)
+        await self.queue_item(new_row, TimelineEntryObj)
 
     async def read_highest_id(self):
         """Read the highest ID currently in the table"""

@@ -10,21 +10,20 @@ import csv
 from surveillance.src.surveillance_manager import SurveillanceManager
 
 
-
 def main():
     surveillance_manager = SurveillanceManager()
-    print("Starting productivity tracking...")
+    # print("Starting productivity tracking...")
     print("Press Ctrl+C to stop and generate report.")
-    
+
     try:
         while True:
             # surveillance_manager.program_tracker.track_window()
             surveillance_manager.program_tracker.attach_listener()
             time.sleep(1)  # Check every second
     except KeyboardInterrupt:
-         # Log final session before exiting
+        # Log final session before exiting
         surveillance_manager.program_tracker.log_session()
-        
+
         # Generate and display productivity report
         report = surveillance_manager.program_tracker.generate_report()  # deprecated
         print("\nToday's Productivity Report:")
@@ -38,8 +37,10 @@ def main():
         if isinstance(mouse_report, dict):  # Check if we got actual data
             print("\nMouse Movement Report:")
             print(f"Total movements: {mouse_report['total_movements']}")
-            print(f"Average movement duration: {mouse_report['avg_movement_duration']} seconds")
-            print(f"Total movement time: {mouse_report['total_movement_time']} seconds")
+            print(f"Average movement duration: {
+                  mouse_report['avg_movement_duration']} seconds")
+            print(f"Total movement time: {
+                  mouse_report['total_movement_time']} seconds")
 
         # Generate and display keyboard report
         keyboard_report = surveillance_manager.keyboard_tracker.generate_keyboard_report()
@@ -51,6 +52,7 @@ def main():
 
         # Clean up
         surveillance_manager.cleanup()  # This will call mouse_tracker.stop()
+
 
 if __name__ == "__main__":
     main()

@@ -1,8 +1,6 @@
 
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from asyncio import Queue
-import asyncio
 
 from datetime import datetime, timedelta
 
@@ -27,7 +25,7 @@ class KeyboardDao(BaseQueueingDao):
     async def create(self, session: KeyboardAggregate):
         # event time should be just month :: date :: HH:MM:SS
         self.logger.log_blue("[LOG] Keyboard event: " + str(session))
-        await self.queue_item(session)
+        await self.queue_item(session, KeyboardAggregate)
 
     async def create_without_queue(self, session: KeyboardAggregate):
         print("adding keystroke ", str(session))

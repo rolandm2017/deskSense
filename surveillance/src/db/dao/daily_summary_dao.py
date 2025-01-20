@@ -2,8 +2,6 @@
 # TODO
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from asyncio import Queue
-import asyncio
 from datetime import datetime, timedelta
 
 from .base_dao import BaseQueueingDao
@@ -16,7 +14,7 @@ from ...object.classes import SessionData
 # @@@@ @@@@ @@@@ @@@@ @@@@
 
 
-class DailySummaryDao():  # NOTE: Does not use BaseQueueDao
+class DailySummaryDao:  # NOTE: Does not use BaseQueueDao
     def __init__(self, db: AsyncSession):
         self.db = db
         self.logger = ConsoleLogger()
@@ -34,7 +32,7 @@ class DailySummaryDao():  # NOTE: Does not use BaseQueueDao
         # ### Check if entry exists for today
         today = datetime.now().date()
         query = select(DailyProgramSummary).where(
-            DailyProgramSummary.programName == target_program_name,
+            DailyProgramSummary.program_name == target_program_name,
             func.date(DailyProgramSummary.date) == today
         )
         result = await self.db.execute(query)
@@ -74,7 +72,7 @@ class DailySummaryDao():  # NOTE: Does not use BaseQueueDao
         """Reads the row for the target program for today."""
         today = datetime.now().date()
         query = select(DailyProgramSummary).where(
-            DailyProgramSummary.programName == target_program,
+            DailyProgramSummary.program_name == target_program,
             func.date(DailyProgramSummary.date) == today
         )
         result = await self.db.execute(query)
