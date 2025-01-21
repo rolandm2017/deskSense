@@ -6,14 +6,19 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from surveillance.server import (
     app,
-    KeyboardService,
+    DashboardService,
     surveillance_state,
-    get_keyboard_service, get_mouse_service, get_program_service
+    get_dashboard_service, get_keyboard_service, get_mouse_service, get_program_service,
+    TimelineEntrySchema,
+    DailyProgramSummarySchema
 )
 from surveillance.server import app, KeyboardService, MouseService, ProgramService
+
+from surveillance.src.db.models import TimelineEntryObj, ChartEventType
 from surveillance.src.db.dao.keyboard_dao import TypingSessionDto
 from surveillance.src.db.dao.mouse_dao import MouseMoveDto
 from surveillance.src.db.dao.program_dao import ProgramDao
+
 from surveillance.src.object.dto import ProgramDto
 
 
@@ -53,6 +58,64 @@ def mock_program_events():
                            timedelta(minutes=i), base_time + timedelta(minutes=i*1), i % 2 == 0)
         events.append(event)
     return events
+
+
+@pytest.fixture
+def mock_timeline_data():
+    base_time = datetime.now()
+
+    # Create mock mouse entries
+    mouse_entries = []
+    for i in range(5):
+        entry = TimelineEntryObj(
+            id=i,
+            clientFacingId=f"mouse-{i}",
+            group=ChartEventType.MOUSE,
+            content=f"Mouse Event {i}",
+            start=base_time + timedelta(minutes=i*10),
+            end=base_time + timedelta(minutes=(i+1)*10)
+        )
+        mouse_entries.append(entry)
+
+    # Create mock keyboard entries
+    keyboard_entries = []
+    for i in range(5):
+        entry = TimelineEntryObj(
+            id=i+10,
+            clientFacingId=f"keyboard-{i}",
+            group=ChartEventType.KEYBOARD,
+            content=f"Typing Session {i}",
+            start=base_time + timedelta(minutes=i*15),
+            end=base_time + timedelta(minutes=(i+1)*15)
+        )
+        keyboard_entries.append(entry)
+
+    return mouse_entries, keyboard_entries
+
+
+@pytest.fixture
+def mock_program_summary_data():
+    base_time = datetime.now()
+    return [
+        DailyProgramSummarySchema(
+            id=1,
+            program_name="Chrome",
+            hours_spent=2.5,
+            gathering_date=base_time
+        ),
+        DailyProgramSummarySchema(
+            id=2,
+            program_name="VS Code",
+            hours_spent=4.0,
+            gathering_date=base_time
+        ),
+        DailyProgramSummarySchema(
+            id=3,
+            program_name="Terminal",
+            hours_spent=1.5,
+            gathering_date=base_time
+        )
+    ]
 
 
 @pytest.fixture
@@ -183,5 +246,94 @@ async def test_get_all_program_reports(test_client, mock_program_events, mock_su
         data = response.json()
         assert data["count"] == 16
         assert len(data["programLogs"]) == 16
+    finally:
+        app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_get_timeline_for_dashboard(
+    test_client,
+    mock_timeline_data,
+    mock_surveillance_state
+):
+    mouse_entries, keyboard_entries = mock_timeline_data
+    mock_service = DashboardService(AsyncMock(), AsyncMock())
+    mock_service.get_timeline = AsyncMock(
+        return_value=(mouse_entries, keyboard_entries)
+    )
+
+    async def override_get_dashboard_service():
+        return mock_service
+
+    app.dependency_overrides[get_dashboard_service] = override_get_dashboard_service
+
+    try:
+        response = test_client.get("/dashboard/timeline")
+        assert response.status_code == 200
+        data = response.json()
+
+        # Check structure and counts
+        assert "mouseRows" in data
+        assert "keyboardRows" in data
+        assert len(data["mouseRows"]) == 5
+        assert len(data["keyboardRows"]) == 5
+
+        # Verify mouse entry structure
+        mouse_entry = data["mouseRows"][0]
+        assert "id" in mouse_entry
+        assert "group" in mouse_entry
+        assert "content" in mouse_entry
+        assert "start" in mouse_entry
+        assert "end" in mouse_entry
+        assert mouse_entry["group"] == "mouse"
+
+        # Verify keyboard entry structure
+        keyboard_entry = data["keyboardRows"][0]
+        assert keyboard_entry["group"] == "keyboard"
+        assert keyboard_entry["id"].startswith("keyboard-")
+
+    finally:
+        app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_get_program_time_for_dashboard(
+    test_client,
+    mock_program_summary_data,
+    mock_surveillance_state
+):
+    mock_service = DashboardService(AsyncMock(), AsyncMock())
+    mock_service.get_program_summary = AsyncMock(
+        return_value=mock_program_summary_data
+    )
+
+    async def override_get_dashboard_service():
+        return mock_service
+
+    app.dependency_overrides[get_dashboard_service] = override_get_dashboard_service
+
+    try:
+        response = test_client.get("/dashboard/programs")
+        assert response.status_code == 200
+        data = response.json()
+
+        # Check structure
+        assert "columns" in data
+        assert len(data["columns"]) == 3
+
+        # Verify program summary entry structure
+        program_entry = data["columns"][0]
+        assert "id" in program_entry
+        assert "program_name" in program_entry
+        assert "hours_spent" in program_entry
+        assert "gathering_date" in program_entry
+
+        # Verify specific data
+        chrome_entry = next(
+            entry for entry in data["columns"]
+            if entry["program_name"] == "Chrome"
+        )
+        assert chrome_entry["hours_spent"] == 2.5
+
     finally:
         app.dependency_overrides.clear()
