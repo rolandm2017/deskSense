@@ -44,15 +44,20 @@ class ProgramDao(BaseQueueingDao):
             return new_program
         return None
 
-    async def read(self, program_id: int = None):
+    async def read_by_id(self, program_id: int):
         """
         Read Program entries. If program_id is provided, return specific program,
         otherwise return all programs.
         """
-        if program_id:
-            return await self.db.get(Program, program_id)
         async with self.session_maker() as session:
+            return await session.get(Program, program_id)
 
+    async def read_all(self):
+        """
+        Read Program entries. If program_id is provided, return specific program,
+        otherwise return all programs.
+        """
+        async with self.session_maker() as session:
             result = await session.execute(select(Program))
             return result.scalars().all()  # TODO: return Dtos
 
@@ -70,8 +75,9 @@ class ProgramDao(BaseQueueingDao):
 
     async def delete(self, program_id: int):
         """Delete a Program entry by ID"""
-        program = await self.db.get(Program, program_id)
-        if program:
-            await self.db.delete(program)
-            await self.db.commit()
-        return program
+        async with self.session_maker() as session:
+            program = await session.get(Program, program_id)
+            if program:
+                await session.delete(program)
+                await session.commit()
+            return program

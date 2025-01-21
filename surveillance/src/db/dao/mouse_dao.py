@@ -52,17 +52,17 @@ class MouseDao(BaseQueueingDao):
         await self.db.refresh(new_mouse_move)
         return new_mouse_move
 
-    async def read(self, mouse_move_id: int = None):
+    async def read_all(self):
         """
-        Read MouseMove entries. If mouse_move_id is provided, return specific movement,
-        otherwise return all movements.
+        Read MouseMove entries.
         """
-        if mouse_move_id:
-            return await self.db.get(MouseMove, mouse_move_id)
-
         async with self.session_maker() as session:
             result = await session.execute(select(MouseMove))
-            return result.scalars().all()  # TODO: return Dtos
+            return await result.scalars().all()  # TODO: return Dtos
+
+    async def read_by_id(self, mouse_move_id: int):
+        async with self.session_maker() as session:
+            return await session.get(MouseMove, mouse_move_id)
 
     async def read_past_24h_events(self):
         """
@@ -75,7 +75,7 @@ class MouseDao(BaseQueueingDao):
 
         async with self.session_maker() as session:
             result = await session.execute(query)
-            return result.scalars().all()  # TODO: return Dtos
+            return await result.scalars().all()  # TODO: return Dtos
 
     async def delete(self, id: int):
         """Delete an entry by ID"""
