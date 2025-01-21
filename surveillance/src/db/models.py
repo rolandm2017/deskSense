@@ -38,6 +38,7 @@ class Program(Base):
     detail = Column(String)
     start_time = Column(DateTime)
     end_time = Column(DateTime)
+    # TODO: Add duration? maybe?
     productive = Column(Boolean)
     created_at = Column(DateTime, default=datetime.now)
 

@@ -26,8 +26,8 @@ class DailySummaryDao:  # NOTE: Does not use BaseQueueDao
         """This method doesn't use queuing since it needs to check the DB state"""
         target_program_name = session['window']
         # ### Calculate time difference
-        start_time = datetime.fromisoformat(session['start_time'])
-        end_time = datetime.fromisoformat(session['end_time'])
+        start_time = session['start_time']
+        end_time = session['end_time']
         # Convert to hours
         usage_duration_in_hours = (
             end_time - start_time).total_seconds() / 3600
@@ -36,7 +36,7 @@ class DailySummaryDao:  # NOTE: Does not use BaseQueueDao
         today = datetime.now().date()
         query = select(DailyProgramSummary).where(
             DailyProgramSummary.program_name == target_program_name,
-            func.date(DailyProgramSummary.date) == today
+            func.date(DailyProgramSummary.gathering_date) == today
         )
 
         async with self.session_maker() as session:
@@ -44,27 +44,27 @@ class DailySummaryDao:  # NOTE: Does not use BaseQueueDao
             existing_entry = result.scalar_one_or_none()
 
             if existing_entry:
-                # Update existing entry
-                existing_entry.hoursSpent += usage_duration_in_hours
-                await self.db.commit()
+                # print(await existing_entry, '47ru')
+                # print(existing_entry, '22222222 47ru')
+                existing_entry.hours_spent += usage_duration_in_hours
+                await session.commit()
             else:
-                self.create(target_program_name,
-                            usage_duration_in_hours, today)
+                await self.create(target_program_name, usage_duration_in_hours, today)
 
     async def create(self, target_program_name, duration_in_hours, today):
-        # Create new entry
-        new_entry = DailyProgramSummary(
-            programName=target_program_name,
-            hoursSpent=duration_in_hours,
-            date=today
-        )
-        self.db.add(new_entry)
-        await self.db.commit()
+        async with self.session_maker() as session:
+            new_entry = DailyProgramSummary(
+                program_name=target_program_name,
+                hours_spent=duration_in_hours,
+                gathering_date=today
+            )
+            session.add(new_entry)
+            await session.commit()
 
     async def read_day(self, day: datetime):
         """Read all entries for the given day."""
         query = select(DailyProgramSummary).where(
-            func.date(DailyProgramSummary.date) == day.date()
+            func.date(DailyProgramSummary.gathering_date) == day.date()
         )
         async with self.session_maker() as session:
 
@@ -82,7 +82,7 @@ class DailySummaryDao:  # NOTE: Does not use BaseQueueDao
         today = datetime.now().date()
         query = select(DailyProgramSummary).where(
             DailyProgramSummary.program_name == target_program,
-            func.date(DailyProgramSummary.date) == today
+            func.date(DailyProgramSummary.gathering_date) == today
         )
         async with self.session_maker() as session:
             result = await session.execute(query)

@@ -34,9 +34,6 @@ class MouseDao(BaseQueueingDao):
         # See SHA 52d3c13c3150c5859243b909d47d609f5b2b8600 to experience the issue.
         mouse_move = MouseMove(
             start_time=window.start_time, end_time=window.end_time)
-        if isinstance(mouse_move, MouseMoveWindow):
-            raise ValueError("mouse move window found")
-        self.logger.log_red("Queuing " + str(mouse_move) + ' 36ru')
         # FIXME: A "MouseMove" goes in, but the Queue receives a MouseMoveWindow!
         await self.queue_item(mouse_move, MouseMove)
 

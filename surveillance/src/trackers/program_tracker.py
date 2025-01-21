@@ -157,8 +157,8 @@ class ProgramTrackerCore:
             window_info) if window_info else False
         the_junk_string, window_name = self.current_window.rsplit(" - ", 1)
         session: SessionData = {
-            'start_time': self.start_time.isoformat(),
-            'end_time': end_time.isoformat(),
+            'start_time': self.start_time,
+            'end_time': end_time,
             'duration': duration,
             'window': window_name,
             'detail': the_junk_string,
@@ -183,8 +183,8 @@ class ProgramTrackerCore:
         session: SessionData = {
             # FIXME: VSCode is in "False" productivity, uNproductive. It should be TRUE
             # FIXME: SOlution is to move the "window rsplit" thing to early early, before the isProductive check.
-            'start_time': self.start_time.isoformat(),
-            'end_time': end_time.isoformat(),
+            'start_time': self.start_time,
+            'end_time': end_time,
             'duration': duration,
             'window': window_name,
             'detail': the_junk_string,
