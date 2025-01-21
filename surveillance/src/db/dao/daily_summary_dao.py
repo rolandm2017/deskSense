@@ -6,7 +6,7 @@ from datetime import datetime
 
 from ..models import DailyProgramSummary
 from ...console_logger import ConsoleLogger
-from ...object.classes import SessionData
+from ...object.classes import ProgramSessionData
 
 # @@@@ @@@@ @@@@ @@@@ @@@@
 # NOTE: Does not use BaseQueueDao
@@ -22,15 +22,13 @@ class DailySummaryDao:  # NOTE: Does not use BaseQueueDao
         self.processing = False
         self.logger = ConsoleLogger()
 
-    async def create_if_new_else_update(self, session: SessionData):
+    async def create_if_new_else_update(self, session: ProgramSessionData):
         """This method doesn't use queuing since it needs to check the DB state"""
         target_program_name = session['window']
         # ### Calculate time difference
-        start_time = session['start_time']
-        end_time = session['end_time']
         # Convert to hours
         usage_duration_in_hours = (
-            end_time - start_time).total_seconds() / 3600
+            session['end_time'] - session['start_time']).total_seconds() / 3600
 
         # ### Check if entry exists for today
         today = datetime.now().date()
@@ -44,8 +42,6 @@ class DailySummaryDao:  # NOTE: Does not use BaseQueueDao
             existing_entry = result.scalar_one_or_none()
 
             if existing_entry:
-                # print(await existing_entry, '47ru')
-                # print(existing_entry, '22222222 47ru')
                 existing_entry.hours_spent += usage_duration_in_hours
                 await session.commit()
             else:
@@ -86,7 +82,7 @@ class DailySummaryDao:  # NOTE: Does not use BaseQueueDao
         )
         async with self.session_maker() as session:
             result = await session.execute(query)
-            return result.scalar_one_or_none()
+            return await result.scalar_one_or_none()
 
     async def delete(self, id: int):
         """Delete an entry by ID"""

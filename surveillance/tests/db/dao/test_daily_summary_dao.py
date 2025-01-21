@@ -40,8 +40,8 @@ class TestDailySummaryDao:
         # Arrange
         session_data = {
             'window': 'TestProgram',
-            'start_time': datetime.now().isoformat(),
-            'end_time': (datetime.now().replace(hour=datetime.now().hour + 1)).isoformat()
+            'start_time': datetime.now(),
+            'end_time': (datetime.now().replace(hour=datetime.now().hour + 1))
         }
 
         # Mock existing entry
@@ -51,7 +51,7 @@ class TestDailySummaryDao:
             self.hours_spent})"
 
         # Mock that no existing entry is found
-        mock_result = AsyncMock()
+        mock_result = Mock()
         # Return the actual mock object
         mock_result.scalar_one_or_none.return_value = existing_entry
         mock_session.execute.return_value = mock_result
@@ -62,21 +62,20 @@ class TestDailySummaryDao:
         # Assert
         assert mock_session.execute.called
 
-    @pytest.mark.skip(reason="Your skip reason here")
     @pytest.mark.asyncio
     async def test_create_if_new_else_update_existing_entry(self, dao, mock_session):
         # Arrange
         session_data = {
             'window': 'TestProgram',
-            'start_time': datetime.now().isoformat(),
-            'end_time': (datetime.now().replace(hour=datetime.now().hour + 1)).isoformat()
+            'start_time': datetime.now(),
+            'end_time': datetime.now().replace(hour=datetime.now().hour + 1)
         }
 
         # Mock existing entry
         existing_entry = Mock(spec=DailyProgramSummary)
         existing_entry.hours_spent = 1.0
 
-        mock_result = AsyncMock()
+        mock_result = Mock()
         mock_result.scalar_one_or_none.return_value = existing_entry
         mock_session.execute.return_value = mock_result
 
@@ -132,7 +131,6 @@ class TestDailySummaryDao:
         assert result == mock_entries
         assert mock_session.execute.called
 
-    @pytest.mark.skip(reason="Your skip reason here")
     @pytest.mark.asyncio
     async def test_read_row_for_program(self, dao, mock_session):
         # Arrange

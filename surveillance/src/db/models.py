@@ -42,8 +42,20 @@ class Program(Base):
     productive = Column(Boolean)
     created_at = Column(DateTime, default=datetime.now)
 
+    def __eq__(self, other):
+        if not isinstance(other, Program):
+            return False
+        return (
+            self.id == other.id and
+            self.window == other.window and
+            self.detail == other.detail and
+            self.start_time == other.start_time and
+            self.end_time == other.end_time and
+            self.productive == other.productive
+        )
+
     def __repr__(self):
-        return f"Program(id={self.id}, window='{self.window}', productive={self.productive})"
+        return f"Program(\n\tid={self.id}, window='{self.window}', \n\tstart_time={self.start_time},\n\tend_time={self.end_time},\n\tproductive={self.productive})"
 
 
 class Chrome(Base):

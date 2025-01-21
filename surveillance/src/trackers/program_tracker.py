@@ -9,7 +9,7 @@ from ..util.detect_os import OperatingSystemInfo
 from ..util.end_program_routine import end_program_readout, pretend_report_event
 from ..util.clock import Clock
 from ..util.threaded_tracker import ThreadedTracker
-from ..object.classes import SessionData
+from ..object.classes import ProgramSessionData
 
 
 # TODO: Report mouse, keyboard, program, chrome tabs, every 15 sec, to the db.
@@ -156,7 +156,7 @@ class ProgramTrackerCore:
         is_productive = self.is_productive(
             window_info) if window_info else False
         the_junk_string, window_name = self.current_window.rsplit(" - ", 1)
-        session: SessionData = {
+        session: ProgramSessionData = {
             'start_time': self.start_time,
             'end_time': end_time,
             'duration': duration,
@@ -180,7 +180,7 @@ class ProgramTrackerCore:
 
         the_junk_string, window_name = self.current_window.rsplit(" - ", 1)
 
-        session: SessionData = {
+        session: ProgramSessionData = {
             # FIXME: VSCode is in "False" productivity, uNproductive. It should be TRUE
             # FIXME: SOlution is to move the "window rsplit" thing to early early, before the isProductive check.
             'start_time': self.start_time,
