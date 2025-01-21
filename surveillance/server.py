@@ -16,7 +16,7 @@ from src.db.dao.keyboard_dao import KeyboardDao
 from src.db.dao.program_dao import ProgramDao
 from src.db.dao.timeline_entry_dao import TimelineEntryDao
 from src.db.dao.daily_summary_dao import DailySummaryDao
-from src.db.models import MouseMove, Program, DailyProgramSummary
+from src.db.models import MouseMove, Program, DailyProgramSummary, TimelineEntryObj
 from src.services import MouseService, KeyboardService, ProgramService, DashboardService
 from src.object.dto import TypingSessionDto, MouseMoveDto, ProgramDto
 from src.surveillance_manager import SurveillanceManager
@@ -80,26 +80,27 @@ class ProgramActivityReport(BaseModel):
     programLogs: List[ProgramActivityLog]
 
 
-class TimelineEntry(BaseModel):
-    # ex: `mouse-${log.mouseEventId}`, ex2: `keyboard-${log.keyboardEventId}`,
-    id: str
-    group: str  # "mouse" or "keyboard"
-    # ex: `Mouse Event ${log.mouseEventId}`, ex2: `Typing Session ${log.keyboardEventId}`,
-    content: str
-    start: datetime
-    end: datetime  # TOD: make it *come out of the db* ready to go
+# class TimelineEntry(BaseModel):
+#     # ex: `mouse-${log.mouseEventId}`, ex2: `keyboard-${log.keyboardEventId}`,
+#     id: str
+#     group: str  # "mouse" or "keyboard"
+#     # ex: `Mouse Event ${log.mouseEventId}`, ex2: `Typing Session ${log.keyboardEventId}`,
+#     content: str
+#     start: datetime
+#     end: datetime  # TOD: make it *come out of the db* ready to go
 
 
-class TimelineRows(BaseModel):
-    mouseRows: List[TimelineEntry]
-    keyboardRows: List[TimelineEntry]
+# class TimelineRows(BaseModel):
+#     mouseRows: List[TimelineEntry]
+#     keyboardRows: List[TimelineEntry]
 
 
-class BarChartProgramEntry(BaseModel):
-    programName: str
-    hoursSpent: float
+# class BarChartProgramEntry(BaseModel):
+#     programName: str
+#     hoursSpent: float
 
-# Pydantic model
+#
+# For the uh, dashboard
 
 
 class DailyProgramSummarySchema(BaseModel):
@@ -117,6 +118,35 @@ class BarChartContent(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class TimelineEntrySchema(BaseModel):
+    id: str  # This will map to clientFacingId from the SQLAlchemy model
+    group: str  # This will map from ChartEventType enum
+    content: str
+    start: datetime
+    end: datetime
+
+    class Config:
+        from_attributes = True
+
+    # Optional: Add a method to convert from SQLAlchemy model
+    @classmethod
+    def from_orm_model(cls, db_model: TimelineEntryObj) -> 'TimelineEntrySchema':
+        return cls(
+            id=db_model.clientFacingId,
+            group=db_model.group.value,  # Convert enum to string
+            content=db_model.content,
+            start=db_model.start,
+            end=db_model.end
+        )
+
+
+class TimelineRows(BaseModel):
+    mouseRows: List[TimelineEntrySchema]
+    keyboardRows: List[TimelineEntrySchema]
+
+# Main class in this file
 
 
 class SurveillanceState:
@@ -307,7 +337,13 @@ async def get_timeline_for_dashboard(dashboard_service: DashboardService = Depen
         raise HTTPException(
             status_code=500, detail="Failed to retrieve timeline info")
 
-    return TimelineRows(mouseRows=mouse_rows, keyboardRows=keyboard_rows)
+    # Convert SQLAlchemy models to Pydantic models
+    pydantic_mouse_rows = [
+        TimelineEntrySchema.from_orm_model(row) for row in mouse_rows]
+    pydantic_keyboard_rows = [
+        TimelineEntrySchema.from_orm_model(row) for row in keyboard_rows]
+
+    return TimelineRows(mouseRows=pydantic_mouse_rows, keyboardRows=pydantic_keyboard_rows)
 
 
 @app.get("/dashboard/programs", response_model=BarChartContent)

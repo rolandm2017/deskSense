@@ -73,10 +73,10 @@ class TimelineEntryDao(BaseQueueingDao):
             return result.scalars().all()
 
     async def read_day_mice(self, day: datetime):
-        return self.read_day(day, ChartEventType.MOUSE)
+        return await self.read_day(day, ChartEventType.MOUSE)
 
     async def read_day_keyboard(self, day: datetime):
-        return self.read_day(day, ChartEventType.KEYBOARD)
+        return await self.read_day(day, ChartEventType.KEYBOARD)
 
     async def read_all(self):
         """Read all timeline entries"""
