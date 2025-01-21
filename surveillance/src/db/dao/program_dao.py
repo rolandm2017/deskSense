@@ -24,8 +24,14 @@ class ProgramDao(BaseQueueingDao):
         # 'window': window_name,
         # 'detail': the_junk_string,
         # 'productive': is_productive
-        if isinstance(session, dict):
-            await self.queue_item(session)
+        program_deliverable = Program(
+            window=session['window'],
+            detail=session['detail'],
+            start_time=session['start_time'],
+            end_time=session['end_time'],
+            productive=session['productive']
+        )
+        await self.queue_item(program_deliverable)
 
     async def create_without_queue(self, session: SessionData):
         if isinstance(session, dict):

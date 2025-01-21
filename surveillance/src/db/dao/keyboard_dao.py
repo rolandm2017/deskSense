@@ -52,9 +52,6 @@ class KeyboardDao(BaseQueueingDao):
         async with self.session_maker() as session:
             result = await session.execute(select(TypingSession))
             result = await result.all()
-            # assert all(isinstance(r[0], TypingSession)
-            #    for r in result)  # consider disabling for performance
-            print(result, '60ru')
             dtos = [TypingSessionDto(
                 x[0].id, x[0].start_time, x[0].end_time) for x in result]
 

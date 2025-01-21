@@ -16,7 +16,7 @@ from src.db.dao.keyboard_dao import KeyboardDao
 from src.db.dao.program_dao import ProgramDao
 from src.db.dao.timeline_entry_dao import TimelineEntryDao
 from src.db.dao.daily_summary_dao import DailySummaryDao
-from src.db.models import MouseMove, Program
+from src.db.models import MouseMove, Program, DailyProgramSummary
 from src.services import MouseService, KeyboardService, ProgramService, DashboardService
 from src.object.dto import TypingSessionDto, MouseMoveDto, ProgramDto
 from src.surveillance_manager import SurveillanceManager
@@ -99,9 +99,24 @@ class BarChartProgramEntry(BaseModel):
     programName: str
     hoursSpent: float
 
+# Pydantic model
+
+
+class DailyProgramSummarySchema(BaseModel):
+    id: int
+    program_name: str
+    hours_spent: float
+    gathering_date: datetime
+
+    class Config:
+        from_attributes = True  # This enables ORM mode
+
 
 class BarChartContent(BaseModel):
-    columns: List[BarChartProgramEntry]
+    columns: List[DailyProgramSummarySchema]  # Use the Pydantic schema instead
+
+    class Config:
+        from_attributes = True
 
 
 class SurveillanceState:
@@ -301,7 +316,7 @@ async def get_program_time_for_dashboard(dashboard_service: DashboardService = D
     if not isinstance(program_data, list):
         raise HTTPException(
             status_code=500, detail="Failed to retrieve bar chart info")
-
+    print(program_data, '304ru')
     return BarChartContent(columns=program_data)
 
 
