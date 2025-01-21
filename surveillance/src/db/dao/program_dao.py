@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 from .base_dao import BaseQueueingDao
 from ..models import Program
-from ...object.classes import SessionData
+from ...object.classes import ProgramSessionData
 from ...console_logger import ConsoleLogger
 
 
@@ -14,7 +14,7 @@ class ProgramDao(BaseQueueingDao):
         super().__init__(session_maker, batch_size, flush_interval)
         self.logger = ConsoleLogger()
 
-    async def create(self, session: SessionData):
+    async def create(self, session: ProgramSessionData):
         # self.logger.log_blue("[LOG] Program event: " + session['window'])
         # Example:
         # NOTE: now has a 'window' and 'detail' field
@@ -31,9 +31,10 @@ class ProgramDao(BaseQueueingDao):
             end_time=session['end_time'],
             productive=session['productive']
         )
+
         await self.queue_item(program_deliverable)
 
-    async def create_without_queue(self, session: SessionData):
+    async def create_without_queue(self, session: ProgramSessionData):
         if isinstance(session, dict):
             print("creating program row", session['start_time'])
             new_program = Program(

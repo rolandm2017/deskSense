@@ -4,6 +4,7 @@ from typing import Iterator
 
 from src.util.clock import ClockProtocol
 
+
 class MockClock(ClockProtocol):
     def __init__(self, times: list[datetime] | Iterator[datetime]):
         self.times = iter(times) if isinstance(times, list) else times
@@ -25,8 +26,6 @@ class MockClock(ClockProtocol):
 
     def advance_time(self, seconds: int):
         """Advance the clock by specified number of seconds."""
-        print(self._current_time, seconds, '25ru')
         if self._current_time is None:
             self._current_time = self.now()
         self._current_time += timedelta(seconds=seconds)
-        print(self._current_time, '29ru')

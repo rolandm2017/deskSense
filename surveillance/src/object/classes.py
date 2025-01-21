@@ -1,14 +1,15 @@
 # classes.py
 # For various classes
+from datetime import datetime
 from typing import TypedDict, NotRequired
 
 
-class SessionData(TypedDict):
-    start_time: str
-    end_time: str
+class ProgramSessionData(TypedDict):
+    start_time: datetime
+    end_time: datetime
     duration: float
     window: str
-    detail: NotRequired[str]  # This field is optional
+    detail: NotRequired[str]
     productive: bool
 
 

@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.db.dao.program_dao import ProgramDao
 from src.db.models import Program
-from src.object.classes import SessionData
 
 
 class TestProgramDao:
@@ -42,6 +41,7 @@ class TestProgramDao:
         # Arrange
         session = {
             'window': 'TestWindow',
+            'detail': "Test detail for test",
             'start_time': datetime.now().isoformat(),
             'end_time': (datetime.now() + timedelta(hours=1)).isoformat(),
             'productive': True
@@ -50,10 +50,18 @@ class TestProgramDao:
         dao.queue_item = AsyncMock()
 
         # Act
+        print(session, "we are here 54ru")
         await dao.create(session)
 
         # Assert
-        dao.queue_item.assert_called_once_with(session)
+        expected_call_argument = Program(
+            window=session['window'],
+            detail=session['detail'],
+            start_time=session['start_time'],
+            end_time=session['end_time'],
+            productive=session['productive']
+        )
+        dao.queue_item.assert_called_once_with(expected_call_argument)
 
     @pytest.mark.asyncio
     async def test_read_by_id(self, dao, mock_session):
