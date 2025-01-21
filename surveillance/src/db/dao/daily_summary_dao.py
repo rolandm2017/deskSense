@@ -38,15 +38,18 @@ class DailySummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.program_name == target_program_name,
             func.date(DailyProgramSummary.date) == today
         )
-        result = await self.db.execute(query)
-        existing_entry = result.scalar_one_or_none()
 
-        if existing_entry:
-            # Update existing entry
-            existing_entry.hoursSpent += usage_duration_in_hours
-            await self.db.commit()
-        else:
-            self.create(target_program_name, usage_duration_in_hours, today)
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            existing_entry = result.scalar_one_or_none()
+
+            if existing_entry:
+                # Update existing entry
+                existing_entry.hoursSpent += usage_duration_in_hours
+                await self.db.commit()
+            else:
+                self.create(target_program_name,
+                            usage_duration_in_hours, today)
 
     async def create(self, target_program_name, duration_in_hours, today):
         # Create new entry
@@ -63,13 +66,16 @@ class DailySummaryDao:  # NOTE: Does not use BaseQueueDao
         query = select(DailyProgramSummary).where(
             func.date(DailyProgramSummary.date) == day.date()
         )
-        result = await self.db.execute(query)
-        return result.scalars().all()
+        async with self.session_maker() as session:
+
+            result = await session.execute(query)
+            return result.scalars().all()
 
     async def read_all(self):
         """Read all entries."""
-        result = await self.db.execute(select(DailyProgramSummary))
-        return result.scalars().all()
+        async with self.session_maker() as session:
+            result = await session.execute(select(DailyProgramSummary))
+            return result.scalars().all()
 
     async def read_row_for_program(self, target_program: str):
         """Reads the row for the target program for today."""
@@ -78,8 +84,9 @@ class DailySummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.program_name == target_program,
             func.date(DailyProgramSummary.date) == today
         )
-        result = await self.db.execute(query)
-        return result.scalar_one_or_none()
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            return result.scalar_one_or_none()
 
     async def delete(self, id: int):
         """Delete an entry by ID"""

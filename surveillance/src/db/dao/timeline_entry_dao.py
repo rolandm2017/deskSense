@@ -51,10 +51,11 @@ class TimelineEntryDao(BaseQueueingDao):
 
     async def read_highest_id(self):
         """Read the highest ID currently in the table"""
-        query = select(func.max(TimelineEntryObj.id))
-        result = await self.db.execute(query)
-        max_id = result.scalar()
-        return max_id or 0  # Return 0 if table is empty
+        async with self.session_maker() as session:
+            query = select(func.max(TimelineEntryObj.id))
+            result = await session.execute(query)
+            max_id = result.scalar()
+            return max_id or 0  # Return 0 if table is empty
 
     async def read_day(self, day: datetime, event_type: ChartEventType):
         """Read all entries for the given day"""
@@ -67,8 +68,9 @@ class TimelineEntryDao(BaseQueueingDao):
             TimelineEntryObj.group == event_type
         ).order_by(TimelineEntryObj.start)
 
-        result = await self.db.execute(query)
-        return result.scalars().all()
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            return result.scalars().all()
 
     async def read_day_mice(self, day: datetime):
         return self.read_day(day, ChartEventType.MOUSE)
@@ -78,8 +80,9 @@ class TimelineEntryDao(BaseQueueingDao):
 
     async def read_all(self):
         """Read all timeline entries"""
-        result = await self.db.execute(select(TimelineEntryObj))
-        return result.scalars().all()
+        async with self.session_maker() as session:
+            result = await session.execute(select(TimelineEntryObj))
+            return result.scalars().all()
 
     async def delete(self, id: int):
         """Delete an entry by ID"""

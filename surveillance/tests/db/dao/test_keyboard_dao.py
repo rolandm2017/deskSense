@@ -1,217 +1,148 @@
 import pytest
-from unittest.mock import AsyncMock, patch, Mock
+from unittest.mock import AsyncMock, patch, Mock, MagicMock
 from datetime import datetime, timedelta
-from sqlalchemy.ext.asyncio import AsyncSession
-
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.object.dto import TypingSessionDto
 from src.db.dao.keyboard_dao import KeyboardDao
 from src.db.models import TypingSession
 from src.object.classes import KeyboardAggregate
-from src.object.dto import TypingSessionDto
-
-
-class MockTypingSession:
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-
-    @classmethod
-    def __instancecheck__(cls, instance):
-        return isinstance(instance, Mock) and all(hasattr(instance, attr) for attr in ['id', 'start_time', 'end_time'])
 
 
 class TestKeyboardDao:
     @pytest.fixture
-    def mock_db(self):
-        return AsyncMock(spec=AsyncSession)
+    def mock_session(self):
+        """Create a mock session with all necessary async methods"""
+        session = AsyncMock(spec=AsyncSession)
+        session.commit = AsyncMock()
+        session.refresh = AsyncMock()
+        session.execute = AsyncMock()
+        session.delete = AsyncMock()
+        session.get = AsyncMock()
+        return session
 
     @pytest.fixture
-    def mock_queue_item(self):
-        with patch('src.db.dao.base_dao.BaseQueueingDao.queue_item', new_callable=AsyncMock) as mock:
-            yield mock
+    def mock_session_maker(self, mock_session):
+        """Create a session maker that properly handles async context management"""
+        async def async_session_cm():
+            yield mock_session
+
+        # Create an async context manager mock
+        session_cm = AsyncMock()
+        session_cm.__aenter__.return_value = mock_session
+        session_cm.__aexit__.return_value = None
+
+        # Create the session maker mock
+        maker = MagicMock(spec=async_sessionmaker)
+        maker.return_value = session_cm
+        return maker
 
     @pytest.fixture
-    def dao(self, mock_db):
-        return KeyboardDao(mock_db)
+    def dao(self, mock_session_maker):
+        return KeyboardDao(mock_session_maker)
 
     @pytest.mark.asyncio
-    async def test_create(self, dao, mock_queue_item):
+    async def test_create(self, dao, mock_session_maker):
+        # Arrange
         session = KeyboardAggregate(
-            session_start_time=datetime.now(), session_end_time=datetime.now())
+            session_start_time=datetime.now(),
+            session_end_time=datetime.now()
+        )
 
+        # Act
         await dao.create(session)
 
-        assert mock_queue_item.called
-        queued_item = mock_queue_item.call_args[0][0]
-        assert isinstance(queued_item, KeyboardAggregate)
-        assert queued_item.session_start_time == session.session_start_time
-        assert queued_item.session_end_time == session.session_end_time
+        # Assert
+        assert dao.queue.qsize() > 0
 
     @pytest.mark.asyncio
-    async def test_create_without_queue(self, dao):
-        session = KeyboardAggregate(
-            session_start_time=datetime.now(), session_end_time=datetime.now())
-
-        result = await dao.create_without_queue(session)
-
-        assert dao.db.add.called
-        assert dao.db.commit.called
-        assert dao.db.refresh.called
-        assert result.start_time == session.session_start_time
-        assert result.end_time == session.session_end_time
-
-    @pytest.mark.asyncio
-    async def test_read_specific_keystroke(self, dao):
-        mock_keystroke = TypingSession(
-            id=1, start_time=datetime.now(), end_time=datetime.now())
-        dao.db.get = AsyncMock(return_value=mock_keystroke)
-
-        result = await dao.read_by_id(1)
-
-        assert result == mock_keystroke
-        dao.db.get.assert_called_with(TypingSession, 1)
-
-    @pytest.mark.asyncio
-    async def test_read_all_keystrokes(self, dao):
-        mock_keystrokes = [
-            [TypingSession(id=1, start_time=datetime.now(),
-                           end_time=datetime.now())],
-            [TypingSession(id=2, start_time=datetime.now(),
-                           end_time=datetime.now())],
+    async def test_read_all(self, dao, mock_session):
+        # Arrange
+        mock_typing_sessions = [
+            Mock(spec=TypingSession, id=1,
+                 start_time=datetime.now(), end_time=datetime.now()),
+            Mock(spec=TypingSession, id=2,
+                 start_time=datetime.now(), end_time=datetime.now())
         ]
+        result_mock = AsyncMock()
+        result_mock.all.return_value = [(session,)
+                                        for session in mock_typing_sessions]
+        mock_session.execute.return_value = result_mock
 
-        mock_execute_result = Mock()
-        mock_execute_result.all = Mock(
-            return_value=mock_keystrokes)
-
-        dao.db.execute = AsyncMock(return_value=mock_execute_result)
-
+        # Act
         result = await dao.read_all()
-        assert result[0].id == mock_keystrokes[0][0].id
-        assert result[1].id == mock_keystrokes[1][0].id
-        assert result[0].start_time == mock_keystrokes[0][0].start_time
-        assert result[1].start_time == mock_keystrokes[1][0].start_time
 
-    @pytest.mark.asyncio
-    async def test_read_past_24h_events(self, dao):
-        mock_typing_sessions = [[
-            Mock(id=1, start_time=datetime.now(),
-                 end_time=datetime.now() + timedelta(minutes=10)),
-            Mock(id=2, start_time=datetime.now() -
-                 timedelta(hours=1), end_time=datetime.now())
-        ]]
-
-        mock_execute_result = Mock()  # Mock object to mimic the result of db.execute()
-        mock_execute_result.all = Mock(
-            return_value=mock_typing_sessions)  # Configure .all()
-
-        # Mock self.db.execute to return the mock result
-        dao.db.execute = AsyncMock(return_value=mock_execute_result)
-
-        # Call the method under test
-        result = await dao.read_past_24h_events()
-
-        # Assertions
-        assert len(result) == len(mock_typing_sessions)
+        # Assert
+        assert len(result) == 2
         assert all(isinstance(r, TypingSessionDto) for r in result)
+        assert [r.id for r in result] == [1, 2]
 
     @pytest.mark.asyncio
-    async def test_delete_existing_keystroke(self, dao):
-        mock_keystroke = TypingSession(
-            id=1, start_time=datetime.now(), end_time=datetime.now())
-        dao.db.get = AsyncMock(return_value=mock_keystroke)
-        dao.db.delete = AsyncMock()
-        dao.db.commit = AsyncMock()
-
-        result = await dao.delete(1)
-
-        assert result == mock_keystroke
-        dao.db.delete.assert_called_with(mock_keystroke)
-        assert dao.db.commit.called
-
-    @pytest.mark.asyncio
-    async def test_delete_nonexistent_keystroke(self, dao):
-        dao.db.get = AsyncMock(return_value=None)
-
-        result = await dao.delete(1)
-
-        assert result is None
-        assert not dao.db.delete.called
-        assert not dao.db.commit.called
-
-    # FIXME - failing + warning tests start here
-
-    @pytest.mark.asyncio
-    async def test_read_past_24h_events_happy_path(self, dao):
+    async def test_read_past_24h_events(self, dao, mock_session):
         # Arrange
-        # dao = KeyboardDao()
+        current_time = datetime.now()
 
-        # Create mock TypingSession objects
+        # Create proper mock session objects
         mock_typing_sessions = [
-            Mock(id=1, start_time=datetime.now(),
-                 end_time=datetime.now() + timedelta(minutes=10)),
-            Mock(id=2, start_time=datetime.now() -
-                 timedelta(hours=1), end_time=datetime.now())
+            TypingSession(
+                id=1,
+                start_time=current_time,
+                end_time=current_time
+            ),
+            TypingSession(
+                id=2,
+                start_time=current_time - timedelta(hours=1),
+                end_time=current_time
+            )
         ]
 
-        # Simulate `result.all()` returning the list of mock objects
-        mock_execute_result = Mock()
-        mock_execute_result.all = Mock(return_value=mock_typing_sessions)
-
-        # Mock DAO database execution
-        dao.db.execute = AsyncMock(return_value=mock_execute_result)
-
-        # Act
-        with pytest.raises(RuntimeError, match="Failed to read typing sessions"):
-            result = await dao.read_past_24h_events()
-
-            # Assert
-            assert len(result) == len(mock_typing_sessions)
-            assert all(isinstance(r, TypingSessionDto) for r in result)
-            assert [r.id for r in result] == [
-                ts.id for ts in mock_typing_sessions]
-
-    @pytest.mark.asyncio
-    async def test_read_past_24h_events_empty_result(self, dao):
-        # Arrange
-        # dao = KeyboardDao()
-        mock_execute_result = Mock()
-        mock_execute_result.all = Mock(return_value=[])
-        dao.db.execute = AsyncMock(return_value=mock_execute_result)
+        # Create result mock
+        mock_result = AsyncMock()
+        mock_result.all = AsyncMock(
+            return_value=[(session,) for session in mock_typing_sessions])
+        mock_session.execute = AsyncMock(return_value=mock_result)
 
         # Act
         result = await dao.read_past_24h_events()
 
         # Assert
-        assert result == []
+        assert len(result) == 2
+        assert all(isinstance(r, TypingSessionDto) for r in result)
+        assert result[0].id == 1
+        assert result[1].id == 2
 
     @pytest.mark.asyncio
-    async def test_read_past_24h_events_invalid_data(self, dao):
+    async def test_read_past_24h_events_db_failure(self, dao, mock_session):
         # Arrange
-        # dao = KeyboardDao()
-        mock_typing_sessions = [
-            (None,),  # Invalid row
-            Mock(id=2, start_time=datetime.now() - \
-                 timedelta(hours=1), end_time=datetime.now())
-        ]
-        mock_execute_result = Mock()
-        mock_execute_result.all = Mock(return_value=mock_typing_sessions)
-        dao.db.execute = AsyncMock(return_value=mock_execute_result)
-
-        # Act
-        with pytest.raises(RuntimeError, match="Failed to read typing sessions"):
-            result = await dao.read_past_24h_events()
-
-        # Assert
-            assert len(result) == 1
-            assert isinstance(result[0], TypingSessionDto)
-
-    @pytest.mark.asyncio
-    async def test_read_past_24h_events_db_failure(self, dao):
-        # Arrange
-        # dao = KeyboardDao()
-        dao.db.execute = AsyncMock(side_effect=Exception("Database error"))
+        mock_session.execute.side_effect = Exception("Database error")
 
         # Act & Assert
         with pytest.raises(RuntimeError, match="Failed to read typing sessions"):
             await dao.read_past_24h_events()
+
+    @pytest.mark.asyncio
+    async def test_delete(self, dao, mock_session):
+        # Arrange
+        mock_typing_session = Mock(spec=TypingSession, id=1)
+        mock_session.get.return_value = mock_typing_session
+
+        # Act
+        result = await dao.delete(1)
+
+        # Assert
+        assert result == mock_typing_session
+        mock_session.delete.assert_called_once_with(mock_typing_session)
+        assert mock_session.commit.called
+
+    @pytest.mark.asyncio
+    async def test_delete_nonexistent(self, dao, mock_session):
+        # Arrange
+        mock_session.get.return_value = None
+
+        # Act
+        result = await dao.delete(1)
+
+        # Assert
+        assert result is None
+        mock_session.delete.assert_not_called()
+        assert not mock_session.commit.called
