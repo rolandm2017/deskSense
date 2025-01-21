@@ -47,7 +47,7 @@ class MouseDao(BaseQueueingDao):
             end_time=end_time
         )
 
-        self.db.add(new_mouse_move)
+        self.db.add(new_mouse_move)   # FIXME: this won't work w/ sessions
         await self.db.commit()
         await self.db.refresh(new_mouse_move)
         return new_mouse_move
@@ -60,8 +60,9 @@ class MouseDao(BaseQueueingDao):
         if mouse_move_id:
             return await self.db.get(MouseMove, mouse_move_id)
 
-        result = await self.db.execute(select(MouseMove))
-        return result.scalars().all()  # TODO: return Dtos
+        async with self.session_maker() as session:
+            result = await session.execute(select(MouseMove))
+            return result.scalars().all()  # TODO: return Dtos
 
     async def read_past_24h_events(self):
         """
@@ -72,8 +73,9 @@ class MouseDao(BaseQueueingDao):
             MouseMove.end_time >= datetime.datetime.now() - datetime.timedelta(days=1)
         ).order_by(MouseMove.end_time.desc())
 
-        result = await self.db.execute(query)
-        return result.scalars().all()  # TODO: return Dtos
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            return result.scalars().all()  # TODO: return Dtos
 
     async def delete(self, id: int):
         """Delete an entry by ID"""

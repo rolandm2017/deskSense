@@ -37,6 +37,7 @@ class ProgramDao(BaseQueueingDao):
                 productive=session['productive']
             )
 
+            # FIXME: this won't work with a session
             await self.db.add(new_program)
             await self.db.commit()
             await self.db.refresh(new_program)
@@ -50,9 +51,10 @@ class ProgramDao(BaseQueueingDao):
         """
         if program_id:
             return await self.db.get(Program, program_id)
+        async with self.session_maker() as session:
 
-        result = await self.db.execute(select(Program))
-        return result.scalars().all()  # TODO: return Dtos
+            result = await session.execute(select(Program))
+            return result.scalars().all()  # TODO: return Dtos
 
     async def read_past_24h_events(self):
         """
@@ -62,9 +64,9 @@ class ProgramDao(BaseQueueingDao):
         query = select(Program).where(
             Program.end_time >= datetime.now() - timedelta(days=1)  # This line is fixed
         ).order_by(Program.end_time.desc())
-
-        result = await self.db.execute(query)
-        return result.scalars().all()  # TODO: return Dtos
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            return result.scalars().all()  # TODO: return Dtos
 
     async def delete(self, program_id: int):
         """Delete a Program entry by ID"""

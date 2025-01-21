@@ -23,8 +23,10 @@ class KeyboardDao(BaseQueueingDao):
 
     async def create(self, session: KeyboardAggregate):
         # event time should be just month :: date :: HH:MM:SS
+        new_typing_session_entry = TypingSession(
+            start_time=session.session_start_time, end_time=session.session_end_time)
         self.logger.log_blue("[LOG] Keyboard event: " + str(session))
-        await self.queue_item(session, KeyboardAggregate)
+        await self.queue_item(new_typing_session_entry)
 
     async def create_without_queue(self, session: KeyboardAggregate):
         print("adding keystroke ", str(session))
@@ -33,7 +35,7 @@ class KeyboardDao(BaseQueueingDao):
             end_time=session.session_end_time
         )
 
-        self.db.add(new_session)
+        self.db.add(new_session)  # FIXME: this won't work w/ sessions
         await self.db.commit()
         await self.db.refresh(new_session)
         return new_session
@@ -47,15 +49,16 @@ class KeyboardDao(BaseQueueingDao):
     async def read_all(self):
         """Return all keystrokes."""
 
-        result = await self.db.execute(select(TypingSession))
-        result = result.all()
-        # assert all(isinstance(r[0], TypingSession)
-        #    for r in result)  # consider disabling for performance
-        print(result, '60ru')
-        dtos = [TypingSessionDto(
-            x[0].id, x[0].start_time, x[0].end_time) for x in result]
+        async with self.session_maker() as session:
+            result = await session.execute(select(TypingSession))
+            result = await result.all()
+            # assert all(isinstance(r[0], TypingSession)
+            #    for r in result)  # consider disabling for performance
+            print(result, '60ru')
+            dtos = [TypingSessionDto(
+                x[0].id, x[0].start_time, x[0].end_time) for x in result]
 
-        return dtos
+            return dtos
 
     async def read_past_24h_events(self):
         """
@@ -69,20 +72,19 @@ class KeyboardDao(BaseQueueingDao):
                 TypingSession.start_time >= twenty_four_hours_ago
             ).order_by(TypingSession.start_time.desc())
 
-            result = await self.db.execute(query)
-            rows = result.all()
+            async with self.session_maker() as session:
+                result = await session.execute(query)
+                rows = await result.all()  # Add await here
 
-            if not rows:  # Handle no results
-                return []
+                if not rows:  # Handle no results
+                    return []
 
-            dtos = [
-                TypingSessionDto(x[0].id, x[0].start_time, x[0].end_time)
-                for x in rows
-                if x[0] is not None  # Avoid invalid row structures
-            ]
-            return dtos
+                dtos = [
+                    TypingSessionDto(x[0].id, x[0].start_time, x[0].end_time)
+                    for x in rows
+                ]
+                return dtos
         except Exception as e:
-            # Handle database exceptions gracefully
             print(f"Error reading events: {e}")
             raise RuntimeError("Failed to read typing sessions") from e
 
