@@ -96,7 +96,7 @@ class TestMouseDao:
         # Setup the mock result chain
         mock_result = AsyncMock()
         mock_scalar_result = AsyncMock()
-        mock_scalar_result.all = AsyncMock(return_value=mock_moves)
+        mock_scalar_result.all = Mock(return_value=mock_moves)
         mock_result.scalars = Mock(return_value=mock_scalar_result)
         mock_session.execute.return_value = mock_result
 
@@ -114,11 +114,13 @@ class TestMouseDao:
         # Setup the mock result chain
         mock_result = AsyncMock()
         mock_scalar_result = AsyncMock()
-        mock_scalar_result.all = AsyncMock(return_value=mock_moves)
+        mock_scalar_result.all = Mock(return_value=mock_moves)
         mock_result.scalars = Mock(return_value=mock_scalar_result)
         mock_session.execute.return_value = mock_result
 
         result = await dao.read_past_24h_events()
+        print(result, '122ru')
+        print(mock_moves, '123ru')
         assert result == mock_moves
 
     @pytest.mark.asyncio

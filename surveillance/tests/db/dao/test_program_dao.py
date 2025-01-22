@@ -42,15 +42,14 @@ class TestProgramDao:
         session = {
             'window': 'TestWindow',
             'detail': "Test detail for test",
-            'start_time': datetime.now().isoformat(),
-            'end_time': (datetime.now() + timedelta(hours=1)).isoformat(),
+            'start_time': datetime.now(),
+            'end_time': (datetime.now() + timedelta(hours=1)),
             'productive': True
         }
 
         dao.queue_item = AsyncMock()
 
         # Act
-        print(session, "we are here 54ru")
         await dao.create(session)
 
         # Assert

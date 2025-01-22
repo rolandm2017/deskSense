@@ -10,7 +10,8 @@ from ..util.detect_os import OperatingSystemInfo
 from ..util.end_program_routine import end_program_readout, pretend_report_event
 from ..util.clock import Clock
 from ..util.threaded_tracker import ThreadedTracker
-from ..util.program_tools import separate_window_name_and_detail, is_expected_shape_else_throw, tab_is_a_productive_tab
+from ..util.program_tools import separate_window_name_and_detail, is_expected_shape_else_throw, tab_is_a_productive_tab, contains_space_dash_space
+from ..util.strings import no_space_dash_space
 from ..object.classes import ProgramSessionData
 
 
@@ -35,36 +36,38 @@ class ProgramTrackerCore:
         self.console_logger = ConsoleLogger()
 
     def run_tracking_loop(self):
-        print("runs 68ru")
         for window_change in self.program_facade.listen_for_window_changes():
-            print("ru ru 69ru")
             is_expected_shape_else_throw(window_change)
             on_a_different_window = self.current_session and window_change[
                 "window_title"] != self.current_session.window_title
             if on_a_different_window:
-                current_time = self.clock.now()
+                current_time = self.clock.now()  # once per loop
                 self.conclude_session(current_time)
+                print("Handler active")
                 self.apply_handlers(self.current_session, 500)
                 self.current_session = self.start_new_session(
                     window_change, current_time)
 
             if self.current_session is None:  # initialize
-                self.console_logger.log_active_program(self.current_session)
+                current_time = self.clock.now()
                 self.current_session = self.start_new_session(
-                    window_change, self.clock.now())
+                    window_change, current_time)
 
-    @staticmethod
     def start_new_session(self, window_change_dict, start_time):
         new_session = ProgramSessionData()
-        detail, window = separate_window_name_and_detail(
-            window_change_dict["window_title"])
-        new_session.window = window
-        new_session.detail = detail
+        if contains_space_dash_space(window_change_dict["window_title"]):
+            detail, window = separate_window_name_and_detail(
+                window_change_dict["window_title"])
+            new_session.window_title = window
+            new_session.detail = detail
+        else:
+            new_session.window_title = window_change_dict["window_title"]
+            new_session.detail = no_space_dash_space
         new_session.start_time = start_time
         # end_time, duration, productive not set yet
         return new_session
 
-    def conclude_session(self, start_time, end_time):
+    def conclude_session(self, end_time):
         # end_time = self.clock.now()
         start_time = self.current_session.start_time
         duration = end_time - start_time

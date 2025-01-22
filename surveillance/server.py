@@ -8,7 +8,7 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from src.db.database import get_db, init_db, AsyncSession, async_session_maker
 from src.db.dao.mouse_dao import MouseDao
@@ -109,15 +109,13 @@ class DailyProgramSummarySchema(BaseModel):
     hours_spent: float
     gathering_date: datetime
 
-    class Config:
-        from_attributes = True  # This enables ORM mode
+    model_config = ConfigDict(from_attributes=True)  # This enables ORM mode
 
 
 class BarChartContent(BaseModel):
     columns: List[DailyProgramSummarySchema]  # Use the Pydantic schema instead
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TimelineEntrySchema(BaseModel):
@@ -127,8 +125,7 @@ class TimelineEntrySchema(BaseModel):
     start: datetime
     end: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
     # Optional: Add a method to convert from SQLAlchemy model
     @classmethod

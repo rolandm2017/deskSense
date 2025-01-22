@@ -39,21 +39,24 @@ class KeyboardTrackerCore:
         event = self.keyboard_facade.read_event()
         if self.keyboard_facade.is_ctrl_c(event):
             self.keyboard_facade.trigger_ctrl_c()  # stop program
+            return
         if self.keyboard_facade.event_type_is_key_down(event):
-            current_time = self.clock.now()
             self.recent_count += 1  # per keystroke
+            current_time = self.clock.now()
             self.time_of_last_aggregator_update = current_time
-            aggregation = self.aggregator.add_event(current_time.timestamp())
+            print(current_time, '47ru')
+            finalized_aggregate = self.aggregator.add_event(
+                current_time.timestamp())
+            print(finalized_aggregate, '50ru')
 
-            if aggregation is not None:
-                session = self.aggregator.package_aggregate_for_db(aggregation)
+            if finalized_aggregate is not None:
+                session = self.aggregator.package_aggregate_for_db(
+                    finalized_aggregate)
                 self.apply_handlers(session)
-            # print("Increasing recent count, 47ru")
             if self._is_ready_to_log_to_console(current_time):
-                # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-                # @@@@ Please never log the actual key pressed @@@@
+                # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+                # @@@@ Never log the actual key pressed @@@@
                 self.console_logger.log_key_presses(self.recent_count)
-                # print("Resetting recent count, 52ru")
                 self.recent_count = 0
                 self.update_time(current_time)
 
@@ -61,10 +64,8 @@ class KeyboardTrackerCore:
         self.time_of_last_terminal_out = new_time
 
     def apply_handlers(self, content: KeyboardAggregate):
-        # print(content, "Applying handlers, 58ru")
         if isinstance(self.event_handlers, list):
             for handler in self.event_handlers:
-                # print("Handler applied, 61ru")
                 handler(content)  # emit an event
         else:
             self.event_handlers(content)  # is a single func

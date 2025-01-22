@@ -3,47 +3,45 @@ import pytest
 from src.config.definitions import productive_sites
 from src.util.program_tools import separate_window_name_and_detail, is_expected_shape_else_throw, tab_is_a_productive_tab,  separator_error_msg, window_is_chrome
 
-window1 = "Squashing Commits with Git Rebase - Claude - Google Chrome"
-window3 = "H&M | Online Fashion, Homeware & Kids Clothes | H&M CA - Google Chrome"
-window4 = "Vite + React + TS - Google Chrome"
-window5 = "program_tracker.py - deskSense - Visual Studio Code"
-window6 = "rlm@kingdom: ~/Code/deskSense/surveillance"
-window7 = "Alt-tab window"
-
 
 def test_separate_window_name_and_detail():
     chrome = "Google Chrome"
+
+    window1 = "Squashing Commits with Git Rebase - Claude - Google Chrome"
 
     detail, title = separate_window_name_and_detail(window1)
 
     assert title == chrome
     assert detail == "Squashing Commits with Git Rebase - Claude"
 
+    window3 = "H&M | Online Fashion, Homeware & Kids Clothes | H&M CA - Google Chrome"
+
     detail, title = separate_window_name_and_detail(window3)
 
     assert title == chrome
     assert detail == "H&M | Online Fashion, Homeware & Kids Clothes | H&M CA"
 
+    window4 = "Vite + React + TS - Google Chrome"
     detail, title = separate_window_name_and_detail(window4)
-
     assert title == chrome
     assert detail == "Vite + React + TS"
 
+    window5 = "program_tracker.py - deskSense - Visual Studio Code"
     detail, title = separate_window_name_and_detail(window5)
-
     assert title == "Visual Studio Code"
     assert detail == "program_tracker.py - deskSense"
 
+    window6 = "rlm@kingdom: ~/Code/deskSense/surveillance"
     response = separate_window_name_and_detail(window6)
     print(response, '38ru')
+    assert response[0] == window6
+    assert len(response) == 1
 
-    assert response[1] == window6
-    assert response[0] == separator_error_msg
-
+    window7 = "Alt-tab window"
     response = separate_window_name_and_detail(window7)
 
-    assert response[1] == window7
-    assert response[0] == separator_error_msg
+    assert response[0] == window7
+    assert len(response) == 1
 
 
 def test_tab_is_a_productive_tab_validation():

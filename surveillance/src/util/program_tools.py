@@ -1,18 +1,24 @@
 separator_error_msg = "Error in function: window_title had no ' - '."
 
 
+def contains_space_dash_space(s):
+    return " - " in s
+
+
 def separate_window_name_and_detail(window_title):
     if not isinstance(window_title, str):
         raise TypeError("Input must be a string")
-    if " - " in window_title:
-        return window_title.rsplit(" - ", 1)
-    return separator_error_msg, window_title
+    return window_title.rsplit(" - ", 1)
 
 
-def is_expected_shape_else_throw(dict):
+def is_expected_shape_else_throw(shape):
+    if not isinstance(shape, dict):
+        raise TypeError("Expected dict, got " + type(shape).__name__)
     # PID is irrelevant
-    compliant_shape = "os" in dict and "process_name" in dict and "window_title" in dict
+    compliant_shape = "os" in shape and "process_name" in shape and "window_title" in shape
     if not compliant_shape:
+        print("os" in shape, "process_name" in shape,
+              "window_title" in shape, shape)
         raise AttributeError("Uncompliant program window shape")
     return compliant_shape
 
