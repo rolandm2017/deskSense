@@ -16,7 +16,7 @@ class BaseQueueingDao:
     async def queue_item(self, item, expected_type=None):
         """Common method to queue items and start processing if needed"""
         if isinstance(item, dict):
-            print(item, '19ru')
+            print("[DEBUG]", item, '19ru')
             raise ValueError("Dict found")
         if expected_type and not isinstance(item, expected_type):
             raise ValueError("Mismatch found")

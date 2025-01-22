@@ -21,9 +21,6 @@ class KeyboardService:
         Each keystroke contains a timestamp.
         """
         events = await self.dao.read_past_24h_events()
-        print("####\n333\n3333\n####")
-        print(all(isinstance(entry, TypingSession)
-              for entry in events), '23ru')
         return events
 
     async def get_all_events(self) -> List[TypingSession]:

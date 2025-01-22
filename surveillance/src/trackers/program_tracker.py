@@ -82,7 +82,6 @@ class ProgramTrackerCore:
             self.console_logger.log_yellow_multiple("[DEBUG]", window_info)
             raise ValueError("Window info was not passed")
 
-        print(window_info, '110ru')
         process_name = window_info['process_name']
         window_title_with_detail = window_info['window_title']
 
@@ -91,7 +90,6 @@ class ProgramTrackerCore:
 
         # Check if it's a known application
         is_a_known_productive_program = window_name in productive_apps
-        print(is_a_known_productive_program, window_name, '115ru')
         if is_a_known_productive_program:
             # Could still be a "Maybe" case, i.e. Chrome
             is_a_maybe_case = process_name == "Google Chrome"
@@ -138,7 +136,6 @@ class ProgramTrackerCore:
         if not isinstance(session, ProgramSessionData):
             self.console_logger.log_yellow_multiple("[DEBUG]", session)
             raise ValueError("Was not a dict")
-        print("[DEBUG]", session, '201ru')
         #  {'os': 'Ubuntu', 'pid': 70442, 'process_name': 'pgadmin4', 'window_title': 'Alt-tab window'}
         # start_time, end_time, duration, window, productive
         if isinstance(self.event_handlers, list):

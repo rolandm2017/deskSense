@@ -242,7 +242,6 @@ async def get_all_keyboard_reports(keyboard_service: KeyboardService = Depends(g
         raise HTTPException(status_code=500, detail="Tracker not initialized")
 
     events = await keyboard_service.get_all_events()
-    print(len(events), '127ru')
     if not isinstance(events, list):
         raise HTTPException(
             status_code=500, detail="Failed to generate keyboard report")
@@ -349,7 +348,6 @@ async def get_program_time_for_dashboard(dashboard_service: DashboardService = D
     if not isinstance(program_data, list):
         raise HTTPException(
             status_code=500, detail="Failed to retrieve bar chart info")
-    print(program_data, '304ru')
     return BarChartContent(columns=program_data)
 
 

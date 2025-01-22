@@ -38,7 +38,6 @@ class MouseTrackerCore:
 
     def get_mouse_position(self):
         coords = self.mouse_facade.get_position_coords()
-        # print(coords, '56ru')
         coords.timestamp = self.clock.now()
         return coords
 

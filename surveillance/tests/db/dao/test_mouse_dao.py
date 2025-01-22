@@ -119,8 +119,6 @@ class TestMouseDao:
         mock_session.execute.return_value = mock_result
 
         result = await dao.read_past_24h_events()
-        print(result, '122ru')
-        print(mock_moves, '123ru')
         assert result == mock_moves
 
     @pytest.mark.asyncio

@@ -24,11 +24,10 @@ class DailySummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def create_if_new_else_update(self, session: ProgramSessionData):
         """This method doesn't use queuing since it needs to check the DB state"""
-        target_program_name = session['window']
+        target_program_name = session.window_title
         # ### Calculate time difference
-        # Convert to hours
         usage_duration_in_hours = (
-            session['end_time'] - session['start_time']).total_seconds() / 3600
+            session.end_time - session.start_time).total_seconds() / 3600
 
         # ### Check if entry exists for today
         today = datetime.now().date()

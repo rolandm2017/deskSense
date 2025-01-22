@@ -217,7 +217,6 @@ def test_window_change_triggers_handler():
 
     facade.listen_for_window_changes.return_value = [ex3]
     tracker.run_tracking_loop()
-    print(tracker.clock.now.call_count, '220ru')
     assert tracker.clock.now.call_count == 2
 
     # Verify handler was called with session data
@@ -299,8 +298,6 @@ def test_a_series_of_programs():
 
     # ### Assert
     # Session is open, not concluded
-    print(tracker.current_session, type(tracker.current_session), '305ru')
-    print(program1, type(program1), '307ru')
     assert tracker.current_session is not None
     assert tracker.current_session.start_time
     assert tracker.current_session.window_title == program1["window_title"]
@@ -316,7 +313,6 @@ def test_a_series_of_programs():
     tracker.run_tracking_loop()  # 2
 
     # ### Assert
-    print(tracker.current_session, '319ru')
     assert tracker.current_session.window_title == program2['window_title']
     assert tracker.current_session.detail == no_space_dash_space
     assert tracker.current_session.start_time is not None
