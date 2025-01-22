@@ -105,9 +105,9 @@ class ProgramActivityReport(BaseModel):
 
 class DailyProgramSummarySchema(BaseModel):
     id: int
-    program_name: str
-    hours_spent: float
-    gathering_date: datetime
+    programName: str
+    hoursSpent: float
+    gatheringDate: datetime
 
     model_config = ConfigDict(from_attributes=True)  # This enables ORM mode
 
@@ -235,6 +235,19 @@ def make_program_log(r: ProgramDto):
         raise e
 
 
+@app.get("/health", response_model=dict)
+async def health_check(keyboard_service: KeyboardService = Depends(get_keyboard_service)):
+    logger.log_purple("[LOG] health check")
+    try:
+        if not surveillance_state.manager.keyboard_tracker:
+            return {"status": "error", "detail": "Tracker not initialized"}
+        await keyboard_service.get_all_events()
+        return {"status": "healthy"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Health check failed: {str(e)}")
+
+
 @app.get("/report/keyboard/all", response_model=KeyboardReport)
 async def get_all_keyboard_reports(keyboard_service: KeyboardService = Depends(get_keyboard_service)):
     logger.log_purple("[LOG] keyboard report - all")
@@ -342,13 +355,23 @@ async def get_timeline_for_dashboard(dashboard_service: DashboardService = Depen
     return TimelineRows(mouseRows=pydantic_mouse_rows, keyboardRows=pydantic_keyboard_rows)
 
 
-@app.get("/dashboard/programs", response_model=BarChartContent)
+def program_summary_row_to_pydantic(v: DailyProgramSummary):
+    return DailyProgramSummarySchema(id=v.id, programName=v.program_name, hoursSpent=v.hours_spent, gatheringDate=v.gathering_date)
+
+
+def manufacture_bar_chart_content(program_data):
+    return [program_summary_row_to_pydantic(r) for r in program_data]
+
+
+@app.get("/dashboard/summaries", response_model=BarChartContent)
 async def get_program_time_for_dashboard(dashboard_service: DashboardService = Depends(get_dashboard_service)):
     program_data = await dashboard_service.get_program_summary()
+    print(program_data, '369ru')
     if not isinstance(program_data, list):
         raise HTTPException(
             status_code=500, detail="Failed to retrieve bar chart info")
-    return BarChartContent(columns=program_data)
+    print("373ru")
+    return BarChartContent(columns=manufacture_bar_chart_content(program_data))
 
 
 if __name__ == "__main__":

@@ -14,7 +14,7 @@ from surveillance.server import (
 )
 from surveillance.server import app, KeyboardService, MouseService, ProgramService
 
-from surveillance.src.db.models import TimelineEntryObj, ChartEventType
+from surveillance.src.db.models import TimelineEntryObj, ChartEventType, DailyProgramSummary
 from surveillance.src.db.dao.keyboard_dao import TypingSessionDto
 from surveillance.src.db.dao.mouse_dao import MouseMoveDto
 from surveillance.src.db.dao.program_dao import ProgramDao
@@ -97,19 +97,19 @@ def mock_timeline_data():
 def mock_program_summary_data():
     base_time = datetime.now()
     return [
-        DailyProgramSummarySchema(
+        DailyProgramSummary(
             id=1,
             program_name="Chrome",
             hours_spent=2.5,
             gathering_date=base_time
         ),
-        DailyProgramSummarySchema(
+        DailyProgramSummary(
             id=2,
             program_name="VS Code",
             hours_spent=4.0,
             gathering_date=base_time
         ),
-        DailyProgramSummarySchema(
+        DailyProgramSummary(
             id=3,
             program_name="Terminal",
             hours_spent=1.5,
@@ -302,6 +302,7 @@ async def test_get_program_time_for_dashboard(
     mock_program_summary_data,
     mock_surveillance_state
 ):
+    print("305ru")
     mock_service = DashboardService(AsyncMock(), AsyncMock())
     mock_service.get_program_summary = AsyncMock(
         return_value=mock_program_summary_data
@@ -313,27 +314,29 @@ async def test_get_program_time_for_dashboard(
     app.dependency_overrides[get_dashboard_service] = override_get_dashboard_service
 
     try:
-        response = test_client.get("/dashboard/programs")
+        print("316ru")
+        response = test_client.get("/dashboard/summaries")
         assert response.status_code == 200
         data = response.json()
 
         # Check structure
         assert "columns" in data
         assert len(data["columns"]) == 3
+        print("324ru")
 
         # Verify program summary entry structure
         program_entry = data["columns"][0]
         assert "id" in program_entry
-        assert "program_name" in program_entry
-        assert "hours_spent" in program_entry
-        assert "gathering_date" in program_entry
+        assert "programName" in program_entry
+        assert "hoursSpent" in program_entry
+        assert "gatheringDate" in program_entry
 
         # Verify specific data
         chrome_entry = next(
             entry for entry in data["columns"]
-            if entry["program_name"] == "Chrome"
+            if entry["programName"] == "Chrome"
         )
-        assert chrome_entry["hours_spent"] == 2.5
+        assert chrome_entry["hoursSpent"] == 2.5
 
     finally:
         app.dependency_overrides.clear()
