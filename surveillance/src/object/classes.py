@@ -5,7 +5,7 @@ from typing import TypedDict, NotRequired
 
 
 class ProgramSessionData:
-    window: str
+    window_title: str
     detail: str
     start_time: datetime
     end_time: datetime
@@ -13,12 +13,15 @@ class ProgramSessionData:
     productive: bool
 
     def __init__(self):
-        self.window = ""
+        self.window_title = ""
         self.detail = ""
         self.start_time = None
         self.end_time = None
         self.duration = None
         self.productive = None
+
+    def __str__(self):
+        return f"ProgramSessionData(window_title='{self.window_title}', detail='{self.detail}', start_time={self.start_time}, end_time={self.end_time}, duration={self.duration}, productive={self.productive})"
 
 
 # class ProgramSessionData(TypedDict):
@@ -31,11 +34,16 @@ class ProgramSessionData:
 
 
 class KeyboardAggregate:
-    """A deliverable that becomes a database entry."""
+    """
+    A deliverable that becomes a database entry.
 
-    def __init__(self, session_start_time, session_end_time):
+    This is the FINISHED package.
+    """
+
+    def __init__(self, session_start_time, session_end_time, count_of_events=None):
         self.session_start_time = session_start_time
         self.session_end_time = session_end_time
+        self.count = count_of_events
 
     def __str__(self):
         return f"Keyboard aggregate from {self.session_start_time} to {self.session_end_time}"

@@ -2,6 +2,7 @@
 from datetime import datetime, timedelta
 from typing import Iterator
 
+
 from src.util.clock import ClockProtocol
 
 
@@ -11,10 +12,9 @@ class MockClock(ClockProtocol):
         self._current_time = None
 
     def now(self) -> datetime:
-        if self._current_time is not None:
-            return self._current_time
         try:
             self._current_time = next(self.times)
+            print("[debug] Returning ", self._current_time)
             return self._current_time
         except StopIteration:
             raise RuntimeError("MockClock ran out of times")
@@ -24,8 +24,14 @@ class MockClock(ClockProtocol):
         elapsed = current_time - previous_time
         return elapsed >= timedelta(seconds=seconds)
 
-    def advance_time(self, seconds: int):
-        """Advance the clock by specified number of seconds."""
-        if self._current_time is None:
-            self._current_time = self.now()
-        self._current_time += timedelta(seconds=seconds)
+    def advance_time(self, n: int):
+        """
+        Advance the iterator by n positions.
+        Example: self.times is [3, 4, 15, 16, 28, 29]
+        next(self.times) would grab 3.
+        advance_time(3) is called. 
+        3 -> 4 -> 15 -> 16 is 3 skips. next(self.times) grabs 28.
+        """
+
+        for position in range(n):
+            self._current_time = next(self.times)

@@ -1,13 +1,13 @@
 from datetime import datetime
 from dataclasses import dataclass
 from time import time
-from typing import List
+from typing import List, Callable
 
 from ..object.classes import KeyboardAggregate
 
 
 @dataclass
-class Aggregation:
+class InProgressAggregation:
     start_time: float
     end_time: float
     events: List[float]
@@ -18,13 +18,14 @@ class EventAggregator:
         if timeout_ms <= 0:
             raise ValueError("Timeout must be positive")
         self.timeout = timeout_ms / 1000
-        self.current_aggregation = None
+        self.current_aggregation: InProgressAggregation = None
         self._on_aggregation_complete = None
 
-    def set_callback(self, callback):
+    def set_callback(self, callback: Callable):  # function
         self._on_aggregation_complete = callback
 
     def add_event(self, timestamp: float):
+        """A timestamp must be a datetime.timestamp() result."""
         if not isinstance(timestamp, (int, float)):
             raise TypeError("Timestamp must be a number")
         if timestamp is None:
@@ -34,8 +35,9 @@ class EventAggregator:
         if self.current_aggregation and timestamp < self.current_aggregation.end_time:
             raise ValueError("Timestamps must be in chronological order")
 
-        if not self.current_aggregation:
-            self.current_aggregation = Aggregation(
+        uninitialized = not self.current_aggregation
+        if uninitialized:
+            self.current_aggregation = InProgressAggregation(
                 timestamp, timestamp, [timestamp])
             return None
 
@@ -45,18 +47,30 @@ class EventAggregator:
         session_window_has_elapsed = next_added_timestamp_difference > self.timeout
         if session_window_has_elapsed:
             # "If no keystroke within 300 ms, end sesion; report session to db"
-            completed = [datetime.fromtimestamp(
-                t) for t in self.current_aggregation.events]
-            self.current_aggregation = Aggregation(
-                timestamp, timestamp, [timestamp])
+            events_in_session = self.current_aggregation.events
+            completed_to_report = self.convert_events_to_timestamps(events_in_session
+                                                                    )
+            #
+            # "Completed report" will be used to, um, get the first and last entry,
+            # to see "start_time", "end_time"
+            #
+
+            self.start_new_aggregate(timestamp)
 
             if self._on_aggregation_complete:
-                self._on_aggregation_complete(completed)
-            return completed
+                self._on_aggregation_complete(completed_to_report)
+            return completed_to_report
 
         self.current_aggregation.end_time = timestamp
         self.current_aggregation.events.append(timestamp)
         return None
+
+    def convert_events_to_timestamps(self, current_agg_events):
+        return [datetime.fromtimestamp(t) for t in current_agg_events]
+
+    def start_new_aggregate(self, timestamp):
+        self.current_aggregation = InProgressAggregation(
+            timestamp, timestamp, [timestamp])
 
     def force_complete(self):
         if not self.current_aggregation:
@@ -69,14 +83,14 @@ class EventAggregator:
             self._on_aggregation_complete(completed)
         return completed
 
-    def package_aggregate_for_db(self, aggregate) -> KeyboardAggregate:
+    def package_aggregate_for_db(self, aggregate: list) -> KeyboardAggregate:
         """
         Aggregate comes out as an array of datetimes. 
         The DB must get an obj with start_time, end_time.
         """
         start = aggregate[0]
         end = aggregate[-1]
-        return KeyboardAggregate(start, end)
+        return KeyboardAggregate(start, end, len(aggregate))
 
 
 # # Example usage:
