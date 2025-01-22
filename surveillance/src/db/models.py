@@ -1,6 +1,6 @@
 # models.py
 from sqlalchemy import Enum as SQLAlchemyEnum
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float, Interval
 from sqlalchemy.sql import func
 from datetime import datetime
 from .database import Base
@@ -38,7 +38,7 @@ class Program(Base):
     detail = Column(String)
     start_time = Column(DateTime)
     end_time = Column(DateTime)
-    # TODO: Add duration? maybe?
+    duration = Column(Interval)
     productive = Column(Boolean)
     created_at = Column(DateTime, default=datetime.now)
 

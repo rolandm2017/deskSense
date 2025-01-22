@@ -99,12 +99,6 @@ class SurveillanceManager:
             self.summary_dao.create_if_new_else_update(event))
         self.loop.create_task(self.program_dao.create(event))
 
-    # def gather_data_from_loop(self):
-    #     return [self.program_tracker.gather_session(), self.mouse_tracker.gather_session(), self.keyboard_tracker.gather_session()]
-
-    # def report_loop_to_db(self, loop_content):
-    #     self.event(loop_content)
-
     def cleanup(self):  # Add this method to ProductivityTracker
         """Clean up resources before exit."""
         print("cleaning up")

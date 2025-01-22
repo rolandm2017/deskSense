@@ -55,7 +55,9 @@ class MouseDao(BaseQueueingDao):
         """
         async with self.session_maker() as session:
             result = await session.execute(select(MouseMove))
-            return await result.scalars().all()  # TODO: return Dtos
+            # return await result.scalars().all()  # TODO: return Dtos
+            # FIXME: Some tests think this needs to be 'awaited' but it doens't
+            return result.scalars().all()  # TODO: return Dtos
 
     async def read_by_id(self, mouse_move_id: int):
         async with self.session_maker() as session:
@@ -72,7 +74,9 @@ class MouseDao(BaseQueueingDao):
 
         async with self.session_maker() as session:
             result = await session.execute(query)
-            return await result.scalars().all()  # TODO: return Dtos
+            # FIXME: Some tests think this needs to be 'awaited' but it doens't
+            # return await result.scalars().all()  # TODO: return Dtos
+            return result.scalars().all()  # TODO: return Dtos
 
     async def delete(self, id: int):
         """Delete an entry by ID"""

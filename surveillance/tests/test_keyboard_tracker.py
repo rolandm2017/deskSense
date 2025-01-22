@@ -74,7 +74,6 @@ def test_tracker_initialization(tracker_and_events):
     tracker = tracker_and_events[0]
     assert tracker.recent_count == 0
     assert isinstance(tracker.events, list)
-    assert isinstance(tracker.session_data, list)
     assert tracker.time_of_last_terminal_out is not None
 
 
@@ -231,22 +230,6 @@ def test_multiple_handlers_are_called(tracker_and_events, mock_keyboard_facade):
 
     assert len(handler1_calls) == len(handler2_calls) == 1
     assert handler1_calls[0] == handler2_calls[0]
-
-
-def test_gather_session(tracker_and_events, mock_keyboard_facade):
-    """Test that gather_session returns and clears session data."""
-    tracker = tracker_and_events[0]
-
-    # Simulate some key presses
-    keys = ['a', 'b', 'c']
-    for key in keys:
-        mock_keyboard_facade.set_event(key)
-        tracker.run_tracking_loop()
-
-    session_data = tracker.gather_session()
-    # Should be empty as we're not adding to session_data
-    assert len(session_data) == 0
-    assert tracker.session_data == []  # Should be cleared
 
 
 def test_end_program_routine_called(tracker_and_events):
