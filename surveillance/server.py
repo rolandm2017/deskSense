@@ -229,7 +229,7 @@ def make_program_log(r: ProgramDto):
             detail=r.detail,
             startTime=r.start_time,
             endTime=r.end_time,
-            productive=r.productive
+            productive=r.productive if r.productive else False
         )
     except AttributeError as e:
         raise e

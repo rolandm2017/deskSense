@@ -51,7 +51,7 @@ class KeyboardDao(BaseQueueingDao):
 
         async with self.session_maker() as session:
             result = await session.execute(select(TypingSession))
-            result = await result.all()
+            result = result.all()
             dtos = [TypingSessionDto(
                 x[0].id, x[0].start_time, x[0].end_time) for x in result]
 
@@ -71,7 +71,7 @@ class KeyboardDao(BaseQueueingDao):
 
             async with self.session_maker() as session:
                 result = await session.execute(query)
-                rows = await result.all()  # Add await here
+                rows = result.all()
 
                 if not rows:  # Handle no results
                     return []
