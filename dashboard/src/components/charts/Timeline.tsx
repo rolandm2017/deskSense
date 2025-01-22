@@ -2,16 +2,34 @@ import React, { useEffect, useRef, useState, useMemo } from "react";
 import { Timeline, DataSet } from "vis-timeline/standalone";
 import "vis-timeline/styles/vis-timeline-graph2d.min.css";
 import { MouseLog, TypingSessionLog } from "../../interface/api.interface";
+import { TimelineEntrySchema } from "../../api/getData.api";
 
 interface TimelineWrapperProps {
-    mouseLogsInput: MouseLog[];
-    typingSessionLogsInput: TypingSessionLog[];
+    mouseLogsInput: TimelineEntrySchema[];
+    typingSessionLogsInput: TimelineEntrySchema[];
 }
+
+// FIXME: many many duplicates here
+// 648
+// {id: 'mouse-1032', group: 'mouse', content: 'Mouse Event 1032', start: '2025-01-22T07:39:16.739955', end: '2025-01-22T07:39:17.642895'}
+// 649
+// {id: 'mouse-1032', group: 'mouse', content: 'Mouse Event 1032', start: '2025-01-22T07:39:17.843819', end: '2025-01-22T07:39:18.045050'}
+// 650
+// {id: 'mouse-1032', group: 'mouse', content: 'Mouse Event 1032', start: '2025-01-22T07:39:18.447073', end: '2025-01-22T07:39:18.547302'}
+// 651
+// {id: 'mouse-1036', group: 'mouse', content: 'Mouse Event 1036', start: '2025-01-22T07:39:19.552906', end: '2025-01-22T07:39:19.653294'}
+// 652
+// {id: 'mouse-1036', group: 'mouse', content: 'Mouse Event 1036', start: '2025-01-22T07:39:20.357324', end: '2025-01-22T07:39:20.457870'}
+
 
 const TimelineWrapper: React.FC<TimelineWrapperProps> = ({
     mouseLogsInput,
     typingSessionLogsInput,
 }) => {
+
+    useEffect(() => {
+        const v = mouseLogsInput.map((i) => i.)
+    })
     // Memoize the DataSet creation
     const formattedApiDataDataSet = useMemo(() => {
         if (!mouseLogsInput?.length && !typingSessionLogsInput?.length) {
@@ -22,39 +40,41 @@ const TimelineWrapper: React.FC<TimelineWrapperProps> = ({
         const totalItems =
             (mouseLogsInput?.length || 0) +
             (typingSessionLogsInput?.length || 0);
-        const items = new Array(totalItems);
-        let index = 0;
+        const items = [...mouseLogsInput, ...typingSessionLogsInput];
+        // let index = 0;
 
-        // Batch process mouse logs
-        if (mouseLogsInput?.length) {
-            for (let i = 0; i < mouseLogsInput.length; i++) {
-                const log = mouseLogsInput[i];
-                items[index++] = {
-                    id: `mouse-${log.mouseEventId}`,
-                    group: "mouse",
-                    content: `Mouse Event ${log.mouseEventId}`,
-                    start: log.startTime,
-                    end: log.endTime,
-                };
-            }
-        }
+        // // Batch process mouse logs
+        // if (mouseLogsInput?.length) {
+        //     for (let i = 0; i < mouseLogsInput.length; i++) {
+        //         const log = mouseLogsInput[i];
+        //         // items[index++] = {
+        //         //     id: `mouse-${log.mouseEventId}`,
+        //         //     group: "mouse",
+        //         //     content: `Mouse Event ${log.mouseEventId}`,
+        //         //     start: log.startTime,
+        //         //     end: log.endTime,
+        //         // };
+        //     }
+        // }
 
-        // Batch process typing logs
-        if (typingSessionLogsInput?.length) {
-            for (let i = 0; i < typingSessionLogsInput.length; i++) {
-                const log = typingSessionLogsInput[i];
-                items[index++] = {
-                    id: `keyboard-${log.keyboardEventId}`,
-                    group: "keyboard",
-                    content: `Typing Session ${log.keyboardEventId}`,
-                    start: log.startTime,
-                    end: log.endTime,
-                };
-            }
-        }
+        // // Batch process typing logs
+        // if (typingSessionLogsInput?.length) {
+        //     for (let i = 0; i < typingSessionLogsInput.length; i++) {
+        //         const log = typingSessionLogsInput[i];
+        //         // items[index++] = {
+        //         //     id: `keyboard-${log.keyboardEventId}`,
+        //         //     group: "keyboard",
+        //         //     content: `Typing Session ${log.keyboardEventId}`,
+        //         //     start: log.startTime,
+        //         //     end: log.endTime,
+        //         // };
+        //     }
+        // }
 
         return new DataSet(items);
     }, [mouseLogsInput, typingSessionLogsInput]);
+
+    console.log("FOO 60ru");
 
     // Memoize groups to prevent unnecessary recreations
     const groups = useMemo(

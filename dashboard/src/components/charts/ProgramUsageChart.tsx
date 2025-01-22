@@ -2,13 +2,17 @@ import React, { useState, useEffect, useRef } from "react";
 import * as d3 from "d3";
 import { ProgramActivityReport } from "../../interface/api.interface";
 import { BarChartColumn } from "../../interface/misc.interface";
+import {
+    DailyProgramSummaries,
+    DailyProgramSummary,
+} from "../../api/getData.api";
 
-interface BarChartProps {
-    barsInput: BarChartColumn[];
+interface ProgramUsageChartProps {
+    barsInput: DailyProgramSummaries;
 }
 
-const BarChart: React.FC<BarChartProps> = ({ barsInput }) => {
-    const [bars, setBars] = useState<BarChartColumn[]>([]);
+const ProgramUsageChart: React.FC<ProgramUsageChartProps> = ({ barsInput }) => {
+    const [bars, setBars] = useState<DailyProgramSummary[]>([]);
 
     // Set up dimensions
     const margin = { top: 0, right: 100, bottom: 60, left: 100 }; // Increased bottom margin
@@ -17,13 +21,7 @@ const BarChart: React.FC<BarChartProps> = ({ barsInput }) => {
     const svgRef = useRef<SVGSVGElement>(null);
 
     useEffect(() => {
-        if (barsInput.length !== 0) {
-            setBars(barsInput);
-        }
-    }, [barsInput]);
-
-    useEffect(() => {
-        if (svgRef.current) {
+        if (svgRef.current && bars) {
             // Clear previous SVG content
             d3.select(svgRef.current).selectAll("*").remove();
 
@@ -90,4 +88,4 @@ const BarChart: React.FC<BarChartProps> = ({ barsInput }) => {
     );
 };
 
-export default BarChart;
+export default ProgramUsageChart;

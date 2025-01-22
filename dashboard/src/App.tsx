@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import "./App.css";
-import LineChart from "./components/charts/LineChart";
-import BarChart from "./components/charts/BarChart";
+
+import ProgramUsageChart from "./components/charts/ProgramUsageChart";
 
 import {
+    DailyProgramSummaries,
     getKeyboardReport,
     getMouseReport,
     getProgramReport,
+    getProgramSummaries,
+    getTimelineData,
+    TimelineRows,
 } from "./api/getData.api";
 import { BarChartColumn } from "./interface/misc.interface";
 import {
@@ -18,101 +22,68 @@ import {
 import TimelineWrapper from "./components/charts/Timeline";
 
 function App() {
-    const [typingReport, setTypingReport] = useState<TypingSessionsReport|null>(null) // prettier-ignore
-    const [mouseReport, setMouseReport] = useState<MouseReport|null>(null) // prettier-ignore
-    const [programReport, setProgramReport] = useState<ProgramActivityReport|null>(null); // prettier-ignore
+    const [typingReport, setTypingReport] = useState<TypingSessionsReport | null>(null) // prettier-ignore
+    const [mouseReport, setMouseReport] = useState<MouseReport | null>(null) // prettier-ignore
+    const [programReport, setProgramReport] = useState<ProgramActivityReport | null>(null); // prettier-ignore
 
-    const [barsInput, setBarsInput] = useState<BarChartColumn[]>([]);
+    const [summaries, setSummaries] = useState<DailyProgramSummaries | null>(
+        null
+    );
+    const [timeline, setTimeline] = useState<TimelineRows | null>(null);
+
+    // const [barsInput, setBarsInput] = useState<BarChartColumn[]>([]);
 
     const hours = 36000000; // 1000 * 60 * 60
 
-    function processTimeReports(
-        reports: ProgramActivityLog[]
-    ): BarChartColumn[] {
-        // Create a hashtable to store total time per window
-        const windowTimes: { [key: string]: number } = {};
+    // function processTimeReports(
+    //     reports: ProgramActivityLog[]
+    // ): BarChartColumn[] {
+    //     // Create a hashtable to store total time per window
+    //     const windowTimes: { [key: string]: number } = {};
 
-        // Calculate time differences and aggregate
-        reports.forEach((report: ProgramActivityLog) => {
-            const startTime = new Date(report.startTime);
-            const endTime = new Date(report.endTime);
-            const durationInHours =
-                (endTime.getTime() - startTime.getTime()) / hours; // Convert to hours
+    //     // Calculate time differences and aggregate
+    //     reports.forEach((report: ProgramActivityLog) => {
+    //         const startTime = new Date(report.startTime);
+    //         const endTime = new Date(report.endTime);
+    //         const durationInHours =
+    //             (endTime.getTime() - startTime.getTime()) / hours; // Convert to hours
 
-            if (windowTimes[report.window]) {
-                windowTimes[report.window] += durationInHours;
-            } else {
-                windowTimes[report.window] = durationInHours;
-            }
-        });
+    //         if (windowTimes[report.window]) {
+    //             windowTimes[report.window] += durationInHours;
+    //         } else {
+    //             windowTimes[report.window] = durationInHours;
+    //         }
+    //     });
 
-        // Convert to BarChartColumn array and sort by hours spent
-        const chartData: BarChartColumn[] = Object.entries(windowTimes)
-            .map(([programName, hoursSpent]) => ({
-                programName,
-                hoursSpent: Number(hoursSpent.toFixed(4)), // Round to 4 decimal places
-            }))
-            .sort((a, b) => b.hoursSpent - a.hoursSpent);
+    //     // Convert to BarChartColumn array and sort by hours spent
+    //     const chartData: BarChartColumn[] = Object.entries(windowTimes)
+    //         .map(([programName, hoursSpent]) => ({
+    //             programName,
+    //             hoursSpent: Number(hoursSpent.toFixed(4)), // Round to 4 decimal places
+    //         }))
+    //         .sort((a, b) => b.hoursSpent - a.hoursSpent);
 
-        return chartData;
-    }
-
-    useEffect(() => {
-        // TEMP
-        console.log(barsInput.length, programReport, "61ru");
-        if (barsInput.length == 0 && programReport) {
-            console.log(programReport, "63ru");
-            const tally = processTimeReports(programReport.programLogs);
-            console.log(tally, "65ru");
-            setBarsInput(tally);
-            // const barsCols: BarChartColumn[] = [
-            //     {
-            //         programName: "Foo",
-            //         hoursSpent: 5.5,
-            //     },
-            //     {
-            //         programName: "Bar",
-            //         hoursSpent: 3.1,
-            //     },
-            //     {
-            //         programName: "Baz",
-            //         hoursSpent: 4.8,
-            //     },
-            //     {
-            //         programName: "Quux",
-            //         hoursSpent: 1.2,
-            //     },
-            // ];
-            // setBarsInput(barsCols);
-        }
-    }, [barsInput, programReport]);
+    //     return chartData;
+    // }
 
     useEffect(() => {
-        if (typingReport === null) {
-            getKeyboardReport().then((report) => {
-                setTypingReport(report);
-                console.log(report.count);
+        if (summaries == null) {
+            //
+            getProgramSummaries().then((sums) => {
+                console.log(sums);
+                setSummaries(sums);
             });
         }
-    }, [typingReport]);
+    }, [summaries]);
 
     useEffect(() => {
-        if (mouseReport === null) {
-            getMouseReport().then((report) => {
-                setMouseReport(report);
-                console.log(report.count);
+        if (timeline == null) {
+            getTimelineData().then((timeline) => {
+                console.log(timeline);
+                setTimeline(timeline);
             });
         }
-    }, [mouseReport]);
-
-    useEffect(() => {
-        if (programReport === null) {
-            getProgramReport().then((report) => {
-                setProgramReport(report);
-                console.log(report, "111ru");
-            });
-        }
-    }, [programReport]);
+    }, [timeline]);
 
     return (
         <>
@@ -122,17 +93,21 @@ function App() {
                 </div>
                 <div style={{ border: "5px solid black" }}>
                     <h2>Programs {programReport?.count.toString()}</h2>
-                    <BarChart barsInput={barsInput} />
+                    {summaries ? (
+                        <ProgramUsageChart barsInput={summaries} />
+                    ) : (
+                        <p>Loading...</p>
+                    )}
                 </div>
                 <div>
                     <h2>
                         Keyboard & Mouse: {typingReport?.count},{" "}
                         {mouseReport?.count}
                     </h2>
-                    {typingReport !== null && mouseReport !== null ? (
+                    {timeline !== null ? (
                         <TimelineWrapper
-                            typingSessionLogsInput={typingReport.keyboardLogs}
-                            mouseLogsInput={mouseReport.mouseLogs}
+                            typingSessionLogsInput={timeline?.keyboardRows}
+                            mouseLogsInput={timeline?.mouseRows}
                         />
                     ) : (
                         <p>Loading...</p>

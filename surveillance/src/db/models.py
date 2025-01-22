@@ -1,7 +1,8 @@
 # models.py
 from sqlalchemy import Enum as SQLAlchemyEnum
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float, Interval
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float, Interval, Computed
 from sqlalchemy.sql import func
+from sqlalchemy.orm import mapped_column
 from datetime import datetime
 from .database import Base
 from ..object.enums import ChartEventType
@@ -86,8 +87,8 @@ class DailyProgramSummary(Base):
 
 class TimelineEntryObj(Base):
     """
-    Note: This table uses camelCase column names (rather than snake_case) 
-    to avoid expensive case conversion of thousands of records before sending 
+    Note: This table uses camelCase column names (rather than snake_case)
+    to avoid expensive case conversion of thousands of records before sending
     to the client. This is an intentional performance optimization.
 
     It *intentionally* has the same name and fields as the server.py Pydantic model.
@@ -96,12 +97,27 @@ class TimelineEntryObj(Base):
     __tablename__ = "client_timeline_entries"
 
     id = Column(Integer, primary_key=True, index=True)
-    # clientFacingId ex: `mouse-${log.mouseEventId}`, ex2: `keyboard-${log.keyboardEventId}`,
-    clientFacingId = Column(String, index=True)
 
-    group = Column(SQLAlchemyEnum(ChartEventType))  # "mouse" or "keyboard"
-    # content ex: `Mouse Event ${log.mouseEventId}`, content: `Typing Session ${log.keyboardEventId}`,
-    content = Column(String)
-    start = Column(DateTime)  # "start" like start_time
-    end = Column(DateTime)  # "end" like end_time
-    # TODO: make it *come out of the db* ready to go
+    clientFacingId = Column(
+        String,
+        Computed(
+            "CASE WHEN \"group\" = 'MOUSE' THEN 'mouse-' || id::TEXT ELSE 'keyboard-' || id::TEXT END",
+            # postgresql_persisted=True  # Add this back
+            persisted=True
+        )
+    )
+
+    group = Column(SQLAlchemyEnum(ChartEventType))
+
+    content = Column(
+        String,
+        Computed(
+            "CASE WHEN \"group\" = 'MOUSE' THEN 'Mouse Event ' || id::TEXT ELSE 'Typing Session ' || id::TEXT END",
+            # postgresql_persisted=True,  # Add this back
+            persisted=True
+
+        )
+    )
+
+    start = Column(DateTime)
+    end = Column(DateTime)

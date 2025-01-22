@@ -5,7 +5,7 @@ import {
     ProgramActivityReport,
 } from "../interface/api.interface";
 
-const baseRoute = import.meta.env.VITE_API_URL + "/api/report";
+const baseRoute = import.meta.env.VITE_API_URL + "/api";
 
 const api = axios.create({
     baseURL: baseRoute,
@@ -85,13 +85,61 @@ const withErrorHandling = <T>(fn: () => Promise<AxiosResponse<T>>) => {
 };
 
 const getKeyboardReport = withErrorHandling<TypingSessionsReport>(() =>
-    api.get("/keyboard")
+    api.get("/report/keyboard")
 );
 
-const getMouseReport = withErrorHandling<MouseReport>(() => api.get("/mouse"));
+const getMouseReport = withErrorHandling<MouseReport>(() =>
+    api.get("/report/mouse")
+);
 
 const getProgramReport = withErrorHandling<ProgramActivityReport>(() =>
-    api.get("/program")
+    api.get("/report/program")
 );
 
-export { getKeyboardReport, getMouseReport, getProgramReport };
+// class DailyProgramSummarySchema(BaseModel):
+//     id: int
+//     program_name: str
+//     hours_spent: float
+//     gathering_date: datetime
+
+//     model_config = ConfigDict(from_attributes=True)  # This enables ORM mode
+
+export interface DailyProgramSummary {
+    id: number;
+    programName: string;
+    hoursSpent: number;
+    gatheringDate: Date;
+}
+
+export interface DailyProgramSummaries {
+    columns: DailyProgramSummary[];
+}
+
+export interface TimelineEntrySchema {
+    id: string;
+    group: string;
+    content: string;
+    start: Date;
+    end: Date;
+}
+
+export interface TimelineRows {
+    mouseRows: TimelineEntrySchema[];
+    keyboardRows: TimelineEntrySchema[];
+}
+
+const getTimelineData = withErrorHandling<TimelineRows>(() =>
+    api.get("/dashboard/timeline")
+);
+
+const getProgramSummaries = withErrorHandling<DailyProgramSummaries>(() =>
+    api.get("/dashboard/summaries")
+);
+
+export {
+    getKeyboardReport,
+    getMouseReport,
+    getProgramReport,
+    getTimelineData,
+    getProgramSummaries,
+};
