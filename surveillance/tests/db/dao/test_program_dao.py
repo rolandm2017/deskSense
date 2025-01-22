@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.db.dao.program_dao import ProgramDao
 from src.db.models import Program
+from src.object.classes import ProgramSessionData
 
 
 class TestProgramDao:
@@ -39,13 +40,12 @@ class TestProgramDao:
     @pytest.mark.asyncio
     async def test_create_happy_path(self, dao):
         # Arrange
-        session = {
-            'window': 'TestWindow',
-            'detail': "Test detail for test",
-            'start_time': datetime.now(),
-            'end_time': (datetime.now() + timedelta(hours=1)),
-            'productive': True
-        }
+        session = ProgramSessionData()
+        session.window_title = "MyTestWindow"
+        session.detail = "Test detail for the test"
+        session.start_time = datetime.now()
+        session.end_time = datetime.now() + timedelta(minutes=3)
+        session.productive = True
 
         dao.queue_item = AsyncMock()
 
@@ -54,11 +54,11 @@ class TestProgramDao:
 
         # Assert
         expected_call_argument = Program(
-            window=session['window'],
-            detail=session['detail'],
-            start_time=session['start_time'],
-            end_time=session['end_time'],
-            productive=session['productive']
+            window=session.window_title,
+            detail=session.detail,
+            start_time=session.start_time,
+            end_time=session.end_time,
+            productive=session.productive
         )
         dao.queue_item.assert_called_once_with(expected_call_argument)
 

@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.db.dao.daily_summary_dao import DailySummaryDao
 from src.db.models import DailyProgramSummary
+from src.object.classes import ProgramSessionData
 
 
 class TestDailySummaryDao:
@@ -38,11 +39,16 @@ class TestDailySummaryDao:
     @pytest.mark.asyncio
     async def test_create_if_new_else_update_new_entry(self, dao, mock_session):
         # Arrange
-        session_data = {
-            'window': 'TestProgram',
-            'start_time': datetime.now(),
-            'end_time': (datetime.now().replace(hour=datetime.now().hour + 1))
-        }
+        # session_data = {
+        #     'window': 'TestProgram',
+        #     'start_time': datetime.now(),
+        #     'end_time': (datetime.now().replace(hour=datetime.now().hour + 1))
+        # }
+
+        session_data = ProgramSessionData()
+        session_data.window_title = "TestProgramFromTest"
+        session_data.start_time = datetime.now()
+        session_data.end_time = datetime.now().replace(hour=datetime.now().hour + 2)
 
         # Mock existing entry
         existing_entry = Mock(spec=DailyProgramSummary)
@@ -65,11 +71,15 @@ class TestDailySummaryDao:
     @pytest.mark.asyncio
     async def test_create_if_new_else_update_existing_entry(self, dao, mock_session):
         # Arrange
-        session_data = {
-            'window': 'TestProgram',
-            'start_time': datetime.now(),
-            'end_time': datetime.now().replace(hour=datetime.now().hour + 1)
-        }
+        # session_data = {
+        #     'window': 'TestProgram',
+        #     'start_time': datetime.now(),
+        #     'end_time': datetime.now().replace(hour=datetime.now().hour + 1)
+        # }
+        session_data = ProgramSessionData()
+        session_data.window_title = "TestProgram"
+        session_data.start_time = datetime.now()
+        session_data.end_time = datetime.now().replace(hour=datetime.now().hour + 1)
 
         # Mock existing entry
         existing_entry = Mock(spec=DailyProgramSummary)
