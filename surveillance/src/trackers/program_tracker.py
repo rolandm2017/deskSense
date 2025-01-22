@@ -4,11 +4,13 @@ import time
 import threading
 
 from ..console_logger import ConsoleLogger
+from ..config.definitions import productive_apps, productive_categories, productive_sites, unproductive_apps
 from ..facade.program_facade import ProgramApiFacadeCore
 from ..util.detect_os import OperatingSystemInfo
 from ..util.end_program_routine import end_program_readout, pretend_report_event
 from ..util.clock import Clock
 from ..util.threaded_tracker import ThreadedTracker
+from ..util.program_tools import separate_window_name_and_detail, is_expected_shape_else_throw, tab_is_a_productive_tab
 from ..object.classes import ProgramSessionData
 
 
@@ -23,184 +25,117 @@ class ProgramTrackerCore:
         self.program_facade: ProgramApiFacadeCore = program_api_facade
         self.event_handlers = event_handlers
 
-        # Define productive applications
-        self.productive_apps = {
-            'code.exe': 'VSCode',
-            'discord.exe': 'Discord',
-            'chrome.exe': 'Chrome',
-            'windowsterminal.exe': 'Terminal',
-            'postman.exe': 'Postman',
-            'explorer.exe': 'File Explorer'
-        }
+        self.productive_apps = productive_apps
+        self.unproductive = unproductive_apps
+        self.productive_categories = productive_categories
+        self.productive_sites = productive_sites
 
-        # Configuration for what's considered productive
-        self.productive_categories = {
-            'VSCode': True,
-            'Terminal': True,
-            'Postman': True,
-            'Chrome': None,  # Will be determined by window title
-            'Discord': None,  # Will be determined by window title
-            'File Explorer': True
-        }
+        self.current_session: ProgramSessionData = None
 
-        # Productive website patterns (for Chrome)
-        self.productive_sites = [
-            'github.com',
-            'stackoverflow.com',
-            'docs.',
-            'jira.',
-            'confluence.',
-            'claude.ai',
-            'chatgpt.com'
-        ]
-
-        # Initialize tracking data
-        self.current_window = None
-        self.start_time = None
-        self.session_data = []  # holds sessions
         self.console_logger = ConsoleLogger()
 
-    def attach_listener(self):
-        for window_change in self.program_facade.listen_for_window_changes():
-            newly_detected_window = f"{
-                window_change['process_name']} - {window_change['window_title']}"
-            on_a_different_window = newly_detected_window != self.current_window
-            if self.current_window and on_a_different_window:
-                self.apply_handlers(self.package_window_into_db_entry(), 500)
-                # FIXME: Program None - rlm@kingdom: ~/Code/deskSense/surveillance
-                self.console_logger.log_active_program(newly_detected_window)
-                self.start_time = self.clock.now()
-
-            # Initialize start time if this is the first window
-            if not self.start_time:
-                self.start_time = self.clock.now()
-
-            self.current_window = newly_detected_window
-
     def run_tracking_loop(self):
-        self.attach_listener()
+        print("runs 68ru")
+        for window_change in self.program_facade.listen_for_window_changes():
+            print("ru ru 69ru")
+            is_expected_shape_else_throw(window_change)
+            on_a_different_window = self.current_session and window_change[
+                "window_title"] != self.current_session.window_title
+            if on_a_different_window:
+                current_time = self.clock.now()
+                self.conclude_session(current_time)
+                self.apply_handlers(self.current_session, 500)
+                self.current_session = self.start_new_session(
+                    window_change, current_time)
 
-    # FIXME: the the ... VSCode is being split differently, PER TAB. Chrome is being split differently, PER TAB.
-    # FIXME: Solution statement:
-    # Chrome tabs goes into a special Chrome-only DB. For now you will just write, "Which tabs names?" without processing"
-    # Program - VSCode, will be split, the text cleaned up.
+            if self.current_session is None:  # initialize
+                self.console_logger.log_active_program(self.current_session)
+                self.current_session = self.start_new_session(
+                    window_change, self.clock.now())
 
-    def get_active_window_info(self):
-        """Get information about the currently active window."""
-        try:
-            window_info = self.program_facade.read_current_program_info()
-            window_info["timestamp"] = self.clock.now()
-            return window_info
-        except Exception as e:
-            print(f"Error getting window info: {e}")
-            raise e
-            return None
+    @staticmethod
+    def start_new_session(self, window_change_dict, start_time):
+        new_session = ProgramSessionData()
+        detail, window = separate_window_name_and_detail(
+            window_change_dict["window_title"])
+        new_session.window = window
+        new_session.detail = detail
+        new_session.start_time = start_time
+        # end_time, duration, productive not set yet
+        return new_session
 
-    def window_is_chrome(self, new_window):
-        # example: 'Fixing datetime.fromisoformat() error - Claude - Google Chrome'
-        window_title = new_window["window_title"]
-        return window_title.endswith('Google Chrome')
+    def conclude_session(self, start_time, end_time):
+        # end_time = self.clock.now()
+        start_time = self.current_session.start_time
+        duration = end_time - start_time
+        self.current_session.end_time = end_time
+        self.current_session.duration = duration
 
-    def is_productive(self, window_info):
+        # TODO: Chrome tabs goes into a special Chrome-only DB. For now you will just write, "Which tabs names?" without processing"
+
+    def is_productive(self, window_info, productive_apps, productive_sites):
         """Determine if the current window represents productive time."""
         if not window_info:
-            return False
+            self.console_logger.log_yellow_multiple("[DEBUG]", window_info)
+            raise ValueError("Window info was not passed")
 
+        print(window_info, '110ru')
         process_name = window_info['process_name']
-        window_title = window_info['window_title']
+        window_title_with_detail = window_info['window_title']
+
+        detail, window_name = separate_window_name_and_detail(
+            window_title_with_detail)
 
         # Check if it's a known application
-        if process_name in self.productive_apps:
-            app_name = self.productive_apps[process_name]
-            productivity = self.productive_categories[app_name]
-            self.console_logger.log_green_multiple(
-                "productivity", productivity, app_name)
-            # If productivity is None, we need to check the window title
-            if productivity is None:
-                # For Chrome, check if the title contains any productive sites
-                if app_name == 'Chrome':
-                    self.console_logger.log_green_multiple(
-                        window_title, "::", self.productive_sites)
-                    return any(site in window_title.lower() for site in self.productive_sites)
-                # For Discord, consider it productive only if specific channels/servers are active
-                elif app_name == 'Discord':
-                    productive_channels = ['work-', 'team-', 'project-']
-                    return any(channel in window_title.lower() for channel in productive_channels)
-
-            return productivity
+        is_a_known_productive_program = window_name in productive_apps
+        print(is_a_known_productive_program, window_name, '115ru')
+        if is_a_known_productive_program:
+            # Could still be a "Maybe" case, i.e. Chrome
+            is_a_maybe_case = process_name == "Google Chrome"
+            if is_a_maybe_case:
+                # access window content to check the sites
+                tab_name = detail
+                is_productive_site = tab_is_a_productive_tab(
+                    tab_name, productive_sites)
+                return is_productive_site
+            return True
 
         return False
 
-    def package_given_window_for_csv(self, window):
-        end_time = self.clock.now()
-        duration = (end_time - self.start_time).total_seconds()
-        is_productive = self.is_productive(window)
-        print(window, '188ru')
-        session = {
-            'start_time': self.start_time.isoformat(),
-            'end_time': end_time.isoformat(),
-            'duration': duration,
-            'window': window["window_title"],
-            'productive': is_productive  # doot
-        }
-        return session
+        # depends on channel -- but how?
+        # if process_name in self.productive_apps:
+        #     app_name = self.productive_apps[process_name]
+        #     productivity = self.productive_categories[app_name]
+        #     self.console_logger.log_green_multiple(
+        #         "productivity", productivity, app_name)
+        #     # If productivity is None, we need to check the window title
+        #     if productivity is None:
+        #         # For Chrome, check if the title contains any productive sites
+        #         if app_name == 'Chrome':
+        #             self.console_logger.log_green_multiple(
+        #                 window_title, "::", self.productive_sites)
+        #             return any(site in window_title.lower() for site in self.productive_sites)
+        #         # For Discord, consider it productive only if specific channels/servers are active
+        #         elif app_name == 'Discord':
+        #             productive_channels = ['work-', 'team-', 'project-']
+        #             return any(channel in window_title.lower() for channel in productive_channels)
 
-    def package_window_into_db_entry(self):
-        if not self.current_window or not self.start_time:
-            return
+        #     return productivity
 
-        end_time = self.clock.now()
-        duration = (end_time - self.start_time).total_seconds()
+    #     # FIXME: what if there is no " - " in it?
 
-        window_info = self.get_active_window_info()
-        is_productive = self.is_productive(
-            window_info) if window_info else False
-        the_junk_string, window_name = self.current_window.rsplit(" - ", 1)
-        session: ProgramSessionData = {
-            'start_time': self.start_time,
-            'end_time': end_time,
-            'duration': duration,
-            'window': window_name,
-            'detail': the_junk_string,
-            'productive': is_productive
-        }
-        return session
-
-    def log_session(self):
-        """Log the current session data."""
-        if not self.current_window or not self.start_time:
-            return
-
-        end_time = self.clock.now()
-        duration = (end_time - self.start_time).total_seconds()
-
-        window_info = self.get_active_window_info()
-        is_productive = self.is_productive(
-            window_info) if window_info else False
-
-        the_junk_string, window_name = self.current_window.rsplit(" - ", 1)
-
-        session: ProgramSessionData = {
-            # FIXME: VSCode is in "False" productivity, uNproductive. It should be TRUE
-            # FIXME: SOlution is to move the "window rsplit" thing to early early, before the isProductive check.
-            'start_time': self.start_time,
-            'end_time': end_time,
-            'duration': duration,
-            'window': window_name,
-            'detail': the_junk_string,
-            'productive': is_productive
-        }
-
-        # is only used to let surveillanceManager gather the session
-        self.session_data.append(session)
-        print(session, "is an empty array right, 197ru")
-        self.apply_handlers(session, 1)
+        # FIXME: VSCode is in "False" productivity, uNproductive. It should be TRUE
+        # FIXME: SOlution is to move the "window rsplit" thing to early early, before the isProductive check.
 
     def report_missing_program(self, title):
         """For when the program isn't found in the productive apps list"""
         self.console_logger.log_yellow(title)  # temp
 
-    def apply_handlers(self, session: dict, source=0):
+    def apply_handlers(self, session: ProgramSessionData, source=0):
+        if not isinstance(session, ProgramSessionData):
+            self.console_logger.log_yellow_multiple("[DEBUG]", session)
+            raise ValueError("Was not a dict")
+        print("[DEBUG]", session, '201ru')
         #  {'os': 'Ubuntu', 'pid': 70442, 'process_name': 'pgadmin4', 'window_title': 'Alt-tab window'}
         # start_time, end_time, duration, window, productive
         if isinstance(self.event_handlers, list):
@@ -208,11 +143,6 @@ class ProgramTrackerCore:
                 handler(session)  # emit an event
         else:
             self.event_handlers(session)  # is a single func
-
-    def gather_session(self):
-        current = self.session_data
-        self.session_data = []  # reset
-        return current
 
     def stop(self):
         pass  # might need later

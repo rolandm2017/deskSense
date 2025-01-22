@@ -1,16 +1,33 @@
 # classes.py
 # For various classes
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TypedDict, NotRequired
 
 
-class ProgramSessionData(TypedDict):
+class ProgramSessionData:
+    window: str
+    detail: str
     start_time: datetime
     end_time: datetime
-    duration: float
-    window: str
-    detail: NotRequired[str]
+    duration: timedelta
     productive: bool
+
+    def __init__(self):
+        self.window = ""
+        self.detail = ""
+        self.start_time = None
+        self.end_time = None
+        self.duration = None
+        self.productive = None
+
+
+# class ProgramSessionData(TypedDict):
+#     start_time: datetime
+#     end_time: datetime
+#     duration: float
+#     window: str
+#     detail: NotRequired[str]
+#     productive: bool
 
 
 class KeyboardAggregate:

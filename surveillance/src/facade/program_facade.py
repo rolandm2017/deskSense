@@ -5,6 +5,7 @@ from datetime import datetime
 from ..console_logger import ConsoleLogger
 import platform
 
+
 class ProgramApiFacadeCore:
     def __init__(self, os):
         self.console_logger = ConsoleLogger()
@@ -28,7 +29,7 @@ class ProgramApiFacadeCore:
         if self.is_windows:
             return self._read_windows()
         return self._read_ubuntu()
-    
+
     def _read_windows(self) -> Dict:
         window = self.win32gui.GetForegroundWindow()
         pid = self.win32process.GetWindowThreadProcessId(window)[1]
@@ -43,10 +44,11 @@ class ProgramApiFacadeCore:
     def listen_for_window_changes(self):
         d = self.display.Display()
         root = d.screen().root
-        
+
         # Listen for focus change events
-        root.change_attributes(event_mask=self.X.FocusChangeMask | self.X.PropertyChangeMask)
-        
+        root.change_attributes(
+            event_mask=self.X.FocusChangeMask | self.X.PropertyChangeMask)
+
         while True:
             event = d.next_event()
             if event.type == self.X.PropertyNotify:
@@ -60,13 +62,14 @@ class ProgramApiFacadeCore:
         # For now, returning active process info
         active = self._get_active_window_ubuntu()
         window_name = self._read_active_window_name_ubuntu()
+        # FIXME: "Program None - rlm@kingdom: ~/Code/deskSense/surveillance"
         return {
             "os": "Ubuntu",
             "pid": active["pid"] if active else None,
             "process_name": active["name"] if active else None,
-            "window_title": window_name
+            "window_title": window_name  # window_title with the detail
         }
-    
+
     def _read_active_window_name_ubuntu(self):
         try:
             # Connect to the X server
@@ -92,10 +95,10 @@ class ProgramApiFacadeCore:
                 return "Unnamed window"
         except Exception as e:
             # Will always be:
-            # <class 'Xlib.error.BadWindow'>: 
-            #     code = 3, resource_id = <Resource 0x00000000>, 
+            # <class 'Xlib.error.BadWindow'>:
+            #     code = 3, resource_id = <Resource 0x00000000>,
             #     sequence_number = 22, major_opcode = 20, minor_opcode = 0 []
-            # print(e) 
+            # print(e)
             # print(traceback.format_exc())
             return "Alt-tab window"  # "Alt-Tab Window (Most Likely)"
 

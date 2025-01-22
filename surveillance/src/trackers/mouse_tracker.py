@@ -33,7 +33,7 @@ class MouseTrackerCore:
 
         self.console_logger = ConsoleLogger()
 
-        self.session_data = []
+        # FIXME: Convert to a MouseMoveSession for clarity
         self.mouse_movement_window = "Closed"
 
     def get_mouse_position(self):
@@ -72,7 +72,7 @@ class MouseTrackerCore:
             if has_stopped:
                 window: MouseMoveWindow = self.close_and_retrieve_window(
                     latest_result)
-                self.session_data.append(window)
+
                 self.apply_handlers(window)
                 self.reset()
             else:
@@ -95,13 +95,6 @@ class MouseTrackerCore:
                 handler(content)  # emit an event
         else:
             self.event_handlers(content)  # is a single func
-
-    def gather_session(self):
-        current = self.session_data
-        return current
-        # TODO: make currently open mouse movements not be reported, move them to the next interval
-        # self.session_data = self.preserve_open_events(current)
-        # return current
 
     def preserve_open_events(self, current_batch):
         # FIXME: convert to accept .start_time, .end_time events. is this needed?

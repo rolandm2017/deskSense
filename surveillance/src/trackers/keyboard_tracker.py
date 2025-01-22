@@ -27,8 +27,6 @@ class KeyboardTrackerCore:
         self.end_program_func = end_program_routine
 
         self.events = []
-        # so surveillanceManager can grab the interval data
-        self.session_data = []
         self.console_logger = ConsoleLogger()
         self.recent_count = 0
         self.time_of_last_terminal_out = clock.now()
@@ -74,11 +72,6 @@ class KeyboardTrackerCore:
     def _is_ready_to_log_to_console(self, current_time):
         # log key presses every 3 sec
         return self.clock.has_elapsed_since(current_time, self.time_of_last_terminal_out, 3)
-
-    def gather_session(self):
-        current = self.session_data
-        self.session_data = []
-        return current
 
     def stop(self):
         print("Stopping program")
