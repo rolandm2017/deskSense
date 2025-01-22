@@ -1,3 +1,11 @@
+
+# @@@
+# For running the trackers only, no server
+# @@@  --- and its out of date - jan 22
+# @@@  --- and its out of date
+# @@@  --- and its out of date
+# @@@  --- and its out of date
+
 import win32gui
 import win32process
 import psutil
@@ -52,6 +60,10 @@ def main():
 
         # Clean up
         surveillance_manager.cleanup()  # This will call mouse_tracker.stop()
+
+# @@@
+# For running the trackers only, no server
+# @@@
 
 
 if __name__ == "__main__":

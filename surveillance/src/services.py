@@ -25,7 +25,7 @@ class KeyboardService:
 
     async def get_all_events(self) -> List[TypingSession]:
         """Mostly for debugging"""
-        return await self.dao.read()
+        return await self.dao.read_all()
 
 
 class MouseService:
@@ -42,8 +42,7 @@ class MouseService:
 
     async def get_all_events(self) -> List[MouseMove]:
         """Mostly for debugging"""
-        all = await self.dao.read()
-        print(all, "in mouse.get_all_events")
+        all = await self.dao.read_all()
         return all
 
 
@@ -63,7 +62,7 @@ class ProgramService:
     async def get_all_events(self) -> List[Program]:
         """Mostly for debugging"""
         print(self.dao, '63vm')
-        all = await self.dao.read()
+        all = await self.dao.read_all()
         print(all, "in programs.get_all_events")
         return all
 
