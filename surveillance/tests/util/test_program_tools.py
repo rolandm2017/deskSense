@@ -1,6 +1,7 @@
 import pytest
 
-from src.util.program_tools import separate_window_name_and_detail, is_expected_shape_else_throw, tab_is_a_productive_tab, separator_error_msg
+from src.config.definitions import productive_sites
+from src.util.program_tools import separate_window_name_and_detail, is_expected_shape_else_throw, tab_is_a_productive_tab,  separator_error_msg, window_is_chrome
 
 window1 = "Squashing Commits with Git Rebase - Claude - Google Chrome"
 window3 = "H&M | Online Fashion, Homeware & Kids Clothes | H&M CA - Google Chrome"
@@ -33,15 +34,16 @@ def test_separate_window_name_and_detail():
     assert title == "Visual Studio Code"
     assert detail == "program_tracker.py - deskSense"
 
-    detail, title = separate_window_name_and_detail(window6)
+    response = separate_window_name_and_detail(window6)
+    print(response, '38ru')
 
-    assert detail == window6
-    assert title == separator_error_msg
+    assert response[1] == window6
+    assert response[0] == separator_error_msg
 
-    detail, title = separate_window_name_and_detail(window7)
+    response = separate_window_name_and_detail(window7)
 
-    assert detail == window7
-    assert title == separator_error_msg
+    assert response[1] == window7
+    assert response[0] == separator_error_msg
 
 
 def test_tab_is_a_productive_tab_validation():
@@ -58,10 +60,59 @@ def test_tab_is_a_productive_tab_validation():
     # facade = Mock()
     # tracker = ProgramTrackerCore(clock, facade, Mock())
 
-    assert tab_is_a_productive_tab(productive_tab_name_1) is True
-    assert tab_is_a_productive_tab(productive_tab_name_2) is True
-    assert tab_is_a_productive_tab(productive_tab_name_3) is True
+    assert tab_is_a_productive_tab(
+        productive_tab_name_1, productive_sites) is True
+    assert tab_is_a_productive_tab(
+        productive_tab_name_2, productive_sites) is True
+    assert tab_is_a_productive_tab(
+        productive_tab_name_3, productive_sites) is True
 
-    assert tab_is_a_productive_tab(questionable_tab_name_4) is False
-    assert tab_is_a_productive_tab(questionable_tab_name_5) is False
-    assert tab_is_a_productive_tab(questionable_tab_name_6) is False
+    assert tab_is_a_productive_tab(
+        questionable_tab_name_4, productive_sites) is False
+    assert tab_is_a_productive_tab(
+        questionable_tab_name_5, productive_sites) is False
+    assert tab_is_a_productive_tab(
+        questionable_tab_name_6, productive_sites) is False
+
+
+my_chrome_example = {'os': 'Ubuntu', 'pid': 129614, 'process_name': 'chrome',
+                     'window_title': 'Squashing Commits with Git Rebase - Claude - Google Chrome'}
+
+
+def test_window_is_chrome():
+    assert window_is_chrome(my_chrome_example) is True
+    assert window_is_chrome({"window_title": "foo bar baz"}) is False
+
+
+ex1 = {'os': 'Ubuntu', 'pid': 129614, 'process_name': 'chrome',
+       'window_title': 'Squashing Commits with Git Rebase - Claude - Google Chrome'}
+ex2 = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg',
+       'window_title': 'Vite + React + TS - Google Chrome'}
+ex3 = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg',
+       'window_title': 'H&M | Online Fashion, Homeware & Kids Clothes | H&M CA - Google Chrome'}
+ex4 = {'os': 'Ubuntu', 'pid': 128216,
+       'process_name': 'Xorg', 'window_title': 'Alt-tab window'}
+ex5 = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg',
+       'window_title': 'rlm@kingdom: ~/Code/deskSense/surveillance'}
+ex6 = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg',
+       'window_title': 'program_tracker.py - deskSense - Visual Studio Code'}
+
+
+def test_is_expected_shape_else_throw():
+    assert is_expected_shape_else_throw(ex1)
+    assert is_expected_shape_else_throw(ex2)
+    assert is_expected_shape_else_throw(ex3)
+    assert is_expected_shape_else_throw(ex4)
+    assert is_expected_shape_else_throw(ex5)
+    assert is_expected_shape_else_throw(ex6)
+
+
+def test_is_expected_shape_else_throw_actually_throws():
+
+    with pytest.raises(AttributeError, match="Uncompliant program window shape"):
+        # Call your function here that should raise the error
+        is_expected_shape_else_throw({"foo": "bar"})
+
+    with pytest.raises(AttributeError, match="Uncompliant program window shape"):
+        # Call your function here that should raise the error
+        is_expected_shape_else_throw({"james": "bond"})
