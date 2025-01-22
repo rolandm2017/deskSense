@@ -1,13 +1,12 @@
-separator_error_msg = "Error in function: window_title likely had no ' - '."
+separator_error_msg = "Error in function: window_title had no ' - '."
 
 
 def separate_window_name_and_detail(window_title):
     if not isinstance(window_title, str):
         raise TypeError("Input must be a string")
-    try:
+    if " - " in window_title:
         return window_title.rsplit(" - ", 1)
-    except ValueError:
-        return [window_title, separator_error_msg]
+    return separator_error_msg, window_title
 
 
 def is_expected_shape_else_throw(dict):
