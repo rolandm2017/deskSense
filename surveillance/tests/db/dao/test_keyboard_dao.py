@@ -64,7 +64,7 @@ class TestKeyboardDao:
             Mock(spec=TypingSession, id=2,
                  start_time=datetime.now(), end_time=datetime.now())
         ]
-        result_mock = AsyncMock()
+        result_mock = Mock()
         result_mock.all.return_value = [(session,)
                                         for session in mock_typing_sessions]
         mock_session.execute.return_value = result_mock
@@ -98,7 +98,7 @@ class TestKeyboardDao:
 
         # Create result mock
         mock_result = AsyncMock()
-        mock_result.all = AsyncMock(
+        mock_result.all = Mock(
             return_value=[(session,) for session in mock_typing_sessions])
         mock_session.execute = AsyncMock(return_value=mock_result)
 
