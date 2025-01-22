@@ -18,29 +18,18 @@ class TimelineEntryDao(BaseQueueingDao):
         self.logger = ConsoleLogger()
 
     async def create_from_keyboard_aggregate(self, content: KeyboardAggregate):
-        highest_id = await self.read_highest_id()  # FIXME: is broken
-        # Fixed: was "mouse-" before
-        client_facing_id = f"keyboard-{highest_id + 1}"
         group = ChartEventType.KEYBOARD
-        content_text = f"Typing Session {highest_id + 1}"
         new_row = TimelineEntryObj(
-            # clientFacingId=client_facing_id,  # Fixed: match the model's camelCase
             group=group,
-            # content=content_text,
             start=content.session_start_time,
             end=content.session_end_time
         )
         await self.create(new_row)
 
     async def create_from_mouse_move_window(self, content: MouseMoveWindow):
-        highest_id = await self.read_highest_id()  # FIXME: is broken
-        client_facing_id = f"mouse-{highest_id + 1}"
         group = ChartEventType.MOUSE
-        content_text = f"Mouse Event {highest_id + 1}"
         new_row = TimelineEntryObj(
-            # clientFacingId=client_facing_id,
             group=group,
-            # content=content_text,
             start=content.start_time,
             end=content.end_time
         )

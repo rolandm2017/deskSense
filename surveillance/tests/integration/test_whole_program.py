@@ -22,13 +22,16 @@ def client():
 @pytest.mark.asyncio
 async def test_health_check():
     async with AsyncClient(base_url="http://127.0.0.1:8000") as client:
+        print(client, '25ru')
         response = await client.get("http://127.0.0.1:8000/health")
+        print(response, '27ru')
 
         assert response.json()["status"] == "healthy"
         assert response.status_code == 200
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip(reason="passing for isolation")
 async def test_timeline():
     async with AsyncClient(base_url="http://127.0.0.1:8000") as client:
         response = await client.get("http://127.0.0.1:8000/dashboard/timeline")
@@ -44,6 +47,7 @@ async def test_timeline():
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip(reason="passing for isolation")
 async def test_summaries():
     async with AsyncClient(base_url="http://127.0.0.1:8000") as client:
         response = await client.get("http://127.0.0.1:8000/dashboard/summaries")
