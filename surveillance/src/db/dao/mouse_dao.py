@@ -25,7 +25,6 @@ class MouseDao(BaseQueueingDao):
 
         if isinstance(mouse_move, MouseMoveWindow):
             raise ValueError("mouse move window found!")
-        self.logger.log_red("Queuing " + str(mouse_move) + ' 28ru')
         # FIXME: A "MouseMove" goes in, but the Queue receives a MouseMoveWindow!
         await self.queue_item(mouse_move, MouseMove)
 

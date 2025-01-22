@@ -33,7 +33,6 @@ def test_separate_window_name_and_detail():
 
     window6 = "rlm@kingdom: ~/Code/deskSense/surveillance"
     response = separate_window_name_and_detail(window6)
-    print(response, '38ru')
     assert response[0] == window6
     assert len(response) == 1
 

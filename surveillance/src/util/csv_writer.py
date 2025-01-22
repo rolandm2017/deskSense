@@ -131,7 +131,6 @@ class ProgramCsvWriter:
         end_time = self.clock.now()
         duration = (end_time - self.start_time).total_seconds()
         is_productive = self.is_productive(window)
-        print(window, '188ru')
         session: ProgramSessionData = {
             'start_time': self.start_time.isoformat(),
             'end_time': end_time.isoformat(),

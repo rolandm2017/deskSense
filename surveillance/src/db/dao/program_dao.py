@@ -24,14 +24,15 @@ class ProgramDao(BaseQueueingDao):
         # 'window': window_name,
         # 'detail': the_junk_string,
         # 'productive': is_productive
-        duration = session['end_time'] - session['start_time']
+        duration = session.end_time - session.start_time
+
         program_deliverable = Program(
-            window=session['window'],
-            detail=session['detail'],
-            start_time=session['start_time'],
-            end_time=session['end_time'],
+            window=session.window_title,
+            detail=session.detail,
+            start_time=session.start_time,
+            end_time=session.end_time,
             duration=duration,
-            productive=session['productive']
+            productive=session.productive
         )
 
         await self.queue_item(program_deliverable)

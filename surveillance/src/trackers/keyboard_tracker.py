@@ -44,10 +44,8 @@ class KeyboardTrackerCore:
             self.recent_count += 1  # per keystroke
             current_time = self.clock.now()
             self.time_of_last_aggregator_update = current_time
-            print(current_time, '47ru')
             finalized_aggregate = self.aggregator.add_event(
                 current_time.timestamp())
-            print(finalized_aggregate, '50ru')
 
             if finalized_aggregate is not None:
                 session = self.aggregator.package_aggregate_for_db(

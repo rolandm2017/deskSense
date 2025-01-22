@@ -76,7 +76,6 @@ def test_callback_execution(monkeypatch):
 
     assert callback_executed
     assert completed_aggregation is not None
-    print(completed_aggregation, '73ru')
     assert len(completed_aggregation) == 1
 
 

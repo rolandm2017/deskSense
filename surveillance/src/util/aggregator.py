@@ -42,8 +42,6 @@ class EventAggregator:
             return None
 
         next_added_timestamp_difference = timestamp - self.current_aggregation.end_time
-        # print(timestamp, self.current_aggregation.end_time, '41ru')
-        # print(next_added_timestamp_difference > self.timeout, '42ru')
         session_window_has_elapsed = next_added_timestamp_difference > self.timeout
         if session_window_has_elapsed:
             # "If no keystroke within 300 ms, end sesion; report session to db"
