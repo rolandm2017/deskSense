@@ -35,37 +35,6 @@ function App() {
 
     const hours = 36000000; // 1000 * 60 * 60
 
-    // function processTimeReports(
-    //     reports: ProgramActivityLog[]
-    // ): BarChartColumn[] {
-    //     // Create a hashtable to store total time per window
-    //     const windowTimes: { [key: string]: number } = {};
-
-    //     // Calculate time differences and aggregate
-    //     reports.forEach((report: ProgramActivityLog) => {
-    //         const startTime = new Date(report.startTime);
-    //         const endTime = new Date(report.endTime);
-    //         const durationInHours =
-    //             (endTime.getTime() - startTime.getTime()) / hours; // Convert to hours
-
-    //         if (windowTimes[report.window]) {
-    //             windowTimes[report.window] += durationInHours;
-    //         } else {
-    //             windowTimes[report.window] = durationInHours;
-    //         }
-    //     });
-
-    //     // Convert to BarChartColumn array and sort by hours spent
-    //     const chartData: BarChartColumn[] = Object.entries(windowTimes)
-    //         .map(([programName, hoursSpent]) => ({
-    //             programName,
-    //             hoursSpent: Number(hoursSpent.toFixed(4)), // Round to 4 decimal places
-    //         }))
-    //         .sort((a, b) => b.hoursSpent - a.hoursSpent);
-
-    //     return chartData;
-    // }
-
     useEffect(() => {
         if (summaries == null) {
             //
@@ -85,14 +54,28 @@ function App() {
         }
     }, [timeline]);
 
+    const primaryBg = "#FAFAF9";
+    const primaryBlack = "#171717";
+    const accentIndigo = "#6366F1";
+
     return (
         <>
             <div>
                 <div>
-                    <h1>DeskSense Dashboard</h1>
+                    <h1
+                        style={{
+                            color: primaryBlack,
+                            fontSize: "28px",
+                            border: "2px solid black",
+                        }}
+                    >
+                        DeskSense Dashboard
+                    </h1>
                 </div>
-                <div style={{ border: "5px solid black" }}>
-                    <h2>Programs {programReport?.count.toString()}</h2>
+                <div style={{ border: "5px solid black", margin: "0px" }}>
+                    <h2 style={{ margin: "0px" }}>
+                        Programs {programReport?.count.toString()}
+                    </h2>
                     {summaries ? (
                         <ProgramUsageChart barsInput={summaries} />
                     ) : (
