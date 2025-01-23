@@ -1,3 +1,4 @@
+// background.js
 import { reportTabSwitch } from "./api.js"
 
 // Helper function to get domain from URL
@@ -16,8 +17,8 @@ chrome.tabs.onCreated.addListener((tab) => {
     if (tab.url) {
         const domain = getDomainFromUrl(tab.url)
         if (domain) {
-            console.log("New tab created:", domain)
-            reportTabSwitch(domain)
+            console.log("New tab created:", domain, "Title:", tab.title)
+            reportTabSwitch(domain, tab.title)
         }
     }
 })
@@ -27,8 +28,9 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (changeInfo.status === "complete" && tab.url) {
         const domain = getDomainFromUrl(tab.url)
         if (domain) {
-            console.log("Tab updated:", domain)
-            reportTabSwitch(domain)
+            console.log(tab, '31ru')
+            console.log("Tab updated:", domain, "Title:", tab.title)
+            reportTabSwitch(domain, tab.title)
         }
     }
 })
@@ -40,7 +42,8 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
             const domain = getDomainFromUrl(tab.url)
             if (domain) {
                 console.log("Switched to tab:", domain)
-                reportTabSwitch(domain)
+                console.log("Title:", tab)
+                reportTabSwitch(domain, tab.title)
             }
         }
     })

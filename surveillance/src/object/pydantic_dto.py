@@ -84,3 +84,10 @@ class TimelineEntrySchema(BaseModel):
 class TimelineRows(BaseModel):
     mouseRows: List[TimelineEntrySchema]
     keyboardRows: List[TimelineEntrySchema]
+
+# Chrome stuff
+
+
+class URLDelivery(BaseModel):
+    tabTitle: str
+    url: str

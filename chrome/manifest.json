@@ -1,5 +1,5 @@
 {
-    "name": "Hello Extensions - foo",
+    "name": "DeskSense",
     "description": "Base Level Extension",
     "version": "1.0",
     "manifest_version": 3,
@@ -12,5 +12,5 @@
         "service_worker": "background.js",
         "type": "module"
     },
-    "host_permissions": ["http://localhost:8080/*"]
+    "host_permissions": ["http://localhost:8000/*"]
 }
