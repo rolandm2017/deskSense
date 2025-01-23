@@ -6,9 +6,7 @@ import asyncio
 # import time
 from typing import Optional, List
 from sqlalchemy.orm import Session
-from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
 
 from src.db.database import get_db, init_db, AsyncSession, async_session_maker
 from src.db.dao.mouse_dao import MouseDao
@@ -16,9 +14,10 @@ from src.db.dao.keyboard_dao import KeyboardDao
 from src.db.dao.program_dao import ProgramDao
 from src.db.dao.timeline_entry_dao import TimelineEntryDao
 from src.db.dao.daily_summary_dao import DailySummaryDao
-from src.db.models import MouseMove, Program, DailyProgramSummary, TimelineEntryObj
+from src.db.models import DailyProgramSummary
 from src.services import MouseService, KeyboardService, ProgramService, DashboardService
 from src.object.dto import TypingSessionDto, MouseMoveDto, ProgramDto
+from src.object.pydantic_dto import KeyboardLog, KeyboardReport, MouseLog, MouseReport, ProgramActivityLog, ProgramActivityReport, DailyProgramSummarySchema, BarChartContent, TimelineEntrySchema, TimelineRows
 from src.surveillance_manager import SurveillanceManager
 from src.console_logger import ConsoleLogger
 
@@ -43,105 +42,6 @@ async def get_program_service(db: AsyncSession = Depends(get_db)) -> ProgramServ
 async def get_dashboard_service(db: AsyncSession = Depends(get_db)) -> DashboardService:
     return DashboardService(TimelineEntryDao(async_session_maker), DailySummaryDao(async_session_maker))
 
-
-class KeyboardLog(BaseModel):
-    keyboardEventId: Optional[int] = None
-    startTime: datetime
-    endTime: datetime
-
-
-class KeyboardReport(BaseModel):
-    count: int
-    keyboardLogs: List[KeyboardLog]
-
-
-class MouseLog(BaseModel):
-    mouseEventId: Optional[int] = None
-    startTime: datetime
-    endTime: datetime
-
-
-class MouseReport(BaseModel):
-    count: int
-    mouseLogs: List[MouseLog]
-
-
-class ProgramActivityLog(BaseModel):
-    programEventId: Optional[int] = None
-    window: str
-    detail: str
-    startTime: datetime
-    endTime: datetime
-    productive: bool
-
-
-class ProgramActivityReport(BaseModel):
-    count: int
-    programLogs: List[ProgramActivityLog]
-
-
-# class TimelineEntry(BaseModel):
-#     # ex: `mouse-${log.mouseEventId}`, ex2: `keyboard-${log.keyboardEventId}`,
-#     id: str
-#     group: str  # "mouse" or "keyboard"
-#     # ex: `Mouse Event ${log.mouseEventId}`, ex2: `Typing Session ${log.keyboardEventId}`,
-#     content: str
-#     start: datetime
-#     end: datetime  # TOD: make it *come out of the db* ready to go
-
-
-# class TimelineRows(BaseModel):
-#     mouseRows: List[TimelineEntry]
-#     keyboardRows: List[TimelineEntry]
-
-
-# class BarChartProgramEntry(BaseModel):
-#     programName: str
-#     hoursSpent: float
-
-#
-# For the uh, dashboard
-
-
-class DailyProgramSummarySchema(BaseModel):
-    id: int
-    programName: str
-    hoursSpent: float
-    gatheringDate: datetime
-
-    model_config = ConfigDict(from_attributes=True)  # This enables ORM mode
-
-
-class BarChartContent(BaseModel):
-    columns: List[DailyProgramSummarySchema]  # Use the Pydantic schema instead
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class TimelineEntrySchema(BaseModel):
-    id: str  # This will map to clientFacingId from the SQLAlchemy model
-    group: str  # This will map from ChartEventType enum
-    content: str
-    start: datetime
-    end: datetime
-
-    model_config = ConfigDict(from_attributes=True)
-
-    # Optional: Add a method to convert from SQLAlchemy model
-    @classmethod
-    def from_orm_model(cls, db_model: TimelineEntryObj) -> 'TimelineEntrySchema':
-        return cls(
-            id=db_model.clientFacingId,
-            group=db_model.group.value,  # Convert enum to string
-            content=db_model.content,
-            start=db_model.start,
-            end=db_model.end
-        )
-
-
-class TimelineRows(BaseModel):
-    mouseRows: List[TimelineEntrySchema]
-    keyboardRows: List[TimelineEntrySchema]
 
 # Main class in this file
 

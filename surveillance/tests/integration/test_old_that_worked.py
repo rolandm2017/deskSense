@@ -1,90 +1,49 @@
 import pytest
 import asyncio
-
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
 from httpx import AsyncClient
-import multiprocessing
-import uvicorn
-import time
 from collections import Counter
 
+
+from fastapi.testclient import TestClient
 from surveillance.server import app
 from surveillance.src.db.database import init_db
 
 
-app = FastAPI()  # from official example
-test_client = TestClient(app)  # official ex
+@pytest.fixture(autouse=True)
+async def setup_db():
+    await init_db()
 
 
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     print("starting up")
-#     yield
-#     print("shutting down")
-
-
-# app = FastAPI(lifespan=lifespan)
-
-
-# @pytest.fixture(scope="session", autouse=True)
-# def start_server():
-#     # Start server in a separate process
-#     server = multiprocessing.Process(
-#         target=uvicorn.run,
-#         args=(app,),
-#         kwargs={
-#             "host": "127.0.0.1",
-#             "port": 8000,
-#             "log_level": "info"
-#         }
-#     )
-#     server.start()
-#     time.sleep(1)  # Give server time to start
-
-#     yield
-
-#     server.terminate()
-#     server.join()
-
-
-# @pytest.fixture(scope="session")
-# async def client():
-#     async with lifespan(app):  # lifespan does not return the asgi app
-#         async with AsyncClient(app=app, base_url="http://localhost") as client:
-#             yield client
-
-
-# @pytest.fixture
-# async def async_client():
-#     async with AsyncClient(base_url="http://127.0.0.1:8000") as client:
-#         yield client
+@pytest.fixture
+def client():
+    return TestClient(app)
 
 
 @pytest.mark.asyncio
 async def test_health_check():
-    response = test_client.get("/api/health")
-    assert response.status_code == 200
-    assert response.json()["status"] == "healthy"
+    async with AsyncClient(base_url="http://127.0.0.1:8000") as client:
+        response = await client.get("http://127.0.0.1:8000/health")
+
+        assert response.json()["status"] == "healthy"
+        assert response.status_code == 200
 
 
 @pytest.mark.asyncio
-# @pytest.mark.skip(reason="passing for isolation")
 async def test_timeline():
-    response = test_client.get("/dashboard/timeline")
-    print(response, '32ru')
-    assert response.status_code == 200
+    async with AsyncClient(base_url="http://127.0.0.1:8000") as client:
+        response = await client.get("http://127.0.0.1:8000/dashboard/timeline")
+        print(response, '32ru')
+        assert response.status_code == 200
 
-    timeline_content = response.json()
-    print(timeline_content, '35ru')
-    assert timeline_content["mouseRows"] is not None
-    assert len(timeline_content["mouseRows"]) > 0
-    assert timeline_content["keyboardRows"] is not None
-    assert len(timeline_content["keyboardRows"]) > 0
+        timeline_content = response.json()
+        print(timeline_content, '35ru')
+        assert timeline_content["mouseRows"] is not None
+        assert len(timeline_content["mouseRows"]) > 0
+        assert timeline_content["keyboardRows"] is not None
+        assert len(timeline_content["keyboardRows"]) > 0
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip(reason="passing for isolation")
 async def test_summaries():
     async with AsyncClient(base_url="http://127.0.0.1:8000") as client:
         response = await client.get("http://127.0.0.1:8000/dashboard/summaries")
