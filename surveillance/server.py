@@ -69,9 +69,7 @@ async def lifespan(app: FastAPI):
     await init_db()
 
     # Use the session_maker directly
-    surveillance_state.manager = SurveillanceManager(
-        # Pass session_maker instead of get_db()
-        async_session_maker, shutdown_signal="TODO")
+    surveillance_state.manager = SurveillanceManager(async_session_maker)
     surveillance_state.manager.start_trackers()
 
     yield
@@ -97,48 +95,11 @@ app.add_middleware(
 )
 
 
-def make_keyboard_log(r: TypingSessionDto):
-    if not hasattr(r, "start_time") or not hasattr(r, "end_time"):
-        raise AttributeError("A timestamp field was missing")
-    try:
-        return KeyboardLog(
-            keyboardEventId=r.id if hasattr(r, 'id') else None,
-            startTime=r.start_time,
-            endTime=r.end_time,
-        )
-    except AttributeError as e:
-        raise e
-
-
-def make_mouse_log(r: MouseMoveDto):
-    try:
-        return MouseLog(
-            mouseEventId=r.id if hasattr(r, 'id') else None,
-            startTime=r.start_time,
-            endTime=r.end_time
-        )
-    except AttributeError as e:
-        raise e
-
-
-def make_program_log(r: ProgramDto):
-    try:
-        return ProgramActivityLog(
-            programEventId=r.id if hasattr(r, 'id') else None,
-            window=r.window,
-            detail=r.detail,
-            startTime=r.start_time,
-            endTime=r.end_time,
-            productive=r.productive if r.productive else False
-        )
-    except AttributeError as e:
-        raise e
-
-
 @app.get("/health", response_model=dict)
 async def health_check(keyboard_service: KeyboardService = Depends(get_keyboard_service)):
     logger.log_purple("[LOG] health check")
     try:
+        # FIXME: this should be on the app, not a local variable
         if not surveillance_state.manager.keyboard_tracker:
             return {"status": "error", "detail": "Tracker not initialized"}
         await keyboard_service.get_all_events()
@@ -151,6 +112,7 @@ async def health_check(keyboard_service: KeyboardService = Depends(get_keyboard_
 @app.get("/report/keyboard/all", response_model=KeyboardReport)
 async def get_all_keyboard_reports(keyboard_service: KeyboardService = Depends(get_keyboard_service)):
     logger.log_purple("[LOG] keyboard report - all")
+    # FIXME: this should be on the app, not a local variable
     if not surveillance_state.manager.keyboard_tracker:
         raise HTTPException(status_code=500, detail="Tracker not initialized")
 
@@ -168,6 +130,7 @@ async def get_all_keyboard_reports(keyboard_service: KeyboardService = Depends(g
 async def get_keyboard_report(keyboard_service: KeyboardService = Depends(get_keyboard_service)):
     # async def get_keyboard_report(db: Session = Depends(get_db)):
     logger.log_purple("[LOG] keyboard report")
+    # FIXME: this should be on the app, not a local variable
     if not surveillance_state.manager.keyboard_tracker:
         raise HTTPException(status_code=500, detail="Tracker not initialized")
 
