@@ -1,5 +1,5 @@
 # server.py
-from fastapi import FastAPI, BackgroundTasks, HTTPException, Depends
+from fastapi import FastAPI, BackgroundTasks, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import asyncio
@@ -13,10 +13,11 @@ from src.db.dao.keyboard_dao import KeyboardDao
 from src.db.dao.program_dao import ProgramDao
 from src.db.dao.timeline_entry_dao import TimelineEntryDao
 from src.db.dao.daily_summary_dao import DailySummaryDao
+from src.db.dao.chrome_dao import ChromeDao
 from src.db.models import DailyProgramSummary
-from src.services import MouseService, KeyboardService, ProgramService, DashboardService
+from src.services import MouseService, KeyboardService, ProgramService, DashboardService, ChromeService
 from src.object.dto import TypingSessionDto, MouseMoveDto, ProgramDto
-from src.object.pydantic_dto import KeyboardLog, KeyboardReport, MouseLog, MouseReport, ProgramActivityLog, ProgramActivityReport, DailyProgramSummarySchema, BarChartContent, TimelineEntrySchema, TimelineRows
+from src.object.pydantic_dto import KeyboardReport, MouseReport, ProgramActivityReport, DailyProgramSummarySchema, BarChartContent, TimelineEntrySchema, TimelineRows, URLDelivery
 from src.util.pydantic_factory import make_keyboard_log, make_mouse_log, make_program_log
 from src.surveillance_manager import SurveillanceManager
 from src.console_logger import ConsoleLogger
@@ -27,21 +28,24 @@ logger = ConsoleLogger()
 # Add these dependency functions at the top of your file
 
 
-async def get_keyboard_service(db: AsyncSession = Depends(get_db)) -> KeyboardService:
+async def get_keyboard_service() -> KeyboardService:
     return KeyboardService(KeyboardDao(async_session_maker))
 
 
-async def get_mouse_service(db: AsyncSession = Depends(get_db)) -> MouseService:
+async def get_mouse_service() -> MouseService:
     return MouseService(MouseDao(async_session_maker))
 
 
-async def get_program_service(db: AsyncSession = Depends(get_db)) -> ProgramService:
+async def get_program_service() -> ProgramService:
     return ProgramService(ProgramDao(async_session_maker))
 
 
-async def get_dashboard_service(db: AsyncSession = Depends(get_db)) -> DashboardService:
+async def get_dashboard_service() -> DashboardService:
     return DashboardService(TimelineEntryDao(async_session_maker), DailySummaryDao(async_session_maker))
 
+
+async def get_chrome_service() -> ChromeService:
+    return ChromeService(ChromeDao(async_session_maker))
 
 # Main class in this file
 
@@ -235,6 +239,22 @@ async def get_program_time_for_dashboard(dashboard_service: DashboardService = D
     print("373ru")
     return BarChartContent(columns=manufacture_bar_chart_content(program_data))
 
+
+@app.post("/chrome/tab", status_code=status.HTTP_204_NO_CONTENT)
+async def your_endpoint_name(
+    url_delivery: URLDelivery,
+    chrome_service: ChromeService = Depends(get_chrome_service)
+):
+    logger.log_purple("[LOG] Chrome Tab Received")
+    try:
+        print(url_delivery, '249ru')
+        await chrome_service.log_url(url_delivery)
+        return  # Returns 204 No Content
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to process request"
+        )
 
 if __name__ == "__main__":
     import uvicorn

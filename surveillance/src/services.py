@@ -5,6 +5,7 @@ from datetime import datetime
 from .db.dao.keyboard_dao import KeyboardDao
 from .db.dao.program_dao import ProgramDao
 from .db.dao.mouse_dao import MouseDao
+from .db.dao.chrome_dao import ChromeDao
 from .db.dao.timeline_entry_dao import TimelineEntryDao
 from .db.dao.daily_summary_dao import DailySummaryDao
 from .db.models import TypingSession, Program, MouseMove
@@ -65,6 +66,15 @@ class ProgramService:
         all = await self.dao.read_all()
         print(all, "in programs.get_all_events")
         return all
+
+
+class ChromeService:
+    def __init__(self, dao: ChromeDao = Depends()):
+        self.dao = dao
+
+    async def log_url(self, url_deliverable):
+        # TODO: Does it go straight to the db? I guess it does
+        print(url_deliverable)
 
 
 class DashboardService:
