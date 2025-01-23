@@ -229,7 +229,6 @@ def manufacture_bar_chart_content(program_data):
 @app.get("/dashboard/summaries", response_model=BarChartContent)
 async def get_program_time_for_dashboard(dashboard_service: DashboardService = Depends(get_dashboard_service)):
     program_data = await dashboard_service.get_program_summary()
-    print(program_data, '369ru')
     if not isinstance(program_data, list):
         raise HTTPException(
             status_code=500, detail="Failed to retrieve bar chart info")

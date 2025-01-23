@@ -14,6 +14,12 @@ interface ProgramUsageChartProps {
 const ProgramUsageChart: React.FC<ProgramUsageChartProps> = ({ barsInput }) => {
     const [bars, setBars] = useState<DailyProgramSummary[]>([]);
 
+    useEffect(() => {
+        if (barsInput) {
+            setBars(barsInput.columns);
+        }
+    }, [barsInput]);
+
     // Set up dimensions
     const margin = { top: 0, right: 100, bottom: 60, left: 100 }; // Increased bottom margin
     const width = 800 - margin.left - margin.right;
