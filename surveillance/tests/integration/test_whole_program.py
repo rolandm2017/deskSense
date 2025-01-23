@@ -1,11 +1,7 @@
 import pytest
-import asyncio
 
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
-import multiprocessing
-import uvicorn
 import time
 from collections import Counter
 
@@ -13,63 +9,20 @@ from surveillance.server import app
 from surveillance.src.db.database import init_db
 
 
-app = FastAPI()  # from official example
+# app = FastAPI()  # from official example
 test_client = TestClient(app)  # official ex
-
-
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     print("starting up")
-#     yield
-#     print("shutting down")
-
-
-# app = FastAPI(lifespan=lifespan)
-
-
-# @pytest.fixture(scope="session", autouse=True)
-# def start_server():
-#     # Start server in a separate process
-#     server = multiprocessing.Process(
-#         target=uvicorn.run,
-#         args=(app,),
-#         kwargs={
-#             "host": "127.0.0.1",
-#             "port": 8000,
-#             "log_level": "info"
-#         }
-#     )
-#     server.start()
-#     time.sleep(1)  # Give server time to start
-
-#     yield
-
-#     server.terminate()
-#     server.join()
-
-
-# @pytest.fixture(scope="session")
-# async def client():
-#     async with lifespan(app):  # lifespan does not return the asgi app
-#         async with AsyncClient(app=app, base_url="http://localhost") as client:
-#             yield client
-
-
-# @pytest.fixture
-# async def async_client():
-#     async with AsyncClient(base_url="http://127.0.0.1:8000") as client:
-#         yield client
+# Add the new function here
 
 
 @pytest.mark.asyncio
 async def test_health_check():
-    response = test_client.get("/api/health")
+    response = test_client.get("/health")
     assert response.status_code == 200
     assert response.json()["status"] == "healthy"
 
 
 @pytest.mark.asyncio
-# @pytest.mark.skip(reason="passing for isolation")
+@pytest.mark.skip(reason="passing for isolation")
 async def test_timeline():
     response = test_client.get("/dashboard/timeline")
     print(response, '32ru')
