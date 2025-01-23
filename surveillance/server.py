@@ -5,7 +5,6 @@ from contextlib import asynccontextmanager
 import asyncio
 # import time
 from typing import Optional, List
-from sqlalchemy.orm import Session
 
 
 from src.db.database import get_db, init_db, AsyncSession, async_session_maker
@@ -18,6 +17,7 @@ from src.db.models import DailyProgramSummary
 from src.services import MouseService, KeyboardService, ProgramService, DashboardService
 from src.object.dto import TypingSessionDto, MouseMoveDto, ProgramDto
 from src.object.pydantic_dto import KeyboardLog, KeyboardReport, MouseLog, MouseReport, ProgramActivityLog, ProgramActivityReport, DailyProgramSummarySchema, BarChartContent, TimelineEntrySchema, TimelineRows
+from src.util.pydantic_factory import make_keyboard_log, make_mouse_log, make_program_log
 from src.surveillance_manager import SurveillanceManager
 from src.console_logger import ConsoleLogger
 
