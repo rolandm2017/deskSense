@@ -61,36 +61,53 @@ async def test_summaries():
         assert len(summaries["columns"]) > 0
 
 
-# @pytest.mark.asyncio
-# async def test_timeline_contains_no_duplicates():
-#     async with AsyncClient(base_url="http://127.0.0.1:8000") as client:
-#         response = await client.get("http://127.0.0.1:8000/dashboard/timeline")
+@pytest.mark.asyncio
+async def test_timeline_contains_no_duplicates():
+    async with AsyncClient(base_url="http://127.0.0.1:8000") as client:
+        response = await client.get("http://127.0.0.1:8000/dashboard/timeline")
 
-#         timeline_content = response.json()
-#         # print(timeline_content, '35ru')
-#         mouse_rows = timeline_content["mouseRows"]
-#         keyboard_rows = timeline_content["keyboardRows"]
+        timeline_content = response.json()
+        # print(timeline_content, '35ru')
+        mouse_rows = timeline_content["mouseRows"]
+        keyboard_rows = timeline_content["keyboardRows"]
 
-#         # Check for duplicate values in "id"
-#         # Check for duplicate values in "group"
-#         # Check for duplicate values in "content"
-#         #
-#         # ### Keyboard
-#         ids = [row["id"] for row in keyboard_rows]
-#         id_counts = Counter(ids)
-#         groups = [row["group"] for row in keyboard_rows]
-#         group_counts = Counter(groups)
+        # Check for duplicate values in "id"
+        # Check for duplicate values in "group"
+        # Check for duplicate values in "content"
+        #
+        # ### Keyboard
+        ids = [row["id"] for row in keyboard_rows]
+        id_counts = Counter(ids)
 
-#         assert all(count == 1 for count in id_counts.values())
-#         assert all(count == 1 for count in group_counts.values())
+        for i in range(0, 20):
+            print(keyboard_rows[i])
+        content = [row["content"] for row in keyboard_rows]
+        content_counts = Counter(content)
 
-#         # ### Mouse
-#         ids = [row["id"] for row in mouse_rows]
-#         id_counts = Counter(ids)
-#         groups = [row["group"] for row in mouse_rows]
-#         group_counts = Counter(groups)
+        # ### do some checking
+        single_ids = [id for id, count in id_counts.items() if count == 1]
+        duplicate_ids = [id for id, count in id_counts.items() if count > 1]
+        single_groups = [group for group,
+                         count in content_counts.items() if count == 1]
+        duplicate_groups = [group for group,
+                            count in content_counts.items() if count > 1]
 
-#         assert all(count == 1 for count in id_counts.values())
-#         assert all(count == 1 for count in group_counts.values())
+        assert len(duplicate_ids) == 0
+        assert len(single_ids) == len(keyboard_rows)
+        assert len(duplicate_groups) == 0
+        assert len(single_groups) == len(keyboard_rows)
+
+        # Continue with keyboard checking
+        assert all(count == 1 for count in id_counts.values())
+        assert all(count == 1 for count in content_counts.values())
+
+        # ### Mouse
+        ids = [row["id"] for row in mouse_rows]
+        id_counts = Counter(ids)
+        content = [row["content"] for row in mouse_rows]
+        content_counts = Counter(content)
+
+        assert all(count == 1 for count in id_counts.values())
+        assert all(count == 1 for count in content_counts.values())
 
 # FIXME: HoursSpent on DailySummary table is suspiciously low
