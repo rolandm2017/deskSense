@@ -37,33 +37,6 @@ const mouseEventsRoute = baseRoute + "/mouse";
 const programsRoute = baseRoute + "/program";
 const chromeRoute = baseRoute + "/chrome";
 
-// const withErrorHandlingAsync = <T>(fn: () => Promise<AxiosResponse<T>>) => {
-//     return async (): Promise<T> => {
-//         try {
-//             const response = await fn();
-//             return response.data;
-//         } catch (error) {
-//             if (axios.isAxiosError(error)) {
-//                 console.error("Error:", error.response?.data);
-//                 throw new Error(`Failed to execute: ${error.message}`);
-//             }
-//             throw error;
-//         }
-//     };
-// };
-
-// const getKeyboardReportAsync = withErrorHandlingAsync<KeyboardReport>(
-//     async () => api.get("/keyboard")
-// );
-
-// const getMouseReportAsync = withErrorHandlingAsync<MouseReport>(async () =>
-//     api.get("/mouse")
-// );
-
-// const getProgramReportAsync = withErrorHandlingAsync<ProgramActivityReport>(
-//     async () => api.get("/program")
-// );
-
 const withErrorHandling = <T>(fn: () => Promise<AxiosResponse<T>>) => {
     return (): Promise<T> => {
         console.log(
@@ -95,14 +68,6 @@ const getMouseReport = withErrorHandling<MouseReport>(() =>
 const getProgramReport = withErrorHandling<ProgramActivityReport>(() =>
     api.get("/report/program")
 );
-
-// class DailyProgramSummarySchema(BaseModel):
-//     id: int
-//     program_name: str
-//     hours_spent: float
-//     gathering_date: datetime
-
-//     model_config = ConfigDict(from_attributes=True)  # This enables ORM mode
 
 export interface DailyProgramSummary {
     id: number;
