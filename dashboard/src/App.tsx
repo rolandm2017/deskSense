@@ -96,6 +96,8 @@ function App() {
                         <p>Loading...</p>
                     )}
                 </div>
+
+                {/* // TODO: A Chrome tabs tracker */}
             </div>
         </>
     );

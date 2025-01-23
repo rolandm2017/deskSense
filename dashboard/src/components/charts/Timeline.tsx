@@ -40,8 +40,8 @@ const TimelineWrapper: React.FC<TimelineWrapperProps> = ({
     // Memoize options to prevent unnecessary recreations
     const options = useMemo(
         () => ({
-            start: "2025-01-19T09:00:00",
-            end: "2025-01-19T23:59:00",
+            start: "2025-01-19T05:00:00", // Changed from 09:00 to 05:00
+            end: "2025-01-19T23:59:59", // Changed from 23:59:00 to 23:59:59
             stack: false,
             margin: { item: 10 },
             zoomable: true,

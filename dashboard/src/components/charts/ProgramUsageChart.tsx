@@ -16,7 +16,17 @@ const ProgramUsageChart: React.FC<ProgramUsageChartProps> = ({ barsInput }) => {
 
     useEffect(() => {
         if (barsInput) {
-            setBars(barsInput.columns);
+            const sortedCols = [...barsInput.columns].sort(
+                (a, b) => b.hoursSpent - a.hoursSpent
+            );
+            console.log(
+                sortedCols.map((col) => Number(col.hoursSpent.toFixed(5))),
+                "hours spent"
+            );
+            const highEnoughTimeVals = sortedCols.filter(
+                (col) => col.hoursSpent > 0.015
+            );
+            setBars(highEnoughTimeVals);
         }
     }, [barsInput]);
 
@@ -42,6 +52,7 @@ const ProgramUsageChart: React.FC<ProgramUsageChartProps> = ({ barsInput }) => {
             const yScale = d3
                 .scaleLinear()
                 .domain([0, d3.max(bars, (d) => d.hoursSpent) || 0])
+                .nice()
                 .range([height, 0]);
 
             // Create bars
