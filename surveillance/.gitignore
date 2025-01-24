@@ -12,3 +12,5 @@ productivity_logs
 
 .env
 deskSense.egg-info
+
+temp.py

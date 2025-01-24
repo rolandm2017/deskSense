@@ -4,22 +4,45 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from datetime import datetime, timedelta
 
 from .base_dao import BaseQueueingDao
-from ..models import Program
-from ...object.classes import ProgramSessionData
+from ..models import ChromeTab
 from ...console_logger import ConsoleLogger
 
 
 class ChromeDao(BaseQueueingDao):
-    # TODO
     def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
         super().__init__(session_maker, batch_size, flush_interval)
         self.logger = ConsoleLogger()
 
-    def create(self, url_delivery):
-        pass
+    async def create(self, url, title, is_productive):
+        # Try without start_time end_time for now
+        chrome_deliverable = ChromeTab(
+            url=url, tab_title=title, productive=is_productive)
+        await self.queue_item(chrome_deliverable)
 
-    def read(self):
-        pass
+    async def read_all(self):
+        async with self.session_maker() as session:
+            result = await session.execute(select(ChromeTab))
+            return result.scalars().all()
 
-    def delete(self):
+    # TODO: ChromeSession table - like DailySummary but for websites
+    # TODO: If tab into chrome, get most recent active tab -- this is the current tab
+    # TODO: If tab out of chrome, stop recording time into the active tab
+    # TODO: For chrome tabs, if just_passing_through(): do not record time at all
+    # TODO just_passing_thru() time should be like, < 600 ms.
+    # TODO: Could also be, "if chrome_session.is_transient(): continue"
+    # TODO: ProgramTracker concludes ChromeSession when tabbing off of Chrome.
+
+    async def read_past_24h_events(self):
+        """
+        Read program activity events that ended within the past 24 hours.
+        Returns all program sessions ordered by their end time.
+        """
+        query = select(ChromeTab).where(
+            ChromeTab.created_at >= datetime.now() - timedelta(days=1)
+        ).order_by(ChromeTab.end_time.desc())
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            return result.scalars().all()
+
+    async def delete(self):
         pass
