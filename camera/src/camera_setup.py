@@ -1,5 +1,7 @@
 import cv2
 
+from ..main import CHOSEN_FPS
+
 
 def init_webcam(chosen_fps):
     cap = cv2.VideoCapture(0)  # 0 is usually the built-in webcam
@@ -10,6 +12,12 @@ def init_webcam(chosen_fps):
 def setup_frame_writer(chosen_fps):
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     out = cv2.VideoWriter('output.avi', fourcc, chosen_fps, (640, 480))
+    return out
+
+
+def initialize_new_vid(name, chosen_fps=CHOSEN_FPS):
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter(name, fourcc, chosen_fps, (640, 480))
     return out
 
 #
