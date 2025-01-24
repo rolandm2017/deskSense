@@ -11,13 +11,20 @@ def init_webcam(chosen_fps):
 
 def setup_frame_writer(chosen_fps):
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    out = cv2.VideoWriter('output.avi', fourcc, chosen_fps, (640, 480))
+    # Add explicit isColor parameter
+    out = cv2.VideoWriter('output.avi', fourcc,
+                          chosen_fps, (640, 480), isColor=True)
+    if not out.isOpened():
+        print("Failed to initialize VideoWriter")
+        return None
     return out
 
 
 def initialize_new_vid(name, chosen_fps=CHOSEN_FPS):
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    out = cv2.VideoWriter(name, fourcc, chosen_fps, (640, 480))
+    # Add explicit isColor parameter)
+    out = cv2.VideoWriter(name, fourcc, chosen_fps, (640, 480), isColor=True)
+
     return out
 
 #

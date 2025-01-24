@@ -22,7 +22,7 @@ def get_frame_timestamps(video_path):
 
 
 # Usage
-video_file = "output/output.avi"
+video_file = "output/output1.avi"
 timestamps = get_frame_timestamps(video_file)
 for i, ts in enumerate(timestamps):
     print(f"Frame {i}: {ts:.1f} seconds")

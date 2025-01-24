@@ -3,13 +3,54 @@ import os
 
 import numpy as np
 
+import threading
+
+
+def get_claude_recommended_ML_codec():
+    # Motion JPEG: High quality, large files, good for ML as each frame preserved
+    return cv2.VideoWriter_fourcc(*'MJPG')
+
+
+def get_max_quality_codec():
+    """Large file size, probably just ok for recording"""
+    return cv2.VideoWriter_fourcc(*'XVID')  # Xvid codec
+
+
+def get_high_compression_codec_one():
+    """Use this one"""
+    # H.264: Good compression, smaller files, industry standard
+    return cv2.VideoWriter_fourcc(*'mp4v')
+
+
+def get_high_compression_codec_two():
+    # Xvid: Open source, decent compression, widely compatible
+    return cv2.VideoWriter_fourcc(*'XVID')
+
+
+class VideoConverter(threading.Thread):
+    def __init__(self, input_path, output_path, on_finish=None):
+        super().__init__()
+        self.input_path = input_path
+        self.output_path = output_path
+        self.finish_handler = on_finish
+        self.daemon = True  # Allow program to exit even if thread is running
+
+    def run(self):
+        try:
+            compressed_file = convert_for_ml(self.input_path, self.output_path)
+            if self.finish_handler:
+                # Likely sends it to Castle
+                self.finish_handler(compressed_file)
+        except Exception as e:
+            print(f"Error converting video: {e}")
+
 
 def convert_for_ml(input_path, output_path):
     """Convert a completed video file to ML-friendly format (MJPEG with minimal compression)"""
     cap = cv2.VideoCapture(input_path)
 
     # Configure writer for maximum quality
-    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+    fourcc = get_high_compression_codec_one()
     out = cv2.VideoWriter(
         output_path,
         fourcc,
@@ -30,7 +71,7 @@ def convert_for_ml(input_path, output_path):
     cap.release()
     out.release()
 
-    return output_patht
+    return output_path
 
 
 def compress_video(input_path, output_path, target_bitrate=1000000):  # 1Mbps default
@@ -105,13 +146,3 @@ def compress_video(input_path, output_path, target_bitrate=1000000):  # 1Mbps de
     print(f"Original Size: {original_size:.2f} MB")
     print(f"Compressed Size: {compressed_size:.2f} MB")
     print(f"Compression Ratio: {compression_ratio:.2f}x")
-
-
-if __name__ == "__main__":
-    input_video = "output.avi"
-    output_video = "compressed_output.avi"
-
-    # You can adjust these parameters to control compression
-    target_bitrate = 1000000  # 1 Mbps - Lower this for more compression
-
-    compress_video(input_video, output_video, target_bitrate)

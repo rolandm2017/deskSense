@@ -1,14 +1,20 @@
+# Artifacts
+**/__pycache__
 .venv-cam
+
 
 .env
 
-output.avi
-
+# Notes
 Claude.md
 networking.md
+notes.md
 
+# video files and folders
+output.avi
 output
-
-**/__pycache__
-
+fodder
 *.avi
+
+
+
