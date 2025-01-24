@@ -1,19 +1,14 @@
 import cv2
 import time
+from datetime import datetime
 
 from src.timestamp import add_timestamp
-from src.compression import convert_for_ml
+from src.compression import convert_for_ml, VideoConverter
 from src.startup_shutdown import setup_interrupt_handler, shutdown
-# from src.camera_setup import setup_frame_writer, init_webcam, initialize_new_vid
-from constants import video_duration_in_minutes, SECONDS_PER_MIN
+from constants import SECONDS_PER_MIN
 
 
-# See Claude.md before changing above 5
-CHOSEN_FPS = 5  # Set to 5 FPS
-MAX_EVER = 5  # Do not change this
-
-if CHOSEN_FPS > MAX_EVER:
-    raise ValueError("Five is the max FPS")
+CHOSEN_FPS = 30  # Change from 5 to 30
 
 output_dir = "output/"
 
@@ -35,7 +30,7 @@ def setup_frame_writer(chosen_fps):
 def initialize_new_vid(name, chosen_fps=CHOSEN_FPS):
     """VideoWriter object manages writing video frames to a file"""
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    out = cv2.VideoWriter(output_dir + name, fourcc, chosen_fps, (640, 480))
+    out = cv2.VideoWriter(output_dir + name, fourcc, 30, (640, 480))
     return out
 
 
@@ -50,11 +45,11 @@ setup_interrupt_handler(signal_handler)
 OUT_FILE = 'outputffff.avi'
 COMPRESSED_FILE = "compressed.avi"
 
-TOTAL_MIN_FOR_VID = 0.5
+TOTAL_MIN_FOR_VID = 0.16666666  # 10 sec vid
 
 
 cap = init_webcam(CHOSEN_FPS)
-output_vid = setup_frame_writer(CHOSEN_FPS)
+# output_vid = setup_frame_writer(CHOSEN_FPS)
 
 
 base_name = "output"
@@ -65,14 +60,10 @@ def join_video_name(base_name, middle, ending):
     return base_name + middle + ending
 
 
-current_vid = initialize_new_vid(base_name)
-
-# Create video writermax_duration
-
-
-max_duration = TOTAL_MIN_FOR_VID * SECONDS_PER_MIN
+max_duration_in_sec = TOTAL_MIN_FOR_VID * SECONDS_PER_MIN
 
 # GOAL: Record ten videos that are a minute long each
+current_index = 1
 
 
 def get_loop_index_from_video(video_name):
@@ -81,16 +72,53 @@ def get_loop_index_from_video(video_name):
     return iteration
 
 
-def make_name_of_new_vid(base_name, loop_idx, ending):
-    return base_name + str(loop_idx) + video_ending
+def name_new_vid(base_name, index, ending):
+    return base_name + str(index) + ending
+
+
+def get_compressed_name_for_vid(s):
+    name, extension = s.split(".")
+    return name + "_compressed" + "." + extension
+
+
+first_vid_name = name_new_vid(
+    base_name, current_index, video_ending)
+
+output_vid_name = first_vid_name
+
+output_vid = initialize_new_vid(output_vid_name)
+
+frames_per_segment = CHOSEN_FPS * max_duration_in_sec
+# Right after frames_per_segment calculation
+print(f"Need {frames_per_segment} frames for {
+      max_duration_in_sec} seconds at {CHOSEN_FPS} FPS")
+
+
+def log_finish_video(frame_count, output_vid_name, current_index):
+    print("[LOG] Ending on frame " + str(frame_count) +
+          " for video " + output_vid_name)
+    print(f"[LOG] Completed video segment {current_index-1}")
+
+
+def send_to_castle(video_path):
+    # TODO: Send the content to Castle for processing
+    print(video_path)
+
+
+def compress_finished_vid(finished_vid_name, on_finish):
+    compressed_out_name = get_compressed_name_for_vid(finished_vid_name)
+    converter = VideoConverter(
+        finished_vid_name, compressed_out_name, on_finish)
+    converter.start()
 
 
 start_time = time.time()
 # FIXME: Frame counter looks bunk
 # FIXME: Timestamp bottom right is bunk
-current_index = 1
 frame_count = 0
 interrupt_called = False
+last_second = None
+
 while True:
     ret, frame = cap.read()
     if interrupt_called:
@@ -102,36 +130,33 @@ while True:
 
         # TODO: detect whether I am present in the screen or not using um, um, motion detection
 
-        current_time = time.time()
-        elapsed_time = current_time - start_time
-
-        # Print progress every 5 seconds without sleeping
-        if int(elapsed_time) % 5 == 0:
-            minutes = int(elapsed_time / 60)
-            seconds = int(elapsed_time % 60)
-            print(f"{minutes}m{seconds:02d} on frame {frame_count}")
+        current = datetime.now()
+        if current.second != last_second:
+            print(f"{current.minute:02d}:{current.second:02d}")
+            last_second = current.second
 
         # Check if we've reached 30 seconds (0.5 minutes)
-        if elapsed_time >= max_duration:
-            current_index += 1
+        if frame_count > frames_per_segment:
+            log_finish_video(frame_count, output_vid_name, current_index)
             output_vid.release()
+            current_index += 1
 
-            print(f"Completed video segment {current_index-1}")
-
-            output_vid_name = make_name_of_new_vid(
-                base_name, current_index, video_ending)
-            output_vid = initialize_new_vid(output_vid_name)
-
+            # Cleanup starting circumstances
             start_time = time.time()  # Reset timer
             frame_count = 0  # Reset frame count
 
+            check_for_motion()
+            if no_motion:
+                black_square(frame)
+                # Handle compression
+            compress_finished_vid(output_vid_name, send_to_castle)
+            # to_be_compressed = output_vid_name
+            # compressed_out_name = get_compressed_name_for_vid(output_vid_name)
+            # converter = VideoConverter(to_be_compressed, compressed_out_name)
+            # converter.start()
 
-# #
-# ### Make a separate process compress the video
-# #
-compressed_file_path = convert_for_ml(OUT_FILE, COMPRESSED_FILE)
-
-
-def send_video_to_castle(video_path):
-    # TODO: Send the content to Castle for processing
-    print(video_path)
+            # Update video name for next round
+            output_vid_name = name_new_vid(
+                base_name, current_index, video_ending)
+            # Update for next loop
+            output_vid = initialize_new_vid(output_vid_name)
