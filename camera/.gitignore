@@ -8,3 +8,7 @@ Claude.md
 networking.md
 
 output
+
+**/__pycache__
+
+*.avi

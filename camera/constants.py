@@ -1,3 +1,6 @@
+SECONDS_PER_MIN = 60
+
+
 video_duration_in_minutes = 30
 
 
@@ -11,3 +14,13 @@ total_frames_per_duration_dict = {
 }
 
 # 5 * 60 * 5
+
+
+#
+# #
+# # #  GRAVEYARD
+# #
+#
+
+# total_seconds_per_vid = 1800  # 30 * 60 = 1,800
+# TOTAL_FRAMES = total_frames_per_duration_dict["30 min"]
