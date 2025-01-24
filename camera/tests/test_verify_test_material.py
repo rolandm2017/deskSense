@@ -2,18 +2,14 @@ import os
 
 from ..debug import get_frame_timestamps, get_video_length
 
+from .file_names import still_then_moving, stillness_ten_sec, no_timestamps_still, with_timestamps_still, motion_ten_sec
+
 
 ###############################################################################
 #                                                                             #
 #   File verifies that test material has the right length and frame count     #
 #                                                                             #
 ###############################################################################
-
-motion_ten_sec = "test_output1-Motion_TenSec.avi"
-stillness_ten_sec = "test_output-Stillness_TenSec.avi"
-no_timestamps_still = "test_out-Stillness_No_Timestamps1.avi"
-with_timestamps_still = "test_out-Stillness-With-Timestamps1.avi"
-still_then_moving = "test_out-Still_Then_Moving1.avi"
 
 
 def get_full_path(file_name):

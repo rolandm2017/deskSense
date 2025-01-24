@@ -4,7 +4,7 @@ import signal
 import sys
 
 
-from .src.compression import convert_for_ml
+from camera.src.compression import convert_for_ml
 
 
 def signal_handler(sig, frame):

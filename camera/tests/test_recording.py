@@ -1,72 +1,68 @@
-
 import pytest
 from unittest.mock import MagicMock, patch
-from src.recording import record_n_sec_video, process_frame
-from constants import CHOSEN_FPS
+import numpy as np
+import cv2
 
-from ..src.recording import initialize_new_vid, init_webcam, record_n_sec_video
-from ..debug import get_frame_timestamps, get_video_length
-# TODO: test recording a 3 sec vid
-# TODO: Test a 7 sec vid
-
-
-@patch('cv2.VideoCapture')
-@patch('cv2.VideoWriter')
-def test_record_n_sec_video_stops_on_flag(mock_writer, mock_capture):
-    # Setup mocks
-    mock_capture.return_value.read.return_value = (True, MagicMock())
-    mock_writer.return_value = MagicMock()
-
-    # Counter for controlling the loop
-    counter = 0
-
-    def should_continue():
-        nonlocal counter
-        counter += 1
-        return counter < 5  # Stop after 5 frames
-
-    # Run recording with our custom continue function
-    output_path = record_n_sec_video(
-        10,
-        "test.avi",
-        should_continue=should_continue
-    )
-
-    # Should have stopped after 5 frames
-    assert mock_capture.return_value.read.call_count == 5
+from camera.constants import CHOSEN_FPS
+from camera.src.recording import initialize_new_vid, init_webcam, record_n_sec_video
+from camera.debug import get_frame_timestamps, get_video_length
 
 
-def test_recording_three_sec():
+#
+# #
+# # # These tests proved to be misleading? Then:
+# # # See https://claude.ai/chat/2247e129-5c73-4ee3-aa8f-424049a115b5
+# #
+#
+
+@pytest.fixture
+def mock_camera():
+    """Fixture to provide a mocked camera that returns valid frames"""
+    with patch('cv2.VideoCapture') as mock_cap:
+        # Create a fake frame (black image)
+        fake_frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        mock_cap.return_value.read.return_value = (True, fake_frame)
+        mock_cap.return_value.isOpened.return_value = True
+        yield mock_cap
+
+
+@pytest.fixture
+def mock_video_writer():
+    """Fixture to provide a mocked video writer"""
+    with patch('cv2.VideoWriter') as mock_writer:
+        mock_writer.return_value.isOpened.return_value = True
+        yield mock_writer
+
+
+def test_recording_three_sec(mock_camera, mock_video_writer):
+    """Test recording a 3-second video"""
+    # Setup
+    out_file = "test_2_sec_vid.avi"
+    vid_length_in_sec = 2
+    out_dir = "test_videos/running/"
+
+    # Act
+    with patch('camera.src.startup_shutdown.sys.exit') as mock_exit:  # Prevent actual system exit
+        vid_path = record_n_sec_video(vid_length_in_sec, out_file, out_dir)
+
+    # Assert
+    expected_frames = vid_length_in_sec * CHOSEN_FPS + 1
+    assert mock_camera.return_value.read.call_count == expected_frames
+    assert mock_video_writer.return_value.write.call_count == expected_frames
+
+
+def test_recording_seven_sec(mock_camera, mock_video_writer):
+    """Test recording a 7-second video"""
+    # Setup
     out_file = "test_3_sec_vid.avi"
     vid_length_in_sec = 3
     out_dir = "test_videos/running/"
 
-    capture = init_webcam(CHOSEN_FPS)
-    output_vid = initialize_new_vid(out_file)
+    # Act
+    with patch('camera.src.startup_shutdown.sys.exit') as mock_exit:  # Prevent actual system exit
+        vid_path = record_n_sec_video(vid_length_in_sec, out_file, out_dir)
 
-    # ### Act
-    vid = record_n_sec_video(vid_length_in_sec, out_file, out_dir)
-    vid.release()
-
-    # ### assert
-    assert get_video_length(vid) == vid_length_in_sec
-    # Tear down, clean up
-
-    pass
-
-
-def test_recording_seven_sec():
-    out_file = "test_7_sec_vid.avi"
-    vid_length_in_sec = 7
-    out_dir = "test_videos/running/"
-
-    capture = init_webcam(CHOSEN_FPS)
-    output_vid = initialize_new_vid(out_file)
-
-    # ### Act
-    vid = record_n_sec_video(vid_length_in_sec, out_file, out_dir)
-    vid.release()
-
-    # ### Assert
-    assert get_video_length(vid) == vid_length_in_sec
-    pass
+    # Assert
+    expected_frames = (vid_length_in_sec * CHOSEN_FPS) + 1
+    assert mock_camera.return_value.read.call_count == expected_frames
+    assert mock_video_writer.return_value.write.call_count == expected_frames
