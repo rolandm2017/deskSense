@@ -1,10 +1,11 @@
 import cv2
 from datetime import datetime
 from contextlib import contextmanager
+import signal
 
 from ..constants import CHOSEN_FPS
 from .startup_shutdown import setup_interrupt_handler, shutdown
-from .logging import log_finish_video
+from .logging import log_ending
 
 from .timestamp import add_timestamp
 
@@ -53,12 +54,6 @@ def process_frame(frame, frame_count, output_vid):
     frame = add_timestamp(frame)
     output_vid.write(frame)
 
-    current = datetime.now()
-    # Log current time if second has changed
-    if current.second != process_frame.last_second:
-        print(f"{current.minute:02d}:{current.second:02d}")
-        process_frame.last_second = current.second
-
     return frame_count + 1
 
 
@@ -83,7 +78,6 @@ def record_n_sec_video(n, title, output_dir="output/", should_continue=lambda: T
     capture = init_webcam(CHOSEN_FPS)
     output_vid = initialize_new_vid(title, output_dir)
     frame_count = 0
-    last_second = None
 
     try:
         while frame_count <= total_frames and should_continue():
@@ -91,14 +85,13 @@ def record_n_sec_video(n, title, output_dir="output/", should_continue=lambda: T
             if not ret:
                 continue
 
-            frame_count, last_second = process_frame(
+            frame_count = process_frame(
                 frame,
                 frame_count,
                 output_vid,
-                last_second
             )
 
-        log_finish_video(frame_count, title)
+        log_ending(frame_count, title)
         return output_dir + title
     finally:
         shutdown(capture, output_vid)

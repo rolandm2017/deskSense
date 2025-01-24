@@ -22,6 +22,7 @@ def filter_with_black(video_path: str, motion_frames: List[Tuple[int, bool]]) ->
     # Open the video file
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
+        print("[ERROR-25] " + video_path)
         raise ValueError("Error opening video file")
 
     # Get video properties

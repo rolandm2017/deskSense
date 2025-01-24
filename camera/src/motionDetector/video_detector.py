@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from typing import Tuple, List
 
-from v2detector import detect_motion
+from .v2detector import detect_motion
 
 
 def process_motion_in_video(video_path: str,
@@ -25,6 +25,7 @@ def process_motion_in_video(video_path: str,
     """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
+        print("[ERROR-28] " + video_path)
         raise ValueError("Error opening video file")
 
     # Get video properties
@@ -69,13 +70,12 @@ def process_motion_in_video(video_path: str,
         motion_frames.append((frame_number, motion_detected))
 
         # Draw rectangles around motion regions
-        if motion_detected and (display_while_processing or writer):
+        if motion_detected:
             for (x, y, w, h) in regions_with_motion:
                 cv2.rectangle(current_frame, (x, y),
                               (x + w, y + h), (0, 255, 0), 2)
 
-        if writer:
-            writer.write(current_frame)
+        writer.write(current_frame)
 
         if display_while_processing:
             cv2.imshow('Motion Detection', current_frame)
