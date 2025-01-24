@@ -4,6 +4,7 @@ from datetime import datetime
 
 from src.timestamp import add_timestamp
 from src.compression import convert_for_ml, VideoConverter
+from src.motionDetector.v2detector import detect_motion
 from src.startup_shutdown import setup_interrupt_handler, shutdown
 from constants import SECONDS_PER_MIN
 

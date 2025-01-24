@@ -55,7 +55,7 @@ while True:
             cv2.rectangle(current_frame, (x, y),
                           (x + w, y + h), (0, 255, 0), 2)
     else:
-        current_frame = np.zeros_like(current_frame)  # Create black frame
+        current_frame = make_black_frame(current_frame)
 
     cv2.imshow('Motion Detection', current_frame)
     previous_frame = current_frame.copy()
