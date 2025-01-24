@@ -37,31 +37,33 @@ def detect_motion(current_frame, previous_frame, threshold=30, min_motion_pixels
     return movement_detected, motion_regions, motion_mask
 
 
-# Usage example:
-cap = cv2.VideoCapture(0)  # Use 0 for webcam or video path
-ret, previous_frame = cap.read()
+if __name__ == "__main__":
 
-while True:
-    ret, current_frame = cap.read()
-    if not ret:
-        break
+    # Usage example:
+    cap = cv2.VideoCapture(0)  # Use 0 for webcam or video path
+    ret, previous_frame = cap.read()
 
-    movement_detected, movement_regions, mask = detect_motion(
-        current_frame, previous_frame)
+    while True:
+        ret, current_frame = cap.read()
+        if not ret:
+            break
 
-    if movement_detected:
-        for (x, y, w, h) in movement_regions:
-            # Draw frame around movement
-            cv2.rectangle(current_frame, (x, y),
-                          (x + w, y + h), (0, 255, 0), 2)
-    else:
-        current_frame = np.zeros_like(current_frame)  # Create black frame
+        movement_detected, movement_regions, mask = detect_motion(
+            current_frame, previous_frame)
 
-    cv2.imshow('Motion Detection', current_frame)
-    previous_frame = current_frame.copy()
+        if movement_detected:
+            for (x, y, w, h) in movement_regions:
+                # Draw frame around movement
+                cv2.rectangle(current_frame, (x, y),
+                              (x + w, y + h), (0, 255, 0), 2)
+        else:
+            current_frame = np.zeros_like(current_frame)  # Create black frame
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+        cv2.imshow('Motion Detection', current_frame)
+        previous_frame = current_frame.copy()
 
-cap.release()
-cv2.destroyAllWindows()
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()

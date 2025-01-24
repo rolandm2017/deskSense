@@ -3,14 +3,13 @@ import numpy as np
 from typing import Tuple, List
 
 from v2detector import detect_motion
-from ..black_frame_maker import make_black_frame
 
 
-def process_video(video_path: str,
-                  output_path: str,
-                  threshold: int = 30,
-                  min_motion_pixels: int = 500,
-                  display_while_processing: bool = False, frame_handler: callable = None) -> List[Tuple[int, bool]]:
+def process_motion_in_video(video_path: str,
+                            output_path: str,
+                            threshold: int = 30,
+                            min_motion_pixels: int = 500,
+                            display_while_processing: bool = False) -> List[Tuple[int, bool]]:
     """
     Process video file for motion detection.
 
@@ -67,12 +66,6 @@ def process_video(video_path: str,
         # #
         #
 
-        if frame_handler and motion_detected:
-            # TODO: Figure out why I wanted a frame handler arg
-            handled_frame = frame_handler(
-                current_frame, regions_with_motion)
-            current_frame = make_black_frame(current_frame)
-
         motion_frames.append((frame_number, motion_detected))
 
         # Draw rectangles around motion regions
@@ -98,13 +91,13 @@ def process_video(video_path: str,
     if display_while_processing:
         cv2.destroyAllWindows()
 
-    return motion_frames
+    return output_path, motion_frames  # the finished vid
 
 
 # Example usage:
 if __name__ == "__main__":
     video_file = "path/to/your/video.mp4"
-    motion_frames = process_video(
+    motion_frames = process_motion_in_video(
         video_file,
         threshold=30,
         min_motion_pixels=500,
