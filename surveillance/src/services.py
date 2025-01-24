@@ -2,6 +2,7 @@ from fastapi import Depends
 from typing import List
 from datetime import datetime
 
+from .config.definitions import productive_sites_2
 from .db.dao.keyboard_dao import KeyboardDao
 from .db.dao.program_dao import ProgramDao
 from .db.dao.mouse_dao import MouseDao
@@ -75,6 +76,13 @@ class ChromeService:
     async def log_url(self, url_deliverable):
         # TODO: Does it go straight to the db? I guess it does
         print(url_deliverable)
+        url = url_deliverable.url
+        title = url_deliverable.tabTitle
+        is_productive = url in productive_sites_2
+        await self.dao.create(url, title, is_productive)
+
+    async def read_last_24_hrs(self):
+        return await self.dao.read_past_24h_events()
 
 
 class DashboardService:

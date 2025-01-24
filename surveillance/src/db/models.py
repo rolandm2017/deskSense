@@ -59,14 +59,16 @@ class Program(Base):
         return f"Program(\n\tid={self.id}, window='{self.window}', \n\tstart_time={self.start_time},\n\tend_time={self.end_time},\n\tproductive={self.productive})"
 
 
-class Chrome(Base):
+class ChromeTab(Base):
     __tablename__ = "chrome_tabs"
 
     id = Column(Integer, primary_key=True, index=True)
+    url = Column(String)
     tab_title = Column(String, index=True)
     start_time = Column(DateTime)
     end_time = Column(DateTime)
     productive = Column(Boolean)
+    created_at = Column(DateTime, default=datetime.now)
 
     def __repr__(self):
         return f"Chrome(id={self.id}, tab_title='{self.tab_title}', productive={self.productive})"

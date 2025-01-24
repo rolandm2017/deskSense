@@ -43,7 +43,6 @@ class ProgramTrackerCore:
             if on_a_different_window:
                 current_time = self.clock.now()  # once per loop
                 self.conclude_session(current_time)
-                print("Handler active")
                 self.apply_handlers(self.current_session, 500)
                 self.current_session = self.start_new_session(
                     window_change, current_time)

@@ -24,3 +24,10 @@ productive_sites = [
     'claude.ai',
     'chatgpt.com'
 ]
+
+productive_sites_2 = ['claude.ai', 'extensions',
+                      'stackoverflow.com', 'www.google.com', 'localhost']
+
+social_media = ['www.facebook.com', 'www.tiktok.com', 'x.com', ]
+
+misc_sites = ['newtab', 'chatgpt.com']

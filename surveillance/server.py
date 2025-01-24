@@ -240,6 +240,13 @@ async def get_program_time_for_dashboard(dashboard_service: DashboardService = D
     return BarChartContent(columns=manufacture_bar_chart_content(program_data))
 
 
+@app.get("/report/chrome")
+async def get_chrome_report(chrome_service: ChromeService = Depends(get_chrome_service)):
+    logger.log_purple("[LOG] Get chrome tabs")
+    reports = await chrome_service.read_last_24_hrs()
+    return reports
+
+
 @app.post("/chrome/tab", status_code=status.HTTP_204_NO_CONTENT)
 async def your_endpoint_name(
     url_delivery: URLDelivery,
@@ -247,14 +254,14 @@ async def your_endpoint_name(
 ):
     logger.log_purple("[LOG] Chrome Tab Received")
     try:
-        print(url_delivery, '249ru')
         await chrome_service.log_url(url_delivery)
         return  # Returns 204 No Content
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail="Failed to process request"
+            detail="A problem occurred in Chrome Service"
         )
+
 
 if __name__ == "__main__":
     import uvicorn

@@ -77,7 +77,7 @@ class ProgramDao(BaseQueueingDao):
         Returns all program sessions ordered by their end time.
         """
         query = select(Program).where(
-            Program.end_time >= datetime.now() - timedelta(days=1)  # This line is fixed
+            Program.end_time >= datetime.now() - timedelta(days=1)
         ).order_by(Program.end_time.desc())
         async with self.session_maker() as session:
             result = await session.execute(query)
