@@ -1,9 +1,11 @@
 import cv2
 import os
 
+import numpy as np
+
 
 def convert_for_ml(input_path, output_path):
-    """Convert video to ML-friendly format (MJPEG with minimal compression)"""
+    """Convert a completed video file to ML-friendly format (MJPEG with minimal compression)"""
     cap = cv2.VideoCapture(input_path)
 
     # Configure writer for maximum quality
@@ -27,6 +29,8 @@ def convert_for_ml(input_path, output_path):
 
     cap.release()
     out.release()
+
+    return output_patht
 
 
 def compress_video(input_path, output_path, target_bitrate=1000000):  # 1Mbps default
