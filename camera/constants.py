@@ -1,6 +1,8 @@
 SECONDS_PER_MIN = 60
 
 
+CHOSEN_FPS = 30
+
 video_duration_in_minutes = 30
 
 
