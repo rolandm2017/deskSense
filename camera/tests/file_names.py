@@ -12,6 +12,8 @@ lossless_static = "Lossless-StillnessV.avi"
 
 exaggerated_movement = "MovingVI.avi"
 
+empty_vid = "empty.avi"
+
 #
 #
 #

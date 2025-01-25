@@ -1,8 +1,10 @@
 import cv2
 import numpy as np
 from typing import List, Tuple
+import os
 
 from ..codecs import get_codec
+from ..video_util import extract_frames
 
 
 def make_black_frame(current_frame):
@@ -21,6 +23,9 @@ def filter_with_black(video_path: str, motion_frames: List[Tuple[int, bool]]) ->
     Returns:
         Path to the processed video file
     """
+
+    if not os.path.exists(video_path):
+        raise FileNotFoundError(f"Video file not found: {video_path}")
     # Open the video file
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
