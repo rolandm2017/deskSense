@@ -3,7 +3,7 @@ import numpy as np
 from datetime import datetime
 import os
 
-from src.motionDetector.v2detector import detect_motion, detect_motion_top_90
+from camera.src.motionDetector.detect_using_diff import detect_motion_using_diff, detect_motion_top_90_using_diff
 from src.preprocess import preprocess_frame, preprocess_blurring
 from src.constants import MOTION_THRESHOLD
 
@@ -26,16 +26,16 @@ def add_timestamp(frame):
 def main():
     # Initialize video file
     # Replace with your actual file path
-    # video_path = 'test_videos/3sec_Still.avi'
-    # video_path = 'test_videos/STILLVID.avi'
-    video_path = 'test_videos/LONG_VID.avi'
-    # video_path = 'test_videos/PURE_motion2.avi'
-    # video_path = 'test_videos/me_using_pc1.avi'
-    # video_path = 'test_videos/me_using_pcV-Lossless.avi'
-    # video_path = 'test_videos/me_using_pcV-Lossless.avi'
+    # video_path = 'samples/3sec_Still.avi'
+    # video_path = 'samples/STILLVID.avi'
+    video_path = 'samples/LONG_VID.avi'
+    # video_path = 'samples/PURE_motion2.avi'
+    # video_path = 'samples/me_using_pc1.avi'
+    # video_path = 'samples/me_using_pcV-Lossless.avi'
+    # video_path = 'samples/me_using_pcV-Lossless.avi'
 
-    # video_path = 'test_videos/StillnessV-Lossless.avi'
-    # video_path = 'test_videos/TenSec_Stillness.avi'
+    # video_path = 'samples/StillnessV-Lossless.avi'
+    # video_path = 'samples/TenSec_Stillness.avi'
     print(video_path, '50ru')
     cap = cv2.VideoCapture(video_path)
 
@@ -70,7 +70,7 @@ def main():
 
             blurred_frame = preprocess_blurring(current_frame)
             # Detect motion
-            movement_detected, movement_regions, mask = detect_motion_top_90(
+            movement_detected, movement_regions, mask = detect_motion_top_90_using_diff(
                 blurred_frame,
                 previous_frame, threshold=60
             )

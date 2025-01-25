@@ -7,13 +7,13 @@ three_sec_motion = "3sec_Motion.avi"
 
 pure_motion = "PURE_motion.avi"
 
-lossless_movement = "me_using_pcV-Lossless.avi"
-lossless_static = "StillnessV-Lossless.avi"
+lossless_movement = "Lossless-me_using_pcV.avi"
+lossless_static = "Lossless-StillnessV.avi"
 
 #
 #
 #
 #
-test_vid_dir = "test_videos/"
+test_vid_dir = "samples/"
 
-test_out_dir = "test_videos/running/"
+test_out_dir = "samples/running/"

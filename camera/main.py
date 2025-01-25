@@ -5,7 +5,7 @@ from datetime import datetime
 from src.timestamp import add_timestamp
 from src.compression.compressor import convert_for_ml
 from src.video_converter import VideoConverter
-from src.motionDetector.v2detector import detect_motion
+from camera.src.motionDetector.detect_using_diff import detect_motion
 from src.startup_shutdown import setup_interrupt_handler, shutdown
 from src.file_util import get_compressed_name_for_vid, get_filtered_vid_name, get_loop_index_from_video, name_new_vid
 from src.recording import init_webcam, initialize_new_vid

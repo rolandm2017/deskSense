@@ -4,7 +4,7 @@ import numpy as np
 from ..constants import MOTION_THRESHOLD
 
 
-def detect_motion(current_frame, previous_frame, threshold=MOTION_THRESHOLD, min_motion_pixels=500):
+def detect_motion_using_diff(current_frame, previous_frame, threshold=MOTION_THRESHOLD, min_motion_pixels=500):
     # Convert frames to grayscale
     curr_gray = cv2.cvtColor(current_frame, cv2.COLOR_BGR2GRAY)
     prev_gray = cv2.cvtColor(previous_frame, cv2.COLOR_BGR2GRAY)
@@ -39,7 +39,7 @@ def detect_motion(current_frame, previous_frame, threshold=MOTION_THRESHOLD, min
     return movement_detected, motion_regions, motion_mask
 
 
-def detect_motion_top_90(current_frame, previous_frame, threshold=30, min_motion_pixels=500):
+def detect_motion_top_90_using_diff(current_frame, previous_frame, threshold=30, min_motion_pixels=500):
     """Detect motion only in the top 90% of the frame"""
     # Calculate the bottom 10% cutoff point
     bottom_cutoff = int(current_frame.shape[0] * 0.9)
