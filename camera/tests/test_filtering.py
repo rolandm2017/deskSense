@@ -3,8 +3,8 @@ import numpy as np
 import cv2
 
 from camera.src.blackFrameFilter.black_frame_maker import make_black_frame, filter_with_black
-from camera.src.motionDetector.v2detector import detect_motion
-from camera.src.motionDetector.motion_detector import process_motion_in_video
+from camera.src.motionDetector.detect_using_diff import detect_motion
+from camera.src.motionDetector.process_motion_in_video import process_motion_in_video
 from camera.src.video_util import extract_frame, extract_frames
 
 from .util.frames import assert_frames_equal

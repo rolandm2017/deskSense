@@ -39,7 +39,7 @@ def test_recording_three_sec(mock_camera, mock_video_writer):
     # Setup
     out_file = "test_3_sec_vid.avi"
     vid_length_in_sec = 2
-    out_dir = "test_videos/running/"
+    out_dir = "samples/running/"
 
     # Act
     with patch('camera.src.startup_shutdown.sys.exit') as mock_exit:  # Prevent actual system exit
@@ -56,7 +56,7 @@ def test_recording_four_sec(mock_camera, mock_video_writer):
     # Setup
     out_file = "test_4_sec_vid.avi"
     vid_length_in_sec = 3
-    out_dir = "test_videos/running/"
+    out_dir = "samples/running/"
 
     # Act
     with patch('camera.src.startup_shutdown.sys.exit') as mock_exit:  # Prevent actual system exit

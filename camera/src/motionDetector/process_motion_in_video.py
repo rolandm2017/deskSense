@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from typing import Tuple, List
 
-from .v2detector import detect_motion
+from .detect_using_diff import detect_motion_using_diff
 from ..codecs import get_codec
 from ..constants import MOTION_THRESHOLD
 
@@ -65,7 +65,7 @@ def process_motion_in_video(video_path: str,
             frame_number += 1
 
             # Detect motion
-            motion_detected, regions_with_motion, mask = detect_motion(
+            motion_detected, regions_with_motion, mask = detect_motion_using_diff(
                 current_frame, prev_frame, threshold, min_motion_pixels
             )
 

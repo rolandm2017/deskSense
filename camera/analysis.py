@@ -2,7 +2,7 @@ import cv2
 
 import numpy as np
 
-path = "test_videos/me_using_pcV-Lossless.avi"
+path = "samples/me_using_pcV-Lossless.avi"
 
 
 def analyze_video_characteristics(video_path: str):
