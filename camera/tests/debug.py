@@ -47,3 +47,15 @@ cv2.destroyAllWindows()
             break
 
     cv2.destroyAllWindows()
+
+
+####
+####
+####
+####
+####
+####
+####
+####
+     true_count = sum(1 for _, bool_val in motion_frames if bool_val)
+        false_count = sum(1 for _, bool_val in motion_frames if not bool_val)
