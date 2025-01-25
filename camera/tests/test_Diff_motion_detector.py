@@ -5,22 +5,6 @@ from camera.src.motionDetector.process_motion_in_video import process_motion_in_
 from camera.src.motionDetector.foreground_motion import ForegroundMotionDetector
 from camera.src.video_util import extract_frames
 
-from .file_names import (
-    still_then_moving,
-    with_timestamps_still,
-    test_vid_dir,
-    test_out_dir,
-    three_sec_stillness,
-    three_sec_motion,
-    no_timestamps_still,
-    lossless_movement,
-    lossless_static
-)
-import cv2
-import numpy as np
-
-from camera.src.motionDetector.process_motion_in_video import process_motion_in_video
-from camera.src.motionDetector.foreground_motion import ForegroundMotionDetector
 
 from .file_names import (
     still_then_moving,
@@ -33,27 +17,6 @@ from .file_names import (
     lossless_movement,
     lossless_static
 )
-
-
-class TestForegroundMotionDetector:
-    def test_3s_of_stillness(self):
-        print("40ru")
-        wall_vid = test_vid_dir + three_sec_stillness
-
-        detector = ForegroundMotionDetector()
-
-        frames = extract_frames(wall_vid)
-
-        has_motion = 0
-        problem = 0
-        for i in range(0, len(frames)):
-            significant_motion, motion_regions, fg_mask = detector.detect_motion(
-                frames[i])
-            if significant_motion:
-                problem = i
-                has_motion += 1
-        print(problem, '55ru')
-        assert has_motion == 0
 
 
 # ██║ ╚████║╚██████╔╝   ██║          ██║   ██║  ██║╚██████╔╝
@@ -160,7 +123,7 @@ class TestDetectMotionUsingDiff:
         vid_path = test_vid_dir + no_timestamps_still
 
         dump_out_path = test_out_dir + \
-            self.test_three_sec_of_motion.__name__ + ".avi"
+            self.test_no_timestamps_still.__name__ + ".avi"
         out, motion_frames = process_motion_in_video(
             vid_path, dump_out_path, threshold=low_threshold * 2, draw_green_boxes=False)
 
@@ -176,7 +139,7 @@ class TestDetectMotionUsingDiff:
 
         extremely_low_threshold = 10
         dump_out_path = test_out_dir + \
-            self.test_three_sec_of_motion.__name__ + ".avi"
+            self.test_lossless_movement.__name__ + ".avi"
         out, motion_frames = process_motion_in_video(
             vid_path, dump_out_path, threshold=extremely_low_threshold, draw_green_boxes=False)
 
@@ -192,7 +155,7 @@ class TestDetectMotionUsingDiff:
         vid_path = test_vid_dir + lossless_static
 
         dump_out_path = test_out_dir + \
-            self.test_three_sec_of_motion.__name__ + ".avi"
+            self.test_lossless_static.__name__ + ".avi"
         out, motion_frames = process_motion_in_video(
             vid_path, dump_out_path, threshold=low_threshold, draw_green_boxes=False)
 

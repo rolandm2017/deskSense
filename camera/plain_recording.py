@@ -30,11 +30,15 @@ def get_codec(choice):
 ###############################################
 
 
-codec = get_codec("mp4v")
-
+WARMUP_DURATION = 3  # seconds to wait before starting recording
+RECORDING_DURATION = 3  # seconds to record after warmup
 CHOSEN_FPS = 30
 DISPLAY_WINDOW_NAME = 'Live Recording'
-base_name = "LONG_VID"
+
+
+codec = get_codec("HFYU")
+
+base_name = "Lossless-Movement"
 output_dir = "output/"
 
 
@@ -68,7 +72,30 @@ def signal_handler(sig, frame):
 
 setup_interrupt_handler(signal_handler)
 
-TOTAL_MIN_FOR_VID = 10 / 60
+
+def wait_for_warmup(cap, duration):
+    print(f"Warming up camera for {duration} seconds...")
+    warmup_start = time.time()
+    last_second = None
+
+    while time.time() - warmup_start < duration:
+        ret, frame = cap.read()
+        if not ret or interrupt_called:
+            return False
+
+        current = datetime.now()
+        if current.second != last_second:
+            print(
+                f"Warmup: {int(duration - (time.time() - warmup_start))} seconds remaining")
+            last_second = current.second
+
+        cv2.imshow(DISPLAY_WINDOW_NAME, frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            return False
+    return True
+
+
+TOTAL_MIN_FOR_VID = 3 / 60
 
 cap = init_webcam(CHOSEN_FPS)
 video_ending = ".avi"
