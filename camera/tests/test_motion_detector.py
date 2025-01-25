@@ -1,4 +1,4 @@
-from camera.src.motionDetector.video_detector import process_motion_in_video
+from camera.src.motionDetector.motion_detector import process_motion_in_video
 
 from .file_names import still_then_moving, stillness_ten_sec, no_timestamps_still, with_timestamps_still, motion_ten_sec, test_vid_dir, test_out_dir
 

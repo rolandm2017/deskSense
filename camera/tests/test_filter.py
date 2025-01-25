@@ -4,7 +4,7 @@ import cv2
 
 from camera.src.blackFrameFilter.black_frame_maker import make_black_frame, filter_with_black
 from camera.src.motionDetector.v2detector import detect_motion
-from camera.src.motionDetector.video_detector import process_motion_in_video
+from camera.src.motionDetector.motion_detector import process_motion_in_video
 from camera.src.video_util import extract_frame, extract_frames
 
 from .file_names import still_then_moving, stillness_ten_sec, no_timestamps_still, with_timestamps_still, motion_ten_sec, test_vid_dir, test_out_dir

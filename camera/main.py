@@ -8,7 +8,7 @@ from src.motionDetector.v2detector import detect_motion
 from src.startup_shutdown import setup_interrupt_handler, shutdown
 from camera.src.file_util import get_compressed_name_for_vid, get_filtered_vid_name, get_loop_index_from_video, name_new_vid
 from src.recording import init_webcam, initialize_new_vid
-from constants import SECONDS_PER_MIN, CHOSEN_FPS
+from camera.src.constants import SECONDS_PER_MIN, CHOSEN_FPS
 
 
 output_dir = "output/"

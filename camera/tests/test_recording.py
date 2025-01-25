@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import cv2
 
-from camera.constants import CHOSEN_FPS
+from camera.src.constants import CHOSEN_FPS
 from camera.src.recording import initialize_new_vid, init_webcam, record_n_sec_video
 from camera.debug import get_frame_timestamps, get_video_length
 
