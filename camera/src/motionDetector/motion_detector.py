@@ -3,7 +3,7 @@ import numpy as np
 from typing import Tuple, List
 
 from .v2detector import detect_motion
-
+from ..codecs import get_codec
 from ..constants import MOTION_THRESHOLD
 
 
@@ -11,6 +11,7 @@ def process_motion_in_video(video_path: str,
                             output_path: str,
                             threshold: int = MOTION_THRESHOLD,
                             min_motion_pixels: int = 500,
+                            draw_green_boxes: bool = True,
                             display_while_processing: bool = False) -> List[Tuple[int, bool]]:
     """
     Process video file for motion detection.
@@ -43,7 +44,7 @@ def process_motion_in_video(video_path: str,
         frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
         # Setup video writer
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        fourcc = get_codec()
         print(output_path, '44ru')
         writer = cv2.VideoWriter(
             output_path, fourcc, fps, (frame_width, frame_height))
@@ -71,7 +72,7 @@ def process_motion_in_video(video_path: str,
             motion_frames.append((frame_number, motion_detected))
 
             # Draw rectangles around motion regions
-            if motion_detected:
+            if motion_detected and draw_green_boxes:
                 for (x, y, w, h) in regions_with_motion:
                     cv2.rectangle(current_frame, (x, y),
                                   (x + w, y + h), (0, 255, 0), 2)
@@ -104,7 +105,7 @@ def process_motion_in_video(video_path: str,
         cv2.destroyAllWindows()
         for i in range(4):  # Sometimes needed to fully clean up windows
             cv2.waitKey(1)
-
+    print(output_path, len(motion_frames), '108ru')
     return output_path, motion_frames  # the finished vid
 
 

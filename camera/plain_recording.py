@@ -2,9 +2,23 @@ import cv2
 import time
 from datetime import datetime
 
-from src.timestamp import add_timestamp
-from src.startup_shutdown import setup_interrupt_handler, shutdown
-from src.constants import SECONDS_PER_MIN
+from .src.timestamp import add_timestamp
+from .src.startup_shutdown import setup_interrupt_handler, shutdown
+from .src.constants import SECONDS_PER_MIN, CHOSEN_CODEC
+from .src.codecs import get_FFV1_codec, get_HFYU_codec, get_MJPG_codec, get_mp4v_codec, get_XVID_codec
+
+
+def get_codec(choice):
+    if choice == "mp4v":
+        return get_mp4v_codec()
+    if choice == "XVID":
+        return get_XVID_codec()
+    if choice == "MJPG":
+        return get_MJPG_codec()
+    if choice == "HFYU":
+        return get_HFYU_codec()
+    if choice == "FFV1":
+        return get_FFV1_codec()
 
 ###############################################
 # * * * * * * * * * * * * * * * * * * * * * #
@@ -15,7 +29,9 @@ from src.constants import SECONDS_PER_MIN
 ###############################################
 
 
-CHOSEN_FPS = 30  # Change from 5 to 30
+codec = get_codec("mp4v")
+
+CHOSEN_FPS = 30
 DISPLAY_WINDOW_NAME = 'Live Recording'
 output_dir = "output/"
 
@@ -28,7 +44,7 @@ def init_webcam(chosen_fps):
 
 def setup_frame_writer(chosen_fps):
     """VideoWriter object manages writing video frames to a file"""
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    fourcc = get_codec(CHOSEN_CODEC)
     out = cv2.VideoWriter(output_dir + 'output.avi',
                           fourcc, chosen_fps, (640, 480))
     return out
@@ -36,7 +52,7 @@ def setup_frame_writer(chosen_fps):
 
 def initialize_new_vid(name, chosen_fps=CHOSEN_FPS):
     """VideoWriter object manages writing video frames to a file"""
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    fourcc = get_codec(CHOSEN_CODEC)
     out = cv2.VideoWriter(output_dir + name, fourcc, chosen_fps, (640, 480))
     return out
 
@@ -53,7 +69,7 @@ setup_interrupt_handler(signal_handler)
 TOTAL_MIN_FOR_VID = 3 / 60
 
 cap = init_webcam(CHOSEN_FPS)
-base_name = "Jan24ffffffffffffffFFFFF"
+base_name = "me_using_pc"
 video_ending = ".avi"
 
 max_duration_in_sec = TOTAL_MIN_FOR_VID * SECONDS_PER_MIN
@@ -64,7 +80,7 @@ def name_new_vid(base_name, index, ending):
     return base_name + str(index) + ending
 
 
-first_vid_name = name_new_vid(base_name, current_index, video_ending)
+first_vid_name = name_new_vid(base_name, "", video_ending)
 output_vid_name = first_vid_name
 print("[LOG] output vid name: " + output_vid_name)
 output_vid = initialize_new_vid(output_vid_name)

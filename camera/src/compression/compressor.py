@@ -1,7 +1,7 @@
 import cv2
 import os
 
-from ..codecs import get_high_compression_codec_one
+from ..codecs import get_codec
 
 
 def convert_for_ml(input_path, output_path):
@@ -55,7 +55,7 @@ def compress_video(input_path, output_path, target_bitrate=1000000):  # 1Mbps de
     buffer_size = int(target_bitrate * 2)  # 2 seconds worth of frames
 
     # Create video writer with compression settings
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    fourcc = get_codec()
     out = cv2.VideoWriter(
         output_path,
         fourcc,
