@@ -103,10 +103,15 @@ def main():
     # Initialize video file
     # Replace with your actual file path
     # video_path = 'test_videos/3sec_Still.avi'
-    video_path = 'test_videos/STILLVID.avi'
+    # video_path = 'test_videos/STILLVID.avi'
+    # video_path = 'test_videos/PURE_motion2.avi'
+    video_path = 'test_videos/me_using_pc1.avi'
     # video_path = 'test_videos/TenSec_Stillness.avi'
     print(video_path, '50ru')
     cap = cv2.VideoCapture(video_path)
+
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
     if not cap.isOpened():
         print(f"Error: Could not open video file {video_path}")
@@ -123,7 +128,7 @@ def main():
     print(f"Video FPS: {fps}")
 
     print("Press 'q' to quit")
-
+    movement_count = 0
     try:
         while True:
             ret, current_frame = cap.read()
@@ -135,18 +140,21 @@ def main():
             current_frame = add_timestamp(current_frame)
 
             # Detect motion
-            movement_detected, movement_regions, mask = detect_motion_top_90(
+            movement_detected, movement_regions, mask = detect_motion(
                 current_frame,
-                previous_frame, threshold=20
+                previous_frame, threshold=30
             )
+
+            if movement_detected:
+                movement_count += 1
 
             # Draw rectangles around motion regions
             for (x, y, w, h) in movement_regions:
                 cv2.rectangle(current_frame, (x, y),
                               (x + w, y + h), (0, 255, 0), 2)
-                cutoff_y = int(current_frame.shape[0] * 0.9)
-                cv2.line(current_frame, (0, cutoff_y),
-                         (current_frame.shape[1], cutoff_y), (255, 0, 0), 2)
+                # cutoff_y = int(current_frame.shape[0] * 0.9)
+                # cv2.line(current_frame, (0, cutoff_y),
+                #          (current_frame.shape[1], cutoff_y), (255, 0, 0), 2)
 
             # Show the frame
             cv2.imshow('Motion Detection', current_frame)
@@ -162,6 +170,8 @@ def main():
         # Clean up
         cap.release()
         cv2.destroyAllWindows()
+        print("[log] movements: " + str(movement_count) + " or " +
+              str(round(movement_count / total_frames, 2)))
 
 
 if __name__ == "__main__":

@@ -7,6 +7,8 @@ still_then_moving = "Still_Then_Moving1.avi"
 three_sec_stillness = "3sec_Still2.avi"
 three_sec_motion = "3sec_Motion.avi"
 
+pure_motion = "PURE_motion.avi"
+
 test_vid_dir = "test_videos/"
 
 test_out_dir = "test_videos/running/"

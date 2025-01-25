@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 from typing import List, Tuple
 
+from ..codecs import get_codec
+
 
 def make_black_frame(current_frame):
     # Create black frame
@@ -35,7 +37,7 @@ def filter_with_black(video_path: str, motion_frames: List[Tuple[int, bool]]) ->
         '.', 1)[0] + '_blackfiltered.' + video_path.rsplit('.', 1)[1]
 
     # Setup video writer
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = get_codec()
     writer = cv2.VideoWriter(
         output_path, fourcc, fps, (frame_width, frame_height))
 
