@@ -1,5 +1,6 @@
 import cv2
 import os
+import traceback
 
 import numpy as np
 
@@ -34,4 +35,5 @@ class VideoConverter(threading.Thread):
                 # Likely sends it to Castle
                 self.finish_handler(compressed_file)
         except Exception as e:
-            print(f"Error converting video: {e}")
+            print(traceback.print_exc())
+            print(f"[err] Error converting video: {e}")

@@ -1,6 +1,8 @@
 import cv2
 import os
 
+from ..codecs import get_high_compression_codec_one
+
 
 def convert_for_ml(input_path, output_path):
     """Convert a completed video file to ML-friendly format (MJPEG with minimal compression)"""

@@ -4,13 +4,12 @@ from typing import Tuple, List
 
 from .v2detector import detect_motion
 
-cv2.setBackend(cv2.CAP_V4L2)  # Use V4L2 backend
-cv2.ocl.setUseOpenCL(False)   # Disable OpenCL
+from ..constants import MOTION_THRESHOLD
 
 
 def process_motion_in_video(video_path: str,
                             output_path: str,
-                            threshold: int = 30,
+                            threshold: int = MOTION_THRESHOLD,
                             min_motion_pixels: int = 500,
                             display_while_processing: bool = False) -> List[Tuple[int, bool]]:
     """
@@ -29,7 +28,10 @@ def process_motion_in_video(video_path: str,
     # At the start of the function, add:
     print("Starting video processing...")
     print(f"Display enabled: {display_while_processing}")
+    cap = None
+    writer = None
     try:
+        print(video_path, '32ru')
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
             print("[ERROR-28] " + video_path)
@@ -42,13 +44,14 @@ def process_motion_in_video(video_path: str,
 
         # Setup video writer
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        print(output_path, '44ru')
         writer = cv2.VideoWriter(
             output_path, fourcc, fps, (frame_width, frame_height))
 
         # Read first frame
         ret, prev_frame = cap.read()
         if not ret:
-            raise ValueError("Error reading first frame")
+            raise ValueError("[ERROR-52] Error reading first frame")
 
         frame_number = 0
         motion_frames = []
@@ -65,15 +68,6 @@ def process_motion_in_video(video_path: str,
                 current_frame, prev_frame, threshold, min_motion_pixels
             )
 
-            #
-            # #
-            # TODO: process a video, so, detect motion
-            # TODO: If motion, keep frame
-            # TODO: No motion -> Replace with black square
-            # TODO: After black square replacement, compress
-            # #
-            #
-
             motion_frames.append((frame_number, motion_detected))
 
             # Draw rectangles around motion regions
@@ -88,15 +82,23 @@ def process_motion_in_video(video_path: str,
                 print("Attempting to display frame...")
                 try:
                     cv2.imshow('Motion Detection', current_frame)
-                    cv2.waitKey(1)
+                    # Set wait time to maintain approximately 30 FPS display
+                    output_fps = 30
+                    wait_time = max(1, int(1000/output_fps))  # in milliseconds
+                    cv2.waitKey(wait_time)
                 except Exception as e:
                     print(f"Display error: {e}")
 
             prev_frame = current_frame.copy()
 
+    except ValueError as e:
+        print("A ValueError occurred")
+
     finally:
         # Cleanup
         print("Cleaning up...")
+        print(cap, '99ru')
+        print(writer, "100ru")
         cap.release()
         writer.release()
         cv2.destroyAllWindows()

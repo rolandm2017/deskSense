@@ -37,7 +37,7 @@ def mock_video_writer():
 def test_recording_three_sec(mock_camera, mock_video_writer):
     """Test recording a 3-second video"""
     # Setup
-    out_file = "test_2_sec_vid.avi"
+    out_file = "test_3_sec_vid.avi"
     vid_length_in_sec = 2
     out_dir = "test_videos/running/"
 
@@ -51,10 +51,10 @@ def test_recording_three_sec(mock_camera, mock_video_writer):
     assert mock_video_writer.return_value.write.call_count == expected_frames
 
 
-def test_recording_seven_sec(mock_camera, mock_video_writer):
-    """Test recording a 7-second video"""
+def test_recording_four_sec(mock_camera, mock_video_writer):
+    """Test recording a 4-second video"""
     # Setup
-    out_file = "test_3_sec_vid.avi"
+    out_file = "test_4_sec_vid.avi"
     vid_length_in_sec = 3
     out_dir = "test_videos/running/"
 

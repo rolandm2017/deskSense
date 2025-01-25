@@ -1,8 +1,10 @@
 import cv2
 import numpy as np
 
+from ..constants import MOTION_THRESHOLD
 
-def detect_motion(current_frame, previous_frame, threshold=30, min_motion_pixels=500):
+
+def detect_motion(current_frame, previous_frame, threshold=MOTION_THRESHOLD, min_motion_pixels=500):
     # Convert frames to grayscale
     curr_gray = cv2.cvtColor(current_frame, cv2.COLOR_BGR2GRAY)
     prev_gray = cv2.cvtColor(previous_frame, cv2.COLOR_BGR2GRAY)
