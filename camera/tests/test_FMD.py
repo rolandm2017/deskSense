@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from camera.src.motionDetector.foreground_motion import ForegroundMotionDetector
+from camera.src.motionDetector.foreground_motion import ForegroundMotionDetector, process_motion_in_vid_FMD
 from camera.src.video_util import extract_frames
 
 
@@ -122,3 +122,25 @@ class TestForegroundMotionDetector:
         has_motion_count, _ = count_frames_with_motion(frames, detector)
 
         assert has_motion_count == 0, "Something was moving"
+
+    # TODO:
+    def test_process_motion_in_vid_FMD_static(self):
+        vid_path = test_vid_dir + lossless_static
+        out_path = self.test_process_motion_in_vid_FMD_static.__name__ + ".avi"
+
+        out, motion_frames = process_motion_in_vid_FMD(vid_path, out_path)
+
+        true_count = sum(1 for _, bool_val in motion_frames if bool_val)
+
+        # Accept 1 frame because the first frame tends to register as movement.
+        assert true_count == 0 or true_count == 1, "Some frame had movement"
+
+    def test_process_motion_in_vid_FMD_movement(self):
+        vid_path = test_vid_dir + lossless_movement
+        out_path = self.test_process_motion_in_vid_FMD_movement.__name__ + ".avi"
+
+        frames = extract_frames(vid_path)
+        out, motion_frames = process_motion_in_vid_FMD(vid_path, out_path)
+
+        assert len(motion_frames) == len(
+            frames) - 1, "Some frame didn't have movement"
