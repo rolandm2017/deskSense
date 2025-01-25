@@ -53,5 +53,5 @@ class ForegroundMotionDetector:
                 significant_motion = True
                 x, y, w, h = cv2.boundingRect(contour)
                 motion_regions.append((x, y, w, h))
-
+        """Note that the first frame to enter the detector will always register movement"""
         return significant_motion, motion_regions, fg_mask

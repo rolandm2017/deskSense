@@ -13,6 +13,8 @@ def main():
     video_path = 'samples/3sec_Still2.avi'
     video_path = 'samples/3sec_Still2.avi'
     video_path = 'samples/Lossless-StillnessV.avi'
+    video_path = 'samples/Stillness_No_Timestamps1.avi'
+    video_path = 'samples/Lossless-me_using_pcV.avi'
 
     cap = cv2.VideoCapture(video_path)
 
