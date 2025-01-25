@@ -2,10 +2,11 @@ import cv2
 import time
 from datetime import datetime
 
-from .src.timestamp import add_timestamp
-from .src.startup_shutdown import setup_interrupt_handler, shutdown
-from .src.constants import SECONDS_PER_MIN, CHOSEN_CODEC
-from .src.codecs import get_FFV1_codec, get_HFYU_codec, get_MJPG_codec, get_mp4v_codec, get_XVID_codec
+from src.preprocess import preprocess_frame
+from src.timestamp import add_timestamp
+from src.startup_shutdown import setup_interrupt_handler, shutdown
+from src.constants import SECONDS_PER_MIN, CHOSEN_CODEC
+from src.codecs import get_FFV1_codec, get_HFYU_codec, get_MJPG_codec, get_mp4v_codec, get_XVID_codec
 
 
 def get_codec(choice):
@@ -33,6 +34,7 @@ codec = get_codec("mp4v")
 
 CHOSEN_FPS = 30
 DISPLAY_WINDOW_NAME = 'Live Recording'
+base_name = "LONG_VID"
 output_dir = "output/"
 
 
@@ -66,10 +68,9 @@ def signal_handler(sig, frame):
 
 setup_interrupt_handler(signal_handler)
 
-TOTAL_MIN_FOR_VID = 3 / 60
+TOTAL_MIN_FOR_VID = 10 / 60
 
 cap = init_webcam(CHOSEN_FPS)
-base_name = "me_using_pc"
 video_ending = ".avi"
 
 max_duration_in_sec = TOTAL_MIN_FOR_VID * SECONDS_PER_MIN
@@ -111,6 +112,7 @@ try:
 
         if ret:
             frame_count += 1
+
             # frame = add_timestamp(frame)
             output_vid.write(frame)
 

@@ -6,7 +6,7 @@ import numpy as np
 
 import threading
 
-from .motionDetector.motion_detector import process_motion_in_video
+from .motionDetector.process_motion_in_video import process_motion_in_video
 from .blackFrameFilter.black_frame_maker import filter_with_black
 from .compression.compressor import convert_for_ml
 

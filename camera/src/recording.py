@@ -6,6 +6,7 @@ import signal
 from .constants import CHOSEN_FPS, CHOSEN_CODEC
 from .startup_shutdown import setup_interrupt_handler, shutdown
 from .logging import log_ending
+from .codecs import get_codec
 
 from .timestamp import add_timestamp
 
@@ -36,7 +37,7 @@ def init_webcam(chosen_fps):
 
 def setup_frame_writer(chosen_fps, output_dir):
     """VideoWriter object manages writing video frames to a file"""
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = get_codec()
     out = cv2.VideoWriter(output_dir + 'output.avi',
                           fourcc, chosen_fps, (640, 480))
     return out
@@ -44,7 +45,7 @@ def setup_frame_writer(chosen_fps, output_dir):
 
 def initialize_new_vid(name, output_dir, chosen_fps=CHOSEN_FPS):
     """VideoWriter object manages writing video frames to a file"""
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = get_codec()
     out = cv2.VideoWriter(output_dir + name, fourcc, 30, (640, 480))
     return out
 
