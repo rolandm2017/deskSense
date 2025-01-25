@@ -4,7 +4,7 @@ from datetime import datetime
 
 from src.timestamp import add_timestamp
 from src.startup_shutdown import setup_interrupt_handler, shutdown
-from constants import SECONDS_PER_MIN
+from src.constants import SECONDS_PER_MIN
 
 
 CHOSEN_FPS = 30  # Change from 5 to 30

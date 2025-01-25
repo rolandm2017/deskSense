@@ -3,7 +3,7 @@ from datetime import datetime
 from contextlib import contextmanager
 import signal
 
-from ..constants import CHOSEN_FPS
+from .constants import CHOSEN_FPS
 from .startup_shutdown import setup_interrupt_handler, shutdown
 from .logging import log_ending
 
