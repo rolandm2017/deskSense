@@ -7,9 +7,6 @@ print("Display:", os.getenv('DISPLAY'))
 print("XDG_SESSION_TYPE:", os.getenv('XDG_SESSION_TYPE'))
 print("WAYLAND_DISPLAY:", os.getenv('WAYLAND_DISPLAY'))
 
-# cv2.setBackend(cv2.CAP_V4L2)  # Use V4L2 backend
-# cv2.ocl.setUseOpenCL(False)   # Disable OpenCL
-
 
 def add_timestamp(frame):
     """Add timestamp to frame"""
