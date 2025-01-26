@@ -88,6 +88,7 @@ class TimelineRows(BaseModel):
 # Chrome stuff
 
 
-class URLDelivery(BaseModel):
+class TabChangeEvent(BaseModel):
     tabTitle: str
     url: str
+    startTime: datetime
