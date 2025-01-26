@@ -1,5 +1,6 @@
 import platform
 
+
 class OperatingSystemInfo:
     def __init__(self):
         self.is_windows = None
@@ -38,15 +39,13 @@ class OperatingSystemInfo:
                     return "Linux (distribution unknown)"
         return system
 
-    
-
 
 # Usage
 sys_info = OperatingSystemInfo()
 print(f"Current operating system: {sys_info.current_os}")
 
-# You can also do specific checks
-if platform.system() == "Windows" and platform.win32_ver()[0] == "11":
-    print("This is Windows 11")
-elif platform.system() == "Linux":
-    print("This is Linux")
+# # You can also do specific checks
+# if platform.system() == "Windows" and platform.win32_ver()[0] == "11":
+#     print("This is Windows 11")
+# elif platform.system() == "Linux":
+#     print("This is Linux")

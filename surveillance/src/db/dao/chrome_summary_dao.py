@@ -22,9 +22,9 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         self.processing = False
         self.logger = ConsoleLogger()
 
-    async def create_if_new_else_update(self, session: ChromeSessionData):
+    async def create_if_new_else_update(self, chrome_session: ChromeSessionData):
         """This method doesn't use queuing since it needs to check the DB state"""
-        target_domain_name = session.domain
+        target_domain_name = chrome_session.domain
         # ### Calculate time difference
         # # TODO
         # TODO: Option (1) is to have every tab contain a, uh, a start and end, and thus a duration
@@ -44,10 +44,10 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             existing_entry = result.scalar_one_or_none()
 
             if existing_entry:
-                existing_entry.hours_spent += session.duration
+                existing_entry.hours_spent += chrome_session.duration
                 await session.commit()
             else:
-                await self.create(target_domain_name, session.duration, today)
+                await self.create(target_domain_name, chrome_session.duration, today)
 
     async def create(self, target_domain_name, duration_in_hours, today):
         async with self.session_maker() as session:
