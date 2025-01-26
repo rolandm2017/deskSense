@@ -3,7 +3,7 @@ import numpy as np
 from typing import List, Tuple
 import os
 
-from ..codecs import get_codec
+from ..recording.codecs import get_codec
 from ..video_util import extract_frames
 
 

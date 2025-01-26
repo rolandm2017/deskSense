@@ -4,8 +4,8 @@ from datetime import datetime
 import os
 
 from camera.src.motionDetector.detect_using_diff import detect_motion_using_diff, detect_motion_top_90_using_diff
-from src.preprocess import preprocess_frame, preprocess_blurring
-from src.constants import MOTION_THRESHOLD
+from camera.src.frames.preprocess import preprocess_frame, preprocess_blurring
+from camera.src.config.constants import MOTION_THRESHOLD
 
 
 ###################################################

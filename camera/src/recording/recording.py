@@ -3,12 +3,12 @@ from datetime import datetime
 from contextlib import contextmanager
 import signal
 
-from .constants import CHOSEN_FPS, CHOSEN_CODEC
-from .startup_shutdown import setup_interrupt_handler, shutdown
-from .logging import log_ending
-from .codecs import get_codec
+from ..config.constants import CHOSEN_FPS, CHOSEN_CODEC
+from ..startup_shutdown import setup_interrupt_handler, shutdown
+from ..util.logging import log_ending
+from .recording.codecs import get_codec
 
-from .timestamp import add_timestamp
+from ..timestamp import add_timestamp
 
 
 @contextmanager

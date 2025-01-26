@@ -1,6 +1,6 @@
 import cv2
 
-from .constants import CHOSEN_CODEC
+from ..config.constants import CHOSEN_CODEC
 
 
 def get_codec(choice=CHOSEN_CODEC):

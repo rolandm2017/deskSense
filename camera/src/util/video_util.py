@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 
+from camera.src.recording.recording import init_webcam, initialize_new_vid
+
 
 def extract_frame(video_path, frame_number):
     # Open the video file
@@ -95,3 +97,17 @@ def extract_frames(video_path):
 #         cv2.imshow(f"Frame {n}", frame)
 #         cv2.waitKey(0)
 #         cv2.destroyAllWindows()
+
+
+def put_still_frames_into_discard(src_frames, motion_frames, discard_name):
+    output_folder = "samples/"
+    discard_vid = initialize_new_vid(discard_name, output_folder)
+
+    for frame in motion_frames:
+        if frame[1]:
+            to_write = src_frames[frame[0]]
+            discard_vid.write(to_write)
+            frame_count += 1
+
+    # Writing is done, should be all stillness
+    discard_vid.release()

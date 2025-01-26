@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from ..constants import MOTION_THRESHOLD
+from ..config.constants import MOTION_THRESHOLD
 
 
 def detect_motion_using_diff(current_frame, previous_frame, threshold=MOTION_THRESHOLD, min_motion_pixels=500):
