@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from camera.src.recording.recording import init_webcam, initialize_new_vid
+from ..recording.recording import init_webcam, initialize_new_vid
 
 
 def extract_frame(video_path, frame_number):
@@ -10,7 +10,7 @@ def extract_frame(video_path, frame_number):
 
     # Check if video opened successfully
     if not cap.isOpened():
-        print("Error: Could not open video file")
+        print("[err 13] Could not open video file")
         return None
 
     # Get total number of frames
@@ -18,7 +18,7 @@ def extract_frame(video_path, frame_number):
 
     # Check if frame_number is valid
     if frame_number >= total_frames:
-        print(f"Error: Video has only {total_frames} frames")
+        print(f"[err 21] Video has only {total_frames} frames")
         cap.release()
         return None
 
@@ -56,7 +56,7 @@ def extract_frames(video_path):
 
     # Check if video opened successfully
     if not cap.isOpened():
-        print(f"Error: Could not open video file {video_path}")
+        print(f"[err 59]: Could not open video file {video_path}")
         return frames
 
     while True:
@@ -99,15 +99,14 @@ def extract_frames(video_path):
 #         cv2.destroyAllWindows()
 
 
-def put_still_frames_into_discard(src_frames, motion_frames, discard_name):
-    output_folder = "samples/"
-    discard_vid = initialize_new_vid(discard_name, output_folder)
+def put_still_frames_into_discard(src_frames, motion_frames, discard_name, out_dir):
+    discard_vid = initialize_new_vid(discard_name, out_dir)
 
     for frame in motion_frames:
-        if frame[1]:
+        print(frame, '107ru')
+        if not frame[1]:
             to_write = src_frames[frame[0]]
             discard_vid.write(to_write)
-            frame_count += 1
 
     # Writing is done, should be all stillness
     discard_vid.release()

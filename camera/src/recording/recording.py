@@ -6,9 +6,9 @@ import signal
 from ..config.constants import CHOSEN_FPS, CHOSEN_CODEC
 from ..startup_shutdown import setup_interrupt_handler, shutdown
 from ..util.logging import log_ending
-from .recording.codecs import get_codec
+from .codecs import get_codec
 
-from ..timestamp import add_timestamp
+from ..frames.timestamp import add_timestamp
 
 
 @contextmanager
@@ -46,7 +46,9 @@ def setup_frame_writer(chosen_fps, output_dir):
 def initialize_new_vid(name, output_dir, chosen_fps=CHOSEN_FPS):
     """VideoWriter object manages writing video frames to a file"""
     fourcc = get_codec()
-    out = cv2.VideoWriter(output_dir + name, fourcc, 30, (640, 480))
+    print(output_dir, '49ru')
+    out = cv2.VideoWriter(str(output_dir / name),
+                          fourcc, chosen_fps, (640, 480))
     return out
 
 
