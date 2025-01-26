@@ -2,6 +2,7 @@ from fastapi import Depends
 from typing import List
 import asyncio
 from datetime import datetime, timedelta
+from operator import attrgetter
 
 from .config.definitions import productive_sites_2, MAX_QUEUE_LENGTH
 from .db.dao.keyboard_dao import KeyboardDao
@@ -74,7 +75,7 @@ class ProgramService:
 
 
 def get_start_time(event):
-    return datetime.fromisoformat(event["startTime"])
+    return datetime.fromisoformat(event.startTime)
 
 
 class ChromeService:
@@ -85,8 +86,10 @@ class ChromeService:
         self.message_queue = []  # Tab change events may arrive out of order
         self.ordered_messages = []
         self.ready_queue = []
+        self.debounce_timer = None
 
     async def add_to_arrival_queue(self, tab_change_event):
+        print(type(tab_change_event.startTime), "91ru")
         self.message_queue.append(tab_change_event)
 
         MAX_QUEUE_LEN = 40
@@ -114,34 +117,40 @@ class ChromeService:
 
     async def order_message_queue(self):
         current = self.message_queue
-        sorted_events = sorted(current, key=get_start_time)
+        sorted_events = sorted(current, key=attrgetter('startTime'))
         self.ordered_messages = sorted_events
-        self.message_queue = []
+        self.message_queue = []  # Cleanup, reset
 
     async def remove_transient_tabs(self):
         # Assumes events have been ORDERED chronologically
         transience_time_in_ms = 100
-        current = self.ordered_messages
+        current_queue = self.ordered_messages
+        if len(current_queue) == 0:
+            return
+        # assert isinstance(current, list)
         remaining = []
-        for i in range(0, len(current)):
-            # TODO: Handle edge cases -- final one, just leave it there
-            final_msg = len(current) - 1 == i
+        for i in range(0, len(current_queue)):
+            # TODO: Handle edge cases -- final one, just leave it there in the queue
+            # FIXME: Must handle case where final tab "is just left there" waiting for a new tab to displace it
+            # FIXME: It won't get logged unless something clears it out
+            final_msg = len(current_queue) - 1 == i
             if final_msg:
-                remaining.append(current[i])
-            current = current[i]
-            next = current[i + 1]
-            tab_duration = next.startTime - current.startTime
+                remaining.append(current_queue[i])
+                break
+            current_event = current_queue[i]
+            next_event = current_queue[i + 1]
+            tab_duration = next_event.startTime - current_event.startTime
             if tab_duration < timedelta(milliseconds=transience_time_in_ms):
                 pass
             else:
-                remaining.append(current)
+                remaining.append(current_event)
         self.ready_queue = remaining
-        self.ordered_messages = []
+        self.ordered_messages = []  # Cleanup, reset
 
     async def empty_queue_as_sessions(self):
         for event in self.ready_queue:
-            self.log_tab_event(event)
-        self.ready_queue = []
+            await self.log_tab_event(event)
+        self.ready_queue = []  # Cleanup, reset
 
     async def log_tab_event(self, url_deliverable):
 
@@ -164,8 +173,9 @@ class ChromeService:
         # await self.dao.create(url, title, is_productive)
 
     async def handle_chrome_ready_for_db(self, event):
-        self.chrome_summary_dao.create_if_new_else_update(event)
-        self.chrome_dao.create(event)
+        print("[log] ", event, "174ru")
+        self.summary_dao.create_if_new_else_update(event)
+        self.dao.create(event)
 
     async def read_last_24_hrs(self):
         return await self.dao.read_past_24h_events()
