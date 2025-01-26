@@ -238,7 +238,8 @@ async def get_chrome_report(chrome_service: ChromeService = Depends(get_chrome_s
 
 def write_temp_log(event: TabChangeEvent):
     with open("events.csv", "a") as f:
-        out = f"{event.tabTitle},{event.url},{str(event.startTime)}"
+        out = f"{event.tabTitle.replace(",", "::")},{event.url},{
+            str(event.startTime)}"
         f.write(out)
         f.write("\n")
 
