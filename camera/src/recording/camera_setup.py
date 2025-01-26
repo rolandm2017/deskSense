@@ -1,7 +1,7 @@
 import cv2
 
-from ..main import CHOSEN_FPS
-from .constants import CHOSEN_CODEC
+from ...main import CHOSEN_FPS
+from ..config.constants import CHOSEN_CODEC
 from .codecs import get_FFV1_codec, get_HFYU_codec, get_MJPG_codec, get_mp4v_codec, get_XVID_codec
 
 

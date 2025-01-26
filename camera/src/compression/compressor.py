@@ -1,7 +1,7 @@
 import cv2
 import os
 
-from ..codecs import get_codec
+from ..recording.codecs import get_codec
 
 
 def convert_for_ml(input_path, output_path):

@@ -2,7 +2,7 @@ import cv2
 
 import numpy as np
 
-from ..codecs import get_codec
+from ..recording.codecs import get_codec
 
 
 class ForegroundMotionDetector:
@@ -137,3 +137,28 @@ def process_motion_in_vid_FMD(video_path, output_path):
             cv2.waitKey(1)
     print(output_path, len(motion_frames), '108ru')
     return output_path, motion_frames  # the finished vid
+
+
+def get_frames_with_motion(frames, detector):
+    motion_frames = []
+    for i in range(0, len(frames)):
+        significant_motion, motion_regions, fg_mask = detector.detect_motion(
+            frames[i])
+        if significant_motion:  # Disregard first frame
+            motion_frames.append((i, True))
+        else:
+            motion_frames.append((i, False))
+    return motion_frames
+
+
+def count_frames_with_motion(frames, detector):
+    has_motion_count = 0
+    motion_frames = []
+    for i in range(0, len(frames)):
+        significant_motion, motion_regions, fg_mask = detector.detect_motion(
+            frames[i])
+        if significant_motion:  # Disregard first frame
+            # if significant_motion and i > 0:  # Disregard first frame
+            motion_frames.append(i)
+            has_motion_count += 1
+    return has_motion_count, motion_frames

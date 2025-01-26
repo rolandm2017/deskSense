@@ -3,8 +3,8 @@ import numpy as np
 from typing import Tuple, List
 
 from .detect_using_diff import detect_motion_using_diff
-from ..codecs import get_codec
-from ..constants import MOTION_THRESHOLD
+from ..recording.codecs import get_codec
+from ..config.constants import MOTION_THRESHOLD
 
 
 def process_motion_in_video(video_path: str,

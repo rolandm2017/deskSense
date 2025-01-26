@@ -1,11 +1,11 @@
 import cv2
 import time
 from datetime import datetime
-from src.preprocess import preprocess_frame
+from camera.src.frames.preprocess import preprocess_frame
 from src.timestamp import add_timestamp
 from src.startup_shutdown import setup_interrupt_handler, shutdown
-from src.constants import SECONDS_PER_MIN, CHOSEN_CODEC
-from src.codecs import get_FFV1_codec, get_HFYU_codec, get_MJPG_codec, get_mp4v_codec, get_XVID_codec
+from camera.src.config.constants import SECONDS_PER_MIN, CHOSEN_CODEC
+from camera.src.recording.codecs import get_FFV1_codec, get_HFYU_codec, get_MJPG_codec, get_mp4v_codec, get_XVID_codec
 
 WARMUP_DURATION = 3  # seconds
 RECORDING_DURATION = 3  # seconds

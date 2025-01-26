@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 from camera.src.motionDetector.foreground_motion import ForegroundMotionDetector, process_motion_in_vid_FMD
-from camera.src.video_util import extract_frames
+from camera.src.util.video_util import extract_frames
 
 
 from .file_names import (
@@ -18,16 +18,16 @@ from .file_names import (
 )
 
 
-def count_frames_with_motion(frames, detector):
-    has_motion_count = 0
-    motion_frames = []
-    for i in range(0, len(frames)):
-        significant_motion, motion_regions, fg_mask = detector.detect_motion(
-            frames[i])
-        if significant_motion and i > 0:  # Disregard first frame
-            motion_frames.append(i)
-            has_motion_count += 1
-    return has_motion_count, motion_frames
+# def count_frames_with_motion(frames, detector):
+#     has_motion_count = 0
+#     motion_frames = []
+#     for i in range(0, len(frames)):
+#         significant_motion, motion_regions, fg_mask = detector.detect_motion(
+#             frames[i])
+#         if significant_motion and i > 0:  # Disregard first frame
+#             motion_frames.append(i)
+#             has_motion_count += 1
+#     return has_motion_count, motion_frames
 
 
 def find_missing_numbers(your_arr, n):

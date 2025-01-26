@@ -1,4 +1,4 @@
-from src.recording import record_n_sec_video
+from camera.src.recording.recording import record_n_sec_video
 from src.startup_shutdown import setup_interrupt_handler
 
 # Global flag for interrupt handling
