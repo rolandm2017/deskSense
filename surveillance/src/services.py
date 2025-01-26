@@ -1,20 +1,19 @@
+# services.py
 from fastapi import Depends
 from typing import List
-import asyncio
 from datetime import datetime, timedelta
 from operator import attrgetter
 
-from .config.definitions import productive_sites_2, MAX_QUEUE_LENGTH
+from .db.dao.mouse_dao import MouseDao
 from .db.dao.keyboard_dao import KeyboardDao
 from .db.dao.program_dao import ProgramDao
-from .db.dao.mouse_dao import MouseDao
-from .db.dao.chrome_dao import ChromeDao
 from .db.dao.timeline_entry_dao import TimelineEntryDao
 from .db.dao.program_summary_dao import ProgramSummaryDao
+from .db.dao.chrome_dao import ChromeDao
 from .db.dao.chrome_summary_dao import ChromeSummaryDao
 from .object.classes import ChromeSessionData
 from .db.models import TypingSession, Program, MouseMove
-from .db.database import get_db, AsyncSession
+from .config.definitions import productive_sites_2
 
 
 class KeyboardService:
@@ -22,15 +21,10 @@ class KeyboardService:
         self.dao = dao
 
     async def get_past_days_events(self) -> List[TypingSession]:
-        """
-        Returns all keystroke events from the last 24 hours.
-        Each keystroke contains a timestamp.
-        """
         events = await self.dao.read_past_24h_events()
         return events
 
     async def get_all_events(self) -> List[TypingSession]:
-        """Mostly for debugging"""
         return await self.dao.read_all()
 
 
@@ -39,17 +33,11 @@ class MouseService:
         self.dao = dao
 
     async def get_past_days_events(self) -> List[MouseMove]:
-        """
-        Returns all mouse movements that ended in the last 24 hours.
-        Each movement contains start_time and end_time.
-        """
         events = await self.dao.read_past_24h_events()
         return events
 
     async def get_all_events(self) -> List[MouseMove]:
-        """Mostly for debugging"""
-        all = await self.dao.read_all()
-        return all
+        return await self.dao.read_all()
 
 
 class ProgramService:
@@ -57,25 +45,11 @@ class ProgramService:
         self.dao = dao
 
     async def get_past_days_events(self) -> List[Program]:
-        """
-        Returns all program sessions that ended in the last 24 hours.
-        Each program session contains window name, start_time, end_time,
-        and productive flag.
-        """
         events = await self.dao.read_past_24h_events()
         return events
 
     async def get_all_events(self) -> List[Program]:
-        """Mostly for debugging"""
-        print(self.dao, '63vm')
-        all = await self.dao.read_all()
-        print(all, "in programs.get_all_events")
-        return all
-# TODO: Move into a util
-
-
-def get_start_time(event):
-    return datetime.fromisoformat(event.startTime)
+        return await self.dao.read_all()
 
 
 class ChromeService:
@@ -83,13 +57,12 @@ class ChromeService:
         self.dao = dao
         self.summary_dao = summary_dao
         self.last_entry = None
-        self.message_queue = []  # Tab change events may arrive out of order
+        self.message_queue = []
         self.ordered_messages = []
         self.ready_queue = []
         self.debounce_timer = None
 
     async def add_to_arrival_queue(self, tab_change_event):
-        print(type(tab_change_event.startTime), "91ru")
         self.message_queue.append(tab_change_event)
 
         MAX_QUEUE_LEN = 40
@@ -99,15 +72,13 @@ class ChromeService:
             await self.start_processing_msgs()
             return
 
-        # Cancel existing timer if there is one
         if self.debounce_timer:
             self.debounce_timer.cancel()
 
-        # Create new timer
         self.debounce_timer = asyncio.create_task(self.debounced_process())
 
     async def debounced_process(self):
-        await asyncio.sleep(1)  # 1 second delay
+        await asyncio.sleep(1)
         await self.start_processing_msgs()
 
     async def start_processing_msgs(self):
@@ -119,20 +90,15 @@ class ChromeService:
         current = self.message_queue
         sorted_events = sorted(current, key=attrgetter('startTime'))
         self.ordered_messages = sorted_events
-        self.message_queue = []  # Cleanup, reset
+        self.message_queue = []
 
     async def remove_transient_tabs(self):
-        # Assumes events have been ORDERED chronologically
         transience_time_in_ms = 100
         current_queue = self.ordered_messages
         if len(current_queue) == 0:
             return
-        # assert isinstance(current, list)
         remaining = []
         for i in range(0, len(current_queue)):
-            # TODO: Handle edge cases -- final one, just leave it there in the queue
-            # FIXME: Must handle case where final tab "is just left there" waiting for a new tab to displace it
-            # FIXME: It won't get logged unless something clears it out
             final_msg = len(current_queue) - 1 == i
             if final_msg:
                 remaining.append(current_queue[i])
@@ -145,15 +111,14 @@ class ChromeService:
             else:
                 remaining.append(current_event)
         self.ready_queue = remaining
-        self.ordered_messages = []  # Cleanup, reset
+        self.ordered_messages = []
 
     async def empty_queue_as_sessions(self):
         for event in self.ready_queue:
             await self.log_tab_event(event)
-        self.ready_queue = []  # Cleanup, reset
+        self.ready_queue = []
 
     async def log_tab_event(self, url_deliverable):
-
         session: ChromeSessionData = ChromeSessionData()
         session.domain = url_deliverable.url
         session.detail = url_deliverable.tabTitle
@@ -166,16 +131,13 @@ class ChromeService:
             self.last_entry = session
             await self.handle_chrome_ready_for_db(session)
         else:
-            # Must have just started up: No session recorded yet
             session.duration = None
             self.last_entry = session
             await self.handle_chrome_ready_for_db(session)
-        # await self.dao.create(url, title, is_productive)
 
     async def handle_chrome_ready_for_db(self, event):
-        print("[log] ", event, "174ru")
-        self.summary_dao.create_if_new_else_update(event)
-        self.dao.create(event)
+        await self.summary_dao.create_if_new_else_update(event)
+        await self.dao.create(event)
 
     async def read_last_24_hrs(self):
         return await self.dao.read_past_24h_events()
@@ -196,19 +158,3 @@ class DashboardService:
         today = datetime.now()
         all = await self.summary_dao.read_day(today)
         return all
-
-
-# Service dependencies
-async def get_program_service(db: AsyncSession = Depends(get_db)) -> ProgramService:
-    dao = ProgramDao(db)
-    return ProgramService(dao)
-
-
-async def get_mouse_service(db: AsyncSession = Depends(get_db)) -> MouseService:
-    dao = MouseDao(db)
-    return MouseService(dao)
-
-
-async def get_keyboard_service(db: AsyncSession = Depends(get_db)) -> KeyboardService:
-    dao = KeyboardDao(db)
-    return KeyboardService(dao)

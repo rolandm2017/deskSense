@@ -8,44 +8,27 @@ from typing import Optional, List
 
 
 from src.db.database import get_db, init_db, AsyncSession, async_session_maker
-from src.db.dao.mouse_dao import MouseDao
-from src.db.dao.keyboard_dao import KeyboardDao
-from src.db.dao.program_dao import ProgramDao
-from src.db.dao.timeline_entry_dao import TimelineEntryDao
-from surveillance.src.db.dao.program_summary_dao import ProgramSummaryDao
-from src.db.dao.chrome_dao import ChromeDao
+
 from src.db.models import DailyProgramSummary
-from src.services import MouseService, KeyboardService, ProgramService, DashboardService, ChromeService
-from src.object.dto import TypingSessionDto, MouseMoveDto, ProgramDto
+# from src.services import MouseService, KeyboardService, ProgramService, DashboardService, ChromeService
+# from src.services import get_mouse_service, get_chrome_service, get_program_service, get_keyboard_service, get_dashboard_service
 from src.object.pydantic_dto import KeyboardReport, MouseReport, ProgramActivityReport, DailyProgramSummarySchema, BarChartContent, TimelineEntrySchema, TimelineRows, TabChangeEvent
 from src.util.pydantic_factory import make_keyboard_log, make_mouse_log, make_program_log
 from src.surveillance_manager import SurveillanceManager
 from src.console_logger import ConsoleLogger
 
+from src.services import (
+    KeyboardService, MouseService, ProgramService, DashboardService, ChromeService
+)
+from src.service_dependencies import (
+    get_keyboard_service, get_mouse_service, get_program_service,
+    get_dashboard_service, get_chrome_service
+)
+
+# Rest of your server.py code...
 
 logger = ConsoleLogger()
 
-# Add these dependency functions at the top of your file
-
-
-async def get_keyboard_service() -> KeyboardService:
-    return KeyboardService(KeyboardDao(async_session_maker))
-
-
-async def get_mouse_service() -> MouseService:
-    return MouseService(MouseDao(async_session_maker))
-
-
-async def get_program_service() -> ProgramService:
-    return ProgramService(ProgramDao(async_session_maker))
-
-
-async def get_dashboard_service() -> DashboardService:
-    return DashboardService(TimelineEntryDao(async_session_maker), ProgramSummaryDao(async_session_maker))
-
-
-async def get_chrome_service() -> ChromeService:
-    return ChromeService(ChromeDao(async_session_maker))
 
 # Main class in this file
 
@@ -257,6 +240,7 @@ async def your_endpoint_name(
         await chrome_service.add_to_arrival_queue(tab_change_event)
         return  # Returns 204 No Content
     except Exception as e:
+        print(e, '260ru')
         raise HTTPException(
             status_code=500,
             detail="A problem occurred in Chrome Service"
