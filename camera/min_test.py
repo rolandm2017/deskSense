@@ -8,9 +8,9 @@ img = np.zeros((300, 300, 3), dtype=np.uint8)
 
 try:
     print("Attempting to create window...")
-    cv2.namedWindow('test', cv2.WINDOW_NORMAL)  # Use NORMAL instead of OPENGL
+    # cv2.namedWindow('test', cv2.WINDOW_NORMAL)  # Use NORMAL instead of OPENGL
     print("Window created, attempting to show image...")
-    cv2.imshow('test', img)
+    # cv2.imshow('test VVV', img)
     print("Image shown, waiting for key...")
     cv2.waitKey(2000)  # Wait 2 seconds
     print("Cleanup...")

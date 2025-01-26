@@ -7,6 +7,8 @@ class VideoPathManager:
         self.raw = self.output_dir / 'raw_recordings'
         self.processed = self.output_dir / 'processed'
         self.discard = self.output_dir / 'discard'
+        self.tests = Path(project_root) / "samples"
+        self.running_tests = self.tests / "running"
 
         # Create directories if they don't exist
         for dir in [self.raw, self.processed, self.discard]:
@@ -20,6 +22,9 @@ class VideoPathManager:
 
     def discard_path(self, filename):
         return self.discard / filename
+
+    def tests_path(self, filename):
+        return self.tests / filename
 
 
 # # Usage

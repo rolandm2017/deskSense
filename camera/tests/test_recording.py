@@ -6,6 +6,7 @@ import cv2
 from camera.src.config.constants import CHOSEN_FPS
 from camera.src.recording.recording import initialize_new_vid, init_webcam, record_n_sec_video
 from camera.debug import get_frame_timestamps, get_video_length
+from camera.src.util.path_manager import VideoPathManager
 
 
 #
@@ -37,9 +38,11 @@ def mock_video_writer():
 def test_recording_three_sec(mock_camera, mock_video_writer):
     """Test recording a 3-second video"""
     # Setup
-    out_file = "test_3_sec_vid.avi"
+
+    path_mgmt = VideoPathManager()
+    out_file = path_mgmt.tests_path("test_3_sec_vid.avi")
     vid_length_in_sec = 2
-    out_dir = "samples/running/"
+    out_dir = path_mgmt.running_tests
 
     # Act
     with patch('camera.src.startup_shutdown.sys.exit') as mock_exit:  # Prevent actual system exit
@@ -54,9 +57,10 @@ def test_recording_three_sec(mock_camera, mock_video_writer):
 def test_recording_four_sec(mock_camera, mock_video_writer):
     """Test recording a 4-second video"""
     # Setup
-    out_file = "test_4_sec_vid.avi"
+    path_mgmt = VideoPathManager()
+    out_file = path_mgmt.tests_path("test_4_sec_vid.avi")
     vid_length_in_sec = 3
-    out_dir = "samples/running/"
+    out_dir = VideoPathManager().running_tests
 
     # Act
     with patch('camera.src.startup_shutdown.sys.exit') as mock_exit:  # Prevent actual system exit

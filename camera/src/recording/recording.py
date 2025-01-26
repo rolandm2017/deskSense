@@ -74,8 +74,12 @@ def record_n_sec_video(n, title, output_dir="output/", should_continue=lambda: T
         str: Path to the recorded video file
     """
     total_frames = n * 30
-    if not title.endswith(".avi"):
-        raise ValueError("Title must be an .avi file")
+    if isinstance(title, str):
+        if not title.endswith(".avi"):
+            raise ValueError("Title must be an .avi file")
+    else:
+        if not title.name.endswith("avi"):
+            raise ValueError("Title must be an .avi file")
 
     # Initialize recording setup
     capture = init_webcam(CHOSEN_FPS)
@@ -95,6 +99,11 @@ def record_n_sec_video(n, title, output_dir="output/", should_continue=lambda: T
             )
 
         log_ending(frame_count, title)
-        return output_dir + title
+        if isinstance(title, str):
+            return output_dir + title
+        else:
+            print(output_dir, '105ru')
+            print(title, '106ru')
+            return title
     finally:
         shutdown(capture, output_vid)

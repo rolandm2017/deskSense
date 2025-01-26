@@ -3,7 +3,7 @@ import numpy as np
 
 from camera.src.motionDetector.process_motion_in_video import process_motion_in_video
 from camera.src.motionDetector.foreground_motion import ForegroundMotionDetector
-from camera.src.video_util import extract_frames
+from camera.src.util.video_util import extract_frames
 
 
 from .file_names import (

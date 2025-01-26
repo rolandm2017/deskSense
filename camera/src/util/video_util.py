@@ -74,30 +74,6 @@ def extract_frames(video_path):
 
     return frames
 
-# Example usage:
-# video_frames = extract_frames('path/to/your/video.mp4')
-# print(f"Extracted {len(video_frames)} frames")
-#
-# # To access individual frames:
-# first_frame = video_frames[0]  # First frame
-# last_frame = video_frames[-1]  # Last frame
-
-# # Example usage
-# if __name__ == "__main__":
-#     video_path = "path/to/your/video.mp4"
-#     n = 100  # Extract the 100th frame
-
-#     frame = extract_frame(video_path, n)
-
-#     if frame is not None:
-#         # Save the frame as an image
-#         cv2.imwrite(f"frame_{n}.jpg", frame)
-
-#         # Or display it (press any key to close)
-#         cv2.imshow(f"Frame {n}", frame)
-#         cv2.waitKey(0)
-#         cv2.destroyAllWindows()
-
 
 def put_still_frames_into_discard(src_frames, motion_frames, discard_name, out_dir):
     discard_vid = initialize_new_vid(discard_name, out_dir)

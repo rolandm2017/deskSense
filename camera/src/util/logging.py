@@ -6,5 +6,9 @@ def log_finish_video(frame_count, output_vid_name, current_index):
 
 
 def log_ending(frame_count, vid_name):
-    print("[LOG] Ending on frame " + str(frame_count) +
-          " for video " + vid_name)
+    if isinstance(vid_name, str):
+        print("[LOG] Ending on frame " + str(frame_count) +
+              " for video " + vid_name)
+    else:
+        print("[LOG] Ending on frame " + str(frame_count) +
+              " for video " + vid_name.name)

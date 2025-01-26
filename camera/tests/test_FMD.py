@@ -18,16 +18,16 @@ from .file_names import (
 )
 
 
-# def count_frames_with_motion(frames, detector):
-#     has_motion_count = 0
-#     motion_frames = []
-#     for i in range(0, len(frames)):
-#         significant_motion, motion_regions, fg_mask = detector.detect_motion(
-#             frames[i])
-#         if significant_motion and i > 0:  # Disregard first frame
-#             motion_frames.append(i)
-#             has_motion_count += 1
-#     return has_motion_count, motion_frames
+def count_frames_with_motion(frames, detector):
+    has_motion_count = 0
+    motion_frames = []
+    for i in range(0, len(frames)):
+        significant_motion, motion_regions, fg_mask = detector.detect_motion(
+            frames[i])
+        if significant_motion and i > 0:  # Disregard first frame
+            motion_frames.append(i)
+            has_motion_count += 1
+    return has_motion_count, motion_frames
 
 
 def find_missing_numbers(your_arr, n):
