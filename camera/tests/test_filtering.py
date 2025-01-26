@@ -8,7 +8,8 @@ from camera.src.blackFrameFilter.black_frame_maker import make_black_frame, filt
 from camera.src.motionDetector.detect_using_diff import detect_motion_using_diff, detect_motion_top_90_using_diff
 from camera.src.motionDetector.process_motion_in_video import process_motion_in_video
 from camera.src.motionDetector.foreground_motion import ForegroundMotionDetector, process_motion_in_vid_FMD
-from camera.src.video_util import extract_frame, extract_frames
+from camera.src.util.video_util import extract_frame, extract_frames
+from camera.src.util.path_manager import VideoPathManager
 
 from .util.frames import assert_frames_equal
 
@@ -77,23 +78,18 @@ def test_black_is_inserted_automated():
     assert np.all(filtered == 0), "Frame is not all zeros"
 
 
-# TODO: Somehow, make the jet black frame visually inspectable
-
-
-# TODO: Complete the below func
-# TODO: Test motion detect on the timestamp vid
-
 def test_works_with_timestamps():
     """Test that timestamps do not interfere with black frame replacement"""
 
     vid_path = test_vid_dir + with_timestamps_still
     dump_out_path = test_out_dir + test_works_with_timestamps.__name__ + ".avi"
+    path_mgmt = VideoPathManager()
 
     out, motion_frames = process_motion_in_video(vid_path, dump_out_path)
 
     assert all(x[1] == False for x in motion_frames)  # Test setup
 
-    path_to_check = filter_with_black(out, motion_frames)
+    path_to_check = filter_with_black(out, motion_frames, path_mgmt)
 
     frames = extract_frames(path_to_check)
 
@@ -104,22 +100,17 @@ def test_three_sec_of_pure_stillness():
     vid_path = test_vid_dir + three_sec_stillness
 
     dump_out_path = test_out_dir + test_three_sec_of_pure_stillness.__name__ + ".avi"
+    path_mgmt = VideoPathManager()
 
     out, motion_frames = process_motion_in_video(vid_path, dump_out_path)
 
     assert all(x[1] == False for x in motion_frames)  # Test setup
 
-    path_to_check = filter_with_black(out, motion_frames)
+    path_to_check = filter_with_black(out, motion_frames, path_mgmt)
 
     frames = extract_frames(path_to_check)
 
     assert all(np.all(frame == 0) for frame in frames)
-
-
-# TODO: Test sad paths
-# TODO: Test sad paths
-# TODO: Test sad paths
-# TODO: Test sad paths
 
 
 # FIXME: This test should use the FMD
@@ -127,24 +118,12 @@ def test_three_sec_of_motion():
     """Analyze a video with pure motion, expecting the filter_with_black to change nothing."""
     input_path = test_vid_dir + lossless_movement
 
-    fps = 30  # Adjust this to match your video's fps
-
-    first_frame = int(90 * 0.1)
-    second_frame = int(90 * 0.2)
-    third_frame = int(90 * 0.3)
-    print("FOO\n\nfoo\nf\nf\nf\nf96ru")
     dump_out_path = test_out_dir + \
         test_three_sec_of_motion.__name__ + ".avi"
 
-    # out, motion_frames = process_motion_in_video(
-    #     vid_path, dump_out_path, threshold=20, draw_green_boxes=False)
-
-    # true_count = sum(1 for _, bool_val in motion_frames if bool_val)
-    # false_count = sum(1 for _, bool_val in motion_frames if not bool_val)
-    # print(true_count, false_count, '104ru')
-    # FIXME: The video doesnt REALLY have no motion
-
     detector = ForegroundMotionDetector()
+
+    path_mgmt = VideoPathManager()
 
     out, motion_frames = process_motion_in_vid_FMD(input_path, dump_out_path)
 
@@ -153,13 +132,7 @@ def test_three_sec_of_motion():
     # Testing setup conditions
     assert true_count == len(motion_frames), "Some frame had no motion"
 
-    black_filtered_path = filter_with_black(out, motion_frames)
-
-    # play_video(black_filtered_path)
-    # print("139ru")
-
-    # start_frames = extract_frames(input_path)
-    # result = extract_frames(black_filtered_path)
+    black_filtered_path = filter_with_black(out, motion_frames, path_mgmt)
 
     assert has_zero_black_frames(
         black_filtered_path), "The video had black inserted somewhere"
