@@ -67,6 +67,7 @@ class ChromeService:
     # TODO: Log a bunch of real chrome tab submissions, use them in a test
 
     async def add_to_arrival_queue(self, tab_change_event: TabChangeEvent):
+        print("[DEBUG] adding ", tab_change_event, '70ru')
         self.message_queue.append(tab_change_event)
 
         MAX_QUEUE_LEN = 40
@@ -82,8 +83,9 @@ class ChromeService:
         self.debounce_timer = asyncio.create_task(self.debounced_process())
 
     async def debounced_process(self):
-        one_second = 1
+        one_second = 1  # TODO: Try 0.5 sec also
         await asyncio.sleep(one_second)
+        print("[debug] Starting processing")
         await self.start_processing_msgs()
 
     async def start_processing_msgs(self):
