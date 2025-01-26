@@ -4,6 +4,12 @@ import numpy as np
 
 path = "samples/me_using_pcV-Lossless.avi"
 
+####
+####
+# ANALYSIS OF WHAT?
+####
+####
+
 
 def analyze_video_characteristics(video_path: str):
     cap = cv2.VideoCapture(video_path)
