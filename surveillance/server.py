@@ -2,12 +2,13 @@
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from pydantic import BaseModel
 import asyncio
 # import time
 from typing import Optional, List
 
 
-from src.db.database import get_db, init_db, AsyncSession, async_session_maker
+from src.db.database import init_db, async_session_maker
 
 from src.db.models import DailyProgramSummary
 # from src.services import MouseService, KeyboardService, ProgramService, DashboardService, ChromeService
@@ -82,7 +83,12 @@ app.add_middleware(
 )
 
 
-@app.get("/health", response_model=dict)
+class HealthResponse(BaseModel):
+    status: str
+    detail: str | None = None
+
+
+@app.get("/health", response_model=HealthResponse)
 async def health_check(keyboard_service: KeyboardService = Depends(get_keyboard_service)):
     logger.log_purple("[LOG] health check")
     try:
@@ -230,21 +236,21 @@ async def get_chrome_report(chrome_service: ChromeService = Depends(get_chrome_s
     return reports
 
 
-@app.post("/chrome/tab", status_code=status.HTTP_204_NO_CONTENT)
-async def your_endpoint_name(
-    tab_change_event: TabChangeEvent,
-    chrome_service: ChromeService = Depends(get_chrome_service)
-):
-    logger.log_purple("[LOG] Chrome Tab Received")
-    try:
-        await chrome_service.add_to_arrival_queue(tab_change_event)
-        return  # Returns 204 No Content
-    except Exception as e:
-        print(e, '260ru')
-        raise HTTPException(
-            status_code=500,
-            detail="A problem occurred in Chrome Service"
-        )
+# @app.post("/chrome/tab", status_code=status.HTTP_204_NO_CONTENT)
+# async def your_endpoint_name(
+#     tab_change_event: TabChangeEvent,
+#     chrome_service: ChromeService = Depends(get_chrome_service)
+# ):
+#     logger.log_purple("[LOG] Chrome Tab Received")
+#     try:
+#         await chrome_service.add_to_arrival_queue(tab_change_event)
+#         return  # Returns 204 No Content
+#     except Exception as e:
+#         print(e, '260ru')
+#         raise HTTPException(
+#             status_code=500,
+#             detail="A problem occurred in Chrome Service"
+#         )
 
 
 if __name__ == "__main__":
