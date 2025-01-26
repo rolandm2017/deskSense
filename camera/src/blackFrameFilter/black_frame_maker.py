@@ -4,7 +4,7 @@ from typing import List, Tuple
 import os
 
 from ..recording.codecs import get_codec
-from ..video_util import extract_frames
+from ..util.video_util import extract_frames
 
 
 def make_black_frame(current_frame):
@@ -12,7 +12,16 @@ def make_black_frame(current_frame):
     return np.zeros_like(current_frame)
 
 
-def filter_with_black(video_path: str, motion_frames: List[Tuple[int, bool]]) -> str:
+def insert_filter_indicator_into_file_name(video_path):
+    if isinstance(video_path, str):
+        src = video_path.rsplit('.', 1)
+        return src[0] + '_blackout.' + src[1]
+    else:
+        src = video_path.name.rsplit(".", 1)
+        return src[0] + '_blackout.' + src[1]
+
+
+def filter_with_black(video_path: str, motion_frames: List[Tuple[int, bool]], path_manager) -> str:
     """
     Process a video file, replacing frames without motion with black frames.
 
@@ -37,9 +46,11 @@ def filter_with_black(video_path: str, motion_frames: List[Tuple[int, bool]]) ->
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
+    # FIXME: Make this line come from a function, that is configured to
+    # FIXME: ...always put the file in the right folder
     # Create output path by adding '_blackfiltered' before the extension
-    output_path = video_path.rsplit(
-        '.', 1)[0] + '_blackfiltered.' + video_path.rsplit('.', 1)[1]
+    output_name = insert_filter_indicator_into_file_name(video_path)
+    output_path = path_manager.processed_path(output_name)
 
     # Setup video writer
     fourcc = get_codec()
@@ -68,5 +79,5 @@ def filter_with_black(video_path: str, motion_frames: List[Tuple[int, bool]]) ->
     # Cleanup
     cap.release()
     writer.release()
-
+    print("[log] black filter video at " / output_path)
     return output_path

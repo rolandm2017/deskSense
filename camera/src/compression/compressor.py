@@ -1,17 +1,19 @@
 import cv2
 import os
 
+import numpy as np
+
 from ..recording.codecs import get_codec
 
 
-def convert_for_ml(input_path, output_path):
+def convert_for_ml(input_path, compressed_file_path):
     """Convert a completed video file to ML-friendly format (MJPEG with minimal compression)"""
     cap = cv2.VideoCapture(input_path)
-
+    print("[debug] output path for ML: " + compressed_file_path.name)
     # Configure writer for maximum quality
-    fourcc = get_high_compression_codec_one()
+    fourcc = get_codec()
     out = cv2.VideoWriter(
-        output_path,
+        compressed_file_path,
         fourcc,
         cap.get(cv2.CAP_PROP_FPS),
         (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
@@ -29,8 +31,9 @@ def convert_for_ml(input_path, output_path):
 
     cap.release()
     out.release()
+    print("[log] Created video at " + compressed_file_path.name)
 
-    return output_path
+    return compressed_file_path  # Think it returns a Posix path
 
 
 def compress_video(input_path, output_path, target_bitrate=1000000):  # 1Mbps default

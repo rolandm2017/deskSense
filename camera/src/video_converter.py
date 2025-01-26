@@ -14,37 +14,41 @@ from .compression.compressor import convert_for_ml
 
 
 class VideoConverter(threading.Thread):
-    def __init__(self, input_path, output_path, on_finish):
+    def __init__(self, input_path, output_path, path_manager, on_finish=None):
+        #
+        # # # Is a pipeline
+        #
         super().__init__()
         self.input_path = input_path
         self.filtered_name = output_path["filtered"]
         self.compressed_name = output_path["compressed"]
         self.discard_name = output_path["discard"]
         self.finish_handler = on_finish
+        self.path_manager = path_manager
         self.foreground_motion_detector = ForegroundMotionDetector()
         self.daemon = True  # Allow program to exit even if thread is running
 
     def run(self):
         try:
-            #
-            # # # Is a pipeline
-            #
+
             with open('/tmp/video_conversion.status', 'w') as f:
                 f.write('running')
 
-            frames = extract_frames(self.input_path)
-
+            frames = extract_frames(
+                self.path_manager.raw_path(self.input_path))
             motion_frames = get_frames_with_motion(
                 frames, self.foreground_motion_detector)
-
+            # FIXME: I think it's at 999 fps these frames
             put_still_frames_into_discard(
-                frames, motion_frames, self.discard_name)
+                frames, motion_frames, self.discard_name, self.path_manager.discard)
 
             black_frame_filter_vid = filter_with_black(
-                self.input_path, motion_frames)
+                self.path_manager.raw_path(self.input_path), motion_frames, self.path_manager)
 
+            compressed_file_path = self.path_manager.processed_path(
+                self.compressed_name)
             compressed_file = convert_for_ml(
-                black_frame_filter_vid, self.compressed_name)
+                black_frame_filter_vid, compressed_file_path)
 
             if self.finish_handler:
                 self.finish_handler(compressed_file)
