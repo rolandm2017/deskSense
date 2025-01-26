@@ -123,3 +123,13 @@ class TimelineEntryObj(Base):
 
     start = Column(DateTime)
     end = Column(DateTime)
+
+
+class DailyChromeSummary(Base):
+    __tablename__ = "daily_chrome_summaries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    domain_name = Column(String)
+    hours_spent = Column(Float)
+    # The date on which the program data was gathered
+    gathering_date = Column(DateTime)

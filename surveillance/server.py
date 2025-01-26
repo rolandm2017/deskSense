@@ -12,12 +12,12 @@ from src.db.dao.mouse_dao import MouseDao
 from src.db.dao.keyboard_dao import KeyboardDao
 from src.db.dao.program_dao import ProgramDao
 from src.db.dao.timeline_entry_dao import TimelineEntryDao
-from src.db.dao.daily_summary_dao import DailySummaryDao
+from surveillance.src.db.dao.program_summary_dao import ProgramSummaryDao
 from src.db.dao.chrome_dao import ChromeDao
 from src.db.models import DailyProgramSummary
 from src.services import MouseService, KeyboardService, ProgramService, DashboardService, ChromeService
 from src.object.dto import TypingSessionDto, MouseMoveDto, ProgramDto
-from src.object.pydantic_dto import KeyboardReport, MouseReport, ProgramActivityReport, DailyProgramSummarySchema, BarChartContent, TimelineEntrySchema, TimelineRows, URLDelivery
+from src.object.pydantic_dto import KeyboardReport, MouseReport, ProgramActivityReport, DailyProgramSummarySchema, BarChartContent, TimelineEntrySchema, TimelineRows, TabChangeEvent
 from src.util.pydantic_factory import make_keyboard_log, make_mouse_log, make_program_log
 from src.surveillance_manager import SurveillanceManager
 from src.console_logger import ConsoleLogger
@@ -41,7 +41,7 @@ async def get_program_service() -> ProgramService:
 
 
 async def get_dashboard_service() -> DashboardService:
-    return DashboardService(TimelineEntryDao(async_session_maker), DailySummaryDao(async_session_maker))
+    return DashboardService(TimelineEntryDao(async_session_maker), ProgramSummaryDao(async_session_maker))
 
 
 async def get_chrome_service() -> ChromeService:
@@ -249,12 +249,12 @@ async def get_chrome_report(chrome_service: ChromeService = Depends(get_chrome_s
 
 @app.post("/chrome/tab", status_code=status.HTTP_204_NO_CONTENT)
 async def your_endpoint_name(
-    url_delivery: URLDelivery,
+    tab_change_event: TabChangeEvent,
     chrome_service: ChromeService = Depends(get_chrome_service)
 ):
     logger.log_purple("[LOG] Chrome Tab Received")
     try:
-        await chrome_service.log_url(url_delivery)
+        await chrome_service.add_to_arrival_queue(tab_change_event)
         return  # Returns 204 No Content
     except Exception as e:
         raise HTTPException(

@@ -1,3 +1,5 @@
+MAX_QUEUE_LENGTH = 40
+
 # Define productive applications
 productive_apps = ['Chrome', 'Discord', 'File Explorer', 'Google Chrome',
                    'Postman', 'Terminal', 'Visual Studio Code']

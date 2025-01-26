@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, Mock, MagicMock
 from datetime import datetime, date
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from src.db.dao.daily_summary_dao import DailySummaryDao
+from surveillance.src.db.dao.program_summary_dao import ProgramSummaryDao
 from src.db.models import DailyProgramSummary
 from src.object.classes import ProgramSessionData
 
@@ -34,7 +34,7 @@ class TestDailySummaryDao:
 
     @pytest.fixture
     def dao(self, mock_session_maker):
-        return DailySummaryDao(mock_session_maker)
+        return ProgramSummaryDao(mock_session_maker)
 
     @pytest.mark.asyncio
     async def test_create_if_new_else_update_new_entry(self, dao, mock_session):

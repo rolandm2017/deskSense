@@ -4,16 +4,16 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from asyncio import Queue
 from datetime import datetime
 
-from ..models import DailyProgramSummary
+from ..models import DailyChromeSummary
 from ...console_logger import ConsoleLogger
-from ...object.classes import ProgramSessionData
+from ...object.classes import ChromeSessionData
 
 # @@@@ @@@@ @@@@ @@@@ @@@@
 # NOTE: Does not use BaseQueueDao
 # @@@@ @@@@ @@@@ @@@@ @@@@
 
 
-class DailySummaryDao:  # NOTE: Does not use BaseQueueDao
+class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
     def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
         self.session_maker = session_maker  # Store the session maker instead of db
         self.batch_size = batch_size
@@ -22,18 +22,21 @@ class DailySummaryDao:  # NOTE: Does not use BaseQueueDao
         self.processing = False
         self.logger = ConsoleLogger()
 
-    async def create_if_new_else_update(self, session: ProgramSessionData):
+    async def create_if_new_else_update(self, session: ChromeSessionData):
         """This method doesn't use queuing since it needs to check the DB state"""
-        target_program_name = session.window_title
+        target_domain_name = session.domain
         # ### Calculate time difference
-        usage_duration_in_hours = (
-            session.end_time - session.start_time).total_seconds() / 3600
+        # # TODO
+        # TODO: Option (1) is to have every tab contain a, uh, a start and end, and thus a duration
+        # TODO: another option is to just, like, entry into the db when the tab starts
+        # And then the duration is the time between StartTime and uh, the next new tab entry
+        # OR startTime and the closure Chrome / the opening of another program
 
         # ### Check if entry exists for today
         today = datetime.now().date()
-        query = select(DailyProgramSummary).where(
-            DailyProgramSummary.program_name == target_program_name,
-            func.date(DailyProgramSummary.gathering_date) == today
+        query = select(DailyChromeSummary).where(
+            DailyChromeSummary.domain_name == target_domain_name,
+            func.date(DailyChromeSummary.gathering_date) == today
         )
 
         async with self.session_maker() as session:
@@ -41,15 +44,15 @@ class DailySummaryDao:  # NOTE: Does not use BaseQueueDao
             existing_entry = result.scalar_one_or_none()
 
             if existing_entry:
-                existing_entry.hours_spent += usage_duration_in_hours
+                existing_entry.hours_spent += session.duration
                 await session.commit()
             else:
-                await self.create(target_program_name, usage_duration_in_hours, today)
+                await self.create(target_domain_name, session.duration, today)
 
-    async def create(self, target_program_name, duration_in_hours, today):
+    async def create(self, target_domain_name, duration_in_hours, today):
         async with self.session_maker() as session:
-            new_entry = DailyProgramSummary(
-                program_name=target_program_name,
+            new_entry = DailyChromeSummary(
+                domain_name=target_domain_name,
                 hours_spent=duration_in_hours,
                 gathering_date=today
             )
@@ -58,8 +61,8 @@ class DailySummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def read_day(self, day: datetime):
         """Read all entries for the given day."""
-        query = select(DailyProgramSummary).where(
-            func.date(DailyProgramSummary.gathering_date) == day.date()
+        query = select(DailyChromeSummary).where(
+            func.date(DailyChromeSummary.gathering_date) == day.date()
         )
         async with self.session_maker() as session:
 
@@ -69,15 +72,15 @@ class DailySummaryDao:  # NOTE: Does not use BaseQueueDao
     async def read_all(self):
         """Read all entries."""
         async with self.session_maker() as session:
-            result = await session.execute(select(DailyProgramSummary))
+            result = await session.execute(select(DailyChromeSummary))
             return result.scalars().all()
 
-    async def read_row_for_program(self, target_program: str):
+    async def read_row_for_domain(self, target_domain: str):
         """Reads the row for the target program for today."""
         today = datetime.now().date()
-        query = select(DailyProgramSummary).where(
-            DailyProgramSummary.program_name == target_program,
-            func.date(DailyProgramSummary.gathering_date) == today
+        query = select(DailyChromeSummary).where(
+            DailyChromeSummary.domain_name == target_domain,
+            func.date(DailyChromeSummary.gathering_date) == today
         )
         async with self.session_maker() as session:
             result = await session.execute(query)
@@ -86,7 +89,7 @@ class DailySummaryDao:  # NOTE: Does not use BaseQueueDao
     async def delete(self, id: int):
         """Delete an entry by ID"""
         async with self.session_maker() as session:
-            entry = await session.get(DailyProgramSummary, id)
+            entry = await session.get(DailyChromeSummary, id)
             if entry:
                 await session.delete(entry)
                 await session.commit()

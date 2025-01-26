@@ -4,6 +4,24 @@ from datetime import datetime, timedelta
 from typing import TypedDict, NotRequired
 
 
+class ChromeSessionData:
+    domain: str
+    detail: str
+    start_time: datetime
+    duration: NotRequired[timedelta]
+    productive: bool
+
+    def __init__(self):
+        self.domain = ""
+        self.detail = ""
+        self.start_time = None
+        self.duration = None
+        self.productive = None
+
+    def __str__(self):
+        return f"ChromeSessionData(domain='{self.domain}', detail='{self.detail}', start_time={self.start_time}, duration={self.duration}, productive={self.productive})"
+
+
 class ProgramSessionData:
     window_title: str
     detail: str

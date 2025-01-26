@@ -9,15 +9,15 @@ from .db.dao.mouse_dao import MouseDao
 from .db.dao.keyboard_dao import KeyboardDao
 from .db.dao.chrome_dao import ChromeDao
 from .db.dao.program_dao import ProgramDao
-from .db.dao.daily_summary_dao import DailySummaryDao
 from .db.dao.timeline_entry_dao import TimelineEntryDao
+from .db.dao.program_summary_dao import ProgramSummaryDao
+from .db.dao.chrome_summary_dao import ChromeSummaryDao
 from .trackers.mouse_tracker import MouseTrackerCore
 from .trackers.keyboard_tracker import KeyboardTrackerCore
 from .trackers.program_tracker import ProgramTrackerCore
 from .facade.keyboard_facade import KeyboardApiFacadeCore
-from .facade.mouse_facade import MouseApiFacade, UbuntuMouseApiFacadeCore
+from .facade.mouse_facade import UbuntuMouseApiFacadeCore
 from .facade.program_facade import ProgramApiFacadeCore
-from .util.interrupt_handler import InterruptHandler
 from .util.detect_os import OperatingSystemInfo
 from .util.clock import Clock
 from .util.threaded_tracker import ThreadedTracker
@@ -53,11 +53,12 @@ class SurveillanceManager:
 
         self.loop = asyncio.get_event_loop()
         self.mouse_dao = MouseDao(self.session_maker)
-        self.summary_dao = DailySummaryDao(self.session_maker)
-        self.timeline_dao = TimelineEntryDao(self.session_maker)
         self.keyboard_dao = KeyboardDao(self.session_maker)
         self.program_dao = ProgramDao(self.session_maker)
         self.chrome_dao = ChromeDao(self.session_maker)
+        self.program_summary_dao = ProgramSummaryDao(self.session_maker)
+        self.chrome_summary_dao = ChromeSummaryDao(self.session_maker)
+        self.timeline_dao = TimelineEntryDao(self.session_maker)
 
         clock = Clock()
 
@@ -96,8 +97,13 @@ class SurveillanceManager:
 
     def handle_program_ready_for_db(self, event):
         self.loop.create_task(
-            self.summary_dao.create_if_new_else_update(event))
+            self.program_summary_dao.create_if_new_else_update(event))
         self.loop.create_task(self.program_dao.create(event))
+
+    def handle_chrome_ready_for_db(self, event):
+        self.loop.create_task(
+            self.chrome_summary_dao.create_if_new_else_update(event))
+        self.loop.create_task(self.chrome_dao.create(event))
 
     def cleanup(self):  # Add this method to ProductivityTracker
         """Clean up resources before exit."""
