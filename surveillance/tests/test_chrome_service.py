@@ -13,6 +13,13 @@ from surveillance.src.services import ChromeService
 
 @pytest.fixture
 def event_fixture():
+    #
+    # Did you run out of test data?
+    # You can generate new data by logging
+    # @app.post("/chrome/tab" inputs
+    # to a csv file for a few min
+    # while you use Chrome.
+    #
     # Get the directory of the current script
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
