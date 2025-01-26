@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from .base_dao import BaseQueueingDao
 from ..models import ChromeTab
 from ...console_logger import ConsoleLogger
+from ...object.classes import ChromeSessionData
 
 
 class ChromeDao(BaseQueueingDao):
@@ -13,10 +14,10 @@ class ChromeDao(BaseQueueingDao):
         super().__init__(session_maker, batch_size, flush_interval)
         self.logger = ConsoleLogger()
 
-    async def create(self, url, title, is_productive):
+    async def create(self, session: ChromeSessionData):
         # Try without start_time end_time for now
         chrome_deliverable = ChromeTab(
-            url=url, tab_title=title, productive=is_productive)
+            url=session.domain, tab_title=session.detail, productive=session.productive, tab_change_time=session.start_time)
         await self.queue_item(chrome_deliverable)
 
     async def read_all(self):

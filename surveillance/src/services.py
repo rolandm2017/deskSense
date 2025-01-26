@@ -14,6 +14,7 @@ from .db.dao.chrome_dao import ChromeDao
 from .db.dao.chrome_summary_dao import ChromeSummaryDao
 from .object.classes import ChromeSessionData
 from .db.models import TypingSession, Program, MouseMove
+from .object.pydantic_dto import TabChangeEvent
 from .config.definitions import productive_sites_2
 
 
@@ -63,7 +64,9 @@ class ChromeService:
         self.ready_queue = []
         self.debounce_timer = None
 
-    async def add_to_arrival_queue(self, tab_change_event):
+    # TODO: Log a bunch of real chrome tab submissions, use them in a test
+
+    async def add_to_arrival_queue(self, tab_change_event: TabChangeEvent):
         self.message_queue.append(tab_change_event)
 
         MAX_QUEUE_LEN = 40
@@ -79,7 +82,8 @@ class ChromeService:
         self.debounce_timer = asyncio.create_task(self.debounced_process())
 
     async def debounced_process(self):
-        await asyncio.sleep(1)
+        one_second = 1
+        await asyncio.sleep(one_second)
         await self.start_processing_msgs()
 
     async def start_processing_msgs(self):
@@ -126,15 +130,20 @@ class ChromeService:
         session.productive = url_deliverable.url in productive_sites_2
         session.start_time = url_deliverable.startTime
 
+        if url_deliverable.startTime.tzinfo is not None:
+            # Convert start_time to a timezone-naive datetime
+            session.start_time = url_deliverable.startTime.replace(tzinfo=None)
+        else:
+            session.start_time = url_deliverable.startTime
+
         if self.last_entry:
             duration = datetime.now() - self.last_entry.start_time
             session.duration = duration
-            self.last_entry = session
-            await self.handle_chrome_ready_for_db(session)
         else:
-            session.duration = None
-            self.last_entry = session
-            await self.handle_chrome_ready_for_db(session)
+            session.duration = 0
+
+        self.last_entry = session
+        await self.handle_chrome_ready_for_db(session)
 
     async def handle_chrome_ready_for_db(self, event):
         await self.summary_dao.create_if_new_else_update(event)

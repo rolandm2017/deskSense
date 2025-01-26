@@ -59,16 +59,31 @@ class Program(Base):
         return f"Program(\n\tid={self.id}, window='{self.window}', \n\tstart_time={self.start_time},\n\tend_time={self.end_time},\n\tproductive={self.productive})"
 
 
+max_content_len = 120
+
+
 class ChromeTab(Base):
     __tablename__ = "chrome_tabs"
 
     id = Column(Integer, primary_key=True, index=True)
     url = Column(String)
-    tab_title = Column(String, index=True)
+    tab_title = Column(String(max_content_len), index=True)
     start_time = Column(DateTime)
     end_time = Column(DateTime)
     productive = Column(Boolean)
+    tab_change_time = Column(DateTime)
     created_at = Column(DateTime, default=datetime.now)
+
+    @property
+    def tab_title(self):
+        return self._tab_title
+
+    @tab_title.setter
+    def tab_title(self, value):
+        if value:
+            self._tab_title = value[:max_content_len]  # truncates to 80 chars
+        else:
+            self._tab_title = value
 
     def __repr__(self):
         return f"Chrome(id={self.id}, tab_title='{self.tab_title}', productive={self.productive})"

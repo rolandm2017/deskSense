@@ -236,21 +236,29 @@ async def get_chrome_report(chrome_service: ChromeService = Depends(get_chrome_s
     return reports
 
 
-# @app.post("/chrome/tab", status_code=status.HTTP_204_NO_CONTENT)
-# async def your_endpoint_name(
-#     tab_change_event: TabChangeEvent,
-#     chrome_service: ChromeService = Depends(get_chrome_service)
-# ):
-#     logger.log_purple("[LOG] Chrome Tab Received")
-#     try:
-#         await chrome_service.add_to_arrival_queue(tab_change_event)
-#         return  # Returns 204 No Content
-#     except Exception as e:
-#         print(e, '260ru')
-#         raise HTTPException(
-#             status_code=500,
-#             detail="A problem occurred in Chrome Service"
-#         )
+def write_temp_log(event: TabChangeEvent):
+    with open("events.csv", "a") as f:
+        out = f"{event.tabTitle},{event.url},{str(event.startTime)}"
+        f.write(out)
+        f.write("\n")
+
+
+@app.post("/chrome/tab", status_code=status.HTTP_204_NO_CONTENT)
+async def your_endpoint_name(
+    tab_change_event: TabChangeEvent,
+    chrome_service: ChromeService = Depends(get_chrome_service)
+):
+    logger.log_purple("[LOG] Chrome Tab Received")
+    try:
+        write_temp_log(tab_change_event)
+        await chrome_service.add_to_arrival_queue(tab_change_event)
+        return  # Returns 204 No Content
+    except Exception as e:
+        print(e, '260ru')
+        raise HTTPException(
+            status_code=500,
+            detail="A problem occurred in Chrome Service"
+        )
 
 
 if __name__ == "__main__":
