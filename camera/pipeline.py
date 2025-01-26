@@ -77,7 +77,7 @@ def run_recording_process(min_of_test, vid_duration_in_sec):
                 output_vid.write(frame_with_timestamp)
 
                 try:
-                    window_name = DISPLAY_WINDOW_NAME + \
+                    window_name = "@@@ " + DISPLAY_WINDOW_NAME + \
                         "_-_" + str(current_index)
                     cv2.imshow(window_name, frame_with_timestamp)
                     # Press 'q' to quit
