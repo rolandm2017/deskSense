@@ -147,6 +147,23 @@ class ChromeService:
         self.last_entry = session
         await self.handle_chrome_ready_for_db(session)
 
+    async def handle_close_chrome_session(self, end_time):
+        current_session_start = self.last_entry.start_time
+        duration = end_time - current_session_start
+        self.last_entry.duration = duration
+
+    def chrome_open_close_handler(self, status):
+        if status:
+            self.mark_chrome_active()
+        else:
+            self.mark_chrome_inactive()
+
+    def mark_chrome_active(self):
+        self.is_active = True
+
+    def mark_chrome_inactive(self):
+        self.is_active = False
+
     async def handle_chrome_ready_for_db(self, event):
         await self.summary_dao.create_if_new_else_update(event)
         await self.dao.create(event)

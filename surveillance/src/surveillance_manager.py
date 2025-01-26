@@ -12,6 +12,7 @@ from .db.dao.program_dao import ProgramDao
 from .db.dao.timeline_entry_dao import TimelineEntryDao
 from .db.dao.program_summary_dao import ProgramSummaryDao
 from .db.dao.chrome_summary_dao import ChromeSummaryDao
+from .services import ChromeService
 from .trackers.mouse_tracker import MouseTrackerCore
 from .trackers.keyboard_tracker import KeyboardTrackerCore
 from .trackers.program_tracker import ProgramTrackerCore
@@ -62,22 +63,20 @@ class SurveillanceManager:
 
         clock = Clock()
 
+        # TODO: Get the Chrome Svc chrome_open_close_handler into the ProgramTrackerCore
+        chrome_svc = ChromeService()
+
         self.keyboard_tracker = KeyboardTrackerCore(
             clock, keyboard_facade, self.handle_keyboard_ready_for_db)
         self.mouse_tracker = MouseTrackerCore(
             clock, mouse_facade, self.handle_mouse_ready_for_db)
         self.program_tracker = ProgramTrackerCore(
-            clock, program_facade, self.handle_program_ready_for_db)
+            clock, program_facade, self.handle_program_ready_for_db, chrome_svc.chrome_open_close_handler)
 
         self.keyboard_thread = ThreadedTracker(self.keyboard_tracker)
         self.mouse_thread = ThreadedTracker(self.mouse_tracker)
         self.program_thread = ThreadedTracker(self.program_tracker)
         # self.key_tracker = KeyActivityTracker(self.data_dir)
-
-        # TODO: Wrap the Cores in the Threaders
-        # TODO: Start the threaders
-        # TODO: Update shutdown "stop" stuff
-        # TODO: Test the API endpoints, integration, from DB to response
 
     def start_trackers(self):
         self.is_running = True

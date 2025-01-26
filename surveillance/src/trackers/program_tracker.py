@@ -10,7 +10,7 @@ from ..util.detect_os import OperatingSystemInfo
 from ..util.end_program_routine import end_program_readout, pretend_report_event
 from ..util.clock import Clock
 from ..util.threaded_tracker import ThreadedTracker
-from ..util.program_tools import separate_window_name_and_detail, is_expected_shape_else_throw, tab_is_a_productive_tab, contains_space_dash_space
+from ..util.program_tools import separate_window_name_and_detail, is_expected_shape_else_throw, tab_is_a_productive_tab, contains_space_dash_space, window_is_chrome
 from ..util.strings import no_space_dash_space
 from ..object.classes import ProgramSessionData
 
@@ -21,10 +21,11 @@ from ..object.classes import ProgramSessionData
 # TODO: report programs that aren't in the apps list.
 
 class ProgramTrackerCore:
-    def __init__(self, clock, program_api_facade, event_handlers):
+    def __init__(self, clock, program_api_facade, event_handlers, chrome_event_update):
         self.clock = clock
         self.program_facade: ProgramApiFacadeCore = program_api_facade
         self.event_handlers = event_handlers
+        self.chrome_event_update = chrome_event_update
 
         self.productive_apps = productive_apps
         self.unproductive = unproductive_apps
@@ -35,12 +36,28 @@ class ProgramTrackerCore:
 
         self.console_logger = ConsoleLogger()
 
+    def handle_chrome_case(self, window_is_chrome):
+        """Handles updates of Chrome state for Chrome Service"""
+        if window_is_chrome:
+            self.current_is_chrome = True
+            self.chrome_event_update(True)
+        else:
+            if self.current_is_chrome:
+                self.current_is_chrome = False
+                self.chrome_event_update(False)
+
     def run_tracking_loop(self):
         for window_change in self.program_facade.listen_for_window_changes():
             is_expected_shape_else_throw(window_change)
+            # TODO: If Chrome is the new Active window, mark chrome active
+            # TODO: If chrome is the CURRENT active window, and chrome is not active now, mark inactive
+            is_chrome = window_is_chrome(window_change)
+            self.handle_chrome_case(is_chrome)
+
             on_a_different_window = self.current_session and window_change[
                 "window_title"] != self.current_session.window_title
             if on_a_different_window:
+                # self.current_is_chrome = is_chrome
                 current_time = self.clock.now()  # once per loop
                 self.conclude_session(current_time)
                 self.apply_handlers(self.current_session, 500)
