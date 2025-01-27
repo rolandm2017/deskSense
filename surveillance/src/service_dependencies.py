@@ -65,11 +65,12 @@ async def get_program_service(dao: ProgramDao = Depends(get_program_dao)) -> Cal
 
 async def get_dashboard_service(
     timeline_dao: TimelineEntryDao = Depends(get_timeline_dao),
-    summary_dao: ProgramSummaryDao = Depends(get_program_summary_dao)
+    program_summary_dao: ProgramSummaryDao = Depends(get_program_summary_dao),
+    chrome_summary_dao: ChromeSummaryDao = Depends(get_chrome_summary_dao)
 ) -> Callable:
     # Lazy import to avoid circular dependency
     from .services import DashboardService
-    return DashboardService(timeline_dao, summary_dao)
+    return DashboardService(timeline_dao, program_summary_dao, chrome_summary_dao)
 
 # Singleton instance of ChromeService
 _chrome_service_instance = None
