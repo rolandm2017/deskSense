@@ -25,7 +25,7 @@ class KeyboardDao(BaseQueueingDao):
         # event time should be just month :: date :: HH:MM:SS
         new_typing_session_entry = TypingSession(
             start_time=session.session_start_time, end_time=session.session_end_time)
-        self.logger.log_blue("[LOG] Keyboard event: " + str(session))
+        # self.logger.log_blue("[LOG] Keyboard event: " + str(session))
         await self.queue_item(new_typing_session_entry)
 
     async def create_without_queue(self, session: KeyboardAggregate):

@@ -54,7 +54,7 @@ class KeyboardTrackerCore:
             if self._is_ready_to_log_to_console(current_time):
                 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
                 # @@@@ Never log the actual key pressed @@@@
-                self.console_logger.log_key_presses(self.recent_count)
+                # self.console_logger.log_key_presses(self.recent_count)
                 self.recent_count = 0
                 self.update_time(current_time)
 

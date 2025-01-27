@@ -60,8 +60,6 @@ async def lifespan(app: FastAPI):
     surveillance_state.manager = SurveillanceManager(async_session_maker)
     surveillance_state.manager.start_trackers()
 
-    app.state.chrome_svc = ChromeService()
-
     yield
 
     # Shutdown
@@ -85,13 +83,6 @@ app.add_middleware(
 )
 
 # this is a dependency function, it's like a lifespan but scoped to a request
-
-
-def get_chrome_service2(request: Request) -> ChromeService:
-    # inside this dependency function, you can grab a reference to the state you
-    # previously setup in the lifespan via request.app.state
-    with app.state.chrome_svc as service:
-        yield service
 
 
 class HealthResponse(BaseModel):
@@ -236,12 +227,11 @@ async def get_program_time_for_dashboard(dashboard_service: DashboardService = D
     if not isinstance(program_data, list):
         raise HTTPException(
             status_code=500, detail="Failed to retrieve bar chart info")
-    print("373ru")
     return BarChartContent(columns=manufacture_bar_chart_content(program_data))
 
 
 @app.get("/report/chrome")
-async def get_chrome_report(chrome_service: ChromeService = Depends(get_chrome_service2)):
+async def get_chrome_report(chrome_service: ChromeService = Depends(get_chrome_service)):
     logger.log_purple("[LOG] Get chrome tabs")
     reports = await chrome_service.read_last_24_hrs()
     return reports
@@ -258,7 +248,7 @@ def write_temp_log(event: TabChangeEvent):
 @app.post("/chrome/tab", status_code=status.HTTP_204_NO_CONTENT)
 async def your_endpoint_name(
     tab_change_event: TabChangeEvent,
-    chrome_service: ChromeService = Depends(get_chrome_service2)
+    chrome_service: ChromeService = Depends(get_chrome_service)
 ):
     logger.log_purple("[LOG] Chrome Tab Received")
     try:

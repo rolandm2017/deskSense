@@ -7,7 +7,8 @@ const chromeTabUrl = "/chrome/tab"
 export function reportTabSwitch(domain, title) {
     const payload = {
         url: domain,  // Must match the pydantic definition
-        tabTitle: title
+        tabTitle: title,
+        startTime: new Date()
     }
     console.log("Sending payload:", payload)
     

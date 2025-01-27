@@ -98,8 +98,6 @@ def process_motion_in_video(video_path: str,
     finally:
         # Cleanup
         print("Cleaning up...")
-        print(cap, '99ru')
-        print(writer, "100ru")
         cap.release()
         writer.release()
         cv2.destroyAllWindows()
