@@ -10,10 +10,19 @@ from typing import Optional, List
 
 from src.db.database import init_db, async_session_maker
 
-from src.db.models import DailyProgramSummary
+from src.db.models import DailyProgramSummary, DailyChromeSummary
 # from src.services import MouseService, KeyboardService, ProgramService, DashboardService, ChromeService
 # from src.services import get_mouse_service, get_chrome_service, get_program_service, get_keyboard_service, get_dashboard_service
-from src.object.pydantic_dto import KeyboardReport, MouseReport, ProgramActivityReport, DailyProgramSummarySchema, BarChartContent, TimelineEntrySchema, TimelineRows, TabChangeEvent
+from src.object.pydantic_dto import (
+    KeyboardReport,
+    MouseReport,
+    ProgramActivityReport,
+    DailyProgramSummarySchema,
+    DailyChromeSummarySchema,
+    ProgramBarChartContent,
+    ChromeBarChartContent, TimelineEntrySchema, TimelineRows, TabChangeEvent
+
+)
 from src.util.pydantic_factory import make_keyboard_log, make_mouse_log, make_program_log
 from src.surveillance_manager import SurveillanceManager
 from src.console_logger import ConsoleLogger
@@ -217,17 +226,34 @@ def program_summary_row_to_pydantic(v: DailyProgramSummary):
     return DailyProgramSummarySchema(id=v.id, programName=v.program_name, hoursSpent=v.hours_spent, gatheringDate=v.gathering_date)
 
 
-def manufacture_bar_chart_content(program_data):
+def chrome_summary_row_to_pydantic(v: DailyChromeSummary):
+    return DailyChromeSummarySchema(id=v.id, domainName=v.domain_name, hoursSpent=v.hours_spent, gatheringDate=v.gathering_date)
+
+
+def manufacture_programs_bar_chart(program_data):
     return [program_summary_row_to_pydantic(r) for r in program_data]
 
 
-@app.get("/dashboard/summaries", response_model=BarChartContent)
+def manufacture_chrome_bar_chart(program_data):
+    return [chrome_summary_row_to_pydantic(r) for r in program_data]
+
+
+@app.get("/dashboard/summaries", response_model=ProgramBarChartContent)
 async def get_program_time_for_dashboard(dashboard_service: DashboardService = Depends(get_dashboard_service)):
     program_data = await dashboard_service.get_program_summary()
     if not isinstance(program_data, list):
         raise HTTPException(
-            status_code=500, detail="Failed to retrieve bar chart info")
-    return BarChartContent(columns=manufacture_bar_chart_content(program_data))
+            status_code=500, detail="Failed to retrieve program chart info")
+    return ProgramBarChartContent(columns=manufacture_programs_bar_chart(program_data))
+
+
+@app.get("/dashboard/chrome", response_model=ChromeBarChartContent)
+async def get_chrome_time_for_dashboard(dashboard_service: DashboardService = Depends(get_dashboard_service)):
+    chrome_data = await dashboard_service.get_chrome_summary()
+    if not isinstance(chrome_data, list):
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve Chrome chart info")
+    return ChromeBarChartContent(columns=manufacture_chrome_bar_chart(chrome_data))
 
 
 @app.get("/report/chrome")

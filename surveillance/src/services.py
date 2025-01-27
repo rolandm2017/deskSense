@@ -147,27 +147,17 @@ class ChromeService:
         else:
             session.start_time = url_deliverable.startTime
 
-        # print("url_deliverable.startTime:", url_deliverable.startTime)
-        # print("session.start_time:", session.start_time)
-        # if self.last_entry is not None:
-        #     print("self.last_entry.start_time:", self.last_entry.start_time)
-        # else:
-        #     print("No last entry yet 161ru")
-        # print("This prints 161ru")
-
-        # print("VVVVVVVVVVVVVVVVV\nVVVV", self.last_entry is not None, '142ru')
         if self.last_entry:
             # print("Timezone info of last_entry.start_time:",
             #   self.last_entry.start_time.tzinfo)
+            #
             # Ensure both datetimes are timezone-naive
+            #
             now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
             print(now_naive, '153ru')
             start_time_naive = self.last_entry.start_time.replace(tzinfo=None)
-            # print(self.last_entry.start_time, '154ru')
 
-            # Calculate duration
             duration = now_naive - start_time_naive
-            # print(duration, '145ru')
             session.duration = duration
         else:
             session.duration = 0
@@ -203,9 +193,10 @@ class ChromeService:
 
 
 class DashboardService:
-    def __init__(self, timeline_dao: TimelineEntryDao, summary_dao: ProgramSummaryDao):
+    def __init__(self, timeline_dao: TimelineEntryDao, program_summary_dao: ProgramSummaryDao, chrome_summary_dao: ChromeSummaryDao):
         self.timeline_dao = timeline_dao
-        self.summary_dao = summary_dao
+        self.program_summary_dao = program_summary_dao
+        self.chrome_summary_dao = chrome_summary_dao
 
     async def get_timeline(self):
         today = datetime.now()
@@ -215,5 +206,10 @@ class DashboardService:
 
     async def get_program_summary(self):
         today = datetime.now()
-        all = await self.summary_dao.read_day(today)
+        all = await self.program_summary_dao.read_day(today)
+        return all
+
+    async def get_chrome_summary(self):
+        today = datetime.now()
+        all = await self.chrome_summary_dao.read_day(today)
         return all

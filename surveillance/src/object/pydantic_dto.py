@@ -54,8 +54,23 @@ class DailyProgramSummarySchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)  # This enables ORM mode
 
 
-class BarChartContent(BaseModel):
+class ProgramBarChartContent(BaseModel):
     columns: List[DailyProgramSummarySchema]  # Use the Pydantic schema instead
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DailyChromeSummarySchema(BaseModel):
+    id: int
+    domainName: str
+    hoursSpent: float
+    gatheringDate: datetime
+
+    model_config = ConfigDict(from_attributes=True)  # This enables ORM mode
+
+
+class ChromeBarChartContent(BaseModel):
+    columns: List[DailyChromeSummarySchema]  # Use the Pydantic schema instead
 
     model_config = ConfigDict(from_attributes=True)
 
