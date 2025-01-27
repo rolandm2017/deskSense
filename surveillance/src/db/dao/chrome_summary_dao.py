@@ -44,9 +44,12 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             existing_entry = result.scalar_one_or_none()
 
             if existing_entry:
+                print("[debug - DAO] adding time ", chrome_session.duration)
                 existing_entry.hours_spent += chrome_session.duration
                 await session.commit()
             else:
+                print("[debug] NEW session: ",
+                      chrome_session.domain, chrome_session.duration)
                 await self.create(target_domain_name, chrome_session.duration, today)
 
     async def create(self, target_domain_name, duration_in_hours, today):
