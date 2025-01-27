@@ -56,6 +56,18 @@ class ProgramService:
 
 class ChromeService:
     def __init__(self, dao: ChromeDao = Depends(), summary_dao: ChromeSummaryDao = Depends()):
+        print("####################")
+        print("#################### FOO")
+        print("####################")
+        print("#################### FOO")
+        print("####################")
+        print("#################### FOO")
+        print("####################")
+        print("#################### FOO")
+        print("####################")
+        print("#################### FOO")
+        print("####################")
+        print("####################")
         self.dao = dao
         self.summary_dao = summary_dao
         self.last_entry = None
@@ -130,7 +142,8 @@ class ChromeService:
         session.domain = url_deliverable.url
         session.detail = url_deliverable.tabTitle
         session.productive = url_deliverable.url in productive_sites_2
-        session.start_time = url_deliverable.startTime
+
+        # FIXME: This is One func, Two problems
 
         if url_deliverable.startTime.tzinfo is not None:
             # Convert start_time to a timezone-naive datetime
@@ -138,13 +151,16 @@ class ChromeService:
         else:
             session.start_time = url_deliverable.startTime
 
+        print("VVVVVVVVVVVVVVVVV\nVVVV", self.last_entry is not None, '142ru')
         if self.last_entry:
             duration = datetime.now() - self.last_entry.start_time
+            print(duration, '145ru')
             session.duration = duration
         else:
             session.duration = 0
 
         self.last_entry = session
+        print(self.last_entry, '149ru')
         await self.handle_chrome_ready_for_db(session)
 
     async def handle_close_chrome_session(self, end_time):
@@ -153,6 +169,7 @@ class ChromeService:
         self.last_entry.duration = duration
 
     def chrome_open_close_handler(self, status):
+        print("[debug] ++ ", str(status))
         if status:
             self.mark_chrome_active()
         else:

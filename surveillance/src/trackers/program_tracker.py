@@ -32,6 +32,8 @@ class ProgramTrackerCore:
         self.productive_categories = productive_categories
         self.productive_sites = productive_sites
 
+        self.current_is_chrome = False
+
         self.current_session: ProgramSessionData = None
 
         self.console_logger = ConsoleLogger()

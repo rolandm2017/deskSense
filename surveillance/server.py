@@ -1,5 +1,5 @@
 # server.py
-from fastapi import FastAPI, BackgroundTasks, HTTPException, Depends, status
+from fastapi import FastAPI, BackgroundTasks, HTTPException, Depends, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
@@ -60,6 +60,8 @@ async def lifespan(app: FastAPI):
     surveillance_state.manager = SurveillanceManager(async_session_maker)
     surveillance_state.manager.start_trackers()
 
+    app.state.chrome_svc = ChromeService()
+
     yield
 
     # Shutdown
@@ -81,6 +83,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# this is a dependency function, it's like a lifespan but scoped to a request
+
+
+def get_chrome_service2(request: Request) -> ChromeService:
+    # inside this dependency function, you can grab a reference to the state you
+    # previously setup in the lifespan via request.app.state
+    with app.state.chrome_svc as service:
+        yield service
 
 
 class HealthResponse(BaseModel):
@@ -230,7 +241,7 @@ async def get_program_time_for_dashboard(dashboard_service: DashboardService = D
 
 
 @app.get("/report/chrome")
-async def get_chrome_report(chrome_service: ChromeService = Depends(get_chrome_service)):
+async def get_chrome_report(chrome_service: ChromeService = Depends(get_chrome_service2)):
     logger.log_purple("[LOG] Get chrome tabs")
     reports = await chrome_service.read_last_24_hrs()
     return reports
@@ -247,11 +258,10 @@ def write_temp_log(event: TabChangeEvent):
 @app.post("/chrome/tab", status_code=status.HTTP_204_NO_CONTENT)
 async def your_endpoint_name(
     tab_change_event: TabChangeEvent,
-    chrome_service: ChromeService = Depends(get_chrome_service)
+    chrome_service: ChromeService = Depends(get_chrome_service2)
 ):
     logger.log_purple("[LOG] Chrome Tab Received")
     try:
-        write_temp_log(tab_change_event)
         await chrome_service.add_to_arrival_queue(tab_change_event)
         return  # Returns 204 No Content
     except Exception as e:

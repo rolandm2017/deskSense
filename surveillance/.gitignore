@@ -14,3 +14,7 @@ productivity_logs
 deskSense.egg-info
 
 temp.py
+
+events.csv
+
+*.csv

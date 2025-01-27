@@ -1,6 +1,7 @@
 # surveillance/src/service_dependencies.py
 from fastapi import Depends
 from typing import Callable
+from functools import lru_cache
 
 from .db.database import get_db, AsyncSession, async_session_maker
 from .db.dao.mouse_dao import MouseDao
@@ -76,4 +77,27 @@ async def get_chrome_service(
     summary_dao: ChromeSummaryDao = Depends(get_chrome_summary_dao)
 ) -> Callable:
     from .services import ChromeService  # Lazy import to avoid circular dependency
+    return ChromeService(dao, summary_dao)
+
+# Create cached instances of DAOs
+
+
+@lru_cache()
+def get_chrome_dao_instance() -> ChromeDao:
+    return ChromeDao(async_session_maker)
+
+
+@lru_cache()
+def get_chrome_summary_dao_instance() -> ChromeSummaryDao:
+    return ChromeSummaryDao(async_session_maker)
+
+# Create cached service instances
+
+
+@lru_cache()
+def get_chrome_service_instance(
+    dao: ChromeDao = Depends(get_chrome_dao_instance),
+    summary_dao: ChromeSummaryDao = Depends(get_chrome_summary_dao_instance)
+):
+    from .services import ChromeService
     return ChromeService(dao, summary_dao)
