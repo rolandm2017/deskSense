@@ -26,14 +26,11 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         """This method doesn't use queuing since it needs to check the DB state"""
         target_domain_name = chrome_session.domain
         # ### Calculate time difference
-        # # TODO
-        # TODO: Option (1) is to have every tab contain a, uh, a start and end, and thus a duration
-        # TODO: another option is to just, like, entry into the db when the tab starts
-        # And then the duration is the time between StartTime and uh, the next new tab entry
-        # OR startTime and the closure Chrome / the opening of another program
+
+        usage_duration_in_hours = chrome_session.duration.total_seconds() / 3600
 
         # ### Check if entry exists for today
-        today = datetime.now().date()
+        today = datetime.now().date()  # FIXME: could be getting 0 hrs today b/c of the
         query = select(DailyChromeSummary).where(
             DailyChromeSummary.domain_name == target_domain_name,
             func.date(DailyChromeSummary.gathering_date) == today
@@ -44,13 +41,14 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             existing_entry = result.scalar_one_or_none()
 
             if existing_entry:
-                print("[debug - DAO] adding time ", chrome_session.duration)
-                existing_entry.hours_spent += chrome_session.duration
+                print("[debug - DAO - 2] adding time ",
+                      chrome_session.duration, " to ", existing_entry.domain_name)
+                existing_entry.hours_spent += usage_duration_in_hours
                 await session.commit()
             else:
                 print("[debug] NEW session: ",
-                      chrome_session.domain, chrome_session.duration)
-                await self.create(target_domain_name, chrome_session.duration, today)
+                      chrome_session.domain, usage_duration_in_hours)
+                await self.create(target_domain_name, usage_duration_in_hours, today)
 
     async def create(self, target_domain_name, duration_in_hours, today):
         async with self.session_maker() as session:
