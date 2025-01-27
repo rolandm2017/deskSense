@@ -2,7 +2,7 @@
 from fastapi import Depends
 from typing import List
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from operator import attrgetter
 
 from .db.dao.mouse_dao import MouseDao
@@ -56,18 +56,15 @@ class ProgramService:
 
 class ChromeService:
     def __init__(self, dao: ChromeDao = Depends(), summary_dao: ChromeSummaryDao = Depends()):
-        print("####################")
-        print("#################### FOO")
-        print("####################")
-        print("#################### FOO")
-        print("####################")
-        print("#################### FOO")
-        print("####################")
-        print("#################### FOO")
-        print("####################")
-        print("#################### FOO")
-        print("####################")
-        print("####################")
+        print("╠══════════╣")
+        print("║    **    ║")
+        print("║   ****   ║")
+        print("║  ******  ║")
+        print("║ ******** ║ Starting Chrome Service")
+        print("║  ******  ║")
+        print("║   ****   ║")
+        print("║    **    ║")
+        print("╚══════════╝")
         self.dao = dao
         self.summary_dao = summary_dao
         self.last_entry = None
@@ -142,8 +139,7 @@ class ChromeService:
         session.domain = url_deliverable.url
         session.detail = url_deliverable.tabTitle
         session.productive = url_deliverable.url in productive_sites_2
-
-        # FIXME: This is One func, Two problems
+        # print("FOO")
 
         if url_deliverable.startTime.tzinfo is not None:
             # Convert start_time to a timezone-naive datetime
@@ -151,16 +147,33 @@ class ChromeService:
         else:
             session.start_time = url_deliverable.startTime
 
-        print("VVVVVVVVVVVVVVVVV\nVVVV", self.last_entry is not None, '142ru')
+        # print("url_deliverable.startTime:", url_deliverable.startTime)
+        # print("session.start_time:", session.start_time)
+        # if self.last_entry is not None:
+        #     print("self.last_entry.start_time:", self.last_entry.start_time)
+        # else:
+        #     print("No last entry yet 161ru")
+        # print("This prints 161ru")
+
+        # print("VVVVVVVVVVVVVVVVV\nVVVV", self.last_entry is not None, '142ru')
         if self.last_entry:
-            duration = datetime.now() - self.last_entry.start_time
-            print(duration, '145ru')
+            # print("Timezone info of last_entry.start_time:",
+            #   self.last_entry.start_time.tzinfo)
+            # Ensure both datetimes are timezone-naive
+            now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+            print(now_naive, '153ru')
+            start_time_naive = self.last_entry.start_time.replace(tzinfo=None)
+            # print(self.last_entry.start_time, '154ru')
+
+            # Calculate duration
+            duration = now_naive - start_time_naive
+            # print(duration, '145ru')
             session.duration = duration
         else:
             session.duration = 0
 
         self.last_entry = session
-        print(self.last_entry, '149ru')
+        # print(self.last_entry, '149ru')
         await self.handle_chrome_ready_for_db(session)
 
     async def handle_close_chrome_session(self, end_time):

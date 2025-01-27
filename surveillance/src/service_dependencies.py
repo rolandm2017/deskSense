@@ -71,13 +71,28 @@ async def get_dashboard_service(
     from .services import DashboardService
     return DashboardService(timeline_dao, summary_dao)
 
+# Singleton instance of ChromeService
+_chrome_service_instance = None
 
-async def get_chrome_service(
-    dao: ChromeDao = Depends(get_chrome_dao),
-    summary_dao: ChromeSummaryDao = Depends(get_chrome_summary_dao)
-) -> Callable:
+
+async def get_chrome_service(dao: ChromeDao = Depends(get_chrome_dao),
+                             summary_dao: ChromeSummaryDao = Depends(get_chrome_summary_dao)) -> Callable:
     from .services import ChromeService  # Lazy import to avoid circular dependency
-    return ChromeService(dao, summary_dao)
+    global _chrome_service_instance
+    if _chrome_service_instance is None:
+        _chrome_service_instance = ChromeService(
+            dao=ChromeDao(async_session_maker),
+            summary_dao=ChromeSummaryDao(async_session_maker)
+        )
+    return _chrome_service_instance
+
+
+# async def get_chrome_service(
+#     dao: ChromeDao = Depends(get_chrome_dao),
+#     summary_dao: ChromeSummaryDao = Depends(get_chrome_summary_dao)
+# ) -> Callable:
+#     from .services import ChromeService  # Lazy import to avoid circular dependency
+#     return ChromeService(dao, summary_dao)
 
 # Create cached instances of DAOs
 

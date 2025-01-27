@@ -36,6 +36,13 @@ class VideoConverter(threading.Thread):
 
             frames = extract_frames(
                 self.path_manager.raw_path(self.input_path))
+            # TODO:
+            # TODO:
+            # TODO: ... use the Exit Detector.
+            # TODO: Run Exit Detector continually.
+            # TODO:  # if the motion stops, AND objects have left the frame, insert black
+            # TODO: If motion stops, BUT no objects have left the frame, presume Obj still in frame.
+            # TODO:
             motion_frames = get_frames_with_motion(
                 frames, self.foreground_motion_detector)
             # FIXME: I think it's at 999 fps these frames
