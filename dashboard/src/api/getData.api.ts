@@ -80,6 +80,17 @@ export interface DailyProgramSummaries {
     columns: DailyProgramSummary[];
 }
 
+export interface DailyChromeSummary {
+    id: number;
+    domain: string;
+    hoursSpent: number;
+    gatheringDate: Date;
+}
+
+export interface DailyChromeSummaries {
+    columns: DailyChromeSummary[];
+}
+
 export interface TimelineEntrySchema {
     id: string;
     group: string;
@@ -98,7 +109,11 @@ const getTimelineData = withErrorHandling<TimelineRows>(() =>
 );
 
 const getProgramSummaries = withErrorHandling<DailyProgramSummaries>(() =>
-    api.get("/dashboard/summaries")
+    api.get("/dashboard/program/summaries")
+);
+
+const getChromeSummaries = withErrorHandling<DailyChromeSummaries>(() =>
+    api.get("/dashboard/chrome/summaries")
 );
 
 export {
@@ -107,4 +122,5 @@ export {
     getProgramReport,
     getTimelineData,
     getProgramSummaries,
+    getChromeSummaries,
 };

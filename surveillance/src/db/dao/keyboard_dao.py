@@ -28,7 +28,7 @@ class KeyboardDao(BaseQueueingDao):
         # self.logger.log_blue("[LOG] Keyboard event: " + str(session))
         await self.queue_item(new_typing_session_entry)
 
-    async def create_without_queue(self, session: KeyboardAggregate):
+    async def create_without_queue(self, session: KeyboardAggregate):  # TODO: Remove
         print("adding keystroke ", str(session))
         new_session = TypingSession(
             start_time=session.session_start_time,

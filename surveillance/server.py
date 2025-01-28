@@ -20,7 +20,8 @@ from src.object.pydantic_dto import (
     DailyProgramSummarySchema,
     DailyChromeSummarySchema,
     ProgramBarChartContent,
-    ChromeBarChartContent, TimelineEntrySchema, TimelineRows, TabChangeEvent
+    ChromeBarChartContent, TimelineEntrySchema, TimelineRows, TabChangeEvent,
+    VideoCreateEvent, FrameCreateEvent, VideoCreateConfirmation
 
 )
 from src.util.pydantic_factory import make_keyboard_log, make_mouse_log, make_program_log
@@ -28,11 +29,12 @@ from src.surveillance_manager import SurveillanceManager
 from src.console_logger import ConsoleLogger
 
 from src.services import (
-    KeyboardService, MouseService, ProgramService, DashboardService, ChromeService
+    KeyboardService, MouseService, ProgramService, DashboardService, ChromeService, VideoService
 )
 from src.service_dependencies import (
     get_keyboard_service, get_mouse_service, get_program_service,
-    get_dashboard_service, get_chrome_service
+    get_dashboard_service, get_chrome_service,
+    get_video_service
 )
 
 # Rest of your server.py code...
@@ -272,7 +274,7 @@ def write_temp_log(event: TabChangeEvent):
 
 
 @app.post("/chrome/tab", status_code=status.HTTP_204_NO_CONTENT)
-async def your_endpoint_name(
+async def receive_chrome_tab(
     tab_change_event: TabChangeEvent,
     chrome_service: ChromeService = Depends(get_chrome_service)
 ):
@@ -285,6 +287,34 @@ async def your_endpoint_name(
         raise HTTPException(
             status_code=500,
             detail="A problem occurred in Chrome Service"
+        )
+
+# TODO: Endpoint for the Camera stuff
+
+
+@app.post("/video/new", response_model=VideoCreateConfirmation)
+async def receive_video_info(video_create_event: VideoCreateEvent, video_service: VideoService = Depends(get_video_service)):
+    logger.log_purple("[LOG] Video create event")
+    try:
+        video_id = await video_service.create_new_video(video_create_event)
+        return VideoCreateConfirmation(video_id=video_id)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail="A problem occurred in Video Service"
+        )
+
+
+@app.post("/video/frame", status_code=status.HTTP_204_NO_CONTENT)
+async def receive_frame_info(frame_create_event: FrameCreateEvent, video_service: VideoService = Depends(get_video_service)):
+    logger.log_purple("[LOG] Video create event")
+    try:
+        await video_service.add_frame_to_video(frame_create_event)
+        return
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail="A problem occurred in Video Service"
         )
 
 

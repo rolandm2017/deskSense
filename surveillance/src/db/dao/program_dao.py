@@ -37,7 +37,7 @@ class ProgramDao(BaseQueueingDao):
 
         await self.queue_item(program_deliverable)
 
-    async def create_without_queue(self, session: ProgramSessionData):
+    async def create_without_queue(self, session: ProgramSessionData):  # TODO: Remove
         if isinstance(session, dict):
             print("creating program row", session['start_time'])
             new_program = Program(
