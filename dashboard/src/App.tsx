@@ -33,6 +33,8 @@ function App() {
 
     // const [barsInput, setBarsInput] = useState<BarChartColumn[]>([]);
 
+    // TODO: Chrome time dashboard
+
     const hours = 36000000; // 1000 * 60 * 60
 
     useEffect(() => {

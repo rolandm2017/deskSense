@@ -1,7 +1,6 @@
 # surveillance/src/service_dependencies.py
 from fastapi import Depends
 from typing import Callable
-from functools import lru_cache
 
 from .db.database import get_db, AsyncSession, async_session_maker
 from .db.dao.mouse_dao import MouseDao
@@ -11,6 +10,8 @@ from .db.dao.timeline_entry_dao import TimelineEntryDao
 from .db.dao.program_summary_dao import ProgramSummaryDao
 from .db.dao.chrome_dao import ChromeDao
 from .db.dao.chrome_summary_dao import ChromeSummaryDao
+from .db.dao.video_dao import VideoDao
+from .db.dao.frame_dao import FrameDao
 
 
 # Dependency functions
@@ -41,6 +42,14 @@ async def get_program_summary_dao() -> ProgramSummaryDao:
 
 async def get_chrome_summary_dao() -> ChromeSummaryDao:
     return ChromeSummaryDao(async_session_maker)
+
+
+async def get_video_dao() -> VideoDao:
+    return VideoDao(async_session_maker)
+
+
+async def get_frame_dao() -> FrameDao:
+    return FrameDao(async_session_maker)
 
 
 async def get_keyboard_service(dao: KeyboardDao = Depends(get_keyboard_dao)) -> Callable:
@@ -79,7 +88,7 @@ _chrome_service_instance = None
 async def get_chrome_service(dao: ChromeDao = Depends(get_chrome_dao),
                              summary_dao: ChromeSummaryDao = Depends(get_chrome_summary_dao)) -> Callable:
     from .services import ChromeService  # Lazy import to avoid circular dependency
-    global _chrome_service_instance
+    global _chrome_service_instance  # Singleton because it must preserve internal state
     if _chrome_service_instance is None:
         _chrome_service_instance = ChromeService(
             dao=ChromeDao(async_session_maker),
@@ -95,25 +104,6 @@ async def get_chrome_service(dao: ChromeDao = Depends(get_chrome_dao),
 #     from .services import ChromeService  # Lazy import to avoid circular dependency
 #     return ChromeService(dao, summary_dao)
 
-# Create cached instances of DAOs
-
-
-@lru_cache()
-def get_chrome_dao_instance() -> ChromeDao:
-    return ChromeDao(async_session_maker)
-
-
-@lru_cache()
-def get_chrome_summary_dao_instance() -> ChromeSummaryDao:
-    return ChromeSummaryDao(async_session_maker)
-
-# Create cached service instances
-
-
-@lru_cache()
-def get_chrome_service_instance(
-    dao: ChromeDao = Depends(get_chrome_dao_instance),
-    summary_dao: ChromeSummaryDao = Depends(get_chrome_summary_dao_instance)
-):
-    from .services import ChromeService
-    return ChromeService(dao, summary_dao)
+async def get_video_service(video_dao: VideoDao = Depends(get_video_dao), frame_dao: FrameDao = Depends(get_frame_dao)):
+    from .services import VideoService
+    return VideoService(video_dao, frame_dao)

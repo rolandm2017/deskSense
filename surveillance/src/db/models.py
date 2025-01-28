@@ -1,8 +1,8 @@
 # models.py
 from sqlalchemy import Enum as SQLAlchemyEnum
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float, Interval, Computed
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float, Interval, Computed, ForeignKey
 from sqlalchemy.sql import func
-from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import mapped_column, relationship
 from datetime import datetime
 from .database import Base
 from ..object.enums import ChartEventType
@@ -148,3 +148,32 @@ class DailyChromeSummary(Base):
     hours_spent = Column(Float)
     # The date on which the program data was gathered
     gathering_date = Column(DateTime)
+
+
+class Video(Base):
+    """
+    The Created At field is given BY THE RECORDER, not when the db row is written.
+
+    A Video connects to a Frames table. One to Many.
+    """
+    __tablename__ = "video_files"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String)
+    created_at = Column(DateTime, default=None)
+
+    # This establishes the one-to-many relationship
+    frames = relationship("Frame", back_populates="video")
+
+
+class Frame(Base):
+    __tablename__ = "frames"
+
+    id = Column(Integer, primary_key=True, index=True)
+    # This creates the foreign key column
+    video_id = Column(Integer, ForeignKey('video_files.id'))
+    created_at = Column(DateTime, default=None)
+    frame_number = Column(Integer)
+
+    # This creates the reference back to the Video
+    video = relationship("Video", back_populates="frames")

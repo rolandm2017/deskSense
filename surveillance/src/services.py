@@ -12,6 +12,8 @@ from .db.dao.timeline_entry_dao import TimelineEntryDao
 from .db.dao.program_summary_dao import ProgramSummaryDao
 from .db.dao.chrome_dao import ChromeDao
 from .db.dao.chrome_summary_dao import ChromeSummaryDao
+from .db.dao.video_dao import VideoDao
+from .db.dao.frame_dao import FrameDao
 from .object.classes import ChromeSessionData
 from .db.models import TypingSession, Program, MouseMove
 from .object.pydantic_dto import TabChangeEvent
@@ -108,8 +110,12 @@ class ChromeService:
         self.ordered_messages = sorted_events
         self.message_queue = []
 
+    async def tab_is_transient(self, current, next):
+        transience_time_in_ms = 300
+        tab_duration = next.startTime - current.startTime
+        return tab_duration < timedelta(milliseconds=transience_time_in_ms)
+
     async def remove_transient_tabs(self):
-        transience_time_in_ms = 100
         current_queue = self.ordered_messages
         if len(current_queue) == 0:
             return
@@ -121,8 +127,7 @@ class ChromeService:
                 break
             current_event = current_queue[i]
             next_event = current_queue[i + 1]
-            tab_duration = next_event.startTime - current_event.startTime
-            if tab_duration < timedelta(milliseconds=transience_time_in_ms):
+            if self.tab_is_transient(current_event, next_event):
                 pass
             else:
                 remaining.append(current_event)
@@ -135,36 +140,34 @@ class ChromeService:
         self.ready_queue = []
 
     async def log_tab_event(self, url_deliverable):
-        session: ChromeSessionData = ChromeSessionData()
-        session.domain = url_deliverable.url
-        session.detail = url_deliverable.tabTitle
-        session.productive = url_deliverable.url in productive_sites_2
+        # TODO: Write tests for this function
+        initialized: ChromeSessionData = ChromeSessionData()
+        initialized.domain = url_deliverable.url
+        initialized.detail = url_deliverable.tabTitle
+        initialized.productive = url_deliverable.url in productive_sites_2
         # print("FOO")
 
         if url_deliverable.startTime.tzinfo is not None:
             # Convert start_time to a timezone-naive datetime
-            session.start_time = url_deliverable.startTime.replace(tzinfo=None)
+            initialized.start_time = url_deliverable.startTime.replace(
+                tzinfo=None)
         else:
-            session.start_time = url_deliverable.startTime
+            initialized.start_time = url_deliverable.startTime
 
         if self.last_entry:
-            # print("Timezone info of last_entry.start_time:",
-            #   self.last_entry.start_time.tzinfo)
+            concluding_session = self.last_entry
             #
             # Ensure both datetimes are timezone-naive
             #
             now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
-            print(now_naive, '153ru')
             start_time_naive = self.last_entry.start_time.replace(tzinfo=None)
 
             duration = now_naive - start_time_naive
-            session.duration = duration
-        else:
-            session.duration = 0
+            concluding_session.duration = duration
 
-        self.last_entry = session
+        self.last_entry = initialized
         # print(self.last_entry, '149ru')
-        await self.handle_chrome_ready_for_db(session)
+        await self.handle_chrome_ready_for_db(concluding_session)
 
     async def handle_close_chrome_session(self, end_time):
         current_session_start = self.last_entry.start_time
@@ -172,6 +175,10 @@ class ChromeService:
         self.last_entry.duration = duration
 
     def chrome_open_close_handler(self, status):
+        # FIXME:
+        # FIXME: When Chrome is active, recording time should take place.
+        # FIXME: When Chrome goes inactive, recording active time should cease.
+        # FIXME:
         print("[debug] ++ ", str(status))
         if status:
             self.mark_chrome_active()
@@ -213,3 +220,15 @@ class DashboardService:
         today = datetime.now()
         all = await self.chrome_summary_dao.read_day(today)
         return all
+
+
+class VideoService:
+    def __init__(self, video_dao: VideoDao, frame_dao: FrameDao):
+        self.video_dao = video_dao
+        self.frame_dao = frame_dao
+
+    async def create_new_video(self, video_create_event):
+        self.video_dao.create(video_create_event)
+
+    async def add_frame_to_video(self, add_frame_event):
+        self.frame_dao.create(add_frame_event)

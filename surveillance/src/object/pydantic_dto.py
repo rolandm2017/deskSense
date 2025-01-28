@@ -107,3 +107,20 @@ class TabChangeEvent(BaseModel):
     tabTitle: str
     url: str
     startTime: datetime
+
+# Video recording stuff
+
+
+class VideoCreateEvent(BaseModel):
+    title: str
+    created_at: datetime
+
+
+class FrameCreateEvent(BaseModel):
+    video_id: int
+    created_at: datetime
+    frame_number: int
+
+
+class VideoCreateConfirmation(BaseModel):
+    video_id: int
