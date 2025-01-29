@@ -12,22 +12,19 @@ load_dotenv()
 
 
 # Use a test database URL
-TEST_DATABASE_URL = os.getenv(
-    'TEST_DB_URL')
+SYNC_TEST_DATABASE_URL = os.getenv(
+    'SYNC_TEST_DB_URL')
 
-print(TEST_DATABASE_URL[:6])
-# Or use an in-memory SQLite database for testing
-# TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
-# Update engine creation
-test_engine = create_async_engine(
-    TEST_DATABASE_URL,
+print(SYNC_TEST_DATABASE_URL[:6])
+# Create sync engine
+test_engine = create_engine(
+    SYNC_TEST_DATABASE_URL,
     echo=False
 )
 
-# Update session maker to use async
-Session = async_sessionmaker(
+# Create sync session maker
+Session = sessionmaker(
     bind=test_engine,
-    class_=AsyncSession
 )
 
 
