@@ -1,5 +1,5 @@
 # daily_summary_dao.py
-from sqlalchemy import select, func
+from sqlalchemy import select, func, text
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from asyncio import Queue
 from datetime import datetime
@@ -7,6 +7,12 @@ from datetime import datetime
 from ..models import DailyProgramSummary
 from ...console_logger import ConsoleLogger
 from ...object.classes import ProgramSessionData
+
+
+class DatabaseProtectionError(RuntimeError):
+    """Custom exception for database protection violations."""
+    pass
+
 
 # @@@@ @@@@ @@@@ @@@@ @@@@
 # NOTE: Does not use BaseQueueDao
@@ -40,17 +46,12 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
 
         async with self.session_maker() as db_session:
             result = await db_session.execute(query)
-            print(result, '41ru')
             # existing_entry = await result.scalar_one_or_none()  # Adding await here makes the program fail
             # This is how it is properly done, this unawaited version works
             existing_entry = result.scalar_one_or_none()
 
-            print(f"Type of existing_entry: {type(existing_entry)}")
-            print(f"Dir of existing_entry: {dir(existing_entry)}")
-
             if existing_entry:
                 # if existing_entry is not None:  # Changed from if existing_entry:
-                print(f"Program name: {existing_entry.program_name}")
                 existing_entry.hours_spent += usage_duration_in_hours
                 await db_session.commit()
             else:
@@ -71,10 +72,13 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         query = select(DailyProgramSummary).where(
             func.date(DailyProgramSummary.gathering_date) == day.date()
         )
+        print(query, '74ru')
         async with self.session_maker() as session:
-
             result = await session.execute(query)
-            return result.scalars().all()
+            print(result, '77ru')
+            thing = result.scalars().all()
+            print(thing, '79ru')
+            return thing
 
     async def read_all(self):
         """Read all entries."""
@@ -92,7 +96,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         async with self.session_maker() as session:
             result = await session.execute(query)
             # return await result.scalar_one_or_none()
-            # return result.scalar_one_or_none()
+            return result.scalar_one_or_none()
 
     async def delete(self, id: int):
         """Delete an entry by ID"""
@@ -102,3 +106,23 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
                 await session.delete(entry)
                 await session.commit()
             return entry
+
+    async def delete_all_rows(self, safety_switch=None) -> int:
+        """
+        Delete all rows from the DailyProgramSummary table.
+
+        Returns:
+            int: The number of rows deleted
+        """
+        if not safety_switch:
+            raise DatabaseProtectionError(
+                "Cannot delete all rows without safety switch enabled. "
+                "Set safety_switch=True to confirm this action."
+            )
+
+        async with self.session_maker() as session:
+            result = await session.execute(
+                text("DELETE FROM daily_program_summary")
+            )
+            await session.commit()
+            return result.rowcount

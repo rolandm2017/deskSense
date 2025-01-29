@@ -17,42 +17,44 @@ from src.object.classes import ProgramSessionData
 load_dotenv()
 
 # Get the test database connection string
-ASYNC_TEST_DB_URL = os.getenv('ASYNC_TEST_DB_URL')
+ASYNC_TEST_DB_URL = ASYNC_TEST_DB_URL = os.getenv(
+    'ASYNC_TEST_DB_URL')
 
 # Optional: Add error handling if the variable is required
 if ASYNC_TEST_DB_URL is None:
     raise ValueError("TEST_DB_STRING environment variable is not set")
 
-print(f"Test DB Connection String: {ASYNC_TEST_DB_URL}")
-
 
 @pytest.fixture(scope="function")
 async def async_engine():
     """Create an async PostgreSQL engine for testing"""
-    # Create main connection to postgres database to create/drop test db
+    # Create engine that connects to default postgres database
+    default_url = ASYNC_TEST_DB_URL.rsplit('/', 1)[0] + '/postgres'
     admin_engine = create_async_engine(
-        ASYNC_TEST_DB_URL,
+        default_url,
         isolation_level="AUTOCOMMIT"
     )
 
     async with admin_engine.connect() as conn:
-        # Disconnect all existing connections to test database
+        # Terminate existing connections more safely
         await conn.execute(text("""
-            SELECT pg_terminate_backend(pid)
-            FROM pg_stat_activity
-            WHERE datname = 'test_program_summary'
+            SELECT pg_terminate_backend(pid) 
+            FROM pg_stat_activity 
+            WHERE datname = 'dsTestDb' 
+            AND pid <> pg_backend_pid()
         """))
 
-        # Drop test database if it exists and recreate it
-        await conn.execute(text("DROP DATABASE IF EXISTS test_program_summary"))
-        await conn.execute(text("CREATE DATABASE test_program_summary"))
+        # Drop and recreate database
+        await conn.execute(text("DROP DATABASE IF EXISTS dsTestDb"))
+        await conn.execute(text("CREATE DATABASE dsTestDb"))
 
     await admin_engine.dispose()
 
     # Create engine for test database
     test_engine = create_async_engine(
         ASYNC_TEST_DB_URL,
-        echo=False  # Set to True to see SQL queries
+        # echo=True,
+        isolation_level="AUTOCOMMIT"  # Add this
     )
 
     # Create all tables
@@ -66,16 +68,17 @@ async def async_engine():
 
         # Clean up by dropping test database
         admin_engine = create_async_engine(
-            ASYNC_TEST_DB_URL,
+            default_url,  # Connect to default db for cleanup
             isolation_level="AUTOCOMMIT"
         )
         async with admin_engine.connect() as conn:
             await conn.execute(text("""
-                SELECT pg_terminate_backend(pid)
-                FROM pg_stat_activity
-                WHERE datname = 'test_program_summary'
+                SELECT pg_terminate_backend(pid) 
+                FROM pg_stat_activity 
+                WHERE datname = 'dsTestDb'
+                AND pid <> pg_backend_pid()
             """))
-            await conn.execute(text("DROP DATABASE IF EXISTS test_program_summary"))
+            await conn.execute(text("DROP DATABASE IF EXISTS dsTestDb"))
         await admin_engine.dispose()
 
 
@@ -97,6 +100,25 @@ async def test_db_dao(async_session_maker):
     session_maker = await async_session_maker
     dao = ProgramSummaryDao(session_maker)
     return dao
+
+
+@pytest.fixture(autouse=True)
+async def cleanup_database(async_session_maker):
+    """Automatically clean up the database after each test"""
+    # Clean before test
+    session_maker = await async_session_maker
+    async with session_maker() as session:
+        await session.execute(text("DELETE FROM daily_program_summaries"))
+        await session.execute(text("ALTER SEQUENCE daily_program_summaries_id_seq RESTART WITH 1"))
+        await session.commit()
+
+    yield
+
+    # Clean after test
+    async with session_maker() as session:
+        await session.execute(text("DELETE FROM daily_program_summaries"))
+        await session.execute(text("ALTER SEQUENCE daily_program_summaries_id_seq RESTART WITH 1"))
+        await session.commit()
 
 
 class TestProgramSummaryDao:
@@ -130,11 +152,6 @@ class TestProgramSummaryDao:
     @pytest.mark.asyncio
     async def test_create_if_new_else_update_new_entry(self, class_mock_dao, mock_session):
         # Arrange
-        # session_data = {
-        #     'window': 'TestProgram',
-        #     'start_time': datetime.now(),
-        #     'end_time': (datetime.now().replace(hour=datetime.now().hour + 1))
-        # }
 
         session_data = ProgramSessionData()
         session_data.window_title = "TestProgramFromTest"
@@ -238,7 +255,7 @@ class TestProgramSummaryDao:
         program_name = "TestProgram"
         mock_entry = Mock(spec=DailyProgramSummary)
 
-        mock_result = AsyncMock()
+        mock_result = Mock()
         mock_result.scalar_one_or_none.return_value = mock_entry
         mock_session.execute.return_value = mock_result
 
@@ -246,6 +263,7 @@ class TestProgramSummaryDao:
         result = await class_mock_dao.read_row_for_program(program_name)
 
         # Assert
+        assert result is not None
         assert result == mock_entry
         assert mock_session.execute.called
 
@@ -305,6 +323,7 @@ class TestProgramSummaryDao:
         dt3 = dt2 + timedelta(seconds=12)
         session_data_2.end_time = dt3
         session_data_2.productive = True
+
         # 3
         session_data_3: ProgramSessionData = ProgramSessionData()
         session_data_3.window_title = "Chrome"
@@ -356,122 +375,184 @@ class TestProgramSummaryDao:
         # Assert
         assert mock_session.execute.call_count == 6
         assert mock_session.commit.call_count == 6
+        # Clean up
+        class_mock_dao.delete_all_rows(safety_switch=True)
 
     @pytest.mark.asyncio
     async def test_live_database_operations(self, test_db_dao):
-        test_db_dao = await test_db_dao  # Add this line back
-        dt = datetime(2025, 1, 25, 15, 5)
+        test_db_dao = await test_db_dao
+
+        # First verify the database is empty
+        initial_entries = await test_db_dao.read_all()
+        print("\nInitial entries:", [
+            (e.program_name, e.hours_spent) for e in initial_entries])
+
+        # Add explicit cleanup at start of test
+        async with test_db_dao.session_maker() as session:
+            await session.execute(text("DELETE FROM daily_program_summaries"))
+            await session.commit()
+
+        initial_entries = await test_db_dao.read_all()
+        assert len(
+            initial_entries) == 0, "Database should be empty at start of test"
+
+      # Get today's date
+        today = date.today()
+
+        # Create a datetime object for today at 3:05 PM
+        dt = datetime(today.year, today.month, today.day, 15, 5)
+        chrome = "Chrome"
+        vscode = "VSCode"
+        discord = "Discord"
+        test_vs_code = "TestVSCode"
+        chrome_time = 0
+        vscode_time = 0
+        discord_time = 0
 
         # First create a single entry and verify it works
         test_session = ProgramSessionData()
-        test_session.window_title = "TestVSCode"
+        test_session.window_title = test_vs_code
         test_session.start_time = dt
         test_session.end_time = dt + timedelta(minutes=5)
 
         # Add debug prints
-        print("Creating first test entry...")
-        print(test_db_dao, ' 35rru')
-        # print(test_db_dao.session_maker(), '356ru')
         await test_db_dao.create_if_new_else_update(test_session)
 
         # Verify it was created
-        entry = await test_db_dao.read_row_for_program("TestVSCode")
+        entry = await test_db_dao.read_row_for_program(test_vs_code)
         print(f"Retrieved entry: {entry}")
         assert entry is not None
-        assert entry.program_name == "TestVSCode"
+        assert entry.program_name == test_vs_code
         assert entry.hours_spent > 0
 
-        # 1
+        # Verify the db is actually empty
+        all_entries = await test_db_dao.read_all()
+        for v in all_entries:
+            print(v.program_name, v.hours_spent, '400ru')
+        assert len(all_entries) == len([1])
+
+        # TODO: Delete all rows in between tests.
+        # TODO: Make the final tests at the end of this file work. The assert hours_spent matches expected.
+
+        1
         session_data_1: ProgramSessionData = ProgramSessionData()
-        session_data_1.window_title = "Chrome"
+        session_data_1.window_title = chrome
         session_data_1.detail = "Facebook.com"
         session_data_1.start_time = dt
         dt2 = dt + timedelta(seconds=13)
         session_data_1.end_time = dt2
         session_data_1.productive = False
-        # 2
+        chrome_time += 13
+        2
         session_data_2: ProgramSessionData = ProgramSessionData()
-        session_data_2.window_title = "VSCode"
+        session_data_2.window_title = vscode
         session_data_2.detail = "some_code.py"
         session_data_2.start_time = dt2
         dt3 = dt2 + timedelta(seconds=12)
         session_data_2.end_time = dt3
         session_data_2.productive = True
-        # 3
+        vscode_time += 12
+        3
         session_data_3: ProgramSessionData = ProgramSessionData()
-        session_data_3.window_title = "Chrome"
+        session_data_3.window_title = chrome
         session_data_3.detail = "Facebook.com"
         session_data_3.start_time = dt3
         dt4 = dt3 + timedelta(seconds=28)
         session_data_3.end_time = dt4
         session_data_3.productive = False
-        # 4
+        chrome_time += 28
+        4
         session_data_4: ProgramSessionData = ProgramSessionData()
-        session_data_4.window_title = "VSCode"
+        session_data_4.window_title = vscode
         session_data_4.detail = "MyFile.tsx"
         session_data_4.start_time = dt4
         dt5 = dt4 + timedelta(seconds=22)
         session_data_4.end_time = dt5
         session_data_4.productive = True
+        vscode_time += 22
         # 5
         session_data_5: ProgramSessionData = ProgramSessionData()
-        session_data_5.window_title = "Discord"
+        session_data_5.window_title = discord
         session_data_5.detail = "Pyre - Exercises in Futility"
         session_data_5.start_time = dt5
         dt6 = dt5 + timedelta(seconds=25)
         session_data_5.end_time = dt6
         session_data_5.productive = False
-        # 6
+        discord_time += 25
+        6
         session_data_6: ProgramSessionData = ProgramSessionData()
-        session_data_6.window_title = "Chrome"
+        session_data_6.window_title = chrome
         session_data_6.detail = "Claude.ai"
         session_data_6.start_time = dt6
         dt7 = dt6 + timedelta(seconds=25)
         session_data_6.end_time = dt7
         session_data_6.productive = True
-        # 7
+        chrome_time += 25
+        7
         session_data_7: ProgramSessionData = ProgramSessionData()
-        session_data_7.window_title = "VSCode"
+        session_data_7.window_title = vscode
         session_data_7.detail = "some_file.py"
         session_data_7.start_time = dt7
         dt8 = dt7 + timedelta(seconds=120)
         session_data_7.end_time = dt8
         session_data_7.productive = True
+        vscode_time += 120
+        print(dt2, '460ru')
+        print(dt3, '460ru')
+        print(dt4, '460ru')
+        print(dt5, '460ru')
 
         sessions = [session_data_1, session_data_2, session_data_3,
                     session_data_4, session_data_5, session_data_6, session_data_7]
 
+        unique_program_mentions = [test_vs_code, chrome, vscode, discord]
+
         for session in sessions:
-            print(session, '405ru')
             await test_db_dao.create_if_new_else_update(session)
 
         # Verify all programs were created
         all_entries = await test_db_dao.read_all()
-        assert len(all_entries) == len(sessions)
+        assert len(all_entries) == len(unique_program_mentions)
 
         # Verify specific program times
+        # chrome_expected = 13 + 28 + 25
+        # vscode_expected = 12 + 22 + 120
+        # discord_expected = 25
+        TestVSCode_expected = 5 * 60
+        # expected_hours_spent = [
+        #     chrome_expected, vscode_expected, discord_expected, TestVSCode_expected]
+        expected_hours_spent = [
+            chrome_time, vscode_time, discord_time, TestVSCode_expected]
         for program in sessions:
             entry = await test_db_dao.read_row_for_program(program.window_title)
             assert entry is not None
-            assert entry.program_name == program
-            assert entry.hours_spent > 0
+            assert entry.program_name == program.window_title
+            # FIXME - more specific claim pls, and passing
+            assert entry.hours_spent * 3600 in expected_hours_spent
+            # assert entry.hours_spent > 0.01  # FIXME - more specific claim pls, and passing
 
         # Test updating existing entry
         update_session = ProgramSessionData()
-        update_session.window_title = "Chrome"
-        update_session.start_time = dt + timedelta(hours=3)
-        update_session.end_time = dt + timedelta(hours=5)
+        update_session.window_title = chrome
+        test_update_start_time = dt + timedelta(hours=3)
+        test_update_end_time = dt + timedelta(hours=5)
+        update_session.start_time = test_update_start_time
+        update_session.end_time = test_update_end_time
+
         await test_db_dao.create_if_new_else_update(update_session)
 
+        time_from_chrome_update = test_update_end_time - test_update_start_time
+        time_from_chrome_update = time_from_chrome_update.total_seconds()
+
         # Verify the update
-        chrome_entry = await test_db_dao.read_row_for_program("Chrome")
+        chrome_entry = await test_db_dao.read_row_for_program(chrome)
         assert chrome_entry is not None
         # Original time plus update time
         assert chrome_entry.hours_spent > 2.0  # 5 - 3
 
         # Test reading by day
         day_entries = await test_db_dao.read_day(dt)
-        assert len(day_entries) == len(sessions)
+        assert len(day_entries) == len(unique_program_mentions)
 
         # Test deletion
         if len(day_entries) > 0:
@@ -481,7 +562,7 @@ class TestProgramSummaryDao:
 
             # Verify deletion
             all_entries = await test_db_dao.read_all()
-            assert len(all_entries) == len(sessions) - 1
+            assert len(all_entries) == len(unique_program_mentions) - 1
 
         # TEST that the total number of entries
         # reflects the number of unique programs seen
@@ -490,6 +571,25 @@ class TestProgramSummaryDao:
         print(all_entries, '450ru')
 
         # TEST that the total computed time is as expected
-        chrome = all_entries.find("Chrome")
-        vs_code = all_entries.find("VSCode")
-        discord = all_entries.find("Discord")
+        chrome_entry = None
+        vscode_entry = None
+        discord_entry = None
+
+        for entry in all_entries:
+            if entry.program_name == "Chrome":
+                chrome_entry = entry
+            elif entry.program_name == "VSCode":
+                vscode_entry = entry
+            elif entry.program_name == "Discord":
+                discord_entry = entry
+
+        #
+        # # 3600 = 60 sec * 60 min = 3600 sec per hour
+        #
+        assert vscode_entry.hours_spent == vscode_time / 3600
+        assert discord_entry.hours_spent == discord_time / 3600
+        print(chrome_entry.hours_spent, chrome_time, '587ru')
+        print(vscode_entry.hours_spent, vscode_time, vscode_time / 3600)
+        print(discord_entry.hours_spent, discord_time, discord_time / 3600)
+        assert chrome_entry.hours_spent == (
+            chrome_time / 3600) + (time_from_chrome_update / 3600)
