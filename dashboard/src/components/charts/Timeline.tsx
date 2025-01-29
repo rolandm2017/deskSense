@@ -12,7 +12,11 @@ const TimelineWrapper: React.FC<TimelineWrapperProps> = ({
     mouseLogsInput,
     typingSessionLogsInput,
 }) => {
-    console.log(mouseLogsInput.length, typingSessionLogsInput.length, "27ru");
+    // console.log(
+    //     mouseLogsInput.length,
+    //     typingSessionLogsInput.length,
+    //     "timeline 27ru"
+    // );
     // Memoize the DataSet creation
     const formattedApiDataDataSet = useMemo(() => {
         if (!mouseLogsInput?.length && !typingSessionLogsInput?.length) {

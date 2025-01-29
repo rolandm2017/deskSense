@@ -82,7 +82,7 @@ export interface DailyProgramSummaries {
 
 export interface DailyChromeSummary {
     id: number;
-    domain: string;
+    domainName: string;
     hoursSpent: number;
     gatheringDate: Date;
 }

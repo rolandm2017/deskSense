@@ -15,17 +15,23 @@ const ChromeUsageChart: React.FC<ChromeUsageChartProps> = ({ barsInput }) => {
 
     useEffect(() => {
         if (barsInput) {
+            // console.log(barsInput, "18ru");
             const sortedCols = [...barsInput.columns].sort(
                 (a, b) => b.hoursSpent - a.hoursSpent
             );
             console.log(
                 sortedCols.map((col) => Number(col.hoursSpent.toFixed(5))),
-                "hours spent"
+                "Chrome - hours spent"
             );
             const highEnoughTimeVals = sortedCols.filter(
-                (col) => col.hoursSpent > 0.015
+                (col) => col.hoursSpent > 0.0833333 // 5 / 60 = 0.08333
             );
-            setBars(highEnoughTimeVals);
+            if (highEnoughTimeVals.length <= 4) {
+                // TODO If the AVERAGE time of the top 4 entries is LESS than 1 hour, show ALL entries
+                setBars(sortedCols);
+            } else {
+                setBars(highEnoughTimeVals);
+            }
         }
     }, [barsInput]);
 
@@ -34,6 +40,9 @@ const ChromeUsageChart: React.FC<ChromeUsageChartProps> = ({ barsInput }) => {
     const width = 800 - margin.left - margin.right;
     const height = 300 - margin.top - margin.bottom;
     const svgRef = useRef<SVGSVGElement>(null);
+
+    // FIXME: If tallest bar = 2h20m, should get maxYVal as 2h30m. Currently 2h30m -> 3h max y val, that's bad.
+    // FIXME: graph also shows places with a hoursSpent less than 15 min. that's bad
 
     useEffect(() => {
         if (svgRef.current && bars) {
@@ -45,13 +54,17 @@ const ChromeUsageChart: React.FC<ChromeUsageChartProps> = ({ barsInput }) => {
             // Create scales
             const xScale = d3
                 .scaleBand()
-                .domain(bars.map((d) => d.domain))
+                .domain(bars.map((d) => d.domainName))
                 .range([0, width])
                 .padding(0.5);
+
+            const ceilingedMaxHours = Math.ceil(
+                Math.max(...bars.map((bar) => bar.hoursSpent))
+            );
+            // Y Scale (Time Scale)
             const yScale = d3
                 .scaleLinear()
-                .domain([0, d3.max(bars, (d) => d.hoursSpent) || 0])
-                .nice()
+                .domain([0, ceilingedMaxHours]) // Use hoursSpent as is
                 .range([height, 0]);
 
             // Create bars
@@ -60,7 +73,7 @@ const ChromeUsageChart: React.FC<ChromeUsageChartProps> = ({ barsInput }) => {
                 .enter()
                 .append("rect")
                 .attr("class", "bar")
-                .attr("x", (d) => xScale(d.domain) || "fail")
+                .attr("x", (d) => xScale(d.domainName) || "fail")
                 .attr("y", (d) => yScale(d.hoursSpent))
                 .attr("width", xScale.bandwidth())
                 .attr("height", (d) => height - yScale(d.hoursSpent))
@@ -81,12 +94,45 @@ const ChromeUsageChart: React.FC<ChromeUsageChartProps> = ({ barsInput }) => {
                 .attr("font-size", "1.3em")
                 .attr("transform", `rotate(${labelRotation})`); // Rotate text 45 degrees
 
-            // Create y-axis
-            const yAxis = d3.axisLeft(yScale);
+            const maxHours = Math.ceil(
+                d3.max(bars.map((bar) => bar.hoursSpent)) || 0
+            );
+            const tickValues = Array.from(
+                { length: maxHours * 4 }, // maxHrs * 4 + 1 gave too many excess ticks
+                (_, i) => i * 0.25
+            );
+
+            const yAxis = d3
+                .axisLeft(yScale)
+                .tickValues(tickValues) // Custom tick values
+                .tickFormat((d) => {
+                    const value = +d; // Convert to plain number
+                    const hours = Math.floor(value);
+                    const minutes = Math.round((value - hours) * 60);
+
+                    if (hours > 0 && minutes === 0) {
+                        return `${hours}h`;
+                    } else if (hours > 0) {
+                        return `${hours}h ${minutes} min`;
+                    } else {
+                        return `${minutes} min`;
+                    }
+                });
+
             svg.append("g")
                 .attr("class", "y-axis")
                 .attr("transform", "translate(30, 10)")
                 .call(yAxis);
+
+            // Add y-axis label
+            svg.append("text")
+                .attr("transform", "rotate(-90)") // Rotate text to be vertical
+                .attr("y", -50)
+                .attr("x", -(height / 2)) // Center on the axis
+                .attr("dy", "1em") // Shift the text position
+                .style("text-anchor", "middle") // Center the text
+                .attr("font-size", "1.2em")
+                .text("Hours"); // The label text
         }
     }, [bars]);
 
