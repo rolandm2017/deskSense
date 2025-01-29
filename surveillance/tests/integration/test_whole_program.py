@@ -53,7 +53,7 @@ async def test_timeline():
 @pytest.mark.asyncio
 async def test_summaries():
     async with AsyncClient(base_url="http://127.0.0.1:8000") as client:
-        response = await client.get("http://127.0.0.1:8000/dashboard/summaries")
+        response = await client.get("http://127.0.0.1:8000/dashboard/program/summaries")
         assert response.status_code == 200
 
         summaries = response.json()

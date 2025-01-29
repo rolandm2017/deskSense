@@ -17,15 +17,13 @@ from src.object.classes import ProgramSessionData
 load_dotenv()
 
 # Get the test database connection string
-test_db_string = os.getenv('TEST_DB_URL')
+ASYNC_TEST_DB_URL = os.getenv('ASYNC_TEST_DB_URL')
 
 # Optional: Add error handling if the variable is required
-if test_db_string is None:
+if ASYNC_TEST_DB_URL is None:
     raise ValueError("TEST_DB_STRING environment variable is not set")
 
-print(f"Test DB Connection String: {test_db_string}")
-
-TEST_DATABASE_URL = test_db_string
+print(f"Test DB Connection String: {ASYNC_TEST_DB_URL}")
 
 
 @pytest.fixture(scope="function")
@@ -33,7 +31,7 @@ async def async_engine():
     """Create an async PostgreSQL engine for testing"""
     # Create main connection to postgres database to create/drop test db
     admin_engine = create_async_engine(
-        TEST_DATABASE_URL,
+        ASYNC_TEST_DB_URL,
         isolation_level="AUTOCOMMIT"
     )
 
@@ -53,7 +51,7 @@ async def async_engine():
 
     # Create engine for test database
     test_engine = create_async_engine(
-        TEST_DATABASE_URL,
+        ASYNC_TEST_DB_URL,
         echo=False  # Set to True to see SQL queries
     )
 
@@ -68,7 +66,7 @@ async def async_engine():
 
         # Clean up by dropping test database
         admin_engine = create_async_engine(
-            TEST_DATABASE_URL,
+            ASYNC_TEST_DB_URL,
             isolation_level="AUTOCOMMIT"
         )
         async with admin_engine.connect() as conn:
