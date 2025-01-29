@@ -4,7 +4,9 @@ import "./App.css";
 import ProgramUsageChart from "./components/charts/ProgramUsageChart";
 
 import {
+    DailyChromeSummaries,
     DailyProgramSummaries,
+    getChromeSummaries,
     getKeyboardReport,
     getMouseReport,
     getProgramReport,
@@ -20,15 +22,13 @@ import {
     ProgramActivityReport,
 } from "./interface/api.interface";
 import TimelineWrapper from "./components/charts/Timeline";
+import ChromeUsageChart from "./components/charts/ChromeUsageChart";
 
 function App() {
-    const [typingReport, setTypingReport] = useState<TypingSessionsReport | null>(null) // prettier-ignore
-    const [mouseReport, setMouseReport] = useState<MouseReport | null>(null) // prettier-ignore
-    const [programReport, setProgramReport] = useState<ProgramActivityReport | null>(null); // prettier-ignore
-
-    const [summaries, setSummaries] = useState<DailyProgramSummaries | null>(
-        null
-    );
+    const [programSummaries, setProgramSummaries] =
+        useState<DailyProgramSummaries | null>(null);
+    const [chromeSummaries, setChromeSummaries] =
+        useState<DailyChromeSummaries | null>(null);
     const [timeline, setTimeline] = useState<TimelineRows | null>(null);
 
     // const [barsInput, setBarsInput] = useState<BarChartColumn[]>([]);
@@ -38,19 +38,28 @@ function App() {
     const hours = 36000000; // 1000 * 60 * 60
 
     useEffect(() => {
-        if (summaries == null) {
+        if (programSummaries == null) {
             //
             getProgramSummaries().then((sums) => {
-                console.log(sums);
-                setSummaries(sums);
+                console.log(sums, "44ru");
+                setProgramSummaries(sums);
             });
         }
-    }, [summaries]);
+    }, [programSummaries]);
+
+    useEffect(() => {
+        if (chromeSummaries == null) {
+            getChromeSummaries().then((sums) => {
+                console.log(sums, "58ru");
+                setChromeSummaries(sums);
+            });
+        }
+    }, [chromeSummaries]);
 
     useEffect(() => {
         if (timeline == null) {
             getTimelineData().then((timeline) => {
-                console.log(timeline);
+                console.log(timeline, "53ru");
                 setTimeline(timeline);
             });
         }
@@ -74,20 +83,34 @@ function App() {
                         DeskSense Dashboard
                     </h1>
                 </div>
-                <div style={{ border: "5px solid black", margin: "0px" }}>
-                    <h2 style={{ margin: "0px" }}>
-                        Programs {programReport?.count.toString()}
-                    </h2>
-                    {summaries ? (
-                        <ProgramUsageChart barsInput={summaries} />
+                <div>
+                    <h2 style={{ margin: "0px" }}>Chrome</h2>
+                    {chromeSummaries ? (
+                        <ChromeUsageChart barsInput={chromeSummaries} />
                     ) : (
                         <p>Loading...</p>
                     )}
                 </div>
+                <div style={{ border: "5px solid black", margin: "0px" }}>
+                    <h2 style={{ margin: "0px" }}>
+                        Programs {programSummaries?.columns.length}
+                    </h2>
+                    {/* // FIXME: programUsageChart re-renders like 5x */}
+                    {programSummaries ? (
+                        <ProgramUsageChart barsInput={programSummaries} />
+                    ) : (
+                        <p>Loading...</p>
+                    )}
+                </div>
+
                 <div>
                     <h2>
-                        Keyboard & Mouse: {typingReport?.count},{" "}
-                        {mouseReport?.count}
+                        Keyboard & Mouse:{" "}
+                        {timeline ? (
+                            `${timeline.keyboardRows.length}, ${timeline?.mouseRows.length}`
+                        ) : (
+                            <p>Loading</p>
+                        )}
                     </h2>
                     {timeline !== null ? (
                         <TimelineWrapper

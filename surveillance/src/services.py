@@ -110,7 +110,7 @@ class ChromeService:
         self.ordered_messages = sorted_events
         self.message_queue = []
 
-    async def tab_is_transient(self, current, next):
+    def tab_is_transient(self, current, next):
         transience_time_in_ms = 300
         tab_duration = next.startTime - current.startTime
         return tab_duration < timedelta(milliseconds=transience_time_in_ms)

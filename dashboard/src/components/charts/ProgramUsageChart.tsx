@@ -19,43 +19,46 @@ const ProgramUsageChart: React.FC<ProgramUsageChartProps> = ({ barsInput }) => {
             const sortedCols = [...barsInput.columns].sort(
                 (a, b) => b.hoursSpent - a.hoursSpent
             );
-            console.log(
-                sortedCols.map((col) => Number(col.hoursSpent.toFixed(5))),
-                "hours spent"
-            );
+
             const highEnoughTimeVals = sortedCols.filter(
-                (col) => col.hoursSpent > 0.015
+                (col) => col.hoursSpent > 0.1833333
             );
-            setBars(highEnoughTimeVals);
+            // FIXME: strange keeping of low time programs
+            // setBars(highEnoughTimeVals);
+            // if (highEnoughTimeVals.length <= 3) {
+            setBars(sortedCols);
+            // } else {
+            // }
         }
     }, [barsInput]);
 
-    // Set up dimensions
-    const margin = { top: 0, right: 100, bottom: 60, left: 100 }; // Increased bottom margin
+    const margin = { top: 0, right: 100, bottom: 60, left: 100 };
     const width = 800 - margin.left - margin.right;
     const height = 300 - margin.top - margin.bottom;
     const svgRef = useRef<SVGSVGElement>(null);
 
     useEffect(() => {
         if (svgRef.current && bars) {
-            // Clear previous SVG content
             d3.select(svgRef.current).selectAll("*").remove();
 
             const svg = d3.select(svgRef.current);
 
-            // Create scales
             const xScale = d3
                 .scaleBand()
                 .domain(bars.map((d) => d.programName))
                 .range([0, width])
                 .padding(0.5);
+
+            // Get the maximum value and round up to the nearest quarter hour
+            const maxValue = d3.max(bars, (d) => d.hoursSpent) || 0;
+            const roundedMax = Math.ceil(maxValue * 4) / 4; // Round up to nearest 0.25
+
             const yScale = d3
                 .scaleLinear()
-                .domain([0, d3.max(bars, (d) => d.hoursSpent) || 0])
+                .domain([0, roundedMax])
                 .nice()
                 .range([height, 0]);
 
-            // Create bars
             svg.selectAll(".bar")
                 .data(bars)
                 .enter()
@@ -68,22 +71,41 @@ const ProgramUsageChart: React.FC<ProgramUsageChartProps> = ({ barsInput }) => {
                 .attr("transform", "translate(30, 10)")
                 .attr("fill", "steelblue");
 
-            // Create x-axis with rotated labels
             const labelRotation = "-45";
             const xAxis = d3.axisBottom(xScale);
             svg.append("g")
                 .attr("class", "x-axis")
                 .attr("transform", `translate(30,${height + 10})`)
                 .call(xAxis)
-                .selectAll("text") // Select all x-axis text elements
-                .style("text-anchor", "end") // Anchor point for the text
-                .attr("dx", "-.8em") // Shift text position
-                .attr("dy", ".15em") // Shift text position
+                .selectAll("text")
+                .style("text-anchor", "end")
+                .attr("dx", "-.8em")
+                .attr("dy", ".15em")
                 .attr("font-size", "1.3em")
-                .attr("transform", `rotate(${labelRotation})`); // Rotate text 45 degrees
+                .attr("transform", `rotate(${labelRotation})`);
 
-            // Create y-axis
-            const yAxis = d3.axisLeft(yScale);
+            // Generate tick values up to the rounded maximum
+            const tickValues = Array.from(
+                { length: Math.floor(roundedMax * 4) + 1 },
+                (_, i) => i * 0.25
+            );
+
+            const yAxis = d3
+                .axisLeft(yScale)
+                .tickValues(tickValues)
+                .tickFormat((d) => {
+                    const value = +d;
+                    const hours = Math.floor(value);
+                    const minutes = Math.round((value - hours) * 60);
+
+                    if (hours > 0 && minutes === 0) {
+                        return `${hours}h`;
+                    } else if (hours > 0) {
+                        return `${hours}h ${minutes} min`;
+                    } else {
+                        return `${minutes} min`;
+                    }
+                });
             svg.append("g")
                 .attr("class", "y-axis")
                 .attr("transform", "translate(30, 10)")

@@ -240,7 +240,7 @@ def manufacture_chrome_bar_chart(program_data):
     return [chrome_summary_row_to_pydantic(r) for r in program_data]
 
 
-@app.get("/dashboard/summaries", response_model=ProgramBarChartContent)
+@app.get("/dashboard/program/summaries", response_model=ProgramBarChartContent)
 async def get_program_time_for_dashboard(dashboard_service: DashboardService = Depends(get_dashboard_service)):
     program_data = await dashboard_service.get_program_summary()
     if not isinstance(program_data, list):
@@ -248,8 +248,11 @@ async def get_program_time_for_dashboard(dashboard_service: DashboardService = D
             status_code=500, detail="Failed to retrieve program chart info")
     return ProgramBarChartContent(columns=manufacture_programs_bar_chart(program_data))
 
+# FIXME: Alt Tab Window has 2.2 hours, while Google Chrome has 0.9
+# Which obviously can't be true
 
-@app.get("/dashboard/chrome", response_model=ChromeBarChartContent)
+
+@app.get("/dashboard/chrome/summaries", response_model=ChromeBarChartContent)
 async def get_chrome_time_for_dashboard(dashboard_service: DashboardService = Depends(get_dashboard_service)):
     chrome_data = await dashboard_service.get_chrome_summary()
     if not isinstance(chrome_data, list):
