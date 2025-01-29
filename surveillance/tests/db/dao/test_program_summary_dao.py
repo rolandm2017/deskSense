@@ -4,11 +4,28 @@ from datetime import datetime, date, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy import text
 
+
+from dotenv import load_dotenv
+import os
+
+
 from surveillance.src.db.dao.program_summary_dao import ProgramSummaryDao
 from src.db.models import DailyProgramSummary, Base
 from src.object.classes import ProgramSessionData
 
-TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/test_program_summary"
+# Load environment variables from .env file
+load_dotenv()
+
+# Get the test database connection string
+test_db_string = os.getenv('TEST_DB_URL')
+
+# Optional: Add error handling if the variable is required
+if test_db_string is None:
+    raise ValueError("TEST_DB_STRING environment variable is not set")
+
+print(f"Test DB Connection String: {test_db_string}")
+
+TEST_DATABASE_URL = test_db_string
 
 
 @pytest.fixture(scope="function")
@@ -16,15 +33,15 @@ async def async_engine():
     """Create an async PostgreSQL engine for testing"""
     # Create main connection to postgres database to create/drop test db
     admin_engine = create_async_engine(
-        "postgresql+asyncpg://postgres:postgres@localhost:5432/postgres",
+        TEST_DATABASE_URL,
         isolation_level="AUTOCOMMIT"
     )
 
     async with admin_engine.connect() as conn:
         # Disconnect all existing connections to test database
         await conn.execute(text("""
-            SELECT pg_terminate_backend(pid) 
-            FROM pg_stat_activity 
+            SELECT pg_terminate_backend(pid)
+            FROM pg_stat_activity
             WHERE datname = 'test_program_summary'
         """))
 
@@ -37,7 +54,7 @@ async def async_engine():
     # Create engine for test database
     test_engine = create_async_engine(
         TEST_DATABASE_URL,
-        echo=True  # Set to True to see SQL queries
+        echo=False  # Set to True to see SQL queries
     )
 
     # Create all tables
@@ -51,13 +68,13 @@ async def async_engine():
 
         # Clean up by dropping test database
         admin_engine = create_async_engine(
-            "postgresql+asyncpg://postgres:postgres@localhost:5432/postgres",
+            TEST_DATABASE_URL,
             isolation_level="AUTOCOMMIT"
         )
         async with admin_engine.connect() as conn:
             await conn.execute(text("""
-                SELECT pg_terminate_backend(pid) 
-                FROM pg_stat_activity 
+                SELECT pg_terminate_backend(pid)
+                FROM pg_stat_activity
                 WHERE datname = 'test_program_summary'
             """))
             await conn.execute(text("DROP DATABASE IF EXISTS test_program_summary"))
@@ -67,8 +84,9 @@ async def async_engine():
 @pytest.fixture(scope="function")
 async def async_session_maker(async_engine):
     """Create an async session maker"""
+    engine = await anext(async_engine)  # Use anext() instead of await
     session_maker = async_sessionmaker(
-        async_engine,
+        engine,
         class_=AsyncSession,
         expire_on_commit=False
     )
@@ -76,9 +94,11 @@ async def async_session_maker(async_engine):
 
 
 @pytest.fixture(scope="function")
-async def dao(async_session_maker):
+async def test_db_dao(async_session_maker):
     """Create a DAO instance with the async session maker"""
-    return ProgramSummaryDao(async_session_maker)
+    session_maker = await async_session_maker
+    dao = ProgramSummaryDao(session_maker)
+    return dao
 
 
 class TestProgramSummaryDao:
@@ -106,11 +126,11 @@ class TestProgramSummaryDao:
         return maker
 
     @pytest.fixture
-    def dao(self, mock_session_maker):
+    def class_mock_dao(self, mock_session_maker):
         return ProgramSummaryDao(mock_session_maker)
 
     @pytest.mark.asyncio
-    async def test_create_if_new_else_update_new_entry(self, dao, mock_session):
+    async def test_create_if_new_else_update_new_entry(self, class_mock_dao, mock_session):
         # Arrange
         # session_data = {
         #     'window': 'TestProgram',
@@ -136,13 +156,13 @@ class TestProgramSummaryDao:
         mock_session.execute.return_value = mock_result
 
         # Act
-        await dao.create_if_new_else_update(session_data)
+        await class_mock_dao.create_if_new_else_update(session_data)
 
         # Assert
         assert mock_session.execute.called
 
     @pytest.mark.asyncio
-    async def test_create_if_new_else_update_existing_entry(self, dao, mock_session):
+    async def test_create_if_new_else_update_existing_entry(self, class_mock_dao, mock_session):
         # Arrange
         # session_data = {
         #     'window': 'TestProgram',
@@ -163,14 +183,14 @@ class TestProgramSummaryDao:
         mock_session.execute.return_value = mock_result
 
         # Act
-        await dao.create_if_new_else_update(session_data)
+        await class_mock_dao.create_if_new_else_update(session_data)
 
         # Assert
         assert mock_session.execute.called
         assert mock_session.commit.called
 
     @pytest.mark.asyncio
-    async def test_read_day(self, dao, mock_session):
+    async def test_read_day(self, class_mock_dao, mock_session):
         # Arrange
         test_day = datetime.now()
         mock_entries = [
@@ -186,14 +206,14 @@ class TestProgramSummaryDao:
         mock_session.execute.return_value = mock_result
 
         # Act
-        result = await dao.read_day(test_day)
+        result = await class_mock_dao.read_day(test_day)
 
         # Assert
         assert result == mock_entries
         assert mock_session.execute.called
 
     @pytest.mark.asyncio
-    async def test_read_all(self, dao, mock_session):
+    async def test_read_all(self, class_mock_dao, mock_session):
         # Arrange
         mock_entries = [
             Mock(spec=DailyProgramSummary),
@@ -208,14 +228,14 @@ class TestProgramSummaryDao:
         mock_session.execute.return_value = mock_result
 
         # Act
-        result = await dao.read_all()
+        result = await class_mock_dao.read_all()
 
         # Assert
         assert result == mock_entries
         assert mock_session.execute.called
 
     @pytest.mark.asyncio
-    async def test_read_row_for_program(self, dao, mock_session):
+    async def test_read_row_for_program(self, class_mock_dao, mock_session):
         # Arrange
         program_name = "TestProgram"
         mock_entry = Mock(spec=DailyProgramSummary)
@@ -225,21 +245,21 @@ class TestProgramSummaryDao:
         mock_session.execute.return_value = mock_result
 
         # Act
-        result = await dao.read_row_for_program(program_name)
+        result = await class_mock_dao.read_row_for_program(program_name)
 
         # Assert
         assert result == mock_entry
         assert mock_session.execute.called
 
     @pytest.mark.asyncio
-    async def test_delete(self, dao, mock_session):
+    async def test_delete(self, class_mock_dao, mock_session):
         # Arrange
         entry_id = 1
         mock_entry = Mock(spec=DailyProgramSummary)
         mock_session.get.return_value = mock_entry
 
         # Act
-        result = await dao.delete(entry_id)
+        result = await class_mock_dao.delete(entry_id)
 
         # Assert
         assert result == mock_entry
@@ -247,13 +267,13 @@ class TestProgramSummaryDao:
         assert mock_session.commit.called
 
     @pytest.mark.asyncio
-    async def test_delete_nonexistent(self, dao, mock_session):
+    async def test_delete_nonexistent(self, class_mock_dao, mock_session):
         # Arrange
         entry_id = 1
         mock_session.get.return_value = None
 
         # Act
-        result = await dao.delete(entry_id)
+        result = await class_mock_dao.delete(entry_id)
 
         # Assert
         assert result is None
@@ -261,7 +281,7 @@ class TestProgramSummaryDao:
         assert not mock_session.commit.called
 
     @pytest.mark.asyncio
-    async def test_several_consecutive_writes(self, dao, mock_session):
+    async def test_several_consecutive_writes(self, class_mock_dao, mock_session):
 
         # class ProgramSessionData:
         #     window_title: str
@@ -328,19 +348,20 @@ class TestProgramSummaryDao:
         mock_session.execute.return_value = mock_result
 
         # Act
-        await dao.create_if_new_else_update(session_data_1)
-        await dao.create_if_new_else_update(session_data_2)
-        await dao.create_if_new_else_update(session_data_3)
-        await dao.create_if_new_else_update(session_data_4)
-        await dao.create_if_new_else_update(session_data_5)
-        await dao.create_if_new_else_update(session_data_6)
+        await class_mock_dao.create_if_new_else_update(session_data_1)
+        await class_mock_dao.create_if_new_else_update(session_data_2)
+        await class_mock_dao.create_if_new_else_update(session_data_3)
+        await class_mock_dao.create_if_new_else_update(session_data_4)
+        await class_mock_dao.create_if_new_else_update(session_data_5)
+        await class_mock_dao.create_if_new_else_update(session_data_6)
 
         # Assert
-        assert mock_session.execute.called
-        assert mock_session.commit.called
+        assert mock_session.execute.call_count == 6
+        assert mock_session.commit.call_count == 6
 
     @pytest.mark.asyncio
-    async def test_live_database_operations(self, dao):
+    async def test_live_database_operations(self, test_db_dao):
+        test_db_dao = await test_db_dao  # Add this line back
         dt = datetime(2025, 1, 25, 15, 5)
 
         # First create a single entry and verify it works
@@ -351,10 +372,12 @@ class TestProgramSummaryDao:
 
         # Add debug prints
         print("Creating first test entry...")
-        await dao.create_if_new_else_update(test_session)
+        print(test_db_dao, ' 35rru')
+        # print(test_db_dao.session_maker(), '356ru')
+        await test_db_dao.create_if_new_else_update(test_session)
 
         # Verify it was created
-        entry = await dao.read_row_for_program("TestVSCode")
+        entry = await test_db_dao.read_row_for_program("TestVSCode")
         print(f"Retrieved entry: {entry}")
         assert entry is not None
         assert entry.program_name == "TestVSCode"
@@ -422,15 +445,15 @@ class TestProgramSummaryDao:
 
         for session in sessions:
             print(session, '405ru')
-            await dao.create_if_new_else_update(session)
+            await test_db_dao.create_if_new_else_update(session)
 
         # Verify all programs were created
-        all_entries = await dao.read_all()
+        all_entries = await test_db_dao.read_all()
         assert len(all_entries) == len(sessions)
 
         # Verify specific program times
         for program in sessions:
-            entry = await dao.read_row_for_program(program.window_title)
+            entry = await test_db_dao.read_row_for_program(program.window_title)
             assert entry is not None
             assert entry.program_name == program
             assert entry.hours_spent > 0
@@ -440,26 +463,26 @@ class TestProgramSummaryDao:
         update_session.window_title = "Chrome"
         update_session.start_time = dt + timedelta(hours=3)
         update_session.end_time = dt + timedelta(hours=5)
-        await dao.create_if_new_else_update(update_session)
+        await test_db_dao.create_if_new_else_update(update_session)
 
         # Verify the update
-        chrome_entry = await dao.read_row_for_program("Chrome")
+        chrome_entry = await test_db_dao.read_row_for_program("Chrome")
         assert chrome_entry is not None
         # Original time plus update time
         assert chrome_entry.hours_spent > 2.0  # 5 - 3
 
         # Test reading by day
-        day_entries = await dao.read_day(dt)
+        day_entries = await test_db_dao.read_day(dt)
         assert len(day_entries) == len(sessions)
 
         # Test deletion
         if len(day_entries) > 0:
             first_entry = day_entries[0]
-            deleted_entry = await dao.delete(first_entry.id)
+            deleted_entry = await test_db_dao.delete(first_entry.id)
             assert deleted_entry is not None
 
             # Verify deletion
-            all_entries = await dao.read_all()
+            all_entries = await test_db_dao.read_all()
             assert len(all_entries) == len(sessions) - 1
 
         # TEST that the total number of entries

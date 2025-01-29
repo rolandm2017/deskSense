@@ -2,6 +2,8 @@ import pytest
 from datetime import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+
 from surveillance.src.db.models import TimelineEntryObj, Base
 from surveillance.src.object.enums import ChartEventType
 from dotenv import load_dotenv
@@ -16,15 +18,16 @@ TEST_DATABASE_URL = os.getenv(
 print(TEST_DATABASE_URL[:6])
 # Or use an in-memory SQLite database for testing
 # TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
-# Create sync engine
-test_engine = create_engine(
+# Update engine creation
+test_engine = create_async_engine(
     TEST_DATABASE_URL,
     echo=False
 )
 
-# Create sync session maker
-Session = sessionmaker(
+# Update session maker to use async
+Session = async_sessionmaker(
     bind=test_engine,
+    class_=AsyncSession
 )
 
 

@@ -15,6 +15,8 @@ from ...object.classes import ProgramSessionData
 
 class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
     def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+        # if not callable(session_maker):
+        # raise TypeError("session_maker must be callable")
         self.session_maker = session_maker  # Store the session maker instead of db
         self.batch_size = batch_size
         self.flush_interval = flush_interval
@@ -38,13 +40,17 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
 
         async with self.session_maker() as db_session:
             result = await db_session.execute(query)
+            print(result, '41ru')
+            # existing_entry = await result.scalar_one_or_none()  # Adding await here makes the program fail
+            # This is how it is properly done, this unawaited version works
             existing_entry = result.scalar_one_or_none()
+
             print(f"Type of existing_entry: {type(existing_entry)}")
             print(f"Dir of existing_entry: {dir(existing_entry)}")
-            print(f"Program name: {existing_entry.program_name}")
-            # Let's see if this line prints
-            print(f"Current hours_spent: {existing_entry.hours_spent}")
+
             if existing_entry:
+                # if existing_entry is not None:  # Changed from if existing_entry:
+                print(f"Program name: {existing_entry.program_name}")
                 existing_entry.hours_spent += usage_duration_in_hours
                 await db_session.commit()
             else:
@@ -85,7 +91,8 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         )
         async with self.session_maker() as session:
             result = await session.execute(query)
-            return await result.scalar_one_or_none()
+            # return await result.scalar_one_or_none()
+            # return result.scalar_one_or_none()
 
     async def delete(self, id: int):
         """Delete an entry by ID"""
