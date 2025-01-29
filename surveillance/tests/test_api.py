@@ -257,7 +257,7 @@ async def test_get_timeline_for_dashboard(
     mock_surveillance_state
 ):
     mouse_entries, keyboard_entries = mock_timeline_data
-    mock_service = DashboardService(AsyncMock(), AsyncMock())
+    mock_service = DashboardService(AsyncMock(), AsyncMock(), AsyncMock())
     mock_service.get_timeline = AsyncMock(
         return_value=(mouse_entries, keyboard_entries)
     )
@@ -303,7 +303,7 @@ async def test_get_program_time_for_dashboard(
     mock_surveillance_state
 ):
     print("305ru")
-    mock_service = DashboardService(AsyncMock(), AsyncMock())
+    mock_service = DashboardService(AsyncMock(), AsyncMock(), AsyncMock())
     mock_service.get_program_summary = AsyncMock(
         return_value=mock_program_summary_data
     )
@@ -315,7 +315,7 @@ async def test_get_program_time_for_dashboard(
 
     try:
         print("316ru")
-        response = test_client.get("/dashboard/summaries")
+        response = test_client.get("/dashboard/program/summaries")
         assert response.status_code == 200
         data = response.json()
 
