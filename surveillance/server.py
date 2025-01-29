@@ -24,7 +24,10 @@ from src.object.pydantic_dto import (
     VideoCreateEvent, FrameCreateEvent, VideoCreateConfirmation
 
 )
-from src.util.pydantic_factory import make_keyboard_log, make_mouse_log, make_program_log
+from src.util.pydantic_factory import (
+    make_keyboard_log, make_mouse_log, make_program_log,
+    manufacture_chrome_bar_chart, manufacture_programs_bar_chart
+)
 from src.surveillance_manager import SurveillanceManager
 from src.console_logger import ConsoleLogger
 
@@ -92,8 +95,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# this is a dependency function, it's like a lifespan but scoped to a request
 
 
 class HealthResponse(BaseModel):
@@ -224,22 +225,6 @@ async def get_timeline_for_dashboard(dashboard_service: DashboardService = Depen
     return TimelineRows(mouseRows=pydantic_mouse_rows, keyboardRows=pydantic_keyboard_rows)
 
 
-def program_summary_row_to_pydantic(v: DailyProgramSummary):
-    return DailyProgramSummarySchema(id=v.id, programName=v.program_name, hoursSpent=v.hours_spent, gatheringDate=v.gathering_date)
-
-
-def chrome_summary_row_to_pydantic(v: DailyChromeSummary):
-    return DailyChromeSummarySchema(id=v.id, domainName=v.domain_name, hoursSpent=v.hours_spent, gatheringDate=v.gathering_date)
-
-
-def manufacture_programs_bar_chart(program_data):
-    return [program_summary_row_to_pydantic(r) for r in program_data]
-
-
-def manufacture_chrome_bar_chart(program_data):
-    return [chrome_summary_row_to_pydantic(r) for r in program_data]
-
-
 @app.get("/dashboard/program/summaries", response_model=ProgramBarChartContent)
 async def get_program_time_for_dashboard(dashboard_service: DashboardService = Depends(get_dashboard_service)):
     program_data = await dashboard_service.get_program_summary()
@@ -247,9 +232,6 @@ async def get_program_time_for_dashboard(dashboard_service: DashboardService = D
         raise HTTPException(
             status_code=500, detail="Failed to retrieve program chart info")
     return ProgramBarChartContent(columns=manufacture_programs_bar_chart(program_data))
-
-# FIXME: Alt Tab Window has 2.2 hours, while Google Chrome has 0.9
-# Which obviously can't be true
 
 
 @app.get("/dashboard/chrome/summaries", response_model=ChromeBarChartContent)
@@ -324,3 +306,19 @@ async def receive_frame_info(frame_create_event: FrameCreateEvent, video_service
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+# FIXME: Alt Tab Window has 2.2 hours, while Google Chrome has 0.9
+# FIXME: Which obviously can't be true
+
+
+# TODO: When the computer shuts down, go to Chrome Summary, "end session"
+# TODO: When the computer shuts down, go to Program Summary, "end session"
+
+# TODO: When shut down detected, the Chrome Session, the final one, should be concluded
+
+    # TODO:
+    # FIXME: At the end of every day, a new set of counters, per program, should be initialized
+    # FIXME: In other words, the day goes from Jan 24 -> Jan 25, the db goes "new rows start here"
+    # FIXME:
+
+# TODO: Write unit tests for the Program Summary DAO, and a long one covering 12 sec and 4 windows

@@ -23,10 +23,6 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         self.logger = ConsoleLogger()
 
     async def create_if_new_else_update(self, session: ProgramSessionData):
-        # TODO:
-        # FIXME: At the end of every day, a new set of counters, per program, should be initialized
-        # FIXME: In other words, the day goes from Jan 24 -> Jan 25, the db goes "new rows start here"
-        # FIXME:
         """This method doesn't use queuing since it needs to check the DB state"""
         target_program_name = session.window_title
         # ### Calculate time difference
