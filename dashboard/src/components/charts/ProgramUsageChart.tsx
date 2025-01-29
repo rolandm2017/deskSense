@@ -26,7 +26,7 @@ const ProgramUsageChart: React.FC<ProgramUsageChartProps> = ({ barsInput }) => {
             // FIXME: strange keeping of low time programs
             // setBars(highEnoughTimeVals);
             // if (highEnoughTimeVals.length <= 3) {
-            setBars(sortedCols);
+            setBars(highEnoughTimeVals);
             // } else {
             // }
         }
