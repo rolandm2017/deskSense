@@ -22,12 +22,12 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         self.processing = False
         self.logger = ConsoleLogger()
 
-    async def create_if_new_else_update(self, session: ProgramSessionData):
+    async def create_if_new_else_update(self, program_session: ProgramSessionData):
         """This method doesn't use queuing since it needs to check the DB state"""
-        target_program_name = session.window_title
+        target_program_name = program_session.window_title
         # ### Calculate time difference
         usage_duration_in_hours = (
-            session.end_time - session.start_time).total_seconds() / 3600
+            program_session.end_time - program_session.start_time).total_seconds() / 3600
 
         # ### Check if entry exists for today
         today = datetime.now().date()
@@ -36,13 +36,17 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             func.date(DailyProgramSummary.gathering_date) == today
         )
 
-        async with self.session_maker() as session:
-            result = await session.execute(query)
+        async with self.session_maker() as db_session:
+            result = await db_session.execute(query)
             existing_entry = result.scalar_one_or_none()
-
+            print(f"Type of existing_entry: {type(existing_entry)}")
+            print(f"Dir of existing_entry: {dir(existing_entry)}")
+            print(f"Program name: {existing_entry.program_name}")
+            # Let's see if this line prints
+            print(f"Current hours_spent: {existing_entry.hours_spent}")
             if existing_entry:
                 existing_entry.hours_spent += usage_duration_in_hours
-                await session.commit()
+                await db_session.commit()
             else:
                 await self.create(target_program_name, usage_duration_in_hours, today)
 
