@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime, timedelta
 from unittest.mock import Mock, MagicMock
 
-from .mocks.mock_clock import MockClock
+from ..mocks.mock_clock import MockClock
 
 from src.config.definitions import productive_apps, productive_sites
 from src.object.classes import ProgramSessionData
@@ -60,7 +60,7 @@ def test_is_productive_chrome_productive():
     """Test that Chrome is marked productive when on productive sites"""
     clock = MockClock([datetime.now()])
     facade = Mock()
-    tracker = ProgramTrackerCore(clock, facade, Mock())
+    tracker = ProgramTrackerCore(clock, facade, Mock(), Mock())
 
     window_info_1 = {
         'process_name': 'Google Chrome',
@@ -81,7 +81,7 @@ def test_is_productive_chrome_unproductive():
     """Test that Chrome is marked unproductive on other sites"""
     clock = MockClock([datetime.now()])
     facade = Mock()
-    tracker = ProgramTrackerCore(clock, facade, Mock())
+    tracker = ProgramTrackerCore(clock, facade, Mock(), Mock())
 
     window_info = {
         'process_name': 'Google Chrome',
@@ -108,7 +108,7 @@ def test_start_new_session():
     facade = Mock()
     handler = Mock()
 
-    tracker = ProgramTrackerCore(clock, facade, handler)
+    tracker = ProgramTrackerCore(clock, facade, handler, Mock())
 
     assert tracker.current_session is None
 
@@ -146,7 +146,7 @@ def test_conclude_session():
     facade = Mock()
     handler = Mock()
 
-    tracker = ProgramTrackerCore(clock, facade, handler)
+    tracker = ProgramTrackerCore(clock, facade, handler, Mock())
 
     assert tracker.current_session is None
 
@@ -187,7 +187,7 @@ def test_window_change_triggers_handler():
     facade = Mock()
     handler = Mock()
 
-    tracker = ProgramTrackerCore(clock, facade, handler)
+    tracker = ProgramTrackerCore(clock, facade, handler, Mock())
 
     # Set up facade to yield a window change
     first_test_item = {
@@ -243,7 +243,7 @@ def test_handle_alt_tab_window():
     """Test handling of 'Alt-tab window' title"""
     clock = MockClock([datetime.now()])
     facade = Mock()
-    tracker = ProgramTrackerCore(clock, facade, Mock())
+    tracker = ProgramTrackerCore(clock, facade, Mock(), Mock())
 
     example = {'os': 'Ubuntu', 'pid': 128216,
                'process_name': 'Xorg', 'window_title': 'Alt-tab window'}
@@ -274,7 +274,7 @@ def test_a_series_of_programs():
     clock = MagicMock(wraps=clock)
     facade = Mock()
     handler = Mock()
-    tracker = ProgramTrackerCore(clock, facade, handler)
+    tracker = ProgramTrackerCore(clock, facade, handler, Mock())
 
     handler1_calls = []
     handler2_calls = []

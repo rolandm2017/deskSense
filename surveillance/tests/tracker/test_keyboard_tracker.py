@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from src.trackers.keyboard_tracker import KeyboardTrackerCore
 from src.util.threaded_tracker import ThreadedTracker
 from src.object.classes import KeyboardAggregate
-from .mocks.mock_clock import MockClock
+from ..mocks.mock_clock import MockClock
 
 
 class MockKeyboardFacade:
