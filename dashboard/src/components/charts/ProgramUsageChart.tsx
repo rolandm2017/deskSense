@@ -5,6 +5,8 @@ import {
     DailyProgramSummary,
 } from "../../interface/api.interface";
 
+import { chooseTickValuesSpacing } from "../../util/tickValueSpacing";
+
 interface ProgramUsageChartProps {
     barsInput: DailyProgramSummaries;
 }
@@ -48,8 +50,8 @@ const ProgramUsageChart: React.FC<ProgramUsageChartProps> = ({ barsInput }) => {
                 .padding(0.5);
 
             // Get the maximum value and round up to the nearest quarter hour
-            const maxValue = d3.max(bars, (d) => d.hoursSpent) || 0;
-            const roundedMax = Math.ceil(maxValue * 4) / 4; // Round up to nearest 0.25
+            const maxHoursSpentValue = d3.max(bars, (d) => d.hoursSpent) || 0;
+            const roundedMax = Math.ceil(maxHoursSpentValue * 4) / 4; // Round up to nearest 0.25
 
             const yScale = d3
                 .scaleLinear()
@@ -82,20 +84,20 @@ const ProgramUsageChart: React.FC<ProgramUsageChartProps> = ({ barsInput }) => {
                 .attr("font-size", "1.3em")
                 .attr("transform", `rotate(${labelRotation})`);
 
-            // Generate tick values up to the rounded maximum
-            const tickValues = Array.from(
-                { length: Math.floor(roundedMax * 4) + 1 },
-                (_, i) => i * 0.25
-            );
-
             const yAxis = d3
                 .axisLeft(yScale)
-                .tickValues(tickValues)
+                .tickValues(
+                    chooseTickValuesSpacing(maxHoursSpentValue, roundedMax + 1)
+                )
                 .tickFormat((d) => {
                     const value = +d;
+                    // TODO: Handle 0 - 3h, 3 - 6h, 6 - 8h
                     const hours = Math.floor(value);
                     const minutes = Math.round((value - hours) * 60);
 
+                    const limitedUsage = value < 3;
+                    const mediumUsage = value < 6;
+                    // const highUsage = value >= 6;
                     if (hours > 0 && minutes === 0) {
                         return `${hours}h`;
                     } else if (hours > 0) {

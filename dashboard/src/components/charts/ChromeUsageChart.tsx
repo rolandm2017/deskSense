@@ -5,6 +5,8 @@ import {
     DailyChromeSummary,
 } from "../../interface/api.interface";
 
+import { chooseTickValuesSpacing } from "../../util/tickValueSpacing";
+
 interface ChromeUsageChartProps {
     barsInput: DailyChromeSummaries;
 }
@@ -96,19 +98,17 @@ const ChromeUsageChart: React.FC<ChromeUsageChartProps> = ({ barsInput }) => {
             const maxHours = Math.ceil(
                 d3.max(bars.map((bar) => bar.hoursSpent)) || 0
             );
-            const tickValues = Array.from(
-                { length: maxHours * 4 }, // maxHrs * 4 + 1 gave too many excess ticks
-                (_, i) => i * 0.25
-            );
 
             const yAxis = d3
                 .axisLeft(yScale)
-                .tickValues(tickValues) // Custom tick values
+                .tickValues(
+                    chooseTickValuesSpacing(ceilingedMaxHours, maxHours)
+                ) // Custom tick values
                 .tickFormat((d) => {
                     const value = +d; // Convert to plain number
                     const hours = Math.floor(value);
                     const minutes = Math.round((value - hours) * 60);
-
+                    // const highUsage = value >= 6;
                     if (hours > 0 && minutes === 0) {
                         return `${hours}h`;
                     } else if (hours > 0) {

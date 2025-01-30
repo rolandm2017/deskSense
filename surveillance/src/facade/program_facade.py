@@ -1,9 +1,6 @@
-import traceback
 import psutil
 from typing import Dict, Optional
-from datetime import datetime
 from ..console_logger import ConsoleLogger
-import platform
 
 
 class ProgramApiFacadeCore:
