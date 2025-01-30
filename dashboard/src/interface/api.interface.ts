@@ -32,3 +32,56 @@ export interface ProgramActivityReport {
     count: number;
     programLogs: ProgramActivityLog[]; //
 }
+
+export interface DailyProgramSummary {
+    id: number;
+    programName: string;
+    hoursSpent: number;
+    gatheringDate: Date;
+}
+
+export interface DailyProgramSummaries {
+    columns: DailyProgramSummary[];
+}
+
+export interface DailyChromeSummary {
+    id: number;
+    domainName: string;
+    hoursSpent: number;
+    gatheringDate: Date;
+}
+
+export interface DailyChromeSummaries {
+    columns: DailyChromeSummary[];
+}
+
+export interface TimelineEntrySchema {
+    id: string;
+    group: string;
+    content: string;
+    start: Date;
+    end: Date;
+}
+
+export interface TimelineRows {
+    mouseRows: TimelineEntrySchema[];
+    keyboardRows: TimelineEntrySchema[];
+}
+
+export interface DayOfProgramUsage {
+    date: Date;
+    usage: DailyProgramSummary;
+}
+
+export interface WeeklyProgramUsage {
+    days: DayOfProgramUsage[];
+}
+
+export interface DayOfChromeUsage {
+    date: Date;
+    usage: DailyChromeSummary;
+}
+
+export interface WeeklyChromeUsage {
+    days: DayOfChromeUsage[];
+}

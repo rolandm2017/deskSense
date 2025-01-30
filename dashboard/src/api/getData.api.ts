@@ -3,6 +3,14 @@ import {
     TypingSessionsReport,
     MouseReport,
     ProgramActivityReport,
+    DailyChromeSummaries,
+    DailyChromeSummary,
+    DailyProgramSummaries,
+    DailyProgramSummary,
+    TimelineEntrySchema,
+    TimelineRows,
+    WeeklyProgramUsage,
+    WeeklyChromeUsage,
 } from "../interface/api.interface";
 
 const baseRoute = import.meta.env.VITE_API_URL + "/api";
@@ -69,41 +77,6 @@ const getProgramReport = withErrorHandling<ProgramActivityReport>(() =>
     api.get("/report/program")
 );
 
-export interface DailyProgramSummary {
-    id: number;
-    programName: string;
-    hoursSpent: number;
-    gatheringDate: Date;
-}
-
-export interface DailyProgramSummaries {
-    columns: DailyProgramSummary[];
-}
-
-export interface DailyChromeSummary {
-    id: number;
-    domainName: string;
-    hoursSpent: number;
-    gatheringDate: Date;
-}
-
-export interface DailyChromeSummaries {
-    columns: DailyChromeSummary[];
-}
-
-export interface TimelineEntrySchema {
-    id: string;
-    group: string;
-    content: string;
-    start: Date;
-    end: Date;
-}
-
-export interface TimelineRows {
-    mouseRows: TimelineEntrySchema[];
-    keyboardRows: TimelineEntrySchema[];
-}
-
 const getTimelineData = withErrorHandling<TimelineRows>(() =>
     api.get("/dashboard/timeline")
 );
@@ -116,6 +89,17 @@ const getChromeSummaries = withErrorHandling<DailyChromeSummaries>(() =>
     api.get("/dashboard/chrome/summaries")
 );
 
+const getWeeklyProgramUsage = withErrorHandling<WeeklyProgramUsage>(() =>
+    api.get("/dashboard/program/summaries/weekly")
+);
+
+const getWeeklyChromeUsage = withErrorHandling<WeeklyChromeUsage>(() =>
+    api.get("/dashboard/chrome/summaries/weekly")
+);
+
+// Omit weekly logs of mouse and keyboard movement.
+// How about one WEEK worth of it, shown stacked in one Timeline?
+
 export {
     getKeyboardReport,
     getMouseReport,
@@ -123,4 +107,6 @@ export {
     getTimelineData,
     getProgramSummaries,
     getChromeSummaries,
+    getWeeklyChromeUsage,
+    getWeeklyProgramUsage,
 };

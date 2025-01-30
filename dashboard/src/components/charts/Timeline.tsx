@@ -1,22 +1,23 @@
 import React, { useEffect, useRef, useMemo } from "react";
 import { Timeline, DataSet } from "vis-timeline/standalone";
 import "vis-timeline/styles/vis-timeline-graph2d.min.css";
-import { TimelineEntrySchema } from "../../api/getData.api";
+import { TimelineEntrySchema } from "../../interface/api.interface";
 
 interface TimelineWrapperProps {
     mouseLogsInput: TimelineEntrySchema[];
     typingSessionLogsInput: TimelineEntrySchema[];
 }
-
+// TODO:
+// https://claude.ai/chat/65402eae-ee0a-4a2a-81dd-a30866452535
 const TimelineWrapper: React.FC<TimelineWrapperProps> = ({
     mouseLogsInput,
     typingSessionLogsInput,
 }) => {
-    // console.log(
-    //     mouseLogsInput.length,
-    //     typingSessionLogsInput.length,
-    //     "timeline 27ru"
-    // );
+    console.log(
+        mouseLogsInput.length,
+        typingSessionLogsInput.length,
+        "timeline 27ru"
+    );
     // Memoize the DataSet creation
     const formattedApiDataDataSet = useMemo(() => {
         if (!mouseLogsInput?.length && !typingSessionLogsInput?.length) {
@@ -73,13 +74,13 @@ const TimelineWrapper: React.FC<TimelineWrapperProps> = ({
         const container = timelineRef.current;
         if (!container) return;
 
-        // Create timeline instance
-        timelineInstanceRef.current = new Timeline(
-            container,
-            formattedApiDataDataSet,
-            groups,
-            options
-        );
+        // // Create timeline instance
+        // timelineInstanceRef.current = new Timeline(
+        //     container,
+        //     formattedApiDataDataSet,
+        //     groups,
+        //     options
+        // );
 
         // Debounced click handler
         let clickTimeout: ReturnType<typeof setTimeout>;
@@ -92,7 +93,7 @@ const TimelineWrapper: React.FC<TimelineWrapperProps> = ({
             }, 300);
         };
 
-        timelineInstanceRef.current.on("click", handleClick);
+        // timelineInstanceRef.current.on("click", handleClick);
 
         // Cleanup
         return () => {

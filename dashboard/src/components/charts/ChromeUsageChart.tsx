@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import * as d3 from "d3";
-import { BarChartColumn } from "../../interface/misc.interface";
 import {
     DailyChromeSummaries,
     DailyChromeSummary,
-} from "../../api/getData.api";
+} from "../../interface/api.interface";
 
 interface ChromeUsageChartProps {
     barsInput: DailyChromeSummaries;

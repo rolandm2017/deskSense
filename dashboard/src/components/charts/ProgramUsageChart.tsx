@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import * as d3 from "d3";
-import { ProgramActivityReport } from "../../interface/api.interface";
-import { BarChartColumn } from "../../interface/misc.interface";
 import {
     DailyProgramSummaries,
     DailyProgramSummary,
-} from "../../api/getData.api";
+} from "../../interface/api.interface";
 
 interface ProgramUsageChartProps {
     barsInput: DailyProgramSummaries;
