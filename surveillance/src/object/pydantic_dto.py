@@ -60,6 +60,15 @@ class ProgramBarChartContent(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class DayOfProgramContent(BaseModel):
+    date: datetime
+    content: ProgramBarChartContent
+
+
+class WeeklyProgramContent(BaseModel):
+    days: List[DayOfProgramContent]
+
+
 class DailyChromeSummarySchema(BaseModel):
     id: int
     domainName: str
@@ -73,6 +82,15 @@ class ChromeBarChartContent(BaseModel):
     columns: List[DailyChromeSummarySchema]  # Use the Pydantic schema instead
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class DayOfChromeContent(BaseModel):
+    date: datetime
+    content: ChromeBarChartContent
+
+
+class WeeklyChromeContent(BaseModel):
+    days: List[DayOfChromeContent]
 
 
 class TimelineEntrySchema(BaseModel):

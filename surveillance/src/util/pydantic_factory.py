@@ -6,7 +6,7 @@ from src.db.models import DailyProgramSummary, DailyChromeSummary
 
 from src.object.pydantic_dto import (
     DailyProgramSummarySchema,
-    DailyChromeSummarySchema,
+    DailyChromeSummarySchema, WeeklyProgramContent, DayOfProgramContent
 
 )
 
@@ -63,3 +63,12 @@ def manufacture_programs_bar_chart(program_data):
 
 def manufacture_chrome_bar_chart(program_data):
     return [chrome_summary_row_to_pydantic(r) for r in program_data]
+
+
+def map_week_of_data_to_dto(week):
+    out = []
+    for day in week:
+        day = DayOfProgramContent(
+            date=day.date, content=manufacture_programs_bar_chart(day.columns))
+        out.append(day)
+    return out

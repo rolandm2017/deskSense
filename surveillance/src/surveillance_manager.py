@@ -17,6 +17,7 @@ from .services import ChromeService
 from .trackers.mouse_tracker import MouseTrackerCore
 from .trackers.keyboard_tracker import KeyboardTrackerCore
 from .trackers.program_tracker import ProgramTrackerCore
+from .trackers.system_tracker import SystemPowerTracker
 from .facade.keyboard_facade import KeyboardApiFacadeCore
 from .facade.mouse_facade import UbuntuMouseApiFacadeCore
 from .facade.program_facade import ProgramApiFacadeCore
@@ -31,8 +32,9 @@ from .util.threaded_tracker import ThreadedTracker
 
 
 class SurveillanceManager:
-    def __init__(self, session_maker: async_sessionmaker, shutdown_signal=None):
+    def __init__(self, session_maker: async_sessionmaker, chrome_service, shutdown_signal=None):
         self.session_maker = session_maker
+        self.chrome_service = chrome_service
         # Initialize tracking data
         self.current_window = None
         self.start_time = None
@@ -73,10 +75,12 @@ class SurveillanceManager:
             clock, mouse_facade, self.handle_mouse_ready_for_db)
         self.program_tracker = ProgramTrackerCore(
             clock, program_facade, self.handle_program_ready_for_db, chrome_svc.chrome_open_close_handler)
+        self.system_tracker = SystemPowerTracker(self.shutdown_handler)
 
         self.keyboard_thread = ThreadedTracker(self.keyboard_tracker)
         self.mouse_thread = ThreadedTracker(self.mouse_tracker)
         self.program_thread = ThreadedTracker(self.program_tracker)
+
         # self.key_tracker = KeyActivityTracker(self.data_dir)
 
     def start_trackers(self):
@@ -104,6 +108,11 @@ class SurveillanceManager:
         self.loop.create_task(
             self.chrome_summary_dao.create_if_new_else_update(event))
         self.loop.create_task(self.chrome_dao.create(event))
+
+    async def shutdown_handler(self):
+        await self.chrome_service.shutdown()
+        # await self.program_summary_dao.shutdown()
+        # await self.chrome_summary_dao.shutdown()
 
     def cleanup(self):  # Add this method to ProductivityTracker
         """Clean up resources before exit."""

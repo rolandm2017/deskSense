@@ -10,23 +10,22 @@ from typing import Optional, List
 
 from src.db.database import init_db, async_session_maker
 
-from src.db.models import DailyProgramSummary, DailyChromeSummary
 # from src.services import MouseService, KeyboardService, ProgramService, DashboardService, ChromeService
 # from src.services import get_mouse_service, get_chrome_service, get_program_service, get_keyboard_service, get_dashboard_service
 from src.object.pydantic_dto import (
     KeyboardReport,
     MouseReport,
     ProgramActivityReport,
-    DailyProgramSummarySchema,
-    DailyChromeSummarySchema,
     ProgramBarChartContent,
     ChromeBarChartContent, TimelineEntrySchema, TimelineRows, TabChangeEvent,
-    VideoCreateEvent, FrameCreateEvent, VideoCreateConfirmation
+    VideoCreateEvent, FrameCreateEvent, VideoCreateConfirmation,
+    WeeklyProgramContent, WeeklyChromeContent
 
 )
 from src.util.pydantic_factory import (
     make_keyboard_log, make_mouse_log, make_program_log,
-    manufacture_chrome_bar_chart, manufacture_programs_bar_chart
+    manufacture_chrome_bar_chart, manufacture_programs_bar_chart,
+    map_week_of_data_to_dto
 )
 from src.surveillance_manager import SurveillanceManager
 from src.console_logger import ConsoleLogger
@@ -70,8 +69,10 @@ async def lifespan(app: FastAPI):
     # Startup: Initialize application-wide resources
     await init_db()
 
+    chrome_service = get_chrome_service()
     # Use the session_maker directly
-    surveillance_state.manager = SurveillanceManager(async_session_maker)
+    surveillance_state.manager = SurveillanceManager(
+        async_session_maker, chrome_service)
     surveillance_state.manager.start_trackers()
 
     yield
@@ -243,6 +244,24 @@ async def get_chrome_time_for_dashboard(dashboard_service: DashboardService = De
     return ChromeBarChartContent(columns=manufacture_chrome_bar_chart(chrome_data))
 
 
+@app.get("/dashboard/program/summaries/week", response_model=WeeklyProgramContent)
+async def get_program_week_history(dashboard_service: DashboardService = Depends(get_dashboard_service)):
+    week_of_data = await dashboard_service.get_program_summary_weekly()
+    if not isinstance(week_of_data, list):
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve week of program chart info")
+    return WeeklyProgramContent(days=map_week_of_data_to_dto(week_of_data))
+
+
+@app.get("/dashboard/chrome/summaries/week", response_model=WeeklyChromeContent)
+async def get_program_week_history(dashboard_service: DashboardService = Depends(get_dashboard_service)):
+    week_of_data = await dashboard_service.get_chrome_summary_weekly()
+    if not isinstance(week_of_data, list):
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve week of program chart info")
+    return WeeklyChromeContent(days=map_week_of_data_to_dto(week_of_data))
+
+
 @app.get("/report/chrome")
 async def get_chrome_report(chrome_service: ChromeService = Depends(get_chrome_service)):
     logger.log_purple("[LOG] Get chrome tabs")
@@ -307,18 +326,18 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
-# FIXME: Alt Tab Window has 2.2 hours, while Google Chrome has 0.9
+# FIXME Jan 28: Alt Tab Window has 2.2 hours, while Google Chrome has 0.9
 # FIXME: Which obviously can't be true
 
 
-# TODO: When the computer shuts down, go to Chrome Summary, "end session"
+# TODO Jan 28: When the computer shuts down, go to Chrome Summary, "end session"
 # TODO: When the computer shuts down, go to Program Summary, "end session"
+# TODO: Does Prgram Tracker need to know when shutdown occurs? Does it already kniw? Investigate
 
-# TODO: When shut down detected, the Chrome Session, the final one, should be concluded
+# TODO Jan 28: When shut down detected, the Chrome Session, the final one, should be concluded
 
-    # TODO:
-    # FIXME: At the end of every day, a new set of counters, per program, should be initialized
-    # FIXME: In other words, the day goes from Jan 24 -> Jan 25, the db goes "new rows start here"
-    # FIXME:
+# TODO Jan 28: When Chrome is exited, the final tab session should be concluded.
+# TODO: So if ProgramTracker detects closing Chrome,
 
-# TODO: Write unit tests for the Program Summary DAO, and a long one covering 12 sec and 4 windows
+# FIXME Jan 28: At the end of every day, a new set of counters, per program, should be initialized
+# FIXME: In other words, the day goes from Jan 24 -> Jan 25, the db goes "new rows start here"

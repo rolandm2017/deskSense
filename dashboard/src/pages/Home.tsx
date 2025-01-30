@@ -18,6 +18,7 @@ import {
 import TimelineWrapper from "../components/charts/Timeline";
 import ChromeUsageChart from "../components/charts/ChromeUsageChart";
 import ActivityTimeline from "../components/charts/ActivityTimeline";
+import QQPlot from "../components/charts/QQPlotv1";
 
 function Home() {
     const [programSummaries, setProgramSummaries] =
@@ -88,15 +89,15 @@ function Home() {
                             <p>Loading</p>
                         )}
                     </h2>
-                    {timeline !== null ? (
+                    {/* {timeline !== null ? (
                         // <TimelineWrapper
                         //     typingSessionLogsInput={timeline?.keyboardRows}
                         //     mouseLogsInput={timeline?.mouseRows}
                         // />
-                        <ActivityTimeline />
+                        <QQPlot />
                     ) : (
                         <p>Loading...</p>
-                    )}
+                    )} */}
                 </div>
                 <div>
                     <h2 style={{ margin: "0px" }}>Chrome</h2>

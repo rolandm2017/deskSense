@@ -78,7 +78,6 @@ class ChromeService:
     # TODO: Log a bunch of real chrome tab submissions, use them in a test
 
     async def add_to_arrival_queue(self, tab_change_event: TabChangeEvent):
-        print("[DEBUG] adding ", tab_change_event, '70ru')
         self.message_queue.append(tab_change_event)
 
         MAX_QUEUE_LEN = 40
@@ -96,7 +95,7 @@ class ChromeService:
     async def debounced_process(self):
         one_second = 1  # TODO: Try 0.5 sec also
         await asyncio.sleep(one_second)
-        print("[debug] Starting processing")
+        # print("[debug] Starting processing")
         await self.start_processing_msgs()
 
     async def start_processing_msgs(self):
@@ -190,6 +189,20 @@ class ChromeService:
 
     def mark_chrome_inactive(self):
         self.is_active = False
+
+    async def shutdown(self):
+        """Mostly just logs the final chrome session to the db"""
+        if self.last_entry:
+            concluding_session = self.last_entry
+            #
+            # Ensure both datetimes are timezone-naive
+            #
+            now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+            start_time_naive = self.last_entry.start_time.replace(tzinfo=None)
+
+            duration = now_naive - start_time_naive
+            concluding_session.duration = duration
+            await self.handle_chrome_ready_for_db(concluding_session)
 
     async def handle_chrome_ready_for_db(self, event):
         await self.summary_dao.create_if_new_else_update(event)
