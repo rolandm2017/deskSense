@@ -20,10 +20,10 @@ const ChromeUsageChart: React.FC<ChromeUsageChartProps> = ({ barsInput }) => {
             const sortedCols = [...barsInput.columns].sort(
                 (a, b) => b.hoursSpent - a.hoursSpent
             );
-            console.log(
-                sortedCols.map((col) => Number(col.hoursSpent.toFixed(5))),
-                "Chrome - hours spent"
-            );
+            // console.log(
+            //     sortedCols.map((col) => Number(col.hoursSpent.toFixed(5))),
+            //     "Chrome - hours spent"
+            // );
             const highEnoughTimeVals = sortedCols.filter(
                 (col) => col.hoursSpent > 0.0833333 // 5 / 60 = 0.08333
             );
@@ -65,7 +65,8 @@ const ChromeUsageChart: React.FC<ChromeUsageChartProps> = ({ barsInput }) => {
             // Y Scale (Time Scale)
             const yScale = d3
                 .scaleLinear()
-                .domain([0, ceilingedMaxHours]) // Use hoursSpent as is
+                // .domain([0, ceilingedMaxHours]) // Use hoursSpent as is
+                .domain([0, Math.max(0.1, ceilingedMaxHours)])
                 .range([height, 0]);
 
             // Create bars
