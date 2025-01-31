@@ -47,10 +47,10 @@ const chromeRoute = baseRoute + "/chrome";
 
 const withErrorHandling = <T>(fn: () => Promise<AxiosResponse<T>>) => {
     return (): Promise<T> => {
-        console.log(
-            "Fetching:",
-            fn.toString().match(/api\.get\("([^"]+)"\)/)?.[1]
-        );
+        // console.log(
+        // "Fetching:",
+        // fn.toString().match(/api\.get\("([^"]+)"\)/)?.[1]
+        // );
         return fn()
             .then((response) => {
                 return response.data;

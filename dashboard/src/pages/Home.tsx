@@ -19,6 +19,9 @@ import TimelineWrapper from "../components/charts/Timeline";
 import ChromeUsageChart from "../components/charts/ChromeUsageChart";
 import ActivityTimeline from "../components/charts/ActivityTimeline";
 import QQPlot from "../components/charts/QQPlotv1";
+import QQPlotV2 from "../components/charts/QQPlotV2";
+import { aggregateEvents } from "../util/aggregateEvents";
+import { AggregatedTimelineEntry } from "../interface/misc.interface";
 
 function Home() {
     const [programSummaries, setProgramSummaries] =
@@ -26,6 +29,12 @@ function Home() {
     const [chromeSummaries, setChromeSummaries] =
         useState<DailyChromeSummaries | null>(null);
     const [timeline, setTimeline] = useState<TimelineRows | null>(null);
+    const [reducedMouseEvents, setReducedMouseEvents] = useState<
+        AggregatedTimelineEntry[]
+    >([]);
+    const [reducedKeyboardEvents, setReducedKeyboardEvents] = useState<
+        AggregatedTimelineEntry[]
+    >([]);
 
     // const [barsInput, setBarsInput] = useState<BarChartColumn[]>([]);
 
@@ -35,7 +44,7 @@ function Home() {
         if (programSummaries == null) {
             //
             getProgramSummaries().then((sums) => {
-                console.log(sums, "44ru");
+                // console.log(sums, "44ru");
                 setProgramSummaries(sums);
             });
         }
@@ -44,7 +53,7 @@ function Home() {
     useEffect(() => {
         if (chromeSummaries == null) {
             getChromeSummaries().then((sums) => {
-                console.log(sums, "58ru");
+                // console.log(sums, "58ru");
                 setChromeSummaries(sums);
             });
         }
@@ -53,9 +62,22 @@ function Home() {
     useEffect(() => {
         if (timeline == null) {
             getTimelineData().then((timeline) => {
-                console.log(timeline, "53ru");
+                // console.log(timeline, "53ru");
                 setTimeline(timeline);
             });
+        }
+    }, [timeline]);
+
+    useEffect(() => {
+        // reduce timeline rows to avoid CPU hug
+        if (timeline) {
+            console.log(timeline.mouseRows.length, "74ru");
+            const reducedMouseEvents = aggregateEvents(timeline.mouseRows);
+            const reducedKeyboardEvents = aggregateEvents(
+                timeline.keyboardRows
+            );
+            setReducedMouseEvents(reducedMouseEvents);
+            setReducedKeyboardEvents(reducedKeyboardEvents);
         }
     }, [timeline]);
 
@@ -89,15 +111,18 @@ function Home() {
                             <p>Loading</p>
                         )}
                     </h2>
-                    {/* {timeline !== null ? (
+                    {timeline !== null ? (
                         // <TimelineWrapper
                         //     typingSessionLogsInput={timeline?.keyboardRows}
                         //     mouseLogsInput={timeline?.mouseRows}
                         // />
-                        <QQPlot />
+                        <QQPlotV2
+                            mouseEvents={reducedMouseEvents}
+                            keyboardEvents={reducedKeyboardEvents}
+                        />
                     ) : (
                         <p>Loading...</p>
-                    )} */}
+                    )}
                 </div>
                 <div>
                     <h2 style={{ margin: "0px" }}>Chrome</h2>
