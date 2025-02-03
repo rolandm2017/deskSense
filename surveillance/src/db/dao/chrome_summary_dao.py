@@ -2,9 +2,9 @@
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from asyncio import Queue
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from ..models import DailyChromeSummary
+from ..models import DailyDomainSummary
 from ...console_logger import ConsoleLogger
 from ...object.classes import ChromeSessionData
 
@@ -31,9 +31,9 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
 
         # ### Check if entry exists for today
         today = datetime.now().date()  # FIXME: could be getting 0 hrs today b/c of the
-        query = select(DailyChromeSummary).where(
-            DailyChromeSummary.domain_name == target_domain_name,
-            func.date(DailyChromeSummary.gathering_date) == today
+        query = select(DailyDomainSummary).where(
+            DailyDomainSummary.domain_name == target_domain_name,
+            func.date(DailyDomainSummary.gathering_date) == today
         )
 
         async with self.session_maker() as session:
@@ -52,7 +52,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def create(self, target_domain_name, duration_in_hours, today):
         async with self.session_maker() as session:
-            new_entry = DailyChromeSummary(
+            new_entry = DailyDomainSummary(
                 domain_name=target_domain_name,
                 hours_spent=duration_in_hours,
                 gathering_date=today
@@ -60,10 +60,36 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             session.add(new_entry)
             await session.commit()
 
+    async def read_past_week(self):
+        today = datetime.now()
+        # +1 because weekday() counts from Monday=0
+        days_since_sunday = today.weekday() + 1
+        last_sunday = today - timedelta(days=days_since_sunday)
+        query = select(DailyDomainSummary).where(
+            func.date(DailyDomainSummary.gathering_date) >= last_sunday.date()
+        )
+
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            return result.scalars().all()
+
+    async def read_past_month(self):
+        """Read all entries from the 1st of the current month through today."""
+        today = datetime.now()
+        start_of_month = today.replace(day=1)  # First day of current month
+
+        query = select(DailyDomainSummary).where(
+            func.date(DailyDomainSummary.gathering_date) >= start_of_month.date()
+        )
+
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            return result.scalars().all()
+
     async def read_day(self, day: datetime):
         """Read all entries for the given day."""
-        query = select(DailyChromeSummary).where(
-            func.date(DailyChromeSummary.gathering_date) == day.date()
+        query = select(DailyDomainSummary).where(
+            func.date(DailyDomainSummary.gathering_date) == day.date()
         )
         async with self.session_maker() as session:
 
@@ -73,15 +99,15 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
     async def read_all(self):
         """Read all entries."""
         async with self.session_maker() as session:
-            result = await session.execute(select(DailyChromeSummary))
+            result = await session.execute(select(DailyDomainSummary))
             return result.scalars().all()
 
     async def read_row_for_domain(self, target_domain: str):
         """Reads the row for the target program for today."""
         today = datetime.now().date()
-        query = select(DailyChromeSummary).where(
-            DailyChromeSummary.domain_name == target_domain,
-            func.date(DailyChromeSummary.gathering_date) == today
+        query = select(DailyDomainSummary).where(
+            DailyDomainSummary.domain_name == target_domain,
+            func.date(DailyDomainSummary.gathering_date) == today
         )
         async with self.session_maker() as session:
             result = await session.execute(query)
@@ -90,7 +116,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
     async def delete(self, id: int):
         """Delete an entry by ID"""
         async with self.session_maker() as session:
-            entry = await session.get(DailyChromeSummary, id)
+            entry = await session.get(DailyDomainSummary, id)
             if entry:
                 await session.delete(entry)
                 await session.commit()

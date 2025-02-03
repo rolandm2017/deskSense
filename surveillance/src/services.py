@@ -234,6 +234,22 @@ class DashboardService:
         all = await self.chrome_summary_dao.read_day(today)
         return all
 
+    async def get_program_summary_weekly(self):
+        all = await self.program_summary_dao.read_past_week()
+        return all
+
+    async def get_chrome_summary_weekly(self):
+        all = await self.chrome_summary_dao.read_past_week()
+        return all
+
+    async def get_past_month_summaries_programs(self):
+        all = await self.program_summary_dao.read_past_month()
+        return all
+
+    async def get_past_month_summaries_chrome(self):
+        all = await self.chrome_summary_dao.read_past_month()
+        return all
+
 
 class VideoService:
     def __init__(self, video_dao: VideoDao, frame_dao: FrameDao):

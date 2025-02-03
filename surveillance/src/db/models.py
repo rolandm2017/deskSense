@@ -140,7 +140,7 @@ class TimelineEntryObj(Base):
     end = Column(DateTime)
 
 
-class DailyChromeSummary(Base):
+class DailyDomainSummary(Base):
     __tablename__ = "daily_chrome_summaries"
 
     id = Column(Integer, primary_key=True, index=True)

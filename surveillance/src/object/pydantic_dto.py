@@ -69,7 +69,7 @@ class WeeklyProgramContent(BaseModel):
     days: List[DayOfProgramContent]
 
 
-class DailyChromeSummarySchema(BaseModel):
+class DailyDomainSummarySchema(BaseModel):
     id: int
     domainName: str
     hoursSpent: float
@@ -79,7 +79,7 @@ class DailyChromeSummarySchema(BaseModel):
 
 
 class ChromeBarChartContent(BaseModel):
-    columns: List[DailyChromeSummarySchema]  # Use the Pydantic schema instead
+    columns: List[DailyDomainSummarySchema]  # Use the Pydantic schema instead
 
     model_config = ConfigDict(from_attributes=True)
 
