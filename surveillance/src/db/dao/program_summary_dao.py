@@ -2,7 +2,7 @@
 from sqlalchemy import select, func, text
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from asyncio import Queue
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from ..models import DailyProgramSummary
 from ...console_logger import ConsoleLogger
@@ -67,17 +67,41 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             session.add(new_entry)
             await session.commit()
 
+    async def read_past_week(self):
+        today = datetime.now()
+        # +1 because weekday() counts from Monday=0
+        days_since_sunday = today.weekday() + 1
+        last_sunday = today - timedelta(days=days_since_sunday)
+
+        query = select(DailyProgramSummary).where(
+            func.date(DailyProgramSummary.gathering_date) >= last_sunday.date()
+        )
+
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            return result.scalars().all()
+
+    async def read_past_month(self):
+        """Read all entries from the 1st of the current month through today."""
+        today = datetime.now()
+        start_of_month = today.replace(day=1)  # First day of current month
+
+        query = select(DailyProgramSummary).where(
+            func.date(DailyProgramSummary.gathering_date) >= start_of_month.date()
+        )
+
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            return result.scalars().all()
+
     async def read_day(self, day: datetime):
         """Read all entries for the given day."""
         query = select(DailyProgramSummary).where(
             func.date(DailyProgramSummary.gathering_date) == day.date()
         )
-        print(query, '74ru')
         async with self.session_maker() as session:
             result = await session.execute(query)
-            print(result, '77ru')
             thing = result.scalars().all()
-            print(thing, '79ru')
             return thing
 
     async def read_all(self):

@@ -9,6 +9,7 @@ from typing import Optional, List
 
 
 from src.db.database import init_db, async_session_maker
+from src.db.models import DailyDomainSummary, DailyProgramSummary
 
 # from src.services import MouseService, KeyboardService, ProgramService, DashboardService, ChromeService
 # from src.services import get_mouse_service, get_chrome_service, get_program_service, get_keyboard_service, get_dashboard_service
@@ -25,7 +26,7 @@ from src.object.pydantic_dto import (
 from src.util.pydantic_factory import (
     make_keyboard_log, make_mouse_log, make_program_log,
     manufacture_chrome_bar_chart, manufacture_programs_bar_chart,
-    map_week_of_data_to_dto
+    DtoMapper
 )
 from src.surveillance_manager import SurveillanceManager
 from src.console_logger import ConsoleLogger
@@ -246,20 +247,36 @@ async def get_chrome_time_for_dashboard(dashboard_service: DashboardService = De
 
 @app.get("/dashboard/program/summaries/week", response_model=WeeklyProgramContent)
 async def get_program_week_history(dashboard_service: DashboardService = Depends(get_dashboard_service)):
-    week_of_data = await dashboard_service.get_program_summary_weekly()
+    week_of_data: List[DailyProgramSummary] = await dashboard_service.get_program_summary_weekly()
     if not isinstance(week_of_data, list):
         raise HTTPException(
             status_code=500, detail="Failed to retrieve week of program chart info")
-    return WeeklyProgramContent(days=map_week_of_data_to_dto(week_of_data))
+    print(len(week_of_data), '254ru')
+    return WeeklyProgramContent(days=DtoMapper.map_programs(week_of_data))
 
 
 @app.get("/dashboard/chrome/summaries/week", response_model=WeeklyChromeContent)
-async def get_program_week_history(dashboard_service: DashboardService = Depends(get_dashboard_service)):
-    week_of_data = await dashboard_service.get_chrome_summary_weekly()
+async def get_chrome_week_history(dashboard_service: DashboardService = Depends(get_dashboard_service)):
+    week_of_data: List[DailyDomainSummary] = await dashboard_service.get_chrome_summary_weekly()
+    # TODO: Sort by day
+
     if not isinstance(week_of_data, list):
         raise HTTPException(
-            status_code=500, detail="Failed to retrieve week of program chart info")
-    return WeeklyChromeContent(days=map_week_of_data_to_dto(week_of_data))
+            status_code=500, detail="Failed to retrieve week of Chrome chart info")
+    print(len(week_of_data), '263ru')
+    return WeeklyChromeContent(days=DtoMapper.map_chrome(week_of_data))
+
+
+# @app.get("/dashboard/program/summaries/month", response_model=WeeklyProgramContent)
+# async def get_program_week_history(dashboard_service: DashboardService = Depends(get_dashboard_service)):
+#     week_of_data = await dashboard_service.get_program_summary_weekly()
+#     if not isinstance(week_of_data, list):
+#         raise HTTPException(
+#             status_code=500, detail="Failed to retrieve week of program chart info")
+#     return WeeklyProgramContent(days=map_week_of_data_to_dto(week_of_data))
+
+
+# @app.get("/dashboard/chrome/summaries/month")
 
 
 @app.get("/report/chrome")

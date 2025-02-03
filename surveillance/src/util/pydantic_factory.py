@@ -1,12 +1,13 @@
-from src.object.pydantic_dto import KeyboardLog, MouseLog, ProgramActivityLog
+from typing import List
 
+from src.object.pydantic_dto import KeyboardLog, MouseLog, ProgramActivityLog
 from src.object.dto import TypingSessionDto, MouseMoveDto, ProgramDto
 
-from src.db.models import DailyProgramSummary, DailyChromeSummary
+from src.db.models import DailyProgramSummary, DailyDomainSummary
 
 from src.object.pydantic_dto import (
     DailyProgramSummarySchema,
-    DailyChromeSummarySchema, WeeklyProgramContent, DayOfProgramContent
+    DailyDomainSummarySchema, WeeklyProgramContent, DayOfProgramContent, DayOfChromeContent, ChromeBarChartContent, ProgramBarChartContent
 
 )
 
@@ -53,22 +54,66 @@ def program_summary_row_to_pydantic(v: DailyProgramSummary):
     return DailyProgramSummarySchema(id=v.id, programName=v.program_name, hoursSpent=v.hours_spent, gatheringDate=v.gathering_date)
 
 
-def chrome_summary_row_to_pydantic(v: DailyChromeSummary):
-    return DailyChromeSummarySchema(id=v.id, domainName=v.domain_name, hoursSpent=v.hours_spent, gatheringDate=v.gathering_date)
+def chrome_summary_row_to_pydantic(v: DailyDomainSummary):
+    return DailyDomainSummarySchema(id=v.id, domainName=v.domain_name, hoursSpent=v.hours_spent, gatheringDate=v.gathering_date)
 
 
-def manufacture_programs_bar_chart(program_data):
+def manufacture_programs_bar_chart(program_data: List[DailyProgramSummary]):
     return [program_summary_row_to_pydantic(r) for r in program_data]
 
 
-def manufacture_chrome_bar_chart(program_data):
-    return [chrome_summary_row_to_pydantic(r) for r in program_data]
+def manufacture_chrome_bar_chart(chrome_data: List[DailyDomainSummary]):
+    return [chrome_summary_row_to_pydantic(r) for r in chrome_data]
 
 
-def map_week_of_data_to_dto(week):
+class DtoMapper:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def map_programs(week):
+        return map_week_of_program_data_to_dto(week)
+
+    @staticmethod
+    def map_chrome(week: List[DailyDomainSummary]):
+        return map_week_of_chrome_data_to_dto(week)
+
+
+def map_week_of_program_data_to_dto(unsorted_week: List[DailyProgramSummary]):
     out = []
-    for day in week:
-        day = DayOfProgramContent(
-            date=day.date, content=manufacture_programs_bar_chart(day.columns))
+    grouped_by_day = {}
+    print(len(unsorted_week), '98ru')
+    for domain_report in unsorted_week:
+        assert isinstance(domain_report, DailyProgramSummary)
+        day = domain_report.gathering_date.date()
+        if day in grouped_by_day:
+            grouped_by_day[day].append(domain_report)
+        else:
+            grouped_by_day[day] = [domain_report]
+    for day, reports in grouped_by_day.items():
+        content = [program_summary_row_to_pydantic(r) for r in reports]
+        bar_chart_content = ProgramBarChartContent(columns=content)
+        day = DayOfProgramContent(date=day, content=bar_chart_content)
+        out.append(day)
+    return out
+
+
+def map_week_of_chrome_data_to_dto(unsorted_week: List[DailyDomainSummary]):
+    out = []
+    grouped_by_day = {}
+    print(len(unsorted_week), '98ru')
+    for domain_report in unsorted_week:
+        assert isinstance(domain_report, DailyDomainSummary)
+        day = domain_report.gathering_date.date()
+        if day in grouped_by_day:
+            grouped_by_day[day].append(domain_report)
+        else:
+            grouped_by_day[day] = [domain_report]
+    for day, reports in grouped_by_day.items():
+        content = [
+            chrome_summary_row_to_pydantic(r) for r in reports]
+        bar_chart_content = ChromeBarChartContent(columns=content)
+        day = DayOfChromeContent(
+            date=day, content=bar_chart_content)
         out.append(day)
     return out
