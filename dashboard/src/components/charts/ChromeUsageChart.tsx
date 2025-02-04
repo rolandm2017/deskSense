@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import * as d3 from "d3";
 import {
     DailyChromeSummaries,
-    DailyChromeSummary,
+    DailyDomainSummary,
 } from "../../interface/api.interface";
 
 import { chooseTickValuesSpacing } from "../../util/tickValueSpacing";
@@ -12,7 +12,7 @@ interface ChromeUsageChartProps {
 }
 
 const ChromeUsageChart: React.FC<ChromeUsageChartProps> = ({ barsInput }) => {
-    const [bars, setBars] = useState<DailyChromeSummary[]>([]);
+    const [bars, setBars] = useState<DailyDomainSummary[]>([]);
 
     useEffect(() => {
         if (barsInput) {

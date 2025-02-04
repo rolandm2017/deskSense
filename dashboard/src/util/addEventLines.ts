@@ -3,6 +3,7 @@ import { Selection, ScaleLinear } from "d3";
 import { AggregatedTimelineEntry } from "../interface/misc.interface";
 
 export function addEventLines(
+    yPosition: number, // 50, 60
     entry: AggregatedTimelineEntry,
     eventLines: Selection<SVGGElement, unknown, null, undefined>,
     x: ScaleLinear<number, number, never>,
@@ -10,7 +11,6 @@ export function addEventLines(
 ) {
     const startX = x(dateToX(entry.start));
     const endX = x(dateToX(entry.end));
-    const yPosition = entry.group === "mouse" ? y(60) : y(55); // Different y positions based on group
 
     // Add the line for the event
     eventLines

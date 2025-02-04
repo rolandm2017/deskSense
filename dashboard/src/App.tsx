@@ -9,14 +9,14 @@ function App() {
         <BrowserRouter>
             <nav>
                 <Link to="/">Home</Link>
-                {/* <Link to="/weekly" className="ml-4">
+                <Link to="/weekly" className="ml-4">
                     Weekly Reports
-                </Link> */}
+                </Link>
             </nav>
 
             <Routes>
                 <Route path="/" element={<Home />} />
-                {/* <Route path="/weekly" element={<Weekly />} /> */}
+                <Route path="/weekly" element={<Weekly />} />
             </Routes>
         </BrowserRouter>
     );

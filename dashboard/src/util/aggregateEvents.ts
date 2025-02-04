@@ -3,7 +3,7 @@ import { TimelineEntrySchema } from "../interface/api.interface";
 import { AggregatedTimelineEntry } from "../interface/misc.interface";
 /*
  * Aggregates mouse and keyboard windows, in close proximity, into one event.
- *
+ * https://claude.ai/chat/65402eae-ee0a-4a2a-81dd-a30866452535
  */
 export const aggregateEvents = (
     events: TimelineEntrySchema[],

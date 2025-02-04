@@ -11,3 +11,14 @@ export interface AggregatedTimelineEntry {
     end: Date;
     eventCount?: number;
 }
+
+export interface DaysOfAggregatedRows {
+    date: Date;
+    mouseRow: AggregatedTimelineEntry[];
+    keyboardRow: AggregatedTimelineEntry[];
+}
+
+export interface WeeklyTimelineAggregate {
+    // the same as the WeeklyTimeline, but it's been aggregated
+    days: DaysOfAggregatedRows[];
+}
