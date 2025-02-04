@@ -4,14 +4,14 @@ import {
     MouseReport,
     ProgramActivityReport,
     DailyChromeSummaries,
-    DailyChromeSummary,
     DailyProgramSummaries,
-    DailyProgramSummary,
-    TimelineEntrySchema,
     TimelineRows,
-    WeeklyProgramUsage,
-    WeeklyChromeUsage,
 } from "../interface/api.interface";
+import {
+    WeeklyChromeUsage,
+    WeeklyProgramUsage,
+    WeeklyTimeline,
+} from "../interface/weekly.interface";
 
 const baseRoute = import.meta.env.VITE_API_URL + "/api";
 
@@ -39,11 +39,6 @@ api.interceptors.request.use(
         return Promise.reject(error);
     }
 );
-
-const keyboardEventsRoute = baseRoute + "/keyboard";
-const mouseEventsRoute = baseRoute + "/mouse";
-const programsRoute = baseRoute + "/program";
-const chromeRoute = baseRoute + "/chrome";
 
 const withErrorHandling = <T>(fn: () => Promise<AxiosResponse<T>>) => {
     return (): Promise<T> => {
@@ -89,16 +84,25 @@ const getChromeSummaries = withErrorHandling<DailyChromeSummaries>(() =>
     api.get("/dashboard/chrome/summaries")
 );
 
+// const getWeeklyTyping = withErrorHandling<WeeklyTyping>(() =>
+//     api.get("/dashboard/typing/summaries/week")
+// );
+
+// const getWeeklyClicking = withErrorHandling<WeeklyClicking>(() =>
+//     api.get("/dashboard/clicking/summaries/week")
+// );
+
 const getWeeklyProgramUsage = withErrorHandling<WeeklyProgramUsage>(() =>
-    api.get("/dashboard/program/summaries/weekly")
+    api.get("/dashboard/program/summaries/week")
 );
 
 const getWeeklyChromeUsage = withErrorHandling<WeeklyChromeUsage>(() =>
-    api.get("/dashboard/chrome/summaries/weekly")
+    api.get("/dashboard/chrome/summaries/week")
 );
 
-// Omit weekly logs of mouse and keyboard movement.
-// How about one WEEK worth of it, shown stacked in one Timeline?
+const getTimelineWeekly = withErrorHandling<WeeklyTimeline>(() =>
+    api.get("/dashboard/timeline/week")
+);
 
 export {
     getKeyboardReport,
@@ -107,6 +111,9 @@ export {
     getTimelineData,
     getProgramSummaries,
     getChromeSummaries,
+    // getWeeklyClicking,
+    // getWeeklyTyping,
     getWeeklyChromeUsage,
     getWeeklyProgramUsage,
+    getTimelineWeekly,
 };

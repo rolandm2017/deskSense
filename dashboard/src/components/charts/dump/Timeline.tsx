@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useMemo } from "react";
 import { Timeline, DataSet } from "vis-timeline/standalone";
 import "vis-timeline/styles/vis-timeline-graph2d.min.css";
-import { TimelineEntrySchema } from "../../interface/api.interface";
+import { TimelineEntrySchema } from "../../../interface/api.interface";
 
 interface TimelineWrapperProps {
     mouseLogsInput: TimelineEntrySchema[];

@@ -15,11 +15,8 @@ import {
     getTimelineData,
 } from "../api/getData.api";
 
-import TimelineWrapper from "../components/charts/Timeline";
 import ChromeUsageChart from "../components/charts/ChromeUsageChart";
-import ActivityTimeline from "../components/charts/ActivityTimeline";
-import QQPlot from "../components/charts/QQPlotv1";
-import QQPlotV2 from "../components/charts/QQPlotV2";
+import QQPlotV2 from "../components/charts/QQPlotV2Single";
 import { aggregateEvents } from "../util/aggregateEvents";
 import { AggregatedTimelineEntry } from "../interface/misc.interface";
 

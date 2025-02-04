@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
-import { DaysOfAggregatedRows } from "../../interface/misc.interface";
-import { DayOfChromeUsage } from "../../interface/weekly.interface";
+import { AggregatedTimelineEntry } from "../../interface/misc.interface";
+import { addEventLines } from "../../util/addEventLines";
 
 // https://observablehq.com/@d3/normal-quantile-plot
 // https://observablehq.com/@d3/line-chart-missing-data/2
@@ -10,7 +10,8 @@ import { DayOfChromeUsage } from "../../interface/weekly.interface";
 /* ** ** */
 
 interface QQPlotProps {
-    days: DaysOfAggregatedRows[];
+    mouseEvents: AggregatedTimelineEntry[];
+    keyboardEvents: AggregatedTimelineEntry[];
     width?: number;
     height?: number;
     margins?: {
@@ -22,7 +23,8 @@ interface QQPlotProps {
 }
 
 const QQPlotV2: React.FC<QQPlotProps> = ({
-    days,
+    mouseEvents,
+    keyboardEvents,
     width = 640,
     height = 640,
     margins = {
@@ -42,7 +44,7 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
      * the threshold for, for aggregation.
      *
      */
-    console.log(days.length, "35ru");
+    console.log(mouseEvents.length, keyboardEvents.length, "35ru");
     const svgRef = useRef<SVGSVGElement | null>(null);
 
     useEffect(() => {
@@ -114,19 +116,13 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
          * 608 = about y = 0
          * Claude says it's because of SVG coordinate system being reversed
          */
-
-        // mouseEvents.forEach((entry: AggregatedTimelineEntry) => {
-        //     addEventLines(20, entry, eventLines, x, y);
-        // });
-        // keyboardEvents.forEach((entry: AggregatedTimelineEntry) => {
-        //     addEventLines(608, entry, eventLines, x, y);
-        // });
-        days.forEach((day: DaysOfAggregatedRows, index: number) => {
-            const date = day.date; // TODO: For each day, move the chart's row down a bit // TODO: Use index
-            const mouse = day.mouseRow;
-            const keyboard = day.keyboardRow;
+        mouseEvents.forEach((entry: AggregatedTimelineEntry) => {
+            addEventLines(20, entry, eventLines, x, y);
         });
-    }, [width, height, margins, days]);
+        keyboardEvents.forEach((entry: AggregatedTimelineEntry) => {
+            addEventLines(608, entry, eventLines, x, y);
+        });
+    }, [width, height, margins, mouseEvents]);
 
     return (
         <div className="w-full p-4 rounded shadow-lg bg-white">
