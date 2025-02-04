@@ -118,6 +118,16 @@ class TimelineRows(BaseModel):
     mouseRows: List[TimelineEntrySchema]
     keyboardRows: List[TimelineEntrySchema]
 
+
+class DayOfTimelineRows(BaseModel):
+    date: datetime
+    row: TimelineRows
+
+
+class WeeklyTimeline(BaseModel):
+    days: List[DayOfTimelineRows]  # expect 1 to 7
+
+
 # Chrome stuff
 
 
