@@ -20,7 +20,7 @@ from src.object.pydantic_dto import (
     ProgramBarChartContent,
     ChromeBarChartContent, TimelineEntrySchema, TimelineRows, TabChangeEvent,
     VideoCreateEvent, FrameCreateEvent, VideoCreateConfirmation,
-    WeeklyProgramContent, WeeklyChromeContent
+    WeeklyProgramContent, WeeklyChromeContent, WeeklyTimeline, DayOfTimelineRows
 
 )
 from src.util.pydantic_factory import (
@@ -245,9 +245,16 @@ async def get_chrome_time_for_dashboard(dashboard_service: DashboardService = De
     return ChromeBarChartContent(columns=manufacture_chrome_bar_chart(chrome_data))
 
 
+#
+# Week Week
+# Week Week Week
+# Week Week
+#
+
 @app.get("/dashboard/program/summaries/week", response_model=WeeklyProgramContent)
 async def get_program_week_history(dashboard_service: DashboardService = Depends(get_dashboard_service)):
     week_of_data: List[DailyProgramSummary] = await dashboard_service.get_program_summary_weekly()
+    # FIXME: Test on Tuesday, Wednesday to see that they each get their own day
     if not isinstance(week_of_data, list):
         raise HTTPException(
             status_code=500, detail="Failed to retrieve week of program chart info")
@@ -258,13 +265,37 @@ async def get_program_week_history(dashboard_service: DashboardService = Depends
 @app.get("/dashboard/chrome/summaries/week", response_model=WeeklyChromeContent)
 async def get_chrome_week_history(dashboard_service: DashboardService = Depends(get_dashboard_service)):
     week_of_data: List[DailyDomainSummary] = await dashboard_service.get_chrome_summary_weekly()
-    # TODO: Sort by day
+    # FIXME: Test on Tuesday, Wednesday to see that they each get their own day
 
     if not isinstance(week_of_data, list):
         raise HTTPException(
             status_code=500, detail="Failed to retrieve week of Chrome chart info")
     print(len(week_of_data), '263ru')
     return WeeklyChromeContent(days=DtoMapper.map_chrome(week_of_data))
+
+
+@app.get("/dashboard/timeline/week", response_model=WeeklyTimeline)
+async def get_timeline_weekly(dashboard_service: DashboardService = Depends(get_dashboard_service)):
+    days = await dashboard_service.get_weekly_timeline()
+    rows: List[DayOfTimelineRows] = []
+
+    for day in days:
+        assert isinstance(day, dict)
+        mouse_rows = day["mouse_events"]
+        keyboard_rows = day["keyboard_events"]
+        # Convert SQLAlchemy models to Pydantic models
+        pydantic_mouse_rows = [
+            TimelineEntrySchema.from_orm_model(row) for row in mouse_rows]
+        pydantic_keyboard_rows = [
+            TimelineEntrySchema.from_orm_model(row) for row in keyboard_rows]
+
+        row = TimelineRows(mouseRows=pydantic_mouse_rows,
+                           keyboardRows=pydantic_keyboard_rows)
+
+        row = DayOfTimelineRows(date=day["date"], row=row)
+        rows.append(row)
+
+    return WeeklyTimeline(days=rows)
 
 
 # @app.get("/dashboard/program/summaries/month", response_model=WeeklyProgramContent)

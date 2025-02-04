@@ -224,6 +224,29 @@ class DashboardService:
         all_keyboard_events = await self.timeline_dao.read_day_keyboard(today)
         return all_mouse_events, all_keyboard_events
 
+    async def get_weekly_timeline(self):
+        # TODO
+        today = datetime.now()
+        # +1 because weekday() counts from Monday=0
+        days_since_sunday = today.weekday() + 1
+        last_sunday = today - timedelta(days=days_since_sunday)
+
+        # TODO: let the frontend tell the backend how readily to stitch the timeline events together
+
+        all_days = []
+        # +1 to include today
+        for days_after_sunday in range(days_since_sunday + 1):
+            current_day = last_sunday + timedelta(days=days_after_sunday)
+            # Or process them directly like your get_timeline() example:
+            mouse_events = await self.timeline_dao.read_day_mice(current_day)
+            keyboard_events = await self.timeline_dao.read_day_keyboard(current_day)
+            day = {"date": current_day,
+                   "mouse_events": mouse_events,
+                   "keyboard_events": keyboard_events}
+            all_days.append(day)
+
+        return all_days
+
     async def get_program_summary(self):
         today = datetime.now()
         all = await self.program_summary_dao.read_day(today)
@@ -236,10 +259,12 @@ class DashboardService:
 
     async def get_program_summary_weekly(self):
         all = await self.program_summary_dao.read_past_week()
+        # FIXME: Ensure that it actually gets all days of week; can't test it on Monday
         return all
 
     async def get_chrome_summary_weekly(self):
         all = await self.chrome_summary_dao.read_past_week()
+        # FIXME: Ensure that it actually gets all days of week; can't test it on Monday
         return all
 
     async def get_past_month_summaries_programs(self):
