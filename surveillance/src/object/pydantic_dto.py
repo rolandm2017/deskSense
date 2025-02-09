@@ -126,6 +126,7 @@ class DayOfTimelineRows(BaseModel):
 
 class WeeklyTimeline(BaseModel):
     days: List[DayOfTimelineRows]  # expect 1 to 7
+    start_date: datetime
 
 
 # Chrome stuff

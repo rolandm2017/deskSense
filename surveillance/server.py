@@ -276,7 +276,7 @@ async def get_chrome_week_history(dashboard_service: DashboardService = Depends(
 
 @app.get("/dashboard/timeline/week", response_model=WeeklyTimeline)
 async def get_timeline_weekly(dashboard_service: DashboardService = Depends(get_dashboard_service)):
-    days = await dashboard_service.get_weekly_timeline()
+    days, latest_sunday = await dashboard_service.get_weekly_timeline()
     rows: List[DayOfTimelineRows] = []
 
     for day in days:
@@ -295,7 +295,7 @@ async def get_timeline_weekly(dashboard_service: DashboardService = Depends(get_
         row = DayOfTimelineRows(date=day["date"], row=row)
         rows.append(row)
 
-    return WeeklyTimeline(days=rows)
+    return WeeklyTimeline(days=rows, start_date=latest_sunday)
 
 
 # @app.get("/dashboard/program/summaries/month", response_model=WeeklyProgramContent)

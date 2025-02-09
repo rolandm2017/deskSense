@@ -1,16 +1,20 @@
-import { Selection, ScaleLinear } from "d3";
-
+import { Selection, ScaleTime } from "d3";
+import { ScaleBand } from "d3";
 import { AggregatedTimelineEntry } from "../interface/misc.interface";
 
 export function addEventLines(
-    yPosition: number, // 50, 60
+    yPosition: number,
     entry: AggregatedTimelineEntry,
     eventLines: Selection<SVGGElement, unknown, null, undefined>,
-    x: ScaleLinear<number, number, never>,
-    y: ScaleLinear<number, number, never>
+    x: ScaleTime<number, number, never>,
+    y: ScaleBand<string>
 ) {
-    const startX = x(dateToX(entry.start));
-    const endX = x(dateToX(entry.end));
+    // Convert the entry times to our reference date (Jan 1, 2024)
+    const startTime = normalizeToReferenceDate(entry.start);
+    const endTime = normalizeToReferenceDate(entry.end);
+
+    const startX = x(startTime);
+    const endX = x(endTime);
 
     // Add the line for the event
     eventLines
@@ -37,6 +41,25 @@ export function addEventLines(
         .attr("cy", yPosition)
         .attr("r", 2)
         .attr("fill", entry.group === "mouse" ? "steelblue" : "#e41a1c");
+}
+
+// Helper function to normalize any date to our reference date (Jan 1, 2024)
+function normalizeToReferenceDate(
+    date: Date | string | { toString: () => string }
+): Date {
+    // Ensure we're working with a proper Date object
+    const dateObj = date instanceof Date ? date : new Date(date.toString());
+
+    // Create a new date on our reference day (Jan 1, 2024)
+    return new Date(
+        2024, // year
+        0, // month (0 = January)
+        1, // day
+        dateObj.getHours(),
+        dateObj.getMinutes(),
+        dateObj.getSeconds(),
+        dateObj.getMilliseconds()
+    );
 }
 
 // Helper function to map Date to x position (-3 to 3)
