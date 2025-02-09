@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
 import { DaysOfAggregatedRows } from "../../interface/misc.interface";
 import { DayOfChromeUsage } from "../../interface/weekly.interface";
+import { addEventLines } from "../../util/addEventLines";
 
 // https://observablehq.com/@d3/normal-quantile-plot
 // https://observablehq.com/@d3/line-chart-missing-data/2
@@ -115,16 +116,32 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
          * Claude says it's because of SVG coordinate system being reversed
          */
 
-        // mouseEvents.forEach((entry: AggregatedTimelineEntry) => {
-        //     addEventLines(20, entry, eventLines, x, y);
-        // });
-        // keyboardEvents.forEach((entry: AggregatedTimelineEntry) => {
-        //     addEventLines(608, entry, eventLines, x, y);
-        // });
+        // TODO: #1 - get the days onto the graph, y axis
+        // TODO: #2 - space the days apart vertically, so that ther eis
+
+        const baseRowSpacing = 60;
+
+        function calculateMouseRowPosition(dayNumber: number) {
+            // old version: 20 * dayNumber
+            return baseRowSpacing * dayNumber + 10;
+        }
+
+        function calculateKeyboardRowPosition(dayNumber: number) {
+            // old version:  20 * dayNumber + 10
+            return baseRowSpacing * dayNumber + 20;
+        }
+
         days.forEach((day: DaysOfAggregatedRows, index: number) => {
-            const date = day.date; // TODO: For each day, move the chart's row down a bit // TODO: Use index
-            const mouse = day.mouseRow;
-            const keyboard = day.keyboardRow;
+            console.log(day.date, "126ru");
+            const dayNumber = new Date(day.date).getDay() + 1; // TODO: For each day, move the chart's row down a bit // TODO: Use index
+            day.mouseRow.forEach((event) => {
+                const yPos = calculateMouseRowPosition(dayNumber);
+                addEventLines(yPos, event, eventLines, x, y);
+            });
+            day.keyboardRow.forEach((event) => {
+                const yPos = calculateKeyboardRowPosition(dayNumber);
+                addEventLines(yPos, event, eventLines, x, y);
+            });
         });
     }, [width, height, margins, days]);
 

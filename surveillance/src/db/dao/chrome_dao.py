@@ -16,8 +16,14 @@ class ChromeDao(BaseQueueingDao):
 
     async def create(self, session: ChromeSessionData):
         # Try without start_time end_time for now
+
+        # Truncate detail because the database col is VARCHAR(255)
+        varchar_limit = 255
+        truncated_for_db_col = session.detail[:varchar_limit] if len(
+            session.detail) > varchar_limit else session.detail
+
         chrome_deliverable = ChromeTab(
-            url=session.domain, tab_title=session.detail, productive=session.productive, tab_change_time=session.start_time)
+            url=session.domain, tab_title=truncated_for_db_col, productive=session.productive, tab_change_time=session.start_time)
         await self.queue_item(chrome_deliverable)
 
     async def read_all(self):
