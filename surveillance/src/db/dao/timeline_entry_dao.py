@@ -4,6 +4,8 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from datetime import datetime, timedelta
 
+from typing import List
+
 from .base_dao import BaseQueueingDao
 from ..models import TimelineEntryObj
 from ...object.dto import ProgramDto
@@ -46,7 +48,7 @@ class TimelineEntryDao(BaseQueueingDao):
             max_id = result.scalar()
             return max_id or 0  # Return 0 if table is empty
 
-    async def read_day(self, day: datetime, event_type: ChartEventType):
+    async def read_day(self, day: datetime, event_type: ChartEventType) -> List[TimelineEntryObj]:
         """Read all entries for the given day"""
         start_of_day = datetime.combine(day.date(), datetime.min.time())
         end_of_day = start_of_day + timedelta(days=1)
@@ -61,10 +63,10 @@ class TimelineEntryDao(BaseQueueingDao):
             result = await session.execute(query)
             return result.scalars().all()
 
-    async def read_day_mice(self, day: datetime):
+    async def read_day_mice(self, day: datetime) -> List[TimelineEntryObj]:
         return await self.read_day(day, ChartEventType.MOUSE)
 
-    async def read_day_keyboard(self, day: datetime):
+    async def read_day_keyboard(self, day: datetime) -> List[TimelineEntryObj]:
         return await self.read_day(day, ChartEventType.KEYBOARD)
 
     async def read_all(self):

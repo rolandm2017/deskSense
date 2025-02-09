@@ -51,9 +51,17 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
 
         d3.select(svgRef.current).selectAll("*").remove();
 
+        // const x = d3
+        //     .scaleLinear()
+        //     .domain([-3, 3])
+        //     .nice()
+        //     .range([margins.left, width - margins.right]);
         const x = d3
-            .scaleLinear()
-            .domain([-3, 3])
+            .scaleTime()
+            .domain([
+                new Date(2024, 0, 1, 5, 0), // 5 AM
+                new Date(2024, 0, 1, 23, 59), // 11:59 PM
+            ])
             .nice()
             .range([margins.left, width - margins.right]);
 
@@ -84,9 +92,16 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
             .style("height", "auto");
 
         // Add x-axis (time of day)
+        // Add x-axis (time of day)
         svg.append("g")
             .attr("transform", `translate(0,${height - margins.bottom})`)
-            .call(d3.axisBottom(x))
+            .call(
+                d3
+                    .axisBottom(x)
+                    .tickFormat((d: Date | d3.NumberValue) =>
+                        d instanceof Date ? d3.timeFormat("%I:%M %p")(d) : ""
+                    )
+            )
             .call((g) => g.select(".domain").remove())
             .call((g) =>
                 g

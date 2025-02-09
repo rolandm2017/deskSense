@@ -28,6 +28,9 @@ function Weekly() {
     const [aggregatedTimeline, setAggregated] =
         useState<WeeklyTimelineAggregate | null>(null);
 
+    const [startDate, setStartDate] = useState<Date | null>(null);
+    const [endDate, setEndDate] = useState<Date | null>(null);
+
     useEffect(() => {
         getWeeklyChromeUsage().then((weekly) => {
             setChrome(weekly);
@@ -36,6 +39,8 @@ function Weekly() {
             setPrograms(weekly);
         });
         getTimelineWeekly().then((weekly) => {
+            // TODO: Get the start and end date
+            // Do I make
             setTimeline(weekly);
         });
     }, []);
@@ -72,7 +77,17 @@ function Weekly() {
             <div>
                 <h2>Weekly Reports</h2>
                 <div>
-                    <h3>Current Week</h3>
+                    {/* <h3>Current Week</h3> */}
+                    <h3>
+                        {startDate && endDate ? (
+                            <p>
+                                Showing {startDate.toString()} to{" "}
+                                {endDate.toString()}
+                            </p>
+                        ) : (
+                            <p>Loading</p>
+                        )}
+                    </h3>
                     {/* // TODO: Show the DATES being displayed, the range. */}
                     {/* // "Showing Sunday 22 to ..." */}
                     <QQPlotV2

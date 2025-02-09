@@ -225,7 +225,13 @@ class DashboardService:
         return all_mouse_events, all_keyboard_events
 
     async def get_weekly_timeline(self):
-        # TODO
+        # FIXME Feb 9: I really need to move the Aggregation process to the server
+        # FIXME: And possibly ready up Aggregate tables in advance so that
+        # FIXME: I don't have to run that compute intensive loop over and over
+        # FIXME: a solution could be, each day, the finalized version of the day is computed
+        # FIXME: And then the unfinalized day, is sent "live" meaning "what we have recorded so far"
+        # FIXME: but the problem is then, how do I determine what is the right Width of stitching
+        # FIXME: threshold is the best one? Maybe I should test various ones and see if one is obviously right/wrong
         today = datetime.now()
         # +1 because weekday() counts from Monday=0
         days_since_sunday = today.weekday() + 1
@@ -245,7 +251,7 @@ class DashboardService:
                    "keyboard_events": keyboard_events}
             all_days.append(day)
 
-        return all_days
+        return all_days, last_sunday
 
     async def get_program_summary(self):
         today = datetime.now()
