@@ -25,12 +25,12 @@ interface QQPlotProps {
 const QQPlotV2: React.FC<QQPlotProps> = ({
     days,
     width = 640,
-    height = 640,
+    height = 384, // Reduced to 0.6 * 640
     margins = {
         top: 20,
         right: 40,
         bottom: 30,
-        left: 40,
+        left: 60, // Increased left margin to accommodate day names
     },
 }) => {
     /*
@@ -57,11 +57,23 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
             .nice()
             .range([margins.left, width - margins.right]);
 
+        // Define days of week in order (Sunday at top)
+        const daysOfWeek = [
+            "Sunday",
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+        ];
+
+        // Create y scale using band scale for categorical data
         const y = d3
-            .scaleLinear()
-            .domain([0, 120])
-            .nice()
-            .range([height - margins.bottom, margins.top]);
+            .scaleBand()
+            .domain(daysOfWeek)
+            .range([margins.top, height - margins.bottom])
+            .padding(0.1);
 
         const svg = d3
             .select(svgRef.current)
@@ -110,12 +122,6 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
         const eventLines: d3.Selection<SVGGElement, unknown, null, undefined> =
             svg.append("g").attr("class", "event-lines");
 
-        /*
-         * 20 = very top of the range, y = 120
-         * 608 = about y = 0
-         * Claude says it's because of SVG coordinate system being reversed
-         */
-
         // TODO: #1 - get the days onto the graph, y axis
         // TODO: #2 - space the days apart vertically, so that ther eis
 
@@ -131,16 +137,27 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
             return baseRowSpacing * dayNumber + 20;
         }
 
-        days.forEach((day: DaysOfAggregatedRows, index: number) => {
+        /*
+         * 20 = very top of the range, y = 120
+         * 608 = about y = 0
+         * Claude says it's because of SVG coordinate system being reversed
+         */
+
+        days.forEach((day: DaysOfAggregatedRows) => {
             console.log(day.date, "126ru");
-            const dayNumber = new Date(day.date).getDay() + 1; // TODO: For each day, move the chart's row down a bit // TODO: Use index
+            const dayName = daysOfWeek[new Date(day.date).getDay()];
+
+            // Get the center of the band for the current day
+            const yPosition = y(dayName)! + y.bandwidth() / 2;
+
+            // Add mouse events
             day.mouseRow.forEach((event) => {
-                const yPos = calculateMouseRowPosition(dayNumber);
-                addEventLines(yPos, event, eventLines, x, y);
+                addEventLines(yPosition, event, eventLines, x, y);
             });
+
+            // Add keyboard events slightly below mouse events
             day.keyboardRow.forEach((event) => {
-                const yPos = calculateKeyboardRowPosition(dayNumber);
-                addEventLines(yPos, event, eventLines, x, y);
+                addEventLines(yPosition + 10, event, eventLines, x, y);
             });
         });
     }, [width, height, margins, days]);
