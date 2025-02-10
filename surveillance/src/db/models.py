@@ -140,6 +140,44 @@ class TimelineEntryObj(Base):
     end = Column(DateTime)
 
 
+class PrecomputedTimelineEntry(Base):
+    """
+    Problem: The program was sending 7.2 mb of timeline data, to be aggregated each refresh, over and over.
+
+    Solution: Precompute the timeline data here on the server, since 
+    it only needs to be done one time supposing the result is stored and demanded effectively.
+    """
+    __tablename__ = "precomputed_timelines"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    clientFacingId = Column(
+        String,
+        Computed(
+            "CASE WHEN \"group\" = 'MOUSE' THEN 'mouse-' || id::TEXT ELSE 'keyboard-' || id::TEXT END",
+            # postgresql_persisted=True  # Add this back
+            persisted=True
+        )
+    )
+
+    group = Column(SQLAlchemyEnum(ChartEventType))
+
+    content = Column(
+        String,
+        Computed(
+            "CASE WHEN \"group\" = 'MOUSE' THEN 'Mouse Event ' || id::TEXT ELSE 'Typing Session ' || id::TEXT END",
+            # postgresql_persisted=True,  # Add this back
+            persisted=True
+
+        )
+    )
+
+    start = Column(DateTime)
+    end = Column(DateTime)
+
+    # count = Column(Integer)  # could be nice to know how many events went into an entry.
+
+
 class DailyDomainSummary(Base):
     __tablename__ = "daily_chrome_summaries"
 
