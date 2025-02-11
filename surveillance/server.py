@@ -1,11 +1,14 @@
 # server.py
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Depends, status, Request
+from fastapi import Path
 from fastapi.middleware.cors import CORSMiddleware
+
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
 import asyncio
 # import time
 from typing import Optional, List
+from datetime import date
 
 
 from src.db.database import init_db, async_session_maker
@@ -276,7 +279,7 @@ async def get_chrome_week_history(dashboard_service: DashboardService = Depends(
 
 @app.get("/dashboard/timeline/week", response_model=WeeklyTimeline)
 async def get_timeline_weekly(dashboard_service: DashboardService = Depends(get_dashboard_service)):
-    days, latest_sunday = await dashboard_service.get_weekly_timeline()
+    days, latest_sunday = await dashboard_service.get_current_week_timeline()
     rows: List[DayOfTimelineRows] = []
 
     for day in days:
@@ -298,16 +301,28 @@ async def get_timeline_weekly(dashboard_service: DashboardService = Depends(get_
     return WeeklyTimeline(days=rows, start_date=latest_sunday)
 
 
-# @app.get("/dashboard/program/summaries/month", response_model=WeeklyProgramContent)
-# async def get_program_week_history(dashboard_service: DashboardService = Depends(get_dashboard_service)):
-#     week_of_data = await dashboard_service.get_program_summary_weekly()
-#     if not isinstance(week_of_data, list):
-#         raise HTTPException(
-#             status_code=500, detail="Failed to retrieve week of program chart info")
-#     return WeeklyProgramContent(days=map_week_of_data_to_dto(week_of_data))
+@app.get("/dashboard/timeline/week/{week_of}", response_model=WeeklyTimeline)
+async def get_previous_week_of_timeline(week_of: date = Path(..., description="Week starting date"), dashboard_service: DashboardService = Depends(get_dashboard_service)):
+    days, start_of_week = await dashboard_service.get_specific_week_timeline(week_of)
+    rows: List[DayOfTimelineRows] = []
 
+    for day in days:
+        assert isinstance(day, dict)
+        mouse_rows = day["mouse_events"]
+        keyboard_rows = day["keyboard_events"]
+        # Convert SQLAlchemy models to Pydantic models
+        pydantic_mouse_rows = [
+            TimelineEntrySchema.from_orm_model(row) for row in mouse_rows]
+        pydantic_keyboard_rows = [
+            TimelineEntrySchema.from_orm_model(row) for row in keyboard_rows]
 
-# @app.get("/dashboard/chrome/summaries/month")
+        row = TimelineRows(mouseRows=pydantic_mouse_rows,
+                           keyboardRows=pydantic_keyboard_rows)
+
+        row = DayOfTimelineRows(date=day["date"], row=row)
+        rows.append(row)
+
+    return WeeklyTimeline(days=rows, start_date=start_of_week)
 
 
 @app.get("/report/chrome")

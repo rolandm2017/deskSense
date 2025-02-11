@@ -2,7 +2,7 @@
 from fastapi import Depends
 from typing import List
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 from operator import attrgetter
 
 from .db.dao.mouse_dao import MouseDao
@@ -224,7 +224,7 @@ class DashboardService:
         all_keyboard_events = await self.timeline_dao.read_day_keyboard(today)
         return all_mouse_events, all_keyboard_events
 
-    async def get_weekly_timeline(self):
+    async def get_current_week_timeline(self):
         # FIXME Feb 9: I really need to move the Aggregation process to the server
         # FIXME: And possibly ready up Aggregate tables in advance so that
         # FIXME: I don't have to run that compute intensive loop over and over
@@ -252,6 +252,47 @@ class DashboardService:
             all_days.append(day)
 
         return all_days, last_sunday
+
+    async def get_specific_week_timeline(self, week_of):
+        if isinstance(week_of, date):
+            week_of = datetime.combine(week_of, datetime.min.time())
+        else:
+            raise TypeError("Expected a date object, got " + str(week_of))
+        is_sunday = week_of.weekday() == 6
+        if is_sunday:
+            # If the week_of is a sunday, start from there.
+            sunday_that_starts_the_week = week_of
+            days_since_sunday = 0
+        else:
+            # If the week_of is not a sunday,
+            # go back in time to the most recent sunday,
+            # and start from there. This is error handling
+            offset = 1
+            days_per_week = 7
+            days_since_sunday = week_of.weekday() + offset % days_per_week
+            sunday_that_starts_the_week = week_of - \
+                timedelta(days=days_since_sunday)
+
+        # TODO: Make this method purely, always, every time, retrieve the precomputed timelines,
+        # TODO: as they are by definition tables that already were computed
+
+        all_days = []
+
+        # +1 to include today
+        for days_after_sunday in range(days_since_sunday + 1):
+            current_day = sunday_that_starts_the_week + \
+                timedelta(days=days_after_sunday)
+            # Or process them directly like your get_timeline() example:
+            print(current_day, type(current_day), '281ru')
+            # FIXME: 2025-02-09 281ru
+            mouse_events = await self.timeline_dao.read_day_mice(current_day)
+            keyboard_events = await self.timeline_dao.read_day_keyboard(current_day)
+            day = {"date": current_day,
+                   "mouse_events": mouse_events,
+                   "keyboard_events": keyboard_events}
+            all_days.append(day)
+
+        return all_days, sunday_that_starts_the_week
 
     async def get_program_summary(self):
         today = datetime.now()
