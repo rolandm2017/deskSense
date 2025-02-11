@@ -104,6 +104,32 @@ const getTimelineWeekly = withErrorHandling<WeeklyTimeline>(() =>
     api.get("/dashboard/timeline/week")
 );
 
+const withErrorHandlingAndArgument = <T, P extends any[]>(
+    fn: (...args: P) => Promise<AxiosResponse<T>>
+) => {
+    return (...args: P): Promise<T> => {
+        return fn(...args)
+            .then((response) => {
+                return response.data;
+            })
+            .catch((error) => {
+                if (axios.isAxiosError(error)) {
+                    console.error("Error:", error.response?.data);
+                    throw new Error(`Failed to execute: ${error.message}`);
+                }
+                throw error;
+            });
+    };
+};
+
+// If you need to format the date in a specific way, you can create a helper function:
+const getTimelineForWeek = withErrorHandlingAndArgument<WeeklyTimeline, [Date]>(
+    (date: Date) => {
+        const formattedDate = date.toISOString().split("T")[0]; // formats to YYYY-MM-DD
+        return api.get(`/dashboard/timeline/week/${formattedDate}`);
+    }
+);
+
 export {
     getKeyboardReport,
     getMouseReport,
@@ -116,4 +142,5 @@ export {
     getWeeklyChromeUsage,
     getWeeklyProgramUsage,
     getTimelineWeekly,
+    getTimelineForWeek,
 };
