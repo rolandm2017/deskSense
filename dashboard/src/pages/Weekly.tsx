@@ -62,17 +62,19 @@ function Weekly() {
     }, [startDate, endDate]);
 
     useEffect(() => {
+        /* Load data for refreshes on prior weeks. */
         // FIXME: Something in here is broken
         const urlParam = searchParams.get("date"); // returns "5432"
         if (urlParam) {
             console.log(urlParam, "68ru");
             getTimelineForWeek(new Date(urlParam)).then((weekly) => {
+                console.log(weekly, "71ru");
                 // TODO: Get the start and end date
                 // Do I make
                 setTimeline(weekly);
             });
         }
-    });
+    }, []);
 
     useEffect(() => {
         const urlParam = searchParams.get("date"); // returns "5432"
@@ -95,6 +97,7 @@ function Weekly() {
     }, []);
 
     useEffect(() => {
+        /* Aggregation */
         if (timeline) {
             const days: DaysOfAggregatedRows[] = [];
             for (const day of timeline.days) {
