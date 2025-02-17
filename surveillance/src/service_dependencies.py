@@ -53,7 +53,7 @@ async def get_frame_dao() -> FrameDao:
 
 
 async def get_keyboard_service(dao: KeyboardDao = Depends(get_keyboard_dao)) -> Callable:
-    from .services import KeyboardService
+    from .services.services import KeyboardService
     return KeyboardService(dao)
 
 # async def get_keyboard_service(dao: KeyboardDao = Depends(KeyboardDao)) -> Callable:
@@ -63,12 +63,14 @@ async def get_keyboard_service(dao: KeyboardDao = Depends(get_keyboard_dao)) -> 
 
 
 async def get_mouse_service(dao: MouseDao = Depends(get_mouse_dao)) -> Callable:
-    from .services import MouseService  # Lazy import to avoid circular dependency
+    # Lazy import to avoid circular dependency
+    from .services.services import MouseService
     return MouseService(dao)
 
 
 async def get_program_service(dao: ProgramDao = Depends(get_program_dao)) -> Callable:
-    from .services import ProgramService  # Lazy import to avoid circular dependency
+    # Lazy import to avoid circular dependency
+    from .services.services import ProgramService
     return ProgramService(dao)
 
 
@@ -78,7 +80,7 @@ async def get_dashboard_service(
     chrome_summary_dao: ChromeSummaryDao = Depends(get_chrome_summary_dao)
 ) -> Callable:
     # Lazy import to avoid circular dependency
-    from .services import DashboardService
+    from .services.dashboard_service import DashboardService
     return DashboardService(timeline_dao, program_summary_dao, chrome_summary_dao)
 
 # Singleton instance of ChromeService
@@ -87,7 +89,8 @@ _chrome_service_instance = None
 
 async def get_chrome_service(dao: ChromeDao = Depends(get_chrome_dao),
                              summary_dao: ChromeSummaryDao = Depends(get_chrome_summary_dao)) -> Callable:
-    from .services import ChromeService  # Lazy import to avoid circular dependency
+    # Lazy import to avoid circular dependency
+    from .services.chrome_service import ChromeService
     global _chrome_service_instance  # Singleton because it must preserve internal state
     if _chrome_service_instance is None:
         _chrome_service_instance = ChromeService(
@@ -105,5 +108,5 @@ async def get_chrome_service(dao: ChromeDao = Depends(get_chrome_dao),
 #     return ChromeService(dao, summary_dao)
 
 async def get_video_service(video_dao: VideoDao = Depends(get_video_dao), frame_dao: FrameDao = Depends(get_frame_dao)):
-    from .services import VideoService
+    from .services.services import VideoService
     return VideoService(video_dao, frame_dao)

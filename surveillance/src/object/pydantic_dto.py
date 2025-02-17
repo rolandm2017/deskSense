@@ -3,7 +3,7 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 from datetime import datetime
 
-from src.db.models import TimelineEntryObj
+from src.db.models import TimelineEntryObj, PrecomputedTimelineEntry
 
 
 class KeyboardLog(BaseModel):
@@ -104,14 +104,19 @@ class TimelineEntrySchema(BaseModel):
 
     # Optional: Add a method to convert from SQLAlchemy model
     @classmethod
-    def from_orm_model(cls, db_model: TimelineEntryObj) -> 'TimelineEntrySchema':
-        return cls(
-            id=db_model.clientFacingId,
-            group=db_model.group.value,  # Convert enum to string
-            content=db_model.content,
-            start=db_model.start,
-            end=db_model.end
-        )
+    def from_orm_model(cls, db_model: PrecomputedTimelineEntry) -> 'TimelineEntrySchema':
+        try:
+            return cls(
+                id=db_model.clientFacingId,
+                group=db_model.group.value,  # Convert enum to string
+                content=db_model.content,
+                start=db_model.start,
+                end=db_model.end
+            )
+        except:
+            print(db_model)
+            print("failed")
+            raise ValueError("Failed with value")
 
 
 class TimelineRows(BaseModel):

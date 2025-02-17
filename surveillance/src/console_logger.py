@@ -49,6 +49,11 @@ class ConsoleLogger:
         if self.active:
             print(f"\033[94m{message}\033[0m")
 
+    def log_white_multiple(self, *args):
+        print(self.active, '53ru')
+        if self.active:
+            print(*args)
+
     def log_yellow_multiple(self, *args):
         if self.active:
             print(f"\033[93m{' '.join(str(arg) for arg in args)}\033[0m")

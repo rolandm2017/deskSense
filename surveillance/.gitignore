@@ -18,3 +18,5 @@ temp.py
 events.csv
 
 *.csv
+
+*.sql

@@ -6,7 +6,7 @@ import asyncio
 import os
 
 from surveillance.src.object.pydantic_dto import TabChangeEvent
-from surveillance.src.services import ChromeService
+from surveillance.src.services.chrome_service import ChromeService
 
 # Fixture to read and reconstruct events from the CSV file
 
