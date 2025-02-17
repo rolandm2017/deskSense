@@ -13,7 +13,7 @@ from .db.dao.program_dao import ProgramDao
 from .db.dao.timeline_entry_dao import TimelineEntryDao
 from .db.dao.program_summary_dao import ProgramSummaryDao
 from .db.dao.chrome_summary_dao import ChromeSummaryDao
-from .services import ChromeService
+from .services.chrome_service import ChromeService
 from .trackers.mouse_tracker import MouseTrackerCore
 from .trackers.keyboard_tracker import KeyboardTrackerCore
 from .trackers.program_tracker import ProgramTrackerCore
@@ -39,6 +39,10 @@ class SurveillanceManager:
         self.current_window = None
         self.start_time = None
         self.session_data = []
+
+        v = [2, 4, 6, 6, 99]
+        for g in v:
+            print(g)
 
         # Get the project root (parent of src directory)
         # This gets us surveillance/src/productivity_tracker.py

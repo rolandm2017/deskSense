@@ -4,7 +4,7 @@ from time import time
 from typing import List
 from dataclasses import dataclass
 
-from surveillance.src.util.aggregator import EventAggregator, InProgressAggregation
+from surveillance.src.util.keyboard_aggregator import EventAggregator, InProgressAggregation
 
 ####
 # Happy path tests

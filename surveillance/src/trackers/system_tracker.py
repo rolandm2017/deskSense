@@ -16,6 +16,9 @@ class SystemPowerTracker:
         # Register exit handler
         atexit.register(self._exit_handler)
 
+    def _startup_notification(self, time):
+        print("System startup at " + str(time))
+
     def _system_shutdown_handler(self, signum, frame):
         """Handler for system shutdown/termination signals"""
         print("System shutdown detected!")

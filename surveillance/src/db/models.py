@@ -139,6 +139,20 @@ class TimelineEntryObj(Base):
     start = Column(DateTime)
     end = Column(DateTime)
 
+    def __str__(self):
+        """
+        Returns a human-readable string representation of the TimelineEntry.
+        """
+        return (
+            f"TimelineEntryObj(id={self.id}, "
+            f"clientFacingId='{self.clientFacingId}', "
+            # f"group='{self.group.value if self.group else None}', "  # says AttributeError: 'str' object has no attribute 'value'
+            f"group='{self.group if self.group else None}', "
+            f"content='{self.content}', "
+            f"start='{self.start.isoformat() if self.start else None}', "
+            f"end='{self.end.isoformat() if self.end else None}')"
+        )
+
 
 class PrecomputedTimelineEntry(Base):
     """
@@ -146,6 +160,10 @@ class PrecomputedTimelineEntry(Base):
 
     Solution: Precompute the timeline data here on the server, since 
     it only needs to be done one time supposing the result is stored and demanded effectively.
+
+    Note: This table uses camelCase column names (rather than snake_case)
+    to avoid expensive case conversion of thousands of records before sending
+    to the client. This is an intentional performance optimization.
     """
     __tablename__ = "precomputed_timelines"
 
@@ -174,6 +192,23 @@ class PrecomputedTimelineEntry(Base):
 
     start = Column(DateTime)
     end = Column(DateTime)
+
+    eventCount = Column(Integer)
+
+    def __str__(self):
+        """
+        Returns a human-readable string representation of the TimelineEntry.
+        """
+        return (
+            f"PrecomputedTimelineEntry(id={self.id}, "
+            f"clientFacingId='{self.clientFacingId}', "
+            # f"group='{self.group.value if self.group else None}', "  # says AttributeError: 'str' object has no attribute 'value'
+            f"group='{self.group if self.group else None}', "
+            f"content='{self.content}', "
+            f"start='{self.start.isoformat() if self.start else None}', "
+            f"end='{self.end.isoformat() if self.end else None}', "
+            f"eventCount='{self.eventCount}')"
+        )
 
     # count = Column(Integer)  # could be nice to know how many events went into an entry.
 

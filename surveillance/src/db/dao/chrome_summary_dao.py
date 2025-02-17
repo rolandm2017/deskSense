@@ -41,8 +41,8 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             existing_entry = result.scalar_one_or_none()
 
             if existing_entry:
-                print("[debug - DAO - 2] adding time ",
-                      chrome_session.duration, " to ", existing_entry.domain_name)
+                self.logger.log_white_multiple("[chrome summary dao] adding time ",
+                                               chrome_session.duration, " to ", existing_entry.domain_name)
                 existing_entry.hours_spent += usage_duration_in_hours
                 await session.commit()
             else:

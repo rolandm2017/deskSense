@@ -4,13 +4,12 @@ from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from surveillance.src.services.dashboard_service import DashboardService
 from surveillance.server import (
     app,
-    DashboardService,
     surveillance_state,
     get_dashboard_service, get_keyboard_service, get_mouse_service, get_program_service,
-    TimelineEntrySchema,
-    DailyProgramSummarySchema
+
 )
 from surveillance.server import app, KeyboardService, MouseService, ProgramService
 

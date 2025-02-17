@@ -34,8 +34,11 @@ from src.util.pydantic_factory import (
 from src.surveillance_manager import SurveillanceManager
 from src.console_logger import ConsoleLogger
 
-from src.services import (
-    KeyboardService, MouseService, ProgramService, DashboardService, ChromeService, VideoService
+from src.services.dashboard_service import DashboardService
+from src.services.chrome_service import ChromeService
+
+from src.services.services import (
+    KeyboardService, MouseService, ProgramService, VideoService
 )
 from src.service_dependencies import (
     get_keyboard_service, get_mouse_service, get_program_service,
@@ -311,6 +314,35 @@ async def get_previous_week_of_timeline(week_of: date = Path(..., description="W
         mouse_rows = day["mouse_events"]
         keyboard_rows = day["keyboard_events"]
         # Convert SQLAlchemy models to Pydantic models
+        # DEBUG:
+        # DEBUG:
+        # DEBUG:
+
+        c = 0
+        d = 0
+        j = 0
+        for v in mouse_rows:
+            if v.start is None:
+                print(j, "mouse")
+
+                c = c + 1
+            if v.end is None:
+                d = d + 1
+            j = j + 1
+        print("DEBUG: ", c, d)  # prints 1, 0. should print 0,0
+        c = 0
+        d = 0
+        j = 0
+        for v in keyboard_rows:
+            if v.start is None:
+                print(j, "keyboard")
+
+                c = c + 1
+            if v.end is None:
+                d = d + 1
+            j = j + 1
+        print("DEBUG: ", c, d)  # prints 1, 0. should print 0,0
+
         pydantic_mouse_rows = [
             TimelineEntrySchema.from_orm_model(row) for row in mouse_rows]
         pydantic_keyboard_rows = [

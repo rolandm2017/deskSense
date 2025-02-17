@@ -5,7 +5,7 @@ from ..util.end_program_routine import end_program_readout, pretend_report_event
 from ..object.classes import KeyboardAggregate
 from ..util.clock import Clock
 from ..util.threaded_tracker import ThreadedTracker
-from ..util.aggregator import EventAggregator
+from ..util.keyboard_aggregator import EventAggregator
 from ..console_logger import ConsoleLogger
 from ..facade.keyboard_facade import KeyboardApiFacadeCore
 
