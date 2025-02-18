@@ -43,7 +43,8 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
      * the threshold for, for aggregation.
      *
      */
-    console.log(days.length, "35ru");
+    // console.log(days.length, "35ru");
+
     const svgRef = useRef<SVGSVGElement | null>(null);
 
     useEffect(() => {
@@ -159,7 +160,7 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
          */
 
         days.forEach((day: DaysOfAggregatedRows) => {
-            console.log(day.date, "126ru");
+            // console.log(day.date, "126ru");
             const dayName = daysOfWeek[new Date(day.date).getDay()];
 
             // Get the center of the band for the current day
