@@ -27,8 +27,8 @@ function Weekly() {
 
     // const [typing, setTyping] = useState<WeeklyTyping | null>(null);
     // const [clicking, setClicking] = useState<WeeklyClicking | null>(null);
-    const [timeline, setTimeline] = useState<WeeklyTimeline | null>(null);
-    const [aggregatedTimeline, setAggregated] =
+    const [rawTimeline, setRawTimeline] = useState<WeeklyTimeline | null>(null);
+    const [aggregatedTimeline, setAggregatedTimeline] =
         useState<WeeklyTimelineAggregate | null>(null);
 
     const [startDate, setStartDate] = useState<Date | null>(null);
@@ -54,32 +54,47 @@ function Weekly() {
         return nextSaturday;
     }
 
-    useEffect(() => {
-        if (startDate === null || endDate === null) {
-            setStartDate(getPreviousSunday());
-            setEndDate(getUpcomingSaturday());
-        }
-    }, [startDate, endDate]);
+    function convertStringToDate(someSundayAsString: string) {
+        return new Date(someSundayAsString);
+    }
+
+    function getSaturdayThatEndsTheWeek(someSundayAsString: string) {
+        const someSunday = new Date(someSundayAsString);
+        let saturdayDate = new Date(someSunday);
+        saturdayDate.setDate(someSunday.getDate() + 6);
+        return saturdayDate;
+    }
 
     useEffect(() => {
-        /* Load data for refreshes on prior weeks. */
-        // FIXME: Something in here is broken
         const urlParam = searchParams.get("date"); // returns "5432"
         if (urlParam) {
+            /* Use this URL param data to set the Showing dates */
+            const previousSunday = convertStringToDate(urlParam);
+            const upcomingSaturday = getSaturdayThatEndsTheWeek(urlParam);
+            setStartDate(previousSunday);
+            setEndDate(upcomingSaturday);
+            return;
+        }
+        if (startDate === null || endDate === null) {
+            console.log("Getting dates for .... what is this");
+            const previousSunday = getPreviousSunday();
+            const upcomingSaturday = getUpcomingSaturday();
+            setStartDate(previousSunday);
+            setEndDate(upcomingSaturday);
+        }
+    }, [searchParams]);
+
+    useEffect(() => {
+        const urlParam = searchParams.get("date"); // returns "5432"
+        if (urlParam) {
+            /* Load data for refreshes on prior weeks. */
             console.log(urlParam, "68ru");
             getTimelineForWeek(new Date(urlParam)).then((weekly) => {
                 console.log(weekly, "71ru");
                 // TODO: Get the start and end date
                 // Do I make
-                setTimeline(weekly);
+                setRawTimeline(weekly);
             });
-        }
-    }, []);
-
-    useEffect(() => {
-        const urlParam = searchParams.get("date"); // returns "5432"
-        if (urlParam) {
-            // useUrlParamsInstead();
             return;
         }
 
@@ -92,15 +107,15 @@ function Weekly() {
         getTimelineWeekly().then((weekly) => {
             // TODO: Get the start and end date
             // Do I make
-            setTimeline(weekly);
+            setRawTimeline(weekly);
         });
     }, []);
 
     useEffect(() => {
         /* Aggregation */
-        if (timeline) {
+        if (rawTimeline && aggregatedTimeline === null) {
             const days: DaysOfAggregatedRows[] = [];
-            for (const day of timeline.days) {
+            for (const day of rawTimeline.days) {
                 const dayClicks = day.row.mouseRows;
                 const dayTyping = day.row.keyboardRows;
                 const row: DaysOfAggregatedRows = {
@@ -110,9 +125,15 @@ function Weekly() {
                 };
                 days.push(row);
             }
-            setAggregated({ days });
+            console.log(
+                rawTimeline.days.length,
+                aggregatedTimeline,
+                days.length,
+                "128ru"
+            );
+            setAggregatedTimeline({ days });
         }
-    }, [timeline]);
+    }, [rawTimeline, aggregatedTimeline]);
 
     // TODO: Aggregate the mouse and keyboard
 
@@ -151,7 +172,7 @@ function Weekly() {
         getTimelineForWeek(prevWeekStart).then((weekly) => {
             // TODO: Get the start and end date
             // Do I make
-            setTimeline(weekly);
+            setRawTimeline(weekly);
         });
     }
 
@@ -187,6 +208,8 @@ function Weekly() {
         // Create new Date object (month is 0-based, so subtract 1)
         return new Date(year, month - 1, day, hours, minutes, seconds);
     };
+
+    // FIXME: the the, the date is wrong. ?date=02-09-2025 shows " Feb 16 to Feb 22"
 
     return (
         <>

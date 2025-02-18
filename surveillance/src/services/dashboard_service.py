@@ -96,9 +96,6 @@ class DashboardService:
             v = v + 1
             current_day = sunday_that_starts_the_week + \
                 timedelta(days=days_after_sunday)
-            # Or process them directly like your get_timeline() example:
-            print(current_day, type(current_day), '281ru')
-            # FIXME: 2025-02-09 281ru
             mouse_events = await self.timeline_dao.read_day_mice(current_day)
             keyboard_events = await self.timeline_dao.read_day_keyboard(current_day)
             print(mouse_events, '102ru')

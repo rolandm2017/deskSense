@@ -43,7 +43,6 @@ async def test_timeline():
         assert response.status_code == 200
 
         timeline_content = response.json()
-        print(timeline_content, '35ru')
         assert timeline_content["mouseRows"] is not None
         assert len(timeline_content["mouseRows"]) > 0
         assert timeline_content["keyboardRows"] is not None
