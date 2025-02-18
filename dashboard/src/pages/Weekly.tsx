@@ -20,6 +20,16 @@ import {
     WeeklyTimelineAggregate,
 } from "../interface/misc.interface";
 import { aggregateEvents } from "../util/aggregateEvents";
+import {
+    getUpcomingSaturday,
+    convertStringToDate,
+    getPreviousSunday,
+    getSaturdayThatEndsTheWeek,
+    getSundayOfNextWeek,
+    formatDate,
+    formatDateMmDdYyyy,
+    parseDateMmDdYyyy,
+} from "../util/timeTools";
 
 function Weekly() {
     const [chrome, setChrome] = useState<WeeklyChromeUsage | null>(null);
@@ -37,33 +47,6 @@ function Weekly() {
     const [nextWeekAvailable, setNextWeekAvailable] = useState(true);
 
     const [searchParams, setSearchParams] = useSearchParams();
-
-    function getPreviousSunday() {
-        let today = new Date();
-        let daysSinceSunday = today.getDay(); // Sunday is 0
-        let previousSunday = new Date(today);
-        previousSunday.setDate(today.getDate() - daysSinceSunday);
-        return previousSunday; // TODO: Test this function
-    }
-
-    function getUpcomingSaturday() {
-        let today = new Date();
-        let daysUntilSaturday = 6 - today.getDay(); // Saturday is 6
-        let nextSaturday = new Date(today);
-        nextSaturday.setDate(today.getDate() + daysUntilSaturday);
-        return nextSaturday;
-    }
-
-    function convertStringToDate(someSundayAsString: string) {
-        return new Date(someSundayAsString);
-    }
-
-    function getSaturdayThatEndsTheWeek(someSundayAsString: string) {
-        const someSunday = new Date(someSundayAsString);
-        let saturdayDate = new Date(someSunday);
-        saturdayDate.setDate(someSunday.getDate() + 6);
-        return saturdayDate;
-    }
 
     useEffect(() => {
         const urlParam = searchParams.get("date"); // returns "5432"
@@ -150,10 +133,18 @@ function Weekly() {
         setSearchParams({ date: input });
     }
 
+    function dumpOldData() {
+        setAggregatedTimeline(null);
+        setRawTimeline(null);
+    }
+
     function goToPreviousWeek() {
         if (startDate === null || endDate == null) {
             return;
         }
+
+        dumpOldData();
+
         const current = new Date(startDate);
         current.setDate(current.getDate() - 7); // Subtract 7 days
         const prevWeekStart = current;
@@ -169,45 +160,33 @@ function Weekly() {
         setEndDate(prevWeekEnd);
 
         // Do netwoek requests
-        getTimelineForWeek(prevWeekStart).then((weekly) => {
-            // TODO: Get the start and end date
-            // Do I make
+        console.log("prev wk: allegedly loading data 152ru");
+        loadDataForWeek(prevWeekStart);
+    }
+
+    function loadDataForWeek(weekStart: Date) {
+        setAggregatedTimeline(null); // clear old data
+        // FIXME: data loads wrong; a mismatch between the weeks ??
+        getTimelineForWeek(weekStart).then((weekly) => {
+            console.log("loading weekly 160ru");
             setRawTimeline(weekly);
         });
     }
 
     function goToNextWeek() {
-        //
+        if (startDate) {
+            const nextSunday: Date = getSundayOfNextWeek(startDate); // startDate is a Sunday
+            const concludingSaturday = getSaturdayThatEndsTheWeek(nextSunday);
+            dumpOldData();
+            setStartDate(nextSunday);
+            setEndDate(concludingSaturday);
+            updateUrlParam(nextSunday);
+            console.log("allegedly loading data 170ru");
+            loadDataForWeek(nextSunday); // TODO
+        } else {
+            console.log("No start date found");
+        }
     }
-
-    const formatDate = (date: Date) => {
-        return date.toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-        });
-    };
-
-    const formatDateMmDdYyyy = (date: Date) => {
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const day = String(date.getDate()).padStart(2, "0");
-        const year = date.getFullYear();
-
-        return `${month}-${day}-${year}`;
-    };
-
-    const parseDateMmDdYyyy = (dateString: string) => {
-        // Split date and time
-        const [datePart, timePart] = dateString.split(", ");
-
-        // Split date components
-        const [month, day, year] = datePart.split("-").map(Number);
-
-        // Split time components
-        const [hours, minutes, seconds] = timePart.split(":").map(Number);
-
-        // Create new Date object (month is 0-based, so subtract 1)
-        return new Date(year, month - 1, day, hours, minutes, seconds);
-    };
 
     // FIXME: the the, the date is wrong. ?date=02-09-2025 shows " Feb 16 to Feb 22"
 
@@ -246,6 +225,7 @@ function Weekly() {
                     <button
                         onClick={() => {
                             if (nextWeekAvailable) {
+                                // FIXME: Go To Next Week fails: Data is not cycled out
                                 goToNextWeek();
                             }
                         }}
