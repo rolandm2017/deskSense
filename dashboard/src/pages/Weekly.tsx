@@ -68,6 +68,11 @@ function Weekly() {
     }, [searchParams]);
 
     useEffect(() => {
+        // FIXME
+        // FIXME Feb 19
+        // FIXME It loads WAY too slow. It's ON MY COMPUTER. 824 ms, 1.61 sec, gross gross
+        // FIXME
+        // FIXME
         const urlParam = searchParams.get("date"); // returns "5432"
         if (urlParam) {
             /* Load data for refreshes on prior weeks. */
@@ -182,13 +187,11 @@ function Weekly() {
             setEndDate(concludingSaturday);
             updateUrlParam(nextSunday);
             console.log("allegedly loading data 170ru");
-            loadDataForWeek(nextSunday); // TODO
+            loadDataForWeek(nextSunday);
         } else {
             console.log("No start date found");
         }
     }
-
-    // FIXME: the the, the date is wrong. ?date=02-09-2025 shows " Feb 16 to Feb 22"
 
     return (
         <>

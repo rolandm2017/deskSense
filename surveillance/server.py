@@ -313,35 +313,6 @@ async def get_previous_week_of_timeline(week_of: date = Path(..., description="W
         assert isinstance(day, dict)
         mouse_rows = day["mouse_events"]
         keyboard_rows = day["keyboard_events"]
-        # Convert SQLAlchemy models to Pydantic models
-        # DEBUG:
-        # DEBUG:
-        # DEBUG:
-
-        c = 0
-        d = 0
-        j = 0
-        for v in mouse_rows:
-            if v.start is None:
-                print(j, "mouse")
-
-                c = c + 1
-            if v.end is None:
-                d = d + 1
-            j = j + 1
-        print("DEBUG: ", c, d)  # prints 1, 0. should print 0,0
-        c = 0
-        d = 0
-        j = 0
-        for v in keyboard_rows:
-            if v.start is None:
-                print(j, "keyboard")
-
-                c = c + 1
-            if v.end is None:
-                d = d + 1
-            j = j + 1
-        print("DEBUG: ", c, d)  # prints 1, 0. should print 0,0
 
         pydantic_mouse_rows = [
             TimelineEntrySchema.from_orm_model(row) for row in mouse_rows]
