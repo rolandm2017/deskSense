@@ -42,23 +42,41 @@ class TimelineEntryDao(BaseQueueingDao):
         await self.queue_item(new_row, TimelineEntryObj)
 
     async def create_precomputed_day(self, days_events):
-        # TODO -- stopping due to finger injury
-
-        # aggregate them
+        # ### aggregate them
         aggregated = aggregate_timeline_events(days_events)
 
-        # store them into the db
+        # ### store them into the db
         rows = []
         for event in aggregated:
             row = PrecomputedTimelineEntry(clientFacingId=event.clientFacingId,
                                            group=event.group,
                                            content=event.content,
                                            start=event.start,
-                                           end=event.end
+                                           end=event.end,
+                                           eventCount=event.eventCount if hasattr(
+                                               # Default to 1 if not provided
+                                               event, 'eventCount') and event.eventCount is not None else 1
                                            )
+
             rows.append(row)
+        print(str(len(rows)), "being added")
+        await self.bulk_create_precomputed(rows)
+
         # return the stored values
         return rows
+
+    async def bulk_create_precomputed(self, rows: List[PrecomputedTimelineEntry]):
+        """
+        Bulk insert multiple PrecomputedTimelineEntry rows in a single transaction.
+
+        Args:
+            rows: List of PrecomputedTimelineEntry instances to insert
+        """
+        async with self.session_maker() as session:
+            async with session.begin():
+                print("adding ", len(rows), " rows")
+                session.add_all(rows)
+                await session.commit()
 
     async def read_highest_id(self):
         """Read the highest ID currently in the table"""
@@ -105,18 +123,14 @@ class TimelineEntryDao(BaseQueueingDao):
             # Precomputed day can't exist yet
             return await self.read_day(day, ChartEventType.MOUSE)
         else:
-            # TEMP - so I can ... without computing the day incorrectly
             # return await self.read_day(day, ChartEventType.MOUSE)
             precomputed_day_entries = await self.read_precomputed_entry_for_day(
                 day, ChartEventType.MOUSE)
-            # FIXME: need to verify that this returns an empty array if the day isnt there yet
-            print(precomputed_day_entries, '113ru')
             if len(precomputed_day_entries) > 0:
                 return precomputed_day_entries
             else:
                 read_events = await self.read_day(day, ChartEventType.MOUSE)
                 new_precomputed_day = await self.create_precomputed_day(read_events)
-                print(new_precomputed_day, '119ru')
                 return new_precomputed_day
 
     async def read_day_keyboard(self, day: datetime) -> List[TimelineEntryObj]:
@@ -129,13 +143,13 @@ class TimelineEntryDao(BaseQueueingDao):
             # return await self.read_day(day, ChartEventType.KEYBOARD)
             precomputed_day_entries = await self.read_precomputed_entry_for_day(
                 day, ChartEventType.KEYBOARD)
-            print(precomputed_day_entries, '130ru')
+
             if len(precomputed_day_entries) > 0:
                 return precomputed_day_entries
             else:
                 read_events = await self.read_day(day, ChartEventType.KEYBOARD)
                 new_precomputed_day = await self.create_precomputed_day(read_events)
-                print(new_precomputed_day, '136ru')
+
                 return new_precomputed_day
 
     async def read_all(self):

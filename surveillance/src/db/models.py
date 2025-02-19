@@ -169,26 +169,28 @@ class PrecomputedTimelineEntry(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    clientFacingId = Column(
-        String,
-        Computed(
-            "CASE WHEN \"group\" = 'MOUSE' THEN 'mouse-' || id::TEXT ELSE 'keyboard-' || id::TEXT END",
-            # postgresql_persisted=True  # Add this back
-            persisted=True
-        )
-    )
+    clientFacingId = Column(String)
+    # clientFacingId = Column(
+    #     String,
+    #     Computed(
+    #         "CASE WHEN \"group\" = 'MOUSE' THEN 'mouse-' || id::TEXT ELSE 'keyboard-' || id::TEXT END",
+    #         # postgresql_persisted=True  # Add this back
+    #         persisted=True
+    #     )
+    # )
 
     group = Column(SQLAlchemyEnum(ChartEventType))
 
-    content = Column(
-        String,
-        Computed(
-            "CASE WHEN \"group\" = 'MOUSE' THEN 'Mouse Event ' || id::TEXT ELSE 'Typing Session ' || id::TEXT END",
-            # postgresql_persisted=True,  # Add this back
-            persisted=True
+    content = Column(String)
+    # content = Column(
+    #     String,
+    #     Computed(
+    #         "CASE WHEN \"group\" = 'MOUSE' THEN 'Mouse Event ' || id::TEXT ELSE 'Typing Session ' || id::TEXT END",
+    #         # postgresql_persisted=True,  # Add this back
+    #         persisted=True
 
-        )
-    )
+    #     )
+    # )
 
     start = Column(DateTime)
     end = Column(DateTime)
