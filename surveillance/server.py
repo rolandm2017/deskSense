@@ -2,13 +2,16 @@
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Depends, status, Request
 from fastapi import Path
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
 import asyncio
 # import time
-from typing import Optional, List
+from typing import Optional, List, Dict
 from datetime import date
+from time import time
 
 
 from src.db.database import init_db, async_session_maker
@@ -306,9 +309,16 @@ async def get_timeline_weekly(dashboard_service: DashboardService = Depends(get_
 
 @app.get("/dashboard/timeline/week/{week_of}", response_model=WeeklyTimeline)
 async def get_previous_week_of_timeline(week_of: date = Path(..., description="Week starting date"), dashboard_service: DashboardService = Depends(get_dashboard_service)):
-    days, start_of_week = await dashboard_service.get_specific_week_timeline(week_of)
-    rows: List[DayOfTimelineRows] = []
+    timings: Dict[str, float] = {}
 
+    # Time database query
+    db_start = time()
+    days, start_of_week = await dashboard_service.get_specific_week_timeline(week_of)
+    timings['database_query'] = time() - db_start
+
+    # Time data processing
+    process_start = time()
+    rows: List[DayOfTimelineRows] = []
     for day in days:
         assert isinstance(day, dict)
         mouse_rows = day["mouse_events"]
@@ -318,14 +328,23 @@ async def get_previous_week_of_timeline(week_of: date = Path(..., description="W
             TimelineEntrySchema.from_orm_model(row) for row in mouse_rows]
         pydantic_keyboard_rows = [
             TimelineEntrySchema.from_orm_model(row) for row in keyboard_rows]
-
         row = TimelineRows(mouseRows=pydantic_mouse_rows,
                            keyboardRows=pydantic_keyboard_rows)
-
         row = DayOfTimelineRows(date=day["date"], row=row)
         rows.append(row)
+    timings['data_processing'] = time() - process_start
 
-    return WeeklyTimeline(days=rows, start_date=start_of_week)
+    response = WeeklyTimeline(days=rows, start_date=start_of_week)
+
+    # Add all timings to response headers
+    return JSONResponse(
+        content=jsonable_encoder(response),
+        headers={
+            "X-Total-Time": f"{sum(timings.values()) * 1000:.2f}ms",
+            "X-DB-Time": f"{timings['database_query'] * 1000:.2f}ms",
+            "X-Processing-Time": f"{timings['data_processing'] * 1000:.2f}ms"
+        }
+    )
 
 
 @app.get("/report/chrome")
