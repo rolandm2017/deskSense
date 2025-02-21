@@ -67,10 +67,10 @@ export interface SocialMediaUsage {
 }
 
 export interface BreakdownByDay {
-    day: string;
+    day: Date;
     productiveHours: number;
     leisureHours: number;
 }
 export interface WeeklyBreakdown {
-    days: WeeklyBreakdown[];
+    days: BreakdownByDay[];
 }

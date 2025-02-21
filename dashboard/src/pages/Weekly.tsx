@@ -9,7 +9,7 @@ import {
     getEnhancedChromeUsageForPastWeek,
     getTimelineForCurrentWeek,
     getTimelineForPastWeek,
-    getWeeklyBreakdown,
+    getEnhancedWeeklyBreakdown,
 } from "../api/getData.api";
 import {
     DayOfChromeUsage,
@@ -35,9 +35,9 @@ import {
     getSundayOfNextWeek,
     formatDate,
     formatDateMmDdYyyy,
-    parseDateMmDdYyyy,
 } from "../util/timeTools";
 import WeeklyUsageChart from "../components/charts/WeeklyBarChart";
+import StackedBarChart from "../components/charts/StackedBarChart";
 
 function Weekly() {
     const [chrome, setChrome] = useState<WeeklyChromeUsage | null>(null);
@@ -55,9 +55,9 @@ function Weekly() {
     const [weeklyBreakdown, setWeeklyBreakdown] =
         useState<WeeklyBreakdown | null>(null);
 
-    const [socialMediaUsage, setSocialMediaUsage] = useState<
-        SocialMediaUsage[] | null
-    >(null);
+    // const [socialMediaUsage, setSocialMediaUsage] = useState<
+    //     SocialMediaUsage[] | null
+    // >(null);
 
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -178,9 +178,11 @@ function Weekly() {
         getTimelineForPastWeek(weekStart).then((weekly) => {
             setRawTimeline(weekly);
         });
-        getWeeklyBreakdown(weekStart).then((breakdown) => {
-            setWeeklyBreakdown(breakdown);
-        });
+        getEnhancedWeeklyBreakdown(weekStart).then(
+            (breakdown: WeeklyBreakdown) => {
+                setWeeklyBreakdown(breakdown);
+            }
+        );
     }
 
     function goToNextWeek() {
@@ -222,8 +224,8 @@ function Weekly() {
                 <h2 className="text-3xl my-2">Weekly Reports</h2>
 
                 <div>
-                    <h3>Twitter Usage</h3>
-                    <h3 className="text-xl">
+                    <h3 className="text-2xl">Overview</h3>
+                    <h3 className="text-lg">
                         {startDate && endDate ? (
                             <p className="mt-4">
                                 Showing {formatDate(startDate)} to{" "}
@@ -233,14 +235,12 @@ function Weekly() {
                             <p>Loading</p>
                         )}
                     </h3>
-                    {
-                        chrome ? (
-                            <WeeklyUsageChart
-                                title={"Overview"}
-                                data={convertToTwitterOnlyData(chrome)}
-                            />
-                        ) : null // null
-                    }
+                    {weeklyBreakdown ? (
+                        <StackedBarChart
+                            title={""}
+                            data={weeklyBreakdown.days}
+                        />
+                    ) : null}
                 </div>
                 <div className="mt-4 ">
                     <button
@@ -267,8 +267,8 @@ function Weekly() {
                 </div>
 
                 <div>
-                    <h3>Twitter Usage</h3>
-                    <h3 className="text-xl">
+                    <h3 className="mt-4 text-2xl">Twitter Usage</h3>
+                    <h3 className="text-lg">
                         {startDate && endDate ? (
                             <p className="mt-4">
                                 Showing {formatDate(startDate)} to{" "}
@@ -281,7 +281,7 @@ function Weekly() {
                     {
                         chrome ? (
                             <WeeklyUsageChart
-                                title={"Twitter"}
+                                title={""}
                                 data={convertToTwitterOnlyData(chrome)}
                             />
                         ) : null // null

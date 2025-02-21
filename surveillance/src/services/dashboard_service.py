@@ -19,41 +19,40 @@ class DashboardService:
         self.logger = ConsoleLogger()
 
     async def get_weekly_productivity_overview(self, starting_sunday):
-        pass  # Return type has a dayOf field, a productiveHours, a leisureHours
-
         if starting_sunday.weekday() != 6:  # In Python, Sunday is 6
             raise ValueError("start_date must be a Sunday")
 
         usage_from_days = []
-        # for day in week:
-        #     # using the Summary DAO stuff...
-        #   # get chrome usage -> categorize as productive | leisure
-        #   # get program usage -> categorize
-        #       # summarize, store as a day
-        #
-        # Could store the computed vals too so to avoid recomputing it. Only if it's slow tho, above 100ms
+
+        v = []
+
+        # TODO: If slow, precompute answer
         for i in range(7):
             current_day = starting_sunday + timedelta(days=i)
             date_as_datetime = datetime.combine(
                 current_day, datetime.min.time())
             daily_chrome_summaries: List[DailyDomainSummary] = await self.chrome_summary_dao.read_day(date_as_datetime)
             daily_program_summaries: List[DailyProgramSummary] = await self.program_summary_dao.read_day(date_as_datetime)
-
             productivity = 0
             leisure = 0
             for domain in daily_chrome_summaries:
-                if domain in productive_sites:
+                if domain.domain_name in productive_sites:
                     productivity = productivity + domain.hours_spent
                 else:
                     leisure = leisure + domain.hours_spent
             for program in daily_program_summaries:
-                if program in productive_apps:
+                if program.program_name == 'Alt-tab window':
+                    v.append(program.hours_spent)
+                    continue  # temp - skipping bugged outputs
+                if program.program_name in productive_apps:
+
                     productivity = productivity + program.hours_spent
                 else:
                     leisure = leisure + program.hours_spent
 
             usage_from_days.append(
                 {"day": date_as_datetime, "productivity": productivity, "leisure": leisure})
+        print(v)
 
         return usage_from_days
 
@@ -112,15 +111,9 @@ class DashboardService:
         # TODO: Make this method purely, always, every time, retrieve the precomputed timelines,
         # TODO: as they are by definition tables that already were computed
 
-        # FIXME: The aggregator is messed up. My days are REALLY REALLY long spans. I don't trust the data.
-
         all_days = []
 
-        # +1 to include today
-        v = 0
         for days_after_sunday in range(7):
-            self.logger.log_purple(str(v))
-            v = v + 1
             current_day = sunday_that_starts_the_week + \
                 timedelta(days=days_after_sunday)
             mouse_events = await self.timeline_dao.read_day_mice(current_day)

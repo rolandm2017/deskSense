@@ -20,3 +20,4 @@ events.csv
 *.csv
 
 *.sql
+program_counts.txt

@@ -10,6 +10,7 @@ import {
 import {
     DayOfChromeUsage,
     WeeklyBreakdown,
+    BreakdownByDay,
     WeeklyChromeUsage,
     WeeklyProgramUsage,
     WeeklyTimeline,
@@ -155,29 +156,65 @@ const getChromeUsageForPastWeek = withErrorHandlingAndArgument<
     return api.get(`/dashboard/chrome/summaries/week/${formattedDate}`);
 });
 
-const withDateConversion = (
-    originalFunction: typeof getChromeUsageForPastWeek
+// Typescript wizardry
+//
+//
+//
+
+// Base interface for objects that have a date field that needs conversion
+interface DateConvertible {
+    date?: string | Date; // Optional because some types might use 'day' instead
+    day?: string | Date; // Some of your interfaces use 'day' instead of 'date'
+}
+
+// Base interface for weekly data structures
+interface WeeklyDataStructure<T extends DateConvertible> {
+    days: T[];
+}
+
+// Generic conversion function that works with your existing types
+const withDateConversion = <
+    // DayType is the type of a single day's data (like DayOfChromeUsage or BreakdownByDay)
+    // It must have either a 'date' or 'day' property
+    DayType extends DateConvertible,
+    // WeekType is the type of the whole week's data (like WeeklyChromeUsage or WeeklyBreakdown)
+    // It must have a 'days' array containing DayType objects
+    WeekType extends WeeklyDataStructure<DayType>,
+    // FuncType is the type of function being wrapped (like getChromeUsageForPastWeek)
+    // It must take a Date and return a Promise of WeekType
+    FuncType extends (date: Date) => Promise<WeekType>
+>(
+    originalFunction: FuncType
 ) => {
-    return async (date: Date): Promise<WeeklyChromeUsage> => {
+    return async (date: Date): Promise<WeekType> => {
         const response = await originalFunction(date);
 
-        const withConvertedDateObjs: DayOfChromeUsage[] = response.days.map(
-            (day) => ({
-                date: new Date(day.date),
-                content: day.content,
-            })
-        );
+        const withConvertedDateObjs = response.days.map((day) => ({
+            ...day,
+            // Convert either 'date' or 'day' property to Date object
+            ...(day.date !== undefined ? { date: new Date(day.date) } : {}),
+            ...(day.day !== undefined ? { day: new Date(day.day) } : {}),
+        }));
 
         return {
+            ...response,
             days: withConvertedDateObjs,
-        };
+        } as WeekType;
     };
 };
 
-// Create the enhanced version of getChromeUsageForPastWeek
-const getEnhancedChromeUsageForPastWeek = withDateConversion(
-    getChromeUsageForPastWeek
-);
+// Example usage:
+const getEnhancedChromeUsageForPastWeek = withDateConversion<
+    DayOfChromeUsage,
+    WeeklyChromeUsage,
+    typeof getChromeUsageForPastWeek
+>(getChromeUsageForPastWeek);
+
+const getEnhancedWeeklyBreakdown = withDateConversion<
+    BreakdownByDay,
+    WeeklyBreakdown,
+    typeof getWeeklyBreakdown
+>(getWeeklyBreakdown);
 
 export {
     getKeyboardReport,
@@ -193,5 +230,5 @@ export {
     getWeeklyProgramUsage,
     getTimelineForPastWeek,
     getEnhancedChromeUsageForPastWeek,
-    getWeeklyBreakdown, // TODO: Convert date strings to Date obj
+    getEnhancedWeeklyBreakdown,
 };

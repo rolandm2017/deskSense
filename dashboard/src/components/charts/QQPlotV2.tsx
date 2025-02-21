@@ -43,7 +43,7 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
      * the threshold for, for aggregation.
      *
      */
-    console.log(days.length, "35ru");
+    // console.log(days.length, "35ru");
 
     const svgRef = useRef<SVGSVGElement | null>(null);
 
