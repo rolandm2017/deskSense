@@ -22,7 +22,7 @@ interface QQPlotProps {
     };
 }
 
-const QQPlotV2: React.FC<QQPlotProps> = ({
+const QQPlotV2Single: React.FC<QQPlotProps> = ({
     mouseEvents,
     keyboardEvents,
     width = 640,
@@ -117,6 +117,7 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
          * Claude says it's because of SVG coordinate system being reversed
          */
         mouseEvents.forEach((entry: AggregatedTimelineEntry) => {
+            // FIXME: migrate this to be time on x
             addEventLines(20, entry, eventLines, x, y);
         });
         keyboardEvents.forEach((entry: AggregatedTimelineEntry) => {
@@ -131,4 +132,4 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
     );
 };
 
-export default QQPlotV2;
+export default QQPlotV2Single;
