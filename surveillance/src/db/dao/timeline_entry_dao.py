@@ -59,7 +59,6 @@ class TimelineEntryDao(BaseQueueingDao):
                                            )
 
             rows.append(row)
-        print(str(len(rows)), "being added")
         await self.bulk_create_precomputed(rows)
 
         # return the stored values

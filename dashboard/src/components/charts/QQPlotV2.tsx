@@ -43,7 +43,7 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
      * the threshold for, for aggregation.
      *
      */
-    // console.log(days.length, "35ru");
+    console.log(days.length, "35ru");
 
     const svgRef = useRef<SVGSVGElement | null>(null);
 
@@ -60,7 +60,7 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
         const x = d3
             .scaleTime()
             .domain([
-                new Date(2024, 0, 1, 5, 0), // 5 AM
+                new Date(2024, 0, 1, 3, 0), // 5 AM
                 new Date(2024, 0, 1, 23, 59), // 11:59 PM
             ])
             .nice()
@@ -68,6 +68,7 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
 
         // Define days of week in order (Sunday at top)
         const daysOfWeek = [
+            // FIXME: The W in "Wed" is cut off.
             "Sunday",
             "Monday",
             "Tuesday",
@@ -137,9 +138,6 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
         // Add timeline events as lines
         const eventLines: d3.Selection<SVGGElement, unknown, null, undefined> =
             svg.append("g").attr("class", "event-lines");
-
-        // TODO: #1 - get the days onto the graph, y axis
-        // TODO: #2 - space the days apart vertically, so that ther eis
 
         const baseRowSpacing = 60;
 

@@ -68,11 +68,6 @@ function Weekly() {
     }, [searchParams]);
 
     useEffect(() => {
-        // FIXME
-        // FIXME Feb 19
-        // FIXME It loads WAY too slow. It's ON MY COMPUTER. 824 ms, 1.61 sec, gross gross
-        // FIXME
-        // FIXME
         const urlParam = searchParams.get("date"); // returns "5432"
         if (urlParam) {
             /* Load data for refreshes on prior weeks. */
@@ -186,7 +181,6 @@ function Weekly() {
             setStartDate(nextSunday);
             setEndDate(concludingSaturday);
             updateUrlParam(nextSunday);
-            console.log("allegedly loading data 170ru");
             loadDataForWeek(nextSunday);
         } else {
             console.log("No start date found");
@@ -196,12 +190,12 @@ function Weekly() {
     return (
         <>
             <div>
-                <h2>Weekly Reports</h2>
+                <h2 className="text-3xl my-2">Weekly Reports</h2>
                 <div>
                     {/* <h3>Current Week</h3> */}
-                    <h3>
+                    <h3 className="text-xl">
                         {startDate && endDate ? (
-                            <p>
+                            <p className="mt-4">
                                 Showing {formatDate(startDate)} to{" "}
                                 {formatDate(endDate)}
                             </p>
@@ -215,8 +209,9 @@ function Weekly() {
                         days={aggregatedTimeline ? aggregatedTimeline.days : []}
                     />
                 </div>
-                <div>
+                <div className="mt-4 ">
                     <button
+                        className="mr-2 shadow-lg bg-blue-100"
                         onClick={() => {
                             // TODO: If there is no previous week available, grey out the button
 
@@ -226,6 +221,7 @@ function Weekly() {
                         Previous
                     </button>
                     <button
+                        className="shadow-lg bg-blue-100"
                         onClick={() => {
                             if (nextWeekAvailable) {
                                 // FIXME: Go To Next Week fails: Data is not cycled out
