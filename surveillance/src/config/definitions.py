@@ -1,7 +1,7 @@
 MAX_QUEUE_LENGTH = 40
 
 # Define productive applications
-productive_apps = ['Chrome', 'Discord', 'File Explorer', 'Google Chrome',
+productive_apps = ['Chrome', 'File Explorer',  # Chrome determined by window title
                    'Postman', 'Terminal', 'Visual Studio Code']
 
 # TODO: allow user to mark certain servers "productive" i.e. Slack analogues
@@ -24,11 +24,13 @@ productive_sites = [
     'jira.',
     'confluence.',
     'claude.ai',
-    'chatgpt.com'
+    'chatgpt.com',
+    'www.google.com', 'localhost', 'extensions'
 ]
 
-productive_sites_2 = ['claude.ai', 'extensions',
-                      'stackoverflow.com', 'www.google.com', 'localhost']
+# productive_sites_2 = ['claude.ai', 'extensions',
+#                       'stackoverflow.com', 'www.google.com', 'localhost']
+
 
 social_media = ['www.facebook.com', 'www.tiktok.com', 'x.com', ]
 

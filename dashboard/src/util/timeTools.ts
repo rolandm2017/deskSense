@@ -1,3 +1,7 @@
+export function formatDateForApi(date: Date) {
+    return date.toISOString().split("T")[0]; // formats to YYYY-MM-DD
+}
+
 export function getPreviousSunday() {
     let today = new Date();
     let daysSinceSunday = today.getDay(); // Sunday is 0

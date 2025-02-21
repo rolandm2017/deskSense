@@ -9,7 +9,7 @@ from ..db.dao.chrome_dao import ChromeDao
 from ..db.dao.chrome_summary_dao import ChromeSummaryDao
 from ..object.classes import ChromeSessionData
 from ..object.pydantic_dto import TabChangeEvent
-from ..config.definitions import productive_sites_2
+from ..config.definitions import productive_sites
 from ..console_logger import ConsoleLogger
 
 
@@ -100,7 +100,7 @@ class ChromeService:
         initialized: ChromeSessionData = ChromeSessionData()
         initialized.domain = url_deliverable.url
         initialized.detail = url_deliverable.tabTitle
-        initialized.productive = url_deliverable.url in productive_sites_2
+        initialized.productive = url_deliverable.url in productive_sites
         # print("FOO")
 
         if url_deliverable.startTime.tzinfo is not None:

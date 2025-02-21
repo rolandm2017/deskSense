@@ -40,10 +40,6 @@ class SurveillanceManager:
         self.start_time = None
         self.session_data = []
 
-        v = [2, 4, 6, 6, 99]
-        for g in v:
-            print(g)
-
         # Get the project root (parent of src directory)
         # This gets us surveillance/src/productivity_tracker.py
         current_file = Path(__file__)

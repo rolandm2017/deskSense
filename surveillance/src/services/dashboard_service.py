@@ -5,8 +5,8 @@ from datetime import datetime, timedelta, timezone, date
 from ..db.dao.timeline_entry_dao import TimelineEntryDao
 from ..db.dao.program_summary_dao import ProgramSummaryDao
 from ..db.dao.chrome_summary_dao import ChromeSummaryDao
-from ..db.models import DailyDomainSummary
-from ..config.definitions import productive_sites_2
+from ..db.models import DailyDomainSummary, DailyProgramSummary
+from ..config.definitions import productive_sites, productive_apps
 from ..console_logger import ConsoleLogger
 from ..object.return_types import DaySummary
 
@@ -17,6 +17,45 @@ class DashboardService:
         self.program_summary_dao = program_summary_dao
         self.chrome_summary_dao = chrome_summary_dao
         self.logger = ConsoleLogger()
+
+    async def get_weekly_productivity_overview(self, starting_sunday):
+        pass  # Return type has a dayOf field, a productiveHours, a leisureHours
+
+        if starting_sunday.weekday() != 6:  # In Python, Sunday is 6
+            raise ValueError("start_date must be a Sunday")
+
+        usage_from_days = []
+        # for day in week:
+        #     # using the Summary DAO stuff...
+        #   # get chrome usage -> categorize as productive | leisure
+        #   # get program usage -> categorize
+        #       # summarize, store as a day
+        #
+        # Could store the computed vals too so to avoid recomputing it. Only if it's slow tho, above 100ms
+        for i in range(7):
+            current_day = starting_sunday + timedelta(days=i)
+            date_as_datetime = datetime.combine(
+                current_day, datetime.min.time())
+            daily_chrome_summaries: List[DailyDomainSummary] = await self.chrome_summary_dao.read_day(date_as_datetime)
+            daily_program_summaries: List[DailyProgramSummary] = await self.program_summary_dao.read_day(date_as_datetime)
+
+            productivity = 0
+            leisure = 0
+            for domain in daily_chrome_summaries:
+                if domain in productive_sites:
+                    productivity = productivity + domain.hours_spent
+                else:
+                    leisure = leisure + domain.hours_spent
+            for program in daily_program_summaries:
+                if program in productive_apps:
+                    productivity = productivity + program.hours_spent
+                else:
+                    leisure = leisure + program.hours_spent
+
+            usage_from_days.append(
+                {"day": date_as_datetime, "productivity": productivity, "leisure": leisure})
+
+        return usage_from_days
 
     async def get_timeline(self):
         today = datetime.now()
@@ -128,9 +167,6 @@ class DashboardService:
                 current_day, datetime.min.time())
             daily_summaries = await self.chrome_summary_dao.read_day(
                 date_as_datetime)
-            print(type(daily_summaries))
-            for v in daily_summaries:
-                print(type(v), "140ru")
 
             usage_from_days.extend(daily_summaries)
 

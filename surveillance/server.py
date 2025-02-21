@@ -23,12 +23,18 @@ from src.object.pydantic_dto import (
     KeyboardReport,
     MouseReport,
     ProgramActivityReport,
-    ProgramBarChartContent,
-    ChromeBarChartContent, TimelineEntrySchema, TimelineRows, TabChangeEvent,
+    TabChangeEvent,
     VideoCreateEvent, FrameCreateEvent, VideoCreateConfirmation,
-    WeeklyProgramContent, WeeklyChromeContent, WeeklyTimeline, DayOfTimelineRows, MyTotallyTempPastWeekChromeReport
 
 )
+
+from src.object.dashboard_dto import (
+    ProductivityBreakdownByWeek,
+    ProgramBarChartContent,
+    ChromeBarChartContent, TimelineEntrySchema, TimelineRows,
+    WeeklyProgramContent, WeeklyChromeContent, WeeklyTimeline, DayOfTimelineRows
+)
+
 from src.util.pydantic_factory import (
     make_keyboard_log, make_mouse_log, make_program_log,
     manufacture_chrome_bar_chart, manufacture_programs_bar_chart,
@@ -221,6 +227,15 @@ async def get_program_activity_report(program_service: ProgramService = Depends(
     return ProgramActivityReport(count=len(reports), programLogs=reports)
 
 
+# ### #
+# ### ##
+# ### ### Dashboard
+# ### ### Dashboard
+# ### ### Dashboard
+# ### ##
+# ### #
+
+
 @app.get("/dashboard/timeline", response_model=TimelineRows)
 async def get_timeline_for_dashboard(dashboard_service: DashboardService = Depends(get_dashboard_service)):
     mouse_rows, keyboard_rows = await dashboard_service.get_timeline()
@@ -256,10 +271,24 @@ async def get_chrome_time_for_dashboard(dashboard_service: DashboardService = De
 
 
 #
-# Week Week
-# Week Week Week
-# Week Week
+# By Week # By Week
+# By Week # By Week # By Week
+# By Week # By Week
 #
+
+@app.get("/dashboard/breakdown/week/{week_of}", response_model=ProductivityBreakdownByWeek)
+async def get_productivity_breakdown(week_of: date = Path(..., description="Week starting date"), dashboard_service: DashboardService = Depends(get_dashboard_service)):
+    weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(week_of)
+    if not isinstance(weeks_overview, list):
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve week of Chrome chart info")
+    for some_dict in weeks_overview:
+        if not isinstance(some_dict, dict):
+            raise HTTPException(
+                status_code=500, detail="Expected a list of dicts")
+
+    return ProductivityBreakdownByWeek(days=DtoMapper.map_overview(weeks_overview))
+
 
 @app.get("/dashboard/program/summaries/week", response_model=WeeklyProgramContent)
 async def get_program_week_history(dashboard_service: DashboardService = Depends(get_dashboard_service)):
@@ -268,7 +297,6 @@ async def get_program_week_history(dashboard_service: DashboardService = Depends
     if not isinstance(week_of_data, list):
         raise HTTPException(
             status_code=500, detail="Failed to retrieve week of program chart info")
-    print(len(week_of_data), '254ru')
     return WeeklyProgramContent(days=DtoMapper.map_programs(week_of_data))
 
 
@@ -284,7 +312,6 @@ async def get_chrome_week_history(dashboard_service: DashboardService = Depends(
         if not isinstance(day, DailyDomainSummary):
             raise HTTPException(
                 status_code=500, detail="Did not receive a list of DailyDomainSummary objects")
-    print(len(week_of_unsorted_domain_summaries), '263ru')
     return WeeklyChromeContent(days=DtoMapper.map_chrome(week_of_unsorted_domain_summaries))
 
 
@@ -296,7 +323,6 @@ async def get_previous_week_chrome_history(week_of: date = Path(..., description
         raise HTTPException(
             status_code=500, detail="Failed to retrieve week of Chrome chart info")
 
-    print(len(week_of_unsorted_domain_summaries), "294ru")
     # Is a list of lists
     for day in week_of_unsorted_domain_summaries:
         if not isinstance(day, DailyDomainSummary):

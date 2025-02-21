@@ -5,9 +5,11 @@ from src.object.dto import TypingSessionDto, MouseMoveDto, ProgramDto
 
 from src.db.models import DailyProgramSummary, DailyDomainSummary
 
-from src.object.pydantic_dto import (
-    DailyProgramSummarySchema,
-    DailyDomainSummarySchema, WeeklyProgramContent, DayOfProgramContent, DayOfChromeContent, ChromeBarChartContent, ProgramBarChartContent
+from src.object.dashboard_dto import (
+    ProductivityBreakdown, DailyProgramSummarySchema, DailyDomainSummarySchema,
+    WeeklyProgramContent,
+    DayOfProgramContent, DayOfChromeContent,
+    ChromeBarChartContent, ProgramBarChartContent
 
 )
 
@@ -77,6 +79,17 @@ class DtoMapper:
     @staticmethod
     def map_chrome(week: List[DailyDomainSummary]):
         return map_week_of_chrome_data_to_dto(week)
+
+    @staticmethod
+    def map_overview(week: List[dict]):
+        return map_week_of_overviews_to_dto(week)
+
+
+def map_week_of_overviews_to_dto(unsorted_week: List[dict]) -> List[ProductivityBreakdown]:
+    out = [ProductivityBreakdown(day=d["day"],
+                                 productiveHours=d["productivity"],
+                                 leisureHours=d["leisure"]) for d in unsorted_week]
+    return out
 
 
 def map_week_of_program_data_to_dto(unsorted_week: List[DailyProgramSummary]):
