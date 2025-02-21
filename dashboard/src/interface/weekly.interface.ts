@@ -23,7 +23,7 @@ export interface DayOfProgramUsage {
 
 export interface DayOfChromeUsage {
     date: Date;
-    usage: DailyDomainSummary;
+    content: { columns: DailyDomainSummary[] };
 }
 
 export interface DayOfTimelineRows {

@@ -6,15 +6,19 @@ import "../App.css";
 import {
     getWeeklyChromeUsage,
     getWeeklyProgramUsage,
-    getTimelineWeekly,
+    getChromeUsageForPastWeek,
+    getTimelineForCurrentWeek,
     getTimelineForPastWeek,
 } from "../api/getData.api";
 import {
+    DayOfChromeUsage,
     SocialMediaUsage,
     WeeklyChromeUsage,
     WeeklyProgramUsage,
     WeeklyTimeline,
 } from "../interface/weekly.interface";
+
+import { BarChartDayData } from "../interface/misc.interface";
 import QQPlotV2 from "../components/charts/QQPlotV2";
 import {
     DaysOfAggregatedRows,
@@ -81,19 +85,31 @@ function Weekly() {
             getTimelineForPastWeek(new Date(urlParam)).then((weekly) => {
                 console.log(weekly, "71ru");
                 // TODO: Get the start and end date
-                // Do I make
                 setRawTimeline(weekly);
             });
             return;
         }
 
-        getWeeklyChromeUsage().then((weekly) => {
-            setChrome(weekly);
+        getWeeklyChromeUsage().then((weekly: WeeklyChromeUsage) => {
+            // TODO: Move this into the api as a layer
+            const withConvertedDateObjs: DayOfChromeUsage[] = weekly.days.map(
+                (day) => {
+                    return {
+                        date: new Date(day.date),
+                        content: day.content,
+                    };
+                }
+            );
+            const withFixedDates: WeeklyChromeUsage = {
+                days: withConvertedDateObjs,
+            };
+            setChrome(withFixedDates);
         });
-        getWeeklyProgramUsage().then((weekly) => {
+        getWeeklyProgramUsage().then((weekly: WeeklyProgramUsage) => {
+            // TODO: Convert date string to new Date() like up above
             setPrograms(weekly);
         });
-        getTimelineWeekly().then((weekly) => {
+        getTimelineForCurrentWeek().then((weekly) => {
             // TODO: Get the start and end date
             // Do I make
             setRawTimeline(weekly);
@@ -193,10 +209,30 @@ function Weekly() {
         }
     }
 
+    function convertToTwitterOnlyData(
+        weekOfUsage: WeeklyChromeUsage
+    ): BarChartDayData[] {
+        // find twitter
+        return weekOfUsage.days.map((day) => {
+            // Find Twitter usage in the columns array
+            const twitterUsage = day.content.columns.find(
+                (column) =>
+                    column.domainName === "x.com" ||
+                    column.domainName === "twitter.com"
+            );
+
+            return {
+                day: day.date,
+                hoursSpent: twitterUsage ? twitterUsage.hoursSpent : 0,
+            };
+        });
+    }
+
     return (
         <>
             <div>
                 <h2 className="text-3xl my-2">Weekly Reports</h2>
+
                 <div>
                     <h3>Twitter Usage</h3>
                     <h3 className="text-xl">
@@ -209,14 +245,37 @@ function Weekly() {
                             <p>Loading</p>
                         )}
                     </h3>
-                    {socialMediaUsage ? (
-                        <WeeklyUsageChart
-                            title={"Twitter"}
-                            data={socialMediaUsage}
-                        />
-                    ) : (
-                        socialMediaUsage // null
-                    )}
+                    {
+                        chrome ? (
+                            <WeeklyUsageChart
+                                title={"Twitter"}
+                                data={convertToTwitterOnlyData(chrome)}
+                            />
+                        ) : null // null
+                    }
+                </div>
+                <div className="mt-4 ">
+                    <button
+                        className="mr-2 shadow-lg bg-blue-100"
+                        onClick={() => {
+                            // TODO: If there is no previous week available, grey out the button
+
+                            goToPreviousWeek();
+                        }}
+                    >
+                        Previous
+                    </button>
+                    <button
+                        className="shadow-lg bg-blue-100"
+                        onClick={() => {
+                            if (nextWeekAvailable) {
+                                // FIXME: Go To Next Week fails: Data is not cycled out
+                                goToNextWeek();
+                            }
+                        }}
+                    >
+                        Next
+                    </button>
                 </div>
                 <div>
                     {/* <h3>Current Week</h3> */}
@@ -236,6 +295,7 @@ function Weekly() {
                         days={aggregatedTimeline ? aggregatedTimeline.days : []}
                     />
                 </div>
+
                 <div className="mt-4 ">
                     <button
                         className="mr-2 shadow-lg bg-blue-100"

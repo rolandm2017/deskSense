@@ -122,7 +122,11 @@ const withErrorHandlingAndArgument = <T, P extends any[]>(
     };
 };
 
-// If you need to format the date in a specific way, you can create a helper function:
+/*
+ *
+ * Past week
+ *
+ */
 const getTimelineForPastWeek = withErrorHandlingAndArgument<
     WeeklyTimeline,
     [Date]

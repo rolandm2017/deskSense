@@ -22,3 +22,8 @@ export interface WeeklyTimelineAggregate {
     // the same as the WeeklyTimeline, but it's been aggregated
     days: DaysOfAggregatedRows[];
 }
+
+export interface BarChartDayData {
+    day: Date;
+    hoursSpent: number;
+}

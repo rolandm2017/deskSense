@@ -1,17 +1,18 @@
 import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
 
-interface DayData {
-    day: string;
-    hours: number;
-}
+import { BarChartDayData } from "../../interface/misc.interface";
 
 interface WeeklyUsageChartProps {
-    data: DayData[];
+    data: BarChartDayData[];
     title: string;
 }
 
 const WeeklyUsageChart: React.FC<WeeklyUsageChartProps> = ({ data, title }) => {
+    // FIXME: On Feb 20, I observed the program stating that I was
+    // FIXME: on Twitter for 10h sunday, 13h Monday. Obviously not true. Hence
+    // FIXME: Twitter sessions is being left open while I shut the computer down
+    console.log(data, "12ru");
     const svgRef = useRef<SVGSVGElement>(null);
 
     // Set up dimensions
@@ -38,11 +39,16 @@ const WeeklyUsageChart: React.FC<WeeklyUsageChartProps> = ({ data, title }) => {
         const svg = d3.select(svgRef.current);
 
         // Process data to include all days (with 0 for missing days)
-        const processedData = days.map((day) => {
-            const dayData = data.find((d) => d.day === day);
+        const processedData = days.map((dayName) => {
+            const dayData = data.find((d) => {
+                const dateDayName = d.day.toLocaleDateString("en-US", {
+                    weekday: "long",
+                });
+                return dateDayName === dayName;
+            });
             return {
-                day,
-                hours: dayData ? dayData.hours : 0,
+                day: dayName,
+                hours: dayData ? dayData.hoursSpent : 0,
             };
         });
 
@@ -56,7 +62,7 @@ const WeeklyUsageChart: React.FC<WeeklyUsageChartProps> = ({ data, title }) => {
         const maxHours = Math.max(...processedData.map((d) => d.hours));
         const yScale = d3
             .scaleLinear()
-            .domain([0, Math.min(Math.max(maxHours, 1), 12)]) // Max of 12 hours, min of actual max or 1
+            .domain([0, Math.min(Math.max(maxHours, 1), 14)]) // Max of 14 hours, min of actual max or 1
             .range([height, 0]);
 
         // Create chart group
