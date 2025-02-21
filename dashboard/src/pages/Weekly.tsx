@@ -13,6 +13,7 @@ import {
 import {
     DayOfChromeUsage,
     SocialMediaUsage,
+    WeeklyBreakdown,
     WeeklyChromeUsage,
     WeeklyProgramUsage,
     WeeklyTimeline,
@@ -48,9 +49,10 @@ function Weekly() {
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
 
-    const [websiteUsage, setWebsiteUsage] = useState<null>(null);
-
     const [nextWeekAvailable, setNextWeekAvailable] = useState(true);
+
+    const [weeklyBreakdown, setWeeklyBreakdown] =
+        useState<WeeklyBreakdown | null>(null);
 
     const [socialMediaUsage, setSocialMediaUsage] = useState<
         SocialMediaUsage[] | null
@@ -214,6 +216,51 @@ function Weekly() {
         <>
             <div>
                 <h2 className="text-3xl my-2">Weekly Reports</h2>
+
+                <div>
+                    <h3>Twitter Usage</h3>
+                    <h3 className="text-xl">
+                        {startDate && endDate ? (
+                            <p className="mt-4">
+                                Showing {formatDate(startDate)} to{" "}
+                                {formatDate(endDate)}
+                            </p>
+                        ) : (
+                            <p>Loading</p>
+                        )}
+                    </h3>
+                    {
+                        chrome ? (
+                            <WeeklyUsageChart
+                                title={"Overview"}
+                                data={convertToTwitterOnlyData(chrome)}
+                            />
+                        ) : null // null
+                    }
+                </div>
+                <div className="mt-4 ">
+                    <button
+                        className="mr-2 shadow-lg bg-blue-100"
+                        onClick={() => {
+                            // TODO: If there is no previous week available, grey out the button
+
+                            goToPreviousWeek();
+                        }}
+                    >
+                        Previous
+                    </button>
+                    <button
+                        className="shadow-lg bg-blue-100"
+                        onClick={() => {
+                            if (nextWeekAvailable) {
+                                // FIXME: Go To Next Week fails: Data is not cycled out
+                                goToNextWeek();
+                            }
+                        }}
+                    >
+                        Next
+                    </button>
+                </div>
 
                 <div>
                     <h3>Twitter Usage</h3>
