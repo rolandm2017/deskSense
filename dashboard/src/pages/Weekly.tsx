@@ -7,9 +7,10 @@ import {
     getWeeklyChromeUsage,
     getWeeklyProgramUsage,
     getTimelineWeekly,
-    getTimelineForWeek,
+    getTimelineForPastWeek,
 } from "../api/getData.api";
 import {
+    SocialMediaUsage,
     WeeklyChromeUsage,
     WeeklyProgramUsage,
     WeeklyTimeline,
@@ -30,13 +31,12 @@ import {
     formatDateMmDdYyyy,
     parseDateMmDdYyyy,
 } from "../util/timeTools";
+import WeeklyUsageChart from "../components/charts/WeeklyBarChart";
 
 function Weekly() {
     const [chrome, setChrome] = useState<WeeklyChromeUsage | null>(null);
     const [programs, setPrograms] = useState<WeeklyProgramUsage | null>(null);
 
-    // const [typing, setTyping] = useState<WeeklyTyping | null>(null);
-    // const [clicking, setClicking] = useState<WeeklyClicking | null>(null);
     const [rawTimeline, setRawTimeline] = useState<WeeklyTimeline | null>(null);
     const [aggregatedTimeline, setAggregatedTimeline] =
         useState<WeeklyTimelineAggregate | null>(null);
@@ -44,7 +44,13 @@ function Weekly() {
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
 
+    const [websiteUsage, setWebsiteUsage] = useState<null>(null);
+
     const [nextWeekAvailable, setNextWeekAvailable] = useState(true);
+
+    const [socialMediaUsage, setSocialMediaUsage] = useState<
+        SocialMediaUsage[] | null
+    >(null);
 
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -72,7 +78,7 @@ function Weekly() {
         if (urlParam) {
             /* Load data for refreshes on prior weeks. */
             console.log(urlParam, "68ru");
-            getTimelineForWeek(new Date(urlParam)).then((weekly) => {
+            getTimelineForPastWeek(new Date(urlParam)).then((weekly) => {
                 console.log(weekly, "71ru");
                 // TODO: Get the start and end date
                 // Do I make
@@ -167,7 +173,7 @@ function Weekly() {
     function loadDataForWeek(weekStart: Date) {
         setAggregatedTimeline(null); // clear old data
         // FIXME: data loads wrong; a mismatch between the weeks ??
-        getTimelineForWeek(weekStart).then((weekly) => {
+        getTimelineForPastWeek(weekStart).then((weekly) => {
             console.log("loading weekly 160ru");
             setRawTimeline(weekly);
         });
@@ -191,6 +197,27 @@ function Weekly() {
         <>
             <div>
                 <h2 className="text-3xl my-2">Weekly Reports</h2>
+                <div>
+                    <h3>Twitter Usage</h3>
+                    <h3 className="text-xl">
+                        {startDate && endDate ? (
+                            <p className="mt-4">
+                                Showing {formatDate(startDate)} to{" "}
+                                {formatDate(endDate)}
+                            </p>
+                        ) : (
+                            <p>Loading</p>
+                        )}
+                    </h3>
+                    {socialMediaUsage ? (
+                        <WeeklyUsageChart
+                            title={"Twitter"}
+                            data={socialMediaUsage}
+                        />
+                    ) : (
+                        socialMediaUsage // null
+                    )}
+                </div>
                 <div>
                     {/* <h3>Current Week</h3> */}
                     <h3 className="text-xl">

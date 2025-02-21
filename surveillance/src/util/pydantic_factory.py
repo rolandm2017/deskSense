@@ -82,7 +82,7 @@ class DtoMapper:
 def map_week_of_program_data_to_dto(unsorted_week: List[DailyProgramSummary]):
     out = []
     grouped_by_day = {}
-    print(len(unsorted_week), '98ru')
+
     for domain_report in unsorted_week:
         assert isinstance(domain_report, DailyProgramSummary)
         day = domain_report.gathering_date.date()
@@ -101,7 +101,7 @@ def map_week_of_program_data_to_dto(unsorted_week: List[DailyProgramSummary]):
 def map_week_of_chrome_data_to_dto(unsorted_week: List[DailyDomainSummary]):
     out = []
     grouped_by_day = {}
-    print(len(unsorted_week), '98ru')
+
     for domain_report in unsorted_week:
         assert isinstance(domain_report, DailyDomainSummary)
         day = domain_report.gathering_date.date()

@@ -93,6 +93,14 @@ class WeeklyChromeContent(BaseModel):
     days: List[DayOfChromeContent]
 
 
+class MyTotallyTempPastWeekChromeReport(BaseModel):
+    days: List[DayOfChromeContent]
+
+
+class SinglePastWeekOfChromeContent(BaseModel):
+    days: List[DayOfChromeContent]
+
+
 class TimelineEntrySchema(BaseModel):
     id: str  # This will map to clientFacingId from the SQLAlchemy model
     group: str  # This will map from ChartEventType enum

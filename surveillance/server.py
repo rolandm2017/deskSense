@@ -26,7 +26,7 @@ from src.object.pydantic_dto import (
     ProgramBarChartContent,
     ChromeBarChartContent, TimelineEntrySchema, TimelineRows, TabChangeEvent,
     VideoCreateEvent, FrameCreateEvent, VideoCreateConfirmation,
-    WeeklyProgramContent, WeeklyChromeContent, WeeklyTimeline, DayOfTimelineRows
+    WeeklyProgramContent, WeeklyChromeContent, WeeklyTimeline, DayOfTimelineRows, MyTotallyTempPastWeekChromeReport
 
 )
 from src.util.pydantic_factory import (
@@ -48,6 +48,7 @@ from src.service_dependencies import (
     get_dashboard_service, get_chrome_service,
     get_video_service
 )
+from src.object.return_types import DaySummary
 
 # Rest of your server.py code...
 
@@ -273,14 +274,39 @@ async def get_program_week_history(dashboard_service: DashboardService = Depends
 
 @app.get("/dashboard/chrome/summaries/week", response_model=WeeklyChromeContent)
 async def get_chrome_week_history(dashboard_service: DashboardService = Depends(get_dashboard_service)):
-    week_of_data: List[DailyDomainSummary] = await dashboard_service.get_chrome_summary_weekly()
+    week_of_unsorted_domain_summaries: List[DailyDomainSummary] = await dashboard_service.get_chrome_summary_weekly()
     # FIXME: Test on Tuesday, Wednesday to see that they each get their own day
 
-    if not isinstance(week_of_data, list):
+    if not isinstance(week_of_unsorted_domain_summaries, list):
         raise HTTPException(
             status_code=500, detail="Failed to retrieve week of Chrome chart info")
-    print(len(week_of_data), '263ru')
-    return WeeklyChromeContent(days=DtoMapper.map_chrome(week_of_data))
+    for day in week_of_unsorted_domain_summaries:
+        if not isinstance(day, DailyDomainSummary):
+            raise HTTPException(
+                status_code=500, detail="Did not receive a list of DailyDomainSummary objects")
+    print(len(week_of_unsorted_domain_summaries), '263ru')
+    return WeeklyChromeContent(days=DtoMapper.map_chrome(week_of_unsorted_domain_summaries))
+
+
+@app.get("/dashboard/chrome/summaries/week/{week_of}", response_model=MyTotallyTempPastWeekChromeReport)
+async def get_previous_week_chrome_history(week_of: date = Path(..., description="Week starting date"), dashboard_service: DashboardService = Depends(get_dashboard_service)):
+    week_of_unsorted_domain_summaries: List[DailyDomainSummary] = await dashboard_service.get_previous_week_chrome_summary(week_of)
+
+    if not isinstance(week_of_unsorted_domain_summaries, list):
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve week of Chrome chart info")
+
+    print(len(week_of_unsorted_domain_summaries), "294ru")
+    # Is a list of lists
+    for day in week_of_unsorted_domain_summaries:
+        if not isinstance(day, DailyDomainSummary):
+            raise HTTPException(
+                status_code=500, detail="Did not receive a list of Daily Domain Summaries, received instead:" + str(type(day)))
+
+    # days = [DtoMapper.map_chrome(day) for day in package]
+    days = DtoMapper.map_chrome(week_of_unsorted_domain_summaries)
+
+    return MyTotallyTempPastWeekChromeReport(days=days)
 
 
 @app.get("/dashboard/timeline/week", response_model=WeeklyTimeline)
@@ -354,6 +380,7 @@ async def get_chrome_report(chrome_service: ChromeService = Depends(get_chrome_s
     return reports
 
 
+# TODO: Move this
 def write_temp_log(event: TabChangeEvent):
     with open("events.csv", "a") as f:
         out = f"{event.tabTitle.replace(",", "::")},{event.url},{

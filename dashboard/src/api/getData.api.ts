@@ -100,7 +100,7 @@ const getWeeklyChromeUsage = withErrorHandling<WeeklyChromeUsage>(() =>
     api.get("/dashboard/chrome/summaries/week")
 );
 
-const getTimelineWeekly = withErrorHandling<WeeklyTimeline>(() =>
+const getTimelineForCurrentWeek = withErrorHandling<WeeklyTimeline>(() =>
     api.get("/dashboard/timeline/week")
 );
 
@@ -123,12 +123,21 @@ const withErrorHandlingAndArgument = <T, P extends any[]>(
 };
 
 // If you need to format the date in a specific way, you can create a helper function:
-const getTimelineForWeek = withErrorHandlingAndArgument<WeeklyTimeline, [Date]>(
-    (date: Date) => {
-        const formattedDate = date.toISOString().split("T")[0]; // formats to YYYY-MM-DD
-        return api.get(`/dashboard/timeline/week/${formattedDate}`);
-    }
-);
+const getTimelineForPastWeek = withErrorHandlingAndArgument<
+    WeeklyTimeline,
+    [Date]
+>((date: Date) => {
+    const formattedDate = date.toISOString().split("T")[0]; // formats to YYYY-MM-DD
+    return api.get(`/dashboard/timeline/week/${formattedDate}`);
+});
+
+const getChromeUsageForPastWeek = withErrorHandlingAndArgument<
+    WeeklyChromeUsage,
+    [Date]
+>((date: Date) => {
+    const formattedDate = date.toISOString().split("T")[0]; // formats to YYYY-MM-DD
+    return api.get(`/dashboard/chrome/week/${formattedDate}`);
+});
 
 export {
     getKeyboardReport,
@@ -137,10 +146,11 @@ export {
     getTimelineData,
     getProgramSummaries,
     getChromeSummaries,
+    getTimelineForCurrentWeek,
     // getWeeklyClicking,
     // getWeeklyTyping,
     getWeeklyChromeUsage,
     getWeeklyProgramUsage,
-    getTimelineWeekly,
-    getTimelineForWeek,
+    getTimelineForPastWeek,
+    getChromeUsageForPastWeek,
 };
