@@ -288,7 +288,7 @@ async def get_chrome_week_history(dashboard_service: DashboardService = Depends(
     return WeeklyChromeContent(days=DtoMapper.map_chrome(week_of_unsorted_domain_summaries))
 
 
-@app.get("/dashboard/chrome/summaries/week/{week_of}", response_model=MyTotallyTempPastWeekChromeReport)
+@app.get("/dashboard/chrome/summaries/week/{week_of}", response_model=WeeklyChromeContent)
 async def get_previous_week_chrome_history(week_of: date = Path(..., description="Week starting date"), dashboard_service: DashboardService = Depends(get_dashboard_service)):
     week_of_unsorted_domain_summaries: List[DailyDomainSummary] = await dashboard_service.get_previous_week_chrome_summary(week_of)
 
@@ -306,7 +306,7 @@ async def get_previous_week_chrome_history(week_of: date = Path(..., description
     # days = [DtoMapper.map_chrome(day) for day in package]
     days = DtoMapper.map_chrome(week_of_unsorted_domain_summaries)
 
-    return MyTotallyTempPastWeekChromeReport(days=days)
+    return WeeklyChromeContent(days=days)
 
 
 @app.get("/dashboard/timeline/week", response_model=WeeklyTimeline)

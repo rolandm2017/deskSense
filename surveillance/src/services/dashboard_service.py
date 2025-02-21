@@ -22,13 +22,6 @@ class DashboardService:
         today = datetime.now()
         all_mouse_events = await self.timeline_dao.read_day_mice(today)
         all_keyboard_events = await self.timeline_dao.read_day_keyboard(today)
-        print("all mouse events")
-        for v in all_mouse_events[:20]:
-            print(v)
-        print("all keyboard events")
-        for k in all_keyboard_events[:20]:
-            print(k)
-
         return all_mouse_events, all_keyboard_events
 
     async def get_current_week_timeline(self):
