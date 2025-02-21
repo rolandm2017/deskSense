@@ -6,7 +6,7 @@ import "../App.css";
 import {
     getWeeklyChromeUsage,
     getWeeklyProgramUsage,
-    getChromeUsageForPastWeek,
+    getEnhancedChromeUsageForPastWeek,
     getTimelineForCurrentWeek,
     getTimelineForPastWeek,
 } from "../api/getData.api";
@@ -127,25 +127,12 @@ function Weekly() {
                 };
                 days.push(row);
             }
-            console.log(
-                rawTimeline.days.length,
-                aggregatedTimeline,
-                days.length,
-                "128ru"
-            );
+
             setAggregatedTimeline({ days });
         }
     }, [rawTimeline, aggregatedTimeline]);
 
     // TODO: Aggregate the mouse and keyboard
-
-    useEffect(() => {
-        if (!chrome && !programs) {
-            return;
-        }
-        console.log(chrome);
-        console.log(programs);
-    }, [chrome, programs]);
 
     function updateUrlParam(newDate: Date) {
         const input = formatDateMmDdYyyy(newDate);
@@ -167,7 +154,6 @@ function Weekly() {
         const current = new Date(startDate);
         current.setDate(current.getDate() - 7); // Subtract 7 days
         const prevWeekStart = current;
-        console.log(prevWeekStart, "being set 135ru");
         setStartDate(prevWeekStart);
 
         updateUrlParam(prevWeekStart);
@@ -175,33 +161,18 @@ function Weekly() {
         const currentEnd = new Date(endDate);
         currentEnd.setDate(currentEnd.getDate() - 7);
         const prevWeekEnd = currentEnd; // Modified
-        console.log(prevWeekEnd, "143ru");
         setEndDate(prevWeekEnd);
 
         // Do netwoek requests
-        console.log("prev wk: allegedly loading data 152ru");
         loadDataForWeek(prevWeekStart);
     }
 
     function loadDataForWeek(weekStart: Date) {
-        getChromeUsageForPastWeek(weekStart).then((chrome) => {
-            console.log(chrome, "191ru");
-            const withConvertedDateObjs: DayOfChromeUsage[] = chrome.days.map(
-                (day) => {
-                    return {
-                        date: new Date(day.date),
-                        content: day.content,
-                    };
-                }
-            );
-            const withFixedDates: WeeklyChromeUsage = {
-                days: withConvertedDateObjs,
-            };
-            setChrome(withFixedDates);
+        getEnhancedChromeUsageForPastWeek(weekStart).then((chrome) => {
+            setChrome(chrome);
         });
         // FIXME: data loads wrong; a mismatch between the weeks ??
         getTimelineForPastWeek(weekStart).then((weekly) => {
-            console.log("loading weekly 160ru");
             setRawTimeline(weekly);
         });
     }
