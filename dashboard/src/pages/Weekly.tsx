@@ -9,6 +9,7 @@ import {
     getEnhancedChromeUsageForPastWeek,
     getTimelineForCurrentWeek,
     getTimelineForPastWeek,
+    getWeeklyBreakdown,
 } from "../api/getData.api";
 import {
     DayOfChromeUsage,
@@ -176,6 +177,9 @@ function Weekly() {
         // FIXME: data loads wrong; a mismatch between the weeks ??
         getTimelineForPastWeek(weekStart).then((weekly) => {
             setRawTimeline(weekly);
+        });
+        getWeeklyBreakdown(weekStart).then((breakdown) => {
+            setWeeklyBreakdown(breakdown);
         });
     }
 

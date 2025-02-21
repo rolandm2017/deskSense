@@ -3,6 +3,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from asyncio import Queue
 from datetime import datetime, timedelta
+from typing import List
 
 from ..models import DailyDomainSummary
 from ...console_logger import ConsoleLogger
@@ -86,7 +87,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             result = await session.execute(query)
             return result.scalars().all()
 
-    async def read_day(self, day: datetime):
+    async def read_day(self, day: datetime) -> List[DailyDomainSummary]:
         """Read all entries for the given day."""
 
         query = select(DailyDomainSummary).where(

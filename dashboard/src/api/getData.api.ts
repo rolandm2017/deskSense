@@ -9,10 +9,12 @@ import {
 } from "../interface/api.interface";
 import {
     DayOfChromeUsage,
+    WeeklyBreakdown,
     WeeklyChromeUsage,
     WeeklyProgramUsage,
     WeeklyTimeline,
 } from "../interface/weekly.interface";
+import { formatDateForApi } from "../util/timeTools";
 
 const baseRoute = import.meta.env.VITE_API_URL + "/api";
 
@@ -128,11 +130,20 @@ const withErrorHandlingAndArgument = <T, P extends any[]>(
  * Past week
  *
  */
+
+const getWeeklyBreakdown = withErrorHandlingAndArgument<
+    WeeklyBreakdown,
+    [Date]
+>((date: Date) => {
+    const formattedDate = formatDateForApi(date);
+    return api.get(`/dashboard/breakdown/week/${formattedDate}`);
+});
+
 const getTimelineForPastWeek = withErrorHandlingAndArgument<
     WeeklyTimeline,
     [Date]
 >((date: Date) => {
-    const formattedDate = date.toISOString().split("T")[0]; // formats to YYYY-MM-DD
+    const formattedDate = formatDateForApi(date);
     return api.get(`/dashboard/timeline/week/${formattedDate}`);
 });
 
@@ -140,7 +151,7 @@ const getChromeUsageForPastWeek = withErrorHandlingAndArgument<
     WeeklyChromeUsage,
     [Date]
 >((date: Date) => {
-    const formattedDate = date.toISOString().split("T")[0]; // formats to YYYY-MM-DD
+    const formattedDate = formatDateForApi(date);
     return api.get(`/dashboard/chrome/summaries/week/${formattedDate}`);
 });
 
@@ -182,4 +193,5 @@ export {
     getWeeklyProgramUsage,
     getTimelineForPastWeek,
     getEnhancedChromeUsageForPastWeek,
+    getWeeklyBreakdown, // TODO: Convert date strings to Date obj
 };

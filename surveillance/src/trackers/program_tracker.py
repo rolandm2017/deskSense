@@ -27,6 +27,7 @@ class ProgramTrackerCore:
         self.event_handlers = event_handlers
         self.chrome_event_update = chrome_event_update
 
+        # FIXME: why is there three "productive categories" fields?
         self.productive_apps = productive_apps
         self.unproductive = unproductive_apps
         self.productive_categories = productive_categories

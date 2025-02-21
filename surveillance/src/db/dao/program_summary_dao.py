@@ -3,6 +3,7 @@ from sqlalchemy import select, func, text
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from asyncio import Queue
 from datetime import datetime, timedelta
+from typing import List
 
 from ..models import DailyProgramSummary
 from ...console_logger import ConsoleLogger
@@ -94,7 +95,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             result = await session.execute(query)
             return result.scalars().all()
 
-    async def read_day(self, day: datetime):
+    async def read_day(self, day: datetime) -> List[DailyProgramSummary]:
         """Read all entries for the given day."""
         query = select(DailyProgramSummary).where(
             func.date(DailyProgramSummary.gathering_date) == day.date()
