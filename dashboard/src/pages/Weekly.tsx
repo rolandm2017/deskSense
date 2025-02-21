@@ -80,13 +80,10 @@ function Weekly() {
     useEffect(() => {
         const urlParam = searchParams.get("date"); // returns "5432"
         if (urlParam) {
+            const asDate = new Date(urlParam);
             /* Load data for refreshes on prior weeks. */
             console.log(urlParam, "68ru");
-            getTimelineForPastWeek(new Date(urlParam)).then((weekly) => {
-                console.log(weekly, "71ru");
-                // TODO: Get the start and end date
-                setRawTimeline(weekly);
-            });
+            loadDataForWeek(asDate);
             return;
         }
 
@@ -187,7 +184,21 @@ function Weekly() {
     }
 
     function loadDataForWeek(weekStart: Date) {
-        setAggregatedTimeline(null); // clear old data
+        getChromeUsageForPastWeek(weekStart).then((chrome) => {
+            console.log(chrome, "191ru");
+            const withConvertedDateObjs: DayOfChromeUsage[] = chrome.days.map(
+                (day) => {
+                    return {
+                        date: new Date(day.date),
+                        content: day.content,
+                    };
+                }
+            );
+            const withFixedDates: WeeklyChromeUsage = {
+                days: withConvertedDateObjs,
+            };
+            setChrome(withFixedDates);
+        });
         // FIXME: data loads wrong; a mismatch between the weeks ??
         getTimelineForPastWeek(weekStart).then((weekly) => {
             console.log("loading weekly 160ru");

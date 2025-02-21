@@ -140,7 +140,7 @@ const getChromeUsageForPastWeek = withErrorHandlingAndArgument<
     [Date]
 >((date: Date) => {
     const formattedDate = date.toISOString().split("T")[0]; // formats to YYYY-MM-DD
-    return api.get(`/dashboard/chrome/week/${formattedDate}`);
+    return api.get(`/dashboard/chrome/summaries/week/${formattedDate}`);
 });
 
 export {
