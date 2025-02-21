@@ -8,6 +8,7 @@ import {
     TimelineRows,
 } from "../interface/api.interface";
 import {
+    DayOfChromeUsage,
     WeeklyChromeUsage,
     WeeklyProgramUsage,
     WeeklyTimeline,
@@ -143,6 +144,30 @@ const getChromeUsageForPastWeek = withErrorHandlingAndArgument<
     return api.get(`/dashboard/chrome/summaries/week/${formattedDate}`);
 });
 
+const withDateConversion = (
+    originalFunction: typeof getChromeUsageForPastWeek
+) => {
+    return async (date: Date): Promise<WeeklyChromeUsage> => {
+        const response = await originalFunction(date);
+
+        const withConvertedDateObjs: DayOfChromeUsage[] = response.days.map(
+            (day) => ({
+                date: new Date(day.date),
+                content: day.content,
+            })
+        );
+
+        return {
+            days: withConvertedDateObjs,
+        };
+    };
+};
+
+// Create the enhanced version of getChromeUsageForPastWeek
+const getEnhancedChromeUsageForPastWeek = withDateConversion(
+    getChromeUsageForPastWeek
+);
+
 export {
     getKeyboardReport,
     getMouseReport,
@@ -156,5 +181,5 @@ export {
     getWeeklyChromeUsage,
     getWeeklyProgramUsage,
     getTimelineForPastWeek,
-    getChromeUsageForPastWeek,
+    getEnhancedChromeUsageForPastWeek,
 };
