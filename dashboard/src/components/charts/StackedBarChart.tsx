@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
-
 import { BreakdownByDay } from "../../interface/weekly.interface";
 
 interface StackedBarChartProps {
@@ -16,35 +15,22 @@ const StackedBarChart: React.FC<StackedBarChartProps> = ({ data, title }) => {
     const width = 800 - margin.left - margin.right;
     const height = 400 - margin.top - margin.bottom;
 
-    const days = [
-        "Sunday",
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-    ];
-
     useEffect(() => {
         if (!svgRef.current || !data) return;
 
         // Clear previous SVG content
         d3.select(svgRef.current).selectAll("*").remove();
 
-        // Process data to include all days and stack the data
-        const processedData = days.map((dayName) => {
-            const dayData = data.find((d) => d.day === dayName) || {
-                day: dayName,
-                productiveHours: 0,
-                leisureHours: 0,
-            };
-            return dayData;
-        });
+        // Process the data to get day names
+        const processedData = data.map((d) => ({
+            day: d.day.toLocaleDateString("en-US", { weekday: "long" }),
+            productiveHours: d.productiveHours,
+            leisureHours: d.leisureHours,
+        }));
 
         // Stack the data
         const stack = d3
-            .stack<BreakdownByDay>()
+            .stack<any>()
             .keys(["productiveHours", "leisureHours"])
             .order(d3.stackOrderNone)
             .offset(d3.stackOffsetNone);
@@ -54,23 +40,25 @@ const StackedBarChart: React.FC<StackedBarChartProps> = ({ data, title }) => {
         // Create scales
         const xScale = d3
             .scaleBand()
-            .domain(days)
+            .domain(processedData.map((d) => d.day))
             .range([0, width])
             .padding(0.3);
 
-        const maxTotal =
+        const yMax =
             d3.max(processedData, (d) => d.productiveHours + d.leisureHours) ||
-            0;
+            24;
         const yScale = d3
             .scaleLinear()
-            .domain([0, Math.min(Math.max(maxTotal, 1), 24)]) // Max of 24 hours, min of actual max or 1
+            .domain([0, Math.min(yMax, 24)])
             .range([height, 0]);
 
+        const softDarkPurple = "#663366";
+        const sageGreen = "#96B39A";
         // Create color scale
         const colorScale = d3
             .scaleOrdinal<string>()
             .domain(["productiveHours", "leisureHours"])
-            .range(["#4CAF50", "#FF5252"]); // Green for productive, Red for leisure
+            .range([softDarkPurple, sageGreen]);
 
         // Create chart group
         const svg = d3.select(svgRef.current);

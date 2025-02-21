@@ -479,3 +479,5 @@ if __name__ == "__main__":
 
 # FIXME Jan 28: At the end of every day, a new set of counters, per program, should be initialized
 # FIXME: In other words, the day goes from Jan 24 -> Jan 25, the db goes "new rows start here"
+
+# FIXME: Am getting values like 20, 12, 23, 20, 17, 19 from 'Alt-tab window' in the Daily Progrma Summary
