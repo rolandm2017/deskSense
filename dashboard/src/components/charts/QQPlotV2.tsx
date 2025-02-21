@@ -52,15 +52,10 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
 
         d3.select(svgRef.current).selectAll("*").remove();
 
-        // const x = d3
-        //     .scaleLinear()
-        //     .domain([-3, 3])
-        //     .nice()
-        //     .range([margins.left, width - margins.right]);
         const x = d3
             .scaleTime()
             .domain([
-                new Date(2024, 0, 1, 3, 0), // 5 AM
+                new Date(2024, 0, 1, 5, 0), // 5 AM
                 new Date(2024, 0, 1, 23, 59), // 11:59 PM
             ])
             .nice()
@@ -93,16 +88,30 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
             .style("max-width", "100%")
             .style("height", "auto");
 
-        // Add x-axis (time of day)
-        // Add x-axis (time of day)
+        // Create custom ticks: 5 AM, 6 AM, then every 3 hours until midnight
+        const customTicks = [
+            new Date(2024, 0, 1, 5, 0), // 5 AM
+            new Date(2024, 0, 1, 6, 0), // 6 AM
+            new Date(2024, 0, 1, 9, 0), // 9 AM
+            new Date(2024, 0, 1, 12, 0), // 12 PM
+            new Date(2024, 0, 1, 15, 0), // 3 PM
+            new Date(2024, 0, 1, 18, 0), // 6 PM
+            new Date(2024, 0, 1, 21, 0), // 9 PM
+            new Date(2024, 0, 1, 23, 59), // 11:59 PM
+        ];
+
         svg.append("g")
             .attr("transform", `translate(0,${height - margins.bottom})`)
             .call(
                 d3
                     .axisBottom(x)
-                    .tickFormat((d: Date | d3.NumberValue) =>
-                        d instanceof Date ? d3.timeFormat("%I:%M %p")(d) : ""
-                    )
+                    .tickValues(customTicks)
+                    .tickFormat((d: Date | d3.NumberValue) => {
+                        if (!(d instanceof Date)) return "";
+                        // For 5 AM, return empty string
+                        if (d.getHours() === 5) return "";
+                        return d3.timeFormat("%I:%M %p")(d);
+                    })
             )
             .call((g) => g.select(".domain").remove())
             .call((g) =>

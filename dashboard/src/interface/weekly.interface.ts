@@ -55,3 +55,13 @@ export interface WeeklyChromeUsage {
 export interface WeeklyTimeline {
     days: DayOfTimelineRows[]; // between 1 and 7 entries long
 }
+
+/*
+ * Graph stuff
+ *
+ */
+
+export interface SocialMediaUsage {
+    day: string;
+    hours: number;
+}

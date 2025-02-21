@@ -88,6 +88,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def read_day(self, day: datetime):
         """Read all entries for the given day."""
+
         query = select(DailyDomainSummary).where(
             func.date(DailyDomainSummary.gathering_date) == day.date()
         )

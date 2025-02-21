@@ -1,11 +1,14 @@
 # dashboard_service.py
+from typing import List, TypedDict
 from datetime import datetime, timedelta, timezone, date
 
 from ..db.dao.timeline_entry_dao import TimelineEntryDao
 from ..db.dao.program_summary_dao import ProgramSummaryDao
 from ..db.dao.chrome_summary_dao import ChromeSummaryDao
+from ..db.models import DailyDomainSummary
 from ..config.definitions import productive_sites_2
 from ..console_logger import ConsoleLogger
+from ..object.return_types import DaySummary
 
 
 class DashboardService:
@@ -27,14 +30,6 @@ class DashboardService:
             print(k)
 
         return all_mouse_events, all_keyboard_events
-
-      # FIXME Feb 9: I really need to move the Aggregation process to the server
-        # FIXME: And possibly ready up Aggregate tables in advance so that
-        # FIXME: I don't have to run that compute intensive loop over and over
-        # FIXME: a solution could be, each day, the finalized version of the day is computed
-        # FIXME: And then the unfinalized day, is sent "live" meaning "what we have recorded so far"
-        # FIXME: but the problem is then, how do I determine what is the right Width of stitching
-        # FIXME: threshold is the best one? Maybe I should test various ones and see if one is obviously right/wrong
 
     async def get_current_week_timeline(self):
         # TODO: Logging
@@ -124,10 +119,29 @@ class DashboardService:
         # FIXME: Ensure that it actually gets all days of week; can't test it on Monday
         return all
 
-    async def get_chrome_summary_weekly(self):
+    async def get_chrome_summary_weekly(self) -> List[DailyDomainSummary]:
         all = await self.chrome_summary_dao.read_past_week()
         # FIXME: Ensure that it actually gets all days of week; can't test it on Monday
         return all
+
+    async def get_previous_week_chrome_summary(self, start_sunday) -> List[DailyDomainSummary]:
+        if start_sunday.weekday() != 6:  # In Python, Sunday is 6
+            raise ValueError("start_date must be a Sunday")
+
+        usage_from_days = []
+        for i in range(7):
+            current_day = start_sunday + timedelta(days=i)
+            date_as_datetime = datetime.combine(
+                current_day, datetime.min.time())
+            daily_summaries = await self.chrome_summary_dao.read_day(
+                date_as_datetime)
+            print(type(daily_summaries))
+            for v in daily_summaries:
+                print(type(v), "140ru")
+
+            usage_from_days.extend(daily_summaries)
+
+        return usage_from_days
 
     async def get_past_month_summaries_programs(self):
         all = await self.program_summary_dao.read_past_month()
