@@ -66,15 +66,13 @@ class SurveillanceManager:
 
         clock = Clock()
 
-        # TODO: Get the Chrome Svc chrome_open_close_handler into the ProgramTrackerCore
-        chrome_svc = ChromeService()
-
         self.keyboard_tracker = KeyboardTrackerCore(
             clock, keyboard_facade, self.handle_keyboard_ready_for_db)
         self.mouse_tracker = MouseTrackerCore(
             clock, mouse_facade, self.handle_mouse_ready_for_db)
+        # Program tracker
         self.program_tracker = ProgramTrackerCore(
-            clock, program_facade, self.handle_program_ready_for_db, chrome_svc.chrome_open_close_handler)
+            clock, program_facade, self.handle_program_ready_for_db, self.chrome_service.chrome_open_close_handler)
         #
         self.system_tracker = SystemPowerTracker(self.shutdown_handler)
 
@@ -100,15 +98,20 @@ class SurveillanceManager:
             self.timeline_dao.create_from_mouse_move_window(event))
         self.loop.create_task(self.mouse_dao.create_from_window(event))
 
+    # FIXME: Am double counting for sure
+    # TODO: If activeProgram is not Chrome, stop counting Chrome
+    # TODO: If activeProgram is Chrome, count domain
     def handle_program_ready_for_db(self, event):
         self.loop.create_task(
             self.program_summary_dao.create_if_new_else_update(event))
         self.loop.create_task(self.program_dao.create(event))
 
     def handle_chrome_ready_for_db(self, event):
-        self.loop.create_task(
-            self.chrome_summary_dao.create_if_new_else_update(event))
-        self.loop.create_task(self.chrome_dao.create(event))
+        pass  # lives in Chrome Service
+
+    #     self.loop.create_task(
+    #         self.chrome_summary_dao.create_if_new_else_update(event))
+    #     self.loop.create_task(self.chrome_dao.create(event))
 
     async def shutdown_handler(self):
         print("In shutdown handler")
