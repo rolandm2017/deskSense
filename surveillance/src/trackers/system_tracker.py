@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import signal
 import sys
 import atexit
@@ -24,6 +26,9 @@ class SystemPowerTracker:
         print("System shutdown detected!")
         # Add your cleanup code here
         print(f"Received shutdown signal: {signum}")
+        with open("shutdown_times.txt", "a") as f:
+            f.write("shutdown at: ", datetime.now().strftime("%m-%d %H:%M:%S"))
+            f.write("\n")
         self.on_shutdown()
         # e.g., save productivity data, close files, etc.
         sys.exit(0)

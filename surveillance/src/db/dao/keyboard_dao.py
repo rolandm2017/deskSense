@@ -9,7 +9,7 @@ from .base_dao import BaseQueueingDao
 from ..models import TypingSession
 from ...object.classes import KeyboardAggregate
 from ...object.dto import TypingSessionDto
-from ...console_logger import ConsoleLogger
+from ...util.console_logger import ConsoleLogger
 
 
 def get_rid_of_ms(time):

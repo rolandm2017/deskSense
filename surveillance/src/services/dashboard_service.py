@@ -7,7 +7,7 @@ from ..db.dao.program_summary_dao import ProgramSummaryDao
 from ..db.dao.chrome_summary_dao import ChromeSummaryDao
 from ..db.models import DailyDomainSummary, DailyProgramSummary
 from ..config.definitions import productive_sites, productive_apps
-from ..console_logger import ConsoleLogger
+from ..util.console_logger import ConsoleLogger
 from ..object.return_types import DaySummary
 
 

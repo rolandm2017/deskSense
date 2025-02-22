@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from .base_dao import BaseQueueingDao
 from ..models import Frame, Video
 from ...object.pydantic_dto import FrameCreateEvent
-from ...console_logger import ConsoleLogger
+from ...util.console_logger import ConsoleLogger
 
 
 class FrameDao(BaseQueueingDao):

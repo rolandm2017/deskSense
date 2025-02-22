@@ -10,7 +10,7 @@ from ..db.dao.chrome_summary_dao import ChromeSummaryDao
 from ..object.classes import ChromeSessionData
 from ..object.pydantic_dto import TabChangeEvent
 from ..config.definitions import productive_sites
-from ..console_logger import ConsoleLogger
+from ..util.console_logger import ConsoleLogger
 
 
 class ChromeService:

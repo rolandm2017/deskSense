@@ -41,7 +41,7 @@ from src.util.pydantic_factory import (
     DtoMapper
 )
 from src.surveillance_manager import SurveillanceManager
-from src.console_logger import ConsoleLogger
+from src.util.console_logger import ConsoleLogger
 
 from src.services.dashboard_service import DashboardService
 from src.services.chrome_service import ChromeService
@@ -481,3 +481,7 @@ if __name__ == "__main__":
 # FIXME: In other words, the day goes from Jan 24 -> Jan 25, the db goes "new rows start here"
 
 # FIXME: Am getting values like 20, 12, 23, 20, 17, 19 from 'Alt-tab window' in the Daily Progrma Summary
+# Hypothesis: ...
+# FIXME: (1) One solution would be to only ever put in like 3 sec on alt tab. But that's crude.
+# FIXME: (2) Another option would be to spend a whole day or two observing the growth of Alt Tab time in DailyProgramSummaries
+# FIXME: Option (3): write a log file every time time is added to Alt-Tab Window

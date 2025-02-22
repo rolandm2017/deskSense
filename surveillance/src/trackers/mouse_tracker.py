@@ -14,7 +14,7 @@ from ..util.end_program_routine import end_program_readout, pretend_report_event
 from ..util.threaded_tracker import ThreadedTracker
 from ..object.enums import MouseEvent
 from ..object.classes import MouseMoveWindow
-from ..console_logger import ConsoleLogger
+from ..util.console_logger import ConsoleLogger
 from ..facade.mouse_facade import UbuntuMouseApiFacadeCore, WindowsMouseApiFacade
 
 
