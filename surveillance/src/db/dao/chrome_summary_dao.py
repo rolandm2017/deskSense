@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from typing import List
 
 from ..models import DailyDomainSummary
-from ...console_logger import ConsoleLogger
+from ...util.console_logger import ConsoleLogger
 from ...object.classes import ChromeSessionData
 
 # @@@@ @@@@ @@@@ @@@@ @@@@

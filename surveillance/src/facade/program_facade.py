@@ -1,6 +1,6 @@
 import psutil
 from typing import Dict, Optional
-from ..console_logger import ConsoleLogger
+from ..util.console_logger import ConsoleLogger
 
 
 class ProgramApiFacadeCore:

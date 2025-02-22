@@ -9,7 +9,7 @@ from ..db.dao.video_dao import VideoDao
 from ..db.dao.frame_dao import FrameDao
 from ..db.models import TypingSession, Program, MouseMove
 from ..config.definitions import productive_sites
-from ..console_logger import ConsoleLogger
+from ..util.console_logger import ConsoleLogger
 
 
 class KeyboardService:

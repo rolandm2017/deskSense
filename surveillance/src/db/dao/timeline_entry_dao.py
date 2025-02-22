@@ -11,7 +11,7 @@ from ..models import TimelineEntryObj, PrecomputedTimelineEntry
 from ...object.dto import ProgramDto
 from ...object.classes import KeyboardAggregate, MouseMoveWindow
 from ...object.enums import ChartEventType
-from ...console_logger import ConsoleLogger
+from ...util.console_logger import ConsoleLogger
 from ...util.timeline_event_aggregator import aggregate_timeline_events
 
 

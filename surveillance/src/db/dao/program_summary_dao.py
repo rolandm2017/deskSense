@@ -6,7 +6,8 @@ from datetime import datetime, timedelta
 from typing import List
 
 from ..models import DailyProgramSummary
-from ...console_logger import ConsoleLogger
+from ...util.console_logger import ConsoleLogger
+from ...util.debug_logger import write_to_debug_log
 from ...object.classes import ProgramSessionData
 
 
@@ -34,6 +35,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
     async def create_if_new_else_update(self, program_session: ProgramSessionData):
         """This method doesn't use queuing since it needs to check the DB state"""
         target_program_name = program_session.window_title
+        print("target program name: ", target_program_name)
         # ### Calculate time difference
         usage_duration_in_hours = (
             program_session.end_time - program_session.start_time).total_seconds() / 3600
@@ -54,6 +56,11 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             if existing_entry:
                 # if existing_entry is not None:  # Changed from if existing_entry:
                 existing_entry.hours_spent += usage_duration_in_hours
+                current_time = datetime.now()
+                if program_session.window_title == "Alt-tab window":
+                    print(program_session.window_title, "60ru")
+                    write_to_debug_log(target_program_name, usage_duration_in_hours,
+                                       current_time.strftime("%m-%d %H:%M:%S"))
                 await db_session.commit()
             else:
                 await self.create(target_program_name, usage_duration_in_hours, today)

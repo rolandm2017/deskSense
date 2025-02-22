@@ -8,7 +8,7 @@ from .base_dao import BaseQueueingDao
 from ..models import MouseMove
 from ...object.dto import MouseMoveDto
 from ...trackers.mouse_tracker import MouseMoveWindow
-from ...console_logger import ConsoleLogger
+from ...util.console_logger import ConsoleLogger
 
 
 def get_rid_of_ms(time):

@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 from .base_dao import BaseQueueingDao
 from ..models import ChromeTab
-from ...console_logger import ConsoleLogger
+from ...util.console_logger import ConsoleLogger
 from ...object.classes import ChromeSessionData
 
 

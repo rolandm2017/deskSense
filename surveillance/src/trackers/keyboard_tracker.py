@@ -6,7 +6,7 @@ from ..object.classes import KeyboardAggregate
 from ..util.clock import Clock
 from ..util.threaded_tracker import ThreadedTracker
 from ..util.keyboard_aggregator import EventAggregator
-from ..console_logger import ConsoleLogger
+from ..util.console_logger import ConsoleLogger
 from ..facade.keyboard_facade import KeyboardApiFacadeCore
 
 average_char_per_word = 5

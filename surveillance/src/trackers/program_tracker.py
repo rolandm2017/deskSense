@@ -3,7 +3,7 @@ from pathlib import Path
 import time
 import threading
 
-from ..console_logger import ConsoleLogger
+from ..util.console_logger import ConsoleLogger
 from ..config.definitions import productive_apps, productive_categories, productive_sites, unproductive_apps
 from ..facade.program_facade import ProgramApiFacadeCore
 from ..util.detect_os import OperatingSystemInfo
