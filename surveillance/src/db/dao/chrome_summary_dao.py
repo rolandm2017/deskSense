@@ -115,6 +115,10 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             result = await session.execute(query)
             return await result.scalar_one_or_none()
 
+    async def shutdown(self):
+        """Closes the open session without opening a new one"""
+        pass
+
     async def delete(self, id: int):
         """Delete an entry by ID"""
         async with self.session_maker() as session:
