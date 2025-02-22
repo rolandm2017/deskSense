@@ -75,6 +75,7 @@ class SurveillanceManager:
             clock, mouse_facade, self.handle_mouse_ready_for_db)
         self.program_tracker = ProgramTrackerCore(
             clock, program_facade, self.handle_program_ready_for_db, chrome_svc.chrome_open_close_handler)
+        #
         self.system_tracker = SystemPowerTracker(self.shutdown_handler)
 
         self.keyboard_thread = ThreadedTracker(self.keyboard_tracker)
@@ -111,6 +112,8 @@ class SurveillanceManager:
 
     async def shutdown_handler(self):
         await self.chrome_service.shutdown()
+        # TODO: Add Program Summary DAO shutdown -> prevent alt tab window being huge
+        # TODO: Add Chrome Summary DAO shutdown -> similar reasons
         # await self.program_summary_dao.shutdown()
         # await self.chrome_summary_dao.shutdown()
 
