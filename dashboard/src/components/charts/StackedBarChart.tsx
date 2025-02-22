@@ -142,7 +142,7 @@ const StackedBarChart: React.FC<StackedBarChartProps> = ({ data, title }) => {
             .attr("x", 0)
             .attr("width", 15)
             .attr("height", 15)
-            .attr("fill", (d, i) => (i === 0 ? "#4CAF50" : "#FF5252"));
+            .attr("fill", (d, i) => (i === 0 ? softDarkPurple : sageGreen));
 
         legend
             .append("text")

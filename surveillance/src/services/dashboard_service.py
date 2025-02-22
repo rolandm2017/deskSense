@@ -24,10 +24,12 @@ class DashboardService:
 
         usage_from_days = []
 
-        v = []
+        alt_tab_window = []
 
         # TODO: If slow, precompute answer
         for i in range(7):
+            significant_programs = {}  # New dictionary to track programs with >1hr usage
+
             current_day = starting_sunday + timedelta(days=i)
             date_as_datetime = datetime.combine(
                 current_day, datetime.min.time())
@@ -40,19 +42,33 @@ class DashboardService:
                     productivity = productivity + domain.hours_spent
                 else:
                     leisure = leisure + domain.hours_spent
+            print("starting program summaries loop")
+
             for program in daily_program_summaries:
+                # print(program.program_name, float(
+                # f"{program.hours_spent:.4f}"))
+                # Track programs with >1hr usage
+                if program.hours_spent > 1:
+                    significant_programs[program.program_name] = float(
+                        f"{program.hours_spent:.4f}")
+
                 if program.program_name == 'Alt-tab window':
-                    v.append(program.hours_spent)
+                    alt_tab_window.append(program.hours_spent)
                     continue  # temp - skipping bugged outputs
                 if program.program_name in productive_apps:
-
+                    print("< LOG > adding " + program.program_name)
                     productivity = productivity + program.hours_spent
                 else:
                     leisure = leisure + program.hours_spent
+            day = {"day": date_as_datetime,
+                   "productivity": float(f"{productivity:.4f}"), "leisure": float(f"{leisure:.4f}")}
+            # print(day)
+            print("significant programs:")
+            print(significant_programs)
 
-            usage_from_days.append(
-                {"day": date_as_datetime, "productivity": productivity, "leisure": leisure})
-        print(v)
+            usage_from_days.append(day
+                                   )
+        print("alt tab windows: ", alt_tab_window)
 
         return usage_from_days
 
