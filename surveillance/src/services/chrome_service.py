@@ -32,6 +32,8 @@ class ChromeService:
         self.ready_queue = []
         self.debounce_timer = None
 
+        # TODO: Get active program. If progrma = chrome, record time. else, do not record.
+
     # TODO: Log a bunch of real chrome tab submissions, use them in a test
 
     async def add_to_arrival_queue(self, tab_change_event: TabChangeEvent):
@@ -130,22 +132,13 @@ class ChromeService:
         duration = end_time - current_session_start
         self.last_entry.duration = duration
 
-    def chrome_open_close_handler(self, status):
+    def chrome_open_close_handler(self, is_active):
         # FIXME:
         # FIXME: When Chrome is active, recording time should take place.
         # FIXME: When Chrome goes inactive, recording active time should cease.
         # FIXME:
         # print("[debug] ++ ", str(status))
-        if status:
-            self.mark_chrome_active()
-        else:
-            self.mark_chrome_inactive()
-
-    def mark_chrome_active(self):
-        self.is_active = True
-
-    def mark_chrome_inactive(self):
-        self.is_active = False
+        self.is_active = is_active
 
     async def shutdown(self):
         """Mostly just logs the final chrome session to the db"""
@@ -162,6 +155,7 @@ class ChromeService:
             await self.handle_chrome_ready_for_db(concluding_session)
 
     async def handle_chrome_ready_for_db(self, event):
+        # TODO: When switch out of Chrome program, stop counting. Confirm.
         await self.summary_dao.create_if_new_else_update(event)
         await self.dao.create(event)
 

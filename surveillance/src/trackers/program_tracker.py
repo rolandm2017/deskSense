@@ -22,6 +22,24 @@ from ..object.classes import ProgramSessionData
 
 class ProgramTrackerCore:
     def __init__(self, clock, program_api_facade, event_handlers, chrome_event_update):
+        """
+        !!!!! IMPORTANT - READ THIS FIRST !!!!!
+
+        This class has ONE job: Track the currently active program. That's it.
+
+        CORRECT USAGE:
+            - Monitor which program is currently in focus
+            - Detect when user switches programs (alt-tab events)
+
+        INCORRECT USAGE - DO NOT:
+            - Track keyboard state
+            - Monitor mouse position/clicks
+            - Read browser tab contents
+            - Add any other tracking functionality outside of, "What is the current program?"
+
+        If you find yourself adding any of the above, stop and rethink it!
+        Create a separate class instead.
+        """
         self.clock = clock
         self.program_facade: ProgramApiFacadeCore = program_api_facade
         self.event_handlers = event_handlers

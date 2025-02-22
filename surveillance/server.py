@@ -90,7 +90,7 @@ async def lifespan(app: FastAPI):
     # consider that the server will likely auto-run on startup
     # when it gets past development and onto being a typical daily use
 
-    chrome_service = get_chrome_service()
+    chrome_service = await get_chrome_service()
     # Use the session_maker directly
     surveillance_state.manager = SurveillanceManager(
         async_session_maker, chrome_service)
