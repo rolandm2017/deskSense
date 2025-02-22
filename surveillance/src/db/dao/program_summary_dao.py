@@ -40,6 +40,8 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         usage_duration_in_hours = (
             program_session.end_time - program_session.start_time).total_seconds() / 3600
 
+        # FIXME: maybe the program_session is hanging open while I have the computer sleeping? or something
+
         # ### Check if entry exists for today
         today = datetime.now().date()
         query = select(DailyProgramSummary).where(
@@ -61,6 +63,9 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
                     print(program_session.window_title, "60ru")
                     write_to_debug_log(target_program_name, usage_duration_in_hours,
                                        current_time.strftime("%m-%d %H:%M:%S"))
+                if usage_duration_in_hours > 1:
+                    write_to_large_usage_log(
+                        target_program_name, usage_duration_in_hours, current_time.strftime("%m-%d %H:%M:%S"))
                 await db_session.commit()
             else:
                 await self.create(target_program_name, usage_duration_in_hours, today)
@@ -132,6 +137,10 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def shutdown(self):
         """Closes the open session without opening a new one"""
+        print("in shutdown for program summary")
+        with open("shutdown_proof.txt", "a") as f:
+            f.write("shutting down program summary dao")
+            f.write("\n")
         pass
 
     async def delete(self, id: int):
