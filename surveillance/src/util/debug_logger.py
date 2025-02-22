@@ -18,3 +18,10 @@ def hours_to_minutes_seconds_ms(hours):
 
     # Format as mm:ss:mmm
     return f"{minutes:02d}:{seconds:02d}:{milliseconds:03d}"
+
+
+def write_to_large_usage_log(name, hours_spent, time):
+    minutes_seconds = hours_to_minutes_seconds_ms(hours_spent)
+    print("Writing to large usage log: " + str(minutes_seconds))
+    with open("large_usage_log.txt", "a") as f:
+        f.write(f"{name} - {minutes_seconds} - {time}\n")

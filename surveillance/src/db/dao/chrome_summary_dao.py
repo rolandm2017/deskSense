@@ -26,12 +26,12 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
     async def create_if_new_else_update(self, chrome_session: ChromeSessionData):
         """This method doesn't use queuing since it needs to check the DB state"""
         target_domain_name = chrome_session.domain
-        # ### Calculate time difference
 
+        # ### Calculate time difference
         usage_duration_in_hours = chrome_session.duration.total_seconds() / 3600
 
         # ### Check if entry exists for today
-        today = datetime.now().date()  # FIXME: could be getting 0 hrs today b/c of the
+        today = datetime.now().date()
         query = select(DailyDomainSummary).where(
             DailyDomainSummary.domain_name == target_domain_name,
             func.date(DailyDomainSummary.gathering_date) == today
@@ -117,6 +117,10 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def shutdown(self):
         """Closes the open session without opening a new one"""
+        print("in shutdown for chrome summary")
+        with open("shutdown_proof.txt", "a") as f:
+            f.write("shutting down Chrome summary dao")
+            f.write("\n")
         pass
 
     async def delete(self, id: int):

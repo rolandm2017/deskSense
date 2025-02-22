@@ -86,6 +86,10 @@ async def lifespan(app: FastAPI):
     # Startup: Initialize application-wide resources
     await init_db()
 
+    # TODO: If you need to note when the computer starts up,
+    # consider that the server will likely auto-run on startup
+    # when it gets past development and onto being a typical daily use
+
     chrome_service = get_chrome_service()
     # Use the session_maker directly
     surveillance_state.manager = SurveillanceManager(
@@ -485,3 +489,7 @@ if __name__ == "__main__":
 # FIXME: (1) One solution would be to only ever put in like 3 sec on alt tab. But that's crude.
 # FIXME: (2) Another option would be to spend a whole day or two observing the growth of Alt Tab time in DailyProgramSummaries
 # FIXME: Option (3): write a log file every time time is added to Alt-Tab Window
+
+
+# TODO: Need to write to power-on-off-times on startup
+# TODO: but how? the program legit isn't running yet
