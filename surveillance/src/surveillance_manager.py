@@ -111,11 +111,18 @@ class SurveillanceManager:
         self.loop.create_task(self.chrome_dao.create(event))
 
     async def shutdown_handler(self):
-        await self.chrome_service.shutdown()
-        # TODO: Add Program Summary DAO shutdown -> prevent alt tab window being huge
-        # TODO: Add Chrome Summary DAO shutdown -> similar reasons
-        # await self.program_summary_dao.shutdown()
-        # await self.chrome_summary_dao.shutdown()
+        print("In shutdown handler")
+        try:
+            print("116ru")
+            # TODO: Add Program Summary DAO shutdown -> prevent alt tab window being huge
+            await self.program_summary_dao.shutdown()
+            # TODO: Add Chrome Summary DAO shutdown -> similar reasons
+            print("120ru")
+            await self.chrome_summary_dao.shutdown()
+            print("122ru")
+            await self.chrome_service.shutdown()  # works despite the lack of highlighting
+        except Exception as e:
+            print(f"Error during shutdown cleanup: {e}")
 
     def cleanup(self):  # Add this method to ProductivityTracker
         """Clean up resources before exit."""

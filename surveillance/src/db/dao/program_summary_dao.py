@@ -130,6 +130,10 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             # return await result.scalar_one_or_none()
             return result.scalar_one_or_none()
 
+    async def shutdown(self):
+        """Closes the open session without opening a new one"""
+        pass
+
     async def delete(self, id: int):
         """Delete an entry by ID"""
         async with self.session_maker() as session:
