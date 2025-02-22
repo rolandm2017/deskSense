@@ -372,6 +372,8 @@ class TestProgramSummaryDao:
         await class_mock_dao.create_if_new_else_update(session_data_5)
         await class_mock_dao.create_if_new_else_update(session_data_6)
 
+        # TODO: Assert that the total time elapsed is what you expect
+
         # Assert
         assert mock_session.execute.call_count == 6
         assert mock_session.commit.call_count == 6
