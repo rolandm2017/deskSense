@@ -1,10 +1,14 @@
 import tkinter as tk
 import time
+from queue import Queue
+import threading
 
 
 class Overlay:
     def __init__(self):
+        print("Overlay init starting")
         # Create transparent window
+        self.update_queue = Queue()
         self.window = tk.Tk()
         self.window.title("Overlay")
 
@@ -39,16 +43,49 @@ class Overlay:
             'Spotify': '#1DB954',   # Spotify Green
         }
 
-        # Start the tkinter event loop
-        self.start_update_loop()
+       # Start a periodic update check
+        self._schedule_queue_check()
+
+        # Set initial text
+        self.change_display_text("Terminal", self.color_map["Terminal"])
+
+        print("Overlay init complete")
+
+    def _schedule_queue_check(self):
+        """Check for updates every 100ms"""
+        self.process_queue()
+        self.window.after(100, self._schedule_queue_check)
+
+    def process_queue(self):
+        """Process all pending updates"""
+        while not self.update_queue.empty():
+            try:
+                text, color = self.update_queue.get_nowait()
+                self._update_display(text, color)
+            except Queue.Empty:
+                break
+
+    def _update_display(self, new_text, display_color):
+        """Actually update the display (called from main thread)"""
+        formatted_text = self.format_title(new_text)
+        color = display_color if display_color else self.get_color_for_window(
+            new_text)
+        self.label.config(text=formatted_text, fg=color)
+        self.window.update()
 
     def change_display_text(self, new_text, display_color=None):
-        """Change the displayed text and update its color"""
-        formatted_text = self.format_title(new_text)
-        color = self.get_color_for_window(new_text)
-        self.label.config(text=formatted_text,
-                          fg=display_color if display_color else color)
-        self.window.update()
+        """Thread-safe method to change display text"""
+        print(new_text, display_color, "53ru")
+        self.update_queue.put((new_text, display_color))
+
+    # def change_display_text(self, new_text, display_color=None):
+    #     """Change the displayed text and update its color"""
+    #     print(new_text, display_color, "53ru")
+    #     formatted_text = self.format_title(new_text)
+    #     color = self.get_color_for_window(new_text)
+    #     self.label.config(text=formatted_text,
+    #                       fg=display_color if display_color else color)
+    #     self.window.update()
 
     def get_color_for_window(self, title):
         """Determine text color based on window title"""
@@ -74,8 +111,8 @@ class Overlay:
         return title
 
     def start_update_loop(self):
-        """Start the tkinter event loop"""
-        self.window.mainloop()
+        """Update the window without blocking"""
+        self.window.update()
 
 
 # Example usage:

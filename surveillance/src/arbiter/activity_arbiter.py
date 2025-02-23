@@ -129,7 +129,7 @@ class ApplicationInternalState(InternalState):
             is_chrome = False
             current_tab = None
             next_state = ApplicationInternalState(
-                next.window_title, is_chrome, current_tab, next.session)
+                next.window_title, is_chrome, current_tab, next)
             return next_state
 
     def stay_on_same_program(self):
@@ -205,13 +205,14 @@ class ActivityArbiter:
 
         This class exists to prevent the Program Tracker from doing ANYTHING except reporting the active program.
 
-        This way, the Chrome Service doesn't need to know if Chrome is active. 
+        This way, the Chrome Service doesn't need to know if Chrome is active.
         i.e. "chrome_open_close_handler" before e22d5badb15
 
-        This way, the Program Tracker doesn't need to track if 
+        This way, the Program Tracker doesn't need to track if
         the current program is Chrome & do such and such if it is or isn't.
         i.e. "chrome_event_update" and "self.current_is_chrome" before e22d5badb15
         """
+        print("ActivityArbiter init starting")
         self.current_program: Optional[ProgramSessionData] = None
         self.tab_state: Optional[ChromeSessionData] = None
         self.overlay = overlay
@@ -220,22 +221,17 @@ class ActivityArbiter:
 
         self.current_state = None
         self.previous_state = None
+        print("ActivityArbiter init complete")
 
-    def set_tab_state(self, tab: ChromeSessionData):
-        self._transition_state(tab)
+        print("here 224ru")
 
-    def set_program_state(self, event: ProgramSessionData):
-        self._transition_state(event)
+    async def set_tab_state(self, tab: ChromeSessionData):
+        await self._transition_state(tab)
 
-    def create_new_internal_obj(self, next: ProgramSessionData | ChromeSessionData):
-        if isinstance(next, ProgramSessionData):
-            # window title, detail, start time, is productive
-            return ApplicationInternalState(next.window_title, next.detail, next.start_time, next.is_productive)
-        else:
-            # domain, tabtitle, start_time, is_productive
-            return ChromeInternalState(next.domain, next.tab_title, next.start_time, next.is_productive)
+    async def set_program_state(self, event: ProgramSessionData):
+        await self._transition_state(event)
 
-    def _transition_state(self, new_session: ChromeSessionData | ProgramSessionData):
+    async def _transition_state(self, new_session: ChromeSessionData | ProgramSessionData):
         """
         If newly_active = Chrome, start a session for the current tab.
         When Chrome is closed, end the session for the current tab.
@@ -243,14 +239,18 @@ class ActivityArbiter:
         When a program is opened, start a session for the program. And vice versa when it closes.
         """
         now = datetime.now()
+        if isinstance(new_session, ChromeSessionData):
+            print(new_session.domain, "new domain in arbiter")
+        else:
+            print(new_session.window_title, "new app in arbiter")
 
         # Record the duration of the previous state
         if self.current_state:
             # ### Calculate the duration that the current state has existed
-            duration = now - self.current_state.start_time
+            duration = now - self.current_state.session.start_time
 
             # ### Get the current state's session to put into the summary DAO along w/ the time
-            old_session = self.current_state.get_session_data()
+            old_session = self.current_state.session
             old_session.duration = duration
 
             # ### Create the replacement state
@@ -271,12 +271,12 @@ class ActivityArbiter:
 
             # ### Put outgoing state into the DAO
             if isinstance(old_session, ChromeSessionData):
-                self.chrome_summary_dao.create_if_new_else_update(
+                await self.chrome_summary_dao.create_if_new_else_update(
                     old_session)
             else:
                 assert isinstance(
                     old_session, ProgramSessionData), "Was not a program session"
-                self.program_summary_dao.create_if_new_else_update(
+                await self.program_summary_dao.create_if_new_else_update(
                     old_session)
         else:
             if isinstance(new_session, ProgramSessionData):
@@ -287,9 +287,13 @@ class ActivityArbiter:
                     new_session.window_title, True, new_session.detail, new_session)
 
         # Update the display
-        display_info = get_display_info(updated_state)
-        self.overlay.change_display_text(
-            display_info["text"], display_info["color"])
+        if isinstance(updated_state, ApplicationInternalState):
+            display_text = updated_state.session.window_title
+            self.overlay.change_display_text(
+                display_text, "lime")  # or whatever color
+        else:
+            display_text = f"Chrome | {updated_state.session.domain}"
+            self.overlay.change_display_text(display_text, "#4285F4")
 
         # Set new state
         self.current_state = updated_state

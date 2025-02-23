@@ -91,7 +91,9 @@ async def lifespan(app: FastAPI):
     # when it gets past development and onto being a typical daily use
 
     chrome_service = await get_chrome_service()
+    print("here 94ru")
     arbiter = await get_activity_arbiter()
+    print("this doesnt print")
     # Use the session_maker directly
     surveillance_state.manager = SurveillanceManager(
         async_session_maker, chrome_service, arbiter)
