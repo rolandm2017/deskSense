@@ -103,10 +103,8 @@ class SurveillanceManager:
         self.loop.create_task(self.mouse_dao.create_from_window(event))
 
     # FIXME: Am double counting for sure
-    # TODO: If activeProgram is not Chrome, stop counting Chrome
-    # TODO: If activeProgram is Chrome, count domain
     def handle_program_ready_for_db(self, event):
-        self.arbiter.set_program_state(event)
+        self.loop.create_task(self.arbiter.set_program_state(event))
         self.loop.create_task(self.program_dao.create(event))
 
     def handle_chrome_ready_for_db(self, event):

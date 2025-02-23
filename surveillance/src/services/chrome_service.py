@@ -32,6 +32,8 @@ class ChromeService:
         self.ready_queue = []
         self.debounce_timer = None
 
+        print("here 35ru")
+
         # TODO: Get active program. If progrma = chrome, record time. else, do not record.
 
     # TODO: Log a bunch of real chrome tab submissions, use them in a test

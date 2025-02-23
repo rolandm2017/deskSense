@@ -95,12 +95,25 @@ _chrome_service_instance = None
 async def get_activity_arbiter():
     from .debug.claude_overlay_v2 import Overlay
     from .arbiter.activity_arbiter import ActivityArbiter
+    from .db.dao.program_summary_dao import ProgramSummaryDao
+    from .db.dao.chrome_summary_dao import ChromeSummaryDao
 
-    # We can still use singleton pattern internally if needed
+    print("Starting get_activity_arbiter")
+
     global _arbiter_instance
     if not _arbiter_instance:
+        print("Creating new Overlay")
         overlay = Overlay()
-        _arbiter_instance = ActivityArbiter(overlay)
+        print("Creating new ActivityArbiter")
+        _arbiter_instance = ActivityArbiter(
+            overlay=overlay,
+            chrome_summary_dao=ChromeSummaryDao(async_session_maker),
+            program_summary_dao=ProgramSummaryDao(async_session_maker)
+        )
+        print("ActivityArbiter created successfully")
+    else:
+        print("Reusing existing arbiter instance")
+
     return _arbiter_instance
 
 
