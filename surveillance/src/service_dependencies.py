@@ -98,21 +98,27 @@ async def get_activity_arbiter():
     from .db.dao.program_summary_dao import ProgramSummaryDao
     from .db.dao.chrome_summary_dao import ChromeSummaryDao
 
-    print("Starting get_activity_arbiter")
+    # print("Starting get_activity_arbiter")
 
     global _arbiter_instance
     if not _arbiter_instance:
         print("Creating new Overlay")
         overlay = Overlay()
         print("Creating new ActivityArbiter")
+        chrome_service = await get_chrome_service()  # Get the singleton instance
+
         _arbiter_instance = ActivityArbiter(
             overlay=overlay,
             chrome_summary_dao=ChromeSummaryDao(async_session_maker),
             program_summary_dao=ProgramSummaryDao(async_session_maker)
         )
+        # Connect the event listener
+        chrome_service.event_emitter.on(
+            'tab_change', _arbiter_instance._handle_tab_change)
+
         print("ActivityArbiter created successfully")
     else:
-        print("Reusing existing arbiter instance")
+        print(f"Reusing arbiter instance with id: {id(_arbiter_instance)}")
 
     return _arbiter_instance
 

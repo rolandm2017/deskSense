@@ -427,7 +427,7 @@ async def receive_chrome_tab(
 ):
     logger.log_purple("[LOG] Chrome Tab Received")
     try:
-        await chrome_service.add_to_arrival_queue(tab_change_event)
+        await chrome_service.tab_queue.add_to_arrival_queue(tab_change_event)
         return  # Returns 204 No Content
     except Exception as e:
         print(e, '260ru')

@@ -1,6 +1,7 @@
 # chrome_service.py
 from fastapi import Depends
 from typing import List
+from pyee import EventEmitter
 import asyncio
 from datetime import datetime, timedelta, timezone, date
 from operator import attrgetter
@@ -14,27 +15,14 @@ from ..arbiter.activity_arbiter import ActivityArbiter
 from ..util.console_logger import ConsoleLogger
 
 
-class ChromeService:
-    def __init__(self, arbiter: ActivityArbiter, dao: ChromeDao = Depends()):
-        print("╠════════╣")
-        print("║   **   ║")
-        print("║  ****  ║")
-        print("║ ****** ║ Starting Chrome Service")
-        print("║  ****  ║")
-        print("║   **   ║")
-        print("╚════════╝")
-        self.dao = dao
-        self.arbiter = arbiter
-        # self.summary_dao = summary_dao
+class TabQueue:
+    def __init__(self, log_tab_event):
         self.last_entry = None
         self.message_queue = []
         self.ordered_messages = []
         self.ready_queue = []
         self.debounce_timer = None
-
-        # TODO: Get active program. If progrma = chrome, record time. else, do not record.
-
-    # TODO: Log a bunch of real chrome tab submissions, use them in a test
+        self.log_tab_event = log_tab_event
 
     async def add_to_arrival_queue(self, tab_change_event: TabChangeEvent):
         self.message_queue.append(tab_change_event)
@@ -97,6 +85,34 @@ class ChromeService:
             await self.log_tab_event(event)
         self.ready_queue = []
 
+
+class ChromeService:
+    def __init__(self, arbiter: ActivityArbiter, dao: ChromeDao = Depends()):
+        print("╠════════╣")
+        print("║   **   ║")
+        print("║  ****  ║")
+        print("║ ****** ║ Starting Chrome Service")
+        print("║  ****  ║")
+        print("║   **   ║")
+        print("╚════════╝")
+        self.dao = dao
+        self.arbiter = arbiter
+        # self.summary_dao = summary_dao
+
+        self.tab_queue = TabQueue(self.log_tab_event)
+        self.arbiter = arbiter  # Replace direct arbiter calls
+
+        self.event_emitter = EventEmitter()
+
+        # Set up event handlers
+        self.event_emitter.on('tab_processed', self.log_tab_event)
+
+        self.loop = asyncio.get_running_loop()
+
+        # TODO: Get active program. If progrma = chrome, record time. else, do not record.
+
+    # TODO: Log a bunch of real chrome tab submissions, use them in a test
+
     async def log_tab_event(self, url_deliverable: TabChangeEvent):
         """Occurs whenever the user tabs through Chrome tabs.
 
@@ -112,81 +128,39 @@ class ChromeService:
         initialized.domain = url_deliverable.url
         initialized.detail = url_deliverable.tabTitle
         initialized.productive = url_deliverable.url in productive_sites
+        initialized.start_time = url_deliverable.startTime.replace(tzinfo=None)
 
-        if url_deliverable.startTime.tzinfo is not None:
-            # Convert start_time to a timezone-naive datetime
-            initialized.start_time = url_deliverable.startTime.replace(
-                tzinfo=None)
-        else:
-            initialized.start_time = url_deliverable.startTime
         print(initialized.domain, "initialized going into arbiter 122ru")
-        await self.dao.create(initialized)
-        await self.arbiter.set_tab_state(initialized)
 
-        # if self.last_entry:
-        #     concluding_session = self.last_entry
-        #     #
-        #     # Ensure both datetimes are timezone-naive
-        #     #
-        #     now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
-        #     start_time_naive = self.last_entry.start_time.replace(tzinfo=None)
+        self.handle_session_ready_for_arbiter(initialized)
 
-        #     if self.elapsed_alt_tab:
-        #         duration_of_alt_tab = self.elapsed_alt_tab
-        #         self.elapsed_alt_tab = None
+    def handle_session_ready_for_arbiter(self, session):
+        print("Creating tasks in handle_session_ready_for_arbiter")
+        self.event_emitter.emit('tab_change', session)
 
-        #     duration = now_naive - start_time_naive - duration_of_alt_tab
-        #     concluding_session.duration = duration
+        dao_task = self.loop.create_task(self.dao.create(session))
 
-        # self.last_entry = initialized
-        # # print(self.last_entry, '149ru')
-        # await self.handle_chrome_ready_for_db(concluding_session)
+        # Add error callbacks to catch any task failures
+        def on_task_done(task):
+            try:
+                task.result()
+            except Exception as e:
+                print(f"Task failed with error: {e}")
 
-    # async def handle_close_chrome_session(self, end_time):
-    #     current_session_start = self.last_entry.start_time
-    #     duration = end_time - current_session_start
-    #     self.last_entry.duration = duration
+        dao_task.add_done_callback(on_task_done)
 
-    # def chrome_open_close_handler(self, is_active):
-    #     # FIXME:
-    #     # FIXME: When Chrome is active, recording time should take place.
-    #     # FIXME: When Chrome goes inactive, recording active time should cease.
-    #     # FIXME:
-    #     # print("[debug] ++ ", str(status))
-    #     self.is_active = is_active
-    #     if is_active:
-    #         self.pause_session_time()
-    #     else:
-    #         self.activate_session_time()
-
-    # def pause_session_time(self):
-    #     """Start a timer"""
-    #     self.paused_at = datetime.now()
-    #     self.elapsed_alt_tab = None
-
-    # def activate_session_time(self):
-    #     """End the timer, subtracting elapsed time from the session"""
-    #     self.elapsed_alt_tab = datetime.now() - self.paused_at
-    #     self.paused_at = None
+    # FIXME:
+    # FIXME: When Chrome is active, recording time should take place.
+    # FIXME: When Chrome goes inactive, recording active time should cease.
+    # FIXME:
 
     async def shutdown(self):
         """Mostly just logs the final chrome session to the db"""
         pass  # No longer needed in the Arbiter version of the program
-        # if self.last_entry:
-        #     concluding_session = self.last_entry
-        #     #
-        #     # Ensure both datetimes are timezone-naive
-        #     #
-        #     now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
-        #     start_time_naive = self.last_entry.start_time.replace(tzinfo=None)
-
-        #     duration = now_naive - start_time_naive
-        #     concluding_session.duration = duration
-        #     await self.handle_chrome_ready_for_db(concluding_session)
+        # Could do stuff like, trigger the Arbiter to shutdown the current state w/o replacement
 
     async def handle_chrome_ready_for_db(self, event):
         # TODO: When switch out of Chrome program, stop counting. Confirm.
-        await self.summary_dao.create_if_new_else_update(event)
         await self.dao.create(event)
 
     async def read_last_24_hrs(self):
