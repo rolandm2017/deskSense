@@ -229,6 +229,32 @@ class ActivityArbiter:
     async def set_program_state(self, event: ProgramSessionData):
         await self._transition_state(event)
 
+    def update_overlay_display(self, updated_state: InternalState):
+        if isinstance(updated_state, ApplicationInternalState):
+            display_text = updated_state.session.window_title
+            if display_text == "Alt-tab window":
+                print("[LOG]: ", display_text)
+            else:
+                print("[log]", display_text)
+            self.overlay.change_display_text(
+                display_text, "lime")  # or whatever color
+        else:
+            display_text = f"Chrome | {updated_state.session.domain}"
+            self.overlay.change_display_text(display_text, "#4285F4")
+
+    def update_overlay_display_with_session(self, session: ProgramSessionData | ChromeSessionData):
+        if isinstance(session, ProgramSessionData):
+            display_text = session.window_title
+            if display_text == "Alt-tab window":
+                print("[LOG]: ", display_text)
+            else:
+                print("[log]", display_text)
+            self.overlay.change_display_text(
+                "# " + display_text, "lime")  # or whatever color
+        else:
+            display_text = f"# Chrome | {session.domain}"
+            self.overlay.change_display_text(display_text, "#4285F4")
+
     async def _transition_state(self, new_session: ChromeSessionData | ProgramSessionData):
         """
         If newly_active = Chrome, start a session for the current tab.
@@ -241,7 +267,11 @@ class ActivityArbiter:
             print(new_session.domain, "new domain in arbiter")
         else:
             print(new_session.window_title, "new app in arbiter")
+        if isinstance(new_session, ProgramSessionData):
+            print("[[arbiter]] ", new_session.window_title)
+        self.update_overlay_display_with_session(new_session)
 
+        temp = None
         # Record the duration of the previous state
         if self.current_state:
             # ### Calculate the duration that the current state has existed
@@ -250,6 +280,8 @@ class ActivityArbiter:
             # ### Get the current state's session to put into the summary DAO along w/ the time
             old_session = self.current_state.session
             old_session.duration = duration
+
+            temp = duration
 
             # ### Create the replacement state
             updated_state = self.current_state.compute_next_state(new_session)
@@ -283,15 +315,20 @@ class ActivityArbiter:
             else:
                 updated_state = ChromeInternalState(
                     new_session.window_title, True, new_session.detail, new_session)
+        print("\n" + "✦★✦" * 6 + " DEBUG " + "✦★✦" * 6 + "\n")
 
         # Update the display
-        if isinstance(updated_state, ApplicationInternalState):
-            display_text = updated_state.session.window_title
-            self.overlay.change_display_text(
-                display_text, "lime")  # or whatever color
-        else:
-            display_text = f"Chrome | {updated_state.session.domain}"
-            self.overlay.change_display_text(display_text, "#4285F4")
+        # if isinstance(updated_state, ApplicationInternalState):
+        #     display_text = updated_state.session.window_title
+        #     if display_text == "Alt-tab window":
+        #         print("[LOG]: ", display_text, temp)
+        #     else:
+        #         print("[log]", display_text, temp)
+        #     self.overlay.change_display_text(
+        #         display_text, "lime")  # or whatever color
+        # else:
+        #     display_text = f"Chrome | {updated_state.session.domain}"
+        #     self.overlay.change_display_text(display_text, "#4285F4")
 
         # Set new state
         self.current_state = updated_state
