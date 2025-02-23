@@ -10,22 +10,22 @@ from ..db.dao.chrome_summary_dao import ChromeSummaryDao
 from ..object.classes import ChromeSessionData
 from ..object.pydantic_dto import TabChangeEvent
 from ..config.definitions import productive_sites
+from ..arbiter.activity_arbiter import ActivityArbiter
 from ..util.console_logger import ConsoleLogger
 
 
 class ChromeService:
-    def __init__(self, dao: ChromeDao = Depends(), summary_dao: ChromeSummaryDao = Depends()):
-        print("╠══════════╣")
-        print("║    **    ║")
-        print("║   ****   ║")
-        print("║  ******  ║")
-        print("║ ******** ║ Starting Chrome Service")
-        print("║  ******  ║")
-        print("║   ****   ║")
-        print("║    **    ║")
-        print("╚══════════╝")
+    def __init__(self, arbiter: ActivityArbiter, dao: ChromeDao = Depends(), summary_dao: ChromeSummaryDao = Depends()):
+        print("╠════════╣")
+        print("║   **   ║")
+        print("║  ****  ║")
+        print("║ ****** ║ Starting Chrome Service")
+        print("║  ****  ║")
+        print("║   **   ║")
+        print("╚════════╝")
         self.dao = dao
-        self.summary_dao = summary_dao
+        self.arbiter = arbiter
+        # self.summary_dao = summary_dao
         self.last_entry = None
         self.message_queue = []
         self.ordered_messages = []
@@ -97,13 +97,21 @@ class ChromeService:
             await self.log_tab_event(event)
         self.ready_queue = []
 
-    async def log_tab_event(self, url_deliverable):
+    async def log_tab_event(self, url_deliverable: TabChangeEvent):
+        """Occurs whenever the user tabs through Chrome tabs.
+
+        A tab comes in and becomes the last entry. Call this the Foo tab.
+        A new tab comes in, called Bar, to become the new last entry in place of Foo. 
+
+        The time between Foo's start, and Bar's start, is compared. Bar.start - Foo.start = time_elapsed
+
+        Then, before Bar replaces Foo, Foo has its duration added. Foo is then logged. Cycle repeats.
+        """
         # TODO: Write tests for this function
         initialized: ChromeSessionData = ChromeSessionData()
         initialized.domain = url_deliverable.url
         initialized.detail = url_deliverable.tabTitle
         initialized.productive = url_deliverable.url in productive_sites
-        # print("FOO")
 
         if url_deliverable.startTime.tzinfo is not None:
             # Convert start_time to a timezone-naive datetime
@@ -112,47 +120,69 @@ class ChromeService:
         else:
             initialized.start_time = url_deliverable.startTime
 
-        if self.last_entry:
-            concluding_session = self.last_entry
-            #
-            # Ensure both datetimes are timezone-naive
-            #
-            now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
-            start_time_naive = self.last_entry.start_time.replace(tzinfo=None)
+        await self.dao.create(initialized)
+        await self.arbiter.set_tab_state(initialized)
 
-            duration = now_naive - start_time_naive
-            concluding_session.duration = duration
+        # if self.last_entry:
+        #     concluding_session = self.last_entry
+        #     #
+        #     # Ensure both datetimes are timezone-naive
+        #     #
+        #     now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+        #     start_time_naive = self.last_entry.start_time.replace(tzinfo=None)
 
-        self.last_entry = initialized
-        # print(self.last_entry, '149ru')
-        await self.handle_chrome_ready_for_db(concluding_session)
+        #     if self.elapsed_alt_tab:
+        #         duration_of_alt_tab = self.elapsed_alt_tab
+        #         self.elapsed_alt_tab = None
 
-    async def handle_close_chrome_session(self, end_time):
-        current_session_start = self.last_entry.start_time
-        duration = end_time - current_session_start
-        self.last_entry.duration = duration
+        #     duration = now_naive - start_time_naive - duration_of_alt_tab
+        #     concluding_session.duration = duration
 
-    def chrome_open_close_handler(self, is_active):
-        # FIXME:
-        # FIXME: When Chrome is active, recording time should take place.
-        # FIXME: When Chrome goes inactive, recording active time should cease.
-        # FIXME:
-        # print("[debug] ++ ", str(status))
-        self.is_active = is_active
+        # self.last_entry = initialized
+        # # print(self.last_entry, '149ru')
+        # await self.handle_chrome_ready_for_db(concluding_session)
+
+    # async def handle_close_chrome_session(self, end_time):
+    #     current_session_start = self.last_entry.start_time
+    #     duration = end_time - current_session_start
+    #     self.last_entry.duration = duration
+
+    # def chrome_open_close_handler(self, is_active):
+    #     # FIXME:
+    #     # FIXME: When Chrome is active, recording time should take place.
+    #     # FIXME: When Chrome goes inactive, recording active time should cease.
+    #     # FIXME:
+    #     # print("[debug] ++ ", str(status))
+    #     self.is_active = is_active
+    #     if is_active:
+    #         self.pause_session_time()
+    #     else:
+    #         self.activate_session_time()
+
+    # def pause_session_time(self):
+    #     """Start a timer"""
+    #     self.paused_at = datetime.now()
+    #     self.elapsed_alt_tab = None
+
+    # def activate_session_time(self):
+    #     """End the timer, subtracting elapsed time from the session"""
+    #     self.elapsed_alt_tab = datetime.now() - self.paused_at
+    #     self.paused_at = None
 
     async def shutdown(self):
         """Mostly just logs the final chrome session to the db"""
-        if self.last_entry:
-            concluding_session = self.last_entry
-            #
-            # Ensure both datetimes are timezone-naive
-            #
-            now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
-            start_time_naive = self.last_entry.start_time.replace(tzinfo=None)
+        pass  # No longer needed in the Arbiter version of the program
+        # if self.last_entry:
+        #     concluding_session = self.last_entry
+        #     #
+        #     # Ensure both datetimes are timezone-naive
+        #     #
+        #     now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+        #     start_time_naive = self.last_entry.start_time.replace(tzinfo=None)
 
-            duration = now_naive - start_time_naive
-            concluding_session.duration = duration
-            await self.handle_chrome_ready_for_db(concluding_session)
+        #     duration = now_naive - start_time_naive
+        #     concluding_session.duration = duration
+        #     await self.handle_chrome_ready_for_db(concluding_session)
 
     async def handle_chrome_ready_for_db(self, event):
         # TODO: When switch out of Chrome program, stop counting. Confirm.

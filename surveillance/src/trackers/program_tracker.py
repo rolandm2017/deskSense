@@ -43,7 +43,7 @@ class ProgramTrackerCore:
         self.clock = clock
         self.program_facade: ProgramApiFacadeCore = program_api_facade
         self.event_handlers = event_handlers
-        self.chrome_event_update = chrome_event_update
+        # self.chrome_event_update = chrome_event_update
 
         # FIXME: why is there three "productive categories" fields?
         self.productive_apps = productive_apps
@@ -57,15 +57,15 @@ class ProgramTrackerCore:
 
         self.console_logger = ConsoleLogger()
 
-    def handle_chrome_case(self, window_is_chrome):
-        """Handles updates of Chrome state for Chrome Service"""
-        if window_is_chrome:
-            self.current_is_chrome = True
-            self.chrome_event_update(True)
-        else:
-            if self.current_is_chrome:
-                self.current_is_chrome = False
-                self.chrome_event_update(False)
+    # def handle_chrome_case(self, window_is_chrome):
+    #     """Handles updates of Chrome state for Chrome Service"""
+    #     if window_is_chrome:
+    #         self.current_is_chrome = True
+    #         self.chrome_event_update(True)
+    #     else:
+    #         if self.current_is_chrome:
+    #             self.current_is_chrome = False
+    #             self.chrome_event_update(False)
 
     def run_tracking_loop(self):
         for window_change in self.program_facade.listen_for_window_changes():

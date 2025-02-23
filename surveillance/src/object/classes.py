@@ -1,14 +1,14 @@
 # classes.py
 # For various classes
 from datetime import datetime, timedelta
-from typing import TypedDict, NotRequired
+from typing import TypedDict, Optional
 
 
 class ChromeSessionData:
     domain: str
     detail: str
     start_time: datetime
-    duration: NotRequired[timedelta]
+    duration: Optional[timedelta]
     productive: bool
 
     def __init__(self):
@@ -40,15 +40,6 @@ class ProgramSessionData:
 
     def __str__(self):
         return f"ProgramSessionData(window_title='{self.window_title}', detail='{self.detail}', start_time={self.start_time}, end_time={self.end_time}, duration={self.duration}, productive={self.productive})"
-
-
-# class ProgramSessionData(TypedDict):
-#     start_time: datetime
-#     end_time: datetime
-#     duration: float
-#     window: str
-#     detail: NotRequired[str]
-#     productive: bool
 
 
 class KeyboardAggregate:
