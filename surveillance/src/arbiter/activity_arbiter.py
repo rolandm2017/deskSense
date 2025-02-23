@@ -17,58 +17,58 @@ class ActivityType(Enum):
     IDLE = "idle"
 
 
-class Activity:
-    def __init__(self, start_time: datetime, is_productive, session):
-        self.start_time = start_time
-        self.is_productive = is_productive
-        self.session = session
+# class Activity:
+#     def __init__(self, start_time: datetime, is_productive, session):
+#         self.start_time = start_time
+#         self.is_productive = is_productive
+#         self.session = session
 
-    def get_display_info(self):
-        raise NotImplementedError
+#     def get_display_info(self):
+#         raise NotImplementedError
 
-    def get_session_data(self):
-        raise NotImplementedError
-
-
-class ChromeActivity(Activity):
-
-    # class ChromeSessionData:
-    #     domain: str  # same
-    #     detail: str   # tab title
-    #     start_time: datetime  # same
-    #     duration: Optional[timedelta]  # not present in Activity
-    #     productive: bool   # is same
-
-    def __init__(self, domain: str, tab_title: str, start_time: datetime, is_productive, session):
-        super().__init__(start_time, is_productive, session)
-        self.domain = domain
-        self.tab_title = tab_title
-
-    def get_display_info(self):
-        return {
-            "text": f"Chrome | {self.domain}",
-            "color": "#4285F4"
-        }
+#     def get_session_data(self):
+#         raise NotImplementedError
 
 
-class ProgramActivity(Activity):
-    # class ProgramSessionData:
-    # window_title: str  # same
-    # detail: str   # same
-    # start_time: datetime   # same
-    # end_time: datetime   # not present  in Activity
-    # duration: timedelta    # Not present in Activity
-    # productive: bool    # same
-    def __init__(self, window_title: str, detail: str, start_time: datetime, is_productive, session):
-        super().__init__(start_time, is_productive, session)
-        self.window_title = window_title
-        self.detail = detail
+# class ChromeActivity(Activity):
 
-    def get_display_info(self):
-        return {
-            "text": self.window_title,
-            "color": "lime"  # Could have a color map like the overlay
-        }
+#     # class ChromeSessionData:
+#     #     domain: str  # same
+#     #     detail: str   # tab title
+#     #     start_time: datetime  # same
+#     #     duration: Optional[timedelta]  # not present in Activity
+#     #     productive: bool   # is same
+
+#     def __init__(self, domain: str, tab_title: str, start_time: datetime, is_productive, session):
+#         super().__init__(start_time, is_productive, session)
+#         self.domain = domain
+#         self.tab_title = tab_title
+
+#     def get_display_info(self):
+#         return {
+#             "text": f"Chrome | {self.domain}",
+#             "color": "#4285F4"
+#         }
+
+
+# class ProgramActivity(Activity):
+#     # class ProgramSessionData:
+#     # window_title: str  # same
+#     # detail: str   # same
+#     # start_time: datetime   # same
+#     # end_time: datetime   # not present  in Activity
+#     # duration: timedelta    # Not present in Activity
+#     # productive: bool    # same
+#     def __init__(self, window_title: str, detail: str, start_time: datetime, is_productive, session):
+#         super().__init__(start_time, is_productive, session)
+#         self.window_title = window_title
+#         self.detail = detail
+
+#     def get_display_info(self):
+#         return {
+#             "text": self.window_title,
+#             "color": "lime"  # Could have a color map like the overlay
+#         }
 
 
 def get_program_display_info(window_title):
@@ -104,7 +104,7 @@ class InternalState:
         self.current_tab = current_tab
         self.session = session
 
-    def compute_next_state(self, next_state: Activity):
+    def compute_next_state(self, next_state: ProgramSessionData | ChromeSessionData):
         raise NotImplementedError
 
 
@@ -112,13 +112,13 @@ class ApplicationInternalState(InternalState):
     def __init__(self, active_application, is_chrome, current_tab, session):
         super().__init__(active_application, is_chrome, current_tab, session)
 
-    def compute_next_state(self, next_state: Activity):
-        if isinstance(next_state, ProgramActivity):
+    def compute_next_state(self, next_state: ProgramSessionData | ChromeSessionData):
+        if isinstance(next_state, ProgramSessionData):
             return self.change_to_new_program(next_state)
         else:
             return self.transit_to_chrome_state(next_state)
 
-    def change_to_new_program(self, next: ProgramActivity):
+    def change_to_new_program(self, next: ProgramSessionData):
         # TODO: If next state is the same program, return current state
         is_same_program = next.window_title == self.active_application
         if is_same_program:
@@ -135,7 +135,7 @@ class ApplicationInternalState(InternalState):
     def stay_on_same_program(self):
         return self  # No change needed
 
-    def transit_to_chrome_state(self, next: ChromeActivity):
+    def transit_to_chrome_state(self, next: ChromeSessionData):
         # FIXME: What to do with the case where, where, there is a new Chrome opening?
         # A new tab opens at the same time as Chrome opens.
         # FIXME: What to do with, case where, a tab was suspended in the bg
@@ -148,27 +148,27 @@ class ChromeInternalState(InternalState):
     def __init__(self, active_application, is_chrome, current_tab, session):
         super().__init__(active_application, is_chrome, current_tab, session)
 
-    def compute_next_state(self, next_state: Activity):
-        if isinstance(next_state, ProgramActivity):
+    def compute_next_state(self, next_state: ProgramSessionData | ChromeSessionData):
+        if isinstance(next_state, ProgramSessionData):
             return self.handle_change_to_program(next_state)
         else:
             return self.handle_change_tabs(next_state)
 
-    def handle_change_to_program(self, next_state: ProgramActivity):
+    def handle_change_to_program(self, next_state: ProgramSessionData):
         now_on_regular_app = not window_is_chrome(next_state.window_title)
         if now_on_regular_app:
             return self.change_to_new_program(next_state)
         else:
             return self.stay_on_chrome()  # Still on Chrome - Pass
 
-    def handle_change_tabs(self, next_state: ChromeActivity):
+    def handle_change_tabs(self, next_state: ChromeSessionData):
         on_different_tab = self.current_domain != next_state.current_domain
         if on_different_tab:
             self.change_to_new_tab(next_state)
         else:
             self.stay_on_current_tab()
 
-    def change_to_new_program(self, next: ProgramActivity):
+    def change_to_new_program(self, next: ProgramSessionData):
         # TODO: How to implement changing the program?
         # Create a new state that is a Program state
         is_chrome = False
@@ -180,7 +180,7 @@ class ChromeInternalState(InternalState):
     def stay_on_chrome(self):
         return self  # Explicitly stay the same
 
-    def change_to_new_tab(self, next: ChromeActivity):
+    def change_to_new_tab(self, next: ChromeSessionData):
         active_application = "Chrome"
         next_state = ChromeInternalState(active_application,
                                          next.is_chrome, None, next.domain, next.session)
@@ -193,48 +193,33 @@ class ChromeInternalState(InternalState):
 
 
 # TODO: make ActivityArbiter into a singleton
+class RecordKeeperCore:
+    def __init__(self):
+        pass  # A name I might use
 
 
 class ActivityArbiter:
-    _instance = None
-    _initialized = False
-
-    def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-
     def __init__(self, overlay=None, chrome_summary_dao: ChromeSummaryDao = None, program_summary_dao: ProgramSummaryDao = None):
-        # Only initialize once
-        if not ActivityArbiter._initialized:
-            """
-            This class exists to prevent the Chrome Service from doing ANYTHING but reporting which tab is active.
+        """
+        This class exists to prevent the Chrome Service from doing ANYTHING but reporting which tab is active.
 
-            This class exists to prevent the Program Tracker from doing ANYTHING except reporting the active program.
+        This class exists to prevent the Program Tracker from doing ANYTHING except reporting the active program.
 
-            This way, the Chrome Service doesn't need to know if Chrome is active. 
-            i.e. "chrome_open_close_handler" before e22d5badb15
+        This way, the Chrome Service doesn't need to know if Chrome is active. 
+        i.e. "chrome_open_close_handler" before e22d5badb15
 
-            This way, the Program Tracker doesn't need to track if 
-            the current program is Chrome & do such and such if it is or isn't.
-            i.e. "chrome_event_update" and "self.current_is_chrome" before e22d5badb15
-            """
-            self.current_program: Optional[ProgramActivity] = None
-            self.tab_state: Optional[ChromeActivity] = None
-            self.overlay = overlay
-            self.chrome_summary_dao = chrome_summary_dao
-            self.program_summary_dao = program_summary_dao
+        This way, the Program Tracker doesn't need to track if 
+        the current program is Chrome & do such and such if it is or isn't.
+        i.e. "chrome_event_update" and "self.current_is_chrome" before e22d5badb15
+        """
+        self.current_program: Optional[ProgramSessionData] = None
+        self.tab_state: Optional[ChromeSessionData] = None
+        self.overlay = overlay
+        self.chrome_summary_dao = chrome_summary_dao
+        self.program_summary_dao = program_summary_dao
 
-            self.current_state = None
-            self.previous_state = None
-
-            ActivityArbiter._initialized = True
-
-    @classmethod
-    def get_instance(cls):
-        if cls._instance is None:
-            cls._instance = ActivityArbiter()
-        return cls._instance
+        self.current_state = None
+        self.previous_state = None
 
     def set_tab_state(self, tab: ChromeSessionData):
         self._transition_state(tab)
@@ -242,8 +227,8 @@ class ActivityArbiter:
     def set_program_state(self, event: ProgramSessionData):
         self._transition_state(event)
 
-    def create_new_internal_obj(self, next: Activity):
-        if isinstance(next, ProgramActivity):
+    def create_new_internal_obj(self, next: ProgramSessionData | ChromeSessionData):
+        if isinstance(next, ProgramSessionData):
             # window title, detail, start time, is productive
             return ApplicationInternalState(next.window_title, next.detail, next.start_time, next.is_productive)
         else:

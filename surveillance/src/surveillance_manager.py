@@ -34,11 +34,11 @@ from .arbiter.activity_arbiter import ActivityArbiter
 
 
 class SurveillanceManager:
-    def __init__(self, session_maker: async_sessionmaker, chrome_service, shutdown_signal=None):
+    def __init__(self, session_maker: async_sessionmaker, chrome_service, arbiter, shutdown_signal=None):
         self.session_maker = session_maker
         self.chrome_service = chrome_service
-        # self.arbiter = ActivityArbiter.get_instance()  # TODO: Initalize display
-        self.arbiter = None
+
+        self.arbiter = arbiter
         # Initialize tracking data
         self.current_window = None
         self.start_time = None
