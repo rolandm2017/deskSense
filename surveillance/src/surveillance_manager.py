@@ -60,6 +60,7 @@ class SurveillanceManager:
         program_facade = ProgramApiFacadeCore(current_os)
 
         self.loop = asyncio.get_event_loop()
+
         self.mouse_dao = MouseDao(self.session_maker)
         self.keyboard_dao = KeyboardDao(self.session_maker)
         self.program_dao = ProgramDao(self.session_maker)

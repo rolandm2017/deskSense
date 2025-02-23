@@ -17,60 +17,6 @@ class ActivityType(Enum):
     IDLE = "idle"
 
 
-# class Activity:
-#     def __init__(self, start_time: datetime, is_productive, session):
-#         self.start_time = start_time
-#         self.is_productive = is_productive
-#         self.session = session
-
-#     def get_display_info(self):
-#         raise NotImplementedError
-
-#     def get_session_data(self):
-#         raise NotImplementedError
-
-
-# class ChromeActivity(Activity):
-
-#     # class ChromeSessionData:
-#     #     domain: str  # same
-#     #     detail: str   # tab title
-#     #     start_time: datetime  # same
-#     #     duration: Optional[timedelta]  # not present in Activity
-#     #     productive: bool   # is same
-
-#     def __init__(self, domain: str, tab_title: str, start_time: datetime, is_productive, session):
-#         super().__init__(start_time, is_productive, session)
-#         self.domain = domain
-#         self.tab_title = tab_title
-
-#     def get_display_info(self):
-#         return {
-#             "text": f"Chrome | {self.domain}",
-#             "color": "#4285F4"
-#         }
-
-
-# class ProgramActivity(Activity):
-#     # class ProgramSessionData:
-#     # window_title: str  # same
-#     # detail: str   # same
-#     # start_time: datetime   # same
-#     # end_time: datetime   # not present  in Activity
-#     # duration: timedelta    # Not present in Activity
-#     # productive: bool    # same
-#     def __init__(self, window_title: str, detail: str, start_time: datetime, is_productive, session):
-#         super().__init__(start_time, is_productive, session)
-#         self.window_title = window_title
-#         self.detail = detail
-
-#     def get_display_info(self):
-#         return {
-#             "text": self.window_title,
-#             "color": "lime"  # Could have a color map like the overlay
-#         }
-
-
 def get_program_display_info(window_title):
     return {
         "text": window_title,
@@ -198,8 +144,14 @@ class RecordKeeperCore:
         pass  # A name I might use
 
 
+class OverallState:
+    def __init__(self):
+        self.program_state = None
+        self.chrome_state = None
+
+
 class ActivityArbiter:
-    def __init__(self, overlay=None, chrome_summary_dao: ChromeSummaryDao = None, program_summary_dao: ProgramSummaryDao = None):
+    def __init__(self, overlay, chrome_summary_dao: ChromeSummaryDao = None, program_summary_dao: ProgramSummaryDao = None):
         """
         This class exists to prevent the Chrome Service from doing ANYTHING but reporting which tab is active.
 
@@ -213,6 +165,8 @@ class ActivityArbiter:
         i.e. "chrome_event_update" and "self.current_is_chrome" before e22d5badb15
         """
         print("ActivityArbiter init starting")
+        chrome_service.arbiter.on('tab_change', self._handle_tab_change)
+
         self.current_program: Optional[ProgramSessionData] = None
         self.tab_state: Optional[ChromeSessionData] = None
         self.overlay = overlay
@@ -220,12 +174,17 @@ class ActivityArbiter:
         self.program_summary_dao = program_summary_dao
 
         self.current_state = None
-        self.previous_state = None
+        self.program_state = None  # Holds a program
+        self.chrome_state = None  # Holds a tab
         print("ActivityArbiter init complete")
 
     async def set_tab_state(self, tab: ChromeSessionData):
-        print("HERE 227ru")
-        await self._transition_state(tab)
+        print("Starting set_tab_state")
+        try:
+            print("HERE 227ru")
+            await self._transition_state(tab)
+        except Exception as e:
+            print(f"Error in set_tab_state: {e}")
 
     async def set_program_state(self, event: ProgramSessionData):
         await self._transition_state(event)
@@ -243,7 +202,10 @@ class ActivityArbiter:
             display_text = f"Chrome | {updated_state.session.domain}"
             self.overlay.change_display_text(display_text, "#4285F4")
 
+    # TODO: Separate handling of program state and tab state.
+
     def update_overlay_display_with_session(self, session: ProgramSessionData | ChromeSessionData):
+        print(session)
         if isinstance(session, ProgramSessionData):
             display_text = session.window_title
             if display_text == "Alt-tab window":
@@ -251,10 +213,16 @@ class ActivityArbiter:
             else:
                 print("[log]", display_text)
             self.overlay.change_display_text(
-                "# " + display_text, "lime")  # or whatever color
+                display_text, "lime")  # or whatever color
         else:
-            display_text = f"# Chrome | {session.domain}"
+            display_text = f"Chrome | {session.domain}"
             self.overlay.change_display_text(display_text, "#4285F4")
+
+    async def _transition_program(self, program_session):
+        pass
+
+    async def _transition_tab(self, chrome_session):
+        pass
 
     async def _transition_state(self, new_session: ChromeSessionData | ProgramSessionData):
         """
@@ -264,6 +232,8 @@ class ActivityArbiter:
         When a program is opened, start a session for the program. And vice versa when it closes.
         """
         now = datetime.now()
+        print("\n" + "✦★✦" * 6 + " DEBUG " + "✦★✦" * 6 + "\n")
+
         if isinstance(new_session, ChromeSessionData):
             print(new_session.domain, "new domain in arbiter")
         else:
@@ -272,9 +242,9 @@ class ActivityArbiter:
             print("[[arbiter]] ", new_session.window_title)
         else:
             print("[[ARB-tab]] ", new_session.domain)
+        # print("gggggggggggggggg")
         self.update_overlay_display_with_session(new_session)
 
-        temp = None
         # Record the duration of the previous state
         if self.current_state:
             # ### Calculate the duration that the current state has existed
@@ -318,7 +288,6 @@ class ActivityArbiter:
             else:
                 updated_state = ChromeInternalState(
                     new_session.window_title, True, new_session.detail, new_session)
-        print("\n" + "✦★✦" * 6 + " DEBUG " + "✦★✦" * 6 + "\n")
 
         # Update the display
         # if isinstance(updated_state, ApplicationInternalState):
