@@ -96,8 +96,9 @@ async def get_chrome_service(dao: ChromeDao = Depends(get_chrome_dao),
     global _chrome_service_instance  # Singleton because it must preserve internal state
     if _chrome_service_instance is None:
         # TODO: Initialize display
-        magic_fraps_overlay = Overlay()
-        arbiter = ActivityArbiter(magic_fraps_overlay)
+        # magic_fraps_overlay = Overlay()
+        # arbiter = ActivityArbiter(magic_fraps_overlay)
+        arbiter = None
         _chrome_service_instance = ChromeService(
             arbiter,
             dao=ChromeDao(async_session_maker),

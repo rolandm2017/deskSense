@@ -37,7 +37,8 @@ class SurveillanceManager:
     def __init__(self, session_maker: async_sessionmaker, chrome_service, shutdown_signal=None):
         self.session_maker = session_maker
         self.chrome_service = chrome_service
-        self.arbiter = ActivityArbiter.get_instance()  # TODO: Initalize display
+        # self.arbiter = ActivityArbiter.get_instance()  # TODO: Initalize display
+        self.arbiter = None
         # Initialize tracking data
         self.current_window = None
         self.start_time = None
@@ -122,10 +123,12 @@ class SurveillanceManager:
         except Exception as e:
             print(f"Error during shutdown cleanup: {e}")
 
-    def cleanup(self):  # Add this method to ProductivityTracker
+    async def cleanup(self):
         """Clean up resources before exit."""
         print("cleaning up")
         self.keyboard_thread.stop()
         self.mouse_thread.stop()
         self.program_thread.stop()
         self.is_running = False
+        # Add any async cleanup operations here
+        await asyncio.sleep(0.5)  # Give threads time to clean up

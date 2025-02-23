@@ -38,6 +38,7 @@ class KeyboardTrackerCore:
     def run_tracking_loop(self):
         event = self.keyboard_facade.read_event()
         if self.keyboard_facade.is_ctrl_c(event):
+            print("### KEYBOARD TRACKER: Detected Ctrl+C ###")
             self.keyboard_facade.trigger_ctrl_c()  # stop program
             return
         if self.keyboard_facade.event_type_is_key_down(event):
