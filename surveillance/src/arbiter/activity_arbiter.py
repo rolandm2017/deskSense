@@ -223,8 +223,6 @@ class ActivityArbiter:
         self.previous_state = None
         print("ActivityArbiter init complete")
 
-        print("here 224ru")
-
     async def set_tab_state(self, tab: ChromeSessionData):
         await self._transition_state(tab)
 
