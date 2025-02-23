@@ -14,6 +14,7 @@ from .db.dao.chrome_summary_dao import ChromeSummaryDao
 from .db.dao.video_dao import VideoDao
 from .db.dao.frame_dao import FrameDao
 from .arbiter.activity_arbiter import ActivityArbiter
+from .util.clock import Clock
 from .debug.debug_overlay import Overlay
 
 
@@ -100,6 +101,7 @@ async def get_activity_arbiter():
     from .db.dao.chrome_summary_dao import ChromeSummaryDao
 
     loop = asyncio.get_running_loop()
+    clock = Clock()
     # print("Starting get_activity_arbiter")
 
     global _arbiter_instance
@@ -111,6 +113,7 @@ async def get_activity_arbiter():
 
         _arbiter_instance = ActivityArbiter(
             overlay=overlay,
+            clock=clock,
             chrome_summary_dao=ChromeSummaryDao(async_session_maker),
             program_summary_dao=ProgramSummaryDao(async_session_maker)
         )

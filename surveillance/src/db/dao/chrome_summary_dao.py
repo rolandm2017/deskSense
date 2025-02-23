@@ -7,6 +7,7 @@ from typing import List
 
 from ..models import DailyDomainSummary
 from ...util.console_logger import ConsoleLogger
+from ...util.clock import Clock
 from ...object.classes import ChromeSessionData
 
 # @@@@ @@@@ @@@@ @@@@ @@@@
@@ -21,6 +22,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         self.flush_interval = flush_interval
         self.queue = Queue()
         self.processing = False
+        self.clock = Clock()
         self.logger = ConsoleLogger()
 
     async def create_if_new_else_update(self, chrome_session: ChromeSessionData):
@@ -31,7 +33,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         usage_duration_in_hours = chrome_session.duration.total_seconds() / 3600
 
         # ### Check if entry exists for today
-        today = datetime.now().date()
+        today = self.clock.now().date()
         query = select(DailyDomainSummary).where(
             DailyDomainSummary.domain_name == target_domain_name,
             func.date(DailyDomainSummary.gathering_date) == today

@@ -23,10 +23,17 @@ def is_expected_shape_else_throw(shape):
     return compliant_shape
 
 
+def window_is_chrome_str_version(new_window):
+    return new_window.endswith("Google Chrome")
+
+
 def window_is_chrome(new_window):
-    # example: 'Fixing datetime.fromisoformat() error - Claude - Google Chrome'
-    window_title = new_window["window_title"]
-    return window_title.endswith('Google Chrome')
+    if isinstance(new_window, str):
+        return window_is_chrome_str_version(new_window)
+    else:
+        # example: 'Fixing datetime.fromisoformat() error - Claude - Google Chrome'
+        window_title = new_window["window_title"]
+        return window_title.endswith('Google Chrome')
 
 
 def tab_is_a_productive_tab(tab_name_to_check, productive_sites):

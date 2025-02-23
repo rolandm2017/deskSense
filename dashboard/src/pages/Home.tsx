@@ -59,7 +59,6 @@ function Home() {
     useEffect(() => {
         if (timeline == null) {
             getTimelineData().then((timeline) => {
-                // console.log(timeline, "53ru");
                 setTimeline(timeline);
             });
         }
