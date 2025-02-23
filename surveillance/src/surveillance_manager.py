@@ -76,7 +76,7 @@ class SurveillanceManager:
             clock, mouse_facade, self.handle_mouse_ready_for_db)
         # Program tracker
         self.program_tracker = ProgramTrackerCore(
-            clock, program_facade, self.handle_program_ready_for_db)
+            clock, program_facade, self.handle_window_change, self.handle_program_ready_for_db)
         #
         self.system_tracker = SystemPowerTracker(self.shutdown_handler)
 
@@ -102,9 +102,11 @@ class SurveillanceManager:
             self.timeline_dao.create_from_mouse_move_window(event))
         self.loop.create_task(self.mouse_dao.create_from_window(event))
 
+    def handle_window_change(self, event):
+        self.loop.create_task(self.arbiter.set_program_state(event))
+
     # FIXME: Am double counting for sure
     def handle_program_ready_for_db(self, event):
-        self.loop.create_task(self.arbiter.set_program_state(event))
         self.loop.create_task(self.program_dao.create(event))
 
     def handle_chrome_ready_for_db(self, event):

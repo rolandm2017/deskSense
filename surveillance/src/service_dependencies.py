@@ -13,7 +13,7 @@ from .db.dao.chrome_summary_dao import ChromeSummaryDao
 from .db.dao.video_dao import VideoDao
 from .db.dao.frame_dao import FrameDao
 from .arbiter.activity_arbiter import ActivityArbiter
-from .debug.claude_overlay_v2 import Overlay
+from .debug.debug_overlay import Overlay
 
 
 # Dependency functions
@@ -93,7 +93,7 @@ _chrome_service_instance = None
 
 
 async def get_activity_arbiter():
-    from .debug.claude_overlay_v2 import Overlay
+    from .debug.debug_overlay import Overlay
     from .arbiter.activity_arbiter import ActivityArbiter
     from .db.dao.program_summary_dao import ProgramSummaryDao
     from .db.dao.chrome_summary_dao import ChromeSummaryDao
