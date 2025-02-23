@@ -85,24 +85,35 @@ async def get_dashboard_service(
     from .services.dashboard_service import DashboardService
     return DashboardService(timeline_dao, program_summary_dao, chrome_summary_dao)
 
+
+# Singleton instance of ActivityArbiter
+_arbiter_instance = None
 # Singleton instance of ChromeService
 _chrome_service_instance = None
 
 
+async def get_activity_arbiter():
+    from .debug.claude_overlay_v2 import Overlay
+    from .arbiter.activity_arbiter import ActivityArbiter
+
+    # We can still use singleton pattern internally if needed
+    global _arbiter_instance
+    if not _arbiter_instance:
+        overlay = Overlay()
+        _arbiter_instance = ActivityArbiter(overlay)
+    return _arbiter_instance
+
+
 async def get_chrome_service(dao: ChromeDao = Depends(get_chrome_dao),
-                             summary_dao: ChromeSummaryDao = Depends(get_chrome_summary_dao)) -> Callable:
+                             arbiter: ActivityArbiter = Depends(get_activity_arbiter)) -> Callable:
     # Lazy import to avoid circular dependency
     from .services.chrome_service import ChromeService
     global _chrome_service_instance  # Singleton because it must preserve internal state
     if _chrome_service_instance is None:
-        # TODO: Initialize display
-        # magic_fraps_overlay = Overlay()
-        # arbiter = ActivityArbiter(magic_fraps_overlay)
-        arbiter = None
         _chrome_service_instance = ChromeService(
             arbiter,
-            dao=ChromeDao(async_session_maker),
-            summary_dao=ChromeSummaryDao(async_session_maker)
+            dao=ChromeDao(async_session_maker)
+
         )
     return _chrome_service_instance
 

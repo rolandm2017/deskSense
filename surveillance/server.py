@@ -51,7 +51,7 @@ from src.services.services import (
 )
 from src.service_dependencies import (
     get_keyboard_service, get_mouse_service, get_program_service,
-    get_dashboard_service, get_chrome_service,
+    get_dashboard_service, get_chrome_service, get_activity_arbiter,
     get_video_service
 )
 from src.object.return_types import DaySummary
@@ -91,9 +91,10 @@ async def lifespan(app: FastAPI):
     # when it gets past development and onto being a typical daily use
 
     chrome_service = await get_chrome_service()
+    arbiter = await get_activity_arbiter()
     # Use the session_maker directly
     surveillance_state.manager = SurveillanceManager(
-        async_session_maker, chrome_service)
+        async_session_maker, chrome_service, arbiter)
     surveillance_state.manager.start_trackers()
 
     yield

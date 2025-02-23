@@ -15,7 +15,7 @@ from ..util.console_logger import ConsoleLogger
 
 
 class ChromeService:
-    def __init__(self, arbiter: ActivityArbiter, dao: ChromeDao = Depends(), summary_dao: ChromeSummaryDao = Depends()):
+    def __init__(self, arbiter: ActivityArbiter, dao: ChromeDao = Depends()):
         print("╠════════╣")
         print("║   **   ║")
         print("║  ****  ║")
