@@ -1,7 +1,7 @@
 import tkinter as tk
-import time
 from queue import Queue, Empty
 import threading
+import re
 
 
 class Overlay:
@@ -73,6 +73,11 @@ class Overlay:
 
     def format_title(self, title):
         """Format the window title for display"""
+        pattern = r'^([^\s@]+@[^\s@:]+):'
+        match = re.match(pattern, title)
+        if match:
+            return match.group(1) if match else None
+
         if "Google Chrome" in title:
             parts = title.split(' - ')
             if len(parts) > 1:

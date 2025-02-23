@@ -224,6 +224,7 @@ class ActivityArbiter:
         print("ActivityArbiter init complete")
 
     async def set_tab_state(self, tab: ChromeSessionData):
+        print("HERE 227ru")
         await self._transition_state(tab)
 
     async def set_program_state(self, event: ProgramSessionData):
@@ -269,6 +270,8 @@ class ActivityArbiter:
             print(new_session.window_title, "new app in arbiter")
         if isinstance(new_session, ProgramSessionData):
             print("[[arbiter]] ", new_session.window_title)
+        else:
+            print("[[ARB-tab]] ", new_session.domain)
         self.update_overlay_display_with_session(new_session)
 
         temp = None
@@ -332,3 +335,11 @@ class ActivityArbiter:
 
         # Set new state
         self.current_state = updated_state
+
+# TODO:
+# TODO:
+# TODO: Test the state changes,
+# TODO: Test the arbiter
+# TODO: Test the overlay
+# TODO:
+# TODO:

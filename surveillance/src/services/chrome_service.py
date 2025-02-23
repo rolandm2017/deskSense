@@ -52,8 +52,8 @@ class ChromeService:
         self.debounce_timer = asyncio.create_task(self.debounced_process())
 
     async def debounced_process(self):
-        one_second = 1  # TODO: Try 0.5 sec also
-        await asyncio.sleep(one_second)
+        half_sec = 0.5  # One full sec was too long.
+        await asyncio.sleep(half_sec)
         # print("[debug] Starting processing")
         await self.start_processing_msgs()
 
@@ -119,7 +119,7 @@ class ChromeService:
                 tzinfo=None)
         else:
             initialized.start_time = url_deliverable.startTime
-
+        print(initialized.domain, "initialized going into arbiter 122ru")
         await self.dao.create(initialized)
         await self.arbiter.set_tab_state(initialized)
 

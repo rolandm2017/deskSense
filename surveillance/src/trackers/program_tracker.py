@@ -21,7 +21,7 @@ from ..object.classes import ProgramSessionData
 # TODO: report programs that aren't in the apps list.
 
 class ProgramTrackerCore:
-    def __init__(self, clock, program_api_facade, event_handlers):
+    def __init__(self, clock, program_api_facade, window_change_handler, conclude_session_handler):
         """
         !!!!! IMPORTANT - READ THIS FIRST !!!!!
 
@@ -42,7 +42,8 @@ class ProgramTrackerCore:
         """
         self.clock = clock
         self.program_facade: ProgramApiFacadeCore = program_api_facade
-        self.event_handlers = event_handlers
+        self.window_change_handler = window_change_handler
+        self.conclude_session_handler = conclude_session_handler
         # self.chrome_event_update = chrome_event_update
 
         # FIXME: why is there three "productive categories" fields?
@@ -72,18 +73,20 @@ class ProgramTrackerCore:
             is_expected_shape_else_throw(window_change)
             # TODO: If Chrome is the new Active window, mark chrome active
             # TODO: If chrome is the CURRENT active window, and chrome is not active now, mark inactive
-            is_chrome = window_is_chrome(window_change)
-            # self.handle_chrome_case(is_chrome)
 
             on_a_different_window = self.current_session and window_change[
                 "window_title"] != self.current_session.window_title
             if on_a_different_window:
-                # self.current_is_chrome = is_chrome
+
                 current_time = self.clock.now()  # once per loop
                 self.conclude_session(current_time)
-                self.apply_handlers(self.current_session, 500)
-                self.current_session = self.start_new_session(
+                # when a window closes, call that with "conclude_session_handler()" to maintain other flows
+                self.apply_handlers(self.current_session)
+                new_session = self.start_new_session(
                     window_change, current_time)
+                self.current_session = new_session
+                # report window change immediately via "window_change_handler()"
+                self.window_change_handler(new_session)
 
             if self.current_session is None:  # initialize
                 current_time = self.clock.now()
@@ -169,17 +172,17 @@ class ProgramTrackerCore:
         """For when the program isn't found in the productive apps list"""
         self.console_logger.log_yellow(title)  # temp
 
-    def apply_handlers(self, session: ProgramSessionData, source=0):
+    def apply_handlers(self, session: ProgramSessionData):
         if not isinstance(session, ProgramSessionData):
             self.console_logger.log_yellow_multiple("[DEBUG]", session)
             raise ValueError("Was not a dict")
         #  {'os': 'Ubuntu', 'pid': 70442, 'process_name': 'pgadmin4', 'window_title': 'Alt-tab window'}
         # start_time, end_time, duration, window, productive
-        if isinstance(self.event_handlers, list):
-            for handler in self.event_handlers:
+        if isinstance(self.conclude_session_handler, list):
+            for handler in self.conclude_session_handler:
                 handler(session)  # emit an event
         else:
-            self.event_handlers(session)  # is a single func
+            self.conclude_session_handler(session)  # is a single func
 
     def stop(self):
         pass  # might need later
