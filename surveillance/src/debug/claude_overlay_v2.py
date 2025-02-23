@@ -5,6 +5,7 @@ import threading
 
 
 class Overlay:
+    # FIXME: If it is alt tab window, color it
     def __init__(self):
         print("Overlay init starting")
         # Color mapping for different applications
@@ -27,13 +28,18 @@ class Overlay:
 
         print("Overlay init complete")
 
+    def change_display_text(self, new_text, display_color=None):
+        """Thread-safe method to change display text"""
+        # print("in change_display_text: ", new_text, display_color)
+        self.update_queue.put((new_text, display_color))
+
     def process_queue(self):
         """Process all pending updates"""
-        print(f"Processing queue, size: {self.update_queue.qsize()}")  # Debug
+        # print(f"Processing queue, size: {self.update_queue.qsize()}")  # Debug
         while not self.update_queue.empty():
             try:
                 text, color = self.update_queue.get_nowait()
-                print(f"Processing update: {text}, {color}")  # Debug
+                # print(f"Processing update: {text}, {color}")  # Debug
                 self._update_display(text, color)
             except Empty:
                 break
@@ -47,13 +53,13 @@ class Overlay:
         print(f"Formatted text: {formatted_text}")  # Debug
         color = display_color if display_color else self.get_color_for_window(
             new_text)
-        print(f"Final color: {color}")  # Debug
+        # print(f"Final color: {color}")  # Debug
 
         try:
             self.label.config(text=formatted_text, fg=color)
-            print("Label configured successfully")  # Debug
+            # print("Label configured successfully")  # Debug
             self.window.update()
-            print("Window updated successfully")  # Debug
+            # print("Window updated successfully")  # Debug
         except Exception as e:
             print(f"Error updating display: {e}")  # Debug
 
@@ -127,11 +133,6 @@ class Overlay:
 
     def _schedule_queue_check(self):
         """Check for updates every 100ms"""
-        print("Queue check running")
+        # print("Queue check running")
         self.process_queue()
         self.window.after(100, self._schedule_queue_check)
-
-    def change_display_text(self, new_text, display_color=None):
-        """Thread-safe method to change display text"""
-        print("in change_display_text: ", new_text, display_color)
-        self.update_queue.put((new_text, display_color))
