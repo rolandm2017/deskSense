@@ -1,6 +1,6 @@
 def write_to_debug_log(name, hours_spent, time):
     minutes_seconds = hours_to_minutes_seconds_ms(hours_spent)
-    print("writing to debug log: " + str(minutes_seconds))
+    # print("writing to debug log: " + str(minutes_seconds))
     with open("debug_logging.txt", "a") as f:
         f.write(f"{name} - {minutes_seconds} - {time}\n")
 
