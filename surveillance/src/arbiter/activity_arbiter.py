@@ -1,7 +1,7 @@
+from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Optional
 from enum import Enum
-from __future__ import annotations
 import asyncio
 
 from ..object.classes import ChromeSessionData, ProgramSessionData
@@ -31,6 +31,14 @@ class Activity:
 
 
 class ChromeActivity(Activity):
+
+    # class ChromeSessionData:
+    #     domain: str  # same
+    #     detail: str   # tab title
+    #     start_time: datetime  # same
+    #     duration: Optional[timedelta]  # not present in Activity
+    #     productive: bool   # is same
+
     def __init__(self, domain: str, tab_title: str, start_time: datetime, is_productive, session):
         super().__init__(start_time, is_productive, session)
         self.domain = domain
@@ -44,6 +52,13 @@ class ChromeActivity(Activity):
 
 
 class ProgramActivity(Activity):
+    # class ProgramSessionData:
+    # window_title: str  # same
+    # detail: str   # same
+    # start_time: datetime   # same
+    # end_time: datetime   # not present  in Activity
+    # duration: timedelta    # Not present in Activity
+    # productive: bool    # same
     def __init__(self, window_title: str, detail: str, start_time: datetime, is_productive, session):
         super().__init__(start_time, is_productive, session)
         self.window_title = window_title
@@ -56,8 +71,34 @@ class ProgramActivity(Activity):
         }
 
 
+def get_program_display_info(window_title):
+    return {
+        "text": window_title,
+        "color": "lime"  # Could have a color map like the overlay
+    }
+
+
+def get_chrome_display_info(domain):
+    return {
+        "text": f"Chrome | {domain}",
+        "color": "#4285F4"
+    }
+
+
+def get_display_info(state):
+
+    if isinstance(state, ChromeInternalState):
+        print(state, "91ru")
+        print(state.session)
+        return get_chrome_display_info(state.session.domain)
+    else:
+        print(state, "96ru")
+        print(state.session)
+        return get_program_display_info(state.session.window_title)
+
+
 class InternalState:
-    def __init__(self, is_chrome, active_application, current_tab, session):
+    def __init__(self, active_application, is_chrome, current_tab, session):
         self.active_application = active_application
         self.is_chrome = is_chrome
         self.current_tab = current_tab
@@ -68,8 +109,8 @@ class InternalState:
 
 
 class ApplicationInternalState(InternalState):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, active_application, is_chrome, current_tab, session):
+        super().__init__(active_application, is_chrome, current_tab, session)
 
     def compute_next_state(self, next_state: Activity):
         if isinstance(next_state, ProgramActivity):
@@ -104,8 +145,8 @@ class ApplicationInternalState(InternalState):
 
 
 class ChromeInternalState(InternalState):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, active_application, is_chrome, current_tab, session):
+        super().__init__(active_application, is_chrome, current_tab, session)
 
     def compute_next_state(self, next_state: Activity):
         if isinstance(next_state, ProgramActivity):
@@ -155,37 +196,51 @@ class ChromeInternalState(InternalState):
 
 
 class ActivityArbiter:
-    def __init__(self, overlay, chrome_summary_dao: ChromeSummaryDao, program_summary_dao: ProgramSummaryDao):
-        """
-        This class exists to prevent the Chrome Service from doing ANYTHING but reporting which tab is active.
+    _instance = None
+    _initialized = False
 
-        This class exists to prevent the Program Tracker from doing ANYTHING except reporting the active program.
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
-        This way, the Chrome Service doesn't need to know if Chrome is active. 
-        i.e. "chrome_open_close_handler" before e22d5badb15
+    def __init__(self, overlay=None, chrome_summary_dao: ChromeSummaryDao = None, program_summary_dao: ProgramSummaryDao = None):
+        # Only initialize once
+        if not ActivityArbiter._initialized:
+            """
+            This class exists to prevent the Chrome Service from doing ANYTHING but reporting which tab is active.
 
-        This way, the Program Tracker doesn't need to track if 
-        the current program is Chrome & do such and such if it is or isn't.
-        i.e. "chrome_event_update" and "self.current_is_chrome" before e22d5badb15
-        """
-        self.current_program: Optional[ProgramActivity] = None
-        self.tab_state: Optional[ChromeActivity] = None
-        self.overlay = overlay
-        self.chrome_summary_dao = chrome_summary_dao
-        self.program_summary_dao = program_summary_dao
+            This class exists to prevent the Program Tracker from doing ANYTHING except reporting the active program.
 
-        self.current_state = None
-        self.previous_state = None
+            This way, the Chrome Service doesn't need to know if Chrome is active. 
+            i.e. "chrome_open_close_handler" before e22d5badb15
+
+            This way, the Program Tracker doesn't need to track if 
+            the current program is Chrome & do such and such if it is or isn't.
+            i.e. "chrome_event_update" and "self.current_is_chrome" before e22d5badb15
+            """
+            self.current_program: Optional[ProgramActivity] = None
+            self.tab_state: Optional[ChromeActivity] = None
+            self.overlay = overlay
+            self.chrome_summary_dao = chrome_summary_dao
+            self.program_summary_dao = program_summary_dao
+
+            self.current_state = None
+            self.previous_state = None
+
+            ActivityArbiter._initialized = True
+
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = ActivityArbiter()
+        return cls._instance
 
     def set_tab_state(self, tab: ChromeSessionData):
-        chrome_state = ChromeActivity(
-            domain=tab.domain, tab_title=tab.detail, start_time=tab.start_time, is_productive=tab.productive)
-        self._transition_state(chrome_state)
+        self._transition_state(tab)
 
     def set_program_state(self, event: ProgramSessionData):
-        program_state = ProgramActivity(
-            window_title=event.window_title, detail=event.detail, start_time=event.start_time, is_productive=event.productive)
-        self._transition_state(program_state)
+        self._transition_state(event)
 
     def create_new_internal_obj(self, next: Activity):
         if isinstance(next, ProgramActivity):
@@ -195,7 +250,7 @@ class ActivityArbiter:
             # domain, tabtitle, start_time, is_productive
             return ChromeInternalState(next.domain, next.tab_title, next.start_time, next.is_productive)
 
-    def _transition_state(self, new_activity: Activity):
+    def _transition_state(self, new_session: ChromeSessionData | ProgramSessionData):
         """
         If newly_active = Chrome, start a session for the current tab.
         When Chrome is closed, end the session for the current tab.
@@ -210,11 +265,11 @@ class ActivityArbiter:
             duration = now - self.current_state.start_time
 
             # ### Get the current state's session to put into the summary DAO along w/ the time
-            session = self.current_state.get_session_data()
-            session.duration = duration
+            old_session = self.current_state.get_session_data()
+            old_session.duration = duration
 
             # ### Create the replacement state
-            updated_state = self.current_state.compute_next_state(new_activity)
+            updated_state = self.current_state.compute_next_state(new_session)
 
             # FIXME: The program is intended to handle Chrome separately from Programs.
             # FIXME: in other words, while Chrome and a tab is stored in the Chrome var,
@@ -230,18 +285,25 @@ class ActivityArbiter:
             #     tab_session.idle()
 
             # ### Put outgoing state into the DAO
-            if isinstance(session, ChromeSessionData):
+            if isinstance(old_session, ChromeSessionData):
                 self.chrome_summary_dao.create_if_new_else_update(
-                    session)
+                    old_session)
             else:
                 assert isinstance(
-                    session, ProgramSessionData), "Was not a program session"
+                    old_session, ProgramSessionData), "Was not a program session"
                 self.program_summary_dao.create_if_new_else_update(
-                    session)
+                    old_session)
+        else:
+            if isinstance(new_session, ProgramSessionData):
+                updated_state = ApplicationInternalState(
+                    new_session.window_title, False, None, new_session)
+            else:
+                updated_state = ChromeInternalState(
+                    new_session.window_title, True, new_session.detail, new_session)
 
         # Update the display
-        display_info = updated_state.get_display_info()
-        self.overlay.update_display(
+        display_info = get_display_info(updated_state)
+        self.overlay.change_display_text(
             display_info["text"], display_info["color"])
 
         # Set new state

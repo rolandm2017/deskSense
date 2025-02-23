@@ -1,5 +1,4 @@
 import tkinter as tk
-import subprocess
 import time
 
 
@@ -40,17 +39,16 @@ class Overlay:
             'Spotify': '#1DB954',   # Spotify Green
         }
 
-        # Start update loop
-        self.update_active_window()
+        # Start the tkinter event loop
+        self.start_update_loop()
 
-    def get_active_window(self):
-        """Fetch the active window title"""
-        try:
-            output = subprocess.check_output(
-                "xdotool getactivewindow getwindowname", shell=True).decode().strip()
-            return output if output else "Unknown"
-        except Exception:
-            return "Unknown"
+    def change_display_text(self, new_text, display_color=None):
+        """Change the displayed text and update its color"""
+        formatted_text = self.format_title(new_text)
+        color = self.get_color_for_window(new_text)
+        self.label.config(text=formatted_text,
+                          fg=display_color if display_color else color)
+        self.window.update()
 
     def get_color_for_window(self, title):
         """Determine text color based on window title"""
@@ -75,19 +73,13 @@ class Overlay:
             return title[:27] + "..."
         return title
 
-    def update_active_window(self):
-        """Update the displayed window title and color"""
-        title = self.get_active_window()
-        formatted_title = self.format_title(title)
-        color = self.get_color_for_window(title)
-
-        # Update label text and color
-        self.label.config(text=formatted_title, fg=color)
-
-        # Update every 100ms (10 times per second)
-        self.window.after(100, self.update_active_window)
+    def start_update_loop(self):
+        """Start the tkinter event loop"""
+        self.window.mainloop()
 
 
+# Example usage:
 if __name__ == "__main__":
     overlay = Overlay()
-    overlay.window.mainloop()
+    # You can change the text from outside the class like this:
+    # overlay.change_display_text("Chrome | Example.com")
