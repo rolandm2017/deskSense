@@ -86,7 +86,10 @@ class ApplicationInternalState(InternalState):
         # A new tab opens at the same time as Chrome opens.
         # FIXME: What to do with, case where, a tab was suspended in the bg
         # while user ran VSCode, now he goes back to Claude?
-        next_state = ChromeInternalState()
+        next_state = ChromeInternalState(active_application="Chrome",
+                                         is_chrome=True,
+                                         current_tab=next.domain,
+                                         session=next)
         return next_state
 
 
@@ -108,7 +111,7 @@ class ChromeInternalState(InternalState):
             return self.stay_on_chrome()  # Still on Chrome - Pass
 
     def handle_change_tabs(self, next_state: ChromeSessionData):
-        on_different_tab = self.current_domain != next_state.current_domain
+        on_different_tab = self.current_tab != next_state.domain
         if on_different_tab:
             self.change_to_new_tab(next_state)
         else:
@@ -127,9 +130,10 @@ class ChromeInternalState(InternalState):
         return self  # Explicitly stay the same
 
     def change_to_new_tab(self, next: ChromeSessionData):
-        active_application = "Chrome"
-        next_state = ChromeInternalState(active_application,
-                                         next.is_chrome, None, next.domain, next.session)
+        next_state = ChromeInternalState(active_application="Chrome",
+                                         is_chrome=True,
+                                         current_tab=next.domain,
+                                         session=next)
         return next_state
 
     def stay_on_current_tab(self):
@@ -138,7 +142,6 @@ class ChromeInternalState(InternalState):
         return self  # Explicitly keep the same object as state
 
 
-# TODO: make ActivityArbiter into a singleton
 class RecordKeeperCore:
     def __init__(self):
         pass  # A name I might use
@@ -165,7 +168,6 @@ class ActivityArbiter:
         i.e. "chrome_event_update" and "self.current_is_chrome" before e22d5badb15
         """
         print("ActivityArbiter init starting")
-        chrome_service.arbiter.on('tab_change', self._handle_tab_change)
 
         self.current_program: Optional[ProgramSessionData] = None
         self.tab_state: Optional[ChromeSessionData] = None
@@ -179,12 +181,7 @@ class ActivityArbiter:
         print("ActivityArbiter init complete")
 
     async def set_tab_state(self, tab: ChromeSessionData):
-        print("Starting set_tab_state")
-        try:
-            print("HERE 227ru")
-            await self._transition_state(tab)
-        except Exception as e:
-            print(f"Error in set_tab_state: {e}")
+        await self._transition_state(tab)
 
     async def set_program_state(self, event: ProgramSessionData):
         await self._transition_state(event)
@@ -205,7 +202,7 @@ class ActivityArbiter:
     # TODO: Separate handling of program state and tab state.
 
     def update_overlay_display_with_session(self, session: ProgramSessionData | ChromeSessionData):
-        print(session)
+        # print(session)
         if isinstance(session, ProgramSessionData):
             display_text = session.window_title
             if display_text == "Alt-tab window":
@@ -234,10 +231,6 @@ class ActivityArbiter:
         now = datetime.now()
         print("\n" + "✦★✦" * 6 + " DEBUG " + "✦★✦" * 6 + "\n")
 
-        if isinstance(new_session, ChromeSessionData):
-            print(new_session.domain, "new domain in arbiter")
-        else:
-            print(new_session.window_title, "new app in arbiter")
         if isinstance(new_session, ProgramSessionData):
             print("[[arbiter]] ", new_session.window_title)
         else:
@@ -248,16 +241,17 @@ class ActivityArbiter:
         # Record the duration of the previous state
         if self.current_state:
             # ### Calculate the duration that the current state has existed
-            duration = now - self.current_state.session.start_time
+            old_session = self.current_state.session
+            duration = now - old_session.start_time
 
             # ### Get the current state's session to put into the summary DAO along w/ the time
-            old_session = self.current_state.session
             old_session.duration = duration
-
-            temp = duration
+            old_session.end_time = now
 
             # ### Create the replacement state
             updated_state = self.current_state.compute_next_state(new_session)
+
+            # TODO: Handle case where current session was continued, i.e. by "return self"
 
             # FIXME: The program is intended to handle Chrome separately from Programs.
             # FIXME: in other words, while Chrome and a tab is stored in the Chrome var,
@@ -274,11 +268,11 @@ class ActivityArbiter:
 
             # ### Put outgoing state into the DAO
             if isinstance(old_session, ChromeSessionData):
+                # FIXME: [chrome summary dao] adding time  -1 day, 16:00:02.581249  to  localho
+                # FIXME: chrome summary dao] adding time  -1 day, 16:00:03.879910  to  claude.ai
                 await self.chrome_summary_dao.create_if_new_else_update(
                     old_session)
             else:
-                assert isinstance(
-                    old_session, ProgramSessionData), "Was not a program session"
                 await self.program_summary_dao.create_if_new_else_update(
                     old_session)
         else:
@@ -287,7 +281,11 @@ class ActivityArbiter:
                     new_session.window_title, False, None, new_session)
             else:
                 updated_state = ChromeInternalState(
-                    new_session.window_title, True, new_session.detail, new_session)
+                    active_application="Chrome",
+                    is_chrome=True,
+                    current_tab=new_session.detail,
+                    session=new_session
+                )
 
         # Update the display
         # if isinstance(updated_state, ApplicationInternalState):

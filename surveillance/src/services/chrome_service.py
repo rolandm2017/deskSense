@@ -135,7 +135,6 @@ class ChromeService:
         self.handle_session_ready_for_arbiter(initialized)
 
     def handle_session_ready_for_arbiter(self, session):
-        print("Creating tasks in handle_session_ready_for_arbiter")
         self.event_emitter.emit('tab_change', session)
 
         dao_task = self.loop.create_task(self.dao.create(session))

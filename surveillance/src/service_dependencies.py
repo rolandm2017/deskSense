@@ -1,6 +1,7 @@
 # surveillance/src/service_dependencies.py
 from fastapi import Depends
 from typing import Callable
+import asyncio
 
 from .db.database import get_db, AsyncSession, async_session_maker
 from .db.dao.mouse_dao import MouseDao
@@ -98,6 +99,7 @@ async def get_activity_arbiter():
     from .db.dao.program_summary_dao import ProgramSummaryDao
     from .db.dao.chrome_summary_dao import ChromeSummaryDao
 
+    loop = asyncio.get_running_loop()
     # print("Starting get_activity_arbiter")
 
     global _arbiter_instance
@@ -105,16 +107,19 @@ async def get_activity_arbiter():
         print("Creating new Overlay")
         overlay = Overlay()
         print("Creating new ActivityArbiter")
-        chrome_service = await get_chrome_service()  # Get the singleton instance
+        chrome_service = await get_chrome_service()
 
         _arbiter_instance = ActivityArbiter(
             overlay=overlay,
             chrome_summary_dao=ChromeSummaryDao(async_session_maker),
             program_summary_dao=ProgramSummaryDao(async_session_maker)
         )
-        # Connect the event listener
-        chrome_service.event_emitter.on(
-            'tab_change', _arbiter_instance._handle_tab_change)
+
+        # Create wrapper for async handler
+        @chrome_service.event_emitter.on('tab_change')
+        def handle_tab_change(tab):
+            # Create and schedule the task
+            loop.create_task(_arbiter_instance.set_tab_state(tab))
 
         print("ActivityArbiter created successfully")
     else:
