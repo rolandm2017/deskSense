@@ -493,3 +493,10 @@ if __name__ == "__main__":
 
 # TODO: Need to write to power-on-off-times on startup
 # TODO: but how? the program legit isn't running yet
+
+    # TODO: Install debug overlay. It could be:
+    # Chrome & Programs -> CPU -> Overlay, DAOs.
+    # It could be that I use State to handle generating Summary changes.
+    # If state change, record summary of window.
+    # So CPU knows about Chrome & Program state, & every time something changes, it yields a conclusion.
+    # Then, neither the Chrome Service, nor Program Tracker, nor the DAOs, need to do any math. They're simple
