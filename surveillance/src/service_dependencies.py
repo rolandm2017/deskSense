@@ -12,6 +12,8 @@ from .db.dao.chrome_dao import ChromeDao
 from .db.dao.chrome_summary_dao import ChromeSummaryDao
 from .db.dao.video_dao import VideoDao
 from .db.dao.frame_dao import FrameDao
+from .arbiter.activity_arbiter import ActivityArbiter
+from .debug.claude_overlay_v2 import Overlay
 
 
 # Dependency functions
@@ -93,7 +95,11 @@ async def get_chrome_service(dao: ChromeDao = Depends(get_chrome_dao),
     from .services.chrome_service import ChromeService
     global _chrome_service_instance  # Singleton because it must preserve internal state
     if _chrome_service_instance is None:
+        # TODO: Initialize display
+        magic_fraps_overlay = Overlay()
+        arbiter = ActivityArbiter(magic_fraps_overlay)
         _chrome_service_instance = ChromeService(
+            arbiter,
             dao=ChromeDao(async_session_maker),
             summary_dao=ChromeSummaryDao(async_session_maker)
         )

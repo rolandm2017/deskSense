@@ -24,6 +24,8 @@ from .facade.program_facade import ProgramApiFacadeCore
 from .util.detect_os import OperatingSystemInfo
 from .util.clock import Clock
 from .util.threaded_tracker import ThreadedTracker
+from .arbiter.activity_arbiter import ActivityArbiter
+
 # from .keyboard_tracker import KeyActivityTracker
 
 
@@ -35,6 +37,7 @@ class SurveillanceManager:
     def __init__(self, session_maker: async_sessionmaker, chrome_service, shutdown_signal=None):
         self.session_maker = session_maker
         self.chrome_service = chrome_service
+        self.arbiter = ActivityArbiter.get_instance()  # TODO: Initalize display
         # Initialize tracking data
         self.current_window = None
         self.start_time = None
@@ -72,7 +75,7 @@ class SurveillanceManager:
             clock, mouse_facade, self.handle_mouse_ready_for_db)
         # Program tracker
         self.program_tracker = ProgramTrackerCore(
-            clock, program_facade, self.handle_program_ready_for_db, self.chrome_service.chrome_open_close_handler)
+            clock, program_facade, self.handle_program_ready_for_db)
         #
         self.system_tracker = SystemPowerTracker(self.shutdown_handler)
 
@@ -102,27 +105,19 @@ class SurveillanceManager:
     # TODO: If activeProgram is not Chrome, stop counting Chrome
     # TODO: If activeProgram is Chrome, count domain
     def handle_program_ready_for_db(self, event):
-        self.loop.create_task(
-            self.program_summary_dao.create_if_new_else_update(event))
+        self.arbiter.set_program_state(event)
         self.loop.create_task(self.program_dao.create(event))
 
     def handle_chrome_ready_for_db(self, event):
         pass  # lives in Chrome Service
 
-    #     self.loop.create_task(
-    #         self.chrome_summary_dao.create_if_new_else_update(event))
-    #     self.loop.create_task(self.chrome_dao.create(event))
-
     async def shutdown_handler(self):
         print("In shutdown handler")
         try:
-            print("116ru")
             # TODO: Add Program Summary DAO shutdown -> prevent alt tab window being huge
             await self.program_summary_dao.shutdown()
             # TODO: Add Chrome Summary DAO shutdown -> similar reasons
-            print("120ru")
             await self.chrome_summary_dao.shutdown()
-            print("122ru")
             await self.chrome_service.shutdown()  # works despite the lack of highlighting
         except Exception as e:
             print(f"Error during shutdown cleanup: {e}")

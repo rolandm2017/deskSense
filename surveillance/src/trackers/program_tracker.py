@@ -21,7 +21,7 @@ from ..object.classes import ProgramSessionData
 # TODO: report programs that aren't in the apps list.
 
 class ProgramTrackerCore:
-    def __init__(self, clock, program_api_facade, event_handlers, chrome_event_update):
+    def __init__(self, clock, program_api_facade, event_handlers):
         """
         !!!!! IMPORTANT - READ THIS FIRST !!!!!
 
@@ -73,7 +73,7 @@ class ProgramTrackerCore:
             # TODO: If Chrome is the new Active window, mark chrome active
             # TODO: If chrome is the CURRENT active window, and chrome is not active now, mark inactive
             is_chrome = window_is_chrome(window_change)
-            self.handle_chrome_case(is_chrome)
+            # self.handle_chrome_case(is_chrome)
 
             on_a_different_window = self.current_session and window_change[
                 "window_title"] != self.current_session.window_title
