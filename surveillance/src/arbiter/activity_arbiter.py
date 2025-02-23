@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from enum import Enum
 import asyncio
@@ -7,6 +7,7 @@ import asyncio
 from ..object.classes import ChromeSessionData, ProgramSessionData
 from ..db.dao.chrome_summary_dao import ChromeSummaryDao
 from ..db.dao.program_summary_dao import ProgramSummaryDao
+
 
 from ..util.program_tools import window_is_chrome
 
@@ -154,7 +155,7 @@ class OverallState:
 
 
 class ActivityArbiter:
-    def __init__(self, overlay, chrome_summary_dao: ChromeSummaryDao = None, program_summary_dao: ProgramSummaryDao = None):
+    def __init__(self, overlay, clock, chrome_summary_dao: ChromeSummaryDao = None, program_summary_dao: ProgramSummaryDao = None):
         """
         This class exists to prevent the Chrome Service from doing ANYTHING but reporting which tab is active.
 
@@ -172,6 +173,7 @@ class ActivityArbiter:
         self.current_program: Optional[ProgramSessionData] = None
         self.tab_state: Optional[ChromeSessionData] = None
         self.overlay = overlay
+        self.clock = clock
         self.chrome_summary_dao = chrome_summary_dao
         self.program_summary_dao = program_summary_dao
 
@@ -189,14 +191,15 @@ class ActivityArbiter:
     def update_overlay_display(self, updated_state: InternalState):
         if isinstance(updated_state, ApplicationInternalState):
             display_text = updated_state.session.window_title
-            if display_text == "Alt-tab window":
-                print("[LOG]: ", display_text)
-            else:
-                print("[log]", display_text)
+            # if display_text == "Alt-tab window":
+            #     print("[LOG]: ", display_text)
+            # else:
+            #     print("[log]", display_text)
             self.overlay.change_display_text(
                 display_text, "lime")  # or whatever color
         else:
-            display_text = f"Chrome | {updated_state.session.domain}"
+            # display_text = f"Chrome | {updated_state.session.domain}"
+            display_text = f"{updated_state.session.domain}"
             self.overlay.change_display_text(display_text, "#4285F4")
 
     # TODO: Separate handling of program state and tab state.
@@ -205,14 +208,14 @@ class ActivityArbiter:
         # print(session)
         if isinstance(session, ProgramSessionData):
             display_text = session.window_title
-            if display_text == "Alt-tab window":
-                print("[LOG]: ", display_text)
-            else:
-                print("[log]", display_text)
+            # if display_text == "Alt-tab window":
+            #     print("[LOG]: ", display_text)
+            # else:
+            #     print("[log]", display_text)
             self.overlay.change_display_text(
                 display_text, "lime")  # or whatever color
         else:
-            display_text = f"Chrome | {session.domain}"
+            display_text = f"{session.domain}"
             self.overlay.change_display_text(display_text, "#4285F4")
 
     async def _transition_program(self, program_session):
@@ -228,7 +231,7 @@ class ActivityArbiter:
 
         When a program is opened, start a session for the program. And vice versa when it closes.
         """
-        now = datetime.now()
+        now = self.clock.now()
         print("\n" + "✦★✦" * 6 + " DEBUG " + "✦★✦" * 6 + "\n")
 
         if isinstance(new_session, ProgramSessionData):
@@ -242,11 +245,17 @@ class ActivityArbiter:
         if self.current_state:
             # ### Calculate the duration that the current state has existed
             old_session = self.current_state.session
-            duration = now - old_session.start_time
+
+            # if old_session.start_time.tzinfo is None:
+            # old_session.start_time = old_session.start_time.astimezone()
 
             # ### Get the current state's session to put into the summary DAO along w/ the time
-            old_session.duration = duration
+            old_session.duration = now - old_session.start_time
+            print(now)
+            print(old_session.start_time)
+            print(old_session.duration)
             old_session.end_time = now
+            print(old_session, '251ru')
 
             # ### Create the replacement state
             updated_state = self.current_state.compute_next_state(new_session)

@@ -118,7 +118,8 @@ class Overlay:
         print("Label created and packed")  # Debug
 
         # Position window
-        self.window.geometry('300x100+10+10')  # Give it an explicit size
+        # self.window.geometry('300x100+10+10')  # Give it an explicit size
+        self.window.geometry('300x70+10+10')  # Width x Height + X + Y position
 
         self.window.deiconify()
         self.window.lift()

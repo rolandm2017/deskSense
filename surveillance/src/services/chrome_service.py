@@ -128,9 +128,22 @@ class ChromeService:
         initialized.domain = url_deliverable.url
         initialized.detail = url_deliverable.tabTitle
         initialized.productive = url_deliverable.url in productive_sites
-        initialized.start_time = url_deliverable.startTime.replace(tzinfo=None)
+        # initialized.start_time = url_deliverable.startTime.replace(tzinfo=None)
+
+        # Make sure the start time has timezone info
+        # ** Whatever the code says, the intent was to
+        # ** keep all notions of time consistent. Meaning,
+        # ** that the user sent a timestamp from EST
+        # ** and the server received it to process it in UTZC
+        # ** has absolutely no bearing on the calculated duration
+        # if url_deliverable.startTime.tzinfo is None:
+        #     initialized.start_time = datetime.now().astimezone(timezone.utc)
+        # else:
+        initialized.start_time = url_deliverable.startTime.astimezone(
+            timezone.utc)
 
         print(initialized.domain, "initialized going into arbiter 122ru")
+        print(initialized.start_time, '134ru')
 
         self.handle_session_ready_for_arbiter(initialized)
 

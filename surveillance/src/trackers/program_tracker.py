@@ -58,16 +58,6 @@ class ProgramTrackerCore:
 
         self.console_logger = ConsoleLogger()
 
-    # def handle_chrome_case(self, window_is_chrome):
-    #     """Handles updates of Chrome state for Chrome Service"""
-    #     if window_is_chrome:
-    #         self.current_is_chrome = True
-    #         self.chrome_event_update(True)
-    #     else:
-    #         if self.current_is_chrome:
-    #             self.current_is_chrome = False
-    #             self.chrome_event_update(False)
-
     def run_tracking_loop(self):
         for window_change in self.program_facade.listen_for_window_changes():
             is_expected_shape_else_throw(window_change)
@@ -142,24 +132,6 @@ class ProgramTrackerCore:
             return True
 
         return False
-
-        # depends on channel -- but how?
-        # if process_name in self.productive_apps:
-        #     app_name = self.productive_apps[process_name]
-        #     productivity = self.productive_categories[app_name]
-        #     self.console_logger.log_green_multiple(
-        #         "productivity", productivity, app_name)
-        #     # If productivity is None, we need to check the window title
-        #     if productivity is None:
-        #         # For Chrome, check if the title contains any productive sites
-        #         if app_name == 'Chrome':
-        #             self.console_logger.log_green_multiple(
-        #                 window_title, "::", self.productive_sites)
-        #             return any(site in window_title.lower() for site in self.productive_sites)
-        #         # For Discord, consider it productive only if specific channels/servers are active
-        #         elif app_name == 'Discord':
-        #             productive_channels = ['work-', 'team-', 'project-']
-        #             return any(channel in window_title.lower() for channel in productive_channels)
 
         #     return productivity
 

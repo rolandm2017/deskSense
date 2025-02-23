@@ -9,6 +9,7 @@ from ..models import DailyProgramSummary
 from ...object.classes import ProgramSessionData
 from ...util.console_logger import ConsoleLogger
 from ...util.debug_logger import write_to_debug_log, write_to_large_usage_log
+from ...util.clock import Clock
 
 
 class DatabaseProtectionError(RuntimeError):
@@ -30,6 +31,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         self.flush_interval = flush_interval
         self.queue = Queue()
         self.processing = False
+        self.clock = Clock()
         self.logger = ConsoleLogger()
 
     async def create_if_new_else_update(self, program_session: ProgramSessionData):
@@ -43,7 +45,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         # FIXME: maybe the program_session is hanging open while I have the computer sleeping? or something
 
         # ### Check if entry exists for today
-        today = datetime.now().date()
+        today = self.clock.now().date()
         query = select(DailyProgramSummary).where(
             DailyProgramSummary.program_name == target_program_name,
             func.date(DailyProgramSummary.gathering_date) == today
@@ -58,7 +60,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             if existing_entry:
                 # if existing_entry is not None:  # Changed from if existing_entry:
                 existing_entry.hours_spent += usage_duration_in_hours
-                current_time = datetime.now()
+                current_time = self.clock.now()
                 if program_session.window_title == "Alt-tab window":
                     # print(program_session.window_title, "60ru")
                     write_to_debug_log(target_program_name, usage_duration_in_hours,
@@ -96,7 +98,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def read_past_month(self):
         """Read all entries from the 1st of the current month through today."""
-        today = datetime.now()
+        today = self.clock.now()
         start_of_month = today.replace(day=1)  # First day of current month
 
         query = select(DailyProgramSummary).where(
@@ -125,7 +127,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def read_row_for_program(self, target_program: str):
         """Reads the row for the target program for today."""
-        today = datetime.now().date()
+        today = self.clock.now().date()
         query = select(DailyProgramSummary).where(
             DailyProgramSummary.program_name == target_program,
             func.date(DailyProgramSummary.gathering_date) == today
