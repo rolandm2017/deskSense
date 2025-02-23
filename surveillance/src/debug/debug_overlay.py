@@ -46,11 +46,11 @@ class Overlay:
 
     def _update_display(self, new_text, display_color):
         """Actually update the display (called from main thread)"""
-        print(
-            # Debug
-            f"Starting _update_display with: {new_text}, {display_color}")
+        # print(
+        # Debug
+        # f"Starting _update_display with: {new_text}, {display_color}")
         formatted_text = self.format_title(new_text)
-        print(f"Formatted text: {formatted_text}")  # Debug
+        # print(f"Formatted text: {formatted_text}")  # Debug
         color = display_color if display_color else self.get_color_for_window(
             new_text)
         # print(f"Final color: {color}")  # Debug
