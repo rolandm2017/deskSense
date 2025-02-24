@@ -24,8 +24,16 @@ class ChromeDao(BaseQueueingDao):
         truncated_for_db_col = session.detail[:varchar_limit] if len(
             session.detail) > varchar_limit else session.detail
 
+        # FIXME: start_time, end_time, tab_change_time, all null
+        assert session.start_time is not None
+        assert session.end_time is not None
         chrome_deliverable = ChromeTab(
-            url=session.domain, tab_title=truncated_for_db_col, productive=session.productive, tab_change_time=session.start_time)
+            url=session.domain,
+            tab_title=truncated_for_db_col,
+            start_time=session.start_time,
+            end_time=session.end_time,
+            productive=session.productive
+        )
         await self.queue_item(chrome_deliverable)
 
     async def read_all(self):

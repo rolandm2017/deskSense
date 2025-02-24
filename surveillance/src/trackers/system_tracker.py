@@ -61,7 +61,7 @@ class SystemPowerTracker:
 
         self._shutdown_in_progress = True
 
-        print("###")
+        print("\n###")
         print("### System shutdown detected")
         print("###")
         print(f"Received shutdown signal: {signum}")
