@@ -66,8 +66,8 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
                     write_to_debug_log(target_program_name, usage_duration_in_hours,
                                        current_time.strftime("%m-%d %H:%M:%S"))
                 if usage_duration_in_hours > 1:
-                    write_to_large_usage_log(
-                        target_program_name, usage_duration_in_hours, current_time.strftime("%m-%d %H:%M:%S"))
+                    write_to_large_usage_log(program_session,
+                                             usage_duration_in_hours, current_time.strftime("%m-%d %H:%M:%S"))
                 await db_session.commit()
             else:
                 await self.create(target_program_name, usage_duration_in_hours, today)

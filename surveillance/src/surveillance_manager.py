@@ -93,6 +93,7 @@ class SurveillanceManager:
         self.program_thread.start()
 
     def handle_keyboard_ready_for_db(self, event):
+        print(event, '96ru')
         self.loop.create_task(
             self.timeline_dao.create_from_keyboard_aggregate(event))
         self.loop.create_task(self.keyboard_dao.create(event))

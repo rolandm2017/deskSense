@@ -12,8 +12,8 @@ class TypingSession(Base):
     __tablename__ = "typing_sessions"
 
     id = Column(Integer, primary_key=True, index=True)
-    start_time = Column(DateTime)
-    end_time = Column(DateTime)
+    start_time = Column(DateTime(timezone=True))
+    end_time = Column(DateTime(timezone=True))
 
     def __repr__(self):
         return f"TypingSession(id={self.id}, start_time={self.start_time}, end_time={self.end_time})"
@@ -23,8 +23,8 @@ class MouseMove(Base):
     __tablename__ = "mouse_moves"
 
     id = Column(Integer, primary_key=True, index=True)
-    start_time = Column(DateTime)
-    end_time = Column(DateTime)
+    start_time = Column(DateTime(timezone=True))
+    end_time = Column(DateTime(timezone=True))
 
     def __repr__(self):
         return f"MouseMove(id={self.id}, start_time={self.start_time})"
@@ -37,8 +37,8 @@ class Program(Base):
     window = Column(String, unique=False, index=True)
     # TODO: As of Jan 19, I am unsure that I need this column. Could take it out.
     detail = Column(String)
-    start_time = Column(DateTime)
-    end_time = Column(DateTime)
+    start_time = Column(DateTime(timezone=True))
+    end_time = Column(DateTime(timezone=True))
     duration = Column(Interval)
     productive = Column(Boolean)
     created_at = Column(DateTime, default=datetime.now)
@@ -68,10 +68,10 @@ class ChromeTab(Base):
     id = Column(Integer, primary_key=True, index=True)
     url = Column(String)
     tab_title = Column(String(max_content_len), index=True)
-    start_time = Column(DateTime)
-    end_time = Column(DateTime)
+    start_time = Column(DateTime(timezone=True))
+    end_time = Column(DateTime(timezone=True))
     productive = Column(Boolean)
-    tab_change_time = Column(DateTime)
+    tab_change_time = Column(DateTime(timezone=True))
     created_at = Column(DateTime, default=datetime.now)
 
     @property
@@ -99,7 +99,7 @@ class DailyProgramSummary(Base):
     program_name = Column(String)
     hours_spent = Column(Float)
     # The date on which the program data was gathered
-    gathering_date = Column(DateTime)
+    gathering_date = Column(DateTime(timezone=True))
 
 
 class TimelineEntryObj(Base):
@@ -136,8 +136,8 @@ class TimelineEntryObj(Base):
         )
     )
 
-    start = Column(DateTime)
-    end = Column(DateTime)
+    start = Column(DateTime(timezone=True))
+    end = Column(DateTime(timezone=True))
 
     def __str__(self):
         """
@@ -192,8 +192,8 @@ class PrecomputedTimelineEntry(Base):
     #     )
     # )
 
-    start = Column(DateTime)
-    end = Column(DateTime)
+    start = Column(DateTime(timezone=True))
+    end = Column(DateTime(timezone=True))
 
     eventCount = Column(Integer)
 
@@ -222,7 +222,7 @@ class DailyDomainSummary(Base):
     domain_name = Column(String)
     hours_spent = Column(Float)
     # The date on which the program data was gathered
-    gathering_date = Column(DateTime)
+    gathering_date = Column(DateTime(timezone=True))
 
 
 class Video(Base):

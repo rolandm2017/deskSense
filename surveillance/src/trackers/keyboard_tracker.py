@@ -45,6 +45,7 @@ class KeyboardTrackerCore:
             self.recent_count += 1  # per keystroke
             current_time = self.clock.now()
             self.time_of_last_aggregator_update = current_time
+            # TODO: Add an "autofinish" time, at which point apply_handlers() is called
             finalized_aggregate = self.aggregator.add_event(
                 current_time.timestamp())
 

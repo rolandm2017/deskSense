@@ -1,7 +1,11 @@
+from ..object.classes import ProgramSessionData
+
+
 def write_to_debug_log(name, hours_spent, time):
     minutes_seconds = hours_to_minutes_seconds_ms(hours_spent)
+
     # print("writing to debug log: " + str(minutes_seconds))
-    with open("debug_logging.txt", "a") as f:
+    with open("debug_logging_-_arbiter_ver.txt", "a") as f:
         f.write(f"{name} - {minutes_seconds} - {time}\n")
 
 
@@ -20,8 +24,8 @@ def hours_to_minutes_seconds_ms(hours):
     return f"{minutes:02d}:{seconds:02d}:{milliseconds:03d}"
 
 
-def write_to_large_usage_log(name, hours_spent, time):
+def write_to_large_usage_log(session: ProgramSessionData, hours_spent, time):
     minutes_seconds = hours_to_minutes_seconds_ms(hours_spent)
     print("Writing to large usage log: " + str(minutes_seconds))
-    with open("large_usage_log.txt", "a") as f:
-        f.write(f"{name} - {minutes_seconds} - {time}\n")
+    with open("large_usage_log_-_arbiter_ver.txt", "a") as f:
+        f.write(f"{str(session)} - {minutes_seconds} - {time}\n")
