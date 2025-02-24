@@ -30,13 +30,16 @@ class MouseMove(Base):
         return f"MouseMove(id={self.id}, start_time={self.start_time})"
 
 
+max_content_len = 120
+
+
 class Program(Base):
     __tablename__ = "program_changes"
 
     id = Column(Integer, primary_key=True, index=True)
-    window = Column(String, unique=False, index=True)
-    # TODO: As of Jan 19, I am unsure that I need this column. Could take it out.
-    detail = Column(String)
+    window = Column(String(max_content_len), unique=False, index=True)
+    # As of Jan 19, I am unsure that I need this column. Could take it out.
+    detail = Column(String(max_content_len))
     start_time = Column(DateTime(timezone=True))
     end_time = Column(DateTime(timezone=True))
     duration = Column(Interval)
@@ -59,14 +62,11 @@ class Program(Base):
         return f"Program(\n\tid={self.id}, window='{self.window}', \n\tstart_time={self.start_time},\n\tend_time={self.end_time},\n\tproductive={self.productive})"
 
 
-max_content_len = 120
-
-
 class ChromeTab(Base):
     __tablename__ = "chrome_tabs"
 
     id = Column(Integer, primary_key=True, index=True)
-    url = Column(String)
+    url = Column(String(max_content_len))
     tab_title = Column(String(max_content_len), index=True)
     start_time = Column(DateTime(timezone=True))
     end_time = Column(DateTime(timezone=True))
