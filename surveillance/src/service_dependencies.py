@@ -11,6 +11,7 @@ from .db.dao.timeline_entry_dao import TimelineEntryDao
 from .db.dao.program_summary_dao import ProgramSummaryDao
 from .db.dao.chrome_dao import ChromeDao
 from .db.dao.chrome_summary_dao import ChromeSummaryDao
+from .db.dao.summary_logs_dao import ProgramLoggingDao, ChromeLoggingDao
 from .db.dao.video_dao import VideoDao
 from .db.dao.frame_dao import FrameDao
 from .arbiter.activity_arbiter import ActivityArbiter
@@ -42,11 +43,13 @@ async def get_timeline_dao() -> TimelineEntryDao:
 
 
 async def get_program_summary_dao() -> ProgramSummaryDao:
-    return ProgramSummaryDao(clock, async_session_maker)
+    program_logging_dao = ProgramLoggingDao()
+    return ProgramSummaryDao(clock, program_logging_dao, async_session_maker)
 
 
 async def get_chrome_summary_dao() -> ChromeSummaryDao:
-    return ChromeSummaryDao(clock, async_session_maker)
+    chrome_logging_dao = ChromeLoggingDao()
+    return ChromeSummaryDao(clock, chrome_logging_dao, async_session_maker)
 
 
 async def get_video_dao() -> VideoDao:
@@ -103,6 +106,8 @@ async def get_activity_arbiter():
 
     loop = asyncio.get_event_loop()
     clock = SystemClock()
+    chrome_logging_dao = ChromeLoggingDao(clock, async_session_maker)
+    program_logging_dao = ProgramLoggingDao(clock, async_session_maker)
     # print("Starting get_activity_arbiter")
 
     global _arbiter_instance
@@ -115,8 +120,10 @@ async def get_activity_arbiter():
         _arbiter_instance = ActivityArbiter(
             overlay=overlay,
             clock=clock,
-            chrome_summary_dao=ChromeSummaryDao(clock, async_session_maker),
-            program_summary_dao=ProgramSummaryDao(clock, async_session_maker)
+            chrome_summary_dao=ChromeSummaryDao(
+                clock, chrome_logging_dao, async_session_maker),
+            program_summary_dao=ProgramSummaryDao(
+                clock, program_logging_dao, async_session_maker)
         )
 
         # Create wrapper for async handler

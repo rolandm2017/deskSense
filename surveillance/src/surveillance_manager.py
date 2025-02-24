@@ -13,6 +13,7 @@ from .db.dao.program_dao import ProgramDao
 from .db.dao.timeline_entry_dao import TimelineEntryDao
 from .db.dao.program_summary_dao import ProgramSummaryDao
 from .db.dao.chrome_summary_dao import ChromeSummaryDao
+from .db.dao.summary_logs_dao import ProgramLoggingDao, ChromeLoggingDao
 from .services.chrome_service import ChromeService
 from .trackers.mouse_tracker import MouseTrackerCore
 from .trackers.keyboard_tracker import KeyboardTrackerCore
@@ -66,8 +67,13 @@ class SurveillanceManager:
         self.keyboard_dao = KeyboardDao(clock, self.session_maker)
         self.program_dao = ProgramDao(clock, self.session_maker)
         self.chrome_dao = ChromeDao(clock, self.session_maker)
-        self.program_summary_dao = ProgramSummaryDao(clock, self.session_maker)
-        self.chrome_summary_dao = ChromeSummaryDao(clock, self.session_maker)
+
+        program_summary_logger = ProgramLoggingDao(clock, self.session_maker)
+        chrome_summary_logger = ChromeLoggingDao(clock, self.session_maker)
+        self.program_summary_dao = ProgramSummaryDao(
+            clock, program_summary_logger, self.session_maker)
+        self.chrome_summary_dao = ChromeSummaryDao(
+            clock, chrome_summary_logger, self.session_maker)
         self.timeline_dao = TimelineEntryDao(clock, self.session_maker)
 
         self.keyboard_tracker = KeyboardTrackerCore(
