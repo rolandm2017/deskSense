@@ -7,6 +7,7 @@ from src.object.dto import TypingSessionDto
 from src.db.dao.keyboard_dao import KeyboardDao
 from src.db.models import TypingSession
 from src.object.classes import KeyboardAggregate
+from src.util.clock import SystemClock
 
 
 class TestKeyboardDao:
@@ -39,7 +40,8 @@ class TestKeyboardDao:
 
     @pytest.fixture
     def dao(self, mock_session_maker):
-        return KeyboardDao(mock_session_maker)
+        clock = SystemClock()
+        return KeyboardDao(clock, mock_session_maker)
 
     @pytest.mark.asyncio
     async def test_create(self, dao, mock_session_maker):

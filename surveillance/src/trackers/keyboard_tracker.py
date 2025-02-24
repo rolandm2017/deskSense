@@ -64,6 +64,8 @@ class KeyboardTrackerCore:
         self.time_of_last_terminal_out = new_time
 
     def apply_handlers(self, content: KeyboardAggregate):
+        length_of_session = content.session_end_time - content.session_start_time
+        print(length_of_session, "68ru")
         if isinstance(self.event_handlers, list):
             for handler in self.event_handlers:
                 handler(content)  # emit an event

@@ -80,8 +80,10 @@ class ProgramTrackerCore:
 
             if self.current_session is None:  # initialize
                 current_time = self.clock.now()
-                self.current_session = self.start_new_session(
+                new_session = self.start_new_session(
                     window_change, current_time)
+                self.current_session = new_session
+                self.window_change_handler(new_session)
 
     def start_new_session(self, window_change_dict, start_time):
         new_session = ProgramSessionData()
@@ -103,42 +105,6 @@ class ProgramTrackerCore:
         duration = end_time - start_time
         self.current_session.end_time = end_time
         self.current_session.duration = duration
-
-        # TODO: Chrome tabs goes into a special Chrome-only DB. For now you will just write, "Which tabs names?" without processing"
-
-    def is_productive(self, window_info, productive_apps, productive_sites):
-        """Determine if the current window represents productive time."""
-        if not window_info:
-            self.console_logger.log_yellow_multiple("[DEBUG]", window_info)
-            raise ValueError("Window info was not passed")
-
-        process_name = window_info['process_name']
-        window_title_with_detail = window_info['window_title']
-
-        detail, window_name = separate_window_name_and_detail(
-            window_title_with_detail)
-
-        # Check if it's a known application
-        is_a_known_productive_program = window_name in productive_apps
-        if is_a_known_productive_program:
-            # Could still be a "Maybe" case, i.e. Chrome
-            is_a_maybe_case = process_name == "Google Chrome"
-            if is_a_maybe_case:
-                # access window content to check the sites
-                tab_name = detail
-                is_productive_site = tab_is_a_productive_tab(
-                    tab_name, productive_sites)
-                return is_productive_site
-            return True
-
-        return False
-
-        #     return productivity
-
-    #     # FIXME: what if there is no " - " in it?
-
-        # FIXME: VSCode is in "False" productivity, uNproductive. It should be TRUE
-        # FIXME: SOlution is to move the "window rsplit" thing to early early, before the isProductive check.
 
     def report_missing_program(self, title):
         """For when the program isn't found in the productive apps list"""

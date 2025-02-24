@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
@@ -156,8 +156,8 @@ def test_multiple_timeline_entries(db_session):
 
 def test_timeline_entry_timestamps(db_session):
     """Test that start and end timestamps are properly stored."""
-    start_time = datetime(2024, 1, 1, 12, 0)
-    end_time = datetime(2024, 1, 1, 13, 0)
+    start_time = datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)
+    end_time = datetime(2024, 1, 1, 13, 0, tzinfo=timezone.utc)
 
     event = TimelineEntryObj(
         group=ChartEventType.MOUSE,
@@ -169,9 +169,10 @@ def test_timeline_entry_timestamps(db_session):
     db_session.commit()
     db_session.refresh(event)
 
+    # FIXME: FAILED tests/db/test_models.py::test_timeline_entry_timestamps -
+    # assert datetime.datetime(2024, 1, 1, 12, 0, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=57600)))
+    # == datetime.da...
+    print(event.start)
+    print(start_time)
     assert event.start == start_time
     assert event.end == end_time
-
-
-# Add this to your conftest.py if you want to configure pytest for async tests
-pytest_plugins = ('pytest_asyncio',)

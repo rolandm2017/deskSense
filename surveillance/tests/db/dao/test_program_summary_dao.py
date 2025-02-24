@@ -8,10 +8,11 @@ from sqlalchemy import text
 from dotenv import load_dotenv
 import os
 
-
-from surveillance.src.db.dao.program_summary_dao import ProgramSummaryDao
+from src.db.dao.program_summary_dao import ProgramSummaryDao
 from src.db.models import DailyProgramSummary, Base
 from src.object.classes import ProgramSessionData
+from src.util.clock import SystemClock
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -98,7 +99,8 @@ async def async_session_maker(async_engine):
 async def test_db_dao(async_session_maker):
     """Create a DAO instance with the async session maker"""
     session_maker = await async_session_maker
-    dao = ProgramSummaryDao(session_maker)
+    clock = SystemClock()
+    dao = ProgramSummaryDao(clock, session_maker)
     return dao
 
 
@@ -147,7 +149,8 @@ class TestProgramSummaryDao:
 
     @pytest.fixture
     def class_mock_dao(self, mock_session_maker):
-        return ProgramSummaryDao(mock_session_maker)
+        clock = SystemClock()
+        return ProgramSummaryDao(clock, mock_session_maker)
 
     @pytest.mark.asyncio
     async def test_create_if_new_else_update_new_entry(self, class_mock_dao, mock_session):

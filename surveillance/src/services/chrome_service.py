@@ -101,15 +101,15 @@ class ChromeService:
         self.event_emitter = EventEmitter()
 
         # Set up event handlers
-        self.event_emitter.on('tab_processed', self.log_tab_event)
+        # self.event_emitter.on('tab_processed', self.log_tab_event)
 
-        self.loop = asyncio.get_running_loop()
+        self.loop = asyncio.get_event_loop()
 
         # TODO: Get active program. If progrma = chrome, record time. else, do not record.
 
     # TODO: Log a bunch of real chrome tab submissions, use them in a test
 
-    async def log_tab_event(self, url_deliverable: TabChangeEvent):
+    def log_tab_event(self, url_deliverable: TabChangeEvent):
         """Occurs whenever the user tabs through Chrome tabs.
 
         A tab comes in and becomes the last entry. Call this the Foo tab.

@@ -1,7 +1,17 @@
-import pytest
 
-from src.config.definitions import productive_sites
-from src.util.program_tools import separate_window_name_and_detail, is_expected_shape_else_throw, tab_is_a_productive_tab,  separator_error_msg, window_is_chrome
+import pytest
+from unittest.mock import Mock, MagicMock
+
+from datetime import datetime
+
+from ..mocks.mock_clock import MockClock
+
+from src.config.definitions import productive_apps, productive_sites
+from src.trackers.program_tracker import ProgramTrackerCore
+from src.object.classes import ProgramSessionData
+from src.util.strings import no_space_dash_space
+from src.util.program_tools import (separate_window_name_and_detail, is_expected_shape_else_throw,
+                                    tab_is_a_productive_tab,  separator_error_msg, window_is_chrome, is_productive)
 
 
 def test_separate_window_name_and_detail():
@@ -113,3 +123,40 @@ def test_is_expected_shape_else_throw_actually_throws():
     with pytest.raises(AttributeError, match="Uncompliant program window shape"):
         # Call your function here that should raise the error
         is_expected_shape_else_throw({"james": "bond"})
+
+
+def test_is_productive_chrome_productive():
+    """Test that Chrome is marked productive when on productive sites"""
+
+    # Stackoverflow makes it productive
+    window_info_1 = {
+        'process_name': 'Google Chrome',
+        'window_title': 'stackoverflow.com - Google Chrome'
+    }
+    # Claude makes it productive
+    productive_window_3 = {'os': 'Ubuntu', 'pid': 129614, 'process_name': 'chrome',
+                           'window_title': 'Squashing Commits with Git Rebase - Claude - Google Chrome'}
+
+    assert is_productive(
+        window_info_1, productive_apps, productive_sites) == True
+    assert is_productive(
+        productive_window_3, productive_apps, productive_sites) == True
+
+
+def test_is_productive_chrome_unproductive():
+    """Test that Chrome is marked unproductive on other sites"""
+
+    # YouTube and TikTok are entertainment
+    window_info = {
+        'process_name': 'Google Chrome',
+        'window_title': 'YouTube - Google Chrome'
+    }
+    window_info_2 = {
+        'process_name': 'Google Chrome',
+        'window_title': 'Tiktok - Google Chrome'
+    }
+
+    assert is_productive(
+        window_info, productive_apps, productive_sites) == False
+    assert is_productive(
+        window_info_2, productive_apps, productive_sites) == False

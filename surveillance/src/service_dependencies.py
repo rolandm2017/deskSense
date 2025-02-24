@@ -101,7 +101,7 @@ async def get_activity_arbiter():
     from .db.dao.program_summary_dao import ProgramSummaryDao
     from .db.dao.chrome_summary_dao import ChromeSummaryDao
 
-    loop = asyncio.get_running_loop()
+    loop = asyncio.get_event_loop()
     clock = SystemClock()
     # print("Starting get_activity_arbiter")
 

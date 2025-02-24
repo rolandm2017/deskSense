@@ -7,6 +7,7 @@ from src.db.dao.timeline_entry_dao import TimelineEntryDao
 from src.db.models import TimelineEntryObj
 from src.object.classes import KeyboardAggregate, MouseMoveWindow
 from src.object.enums import ChartEventType
+from src.util.clock import SystemClock
 
 
 class TestTimelineEntryDao:
@@ -33,7 +34,8 @@ class TestTimelineEntryDao:
 
     @pytest.fixture
     def dao(self, mock_session_maker):
-        return TimelineEntryDao(mock_session_maker)
+        clock = SystemClock()
+        return TimelineEntryDao(clock, mock_session_maker)
 
     @pytest.mark.asyncio
     async def test_create_from_keyboard_aggregate(self, dao, mock_session):
