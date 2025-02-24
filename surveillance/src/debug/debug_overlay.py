@@ -7,7 +7,7 @@ import re
 class Overlay:
     # FIXME: If it is alt tab window, color it
     def __init__(self):
-        print("Overlay init starting")
+        # print("Overlay init starting")
         # Color mapping for different applications
         self.color_map = {
             'Chrome': '#4285F4',    # Google Blue
@@ -26,7 +26,7 @@ class Overlay:
         self.gui_thread.daemon = True  # Thread will close when main program exits
         self.gui_thread.start()
 
-        print("Overlay init complete")
+        # print("Overlay init complete")
 
     def change_display_text(self, new_text, display_color=None):
         """Thread-safe method to change display text"""
@@ -96,7 +96,7 @@ class Overlay:
         self.window = tk.Tk()
         self.window.title("Overlay")
 
-        print("Creating window")  # Debug
+        # print("Creating window")  # Debug
 
         # Make window transparent
         self.window.attributes('-alpha', 0.8)
@@ -115,7 +115,7 @@ class Overlay:
             pady=5
         )
         self.label.pack(expand=True, fill='both')  # Make label fill window
-        print("Label created and packed")  # Debug
+        # print("Label created and packed")  # Debug
 
         # Position window
         # self.window.geometry('300x100+10+10')  # Give it an explicit size
@@ -124,17 +124,17 @@ class Overlay:
         self.window.deiconify()
         self.window.lift()
         self.window.update()
-        print("Window initialized")  # Debug
+        # print("Window initialized")  # Debug
 
         # Start queue check
         self._schedule_queue_check()
-        print("Queue check scheduled")  # Debug
+        # print("Queue check scheduled")  # Debug
 
         # Set initial text
         self.change_display_text("Terminal", self.color_map["Terminal"])
-        print("Initial text set")  # Debug
+        # print("Initial text set")  # Debug
 
-        print("Starting mainloop")  # Debug
+        # print("Starting mainloop")  # Debug
         self.window.mainloop()
 
     def _schedule_queue_check(self):

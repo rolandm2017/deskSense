@@ -9,6 +9,7 @@ from ..db.models import DailyDomainSummary, DailyProgramSummary
 from ..config.definitions import productive_sites, productive_apps
 from ..util.console_logger import ConsoleLogger
 from ..object.return_types import DaySummary
+from ..util.clock import UserFacingClock
 
 
 class DashboardService:
@@ -16,6 +17,7 @@ class DashboardService:
         self.timeline_dao = timeline_dao
         self.program_summary_dao = program_summary_dao
         self.chrome_summary_dao = chrome_summary_dao
+        self.user_clock = UserFacingClock()
         self.logger = ConsoleLogger()
 
     async def get_weekly_productivity_overview(self, starting_sunday):
@@ -74,14 +76,14 @@ class DashboardService:
         return usage_from_days
 
     async def get_timeline(self):
-        today = datetime.now()
+        today = self.user_clock.now()
         all_mouse_events = await self.timeline_dao.read_day_mice(today)
         all_keyboard_events = await self.timeline_dao.read_day_keyboard(today)
         return all_mouse_events, all_keyboard_events
 
     async def get_current_week_timeline(self):
         # TODO: Logging
-        today = datetime.now()
+        today = self.user_clock.now()
         # +1 because weekday() counts from Monday=0
         days_since_sunday = today.weekday() + 1
         last_sunday = today - timedelta(days=days_since_sunday)
@@ -147,12 +149,12 @@ class DashboardService:
         return all_days, sunday_that_starts_the_week
 
     async def get_program_summary(self):
-        today = datetime.now()
+        today = self.user_clock.now()
         all = await self.program_summary_dao.read_day(today)
         return all
 
     async def get_chrome_summary(self):
-        today = datetime.now()
+        today = self.user_clock.now()
         all = await self.chrome_summary_dao.read_day(today)
         return all
 

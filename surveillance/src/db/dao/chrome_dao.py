@@ -10,8 +10,10 @@ from ...object.classes import ChromeSessionData
 
 
 class ChromeDao(BaseQueueingDao):
-    def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
-        super().__init__(session_maker, batch_size, flush_interval)
+    def __init__(self, clock, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+        super().__init__(session_maker=session_maker,
+                         batch_size=batch_size, flush_interval=flush_interval)
+        self.clock = clock
         self.logger = ConsoleLogger()
 
     async def create(self, session: ChromeSessionData):
@@ -45,7 +47,7 @@ class ChromeDao(BaseQueueingDao):
         Returns all program sessions ordered by their end time.
         """
         query = select(ChromeTab).where(
-            ChromeTab.created_at >= datetime.now() - timedelta(days=1)
+            ChromeTab.created_at >= self.clock.now() - timedelta(days=1)
         ).order_by(ChromeTab.end_time.desc())
         async with self.session_maker() as session:
             result = await session.execute(query)

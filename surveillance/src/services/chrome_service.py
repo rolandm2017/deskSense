@@ -89,11 +89,7 @@ class TabQueue:
 class ChromeService:
     def __init__(self, arbiter: ActivityArbiter, dao: ChromeDao = Depends()):
         print("╠════════╣")
-        print("║   **   ║")
-        print("║  ****  ║")
         print("║ ****** ║ Starting Chrome Service")
-        print("║  ****  ║")
-        print("║   **   ║")
         print("╚════════╝")
         self.dao = dao
         self.arbiter = arbiter

@@ -3,7 +3,7 @@ import time
 
 from ..util.end_program_routine import end_program_readout, pretend_report_event
 from ..object.classes import KeyboardAggregate
-from ..util.clock import Clock
+from ..util.clock import SystemClock
 from ..util.threaded_tracker import ThreadedTracker
 from ..util.keyboard_aggregator import EventAggregator
 from ..util.console_logger import ConsoleLogger
@@ -89,7 +89,7 @@ class KeyboardTrackerCore:
 
 if __name__ == "__main__":
     api_facade = KeyboardApiFacadeCore()
-    clock = Clock()
+    clock = SystemClock()
     # instance = KeyboardTracker(clock, api_facade, [end_program_readout, pretend_report_event])
     # uncomment other line to do way too much logging - plus it keylogs
     instance = KeyboardTrackerCore(clock, api_facade, [pretend_report_event])

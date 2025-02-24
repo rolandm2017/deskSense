@@ -13,8 +13,10 @@ from ...util.console_logger import ConsoleLogger
 
 
 class VideoDao(BaseQueueingDao):
-    def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
-        super().__init__(session_maker, batch_size, flush_interval)
+    def __init__(self, clock, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+        super().__init__(session_maker=session_maker,
+                         batch_size=batch_size, flush_interval=flush_interval)
+        self.clock = clock
         self.logger = ConsoleLogger()
 
     async def create(self, create_event: VideoCreateEvent):
@@ -44,7 +46,7 @@ class VideoDao(BaseQueueingDao):
         Returns the count of sessions per interval.
         """
         try:
-            twenty_four_hours_ago = datetime.now() - timedelta(hours=24)
+            twenty_four_hours_ago = self.clock.now() - timedelta(hours=24)
 
             query = select(Video).where(
                 Video.start_time >= twenty_four_hours_ago

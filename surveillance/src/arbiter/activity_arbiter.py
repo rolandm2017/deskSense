@@ -168,7 +168,7 @@ class ActivityArbiter:
         the current program is Chrome & do such and such if it is or isn't.
         i.e. "chrome_event_update" and "self.current_is_chrome" before e22d5badb15
         """
-        print("ActivityArbiter init starting")
+        # print("ActivityArbiter init starting")
 
         self.current_program: Optional[ProgramSessionData] = None
         self.tab_state: Optional[ChromeSessionData] = None
@@ -180,7 +180,7 @@ class ActivityArbiter:
         self.current_state = None
         self.program_state = None  # Holds a program
         self.chrome_state = None  # Holds a tab
-        print("ActivityArbiter init complete")
+        # print("ActivityArbiter init complete")
 
     async def set_tab_state(self, tab: ChromeSessionData):
         await self._transition_state(tab)
