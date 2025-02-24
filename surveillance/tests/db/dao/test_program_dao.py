@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from src.db.dao.program_dao import ProgramDao
 from src.db.models import Program
 from src.object.classes import ProgramSessionData
+from src.util.clock import SystemClock
 
 
 class TestProgramDao:
@@ -35,7 +36,8 @@ class TestProgramDao:
 
     @pytest.fixture
     def dao(self, mock_session_maker):
-        return ProgramDao(mock_session_maker)
+        clock = SystemClock()
+        return ProgramDao(clock, mock_session_maker)
 
     @pytest.mark.asyncio
     async def test_create_happy_path(self, dao):

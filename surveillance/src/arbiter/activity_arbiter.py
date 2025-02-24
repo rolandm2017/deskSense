@@ -124,7 +124,7 @@ class ChromeInternalState(InternalState):
         is_chrome = False
         current_tab = None  # should it be whatever is open in chrome? if Chrome is open
         next_state = ApplicationInternalState(
-            next.window_title, is_chrome, current_tab, next.session)
+            next.window_title, is_chrome, current_tab, next)
         return next_state
 
     def stay_on_chrome(self):
@@ -235,9 +235,9 @@ class ActivityArbiter:
         print("\n" + "✦★✦" * 6 + " DEBUG " + "✦★✦" * 6 + "\n")
 
         if isinstance(new_session, ProgramSessionData):
-            print("[[arbiter]] ", new_session.window_title)
+            print("[[Arb]] ", new_session.window_title)
         else:
-            print("[[ARB-tab]] ", new_session.domain)
+            print("[[Tab]] ", new_session.domain)
         # print("gggggggggggggggg")
         self.update_overlay_display_with_session(new_session)
 
@@ -251,11 +251,11 @@ class ActivityArbiter:
 
             # ### Get the current state's session to put into the summary DAO along w/ the time
             old_session.duration = now - old_session.start_time
-            print(now)
-            print(old_session.start_time)
-            print(old_session.duration)
+            # print(now)
+            # print(old_session.start_time)
+            # print(old_session.duration)
             old_session.end_time = now
-            print(old_session, '251ru')
+            # print(old_session, '251ru')
 
             # ### Create the replacement state
             updated_state = self.current_state.compute_next_state(new_session)

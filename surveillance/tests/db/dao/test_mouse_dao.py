@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from src.db.dao.mouse_dao import MouseDao
 from src.db.models import MouseMove
 from src.trackers.mouse_tracker import MouseMoveWindow
+from src.util.clock import SystemClock
 
 
 class TestMouseDao:
@@ -44,7 +45,8 @@ class TestMouseDao:
 
     @pytest.fixture
     def dao(self, mock_session_maker):
-        return MouseDao(mock_session_maker)
+        clock = SystemClock()
+        return MouseDao(clock, mock_session_maker)
 
     @pytest.mark.asyncio
     async def test_create_from_start_end_times(self, dao, mock_queue_item):

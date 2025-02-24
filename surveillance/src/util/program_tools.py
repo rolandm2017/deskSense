@@ -42,3 +42,28 @@ def tab_is_a_productive_tab(tab_name_to_check, productive_sites):
     """Checks if 'any of the productive sites substrings is present?' in the input tab"""
     return any(
         some_site in tab_name_to_check for some_site in productive_sites)
+
+
+def is_productive(window_info, productive_apps, productive_sites):
+    """Determine if the current window represents productive time."""
+    title_with_detail = window_info['window_title']
+
+    detail, window_name = separate_window_name_and_detail(title_with_detail)
+
+    # Check if it's a known application
+    is_a_known_productive_program = window_name in productive_apps
+    print(window_name, is_a_known_productive_program, "here 55ru")
+    if is_a_known_productive_program:
+        print(is_a_known_productive_program, "56ru")
+        # Could still be a "Maybe" case, i.e. Chrome
+        is_a_maybe_case = window_info['process_name'] == "Google Chrome"
+        if is_a_maybe_case:
+            print(detail, '59ru')
+            # access window content to check the sites
+            tab_name = detail
+            is_productive_site = tab_is_a_productive_tab(
+                tab_name, productive_sites)
+            return is_productive_site
+        return True
+
+    return False

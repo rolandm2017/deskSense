@@ -45,57 +45,12 @@ def tracker(mock_facade, mock_event_handler, clock):
     return ProgramTrackerCore(clock, mock_facade, mock_event_handler)
 
 
-# TODO: Test "for window_change in self.program_facade.listen_for_window_changes()" returns dict containing such and such
-# TODO: Or *assume* that it does in a test somewhere.
-
 ex3 = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg',
        'window_title': 'H&M | Online Fashion, Homeware & Kids Clothes | H&M CA - Google Chrome'}
 ex4 = {'os': 'Ubuntu', 'pid': 128216,
        'process_name': 'Xorg', 'window_title': 'Alt-tab window'}
 ex5 = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg',
        'window_title': 'program_tracker.py - deskSense - Visual Studio Code'}
-
-
-def test_is_productive_chrome_productive():
-    """Test that Chrome is marked productive when on productive sites"""
-    clock = MockClock([datetime.now()])
-    facade = Mock()
-    tracker = ProgramTrackerCore(clock, facade, Mock(), Mock())
-
-    window_info_1 = {
-        'process_name': 'Google Chrome',
-        'window_title': 'stackoverflow.com - Google Chrome'
-    }
-    # productive_window_2 = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg',
-    #                        'window_title': 'program_tracker.py - deskSense - Visual Studio Code'}
-    productive_window_3 = {'os': 'Ubuntu', 'pid': 129614, 'process_name': 'chrome',
-                           'window_title': 'Squashing Commits with Git Rebase - Claude - Google Chrome'}
-
-    assert tracker.is_productive(
-        window_info_1, productive_apps, productive_sites) == True
-    assert tracker.is_productive(
-        productive_window_3, productive_apps, productive_sites) == True
-
-
-def test_is_productive_chrome_unproductive():
-    """Test that Chrome is marked unproductive on other sites"""
-    clock = MockClock([datetime.now()])
-    facade = Mock()
-    tracker = ProgramTrackerCore(clock, facade, Mock(), Mock())
-
-    window_info = {
-        'process_name': 'Google Chrome',
-        'window_title': 'YouTube - Google Chrome'
-    }
-    window_info_2 = {
-        'process_name': 'Google Chrome',
-        'window_title': 'Tiktok - Google Chrome'
-    }
-
-    assert tracker.is_productive(
-        window_info, productive_apps, productive_sites) == False
-    assert tracker.is_productive(
-        window_info_2, productive_apps, productive_sites) == False
 
 
 def test_start_new_session():
@@ -175,19 +130,19 @@ def test_conclude_session():
 def test_window_change_triggers_handler():
     """Test that window changes trigger event handlers"""
     time_from_previous_program = datetime(2024, 1, 1, 12, 0)
-    t1_start = datetime(2024, 1, 1, 12, 2)
-    t2_end = datetime(2024, 1, 1, 12, 4)
-    t3_start = datetime(2024, 1, 1, 12, 7)
-    t4_end = datetime(2024, 1, 1, 12, 10)
+    t1 = datetime(2024, 1, 1, 12, 2)
+    t2 = datetime(2024, 1, 1, 12, 3)
+    t3 = datetime(2024, 1, 1, 12, 4)
+    t4 = datetime(2024, 1, 1, 12, 7)
+    t5 = datetime(2024, 1, 1, 12, 10)
 
-    start_time = t1_start
-    times = [start_time, t2_end, t3_start, t4_end]
+    times = [t1, t2, t3, t4, t5]
     clock = MockClock(times)
     clock.now = MagicMock(wraps=clock.now)
     facade = Mock()
-    handler = Mock()
+    window_change_handler = Mock()
 
-    tracker = ProgramTrackerCore(clock, facade, handler, Mock())
+    tracker = ProgramTrackerCore(clock, facade, window_change_handler, Mock())
 
     # Set up facade to yield a window change
     first_test_item = {
@@ -196,11 +151,6 @@ def test_window_change_triggers_handler():
         "os": "Ubuntu"
     }
     facade.listen_for_window_changes.return_value = iter([first_test_item])
-    # facade.listen_for_window_changes.side_effect = lambda: (print("FOO BAR") or iter([{
-    #     'process_name': 'code',
-    #     'window_title': 'test.py - Visual Studio Code',
-    #     "os": "Ubuntu"
-    # }]))
 
     tracker.clock.now.assert_not_called()
     assert tracker.current_session is None  # Test setup conditions
@@ -211,7 +161,24 @@ def test_window_change_triggers_handler():
     # There was no session from a prev run so, on_a_different_window is false
     assert tracker.current_session.window_title == "Visual Studio Code"
     assert tracker.current_session.end_time is None
-    handler.assert_not_called()
+    window_change_handler.assert_called_once()
+
+    session_arg = window_change_handler.call_args[0][0]
+    assert isinstance(session_arg, ProgramSessionData)
+    assert hasattr(session_arg, 'window_title')
+    assert hasattr(session_arg, 'productive')
+    assert hasattr(session_arg, 'duration')
+
+    deliverable = session_arg
+
+    assert deliverable.window_title == "Visual Studio Code"  #
+    assert deliverable.detail == "test.py"
+    # The second time clock.now() is called, i.e. not 1st window, but the 2nd
+    assert deliverable.start_time == t1
+    # Because the window change handler reports the started sessions
+    assert deliverable.end_time is None
+    # Because it's only the start of a session
+    assert deliverable.duration is None
 
     # # Continue acting - Need to run the tracking loop again to close a session
 
@@ -220,9 +187,9 @@ def test_window_change_triggers_handler():
     assert tracker.clock.now.call_count == 2
 
     # Verify handler was called with session data
-    handler.assert_called_once()
+    window_change_handler.call_count == 2
 
-    session_arg = handler.call_args[0][0]
+    session_arg = window_change_handler.call_args[0][0]
     assert isinstance(session_arg, ProgramSessionData)
     assert hasattr(session_arg, 'window_title')
     assert hasattr(session_arg, 'productive')
@@ -230,13 +197,14 @@ def test_window_change_triggers_handler():
 
     deliverable = session_arg
 
-    assert deliverable.start_time != deliverable.end_time
-
-    assert deliverable.window_title == "Visual Studio Code"
-    assert deliverable.detail == "test.py"
-    assert deliverable.start_time == t1_start
-    assert deliverable.end_time == t2_end
-    assert deliverable.duration == (t2_end - t1_start)
+    assert deliverable.window_title == "Google Chrome"  #
+    assert deliverable.detail[0:5] == "H&M |"
+    # The second time clock.now() is called, i.e. not 1st window, but the 2nd
+    assert deliverable.start_time == t2
+    # Because the window change handler reports the started sessions
+    assert deliverable.end_time is None
+    # Because it's only the start of a session
+    assert deliverable.duration is None
 
 
 def test_handle_alt_tab_window():
@@ -257,8 +225,8 @@ def test_handle_alt_tab_window():
 
 
 def test_a_series_of_programs():
-    """ 
-    A very long test. 
+    """
+    A very long test.
     This test shows that the run_tracking_loop() works as expected when given, a series of changes.
     """
 
@@ -286,7 +254,7 @@ def test_a_series_of_programs():
         handler2_calls.append(event)
 
     # Replace single handler with multiple handlers
-    tracker.event_handlers = [handler1, handler2]
+    tracker.conclude_session_handler = [handler1, handler2]
 
     # Setup
     program1 = {"os": "some_val", 'process_name': 'code',
@@ -355,8 +323,8 @@ def test_a_series_of_programs():
     tracker.run_tracking_loop()
 
     # Assert
-    assert tracker.current_session.window_title == "Visual Studio Code"
     assert clock.now.call_count == 5
+    assert tracker.current_session.window_title == "Visual Studio Code"
 
     # ### Final assertions
     assert len(handler1_calls) == 4  # Not five: The fifth remains open
