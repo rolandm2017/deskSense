@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-import datetime
+from datetime import timedelta, datetime
 
 from .base_dao import BaseQueueingDao
 
@@ -16,8 +16,10 @@ def get_rid_of_ms(time):
 
 
 class MouseDao(BaseQueueingDao):
-    def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
-        super().__init__(session_maker, batch_size, flush_interval)
+    def __init__(self, clock, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+        super().__init__(session_maker=session_maker,
+                         batch_size=batch_size, flush_interval=flush_interval)
+        self.clock = clock
         self.logger = ConsoleLogger()
 
     async def create_from_start_end_times(self, start_time: datetime, end_time: datetime):
@@ -68,7 +70,7 @@ class MouseDao(BaseQueueingDao):
         Returns all movements ordered by their end time.
         """
         query = select(MouseMove).where(
-            MouseMove.end_time >= datetime.datetime.now() - datetime.timedelta(days=1)
+            MouseMove.end_time >= self.clock.now() - timedelta(days=1)
         ).order_by(MouseMove.end_time.desc())
 
         async with self.session_maker() as session:

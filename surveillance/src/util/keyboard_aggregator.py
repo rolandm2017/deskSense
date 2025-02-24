@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from dataclasses import dataclass
 from time import time
 from typing import List, Callable
@@ -64,7 +64,7 @@ class EventAggregator:
         return None
 
     def convert_events_to_timestamps(self, current_agg_events):
-        return [datetime.fromtimestamp(t) for t in current_agg_events]
+        return [datetime.fromtimestamp(t, tz=timezone.utc) for t in current_agg_events]
 
     def start_new_aggregate(self, timestamp):
         self.current_aggregation = InProgressAggregation(

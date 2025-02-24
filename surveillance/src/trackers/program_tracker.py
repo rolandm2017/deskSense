@@ -8,7 +8,7 @@ from ..config.definitions import productive_apps, productive_categories, product
 from ..facade.program_facade import ProgramApiFacadeCore
 from ..util.detect_os import OperatingSystemInfo
 from ..util.end_program_routine import end_program_readout, pretend_report_event
-from ..util.clock import Clock
+from ..util.clock import SystemClock
 from ..util.threaded_tracker import ThreadedTracker
 from ..util.program_tools import separate_window_name_and_detail, is_expected_shape_else_throw, tab_is_a_productive_tab, contains_space_dash_space, window_is_chrome
 from ..util.strings import no_space_dash_space
@@ -166,7 +166,7 @@ if __name__ == "__main__":
 
     # folder = Path("/tmp")
 
-    clock = Clock()
+    clock = SystemClock()
 
     try:
 

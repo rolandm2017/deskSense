@@ -1,5 +1,11 @@
 separator_error_msg = "Error in function: window_title had no ' - '."
 
+####
+####
+# Tools for the program_tracker to use.
+####
+####
+
 
 def contains_space_dash_space(s):
     return " - " in s
@@ -23,13 +29,9 @@ def is_expected_shape_else_throw(shape):
     return compliant_shape
 
 
-def window_is_chrome_str_version(new_window):
-    return new_window.endswith("Google Chrome")
-
-
 def window_is_chrome(new_window):
     if isinstance(new_window, str):
-        return window_is_chrome_str_version(new_window)
+        return new_window.endswith("Google Chrome")
     else:
         # example: 'Fixing datetime.fromisoformat() error - Claude - Google Chrome'
         window_title = new_window["window_title"]

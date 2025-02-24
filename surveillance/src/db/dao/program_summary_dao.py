@@ -9,7 +9,7 @@ from ..models import DailyProgramSummary
 from ...object.classes import ProgramSessionData
 from ...util.console_logger import ConsoleLogger
 from ...util.debug_logger import write_to_debug_log, write_to_large_usage_log
-from ...util.clock import Clock
+from ...util.clock import SystemClock
 
 
 class DatabaseProtectionError(RuntimeError):
@@ -23,7 +23,7 @@ class DatabaseProtectionError(RuntimeError):
 
 
 class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
-    def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+    def __init__(self, clock, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
         # if not callable(session_maker):
         # raise TypeError("session_maker must be callable")
         self.session_maker = session_maker  # Store the session maker instead of db
@@ -31,7 +31,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         self.flush_interval = flush_interval
         self.queue = Queue()
         self.processing = False
-        self.clock = Clock()
+        self.clock = clock
         self.logger = ConsoleLogger()
 
     async def create_if_new_else_update(self, program_session: ProgramSessionData):
@@ -83,7 +83,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             await session.commit()
 
     async def read_past_week(self):
-        today = datetime.now()
+        today = self.clock.now()
         # +1 because weekday() counts from Monday=0
         days_since_sunday = today.weekday() + 1
         last_sunday = today - timedelta(days=days_since_sunday)

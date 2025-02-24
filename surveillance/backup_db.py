@@ -1,5 +1,7 @@
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
+
+import os
 
 
 def backup_database(
@@ -9,7 +11,8 @@ def backup_database(
     port="5432",
     username="postgres"
 ):
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    # timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
     backup_file = f"{backup_path}/backup_{db_name}_{timestamp}.sql"
 
     try:
@@ -31,5 +34,7 @@ def backup_database(
         print(f"Backup failed: {e}")
         raise
 
+
+os.makedirs(".", exist_ok=True)
 
 backup_database("deskSense", ".")

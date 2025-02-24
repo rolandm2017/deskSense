@@ -14,46 +14,47 @@ from .db.dao.chrome_summary_dao import ChromeSummaryDao
 from .db.dao.video_dao import VideoDao
 from .db.dao.frame_dao import FrameDao
 from .arbiter.activity_arbiter import ActivityArbiter
-from .util.clock import Clock
-from .debug.debug_overlay import Overlay
+from .util.clock import SystemClock
 
 
 # Dependency functions
+clock = SystemClock()
+
 
 async def get_keyboard_dao() -> KeyboardDao:
-    return KeyboardDao(async_session_maker)
+    return KeyboardDao(clock, async_session_maker)
 
 
 async def get_mouse_dao() -> MouseDao:
-    return MouseDao(async_session_maker)
+    return MouseDao(clock, async_session_maker)
 
 
 async def get_program_dao() -> ProgramDao:
-    return ProgramDao(async_session_maker)
+    return ProgramDao(clock, async_session_maker)
 
 
 async def get_chrome_dao() -> ChromeDao:
-    return ChromeDao(async_session_maker)
+    return ChromeDao(clock, async_session_maker)
 
 
 async def get_timeline_dao() -> TimelineEntryDao:
-    return TimelineEntryDao(async_session_maker)
+    return TimelineEntryDao(clock, async_session_maker)
 
 
 async def get_program_summary_dao() -> ProgramSummaryDao:
-    return ProgramSummaryDao(async_session_maker)
+    return ProgramSummaryDao(clock, async_session_maker)
 
 
 async def get_chrome_summary_dao() -> ChromeSummaryDao:
-    return ChromeSummaryDao(async_session_maker)
+    return ChromeSummaryDao(clock, async_session_maker)
 
 
 async def get_video_dao() -> VideoDao:
-    return VideoDao(async_session_maker)
+    return VideoDao(clock, async_session_maker)
 
 
 async def get_frame_dao() -> FrameDao:
-    return FrameDao(async_session_maker)
+    return FrameDao(clock, async_session_maker)
 
 
 async def get_keyboard_service(dao: KeyboardDao = Depends(get_keyboard_dao)) -> Callable:
@@ -101,7 +102,7 @@ async def get_activity_arbiter():
     from .db.dao.chrome_summary_dao import ChromeSummaryDao
 
     loop = asyncio.get_running_loop()
-    clock = Clock()
+    clock = SystemClock()
     # print("Starting get_activity_arbiter")
 
     global _arbiter_instance
@@ -114,8 +115,8 @@ async def get_activity_arbiter():
         _arbiter_instance = ActivityArbiter(
             overlay=overlay,
             clock=clock,
-            chrome_summary_dao=ChromeSummaryDao(async_session_maker),
-            program_summary_dao=ProgramSummaryDao(async_session_maker)
+            chrome_summary_dao=ChromeSummaryDao(clock, async_session_maker),
+            program_summary_dao=ProgramSummaryDao(clock, async_session_maker)
         )
 
         # Create wrapper for async handler
@@ -137,9 +138,10 @@ async def get_chrome_service(dao: ChromeDao = Depends(get_chrome_dao),
     from .services.chrome_service import ChromeService
     global _chrome_service_instance  # Singleton because it must preserve internal state
     if _chrome_service_instance is None:
+        clock = SystemClock()
         _chrome_service_instance = ChromeService(
             arbiter,
-            dao=ChromeDao(async_session_maker)
+            dao=ChromeDao(clock, async_session_maker)
 
         )
     return _chrome_service_instance

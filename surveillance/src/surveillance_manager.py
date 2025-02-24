@@ -22,7 +22,7 @@ from .facade.keyboard_facade import KeyboardApiFacadeCore
 from .facade.mouse_facade import UbuntuMouseApiFacadeCore
 from .facade.program_facade import ProgramApiFacadeCore
 from .util.detect_os import OperatingSystemInfo
-from .util.clock import Clock
+from .util.clock import SystemClock
 from .util.threaded_tracker import ThreadedTracker
 from .arbiter.activity_arbiter import ActivityArbiter
 
@@ -60,16 +60,15 @@ class SurveillanceManager:
         program_facade = ProgramApiFacadeCore(current_os)
 
         self.loop = asyncio.get_event_loop()
+        clock = SystemClock()
 
-        self.mouse_dao = MouseDao(self.session_maker)
-        self.keyboard_dao = KeyboardDao(self.session_maker)
-        self.program_dao = ProgramDao(self.session_maker)
-        self.chrome_dao = ChromeDao(self.session_maker)
-        self.program_summary_dao = ProgramSummaryDao(self.session_maker)
-        self.chrome_summary_dao = ChromeSummaryDao(self.session_maker)
-        self.timeline_dao = TimelineEntryDao(self.session_maker)
-
-        clock = Clock()
+        self.mouse_dao = MouseDao(clock, self.session_maker)
+        self.keyboard_dao = KeyboardDao(clock, self.session_maker)
+        self.program_dao = ProgramDao(clock, self.session_maker)
+        self.chrome_dao = ChromeDao(clock, self.session_maker)
+        self.program_summary_dao = ProgramSummaryDao(clock, self.session_maker)
+        self.chrome_summary_dao = ChromeSummaryDao(clock, self.session_maker)
+        self.timeline_dao = TimelineEntryDao(clock, self.session_maker)
 
         self.keyboard_tracker = KeyboardTrackerCore(
             clock, keyboard_facade, self.handle_keyboard_ready_for_db)

@@ -8,7 +8,7 @@ import threading
 from threading import Thread
 import time
 
-from ..util.clock import Clock
+from ..util.clock import SystemClock
 from ..util.detect_os import OperatingSystemInfo
 from ..util.end_program_routine import end_program_readout, pretend_report_event
 from ..util.threaded_tracker import ThreadedTracker
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     api_facade = facade_type()
     folder = Path("/tmp")
 
-    clock = Clock()
+    clock = SystemClock()
 
     try:
         tracker = MouseTrackerCore(
