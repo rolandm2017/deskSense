@@ -235,9 +235,9 @@ class ActivityArbiter:
         print("\n" + "✦★✦" * 6 + " DEBUG " + "✦★✦" * 6 + "\n")
 
         if isinstance(new_session, ProgramSessionData):
-            print("[[Arb]] ", new_session.window_title)
+            print("[Arb] ", new_session.window_title)
         else:
-            print("[[Tab]] ", new_session.domain)
+            print("[Tab] ", new_session.domain)
         # print("gggggggggggggggg")
         self.update_overlay_display_with_session(new_session)
 

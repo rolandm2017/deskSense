@@ -138,6 +138,10 @@ class ChromeService:
         initialized.start_time = url_deliverable.startTime.astimezone(
             timezone.utc)
 
+        # TODO: Keep the transition time on hand so i can add .end_time, which, should exist.
+        # Maybe when the new tab comes in, tell the DAO, "hey conclude that last tab's session"
+        # Until then, ChromeDAO is reporting end_time as Null
+
         print(initialized.domain, "initialized going into arbiter 122ru")
         print(initialized.start_time, '134ru')
 
