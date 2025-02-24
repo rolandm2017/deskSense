@@ -10,13 +10,14 @@ from ...util.console_logger import ConsoleLogger
 from ...object.classes import ChromeSessionData
 
 # @@@@ @@@@ @@@@ @@@@ @@@@
-# NOTE: Does not use BaseQueueDao
+# NOTE: Does not use BaseQueueDao - Because ... <insert reason here when recalled>
 # @@@@ @@@@ @@@@ @@@@ @@@@
 
 
 class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
-    def __init__(self, clock, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+    def __init__(self, clock, logging, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
         self.clock = clock
+        self.logging_dao = logging
         self.session_maker = session_maker  # Store the session maker instead of db
         self.batch_size = batch_size
         self.flush_interval = flush_interval
@@ -39,8 +40,13 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             func.date(DailyDomainSummary.gathering_date) == today
         )
 
+        self.logging_dao.create(
+            target_domain_name, usage_duration_in_hours, today)
+
         async with self.session_maker() as session:
             result = await session.execute(query)
+            # existing_entry = await result.scalar_one_or_none()  # Adding await here makes the program fail
+            # This is how it is properly done, this unawaited version works
             existing_entry = result.scalar_one_or_none()
 
             if existing_entry:

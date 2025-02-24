@@ -102,6 +102,38 @@ class DailyProgramSummary(Base):
     gathering_date = Column(DateTime(timezone=True))
 
 
+class DailyDomainSummary(Base):
+    __tablename__ = "daily_chrome_summaries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    domain_name = Column(String)
+    hours_spent = Column(Float)
+    # The date on which the program data was gathered
+    gathering_date = Column(DateTime(timezone=True))
+
+
+class ProgramSummaryLog(Base):
+    __tablename__ = "program_summary_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    program_name = Column(String)
+    hours_spent = Column(Float)
+    # The date on which the program data was gathered
+    gathering_date = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True))
+
+
+class DomainSummaryLog(Base):
+    __tablename__ = "domain_summary_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    domain_name = Column(String)
+    hours_spent = Column(Float)
+    # The date on which the program data was gathered
+    gathering_date = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True))
+
+
 class TimelineEntryObj(Base):
     """
     Note: This table uses camelCase column names (rather than snake_case)
@@ -213,16 +245,6 @@ class PrecomputedTimelineEntry(Base):
         )
 
     # count = Column(Integer)  # could be nice to know how many events went into an entry.
-
-
-class DailyDomainSummary(Base):
-    __tablename__ = "daily_chrome_summaries"
-
-    id = Column(Integer, primary_key=True, index=True)
-    domain_name = Column(String)
-    hours_spent = Column(Float)
-    # The date on which the program data was gathered
-    gathering_date = Column(DateTime(timezone=True))
 
 
 class Video(Base):

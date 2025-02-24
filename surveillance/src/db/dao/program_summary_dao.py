@@ -18,20 +18,21 @@ class DatabaseProtectionError(RuntimeError):
 
 
 # @@@@ @@@@ @@@@ @@@@ @@@@
-# NOTE: Does not use BaseQueueDao
+# NOTE: Does not use BaseQueueDao - Because ... <insert reason here when recalled>
 # @@@@ @@@@ @@@@ @@@@ @@@@
 
 
 class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
-    def __init__(self, clock, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+    def __init__(self, clock, logging, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
         # if not callable(session_maker):
         # raise TypeError("session_maker must be callable")
+        self.clock = clock
+        self.logging_dao = logging
         self.session_maker = session_maker  # Store the session maker instead of db
         self.batch_size = batch_size
         self.flush_interval = flush_interval
         self.queue = Queue()
         self.processing = False
-        self.clock = clock
         self.logger = ConsoleLogger()
 
     async def create_if_new_else_update(self, program_session: ProgramSessionData):
@@ -50,6 +51,9 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.program_name == target_program_name,
             func.date(DailyProgramSummary.gathering_date) == today
         )
+
+        self.logging_dao.create(target_program_name,
+                                usage_duration_in_hours, today)
 
         async with self.session_maker() as db_session:
             result = await db_session.execute(query)
