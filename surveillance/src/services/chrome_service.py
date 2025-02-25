@@ -94,6 +94,8 @@ class ChromeService:
         self.clock = clock
         self.arbiter = arbiter
         self.dao = dao
+        self.last_entry = None
+        self.elapsed_alt_tab = None
         # self.summary_dao = summary_dao
 
         self.tab_queue = TabQueue(self.log_tab_event)
@@ -110,7 +112,7 @@ class ChromeService:
 
     # TODO: Log a bunch of real chrome tab submissions, use them in a test
 
-    async def log_tab_event(self, url_deliverable: TabChangeEvent):
+    def log_tab_event(self, url_deliverable: TabChangeEvent):
         """Occurs whenever the user tabs through Chrome tabs.
 
         A tab comes in and becomes the last entry. Call this the Foo tab.
@@ -121,6 +123,7 @@ class ChromeService:
         Then, before Bar replaces Foo, Foo has its duration added. Foo is then logged. Cycle repeats.
         """
         # TODO: Write tests for this function
+
         initialized: ChromeSessionData = ChromeSessionData()
         initialized.domain = url_deliverable.url
         initialized.detail = url_deliverable.tabTitle
@@ -142,19 +145,14 @@ class ChromeService:
             # ### Ensure both datetimes are timezone-naive
             now_utc = self.clock.now()
             # Must be utc already since it is set up there
-            start_time_naive = self.last_entry.start_time
+            start_time = self.last_entry.start_time
 
-            if self.elapsed_alt_tab:
-                duration_of_alt_tab = self.elapsed_alt_tab
-                self.elapsed_alt_tab = None
-
-            duration = now_utc - start_time_naive - duration_of_alt_tab
+            # duration_of_alt_tab   # used to be a thing
+            duration = now_utc - start_time
             concluding_session.duration = duration
             concluding_session.end_time = now_utc
-
         self.last_entry = initialized
-
-        await self.write_completed_session_to_chrome_dao(concluding_session)
+        self.write_completed_session_to_chrome_dao(concluding_session)
 
     def write_completed_session_to_chrome_dao(self, session):
         dao_task = self.loop.create_task(self.dao.create(session))
