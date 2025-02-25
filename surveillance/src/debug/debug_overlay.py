@@ -19,6 +19,7 @@ class Overlay:
             'Discord': '#7289DA',   # Discord Blue
             'Spotify': '#1DB954',   # Spotify Green
         }
+        self.default_color = 'lime'
 
         self.update_queue = Queue()
 
@@ -71,20 +72,19 @@ class Overlay:
         for key, color in self.color_map.items():
             if key.lower() in title:
                 return color
-        return 'lime'  # Default color
+        return self.default_color  # Default color
 
     def format_title(self, title):
         """Format the window title for display"""
-        pattern = r'^([^\s@]+@[^\s@:]+):'
-        match = re.match(pattern, title)
+        linux_cli_pattern = r'^([^\s@]+@[^\s@:]+):'
+        match = re.match(linux_cli_pattern, title)
         if match:
-            return match.group(1) if match else None
+            return match.group(1)
 
         if "Google Chrome" in title:
             parts = title.split(' - ')
-            if len(parts) > 1:
-                site = parts[-2]  # Usually the site name is second-to-last
-                return f"Chrome | {site}"
+            site = parts[-2]  # Usually the site name is second-to-last
+            return f"Chrome | {site}"
         elif "Visual Studio Code" in title:
             return "VSCode"
         elif "Terminal" in title:
@@ -111,7 +111,7 @@ class Overlay:
             self.window,
             text="Initializing...",  # Add initial text
             font=('Arial', 24, 'bold'),
-            fg='lime',
+            fg=self.default_color,
             bg='black',
             padx=10,
             pady=5

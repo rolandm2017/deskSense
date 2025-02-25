@@ -7,6 +7,7 @@ from ..object.classes import ChromeSessionData, ProgramSessionData
 from ..db.dao.chrome_summary_dao import ChromeSummaryDao
 from ..db.dao.program_summary_dao import ProgramSummaryDao
 
+from .activity_state_machine import ActivityStateMachine
 from ..object.arbiter_classes import ChromeInternalState, ApplicationInternalState, InternalState
 
 
@@ -15,14 +16,8 @@ class RecordKeeperCore:
         pass  # A name I might use
 
 
-class OverallState:
-    def __init__(self):
-        self.program_state = None
-        self.chrome_state = None
-
-
 class ActivityArbiter:
-    def __init__(self, overlay, clock, chrome_summary_dao: ChromeSummaryDao = None, program_summary_dao: ProgramSummaryDao = None):
+    def __init__(self, overlay, clock, chrome_summary_dao: ChromeSummaryDao, program_summary_dao: ProgramSummaryDao):
         """
         This class exists to prevent the Chrome Service from doing ANYTHING but reporting which tab is active.
 
@@ -37,13 +32,8 @@ class ActivityArbiter:
         """
         # print("ActivityArbiter init starting")
 
-        self.current_program: Optional[ProgramSessionData] = None
-        self.tab_state: Optional[ChromeSessionData] = None
+        self.state_machine = ActivityStateMachine(clock)
         self.system_clock = clock
-
-        self.current_state = None
-        self.program_state = None  # Holds a program
-        self.chrome_state = None  # Holds a tab
 
         self.ui_update_listener = None
         self.program_summary_listener = None
@@ -79,20 +69,20 @@ class ActivityArbiter:
     async def set_program_state(self, event: ProgramSessionData):
         await self._transition_state(event)
 
-    def update_overlay_display(self, updated_state: InternalState):
+    # def update_overlay_display(self, updated_state: InternalState):
 
-        if isinstance(updated_state, ApplicationInternalState):
-            display_text = updated_state.session.window_title
-            # if display_text == "Alt-tab window":
-            #     print("[LOG]: ", display_text)
-            # else:
-            #     print("[log]", display_text)
-            self.overlay.change_display_text(
-                display_text, "lime")  # or whatever color
-        else:
-            # display_text = f"Chrome | {updated_state.session.domain}"
-            display_text = f"{updated_state.session.domain}"
-            self.overlay.change_display_text(display_text, "#4285F4")
+    #     if isinstance(updated_state, ApplicationInternalState):
+    #         display_text = updated_state.session.window_title
+    #         # if display_text == "Alt-tab window":
+    #         #     print("[LOG]: ", display_text)
+    #         # else:
+    #         #     print("[log]", display_text)
+    #         self.overlay.change_display_text(
+    #             display_text, "lime")  # or whatever color
+    #     else:
+    #         # display_text = f"Chrome | {updated_state.session.domain}"
+    #         display_text = f"{updated_state.session.domain}"
+    #         self.overlay.change_display_text(display_text, "#4285F4")
 
     # TODO: Separate handling of program state and tab state.
 
@@ -110,7 +100,7 @@ class ActivityArbiter:
         When a program is opened, start a session for the program. And vice versa when it closes.
         """
         now = self.system_clock.now()
-        print("\n" + "✦★✦" * 6 + " DEBUG " + "✦★✦" * 6 + "\n")
+        # print("\n" + "✦★✦" * 6 + " DEBUG " + "✦★✦" * 6 + "\n")
 
         if isinstance(new_session, ProgramSessionData):
             print("[Arb] ", new_session.window_title)
@@ -163,7 +153,7 @@ class ActivityArbiter:
         else:
             if isinstance(new_session, ProgramSessionData):
                 updated_state = ApplicationInternalState(
-                    new_session.window_title, False, None, new_session)
+                    new_session.window_title, False,  new_session)
             else:
                 updated_state = ChromeInternalState(
                     active_application="Chrome",
