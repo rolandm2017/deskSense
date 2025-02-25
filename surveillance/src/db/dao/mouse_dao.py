@@ -31,7 +31,7 @@ class MouseDao(BaseQueueingDao):
     async def create_from_window(self, window: MouseMoveWindow):
         # Create dict first, to avoid MouseMoveWindow "infesting" a MouseMove object.
         # See SHA 52d3c13c3150c5859243b909d47d609f5b2b8600 to experience the issue.
-        self.logger.log_green("[LOG] Mouse move")
+        # self.logger.log_green("[LOG] Mouse move")
         mouse_move = MouseMove(
             start_time=window.start_time, end_time=window.end_time)
         await self.queue_item(mouse_move, MouseMove)
@@ -49,9 +49,7 @@ class MouseDao(BaseQueueingDao):
         return new_mouse_move
 
     async def read_all(self):
-        """
-        Read MouseMove entries.
-        """
+        """Read MouseMove entries."""
         async with self.session_maker() as session:
             result = await session.execute(select(MouseMove))
             # return await result.scalars().all()  # TODO: return Dtos

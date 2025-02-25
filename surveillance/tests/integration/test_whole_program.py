@@ -78,8 +78,6 @@ async def test_timeline_contains_no_duplicates():
         ids = [row["id"] for row in keyboard_rows]
         id_counts = Counter(ids)
 
-        for i in range(0, 20):
-            print(keyboard_rows[i])
         content = [row["content"] for row in keyboard_rows]
         content_counts = Counter(content)
 

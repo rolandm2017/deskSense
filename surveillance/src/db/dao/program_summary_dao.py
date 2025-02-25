@@ -36,7 +36,12 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         self.logger = ConsoleLogger()
 
     async def create_if_new_else_update(self, program_session: ProgramSessionData):
-        """This method doesn't use queuing since it needs to check the DB state"""
+        """
+        This method doesn't use queuing since it needs to check the DB state.
+
+        Note that this method ONLY creates gathering dates that are *today*.
+
+        """
         target_program_name = program_session.window_title
         # print("target program name: ", target_program_name)
         # ### Calculate time difference
@@ -46,7 +51,8 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         # FIXME: maybe the program_session is hanging open while I have the computer sleeping? or something
 
         # ### Check if entry exists for today
-        today = self.clock.now().date()
+        current_time = self.clock.now()
+        today = current_time.date()
         query = select(DailyProgramSummary).where(
             DailyProgramSummary.program_name == target_program_name,
             func.date(DailyProgramSummary.gathering_date) == today
@@ -64,7 +70,6 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             if existing_entry:
                 # if existing_entry is not None:  # Changed from if existing_entry:
                 existing_entry.hours_spent += usage_duration_in_hours
-                current_time = self.clock.now()
                 if program_session.window_title == "Alt-tab window":
                     # print(program_session.window_title, "60ru")
                     write_to_debug_log(target_program_name, usage_duration_in_hours,

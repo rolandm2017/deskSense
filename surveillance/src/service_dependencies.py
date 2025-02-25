@@ -43,12 +43,12 @@ async def get_timeline_dao() -> TimelineEntryDao:
 
 
 async def get_program_summary_dao() -> ProgramSummaryDao:
-    program_logging_dao = ProgramLoggingDao()
+    program_logging_dao = ProgramLoggingDao(clock, async_session_maker)
     return ProgramSummaryDao(clock, program_logging_dao, async_session_maker)
 
 
 async def get_chrome_summary_dao() -> ChromeSummaryDao:
-    chrome_logging_dao = ChromeLoggingDao()
+    chrome_logging_dao = ChromeLoggingDao(clock, async_session_maker)
     return ChromeSummaryDao(clock, chrome_logging_dao, async_session_maker)
 
 

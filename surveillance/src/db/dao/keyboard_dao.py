@@ -26,7 +26,7 @@ class KeyboardDao(BaseQueueingDao):
 
     async def create(self, session: KeyboardAggregate):
         # FIXME: after 1 sec of no typing, session should "just conclude"
-        self.logger.log_green("[LOG] Keyboard session")
+        # self.logger.log_green("[LOG] Keyboard session")
         # event time should be just month :: date :: HH:MM:SS
         new_typing_session_entry = TypingSession(
             start_time=session.session_start_time, end_time=session.session_end_time)

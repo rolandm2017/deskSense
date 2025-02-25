@@ -32,7 +32,7 @@ class ProgramTrackerCore:
             - Detect when user switches programs (alt-tab events)
 
         INCORRECT USAGE - DO NOT:
-            - Track keyboard state
+            - Track keyboard state (outside of the current session)
             - Monitor mouse position/clicks
             - Read browser tab contents
             - Add any other tracking functionality outside of, "What is the current program?"

@@ -7,6 +7,7 @@ import re
 class Overlay:
     # FIXME: If it is alt tab window, color it
     def __init__(self):
+        self.debug = False
         # print("Overlay init starting")
         # Color mapping for different applications
         self.color_map = {
@@ -22,9 +23,10 @@ class Overlay:
         self.update_queue = Queue()
 
         # Create and start the GUI thread
-        self.gui_thread = threading.Thread(target=self._run_gui)
-        self.gui_thread.daemon = True  # Thread will close when main program exits
-        self.gui_thread.start()
+        if self.debug:
+            self.gui_thread = threading.Thread(target=self._run_gui)
+            self.gui_thread.daemon = True  # Thread will close when main program exits
+            self.gui_thread.start()
 
         # print("Overlay init complete")
 
