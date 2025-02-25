@@ -7,8 +7,8 @@ from typing import TypedDict, Optional
 class ChromeSessionData:
     domain: str
     detail: str
-    start_time: datetime  # UTC timestamps
-    end_time: datetime  # UTC timestamps
+    start_time: Optional[datetime]  # UTC timestamps
+    end_time: Optional[datetime]  # UTC timestamps
     duration: Optional[timedelta]
     productive: bool
 
@@ -17,7 +17,7 @@ class ChromeSessionData:
         self.detail = ""
         self.start_time = None
         self.duration = None
-        self.productive = None
+        self.productive = False
 
     def __str__(self):
         return f"ChromeSessionData(domain='{self.domain}', detail='{self.detail}', \n\tstart_time={self.start_time}, \n\tend_time={self.end_time}, duration={self.duration}, productive={self.productive})"
@@ -26,9 +26,9 @@ class ChromeSessionData:
 class ProgramSessionData:
     window_title: str
     detail: str
-    start_time: datetime  # UTC timestamps
-    end_time: datetime  # UTC timestamps
-    duration: timedelta
+    start_time: Optional[datetime]  # UTC timestamps
+    end_time: Optional[datetime]  # UTC timestamps
+    duration: Optional[timedelta]
     productive: bool
 
     def __init__(self):
@@ -37,7 +37,7 @@ class ProgramSessionData:
         self.start_time = None
         self.end_time = None
         self.duration = None
-        self.productive = None
+        self.productive = False
 
     def __str__(self):
         return f"ProgramSessionData(window_title='{self.window_title}', detail='{self.detail}', \n\tstart_time={self.start_time}, \n\tend_time={self.end_time}, duration={self.duration}, productive={self.productive})"
@@ -82,5 +82,5 @@ class MouseMoveWindow:
 
     def __str__(self):
         if self.source:
-            return f"Mouse movement from {self.start_time} to {self.end_time} - {self.source} - {str(self.count)}"
+            return f"Mouse movement from {self.start_time} to {self.end_time} - {self.source}"
         return f"Mouse movement from {self.start_time} to {self.end_time} : nameless"

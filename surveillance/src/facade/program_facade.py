@@ -7,7 +7,7 @@ class ProgramApiFacadeCore:
     def __init__(self, os):
         self.console_logger = ConsoleLogger()
         self.is_windows = os.is_windows
-        self.is_ubuntu: os.is_ubuntu
+        self.is_ubuntu = os.is_ubuntu
         self.Xlib = None
         self.display = None
         self.X = None
@@ -16,6 +16,8 @@ class ProgramApiFacadeCore:
             import win32process
             self.win32gui = win32gui
             self.win32process = win32process
+            self.display = None
+            self.X = None
         else:
             # from Xlib import X, display
             from Xlib import display, X
@@ -39,10 +41,15 @@ class ProgramApiFacadeCore:
         }
 
     def listen_for_window_changes(self):
+        if self.X is None or self.display is None:
+            raise AttributeError(
+                "Crucial component was not initialized")
+
         d = self.display.Display()
         root = d.screen().root
 
         # Listen for focus change events
+
         root.change_attributes(
             event_mask=self.X.FocusChangeMask | self.X.PropertyChangeMask)
 
@@ -69,6 +76,10 @@ class ProgramApiFacadeCore:
 
     def _read_active_window_name_ubuntu(self):
         try:
+            if self.X is None or self.display is None:
+                raise AttributeError(
+                    "Crucial component was not initialized")
+
             # Connect to the X server
             d = self.display.Display()
             root = d.screen().root

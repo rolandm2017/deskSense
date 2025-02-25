@@ -5,11 +5,12 @@ class UINotifier:
     def __init__(self, overlay):
         """
         Exists to keep the Overlay separate from the ActivityArbiter.
+
+        It only handles UI updates for the debug overlay.
         """
         self.overlay = overlay
 
-    async def on_state_changed(self, previous_state, new_state):
-        # Only handle UI updates
+    async def on_state_changed(self, new_state):
         if isinstance(new_state, ApplicationInternalState):
             display_text = new_state.session.window_title
             self.overlay.change_display_text(display_text, "lime")
