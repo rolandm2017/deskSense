@@ -71,6 +71,7 @@ class ChromeTab(Base):
     start_time = Column(DateTime(timezone=True))
     end_time = Column(DateTime(timezone=True))
     productive = Column(Boolean)
+    # TODO: Remove "tab_change_time"
     tab_change_time = Column(DateTime(timezone=True))
     created_at = Column(DateTime, default=datetime.now)
 

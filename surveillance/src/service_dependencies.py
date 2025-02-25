@@ -146,20 +146,14 @@ async def get_chrome_service(dao: ChromeDao = Depends(get_chrome_dao),
     global _chrome_service_instance  # Singleton because it must preserve internal state
     if _chrome_service_instance is None:
         clock = SystemClock()
-        _chrome_service_instance = ChromeService(
-            arbiter,
-            dao=ChromeDao(clock, async_session_maker)
+        _chrome_service_instance = ChromeService(clock,
+                                                 arbiter,
+                                                 dao=ChromeDao(
+                                                     clock, async_session_maker)
 
-        )
+                                                 )
     return _chrome_service_instance
 
-
-# async def get_chrome_service(
-#     dao: ChromeDao = Depends(get_chrome_dao),
-#     summary_dao: ChromeSummaryDao = Depends(get_chrome_summary_dao)
-# ) -> Callable:
-#     from .services import ChromeService  # Lazy import to avoid circular dependency
-#     return ChromeService(dao, summary_dao)
 
 async def get_video_service(video_dao: VideoDao = Depends(get_video_dao), frame_dao: FrameDao = Depends(get_frame_dao)):
     from .services.services import VideoService

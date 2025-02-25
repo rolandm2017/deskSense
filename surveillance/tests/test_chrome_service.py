@@ -57,7 +57,7 @@ def chrome_service_fixture():
     overlay = Overlay()
     clock = SystemClock()
     arbiter = ActivityArbiter(overlay, clock)
-    chrome_service = ChromeService(arbiter, mock_dao)
+    chrome_service = ChromeService(clock, arbiter, mock_dao)
 
     # Return the initialized ChromeService instance
     return chrome_service

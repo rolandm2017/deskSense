@@ -1,11 +1,14 @@
+import uvicorn
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop
 from gi.repository import GLib
+import os
 import signal
 import sys
 import atexit
 import threading
 import asyncio
+import psutil
 from datetime import datetime
 from typing import Callable, Awaitable
 import concurrent.futures
@@ -41,14 +44,25 @@ class SystemPowerTracker:
             print(f"Failed to log event: {e}")
 
     def _run_shutdown_in_thread(self):
-        """Run shutdown handler in a separate thread"""
-        # Create a new event loop for this thread
+        """Run shutdown handler with timeout and task cancellation"""
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
+        async def shutdown():
+            tasks = [t for t in asyncio.all_tasks(
+            ) if t is not asyncio.current_task()]
+            if tasks:
+                try:
+                    await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=0.3)
+                except asyncio.TimeoutError:
+                    for task in tasks:
+                        task.cancel()
+                    await asyncio.gather(*tasks, return_exceptions=True)
+
+            loop.stop()
+
         try:
-            # Run the shutdown handler
-            loop.run_until_complete(self.on_shutdown())
+            loop.run_until_complete(shutdown())
         except Exception as e:
             print(f"Error in shutdown handler: {e}")
         finally:
@@ -77,14 +91,20 @@ class SystemPowerTracker:
         cleanup_thread.start()
         cleanup_thread.join(timeout=2.0)  # Wait up to 2 seconds for cleanup
 
-        if self.main_loop:
+        # Gracefully shut down Uvicorn subprocesses
+        current_pid = os.getpid()
+        for child in psutil.Process(current_pid).children(recursive=True):
+            print(f"Shutting down Uvicorn process: {child.pid}")
+            child.terminate()  # Sends SIGTERM to allow graceful shutdown
             try:
-                self.main_loop.quit()
-            except:
-                pass
+                child.wait(timeout=5)  # Wait for the process to exit
+            except psutil.TimeoutExpired:
+                print(
+                    f"Process {child.pid} did not exit in time. Forcing shutdown.")
+                child.kill()  # Force kill if it doesn't exit in time
 
-        # Now we can exit
-        sys.exit(0)
+        print("Shutdown complete.")
+        os._exit(0)  # Ensure the main process exits cleanly
 
     def _setup_sleep_detection(self):
         """Initialize and start the sleep detection loop in a separate thread"""
@@ -114,6 +134,27 @@ class SystemPowerTracker:
         else:
             print(f"System waking up at {datetime.now()}")
             self._log_event("wake")
+
+    # async def system_shutdown_handler(signal_received, frame):
+    #     """Handles shutdown by waiting for tasks briefly, then canceling remaining ones."""
+    #     loop = asyncio.get_running_loop()
+
+    #     # Get all running tasks except the current one
+    #     tasks = [task for task in asyncio.all_tasks() if task is not asyncio.current_task()]
+
+    #     if tasks:
+    #         try:
+    #             # Give tasks 300ms to finish naturally
+    #             await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=0.3)
+    #         except asyncio.TimeoutError:
+    #             # If timeout, cancel remaining tasks
+    #             for task in tasks:
+    #                 task.cancel()
+    #             await asyncio.gather(*tasks, return_exceptions=True)
+
+    #     # Stop the loop and exit
+    #     loop.stop()
+    #     sys.exit(0)
 
     def stop(self):
         """Clean shutdown of the power tracker"""
