@@ -20,7 +20,7 @@ class DashboardService:
         self.user_clock = UserFacingClock()
         self.logger = ConsoleLogger()
 
-    async def get_weekly_productivity_overview(self, starting_sunday):
+    async def get_weekly_productivity_overview(self, starting_sunday, chrome_summary_dao, program_summary_dao):
         if starting_sunday.weekday() != 6:  # In Python, Sunday is 6
             raise ValueError("start_date must be a Sunday")
 
@@ -35,8 +35,8 @@ class DashboardService:
             current_day = starting_sunday + timedelta(days=i)
             date_as_datetime = datetime.combine(
                 current_day, datetime.min.time())
-            daily_chrome_summaries: List[DailyDomainSummary] = await self.chrome_summary_dao.read_day(date_as_datetime)
-            daily_program_summaries: List[DailyProgramSummary] = await self.program_summary_dao.read_day(date_as_datetime)
+            daily_chrome_summaries: List[DailyDomainSummary] = await chrome_summary_dao.read_day(date_as_datetime)
+            daily_program_summaries: List[DailyProgramSummary] = await program_summary_dao.read_day(date_as_datetime)
             # FIXME: If the program is Chrome, exclude from totals, as the Chrome summaries will handle it
             productivity = 0
             leisure = 0
