@@ -8,6 +8,7 @@ class ChromeSessionData:
     domain: str
     detail: str
     start_time: datetime
+    end_time: datetime
     duration: Optional[timedelta]
     productive: bool
 

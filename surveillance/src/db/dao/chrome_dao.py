@@ -24,9 +24,10 @@ class ChromeDao(BaseQueueingDao):
         truncated_for_db_col = session.detail[:varchar_limit] if len(
             session.detail) > varchar_limit else session.detail
 
-        # FIXME: start_time, end_time, tab_change_time, all null
-        assert session.start_time is not None
-        assert session.end_time is not None
+        assert isinstance(session.start_time,
+                          datetime), "Start time wasn't set in a Chrome session"
+        assert isinstance(session.end_time,
+                          datetime), "End time wasn't set in a Chrome session"
         chrome_deliverable = ChromeTab(
             url=session.domain,
             tab_title=truncated_for_db_col,

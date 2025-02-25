@@ -87,12 +87,13 @@ class TabQueue:
 
 
 class ChromeService:
-    def __init__(self, arbiter: ActivityArbiter, dao: ChromeDao = Depends()):
+    def __init__(self, clock, arbiter: ActivityArbiter, dao: ChromeDao = Depends()):
         print("╠════════╣")
         print("║ ****** ║ Starting Chrome Service")
         print("╚════════╝")
-        self.dao = dao
+        self.clock = clock
         self.arbiter = arbiter
+        self.dao = dao
         # self.summary_dao = summary_dao
 
         self.tab_queue = TabQueue(self.log_tab_event)
@@ -109,7 +110,7 @@ class ChromeService:
 
     # TODO: Log a bunch of real chrome tab submissions, use them in a test
 
-    def log_tab_event(self, url_deliverable: TabChangeEvent):
+    async def log_tab_event(self, url_deliverable: TabChangeEvent):
         """Occurs whenever the user tabs through Chrome tabs.
 
         A tab comes in and becomes the last entry. Call this the Foo tab.
@@ -124,7 +125,6 @@ class ChromeService:
         initialized.domain = url_deliverable.url
         initialized.detail = url_deliverable.tabTitle
         initialized.productive = url_deliverable.url in productive_sites
-        # initialized.start_time = url_deliverable.startTime.replace(tzinfo=None)
 
         # Make sure the start time has timezone info
         # ** Whatever the code says, the intent was to
@@ -132,24 +132,31 @@ class ChromeService:
         # ** that the user sent a timestamp from EST
         # ** and the server received it to process it in UTZC
         # ** has absolutely no bearing on the calculated duration
-        # if url_deliverable.startTime.tzinfo is None:
-        #     initialized.start_time = datetime.now().astimezone(timezone.utc)
-        # else:
         initialized.start_time = url_deliverable.startTime.astimezone(
             timezone.utc)
 
-        # TODO: Keep the transition time on hand so i can add .end_time, which, should exist.
-        # Maybe when the new tab comes in, tell the DAO, "hey conclude that last tab's session"
-        # Until then, ChromeDAO is reporting end_time as Null
-
-        print(initialized.domain, "initialized going into arbiter 122ru")
-        print(initialized.start_time, '134ru')
-
         self.handle_session_ready_for_arbiter(initialized)
 
-    def handle_session_ready_for_arbiter(self, session):
-        self.event_emitter.emit('tab_change', session)
+        if self.last_entry:
+            concluding_session = self.last_entry
+            # ### Ensure both datetimes are timezone-naive
+            now_utc = self.clock.now()
+            # Must be utc already since it is set up there
+            start_time_naive = self.last_entry.start_time
 
+            if self.elapsed_alt_tab:
+                duration_of_alt_tab = self.elapsed_alt_tab
+                self.elapsed_alt_tab = None
+
+            duration = now_utc - start_time_naive - duration_of_alt_tab
+            concluding_session.duration = duration
+            concluding_session.end_time = now_utc
+
+        self.last_entry = initialized
+
+        await self.write_completed_session_to_chrome_dao(concluding_session)
+
+    def write_completed_session_to_chrome_dao(self, session):
         dao_task = self.loop.create_task(self.dao.create(session))
 
         # Add error callbacks to catch any task failures
@@ -160,6 +167,9 @@ class ChromeService:
                 print(f"Task failed with error: {e}")
 
         dao_task.add_done_callback(on_task_done)
+
+    def handle_session_ready_for_arbiter(self, session):
+        self.event_emitter.emit('tab_change', session)
 
     # FIXME:
     # FIXME: When Chrome is active, recording time should take place.
