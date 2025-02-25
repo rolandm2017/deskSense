@@ -141,37 +141,73 @@ class TestTimelineEntryDao:
     async def test_read_day_mice(self, dao):
         # Arrange
         test_day = datetime.now()
-        mock_read_day = AsyncMock()  # Create AsyncMock explicitly
         mock_entries = [Mock(spec=TimelineEntryObj),
                         Mock(spec=TimelineEntryObj)]
-        mock_read_day.return_value = mock_entries
 
-        with patch.object(TimelineEntryDao, 'read_day', mock_read_day):
+        day_result = ["Precomputed day result"]
+
+        with patch.object(dao, 'read_day') as mocked_read_day, \
+                patch.object(dao, 'read_precomputed_entry_for_day') as mocked_precomputed, \
+                patch.object(dao, 'create_precomputed_day') as mocked_create_precomputed:
+
+            # Set up the return values for the mocks
+            # Note: For read_day, we're setting up the expected return chain
+            mocked_read_day.return_value = mock_entries
+            # Non-empty list to trigger that path
+            mocked_precomputed.return_value = []
+            mocked_create_precomputed.return_value = day_result
+
             # Act
             result = await dao.read_day_mice(test_day)
 
             # Assert
-            assert result == mock_entries
-            mock_read_day.assert_called_once_with(
+            # The patched methods should have been called
+            mocked_read_day.assert_called_once()
+
+            mocked_precomputed.assert_called_once()
+            mocked_create_precomputed.assert_called_once()
+
+            mocked_read_day.assert_called_once_with(
                 test_day, ChartEventType.MOUSE)
+            # Check the result matches what we expect
+            # Since precomputed returns non-empty list
+            assert isinstance(result, list)
+            assert result == day_result
+
+    # FIXME: need more tests for the branches of read_day_peripheral
 
     @pytest.mark.asyncio
     async def test_read_day_keyboard(self, dao):
         # Arrange
         test_day = datetime.now()
-        mock_read_day = AsyncMock()  # Create AsyncMock explicitly
         mock_entries = [Mock(spec=TimelineEntryObj),
                         Mock(spec=TimelineEntryObj)]
-        mock_read_day.return_value = mock_entries
 
-        with patch.object(TimelineEntryDao, 'read_day', mock_read_day):
+        day_result = ["A valid precomputed day of Keyboard Events"]
+
+        with patch.object(dao, 'read_day') as mocked_read_day, \
+                patch.object(dao, 'read_precomputed_entry_for_day') as mocked_precomputed, \
+                patch.object(dao, 'create_precomputed_day') as mocked_create_precomputed:
+
+            # Set up the return values for the mocks
+            mocked_read_day.return_value = mock_entries
+            # Empty list to trigger the else path (assuming similar logic to read_day_mice)
+            mocked_precomputed.return_value = []
+            mocked_create_precomputed.return_value = day_result
+
             # Act
             result = await dao.read_day_keyboard(test_day)
 
             # Assert
-            assert result == mock_entries
-            mock_read_day.assert_called_once_with(
+            # The patched methods should have been called
+            mocked_read_day.assert_called_once_with(
                 test_day, ChartEventType.KEYBOARD)
+            mocked_precomputed.assert_called_once()
+            mocked_create_precomputed.assert_called_once()
+
+            # Check the result matches what we expect
+            assert isinstance(result, list)
+            assert result == day_result
 
     @pytest.mark.asyncio
     async def test_read_all(self, dao, mock_session):

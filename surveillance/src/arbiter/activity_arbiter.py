@@ -189,6 +189,7 @@ class ActivityArbiter:
         await self._transition_state(event)
 
     def update_overlay_display(self, updated_state: InternalState):
+
         if isinstance(updated_state, ApplicationInternalState):
             display_text = updated_state.session.window_title
             # if display_text == "Alt-tab window":

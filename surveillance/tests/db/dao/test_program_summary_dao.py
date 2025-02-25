@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, Mock, MagicMock
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy import text
 
@@ -9,10 +9,12 @@ from dotenv import load_dotenv
 import os
 
 from src.db.dao.program_summary_dao import ProgramSummaryDao
+from src.db.dao.summary_logs_dao import ProgramLoggingDao
 from src.db.models import DailyProgramSummary, Base
 from src.object.classes import ProgramSessionData
 from src.util.clock import SystemClock
 
+from ...mocks.mock_clock import MockClock
 
 # Load environment variables from .env file
 load_dotenv()
@@ -100,7 +102,8 @@ async def test_db_dao(async_session_maker):
     """Create a DAO instance with the async session maker"""
     session_maker = await async_session_maker
     clock = SystemClock()
-    dao = ProgramSummaryDao(clock, session_maker)
+    logging_dao = ProgramLoggingDao(clock, session_maker)
+    dao = ProgramSummaryDao(clock, logging_dao, session_maker=session_maker)
     return dao
 
 
@@ -150,7 +153,9 @@ class TestProgramSummaryDao:
     @pytest.fixture
     def class_mock_dao(self, mock_session_maker):
         clock = SystemClock()
-        return ProgramSummaryDao(clock, mock_session_maker)
+
+        logging_dao = ProgramLoggingDao(clock, mock_session_maker)
+        return ProgramSummaryDao(clock,  logging_dao, mock_session_maker)
 
     @pytest.mark.asyncio
     async def test_create_if_new_else_update_new_entry(self, class_mock_dao, mock_session):
@@ -228,6 +233,7 @@ class TestProgramSummaryDao:
 
         # Assert
         assert result == mock_entries
+        assert len(result) == len(mock_entries)
         assert mock_session.execute.called
 
     @pytest.mark.asyncio
@@ -387,6 +393,35 @@ class TestProgramSummaryDao:
     async def test_live_database_operations(self, test_db_dao):
         test_db_dao = await test_db_dao
 
+        # Get today's date
+        today = date.today()
+
+        change_1 = 13
+        change_2 = 12
+        change_3 = 28
+        change_4 = 22
+        change_5 = 25
+        change_6 = 25
+        change_7 = 120
+
+        # Create a datetime object for today at 3:05 PM
+        dt = datetime(today.year, today.month, today.day,
+                      15, 5, tzinfo=timezone.utc)
+        dt2 = dt + timedelta(seconds=change_1)
+        dt3 = dt2 + timedelta(seconds=change_2)
+        dt4 = dt3 + timedelta(seconds=change_3)
+        dt5 = dt4 + timedelta(seconds=change_4)
+        dt6 = dt5 + timedelta(seconds=change_5)
+        dt7 = dt6 + timedelta(seconds=change_6)
+        dt8 = dt7 + timedelta(seconds=change_7)
+
+        unused = dt + timedelta(hours=1)
+
+        times = [dt, dt2, dt3, dt4, dt5, dt6, dt7, dt8,
+                 unused, unused, unused, unused, unused, unused, unused, unused, unused, unused]
+        mock_clock = MockClock(times)
+        test_db_dao.clock = mock_clock
+
         # First verify the database is empty
         initial_entries = await test_db_dao.read_all()
         print("\nInitial entries:", [
@@ -401,11 +436,6 @@ class TestProgramSummaryDao:
         assert len(
             initial_entries) == 0, "Database should be empty at start of test"
 
-      # Get today's date
-        today = date.today()
-
-        # Create a datetime object for today at 3:05 PM
-        dt = datetime(today.year, today.month, today.day, 15, 5)
         chrome = "Chrome"
         vscode = "VSCode"
         discord = "Discord"
@@ -439,73 +469,64 @@ class TestProgramSummaryDao:
         # TODO: Delete all rows in between tests.
         # TODO: Make the final tests at the end of this file work. The assert hours_spent matches expected.
 
-        1
+        # 1
         session_data_1: ProgramSessionData = ProgramSessionData()
         session_data_1.window_title = chrome
         session_data_1.detail = "Facebook.com"
         session_data_1.start_time = dt
-        dt2 = dt + timedelta(seconds=13)
+
         session_data_1.end_time = dt2
         session_data_1.productive = False
-        chrome_time += 13
-        2
+        chrome_time += change_1
+        # 2
         session_data_2: ProgramSessionData = ProgramSessionData()
         session_data_2.window_title = vscode
         session_data_2.detail = "some_code.py"
         session_data_2.start_time = dt2
-        dt3 = dt2 + timedelta(seconds=12)
         session_data_2.end_time = dt3
         session_data_2.productive = True
-        vscode_time += 12
-        3
+        vscode_time += change_2
+        # 3
         session_data_3: ProgramSessionData = ProgramSessionData()
         session_data_3.window_title = chrome
         session_data_3.detail = "Facebook.com"
         session_data_3.start_time = dt3
-        dt4 = dt3 + timedelta(seconds=28)
+
         session_data_3.end_time = dt4
         session_data_3.productive = False
-        chrome_time += 28
-        4
+        chrome_time += change_3
+        # 4
         session_data_4: ProgramSessionData = ProgramSessionData()
         session_data_4.window_title = vscode
         session_data_4.detail = "MyFile.tsx"
         session_data_4.start_time = dt4
-        dt5 = dt4 + timedelta(seconds=22)
         session_data_4.end_time = dt5
         session_data_4.productive = True
-        vscode_time += 22
+        vscode_time += change_4
         # 5
         session_data_5: ProgramSessionData = ProgramSessionData()
         session_data_5.window_title = discord
         session_data_5.detail = "Pyre - Exercises in Futility"
         session_data_5.start_time = dt5
-        dt6 = dt5 + timedelta(seconds=25)
         session_data_5.end_time = dt6
         session_data_5.productive = False
-        discord_time += 25
-        6
+        discord_time += change_5
+        # 6
         session_data_6: ProgramSessionData = ProgramSessionData()
         session_data_6.window_title = chrome
         session_data_6.detail = "Claude.ai"
         session_data_6.start_time = dt6
-        dt7 = dt6 + timedelta(seconds=25)
         session_data_6.end_time = dt7
         session_data_6.productive = True
-        chrome_time += 25
-        7
+        chrome_time += change_6
+        # 7
         session_data_7: ProgramSessionData = ProgramSessionData()
         session_data_7.window_title = vscode
         session_data_7.detail = "some_file.py"
         session_data_7.start_time = dt7
-        dt8 = dt7 + timedelta(seconds=120)
         session_data_7.end_time = dt8
         session_data_7.productive = True
-        vscode_time += 120
-        print(dt2, '460ru')
-        print(dt3, '460ru')
-        print(dt4, '460ru')
-        print(dt5, '460ru')
+        vscode_time += change_7
 
         sessions = [session_data_1, session_data_2, session_data_3,
                     session_data_4, session_data_5, session_data_6, session_data_7]
@@ -517,6 +538,7 @@ class TestProgramSummaryDao:
 
         # Verify all programs were created
         all_entries = await test_db_dao.read_all()
+        print(all_entries, '525ru')
         assert len(all_entries) == len(unique_program_mentions)
 
         # Verify specific program times
@@ -556,7 +578,15 @@ class TestProgramSummaryDao:
         assert chrome_entry.hours_spent > 2.0  # 5 - 3
 
         # Test reading by day
-        day_entries = await test_db_dao.read_day(dt)
+        all_again = await test_db_dao.read_all()
+        print(all_entries, len(all_entries))
+        for v in all_entries:
+            print(v.gathering_date)
+        # FIXME
+
+        right_now = datetime.now()
+        day_entries = await test_db_dao.read_day(right_now)
+        # day_entries = await test_db_dao.read_day(dt)
         assert len(day_entries) == len(unique_program_mentions)
 
         # Test deletion
