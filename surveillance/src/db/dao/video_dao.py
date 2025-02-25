@@ -37,7 +37,6 @@ class VideoDao(BaseQueueingDao):
             result = await session.execute(select(Video))
             result = result.all()
 
-            # TODO: what should this return? at the moment I don't know when it will be used
             return result
 
     async def read_past_24h_events(self):

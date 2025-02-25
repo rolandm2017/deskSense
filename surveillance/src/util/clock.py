@@ -28,3 +28,14 @@ class UserFacingClock(ClockProtocol):
 
     def get_start_of_week(self, user_tz, date):
         pass
+
+    def get_previous_sunday(self, date=None):
+        """Get the most recent Sunday before the given date (or today)"""
+        target = date or self.now()
+        days_since_sunday = (target.weekday() + 1) % 7
+        return target - timedelta(days=days_since_sunday)
+
+    def get_day_start(self, date=None):
+        """Get midnight for the specified day"""
+        target = date or self.now()
+        return datetime.combine(target.date(), datetime.min.time())

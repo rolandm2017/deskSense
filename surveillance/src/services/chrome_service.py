@@ -108,8 +108,6 @@ class ChromeService:
 
         self.loop = asyncio.get_event_loop()
 
-        # TODO: Get active program. If progrma = chrome, record time. else, do not record.
-
     # TODO: Log a bunch of real chrome tab submissions, use them in a test
 
     def log_tab_event(self, url_deliverable: TabChangeEvent):

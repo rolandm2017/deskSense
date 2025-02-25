@@ -40,7 +40,7 @@ class ProgramDao(BaseQueueingDao):
 
         await self.queue_item(program_deliverable)
 
-    async def create_without_queue(self, session: ProgramSessionData):  # TODO: Remove
+    async def create_without_queue(self, session: ProgramSessionData):
         if isinstance(session, dict):
             print("creating program row", session['start_time'])
             new_program = Program(
@@ -72,7 +72,7 @@ class ProgramDao(BaseQueueingDao):
         """
         async with self.session_maker() as session:
             result = await session.execute(select(Program))
-            return result.scalars().all()  # TODO: return Dtos
+            return result.scalars().all()
 
     async def read_past_24h_events(self):
         """
@@ -84,7 +84,7 @@ class ProgramDao(BaseQueueingDao):
         ).order_by(Program.end_time.desc())
         async with self.session_maker() as session:
             result = await session.execute(query)
-            return result.scalars().all()  # TODO: return Dtos
+            return result.scalars().all()
 
     async def delete(self, program_id: int):
         """Delete a Program entry by ID"""

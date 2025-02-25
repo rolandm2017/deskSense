@@ -1,5 +1,7 @@
 MAX_QUEUE_LENGTH = 40
 
+max_content_len = 120
+
 # Define productive applications
 productive_apps = ['Chrome', "Google Chrome", 'File Explorer',  # Chrome determined by window title
                    'Postman', 'Terminal', 'Visual Studio Code']

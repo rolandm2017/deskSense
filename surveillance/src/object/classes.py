@@ -7,8 +7,8 @@ from typing import TypedDict, Optional
 class ChromeSessionData:
     domain: str
     detail: str
-    start_time: datetime
-    end_time: datetime
+    start_time: datetime  # UTC timestamps
+    end_time: datetime  # UTC timestamps
     duration: Optional[timedelta]
     productive: bool
 
@@ -26,8 +26,8 @@ class ChromeSessionData:
 class ProgramSessionData:
     window_title: str
     detail: str
-    start_time: datetime
-    end_time: datetime
+    start_time: datetime  # UTC timestamps
+    end_time: datetime  # UTC timestamps
     duration: timedelta
     productive: bool
 

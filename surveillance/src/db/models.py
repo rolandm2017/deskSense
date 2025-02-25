@@ -6,6 +6,7 @@ from sqlalchemy.orm import mapped_column, relationship
 from datetime import datetime
 from .database import Base
 from ..object.enums import ChartEventType
+from ..config.definitions import max_content_len
 
 
 class TypingSession(Base):
@@ -28,9 +29,6 @@ class MouseMove(Base):
 
     def __repr__(self):
         return f"MouseMove(id={self.id}, start_time={self.start_time})"
-
-
-max_content_len = 120
 
 
 class Program(Base):

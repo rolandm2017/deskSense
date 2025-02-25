@@ -15,9 +15,6 @@ from ..util.strings import no_space_dash_space
 from ..object.classes import ProgramSessionData
 
 
-# TODO: Report mouse, keyboard, program, chrome tabs, every 15 sec, to the db.
-# TODO: report only closed loops of mouse, if unclosed, move to next cycle
-
 # TODO: report programs that aren't in the apps list.
 
 class ProgramTrackerCore:
