@@ -30,10 +30,6 @@ from .arbiter.activity_arbiter import ActivityArbiter
 # from .keyboard_tracker import KeyActivityTracker
 
 
-# TODO: Report mouse, keyboard, program, chrome tabs, every 10 sec, to the db.
-# TODO: report only closed loops of mouse, if unclosed, move to next cycle
-
-
 class SurveillanceManager:
     def __init__(self, session_maker: async_sessionmaker, chrome_service, arbiter, shutdown_signal=None):
         self.session_maker = session_maker

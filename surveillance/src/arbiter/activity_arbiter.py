@@ -61,9 +61,9 @@ class ActivityArbiter:
     def add_chrome_summary_listener(self, listener):
         self.chrome_summary_listener = listener
 
-    async def notify_display_update(self, state):
+    def notify_display_update(self, state):
         if self.ui_update_listener:
-            await self.ui_update_listener.on_state_display_update(state)
+            self.ui_update_listener.on_state_display_update(state)
 
     async def notify_program_summary(self, program_session):
         if self.program_summary_listener:
@@ -177,10 +177,6 @@ class ActivityArbiter:
         # Set new state
         self.current_state = updated_state
 
-# TODO:
-# TODO:
 # TODO: Test the state changes,
 # TODO: Test the arbiter
 # TODO: Test the overlay
-# TODO:
-# TODO:

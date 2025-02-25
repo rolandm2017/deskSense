@@ -41,7 +41,6 @@ from src.util.pydantic_factory import (
     DtoMapper
 )
 from src.surveillance_manager import SurveillanceManager
-from src.util.console_logger import ConsoleLogger
 
 from src.services.dashboard_service import DashboardService
 from src.services.chrome_service import ChromeService
@@ -55,6 +54,9 @@ from src.service_dependencies import (
     get_video_service
 )
 from src.object.return_types import DaySummary
+
+from src.util.console_logger import ConsoleLogger
+from src.util.debug_logger import write_temp_log
 
 # Rest of your server.py code...
 
@@ -86,7 +88,7 @@ async def lifespan(app: FastAPI):
     # Startup: Initialize application-wide resources
     await init_db()
 
-    # TODO: If you need to note when the computer starts up,
+    # If you need to note when the computer starts up,
     # consider that the server will likely auto-run on startup
     # when it gets past development and onto being a typical daily use
 
@@ -409,15 +411,6 @@ async def get_chrome_report(chrome_service: ChromeService = Depends(get_chrome_s
     logger.log_purple("[LOG] Get chrome tabs")
     reports = await chrome_service.read_last_24_hrs()
     return reports
-
-
-# TODO: Move this
-def write_temp_log(event: TabChangeEvent):
-    with open("events.csv", "a") as f:
-        out = f"{event.tabTitle.replace(",", "::")},{event.url},{
-            str(event.startTime)}"
-        f.write(out)
-        f.write("\n")
 
 
 @app.post("/chrome/tab", status_code=status.HTTP_204_NO_CONTENT)

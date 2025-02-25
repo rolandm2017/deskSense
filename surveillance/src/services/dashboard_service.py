@@ -28,7 +28,6 @@ class DashboardService:
 
         alt_tab_window = []
 
-        # TODO: If slow, precompute answer
         for i in range(7):
             significant_programs = {}  # New dictionary to track programs with >1hr usage
 
@@ -82,7 +81,6 @@ class DashboardService:
         return all_mouse_events, all_keyboard_events
 
     async def get_current_week_timeline(self):
-        # TODO: Logging
         today = self.user_clock.now()
         # +1 because weekday() counts from Monday=0
         days_since_sunday = today.weekday() + 1

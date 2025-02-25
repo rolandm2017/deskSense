@@ -1,4 +1,5 @@
 from ..object.classes import ProgramSessionData
+from ..object.pydantic_dto import TabChangeEvent
 
 
 def write_to_debug_log(name, hours_spent, time):
@@ -32,3 +33,12 @@ def write_to_large_usage_log(session: ProgramSessionData, hours_spent, time):
     print("Writing to large usage log: " + str(minutes_seconds))
     with open("large_usage_log_-_arbiter_ver.txt", "a") as f:
         f.write(f"{str(session)} - {minutes_seconds} - {time}\n")
+
+
+# TODO: Move this
+def write_temp_log(event: TabChangeEvent):
+    with open("events.csv", "a") as f:
+        out = f"{event.tabTitle.replace(",", "::")},{event.url},{
+            str(event.startTime)}"
+        f.write(out)
+        f.write("\n")
