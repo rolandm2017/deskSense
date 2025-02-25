@@ -14,6 +14,8 @@ class InternalState:
 
 class ApplicationInternalState(InternalState):
     def __init__(self, active_application, is_chrome, session):
+        # NOTE: is_chrome is needed to indicate when the application, well, is on Chrome!
+        # And therefore should check what the chrome state says about the current tab.
         super().__init__(active_application, is_chrome, session)
 
     # def compute_next_state(self, next_state: ProgramSessionData | ChromeSessionData):
