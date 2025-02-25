@@ -16,42 +16,60 @@ class ActivityStateMachine:
         Is a finite state machine
         """
         self.system_clock = system_clock
-        self.chrome_state = ChromeInternalState("", "", "", {})
         self.program_state = ApplicationInternalState("", "", {})
-        self.current_state: OverallState | None = None
-        self.prior_state: OverallState | None = None
-        self.transition_from_program = TransitionFromProgramMachine(None)
-        self.transition_from_chrome = TransitionFromChromeMachine(None)
+        self.chrome_state = ChromeInternalState("", "", "", {})
+        self.current_state: InternalState | None = None
+        self.prior_state: InternalState | None = None
+        self.transition_from_program = TransitionFromProgramMachine(
+            self.program_state)
+        self.transition_from_chrome = TransitionFromChromeMachine(
+            self.chrome_state)
         self.state_listeners = []
 
     def set_new_session(self, next_state: ProgramSessionData | ChromeSessionData):
         if self.current_state:
             prior_update_was_program = isinstance(
-                self.current_state.latest_update, ApplicationInternalState)
+                self.current_state, ApplicationInternalState)
             if prior_update_was_program:
                 updated_state = self.transition_from_program.compute_next_state(
                     next_state)
-                updated_overall_state = OverallState()
+                # updated_overall_state = OverallState()
             else:
                 updated_state = self.transition_from_chrome.compute_next_state(
                     next_state)
             self._conclude_session(self.current_state)
             self.prior_state = self.current_state
             self.current_state = updated_state
+        else:
+            # No current state yet, this is initialization:
+            if isinstance(next_state, ProgramSessionData):
+                is_chrome = window_is_chrome(next_state.window_title)
+                updated_state = ApplicationInternalState(
+                    next_state.window_title, is_chrome, next_state)
+            else:
+                updated_state = ChromeInternalState(
+                    "Chrome", True, next_state.domain, next_state)
+            self.current_state = updated_state
 
-    def _conclude_session(self, state: OverallState):
+    def _conclude_session(self, state: InternalState):
         now = self.system_clock.now()
         duration = now - state.session.start_time
         state.session.duration = duration
         state.session.end_time = now
 
     def get_finished_state(self) -> InternalState | None:
+
         return self.prior_state
 
 
 class TransitionFromProgramMachine:
     def __init__(self, current_state):
+        print(f"Test ApplicationInternalState: {ApplicationInternalState}")
+        print(
+            f"Implementation ApplicationInternalState: {type(current_state).__module__}.{type(current_state).__name__}")
+
         if not isinstance(current_state, ApplicationInternalState):
+            print(current_state, '55ru')
             raise TypeError(
                 "TransitionFromProgramMachine requires an ApplicationInternalState")
 
@@ -94,6 +112,7 @@ class TransitionFromProgramMachine:
 
 class TransitionFromChromeMachine:
     def __init__(self,  current_state):
+
         if not isinstance(current_state, ChromeInternalState):
             raise TypeError(
                 "TransitionFromChromeMachine requires a ChromeInternalState")
@@ -116,9 +135,9 @@ class TransitionFromChromeMachine:
     def _handle_change_tabs(self, next_state: ChromeSessionData) -> ChromeInternalState:
         on_different_tab = self.current_state.current_tab != next_state.domain
         if on_different_tab:
-            self._change_to_new_tab(next_state)
+            return self._change_to_new_tab(next_state)
         else:
-            self._stay_on_current_tab()
+            return self._stay_on_current_tab()
 
     def _change_to_new_program(self, next: ProgramSessionData) -> ApplicationInternalState:
         # TODO: How to implement changing the program?
