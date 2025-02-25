@@ -40,7 +40,7 @@ class ProgramTrackerCore:
         If you find yourself adding any of the above, stop and rethink it!
         Create a separate class instead.
         """
-        self.clock = clock
+        self.system_clock = clock
         self.program_facade: ProgramApiFacadeCore = program_api_facade
         self.window_change_handler = window_change_handler
         self.conclude_session_handler = conclude_session_handler
@@ -68,7 +68,7 @@ class ProgramTrackerCore:
                 "window_title"] != self.current_session.window_title
             if on_a_different_window:
 
-                current_time = self.clock.now()  # once per loop
+                current_time = self.system_clock.now()  # once per loop
                 self.conclude_session(current_time)
                 # when a window closes, call that with "conclude_session_handler()" to maintain other flows
                 self.apply_handlers(self.current_session)
@@ -79,7 +79,7 @@ class ProgramTrackerCore:
                 self.window_change_handler(new_session)
 
             if self.current_session is None:  # initialize
-                current_time = self.clock.now()
+                current_time = self.system_clock.now()
                 new_session = self.start_new_session(
                     window_change, current_time)
                 self.current_session = new_session
@@ -100,7 +100,7 @@ class ProgramTrackerCore:
         return new_session
 
     def conclude_session(self, end_time):
-        # end_time = self.clock.now()
+        # end_time = self.system_clock.now()
         start_time = self.current_session.start_time
         duration = end_time - start_time
         self.current_session.end_time = end_time

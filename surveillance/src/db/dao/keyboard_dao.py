@@ -21,7 +21,7 @@ class KeyboardDao(BaseQueueingDao):
         super().__init__(session_maker=session_maker,
                          batch_size=batch_size, flush_interval=flush_interval)
 
-        self.clock = clock
+        self.system_clock = clock
         self.logger = ConsoleLogger()
 
     async def create(self, session: KeyboardAggregate):
@@ -68,7 +68,7 @@ class KeyboardDao(BaseQueueingDao):
         Returns the count of sessions per interval.
         """
         try:
-            twenty_four_hours_ago = self.clock.now() - timedelta(hours=24)
+            twenty_four_hours_ago = self.system_clock.now() - timedelta(hours=24)
 
             query = select(TypingSession).where(
                 TypingSession.start_time >= twenty_four_hours_ago
