@@ -1,3 +1,4 @@
+from xml import dom
 import pytest
 
 from datetime import datetime, timedelta
@@ -132,32 +133,102 @@ class TestActivityStateMachine:
 
 
 class TestTransitionFromProgram:
-    class CurrentStateIsProgram:
-        """
-        Test cases where the machine starts with a Program as the latest state.
-        """
+    """
+    Test cases where the machine starts with a Program as the latest state.
+    """
 
-        def test_foo(self):
-            session = ProgramSessionData()
-            session.window_title = "Postman"
-            session.detail = "GET requests folder"
-            session.start_time = datetime.now()
-            current_state = ApplicationInternalState("Postman", False, session)
-            pass
+    class CurrentStateIsProgram:
+        def test_transition_to_different_program(self):
+            # Arrange
+            now = datetime.now()
+            start_session = ProgramSessionData()
+            start_session.window_title = "Postman"
+            start_session.detail = "GET requests folder"
+            start_session.start_time = now
+            current_state = ApplicationInternalState(
+                "Postman", False, start_session)
+            tfpm = TransitionFromProgramMachine(current_state)
+
+            next_session = ProgramSessionData()
+            next_session.window_title = "VSCode"
+            next_session.detail = "api.py"
+            next_session.start_time = now + timedelta(seconds=2)
+
+            # Act
+            output = tfpm.compute_next_state(next_session)
+
+            assert isinstance(output, ApplicationInternalState)
+            assert output.active_application == next_session.window_title
+            assert output.session.detail == next_session.detail
+            assert output.is_chrome is False
+
+        def test_transition_to_same_program(self):
+            # Arrange
+            now = datetime.now()
+            start_session = ProgramSessionData()
+            start_session.window_title = "Postman"
+            start_session.detail = "GET requests folder"
+            start_session.start_time = now
+            current_state = ApplicationInternalState(
+                "Postman", False, start_session)
+            tfpm = TransitionFromProgramMachine(current_state)
+
+            next_session = ProgramSessionData()
+            next_session.window_title = "Postman"
+            next_session.detail = "GET requests folder"
+            next_session.start_time = now + timedelta(seconds=2)
+
+            # Act
+            output = tfpm.compute_next_state(next_session)
+
+            assert isinstance(output, ApplicationInternalState)
+            assert output.active_application == next_session.window_title
+            assert output.session.detail == next_session.detail
+            assert output.is_chrome is False
+
+        def test_transition_to_chrome(self):
+            # Arrange
+            now = datetime.now()
+            start_session = ProgramSessionData()
+            start_session.window_title = "Postman"
+            start_session.detail = "GET requests folder"
+            start_session.start_time = now
+            current_state = ApplicationInternalState(
+                "Postman", False, start_session)
+            tfpm = TransitionFromProgramMachine(current_state)
+
+            next_session = ChromeSessionData()
+            next_session.domain = "Google.com"
+            next_session.detail = "Search here"
+            next_session.start_time = now + timedelta(seconds=2)
+
+            # Act
+            output = tfpm.compute_next_state(next_session)
+
+            assert isinstance(output, ChromeInternalState)
+            assert output.session.domain == next_session.domain
+            assert output.session.detail == next_session.detail
+            assert output.is_chrome is True
 
     class CurrentStateIsChrome:
         """
         Test cases where the machine starts with Chrome as the latest state.
         """
 
-        def test_bar(self):
+        def test_start_with_chrome(self):
+            """A sad path. Should not happen, constitutes a bug."""
+            now = datetime.now()
+
             chrome_tab = ChromeSessionData()
             chrome_tab.domain = "Claude.ai"
             chrome_tab.detail = "Baking tips"
-            chrome_tab.start_time = datetime.now()
+            chrome_tab.start_time = now
             current_state = ChromeInternalState(
                 "Chrome", True, "Claude.ai", chrome_tab)
-            pass
+
+            # Use pytest's raises context manager
+            with pytest.raises(TypeError, match="requires an ApplicationInternalState"):
+                tfpm = TransitionFromProgramMachine(current_state)
 
 
 class TestTransitionFromChrome:
@@ -166,24 +237,90 @@ class TestTransitionFromChrome:
         Test cases where the machine starts with a Program as the latest state.
         """
 
-        def test_foo(self):
+        def test_start_from_program(self):
+            """A sad path"""
             session = ProgramSessionData()
             session.window_title = "VSCode"
             session.detail = "test_my_wonerful_code.py"
             session.start_time = datetime.now()
             current_state = ApplicationInternalState("VSCode", False, session)
-            pass
+
+            with pytest.raises(TypeError, match="requires a ChromeInternalState"):
+                tfcm = TransitionFromChromeMachine(current_state)
 
     class CurrentStateIsChrome:
         """
         Test cases where the machine starts with Chrome as the latest state.
         """
 
-        def test_bar(self):
-            chrome_tab = ChromeSessionData()
-            chrome_tab.domain = "Claude.ai"
-            chrome_tab.detail = "Baking tips"
-            chrome_tab.start_time = datetime.now()
+        def test_transition_to_program(self):
+            now = datetime.now()
+
+            start_session = ChromeSessionData()
+            start_session.domain = "ChatGPT.com"
+            start_session.detail = "American stir fry"
+            start_session.start_time = now
             current_state = ChromeInternalState(
-                "Chrome", True, "ChatGPT.com", chrome_tab)
-            pass
+                "Chrome", True, "ChatGPT.com", start_session)
+
+            tfcm = TransitionFromChromeMachine(current_state)
+
+            next_session = ProgramSessionData()
+            next_session.window_title = "Postman"
+            next_session.detail = "GET requests folder"
+            next_session.start_time = now + timedelta(seconds=4)
+
+            output = tfcm.compute_next_state(next_session)
+
+            assert isinstance(output, ApplicationInternalState)
+            assert output.active_application == next_session.window_title
+            assert output.session.detail == next_session.detail
+
+        def test_transition_to_another_tab(self):
+            now = datetime.now()
+
+            domain = "ChatGPT.com"
+            start_session = ChromeSessionData()
+            start_session.domain = domain
+            start_session.detail = "American stir fry"
+            start_session.start_time = now
+            current_state = ChromeInternalState(
+                "Chrome", True, domain, start_session)
+
+            tfcm = TransitionFromChromeMachine(current_state)
+
+            next_session = ChromeSessionData()
+            next_session.domain = "Twitter.com"
+            next_session.detail = "Home"
+            next_session.start_time = now + timedelta(seconds=10)
+
+            output = tfcm.compute_next_state(next_session)
+
+            assert isinstance(output, ChromeInternalState)
+            assert output.current_tab == next_session.domain
+            assert output.session.detail == next_session.detail
+
+        def test_transition_to_same_tab(self):
+            now = datetime.now()
+            later = now + timedelta(seconds=10)
+
+            domain = "Facebook.com"
+            start_session = ChromeSessionData()
+            start_session.domain = domain
+            start_session.detail = "Home"
+            start_session.start_time = now
+            current_state = ChromeInternalState(
+                "Chrome", True, domain, start_session)
+
+            tfcm = TransitionFromChromeMachine(current_state)
+
+            next_session = ChromeSessionData()
+            next_session.domain = domain
+            next_session.detail = "Marketplace"
+            next_session.start_time = later
+
+            output = tfcm.compute_next_state(next_session)
+
+            assert isinstance(output, ChromeInternalState)
+            assert output.current_tab == domain
+            assert output.session.start_time == now  # NOT later.

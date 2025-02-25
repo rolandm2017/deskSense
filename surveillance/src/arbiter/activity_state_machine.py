@@ -51,6 +51,10 @@ class ActivityStateMachine:
 
 class TransitionFromProgramMachine:
     def __init__(self, current_state):
+        if not isinstance(current_state, ApplicationInternalState):
+            raise TypeError(
+                "TransitionFromProgramMachine requires an ApplicationInternalState")
+
         self.current_state = current_state
 
     def compute_next_state(self, next_state: ProgramSessionData | ChromeSessionData) -> InternalState:
@@ -90,6 +94,10 @@ class TransitionFromProgramMachine:
 
 class TransitionFromChromeMachine:
     def __init__(self,  current_state):
+        if not isinstance(current_state, ChromeInternalState):
+            raise TypeError(
+                "TransitionFromChromeMachine requires a ChromeInternalState")
+
         self.current_state = current_state
 
     def compute_next_state(self, next_state: ProgramSessionData | ChromeSessionData) -> InternalState:
