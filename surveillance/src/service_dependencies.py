@@ -133,8 +133,8 @@ async def get_activity_arbiter():
             loop.create_task(_arbiter_instance.set_tab_state(tab))
 
         print("ActivityArbiter created successfully")
-    else:
-        print(f"Reusing arbiter instance with id: {id(_arbiter_instance)}")
+    # else:
+        # print(f"Reusing arbiter instance with id: {id(_arbiter_instance)}")
 
     return _arbiter_instance
 

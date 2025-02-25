@@ -20,7 +20,7 @@ class ChromeSessionData:
         self.productive = None
 
     def __str__(self):
-        return f"ChromeSessionData(domain='{self.domain}', detail='{self.detail}', start_time={self.start_time}, duration={self.duration}, productive={self.productive})"
+        return f"ChromeSessionData(domain='{self.domain}', detail='{self.detail}', \n\tstart_time={self.start_time}, \n\tend_time={self.end_time}, duration={self.duration}, productive={self.productive})"
 
 
 class ProgramSessionData:

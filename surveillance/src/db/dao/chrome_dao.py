@@ -28,6 +28,8 @@ class ChromeDao(BaseQueueingDao):
                           datetime), "Start time wasn't set in a Chrome session"
         assert isinstance(session.end_time,
                           datetime), "End time wasn't set in a Chrome session"
+        print("Adding session:")
+        print(session)
         chrome_deliverable = ChromeTab(
             url=session.domain,
             tab_title=truncated_for_db_col,
