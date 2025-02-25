@@ -2,145 +2,12 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from enum import Enum
-import asyncio
 
 from ..object.classes import ChromeSessionData, ProgramSessionData
 from ..db.dao.chrome_summary_dao import ChromeSummaryDao
 from ..db.dao.program_summary_dao import ProgramSummaryDao
 
-
-from ..util.program_tools import window_is_chrome
-
-
-class ActivityType(Enum):
-    CHROME = "chrome"
-    PROGRAM = "program"
-    IDLE = "idle"
-
-
-def get_program_display_info(window_title):
-    return {
-        "text": window_title,
-        "color": "lime"  # Could have a color map like the overlay
-    }
-
-
-def get_chrome_display_info(domain):
-    return {
-        "text": f"Chrome | {domain}",
-        "color": "#4285F4"
-    }
-
-
-def get_display_info(state):
-
-    if isinstance(state, ChromeInternalState):
-        print(state, "91ru")
-        print(state.session)
-        return get_chrome_display_info(state.session.domain)
-    else:
-        print(state, "96ru")
-        print(state.session)
-        return get_program_display_info(state.session.window_title)
-
-
-class InternalState:
-    def __init__(self, active_application, is_chrome, current_tab, session):
-        self.active_application = active_application
-        self.is_chrome = is_chrome
-        self.current_tab = current_tab
-        self.session = session
-
-    def compute_next_state(self, next_state: ProgramSessionData | ChromeSessionData):
-        raise NotImplementedError
-
-
-class ApplicationInternalState(InternalState):
-    def __init__(self, active_application, is_chrome, current_tab, session):
-        super().__init__(active_application, is_chrome, current_tab, session)
-
-    def compute_next_state(self, next_state: ProgramSessionData | ChromeSessionData):
-        if isinstance(next_state, ProgramSessionData):
-            return self.change_to_new_program(next_state)
-        else:
-            return self.transit_to_chrome_state(next_state)
-
-    def change_to_new_program(self, next: ProgramSessionData):
-        # TODO: If next state is the same program, return current state
-        is_same_program = next.window_title == self.active_application
-        if is_same_program:
-            return self.stay_on_same_program()
-        else:
-            # Program A -> Program B, neither is Chrome
-            # Create a new state that is on a different program
-            is_chrome = False
-            current_tab = None
-            next_state = ApplicationInternalState(
-                next.window_title, is_chrome, current_tab, next)
-            return next_state
-
-    def stay_on_same_program(self):
-        return self  # No change needed
-
-    def transit_to_chrome_state(self, next: ChromeSessionData):
-        # FIXME: What to do with the case where, where, there is a new Chrome opening?
-        # A new tab opens at the same time as Chrome opens.
-        # FIXME: What to do with, case where, a tab was suspended in the bg
-        # while user ran VSCode, now he goes back to Claude?
-        next_state = ChromeInternalState(active_application="Chrome",
-                                         is_chrome=True,
-                                         current_tab=next.domain,
-                                         session=next)
-        return next_state
-
-
-class ChromeInternalState(InternalState):
-    def __init__(self, active_application, is_chrome, current_tab, session):
-        super().__init__(active_application, is_chrome, current_tab, session)
-
-    def compute_next_state(self, next_state: ProgramSessionData | ChromeSessionData):
-        if isinstance(next_state, ProgramSessionData):
-            return self.handle_change_to_program(next_state)
-        else:
-            return self.handle_change_tabs(next_state)
-
-    def handle_change_to_program(self, next_state: ProgramSessionData):
-        now_on_regular_app = not window_is_chrome(next_state.window_title)
-        if now_on_regular_app:
-            return self.change_to_new_program(next_state)
-        else:
-            return self.stay_on_chrome()  # Still on Chrome - Pass
-
-    def handle_change_tabs(self, next_state: ChromeSessionData):
-        on_different_tab = self.current_tab != next_state.domain
-        if on_different_tab:
-            self.change_to_new_tab(next_state)
-        else:
-            self.stay_on_current_tab()
-
-    def change_to_new_program(self, next: ProgramSessionData):
-        # TODO: How to implement changing the program?
-        # Create a new state that is a Program state
-        is_chrome = False
-        current_tab = None  # should it be whatever is open in chrome? if Chrome is open
-        next_state = ApplicationInternalState(
-            next.window_title, is_chrome, current_tab, next)
-        return next_state
-
-    def stay_on_chrome(self):
-        return self  # Explicitly stay the same
-
-    def change_to_new_tab(self, next: ChromeSessionData):
-        next_state = ChromeInternalState(active_application="Chrome",
-                                         is_chrome=True,
-                                         current_tab=next.domain,
-                                         session=next)
-        return next_state
-
-    def stay_on_current_tab(self):
-        # Chrome, currentDomain -> Chrome, currentDomain
-        # "Skip over" this state change.
-        return self  # Explicitly keep the same object as state
+from ..object.arbiter_classes import ChromeInternalState, ApplicationInternalState, InternalState
 
 
 class RecordKeeperCore:
@@ -172,15 +39,39 @@ class ActivityArbiter:
 
         self.current_program: Optional[ProgramSessionData] = None
         self.tab_state: Optional[ChromeSessionData] = None
-        self.overlay = overlay
         self.clock = clock
-        self.chrome_summary_dao = chrome_summary_dao
-        self.program_summary_dao = program_summary_dao
 
         self.current_state = None
         self.program_state = None  # Holds a program
         self.chrome_state = None  # Holds a tab
+
+        self.ui_update_listener = None
+        self.program_summary_listener = None
+        self.chrome_summary_listener = None
+
+        self.ui_update_listener = None
         # print("ActivityArbiter init complete")
+
+    def add_ui_listener(self, listener):
+        self.ui_update_listener = listener
+
+    def add_program_summary_listener(self, listener):
+        self.program_summary_listener = listener
+
+    def add_chrome_summary_listener(self, listener):
+        self.chrome_summary_listener = listener
+
+    async def notify_display_update(self, state):
+        if self.ui_update_listener:
+            await self.ui_update_listener.on_state_display_update(state)
+
+    async def notify_program_summary(self, program_session):
+        if self.program_summary_listener:
+            await self.program_summary_listener.on_program_session_completed(program_session)
+
+    async def notify_chrome_summary(self, chrome_session):
+        if self.chrome_summary_listener:
+            await self.chrome_summary_listener.on_chrome_session_completed(chrome_session)
 
     async def set_tab_state(self, tab: ChromeSessionData):
         await self._transition_state(tab)
@@ -205,20 +96,6 @@ class ActivityArbiter:
 
     # TODO: Separate handling of program state and tab state.
 
-    def update_overlay_display_with_session(self, session: ProgramSessionData | ChromeSessionData):
-        # print(session)
-        if isinstance(session, ProgramSessionData):
-            display_text = session.window_title
-            # if display_text == "Alt-tab window":
-            #     print("[LOG]: ", display_text)
-            # else:
-            #     print("[log]", display_text)
-            self.overlay.change_display_text(
-                display_text, "lime")  # or whatever color
-        else:
-            display_text = f"{session.domain}"
-            self.overlay.change_display_text(display_text, "#4285F4")
-
     async def _transition_program(self, program_session):
         pass
 
@@ -239,8 +116,7 @@ class ActivityArbiter:
             print("[Arb] ", new_session.window_title)
         else:
             print("[Tab] ", new_session.domain)
-        # print("gggggggggggggggg")
-        self.update_overlay_display_with_session(new_session)
+        self.notify_display_update(new_session)
 
         # Record the duration of the previous state
         if self.current_state:
@@ -277,14 +153,13 @@ class ActivityArbiter:
             #     tab_session.idle()
 
             # ### Put outgoing state into the DAO
+            # FIXME: what is the point of this state business if the output state isn't used for these args?
             if isinstance(old_session, ChromeSessionData):
                 # FIXME: [chrome summary dao] adding time  -1 day, 16:00:02.581249  to  localho
                 # FIXME: chrome summary dao] adding time  -1 day, 16:00:03.879910  to  claude.ai
-                await self.chrome_summary_dao.create_if_new_else_update(
-                    old_session)
+                await self.notify_chrome_summary(old_session)
             else:
-                await self.program_summary_dao.create_if_new_else_update(
-                    old_session)
+                await self.notify_program_summary(old_session)
         else:
             if isinstance(new_session, ProgramSessionData):
                 updated_state = ApplicationInternalState(
@@ -298,18 +173,7 @@ class ActivityArbiter:
                 )
 
         # Update the display
-        # if isinstance(updated_state, ApplicationInternalState):
-        #     display_text = updated_state.session.window_title
-        #     if display_text == "Alt-tab window":
-        #         print("[LOG]: ", display_text, temp)
-        #     else:
-        #         print("[log]", display_text, temp)
-        #     self.overlay.change_display_text(
-        #         display_text, "lime")  # or whatever color
-        # else:
-        #     display_text = f"Chrome | {updated_state.session.domain}"
-        #     self.overlay.change_display_text(display_text, "#4285F4")
-
+        # self.notify_display_update(new_session)
         # Set new state
         self.current_state = updated_state
 
