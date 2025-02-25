@@ -20,7 +20,7 @@ DELAY_TO_AVOID_CPU_HOGGING = required_delay_per_char
 
 class KeyboardTrackerCore:
     def __init__(self, clock, keyboard_api_facade, event_handlers, end_program_routine=None):
-        self.clock = clock
+        self.system_clock = clock
         self.keyboard_facade: KeyboardApiFacadeCore = keyboard_api_facade
         self.event_handlers = event_handlers
 
@@ -43,7 +43,7 @@ class KeyboardTrackerCore:
             return
         if self.keyboard_facade.event_type_is_key_down(event):
             self.recent_count += 1  # per keystroke
-            current_time = self.clock.now()
+            current_time = self.system_clock.now()
             self.time_of_last_aggregator_update = current_time
             # TODO: Add an "autofinish" time, at which point apply_handlers() is called
             finalized_aggregate = self.aggregator.add_event(
@@ -74,7 +74,7 @@ class KeyboardTrackerCore:
 
     def _is_ready_to_log_to_console(self, current_time):
         # log key presses every 3 sec
-        return self.clock.has_elapsed_since(current_time, self.time_of_last_terminal_out, 3)
+        return self.system_clock.has_elapsed_since(current_time, self.time_of_last_terminal_out, 3)
 
     def stop(self):
         print("Stopping program")

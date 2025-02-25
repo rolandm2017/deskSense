@@ -16,14 +16,13 @@ from ...object.classes import ChromeSessionData
 
 class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
     def __init__(self, clock, logging, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
-        self.clock = clock
+        self.system_clock = clock
         self.logging_dao = logging
         self.session_maker = session_maker  # Store the session maker instead of db
         self.batch_size = batch_size
         self.flush_interval = flush_interval
         self.queue = Queue()
         self.processing = False
-        self.clock = clock
         self.logger = ConsoleLogger()
 
     async def create_if_new_else_update(self, chrome_session: ChromeSessionData):
@@ -34,7 +33,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         usage_duration_in_hours = chrome_session.duration.total_seconds() / 3600
 
         # ### Check if entry exists for today
-        today = self.clock.now().date()
+        today = self.system_clock.now().date()
         query = select(DailyDomainSummary).where(
             DailyDomainSummary.domain_name == target_domain_name,
             func.date(DailyDomainSummary.gathering_date) == today
@@ -70,7 +69,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             await session.commit()
 
     async def read_past_week(self):
-        today = self.clock.now()
+        today = self.system_clock.now()
         # +1 because weekday() counts from Monday=0
         days_since_sunday = today.weekday() + 1
         last_sunday = today - timedelta(days=days_since_sunday)
@@ -84,7 +83,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def read_past_month(self):
         """Read all entries from the 1st of the current month through today."""
-        today = self.clock.now()
+        today = self.system_clock.now()
         start_of_month = today.replace(day=1)  # First day of current month
 
         query = select(DailyDomainSummary).where(
@@ -114,7 +113,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def read_row_for_domain(self, target_domain: str):
         """Reads the row for the target program for today."""
-        today = self.clock.now().date()
+        today = self.system_clock.now().date()
         query = select(DailyDomainSummary).where(
             DailyDomainSummary.domain_name == target_domain,
             func.date(DailyDomainSummary.gathering_date) == today

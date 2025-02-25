@@ -12,7 +12,7 @@ class ProgramLoggingDao(BaseQueueingDao):
     def __init__(self, clock, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
         super().__init__(session_maker=session_maker,
                          batch_size=batch_size, flush_interval=flush_interval)
-        self.clock = clock
+        self.system_clock = clock
         self.session_maker = session_maker
 
     def create(self, program_name, hours_spent, gathering_date):
@@ -21,7 +21,7 @@ class ProgramLoggingDao(BaseQueueingDao):
             program_name=program_name,
             hours_spent=hours_spent,
             gathering_date=gathering_date,
-            created_at=self.clock.now()
+            created_at=self.system_clock.now()
         )
         asyncio.create_task(self.queue_item(log_entry, ProgramSummaryLog))
 
@@ -33,7 +33,7 @@ class ProgramLoggingDao(BaseQueueingDao):
 
     async def read_last_24_hrs(self):
         """Fetch all program log entries from the last 24 hours"""
-        cutoff_time = self.clock.now() - timedelta(hours=24)
+        cutoff_time = self.system_clock.now() - timedelta(hours=24)
         async with self.session_maker() as session:
             query = select(ProgramSummaryLog).where(
                 ProgramSummaryLog.created_at >= cutoff_time
@@ -67,7 +67,7 @@ class ChromeLoggingDao(BaseQueueingDao):
     def __init__(self, clock, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
         super().__init__(session_maker=session_maker,
                          batch_size=batch_size, flush_interval=flush_interval)
-        self.clock = clock
+        self.system_clock = clock
         self.session_maker = session_maker
 
     def create(self, domain_name, hours_spent, gathering_date):
@@ -76,7 +76,7 @@ class ChromeLoggingDao(BaseQueueingDao):
             domain_name=domain_name,
             hours_spent=hours_spent,
             gathering_date=gathering_date,
-            created_at=self.clock.now()
+            created_at=self.system_clock.now()
         )
         asyncio.create_task(self.queue_item(log_entry, DomainSummaryLog))
 
@@ -88,7 +88,7 @@ class ChromeLoggingDao(BaseQueueingDao):
 
     async def read_last_24_hrs(self):
         """Fetch all domain log entries from the last 24 hours"""
-        cutoff_time = self.clock.now() - timedelta(hours=24)
+        cutoff_time = self.system_clock.now() - timedelta(hours=24)
         async with self.session_maker() as session:
             query = select(DomainSummaryLog).where(
                 DomainSummaryLog.created_at >= cutoff_time

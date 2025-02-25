@@ -16,7 +16,7 @@ class FrameDao(BaseQueueingDao):
         super().__init__(session_maker=session_maker,
                          batch_size=batch_size, flush_interval=flush_interval)
 
-        self.clock = clock
+        self.system_clock = clock
         self.logger = ConsoleLogger()
 
     async def create(self, frame: FrameCreateEvent):
@@ -45,7 +45,7 @@ class FrameDao(BaseQueueingDao):
         """Read typing sessions from the past 24 hours, grouped into 5-minute intervals.
         Returns the count of sessions per interval."""
         try:
-            twenty_four_hours_ago = self.clock.now() - timedelta(hours=24)
+            twenty_four_hours_ago = self.system_clock.now() - timedelta(hours=24)
 
             query = select(Frame).where(
                 Frame.start_time >= twenty_four_hours_ago

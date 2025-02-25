@@ -39,7 +39,7 @@ class ActivityArbiter:
 
         self.current_program: Optional[ProgramSessionData] = None
         self.tab_state: Optional[ChromeSessionData] = None
-        self.clock = clock
+        self.system_clock = clock
 
         self.current_state = None
         self.program_state = None  # Holds a program
@@ -109,7 +109,7 @@ class ActivityArbiter:
 
         When a program is opened, start a session for the program. And vice versa when it closes.
         """
-        now = self.clock.now()
+        now = self.system_clock.now()
         print("\n" + "✦★✦" * 6 + " DEBUG " + "✦★✦" * 6 + "\n")
 
         if isinstance(new_session, ProgramSessionData):

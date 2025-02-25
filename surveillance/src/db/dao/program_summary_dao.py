@@ -26,7 +26,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
     def __init__(self, clock, logging, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
         # if not callable(session_maker):
         # raise TypeError("session_maker must be callable")
-        self.clock = clock
+        self.system_clock = clock
         self.logging_dao = logging
         self.session_maker = session_maker  # Store the session maker instead of db
         self.batch_size = batch_size
@@ -51,7 +51,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         # FIXME: maybe the program_session is hanging open while I have the computer sleeping? or something
 
         # ### Check if entry exists for today
-        current_time = self.clock.now()
+        current_time = self.system_clock.now()
         today = current_time.date()
         query = select(DailyProgramSummary).where(
             DailyProgramSummary.program_name == target_program_name,
@@ -92,7 +92,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             await session.commit()
 
     async def read_past_week(self):
-        today = self.clock.now()
+        today = self.system_clock.now()
         # +1 because weekday() counts from Monday=0
         days_since_sunday = today.weekday() + 1
         last_sunday = today - timedelta(days=days_since_sunday)
@@ -107,7 +107,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def read_past_month(self):
         """Read all entries from the 1st of the current month through today."""
-        today = self.clock.now()
+        today = self.system_clock.now()
         start_of_month = today.replace(day=1)  # First day of current month
 
         query = select(DailyProgramSummary).where(
@@ -136,7 +136,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def read_row_for_program(self, target_program: str):
         """Reads the row for the target program for today."""
-        today = self.clock.now().date()
+        today = self.system_clock.now().date()
         query = select(DailyProgramSummary).where(
             DailyProgramSummary.program_name == target_program,
             func.date(DailyProgramSummary.gathering_date) == today

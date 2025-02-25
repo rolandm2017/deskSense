@@ -20,7 +20,7 @@ class TimelineEntryDao(BaseQueueingDao):
     def __init__(self, clock, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
         super().__init__(session_maker=session_maker,
                          batch_size=batch_size, flush_interval=flush_interval)
-        self.clock = clock
+        self.system_clock = clock
         self.logger = ConsoleLogger()
 
     async def create_from_keyboard_aggregate(self, content: KeyboardAggregate):
@@ -129,7 +129,7 @@ class TimelineEntryDao(BaseQueueingDao):
 
     async def read_day_mice(self, day: datetime) -> List[TimelineEntryObj]:
         is_today = day.strftime(
-            "%m %d %Y") == self.clock.now().strftime("%m %d %Y")
+            "%m %d %Y") == self.system_clock.now().strftime("%m %d %Y")
         print("FOO")
         if is_today:
             # Precomputed day can't exist yet
@@ -149,7 +149,7 @@ class TimelineEntryDao(BaseQueueingDao):
 
     async def read_day_keyboard(self, day: datetime) -> List[TimelineEntryObj]:
         is_today = day.strftime(
-            "%m %d %Y") == self.clock.now().strftime("%m %d %Y")
+            "%m %d %Y") == self.system_clock.now().strftime("%m %d %Y")
         if is_today:
             # Precomputed day can't exist yet
             return await self.read_day(day, ChartEventType.KEYBOARD)

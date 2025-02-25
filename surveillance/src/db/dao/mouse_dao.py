@@ -19,7 +19,7 @@ class MouseDao(BaseQueueingDao):
     def __init__(self, clock, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
         super().__init__(session_maker=session_maker,
                          batch_size=batch_size, flush_interval=flush_interval)
-        self.clock = clock
+        self.system_clock = clock
         self.logger = ConsoleLogger()
 
     async def create_from_start_end_times(self, start_time: datetime, end_time: datetime):
@@ -66,7 +66,7 @@ class MouseDao(BaseQueueingDao):
         Returns all movements ordered by their end time.
         """
         query = select(MouseMove).where(
-            MouseMove.end_time >= self.clock.now() - timedelta(days=1)
+            MouseMove.end_time >= self.system_clock.now() - timedelta(days=1)
         ).order_by(MouseMove.end_time.desc())
 
         async with self.session_maker() as session:

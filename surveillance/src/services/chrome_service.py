@@ -91,7 +91,7 @@ class ChromeService:
         print("╠════════╣")
         print("║ ****** ║ Starting Chrome Service")
         print("╚════════╝")
-        self.clock = clock
+        self.system_clock = clock
         self.arbiter = arbiter
         self.dao = dao
         self.last_entry = None
@@ -143,7 +143,7 @@ class ChromeService:
         if self.last_entry:
             concluding_session = self.last_entry
             # ### Ensure both datetimes are timezone-naive
-            now_utc = self.clock.now()
+            now_utc = self.system_clock.now()
             # Must be utc already since it is set up there
             start_time = self.last_entry.start_time
 
