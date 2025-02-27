@@ -65,7 +65,8 @@ class ChromeTab(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     url = Column(String(max_content_len))
-    tab_title = Column(String(max_content_len), index=True)
+    # _ (underscore) because the @property and @tab_title.setter use "tab_title"
+    _tab_title = Column(String(max_content_len), index=True)
     start_time = Column(DateTime(timezone=True))
     end_time = Column(DateTime(timezone=True))
     productive = Column(Boolean)
@@ -178,10 +179,10 @@ class TimelineEntryObj(Base):
             f"TimelineEntryObj(id={self.id}, "
             f"clientFacingId='{self.clientFacingId}', "
             # f"group='{self.group.value if self.group else None}', "  # says AttributeError: 'str' object has no attribute 'value'
-            f"group='{self.group if self.group else None}', "
+            f"group='{self.group if self.group is not None else None}', "
             f"content='{self.content}', "
-            f"start='{self.start.isoformat() if self.start else None}', "
-            f"end='{self.end.isoformat() if self.end else None}')"
+            f"start='{self.start.isoformat() if self.start is not None else None}', "
+            f"end='{self.end.isoformat() if self.end is not None else None}')"
         )
 
 
@@ -236,10 +237,10 @@ class PrecomputedTimelineEntry(Base):
             f"PrecomputedTimelineEntry(id={self.id}, "
             f"clientFacingId='{self.clientFacingId}', "
             # f"group='{self.group.value if self.group else None}', "  # says AttributeError: 'str' object has no attribute 'value'
-            f"group='{self.group if self.group else None}', "
+            f"group='{self.group if self.group is not None else None}', "
             f"content='{self.content}', "
-            f"start='{self.start.isoformat() if self.start else None}', "
-            f"end='{self.end.isoformat() if self.end else None}', "
+            f"start='{self.start.isoformat() if self.start is not None else None}', "
+            f"end='{self.end.isoformat() if self.end is not None else None}', "
             f"eventCount='{self.eventCount}')"
         )
 

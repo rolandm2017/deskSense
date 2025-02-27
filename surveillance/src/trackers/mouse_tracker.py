@@ -13,7 +13,7 @@ from ..util.detect_os import OperatingSystemInfo
 from ..util.end_program_routine import end_program_readout, pretend_report_event
 from ..util.threaded_tracker import ThreadedTracker
 from ..object.enums import MouseEvent
-from ..object.classes import MouseMoveWindow
+from ..object.classes import MouseCoords, MouseMoveWindow
 from ..util.console_logger import ConsoleLogger
 from ..facade.mouse_facade import UbuntuMouseApiFacadeCore, WindowsMouseApiFacade
 
@@ -28,7 +28,7 @@ class MouseTrackerCore:
         self.environment = OperatingSystemInfo()
 
         self.movement_start_time = None
-        self.last_position = None
+        self.last_position: MouseCoords = MouseCoords(x=0, y=0)  # init
         self.is_moving = False
 
         self.console_logger = ConsoleLogger()

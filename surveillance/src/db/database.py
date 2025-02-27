@@ -10,6 +10,9 @@ load_dotenv()
 
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 
+if SQLALCHEMY_DATABASE_URL is None:
+    raise ValueError("Failed to load SqlAlchemy database URL")
+
 # Create async engine
 engine = create_async_engine(
     SQLALCHEMY_DATABASE_URL,

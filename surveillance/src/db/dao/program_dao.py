@@ -27,6 +27,8 @@ class ProgramDao(BaseQueueingDao):
         # 'window': window_name,
         # 'detail': the_junk_string,
         # 'productive': is_productive
+        if session.start_time is None or session.end_time is None:
+            raise ValueError("Start or end time was None")
         duration = session.end_time - session.start_time
 
         program_deliverable = Program(

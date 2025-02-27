@@ -135,13 +135,13 @@ def test_zero_timeout():
 def test_invalid_timestamp_type():
     aggregator = EventAggregator(timeout_ms=1000)
     with pytest.raises(TypeError):
-        aggregator.add_event("not a timestamp")
+        aggregator.add_event("not a timestamp")  # type: ignore
 
 
 def test_none_timestamp():
     aggregator = EventAggregator(timeout_ms=1000)
     with pytest.raises(TypeError):
-        aggregator.add_event(None)
+        aggregator.add_event(None)  # type: ignore
 
 
 def test_future_timestamp():

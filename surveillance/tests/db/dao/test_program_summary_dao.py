@@ -32,6 +32,8 @@ if ASYNC_TEST_DB_URL is None:
 async def async_engine():
     """Create an async PostgreSQL engine for testing"""
     # Create engine that connects to default postgres database
+    if ASYNC_TEST_DB_URL is None:
+        raise ValueError("ASYNC_TEST_DB_URL was None")
     default_url = ASYNC_TEST_DB_URL.rsplit('/', 1)[0] + '/postgres'
     admin_engine = create_async_engine(
         default_url,
@@ -169,8 +171,9 @@ class TestProgramSummaryDao:
         # Mock existing entry
         existing_entry = Mock(spec=DailyProgramSummary)
         existing_entry.hours_spent = 1.0
-        existing_entry.__str__ = lambda self: f"DailyProgramSummary(hours_spent={
-            self.hours_spent})"
+        existing_entry.configure_mock(**{
+            "__str__.return_value": f"DailyProgramSummary(hours_spent={existing_entry.hours_spent})"
+        })
 
         # Mock that no existing entry is found
         mock_result = Mock()
@@ -621,10 +624,10 @@ class TestProgramSummaryDao:
         #
         # # 3600 = 60 sec * 60 min = 3600 sec per hour
         #
+        assert vscode_entry is not None
+        assert discord_entry is not None
+        assert chrome_entry is not None
         assert vscode_entry.hours_spent == vscode_time / 3600
         assert discord_entry.hours_spent == discord_time / 3600
-        print(chrome_entry.hours_spent, chrome_time, '587ru')
-        print(vscode_entry.hours_spent, vscode_time, vscode_time / 3600)
-        print(discord_entry.hours_spent, discord_time, discord_time / 3600)
         assert chrome_entry.hours_spent == (
             chrome_time / 3600) + (time_from_chrome_update / 3600)

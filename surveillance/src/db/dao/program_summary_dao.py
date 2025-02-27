@@ -42,6 +42,8 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         Note that this method ONLY creates gathering dates that are *today*.
 
         """
+        if program_session.start_time is None or program_session.end_time is None:
+            raise ValueError("Start or end time was None")
         target_program_name = program_session.window_title
         # print("target program name: ", target_program_name)
         # ### Calculate time difference
@@ -74,7 +76,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
                     # print(program_session.window_title, "60ru")
                     write_to_debug_log(target_program_name, usage_duration_in_hours,
                                        current_time.strftime("%m-%d %H:%M:%S"))
-                if usage_duration_in_hours > 1:
+                if usage_duration_in_hours > 0.333:
                     write_to_large_usage_log(program_session,
                                              usage_duration_in_hours, current_time.strftime("%m-%d %H:%M:%S"))
                 await db_session.commit()

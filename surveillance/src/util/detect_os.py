@@ -1,4 +1,5 @@
 import platform
+import distro
 
 
 class OperatingSystemInfo:
@@ -26,14 +27,14 @@ class OperatingSystemInfo:
             # For Linux, we can get the distribution details
             try:
                 # This works for most Linux distributions
-                distro = platform.linux_distribution()[0].lower()
-                if "ubuntu" in distro:
-                    return f"Ubuntu {platform.linux_distribution()[1]}"
-                return f"Linux ({distro})"
+                distro_name = distro.id().lower()
+                if "ubuntu" in distro_name:
+                    return f"Ubuntu {distro.version()}"
+                return f"Linux ({distro.name()} {distro.version()})"
+
             except:
                 # Fallback for newer Python versions where linux_distribution() is removed
                 try:
-                    import distro
                     return f"Linux ({distro.name()} {distro.version()})"
                 except ImportError:
                     return "Linux (distribution unknown)"

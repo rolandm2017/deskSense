@@ -30,6 +30,8 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         target_domain_name = chrome_session.domain
 
         # ### Calculate time difference
+        if chrome_session.duration is None:
+            raise ValueError("Session duration was None")
         usage_duration_in_hours = chrome_session.duration.total_seconds() / 3600
 
         # ### Check if entry exists for today

@@ -31,7 +31,9 @@ def test_aggregate_timeline_events():
         time_delta = end.end - start.start
         milliseconds = time_delta.total_seconds() * 1000
         assert milliseconds < threshold, f"Time difference {milliseconds}ms exceeds threshold of {threshold}ms"
-        assert grouped[i].end - grouped[i + 1].start < threshold
+        delta = (grouped[i].end.timestamp() -
+                 grouped[i + 1].start.timestamp()) * 1000
+        assert delta < threshold
 
 
 def test_aggregate_timeline_events_again():

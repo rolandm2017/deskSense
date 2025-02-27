@@ -3,6 +3,9 @@ from fastapi import Depends
 from typing import Callable
 import asyncio
 
+from surveillance.src.services.chrome_service import ChromeService
+from surveillance.src.services.services import KeyboardService, MouseService, ProgramService
+
 from .db.database import get_db, AsyncSession, async_session_maker
 from .db.dao.mouse_dao import MouseDao
 from .db.dao.keyboard_dao import KeyboardDao
@@ -60,7 +63,7 @@ async def get_frame_dao() -> FrameDao:
     return FrameDao(clock, async_session_maker)
 
 
-async def get_keyboard_service(dao: KeyboardDao = Depends(get_keyboard_dao)) -> Callable:
+async def get_keyboard_service(dao: KeyboardDao = Depends(get_keyboard_dao)) -> KeyboardService:
     from .services.services import KeyboardService
     return KeyboardService(dao)
 
@@ -70,13 +73,13 @@ async def get_keyboard_service(dao: KeyboardDao = Depends(get_keyboard_dao)) -> 
     # return KeyboardService(dao)
 
 
-async def get_mouse_service(dao: MouseDao = Depends(get_mouse_dao)) -> Callable:
+async def get_mouse_service(dao: MouseDao = Depends(get_mouse_dao)) -> MouseService:
     # Lazy import to avoid circular dependency
     from .services.services import MouseService
     return MouseService(dao)
 
 
-async def get_program_service(dao: ProgramDao = Depends(get_program_dao)) -> Callable:
+async def get_program_service(dao: ProgramDao = Depends(get_program_dao)) -> ProgramService:
     # Lazy import to avoid circular dependency
     from .services.services import ProgramService
     return ProgramService(dao)
@@ -86,7 +89,7 @@ async def get_dashboard_service(
     timeline_dao: TimelineEntryDao = Depends(get_timeline_dao),
     program_summary_dao: ProgramSummaryDao = Depends(get_program_summary_dao),
     chrome_summary_dao: ChromeSummaryDao = Depends(get_chrome_summary_dao)
-) -> Callable:
+):
     # Lazy import to avoid circular dependency
     from .services.dashboard_service import DashboardService
     return DashboardService(timeline_dao, program_summary_dao, chrome_summary_dao)
@@ -130,6 +133,8 @@ async def get_activity_arbiter():
         @chrome_service.event_emitter.on('tab_change')
         def handle_tab_change(tab):
             # Create and schedule the task
+            if _arbiter_instance is None:
+                raise ValueError("Arbiter instance should be set by now")
             loop.create_task(_arbiter_instance.set_tab_state(tab))
 
         print("ActivityArbiter created successfully")
@@ -140,7 +145,7 @@ async def get_activity_arbiter():
 
 
 async def get_chrome_service(dao: ChromeDao = Depends(get_chrome_dao),
-                             arbiter: ActivityArbiter = Depends(get_activity_arbiter)) -> Callable:
+                             arbiter: ActivityArbiter = Depends(get_activity_arbiter)) -> ChromeService:
     # Lazy import to avoid circular dependency
     from .services.chrome_service import ChromeService
     global _chrome_service_instance  # Singleton because it must preserve internal state
