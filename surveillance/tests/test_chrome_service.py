@@ -53,10 +53,14 @@ def chrome_service_fixture():
     mock_dao = AsyncMock()
     mock_summary_dao = AsyncMock()
 
+    chrome_summary_dao = AsyncMock()
+    program_summary_dao = AsyncMock()
+
     # Initialize ChromeService with the mocked DAOs
     overlay = Overlay()
     clock = SystemClock()
-    arbiter = ActivityArbiter(overlay, clock)
+    arbiter = ActivityArbiter(
+        overlay, clock, chrome_summary_dao, program_summary_dao)
     chrome_service = ChromeService(clock, arbiter, mock_dao)
 
     # Return the initialized ChromeService instance

@@ -7,8 +7,8 @@ def write_to_debug_log(name, hours_spent, time):
 
     # print("writing to debug log: " + str(minutes_seconds))
     with open("debug_logging_-_arbiter_ver.txt", "a") as f:
-        if minutes >= 10:
-            f.write(f"{name} - {minutes_seconds} - {time} - {minutes}\n")
+        if minutes >= 1:
+            f.write(f"{name} - {minutes_seconds} - {time} -- {minutes}\n")
         else:
             f.write(f"{name} - {minutes_seconds} - {time}\n")
 

@@ -102,7 +102,7 @@ def tracker_and_events(mock_clock, mock_mouse_facade, event_collector):
                 patch.dict('sys.modules', {'win32con': Mock(), 'ctypes': Mock()}):
             mock_os_info.return_value.is_windows = True
             mock_os_info.return_value.is_ubuntu = False
-            mock_clock = MockClock()
+            mock_clock = MockClock([])
             tracker = MouseTrackerCore(mock_clock, mock_mouse_facade, handler)
             yield tracker, events
             print("Stopping tracker")
@@ -345,9 +345,10 @@ def test_threading_cleanup(mock_clock, mock_mouse_facade, event_collector):
     threaded_tracker = ThreadedTracker(tracker_core)
 
     threaded_tracker.start()
+
     assert threaded_tracker.is_running
-    assert threaded_tracker.hook_thread.is_alive()
     assert threaded_tracker.hook_thread is not None
+    assert threaded_tracker.hook_thread.is_alive()
 
     threaded_tracker.stop()
     assert not threaded_tracker.is_running

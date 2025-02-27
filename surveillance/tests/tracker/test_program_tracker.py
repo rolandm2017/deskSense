@@ -42,7 +42,12 @@ def clock(times):
 
 @pytest.fixture
 def tracker(mock_facade, mock_event_handler, clock):
-    return ProgramTrackerCore(clock, mock_facade, mock_event_handler)
+    events = []
+
+    def handler(some_arg):
+        events.append(some_arg)
+
+    return ProgramTrackerCore(clock, mock_facade, mock_event_handler, handler)
 
 
 ex3 = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg',
@@ -152,7 +157,7 @@ def test_window_change_triggers_handler():
     }
     facade.listen_for_window_changes.return_value = iter([first_test_item])
 
-    tracker.clock.now.assert_not_called()
+    tracker.system_clock.now.assert_not_called()
     assert tracker.current_session is None  # Test setup conditions
 
     # ### Act - Run the tracker
@@ -242,7 +247,6 @@ def test_a_series_of_programs():
     clock = MagicMock(wraps=clock)
     facade = Mock()
     handler = Mock()
-    tracker = ProgramTrackerCore(clock, facade, handler, Mock())
 
     handler1_calls = []
     handler2_calls = []
@@ -253,8 +257,7 @@ def test_a_series_of_programs():
     def handler2(event):
         handler2_calls.append(event)
 
-    # Replace single handler with multiple handlers
-    tracker.conclude_session_handler = [handler1, handler2]
+    tracker = ProgramTrackerCore(clock, facade, handler, handler1)
 
     # Setup
     program1 = {"os": "some_val", 'process_name': 'code',

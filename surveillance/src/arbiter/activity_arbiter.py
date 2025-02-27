@@ -125,7 +125,7 @@ class ActivityArbiter:
             # print(old_session, '251ru')
 
             # ### Create the replacement state
-            updated_state = self.current_state.compute_next_state(new_session)
+            updated_state = self.state_machine.compute_next_state(new_session)
 
             # TODO: Handle case where current session was continued, i.e. by "return self"
 

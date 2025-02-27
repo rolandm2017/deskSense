@@ -80,6 +80,7 @@ surveillance_state = SurveillanceState()
 def track_productivity():
     while surveillance_state.is_running:
         # surveillance_state.manager.program_tracker.track_window()
+        assert surveillance_state.manager is not None
         surveillance_state.manager.program_tracker.attach_listener()
 
 
@@ -107,7 +108,7 @@ async def lifespan(app: FastAPI):
     print("Shutting down productivity tracking...")
     # surveillance_state.tracking_task.cancel()
     if surveillance_state.manager:
-        surveillance_state.manager.cleanup()
+        await surveillance_state.manager.cleanup()
         # time.sleep(2)
 
 
@@ -132,7 +133,7 @@ async def health_check(keyboard_service: KeyboardService = Depends(get_keyboard_
     logger.log_purple("[LOG] health check")
     try:
         # FIXME: this should be on the app, not a local variable
-        if not surveillance_state.manager.keyboard_tracker:
+        if not surveillance_state and not surveillance_state.manager.keyboard_tracker:
             return {"status": "error", "detail": "Tracker not initialized"}
         await keyboard_service.get_all_events()
         return {"status": "healthy"}
@@ -145,7 +146,7 @@ async def health_check(keyboard_service: KeyboardService = Depends(get_keyboard_
 async def get_all_keyboard_reports(keyboard_service: KeyboardService = Depends(get_keyboard_service)):
     logger.log_purple("[LOG] keyboard report - all")
     # FIXME: this should be on the app, not a local variable
-    if not surveillance_state.manager.keyboard_tracker:
+    if not surveillance_state and not surveillance_state.manager.keyboard_tracker:
         raise HTTPException(status_code=500, detail="Tracker not initialized")
 
     events = await keyboard_service.get_all_events()
@@ -163,7 +164,7 @@ async def get_keyboard_report(keyboard_service: KeyboardService = Depends(get_ke
     # async def get_keyboard_report(db: Session = Depends(get_db)):
     logger.log_purple("[LOG] keyboard report")
     # FIXME: this should be on the app, not a local variable
-    if not surveillance_state.manager.keyboard_tracker:
+    if not surveillance_state and not surveillance_state.manager.keyboard_tracker:
         raise HTTPException(status_code=500, detail="Tracker not initialized")
 
     events = await keyboard_service.get_past_days_events()
@@ -179,7 +180,7 @@ async def get_keyboard_report(keyboard_service: KeyboardService = Depends(get_ke
 @app.get("/report/mouse/all", response_model=MouseReport)
 async def get_all_mouse_reports(mouse_service: MouseService = Depends(get_mouse_service)):
     logger.log_purple("[LOG] mouse report - all")
-    if not surveillance_state.manager.mouse_tracker:
+    if not surveillance_state and not surveillance_state.manager.mouse_tracker:
         raise HTTPException(status_code=500, detail="Tracker not initialized")
 
     events = await mouse_service.get_all_events()
@@ -194,7 +195,7 @@ async def get_all_mouse_reports(mouse_service: MouseService = Depends(get_mouse_
 @app.get("/report/mouse", response_model=MouseReport)
 async def get_mouse_report(mouse_service: MouseService = Depends(get_mouse_service)):
     logger.log_purple("[LOG] mouse report")
-    if not surveillance_state.manager.mouse_tracker:
+    if not surveillance_state and not surveillance_state.manager.mouse_tracker:
         raise HTTPException(status_code=500, detail="Tracker not initialized")
 
     events = await mouse_service.get_past_days_events()
@@ -208,7 +209,7 @@ async def get_mouse_report(mouse_service: MouseService = Depends(get_mouse_servi
 
 @app.get("/report/program/all", response_model=ProgramActivityReport)
 async def get_all_program_reports(program_service: ProgramService = Depends(get_program_service)):
-    if not surveillance_state.manager.program_tracker:
+    if not surveillance_state and not surveillance_state.manager.program_tracker:
         raise HTTPException(status_code=500, detail="Tracker not initialized")
 
     events = await program_service.get_all_events()
@@ -222,7 +223,7 @@ async def get_all_program_reports(program_service: ProgramService = Depends(get_
 
 @app.get("/report/program", response_model=ProgramActivityReport)
 async def get_program_activity_report(program_service: ProgramService = Depends(get_program_service)):
-    if not surveillance_state.manager.program_tracker:
+    if not surveillance_state and not surveillance_state.manager.program_tracker:
         raise HTTPException(status_code=500, detail="Tracker not initialized")
 
     events = await program_service.get_past_days_events()
@@ -494,3 +495,5 @@ if __name__ == "__main__":
     # If state change, record summary of window.
     # So CPU knows about Chrome & Program state, & every time something changes, it yields a conclusion.
     # Then, neither the Chrome Service, nor Program Tracker, nor the DAOs, need to do any math. They're simple
+
+# TODO Feb 26:

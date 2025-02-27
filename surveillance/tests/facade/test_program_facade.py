@@ -7,7 +7,7 @@ from src.util.detect_os import OperatingSystemInfo
 
 
 @pytest.mark.skipif(
-    OperatingSystemInfo().is_windows,
+    OperatingSystemInfo().is_windows == True,
     reason="Test only applicable on Ubuntu systems"
 )
 def test_program_facade_on_ubuntu():
@@ -23,7 +23,7 @@ def test_program_facade_on_ubuntu():
 
 
 @pytest.mark.skipif(
-    OperatingSystemInfo().is_ubuntu,
+    OperatingSystemInfo().is_ubuntu == True,
     reason="Test only applicable on Windows systems"
 )
 def test_program_facade_on_windows():

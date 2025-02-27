@@ -243,6 +243,9 @@ def test_threading_cleanup(mock_clock, mock_keyboard_facade, event_collector):
     threaded_tracker = ThreadedTracker(tracker_core)
 
     threaded_tracker.start()
+
+    assert threaded_tracker.hook_thread is not None
+
     assert threaded_tracker.is_running
     assert threaded_tracker.hook_thread.is_alive()
 

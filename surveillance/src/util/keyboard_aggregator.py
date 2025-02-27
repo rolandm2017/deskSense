@@ -14,15 +14,23 @@ class InProgressAggregation:
 
 
 class EventAggregator:
-    def __init__(self, timeout_ms: int):
+    def __init__(self, system_clock, timeout_ms: int):
         if timeout_ms <= 0:
             raise ValueError("Timeout must be positive")
+        self.system_clock = system_clock
         self.timeout = timeout_ms / 1000
-        self.current_aggregation: InProgressAggregation = None
+        # self.current_aggregation: InProgressAggregation | None = None
+
+        self.current_aggregation: InProgressAggregation = self.set_initialization_aggregation()
         self._on_aggregation_complete = None
 
     def set_callback(self, callback: Callable):  # function
         self._on_aggregation_complete = callback
+
+    def set_initialization_aggregation(self):
+        now = self.system_clock.now()
+        # now, now, [] -> default, as close to meaningless as it gets
+        return InProgressAggregation(now, now, [])
 
     def add_event(self, timestamp: float):
         """A timestamp must be a datetime.timestamp() result."""
@@ -35,7 +43,7 @@ class EventAggregator:
         if self.current_aggregation and timestamp < self.current_aggregation.end_time:
             raise ValueError("Timestamps must be in chronological order")
 
-        uninitialized = not self.current_aggregation
+        uninitialized = len(self.current_aggregation.events) == 0
         if uninitialized:
             self.current_aggregation = InProgressAggregation(
                 timestamp, timestamp, [timestamp])
@@ -75,7 +83,7 @@ class EventAggregator:
             return None
 
         completed = self.current_aggregation
-        self.current_aggregation = None
+        self.current_aggregation = self.set_initialization_aggregation()
 
         if self._on_aggregation_complete:
             self._on_aggregation_complete(completed)
