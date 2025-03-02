@@ -15,8 +15,14 @@ load_dotenv()
 # access to the values within the .ini file in use.
 config = context.config
 
-config.set_main_option('sqlalchemy.url',  os.getenv(
-    'DATABASE_URL').replace('postgresql+asyncpg://', 'postgresql://'))
+db_url = os.getenv(
+    'DATABASE_URL')
+
+if db_url is None:
+    raise ValueError("Failed to get database url")
+
+config.set_main_option('sqlalchemy.url',  db_url.replace(
+    'postgresql+asyncpg://', 'postgresql://'))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

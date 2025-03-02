@@ -77,11 +77,11 @@ class SurveillanceState:
 surveillance_state = SurveillanceState()
 
 
-def track_productivity():
-    while surveillance_state.is_running:
-        # surveillance_state.manager.program_tracker.track_window()
-        assert surveillance_state.manager is not None
-        surveillance_state.manager.program_tracker.attach_listener()
+# def track_productivity():
+#     while surveillance_state.is_running:
+#         # surveillance_state.manager.program_tracker.track_window()
+#         assert surveillance_state.manager is not None
+#         # surveillance_state.manager.program_tracker.attach_listener()
 
 
 @asynccontextmanager

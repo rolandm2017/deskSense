@@ -52,10 +52,12 @@ class ProgramDao(BaseQueueingDao):
                 productive=session['productive']
             )
 
-            # FIXME: this won't work with a session
-            await self.db.add(new_program)
-            await self.db.commit()
-            await self.db.refresh(new_program)
+            async with self.session_maker() as db_session:
+                async with db_session.begin():
+                    db_session.add(new_program)
+
+                await db_session.refresh(new_program)
+
             return new_program
         return None
 

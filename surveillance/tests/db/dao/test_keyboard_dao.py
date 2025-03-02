@@ -47,8 +47,8 @@ class TestKeyboardDao:
     async def test_create(self, dao, mock_session_maker):
         # Arrange
         session = KeyboardAggregate(
-            session_start_time=datetime.now(),
-            session_end_time=datetime.now()
+            start_time=datetime.now(),
+            end_time=datetime.now()
         )
 
         # Act

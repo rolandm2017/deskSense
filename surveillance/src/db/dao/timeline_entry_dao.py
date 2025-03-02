@@ -27,8 +27,8 @@ class TimelineEntryDao(BaseQueueingDao):
         group = ChartEventType.KEYBOARD
         new_row = TimelineEntryObj(
             group=group,
-            start=content.session_start_time,
-            end=content.session_end_time
+            start=content.start_time,
+            end=content.end_time
         )
         await self.create(new_row)
 

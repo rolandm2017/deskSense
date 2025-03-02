@@ -11,6 +11,14 @@ from ...object.pydantic_dto import FrameCreateEvent
 from ...util.console_logger import ConsoleLogger
 
 
+class FrameDto:
+    # Making IDE errors be quiet while I ignore this
+    def __init__(self, id, start_time, end_time) -> None:
+        self.id: int = id
+        self.start_time: datetime = start_time
+        self.end_time: datetime = end_time
+
+
 class FrameDao(BaseQueueingDao):
     def __init__(self, clock, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
         super().__init__(session_maker=session_maker,
@@ -22,14 +30,15 @@ class FrameDao(BaseQueueingDao):
     async def create(self, frame: FrameCreateEvent):
         new_frame = Frame(
             video_id=frame.video_id,
-            created_at=frame.frame_time,
+            created_at=frame.created_at,
             frame_number=frame.frame_number
         )
         await self.queue_item(new_frame)
 
-    async def read_by_id(self, keystroke_id: int):
+    async def read_by_id(self, frame_id: int):
         """Read Frame entries."""
-        return await self.db.get(Frame, keystroke_id)
+        async with self.session_maker() as session:
+            return await session.get(Frame, frame_id)
 
     async def read_all(self):
         """Return all frames."""

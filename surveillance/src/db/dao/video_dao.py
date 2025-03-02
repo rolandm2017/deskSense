@@ -20,15 +20,43 @@ class VideoDao(BaseQueueingDao):
         self.logger = ConsoleLogger()
 
     async def create(self, create_event: VideoCreateEvent):
+        """
+        Create a new video and return its ID.
+        This method does not use queuing to ensure we can return the generated ID.
+        """
+        new_video = Video(
+            title=create_event.title, created_at=create_event.created_at)
+
+        # For immediate ID return, we need to commit directly instead of queuing
+        async with self.session_maker() as session:
+            session.add(new_video)
+            await session.flush()  # This assigns the ID but doesn't commit yet
+            video_id = new_video.id  # Get the generated ID
+            await session.commit()  # Now commit the transaction
+
+        return video_id
+
+    async def create_queued(self, create_event: VideoCreateEvent):
+        """
+        Queue a video creation without returning ID.
+        Use this method when you don't need the ID immediately.
+        """
         new_video = Video(
             title=create_event.title, created_at=create_event.created_at)
         await self.queue_item(new_video)
+
+    # async def create(self, create_event: VideoCreateEvent):
+    #     new_video = Video(
+    #         title=create_event.title, created_at=create_event.created_at)
+    #     await self.queue_item(new_video)
 
     async def read_by_id(self, video_id: int):
         """
         Read Video entries. 
         """
-        return await self.db.get(Video, video_id)
+        async with self.session_maker() as db_session:
+            result = await db_session.get(Video, video_id)
+            return result
 
     async def read_all(self):
         """Return all videos."""

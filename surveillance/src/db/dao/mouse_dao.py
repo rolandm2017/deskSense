@@ -37,15 +37,17 @@ class MouseDao(BaseQueueingDao):
         await self.queue_item(mouse_move, MouseMove)
 
     async def create_without_queue(self, start_time: datetime, end_time: datetime):
-        # print("creating mouse move event", start_time)
         new_mouse_move = MouseMove(
             start_time=start_time,
             end_time=end_time
         )
 
-        self.db.add(new_mouse_move)
-        await self.db.commit()
-        await self.db.refresh(new_mouse_move)
+        async with self.session_maker() as db_session:
+            async with db_session.begin():
+                db_session.add(new_mouse_move)
+
+            await db_session.refresh(new_mouse_move)
+
         return new_mouse_move
 
     async def read_all(self):
@@ -53,7 +55,7 @@ class MouseDao(BaseQueueingDao):
         async with self.session_maker() as session:
             result = await session.execute(select(MouseMove))
             # return await result.scalars().all()
-            # FIXME: Some tests think this needs to be 'awaited' but it doens't
+            # Some tests think this needs to be 'awaited' but it doens't
             return result.scalars().all()
 
     async def read_by_id(self, mouse_move_id: int):
@@ -71,7 +73,7 @@ class MouseDao(BaseQueueingDao):
 
         async with self.session_maker() as session:
             result = await session.execute(query)
-            # FIXME: Some tests think this needs to be 'awaited' but it doens't
+            # Some tests think this needs to be 'awaited' but it doens't
             # return await result.scalars().all()
             return result.scalars().all()
 

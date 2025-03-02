@@ -43,8 +43,8 @@ class TestTimelineEntryDao:
         # Arrange
         current_time = datetime.now()
         keyboard_aggregate = KeyboardAggregate(
-            session_start_time=current_time,
-            session_end_time=current_time + timedelta(minutes=5)
+            start_time=current_time,
+            end_time=current_time + timedelta(minutes=5)
         )
 
         # Mock highest_id query

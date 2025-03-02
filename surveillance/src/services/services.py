@@ -1,6 +1,6 @@
 # services.py
 from fastapi import Depends
-from typing import List
+from typing import List, cast
 
 from ..db.dao.mouse_dao import MouseDao
 from ..db.dao.keyboard_dao import KeyboardDao
@@ -8,6 +8,9 @@ from ..db.dao.program_dao import ProgramDao
 from ..db.dao.video_dao import VideoDao
 from ..db.dao.frame_dao import FrameDao
 from ..db.models import TypingSession, Program, MouseMove
+from ..object.dto import TypingSessionDto
+
+
 from ..config.definitions import productive_sites
 from ..util.console_logger import ConsoleLogger
 
@@ -16,11 +19,11 @@ class KeyboardService:
     def __init__(self, dao: KeyboardDao = Depends()):
         self.dao = dao
 
-    async def get_past_days_events(self) -> List[TypingSession]:
+    async def get_past_days_events(self) -> List[TypingSessionDto]:
         events = await self.dao.read_past_24h_events()
         return events
 
-    async def get_all_events(self) -> List[TypingSession]:
+    async def get_all_events(self) -> List[TypingSessionDto]:
         return await self.dao.read_all()
 
 
@@ -53,8 +56,10 @@ class VideoService:
         self.video_dao = video_dao
         self.frame_dao = frame_dao
 
-    async def create_new_video(self, video_create_event):
-        self.video_dao.create(video_create_event)
+    async def create_new_video(self, video_create_event) -> int:
+        new_video_id = await self.video_dao.create(video_create_event)
+        new_video_id = cast(int, new_video_id)
+        return new_video_id
 
     async def add_frame_to_video(self, add_frame_event):
-        self.frame_dao.create(add_frame_event)
+        return await self.frame_dao.create(add_frame_event)

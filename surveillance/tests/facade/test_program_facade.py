@@ -87,8 +87,9 @@ def test_listen_for_window_changes():
     mock_X.FocusChangeMask = 1
     mock_X.PropertyChangeMask = 2
     mock_X.PropertyNotify = 'PropertyNotify'
-    # type: ignore - IDE correctly notes that the type is expected to be Xlib | None
-    facade.X = mock_X
+
+    # IDE correctly notes that the type is expected to be Xlib | None
+    facade.X = mock_X  # type: ignore
 
     mock_event.type = 'PropertyNotify'
     mock_event.atom = '_NET_ACTIVE_WINDOW'
