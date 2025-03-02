@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, Mock, MagicMock, patch
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from typing import cast
 
 from src.db.dao.timeline_entry_dao import TimelineEntryDao
 from src.db.models import TimelineEntryObj
@@ -60,7 +61,7 @@ class TestTimelineEntryDao:
         assert dao.queue_item.called
         queued_item = dao.queue_item.call_args[0][0]
         assert isinstance(queued_item, TimelineEntryObj)
-        assert queued_item.group == ChartEventType.KEYBOARD
+        assert cast(str, queued_item.group) == ChartEventType.KEYBOARD
 
     @pytest.mark.asyncio
     async def test_create_from_mouse_move_window(self, dao, mock_session):
@@ -83,7 +84,7 @@ class TestTimelineEntryDao:
         assert dao.queue_item.called
         queued_item = dao.queue_item.call_args[0][0]
         assert isinstance(queued_item, TimelineEntryObj)
-        assert queued_item.group == ChartEventType.MOUSE
+        assert cast(str, queued_item.group) == ChartEventType.MOUSE
 
     @pytest.mark.asyncio
     async def test_read_highest_id(self, dao, mock_session):
@@ -139,74 +140,86 @@ class TestTimelineEntryDao:
 
     @pytest.mark.asyncio
     async def test_read_day_mice(self, dao):
+        """TODO: Improve the name of and comment for this test"""
         # Arrange
         test_day = datetime.now()
+        test_day = test_day - timedelta(days=7)
+
         mock_entries = [Mock(spec=TimelineEntryObj),
                         Mock(spec=TimelineEntryObj)]
 
         day_result = ["Precomputed day result"]
 
-        with patch.object(dao, 'read_day') as mocked_read_day, \
-                patch.object(dao, 'read_precomputed_entry_for_day') as mocked_precomputed, \
-                patch.object(dao, 'create_precomputed_day') as mocked_create_precomputed:
+        # In order of which they are called:
+        with patch.object(dao, 'read_precomputed_entry_for_day') as mocked_precomputed_entry_for_day, \
+                patch.object(dao, 'read_day') as mocked_read_day, \
+                patch.object(dao, 'create_precomputed_day') as mocked_create_precomputed_day:
 
-            # Set up the return values for the mocks
-            # Note: For read_day, we're setting up the expected return chain
+            # ### Set up the return values for the mocks
+            # Empty list to trigger that path
+            mocked_precomputed_entry_for_day.return_value = []  # Nothing
+            # Note: For read_day, set up an expected return chain
             mocked_read_day.return_value = mock_entries
-            # Non-empty list to trigger that path
-            mocked_precomputed.return_value = []
-            mocked_create_precomputed.return_value = day_result
+
+            mocked_create_precomputed_day.return_value = day_result
 
             # Act
             result = await dao.read_day_mice(test_day)
 
             # Assert
             # The patched methods should have been called
+            mocked_precomputed_entry_for_day.assert_called_once()
+
             mocked_read_day.assert_called_once()
-
-            mocked_precomputed.assert_called_once()
-            mocked_create_precomputed.assert_called_once()
-
             mocked_read_day.assert_called_once_with(
                 test_day, ChartEventType.MOUSE)
-            # Check the result matches what we expect
-            # Since precomputed returns non-empty list
-            assert isinstance(result, list)
+
+            mocked_create_precomputed_day.assert_called_once_with(mock_entries)
+
+            assert isinstance(
+                result, list) and len(result) > 0, "create_precomputed_day must return a non-empty list"
             assert result == day_result
 
     # FIXME: need more tests for the branches of read_day_peripheral
 
     @pytest.mark.asyncio
     async def test_read_day_keyboard(self, dao):
+        """TODO: Improve the name of and comment for this test"""
         # Arrange
         test_day = datetime.now()
+        test_day = test_day - timedelta(days=7)
+
         mock_entries = [Mock(spec=TimelineEntryObj),
                         Mock(spec=TimelineEntryObj)]
 
         day_result = ["A valid precomputed day of Keyboard Events"]
 
-        with patch.object(dao, 'read_day') as mocked_read_day, \
-                patch.object(dao, 'read_precomputed_entry_for_day') as mocked_precomputed, \
-                patch.object(dao, 'create_precomputed_day') as mocked_create_precomputed:
+        # In the order in which they are called
+        with patch.object(dao, 'read_precomputed_entry_for_day') as mocked_precomputed_entry_for_day, \
+                patch.object(dao, 'read_day') as mocked_read_day, \
+                patch.object(dao, 'create_precomputed_day') as mocked_create_precomputed_day:
 
-            # Set up the return values for the mocks
-            mocked_read_day.return_value = mock_entries
+            # ### Set up return values for the mocks
             # Empty list to trigger the else path (assuming similar logic to read_day_mice)
-            mocked_precomputed.return_value = []
-            mocked_create_precomputed.return_value = day_result
+            mocked_precomputed_entry_for_day.return_value = []
+            mocked_read_day.return_value = mock_entries
+            mocked_create_precomputed_day.return_value = day_result
 
             # Act
             result = await dao.read_day_keyboard(test_day)
 
-            # Assert
+            # ### Assert
             # The patched methods should have been called
+            mocked_precomputed_entry_for_day.assert_called_once()
+
+            mocked_read_day.assert_called_once()
             mocked_read_day.assert_called_once_with(
                 test_day, ChartEventType.KEYBOARD)
-            mocked_precomputed.assert_called_once()
-            mocked_create_precomputed.assert_called_once()
 
-            # Check the result matches what we expect
-            assert isinstance(result, list)
+            mocked_create_precomputed_day.assert_called_once_with(mock_entries)
+
+            assert isinstance(
+                result, list) and len(result) > 0, "create_precomputed_day must return a non-empty list"
             assert result == day_result
 
     @pytest.mark.asyncio

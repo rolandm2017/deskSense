@@ -109,7 +109,7 @@ class ActivityArbiter:
         self.notify_display_update(new_session)
 
         # Record the duration of the previous state
-        if self.current_state:
+        if self.state_machine.current_state:
             # ### Calculate the duration that the current state has existed
             old_session = self.current_state.session
 

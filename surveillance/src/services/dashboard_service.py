@@ -47,21 +47,22 @@ class DashboardService:
             print("starting program summaries loop")
 
             for program in daily_program_summaries:
+                hours_spent: float = float(program.hours_spent)  # type: ignore
                 # print(program.program_name, float(
                 # f"{program.hours_spent:.4f}"))
                 # Track programs with >1hr usage
-                if program.hours_spent > 1:
+                if hours_spent > 1:
                     significant_programs[program.program_name] = float(
                         f"{program.hours_spent:.4f}")
 
-                if program.program_name == 'Alt-tab window':
+                if str(program.program_name) == 'Alt-tab window':
                     alt_tab_window.append(program.hours_spent)
                     continue  # temp - skipping bugged outputs
                 if program.program_name in productive_apps:
                     print("< LOG > adding " + program.program_name)
-                    productivity = productivity + program.hours_spent
+                    productivity = productivity + hours_spent
                 else:
-                    leisure = leisure + program.hours_spent
+                    leisure = leisure + hours_spent
             day = {"day": date_as_datetime,
                    "productivity": float(f"{productivity:.4f}"), "leisure": float(f"{leisure:.4f}")}
             # print(day)

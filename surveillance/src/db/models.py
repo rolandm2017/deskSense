@@ -3,6 +3,10 @@ from sqlalchemy import Enum as SQLAlchemyEnum
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float, Interval, Computed, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import mapped_column, relationship
+
+from sqlalchemy import Column as SQLAlchemyColumn
+
+from typing import Union, Any, Optional
 from datetime import datetime
 from .database import Base
 from ..object.enums import ChartEventType
@@ -201,7 +205,7 @@ class PrecomputedTimelineEntry(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    clientFacingId = Column(String)
+    clientFacingId: Union[str, SQLAlchemyColumn[str]] = Column(String)
     # clientFacingId = Column(
     #     String,
     #     Computed(
