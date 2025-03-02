@@ -126,8 +126,8 @@ def test_key_press_tracking(tracker_and_events, mock_keyboard_facade):
 
         deliverable_for_db = handler_events[0]   # Note "events[0]"
         assert isinstance(deliverable_for_db, KeyboardAggregate)
-        assert deliverable_for_db.session_start_time is not None
-        assert deliverable_for_db.session_end_time is not None
+        assert deliverable_for_db.start_time is not None
+        assert deliverable_for_db.end_time is not None
         # assert all(isinstance(some_time, datetime) for some_time in my_times)
 
         #
@@ -173,8 +173,8 @@ def test_multiple_key_presses(tracker_and_events, mock_keyboard_facade):
     tracker.run_tracking_loop()  # Should close the aggregator loop
 
     assert isinstance(events[0], KeyboardAggregate)
-    assert events[0].session_start_time is not None
-    assert events[0].session_end_time is not None
+    assert events[0].start_time is not None
+    assert events[0].end_time is not None
     assert len(events) == 1
 
 

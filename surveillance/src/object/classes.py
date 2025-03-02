@@ -50,13 +50,13 @@ class KeyboardAggregate:
     This is the FINISHED package.
     """
 
-    def __init__(self, session_start_time, session_end_time, count_of_events=None):
-        self.session_start_time = session_start_time
-        self.session_end_time = session_end_time
+    def __init__(self, start_time, end_time, count_of_events=None):
+        self.start_time = start_time
+        self.end_time = end_time
         self.count = count_of_events
 
     def __str__(self):
-        return f"Keyboard aggregate from {self.session_start_time} to {self.session_end_time}"
+        return f"Keyboard aggregate from {self.start_time} to {self.end_time}"
 
 
 class MouseCoords:

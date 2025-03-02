@@ -29,27 +29,37 @@ class KeyboardDao(BaseQueueingDao):
         # self.logger.log_green("[LOG] Keyboard session")
         # event time should be just month :: date :: HH:MM:SS
         new_typing_session_entry = TypingSession(
-            start_time=session.session_start_time, end_time=session.session_end_time)
+            start_time=session.start_time, end_time=session.end_time)
         # self.logger.log_blue("[LOG] Keyboard event: " + str(session))
         await self.queue_item(new_typing_session_entry)
 
     async def create_without_queue(self, session: KeyboardAggregate):
         print("adding keystroke ", str(session))
         new_session = TypingSession(
-            start_time=session.session_start_time,
-            end_time=session.session_end_time
+            start_time=session.start_time,
+            end_time=session.end_time
         )
 
-        self.db.add(new_session)  # FIXME: this won't work w/ sessions
-        await self.db.commit()
-        await self.db.refresh(new_session)
+        # Create a new session from the session_maker
+        async with self.session_maker() as db_session:
+            # Begin a transaction
+            async with db_session.begin():
+                # Add the new session to the database
+                db_session.add(new_session)
+                # The commit is handled by the context manager when exiting the begin() block
+
+            # Refresh to get any database-generated values (like IDs)
+            await db_session.refresh(new_session)
+
         return new_session
 
     async def read_by_id(self, keystroke_id: int):
         """
         Read Keystroke entries. 
         """
-        return await self.db.get(TypingSession, keystroke_id)
+        async with self.session_maker() as db_session:
+            result = await db_session.get(TypingSession, keystroke_id)
+            return result
 
     async def read_all(self):
         """Return all keystrokes."""

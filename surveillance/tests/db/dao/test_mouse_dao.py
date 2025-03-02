@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import Mock, patch, AsyncMock, MagicMock
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from typing import cast
 
 from src.db.dao.mouse_dao import MouseDao
 from src.db.models import MouseMove
@@ -58,8 +59,8 @@ class TestMouseDao:
         assert mock_queue_item.called
         queued_item = mock_queue_item.call_args[0][0]
         assert isinstance(queued_item, MouseMove)
-        assert queued_item.start_time == start_time
-        assert queued_item.end_time == end_time
+        assert cast(datetime, queued_item.start_time) == start_time
+        assert cast(datetime, queued_item.end_time) == end_time
 
     @pytest.mark.asyncio
     async def test_create_from_window(self, dao, mock_queue_item):
@@ -72,8 +73,8 @@ class TestMouseDao:
         assert mock_queue_item.called
         queued_item = mock_queue_item.call_args[0][0]
         assert isinstance(queued_item, MouseMove)
-        assert queued_item.start_time == start_time
-        assert queued_item.end_time == end_time
+        assert cast(datetime, queued_item.start_time) == start_time
+        assert cast(datetime, queued_item.end_time) == end_time
 
     @pytest.mark.asyncio
     async def test_read_by_id(self, dao, mock_session):

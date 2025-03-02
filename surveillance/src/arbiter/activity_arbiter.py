@@ -111,7 +111,7 @@ class ActivityArbiter:
         # Record the duration of the previous state
         if self.state_machine.current_state:
             # ### Calculate the duration that the current state has existed
-            old_session = self.current_state.session
+            old_session = self.state_machine.current_state.session
 
             # if old_session.start_time.tzinfo is None:
             # old_session.start_time = old_session.start_time.astimezone()
@@ -125,7 +125,7 @@ class ActivityArbiter:
             # print(old_session, '251ru')
 
             # ### Create the replacement state
-            updated_state = self.state_machine.compute_next_state(new_session)
+            updated_state = self.state_machine.set_new_session(new_session)
 
             # TODO: Handle case where current session was continued, i.e. by "return self"
 

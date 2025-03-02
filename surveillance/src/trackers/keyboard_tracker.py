@@ -5,7 +5,7 @@ from ..util.end_program_routine import end_program_readout, pretend_report_event
 from ..object.classes import KeyboardAggregate
 from ..util.clock import SystemClock
 from ..util.threaded_tracker import ThreadedTracker
-from ..util.keyboard_aggregator import EventAggregator
+from ..util.keyboard_aggregator import EventAggregator, InProgressAggregation
 from ..util.console_logger import ConsoleLogger
 from ..facade.keyboard_facade import KeyboardApiFacadeCore
 
@@ -63,8 +63,8 @@ class KeyboardTrackerCore:
     def update_time(self, new_time):  # Method exists to enhance testability
         self.time_of_last_terminal_out = new_time
 
-    def apply_handlers(self, content: KeyboardAggregate):
-        length_of_session = content.session_end_time - content.session_start_time
+    def apply_handlers(self, content: KeyboardAggregate | InProgressAggregation):
+        # length_of_session = content.end_time - content.start_time
         if isinstance(self.event_handlers, list):
             for handler in self.event_handlers:
                 handler(content)  # emit an event
