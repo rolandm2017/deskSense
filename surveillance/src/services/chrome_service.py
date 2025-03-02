@@ -30,6 +30,7 @@ class TabQueue:
         MAX_QUEUE_LEN = 40
 
         if len(self.message_queue) >= MAX_QUEUE_LEN:
+            assert self.debounce_timer is not None, "Debounce timer was None when it should exist"
             self.debounce_timer.cancel()
             await self.start_processing_msgs()
             return

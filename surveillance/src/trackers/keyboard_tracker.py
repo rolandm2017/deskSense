@@ -19,8 +19,8 @@ DELAY_TO_AVOID_CPU_HOGGING = required_delay_per_char
 
 
 class KeyboardTrackerCore:
-    def __init__(self, clock, keyboard_api_facade, event_handlers, end_program_routine=None):
-        self.system_clock = clock
+    def __init__(self, system_clock, keyboard_api_facade, event_handlers, end_program_routine=None):
+        self.system_clock = system_clock
         self.keyboard_facade: KeyboardApiFacadeCore = keyboard_api_facade
         self.event_handlers = event_handlers
 
@@ -29,11 +29,11 @@ class KeyboardTrackerCore:
         self.events = []
         self.console_logger = ConsoleLogger()
         self.recent_count = 0
-        self.time_of_last_terminal_out = clock.now()
+        self.time_of_last_terminal_out = system_clock.now()
         self.time_of_last_aggregator_update = None
 
         # one sec of no typing => close session
-        self.aggregator = EventAggregator(timeout_ms=1000)
+        self.aggregator = EventAggregator(system_clock, timeout_ms=1000)
 
     def run_tracking_loop(self):
         event = self.keyboard_facade.read_event()

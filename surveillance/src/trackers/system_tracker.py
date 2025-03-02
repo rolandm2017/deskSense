@@ -1,7 +1,7 @@
 import uvicorn
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop
-from gi.repository import GLib
+from gi.repository import GLib  # type: ignore
 import os
 import signal
 import sys
@@ -10,12 +10,13 @@ import threading
 import asyncio
 import psutil
 from datetime import datetime
-from typing import Callable, Awaitable
+from typing import Callable, Awaitable, Optional
 import concurrent.futures
 
 
 class SystemPowerTracker:
-    def __init__(self, on_shutdown: Callable[[], Awaitable[None]], loop: asyncio.AbstractEventLoop = None):
+    # def __init__(self, on_shutdown: Callable[[], Awaitable[None]], loop: asyncio.AbstractEventLoop = None):
+    def __init__(self, on_shutdown: Callable[[], Awaitable[None]], loop: Optional[asyncio.AbstractEventLoop] = None):
         self.on_shutdown = on_shutdown
         self.main_loop = None
         self.main_loop_thread = None

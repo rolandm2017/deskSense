@@ -3,8 +3,8 @@ from fastapi import Depends
 from typing import Callable
 import asyncio
 
-from surveillance.src.services.chrome_service import ChromeService
-from surveillance.src.services.services import KeyboardService, MouseService, ProgramService
+from .services.chrome_service import ChromeService
+from .services.services import KeyboardService, MouseService, ProgramService
 
 from .db.database import get_db, AsyncSession, async_session_maker
 from .db.dao.mouse_dao import MouseDao

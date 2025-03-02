@@ -172,8 +172,9 @@ class TestProgramSummaryDao:
         existing_entry = Mock(spec=DailyProgramSummary)
         existing_entry.hours_spent = 1.0
         existing_entry.configure_mock(**{
-            "__str__.return_value": f"DailyProgramSummary(hours_spent={existing_entry.hours_spent})"
+            "__str__": lambda: f"DailyProgramSummary(hours_spent={existing_entry.hours_spent})"
         })
+        print("177ru")
 
         # Mock that no existing entry is found
         mock_result = Mock()
@@ -181,8 +182,12 @@ class TestProgramSummaryDao:
         mock_result.scalar_one_or_none.return_value = existing_entry
         mock_session.execute.return_value = mock_result
 
+        print("184ru")
+
         # Act
         await class_mock_dao.create_if_new_else_update(session_data)
+
+        print("190ru")
 
         # Assert
         assert mock_session.execute.called

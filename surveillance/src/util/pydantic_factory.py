@@ -53,11 +53,18 @@ def make_program_log(r: ProgramDto):
 
 
 def program_summary_row_to_pydantic(v: DailyProgramSummary):
-    return DailyProgramSummarySchema(id=v.id, programName=v.program_name, hoursSpent=v.hours_spent, gatheringDate=v.gathering_date)
+    return DailyProgramSummarySchema.model_validate(v)
+    # return DailyProgramSummarySchema(
+    #     id=v.id,  # type: ignore
+    #     programName=v.program_name,  # type: ignore
+    #     hoursSpent=v.hours_spent,  # type: ignore
+    #     gatheringDate=v.gathering_date  # type: ignore
+    # )  # type: ignore
 
 
 def chrome_summary_row_to_pydantic(v: DailyDomainSummary):
-    return DailyDomainSummarySchema(id=v.id, domainName=v.domain_name, hoursSpent=v.hours_spent, gatheringDate=v.gathering_date)
+    return DailyDomainSummarySchema.model_validate(v)
+    # return DailyDomainSummarySchema(id=v.id, domainName=v.domain_name, hoursSpent=v.hours_spent, gatheringDate=v.gathering_date)
 
 
 def manufacture_programs_bar_chart(program_data: List[DailyProgramSummary]):

@@ -1,7 +1,9 @@
+from datetime import datetime
 from pathlib import Path
 
 import time
 import threading
+from tracemalloc import start
 
 from ..util.console_logger import ConsoleLogger
 from ..config.definitions import productive_apps, productive_categories, productive_sites, unproductive_apps
@@ -51,7 +53,7 @@ class ProgramTrackerCore:
 
         self.current_is_chrome = False
 
-        self.current_session: ProgramSessionData = None
+        self.current_session: ProgramSessionData = ProgramSessionData()
 
         self.console_logger = ConsoleLogger()
 
@@ -65,7 +67,7 @@ class ProgramTrackerCore:
                 "window_title"] != self.current_session.window_title
             if on_a_different_window:
 
-                current_time = self.system_clock.now()  # once per loop
+                current_time: datetime = self.system_clock.now()  # once per loop
                 self.conclude_session(current_time)
                 # when a window closes, call that with "conclude_session_handler()" to maintain other flows
                 self.apply_handlers(self.current_session)
@@ -75,12 +77,20 @@ class ProgramTrackerCore:
                 # report window change immediately via "window_change_handler()"
                 self.window_change_handler(new_session)
 
-            if self.current_session is None:  # initialize
+            # initialize
+            if self.is_initialization_session(self.current_session):
                 current_time = self.system_clock.now()
                 new_session = self.start_new_session(
                     window_change, current_time)
                 self.current_session = new_session
                 self.window_change_handler(new_session)
+
+    def is_initialization_session(self, session):
+        if (session.window_title == "" and
+            session.detail == "" and
+                session.start_time is None):
+            return True
+        return False
 
     def start_new_session(self, window_change_dict, start_time):
         new_session = ProgramSessionData()
@@ -96,9 +106,12 @@ class ProgramTrackerCore:
         # end_time, duration, productive not set yet
         return new_session
 
-    def conclude_session(self, end_time):
+    def conclude_session(self, end_time: datetime):
         # end_time = self.system_clock.now()
-        start_time = self.current_session.start_time
+        start_time: datetime | None = self.current_session.start_time
+        initializing = start_time is None
+        if initializing:
+            start_time = end_time  # whatever
         duration = end_time - start_time
         self.current_session.end_time = end_time
         self.current_session.duration = duration
@@ -131,10 +144,13 @@ if __name__ == "__main__":
 
     clock = SystemClock()
 
+    def placeholder_handler():
+        return True
+
     try:
 
         tracker = ProgramTrackerCore(clock, program_api_facade, [
-                                     end_program_readout, pretend_report_event])
+                                     end_program_readout, pretend_report_event], placeholder_handler)
         thread_handler = ThreadedTracker(tracker)
         thread_handler.start()
         # Add a way to keep the main thread alive

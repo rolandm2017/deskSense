@@ -1,6 +1,5 @@
 from datetime import datetime, timezone
 from dataclasses import dataclass
-from time import time
 from typing import List, Callable
 
 from ..object.classes import KeyboardAggregate
@@ -15,49 +14,53 @@ class InProgressAggregation:
 
 class EventAggregator:
     def __init__(self, system_clock, timeout_ms: int):
-        if timeout_ms <= 0:
-            raise ValueError("Timeout must be positive")
         self.system_clock = system_clock
-        self.timeout = timeout_ms / 1000
+        self.timeout_in_sec = timeout_ms / 1000
         # self.current_aggregation: InProgressAggregation | None = None
 
-        self.current_aggregation: InProgressAggregation = self.set_initialization_aggregation()
+        self.current_aggregation: InProgressAggregation | None = None
         self._on_aggregation_complete = None
 
     def set_callback(self, callback: Callable):  # function
         self._on_aggregation_complete = callback
 
     def set_initialization_aggregation(self):
-        now = self.system_clock.now()
+        # Class relies on times as .timestamp() floats
+        now = self.system_clock.now().timestamp()
+
         # now, now, [] -> default, as close to meaningless as it gets
         return InProgressAggregation(now, now, [])
 
-    def add_event(self, timestamp: float):
+    def add_event(self, timestamp: float) -> None | list[datetime]:
         """A timestamp must be a datetime.timestamp() result."""
-        if not isinstance(timestamp, (int, float)):
-            raise TypeError("Timestamp must be a number")
         if timestamp is None:
             raise TypeError("Timestamp cannot be None")
-        if timestamp > time() + 1:  # 1 second buffer for clock skew
+        if not isinstance(timestamp, (int, float)):
+            raise TypeError("Timestamp must be a number")
+
+        if timestamp > self.system_clock.now().timestamp():
             raise ValueError("Timestamp cannot be in the future")
         if self.current_aggregation and timestamp < self.current_aggregation.end_time:
+            print(timestamp)
+            print(self.current_aggregation.end_time, '46ru')
             raise ValueError("Timestamps must be in chronological order")
 
-        uninitialized = len(self.current_aggregation.events) == 0
+        uninitialized = self.current_aggregation is None
         if uninitialized:
             self.current_aggregation = InProgressAggregation(
                 timestamp, timestamp, [timestamp])
             return None
 
-        next_added_timestamp_difference = timestamp - self.current_aggregation.end_time
-        session_window_has_elapsed = next_added_timestamp_difference > self.timeout
+        next_added_timestamp_difference = timestamp - \
+            self.current_aggregation.end_time  # type: ignore
+        session_window_has_elapsed = next_added_timestamp_difference > self.timeout_in_sec
         if session_window_has_elapsed:
             # "If no keystroke within 300 ms, end sesion; report session to db"
-            events_in_session = self.current_aggregation.events
+            events_in_session = self.current_aggregation.events  # type: ignore
             completed_to_report = self.convert_events_to_timestamps(events_in_session
                                                                     )
             #
-            # "Completed report" will be used to, um, get the first and last entry,
+            # "Completed report" will be used to get the first and last entry,
             # to see "start_time", "end_time"
             #
 
@@ -67,8 +70,8 @@ class EventAggregator:
                 self._on_aggregation_complete(completed_to_report)
             return completed_to_report
 
-        self.current_aggregation.end_time = timestamp
-        self.current_aggregation.events.append(timestamp)
+        self.current_aggregation.end_time = timestamp  # type: ignore
+        self.current_aggregation.events.append(timestamp)  # type: ignore
         return None
 
     def convert_events_to_timestamps(self, current_agg_events):
@@ -78,7 +81,7 @@ class EventAggregator:
         self.current_aggregation = InProgressAggregation(
             timestamp, timestamp, [timestamp])
 
-    def force_complete(self):
+    def force_complete(self) -> InProgressAggregation | None:
         if not self.current_aggregation:
             return None
 
@@ -87,6 +90,7 @@ class EventAggregator:
 
         if self._on_aggregation_complete:
             self._on_aggregation_complete(completed)
+
         return completed
 
     def package_aggregate_for_db(self, aggregate: list) -> KeyboardAggregate:
