@@ -38,3 +38,12 @@ productive_sites = [
 social_media = ['www.facebook.com', 'www.tiktok.com', 'x.com', ]
 
 misc_sites = ['newtab', 'chatgpt.com']
+
+# Keyboard tracker stuff (not used)
+average_char_per_word = 5
+wpm = 90
+char_per_min = 540  # 5 char per word * 90 word per min -> 540 char per min
+char_per_sec = 9  # 540 char / 60 sec -> 9 char per sec
+required_delay_per_char = 0.08  # 1 sec / 9 char -> 0.111 sec per char
+
+DELAY_TO_AVOID_CPU_HOGGING = required_delay_per_char

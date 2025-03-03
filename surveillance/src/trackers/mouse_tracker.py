@@ -28,7 +28,8 @@ class MouseTrackerCore:
         self.environment = OperatingSystemInfo()
 
         self.movement_start_time = None
-        self.last_position: MouseCoords = MouseCoords(x=0, y=0)  # init
+        self.last_position: MouseCoords | None = None  # init
+        # self.last_position: MouseCoords = MouseCoords(x=0, y=0)  # init
         self.is_moving = False
 
         self.console_logger = ConsoleLogger()
@@ -42,9 +43,13 @@ class MouseTrackerCore:
         return coords
 
     def position_is_same_as_before(self, new_position):
+        if self.last_position is None:
+            return True  # In that it is still None, like it was before.
         return self.last_position.x == new_position.x and self.last_position.y == new_position.y
 
     def mouse_is_moving(self, coords):
+        if self.last_position is None:
+            return False
         previous = self.last_position
         is_still_moving = previous.x != coords.x or previous.y != coords.y
         return is_still_moving

@@ -116,8 +116,6 @@ def test_tracker_initialization(tracker_and_events):
     assert tracker.movement_start_time is None
     assert tracker.last_position is None
 
-# TODO: make this test that event handlers actually handle
-
 
 def test_make_sure_handler_actually_handles(tracker_and_events, mock_mouse_facade):
     x1 = MouseCoords(100, 100)
@@ -321,6 +319,7 @@ def test_zero_distance_movement(tracker_and_events, mock_mouse_facade):
     # Simulate movement to same position
     mock_mouse_facade.set_cursor_pos(MouseCoords(100, 100))
     tracker.run_tracking_loop()
+    print(tracker, '324ru')
     # Testing starting circumstances
     assert tracker.is_moving is False, "Should be false"
     assert tracker.last_position.x == 100 and tracker.last_position.y == 100
@@ -375,6 +374,7 @@ def test_end_program_routine_called(tracker_and_events, mock_mouse_facade):
 
     tracker.stop()
     assert len(end_program_called) == 1
+
 
 # def test_preserve_open_events(tracker):
 #     """Test that preserve_open_events correctly handles open movement sessions."""

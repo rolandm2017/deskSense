@@ -53,7 +53,7 @@ class ProgramTrackerCore:
 
         self.current_is_chrome = False
 
-        self.current_session: ProgramSessionData = ProgramSessionData()
+        self.current_session: ProgramSessionData | None = None
 
         self.console_logger = ConsoleLogger()
 
@@ -65,7 +65,9 @@ class ProgramTrackerCore:
 
             on_a_different_window = self.current_session and window_change[
                 "window_title"] != self.current_session.window_title
-            if on_a_different_window:
+            if on_a_different_window and self.is_initialized():
+                if self.current_session is None:
+                    raise ValueError("Current session was None")
 
                 current_time: datetime = self.system_clock.now()  # once per loop
                 self.conclude_session(current_time)
@@ -78,19 +80,24 @@ class ProgramTrackerCore:
                 self.window_change_handler(new_session)
 
             # initialize
-            if self.is_initialization_session(self.current_session):
+            if self.is_uninitialized():
                 current_time = self.system_clock.now()
                 new_session = self.start_new_session(
                     window_change, current_time)
                 self.current_session = new_session
                 self.window_change_handler(new_session)
 
-    def is_initialization_session(self, session):
-        if (session.window_title == "" and
-            session.detail == "" and
-                session.start_time is None):
-            return True
-        return False
+    def is_uninitialized(self):
+        return self.current_session is None
+
+    def is_initialized(self):
+        return not self.current_session is None
+    # def is_initialization_session(self, session):
+    #     if (session.window_title == "" and
+    #         session.detail == "" and
+    #             session.start_time is None):
+    #         return True
+    #     return False
 
     def start_new_session(self, window_change_dict, start_time):
         new_session = ProgramSessionData()
@@ -107,6 +114,8 @@ class ProgramTrackerCore:
         return new_session
 
     def conclude_session(self, end_time: datetime):
+        if self.current_session is None:
+            raise ValueError("Current session was None")
         # end_time = self.system_clock.now()
         start_time: datetime | None = self.current_session.start_time
         initializing = start_time is None

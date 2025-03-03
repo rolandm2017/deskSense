@@ -264,6 +264,7 @@ async def get_timeline_for_dashboard(dashboard_service: DashboardService = Depen
 async def get_program_time_for_dashboard(dashboard_service: DashboardService = Depends(get_dashboard_service)):
     program_data = await dashboard_service.get_program_summary()
     if not isinstance(program_data, list):
+        print(program_data, "here 267ru")
         raise HTTPException(
             status_code=500, detail="Failed to retrieve program chart info")
     return ProgramBarChartContent(columns=manufacture_programs_bar_chart(program_data))
