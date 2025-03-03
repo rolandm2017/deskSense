@@ -9,31 +9,20 @@ from ..util.keyboard_aggregator import EventAggregator, InProgressAggregation
 from ..util.console_logger import ConsoleLogger
 from ..facade.keyboard_facade import KeyboardApiFacadeCore
 
-average_char_per_word = 5
-wpm = 90
-char_per_min = 540  # 5 char per word * 90 word per min -> 540 char per min
-char_per_sec = 9  # 540 char / 60 sec -> 9 char per sec
-required_delay_per_char = 0.08  # 1 sec / 9 char -> 0.111 sec per char
-
-DELAY_TO_AVOID_CPU_HOGGING = required_delay_per_char
-
 
 class KeyboardTrackerCore:
-    def __init__(self, system_clock, keyboard_api_facade, event_handlers, end_program_routine=None):
+    def __init__(self, system_clock, keyboard_api_facade, event_handlers):
         self.system_clock = system_clock
         self.keyboard_facade: KeyboardApiFacadeCore = keyboard_api_facade
         self.event_handlers = event_handlers
 
-        self.end_program_func = end_program_routine
-
-        self.events = []
-        self.console_logger = ConsoleLogger()
         self.recent_count = 0
         self.time_of_last_terminal_out = system_clock.now()
         self.time_of_last_aggregator_update = None
 
         # one sec of no typing => close session
         self.aggregator = EventAggregator(system_clock, timeout_ms=1000)
+        self.console_logger = ConsoleLogger()
 
     def run_tracking_loop(self):
         event = self.keyboard_facade.read_event()
@@ -80,13 +69,7 @@ class KeyboardTrackerCore:
         final_aggregate = self.aggregator.force_complete()
         if final_aggregate:
             self.apply_handlers(final_aggregate)
-        if self.end_program_func:
-            report = self.generate_keyboard_report()
-            self.end_program_func(report)
         self.is_running = False
-
-    def generate_keyboard_report(self):
-        return {"total_inputs": len(self.events)}
 
 
 if __name__ == "__main__":

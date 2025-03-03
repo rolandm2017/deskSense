@@ -70,12 +70,16 @@ def test_start_new_session():
 
     tracker = ProgramTrackerCore(clock, facade, handler, Mock())
 
-    assert tracker.current_session is None
+    assert tracker.current_session is None, "Initialization condition wasn't met"
+
+    # assert tracker.current_session.window_title == "", "Initialization conditions weren't met"
+    # assert tracker.current_session.detail == "", "Initialization conditions weren't met"
+    # assert tracker.current_session.start_time is None, "Initialization conditions weren't met"
 
     # Act
     window_change = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg',
                      'window_title': 'program_tracker.py - deskSense - Visual Studio Code'}
-    current_time = tracker.clock.now()
+    current_time = tracker.system_clock.now()
     new_session = tracker.start_new_session(
         window_change, current_time)
 
@@ -108,7 +112,10 @@ def test_conclude_session():
 
     tracker = ProgramTrackerCore(clock, facade, handler, Mock())
 
-    assert tracker.current_session is None
+    assert tracker.current_session is None, "Initialization condition wasn't met"
+    # assert tracker.current_session.window_title == "", "Initialization conditions weren't met"
+    # assert tracker.current_session.detail == "", "Initialization conditions weren't met"
+    # assert tracker.current_session.start_time is None, "Initialization conditions weren't met"
 
     window_change = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg',
                      'window_title': 'program_tracker.py - deskSense - Visual Studio Code'}
@@ -158,12 +165,18 @@ def test_window_change_triggers_handler():
     facade.listen_for_window_changes.return_value = iter([first_test_item])
 
     tracker.system_clock.now.assert_not_called()
-    assert tracker.current_session is None  # Test setup conditions
+
+    assert tracker.current_session is None, "Initialization condition wasn't met"
+    # assert tracker.current_session.window_title == "", "Initialization conditions weren't met"
+    # assert tracker.current_session.detail == "", "Initialization conditions weren't met"
+    # assert tracker.current_session.start_time is None, "Initialization conditions weren't met"
+    # # assert tracker.current_session is None  # Test setup conditions
 
     # ### Act - Run the tracker
     tracker.run_tracking_loop()
-    tracker.clock.now.assert_called()
+    tracker.system_clock.now.assert_called()
     # There was no session from a prev run so, on_a_different_window is false
+    assert tracker.current_session is not None, "Program was still in its init condition"
     assert tracker.current_session.window_title == "Visual Studio Code"
     assert tracker.current_session.end_time is None
     window_change_handler.assert_called_once()
@@ -189,10 +202,10 @@ def test_window_change_triggers_handler():
 
     facade.listen_for_window_changes.return_value = [ex3]
     tracker.run_tracking_loop()
-    assert tracker.clock.now.call_count == 2
+    assert tracker.system_clock.now.call_count == 2
 
     # Verify handler was called with session data
-    window_change_handler.call_count == 2
+    assert window_change_handler.call_count == 2
 
     session_arg = window_change_handler.call_args[0][0]
     assert isinstance(session_arg, ProgramSessionData)
@@ -252,12 +265,15 @@ def test_a_series_of_programs():
     handler2_calls = []
 
     def handler1(event):
+        print("handler called with", event)
         handler1_calls.append(event)
 
     def handler2(event):
         handler2_calls.append(event)
 
-    tracker = ProgramTrackerCore(clock, facade, handler, handler1)
+    tracker = ProgramTrackerCore(clock, facade, handler, [handler1, handler2])
+
+    assert tracker.current_session is None, "Initialization conditions not met"
 
     # Setup
     program1 = {"os": "some_val", 'process_name': 'code',
@@ -268,9 +284,7 @@ def test_a_series_of_programs():
     tracker.run_tracking_loop()  # 1
 
     # ### Assert
-    # Session is open, not concluded
-    assert tracker.current_session is not None
-    assert tracker.current_session.start_time
+    assert tracker.current_session is not None, "Tracker wasn't initialized when it should be"
     assert tracker.current_session.window_title == program1["window_title"]
     assert tracker.current_session.detail == no_space_dash_space
     assert tracker.current_session.end_time is None
