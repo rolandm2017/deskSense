@@ -62,12 +62,12 @@ async def activity_arbiter_and_setup():
     # mock_chrome_service = MagicMock()
     # mock_chrome_service.event_emitter.on = MagicMock()
 
-    return arbiter, program_events, chrome_events, ui_layer
+    return arbiter, program_events, chrome_events, ui_layer, mock_program_listener, mock_chrome_listener
 
 
 @pytest.mark.asyncio
 async def test_activity_arbiter(activity_arbiter_and_setup):
-    arbiter, program_events, chrome_events, ui_layer = activity_arbiter_and_setup
+    arbiter, program_events, chrome_events, ui_layer, mock_program_listener, mock_chrome_listener = activity_arbiter_and_setup
 
     # Setup: How much time should pass?
     expected_sum_of_time = 45 * 60  # 45 minutes, as per the arbiter_events.py file
@@ -80,13 +80,17 @@ async def test_activity_arbiter(activity_arbiter_and_setup):
 
     assert len(test_sessions) > 0, "Test setup failed"
 
+    # TODO: Test the UINotifier
+    # TODO: Test the DAO listeners
+
     # ### Act
     for session in test_sessions:
         await arbiter.transition_state(session)
 
-    # ### Assert
+    # ### ### Assert
+    remaining_open_session_offset = 1
 
-    # Elapsed time was as expected
+    # ### Test some basic assumptions
     output_events = program_events + chrome_events
 
     assert len(program_events) > 0, "Not even one event made it"
@@ -97,19 +101,16 @@ async def test_activity_arbiter(activity_arbiter_and_setup):
     assert all(isinstance(log, ChromeSessionData)
                for log in chrome_events), "A Chrome event wasn't a Chrome session"
 
-    for k in output_events:
-        print(k.duration)
-
     assert any(isinstance(obj.duration, int) for obj in output_events) is False
     assert all(isinstance(obj.duration, timedelta) for obj in output_events)
 
-    total = timedelta()
-    for e in output_events:
-        total = total + e.duration
+    # ### Test DAO notifications
+    assert mock_program_listener.on_program_session_completed.call_count == len(
+        # NOTE: Would be "- 1" if the final input was a ProgramSession
+        program_sessions_in_test)
+    assert mock_chrome_listener.on_chrome_session_completed.call_count == len(
+        chrome_sessions_in_test) - remaining_open_session_offset
 
-    total_duration = total.total_seconds()
-
-    assert expected_sum_of_time == total_duration
     # Total number of recorded Program DAO entries was as expected
     assert len(program_events) == len(
         program_sessions_in_test), "A program session didn't make it through"
@@ -117,10 +118,21 @@ async def test_activity_arbiter(activity_arbiter_and_setup):
     remaining_open_session_offset = 1
     assert len(chrome_events) == len(
         chrome_sessions_in_test) - remaining_open_session_offset, "A Chrome session didn't make it through"
+
+    # ### Test UI Notification layer
     # UI notifier was called the expected number of times
     assert ui_layer.on_state_changed.call_count == len(test_sessions)
 
-    # ### Check that they all received durations and end times
+    # ### The total time elapsed is what was expected
+    total = timedelta()
+    for e in output_events:
+        total = total + e.duration
+
+    total_duration = total.total_seconds()
+
+    assert expected_sum_of_time == total_duration
+
+    # ### Check that sessions all received durations and end times
     assert all(log.end_time is not None for log in output_events)
     assert all(log.duration is not None for log in output_events)
 
