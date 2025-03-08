@@ -54,7 +54,6 @@ async def activity_arbiter_and_setup():
     mock_chrome_listener.on_chrome_session_completed = AsyncMock(
         side_effect=chrome_events.append)
 
-    # Example usage
     arbiter.add_program_summary_listener(mock_program_listener)
     arbiter.add_chrome_summary_listener(mock_chrome_listener)
 

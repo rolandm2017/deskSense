@@ -36,8 +36,7 @@ def ui_notifier(mock_overlay):
     return UINotifier(mock_overlay)
 
 
-@pytest.mark.asyncio
-async def test_internal_state_change(ui_notifier, mock_overlay):
+def test_internal_state_change(ui_notifier, mock_overlay):
     """Test that internal state changes update the overlay with the right text and color"""
     # Create a test state
     program_session = ProgramSessionData()
@@ -46,7 +45,8 @@ async def test_internal_state_change(ui_notifier, mock_overlay):
         "Test Window Title", False, program_session)
 
     # Trigger the state change
-    await ui_notifier.on_state_changed(test_state)
+    print(ui_notifier, "49ru")
+    ui_notifier.on_state_changed(test_state)
 
     # Check that change_display_text was called with the right arguments
     assert len(mock_overlay.change_display_text.calls) == 1
@@ -55,8 +55,7 @@ async def test_internal_state_change(ui_notifier, mock_overlay):
     assert call["color"] == "lime"
 
 
-@pytest.mark.asyncio
-async def test_other_state_change(ui_notifier, mock_overlay):
+def test_other_state_change(ui_notifier, mock_overlay):
     """Test that other state changes update the overlay with domain and blue color"""
     # Create a test state
 
@@ -66,7 +65,7 @@ async def test_other_state_change(ui_notifier, mock_overlay):
         "Chrome", True, "example.com", chrome_session)
 
     # Trigger the state change
-    await ui_notifier.on_state_changed(test_state)
+    ui_notifier.on_state_changed(test_state)
 
     # Check that change_display_text was called with the right arguments
     assert len(mock_overlay.change_display_text.calls) == 1
@@ -75,8 +74,7 @@ async def test_other_state_change(ui_notifier, mock_overlay):
     assert call["color"] == "#4285F4"
 
 
-@pytest.mark.asyncio
-async def test_multiple_state_changes(ui_notifier, mock_overlay):
+def test_multiple_state_changes(ui_notifier, mock_overlay):
     """Test multiple state changes in sequence"""
     # Create test states
     program_session = ProgramSessionData()
@@ -89,9 +87,9 @@ async def test_multiple_state_changes(ui_notifier, mock_overlay):
         "Chrome", True, "test-domain.org", chrome_session)
 
     # Trigger state changes
-    await ui_notifier.on_state_changed(internal_state)
-    await ui_notifier.on_state_changed(other_state)
-    await ui_notifier.on_state_changed(internal_state)
+    ui_notifier.on_state_changed(internal_state)
+    ui_notifier.on_state_changed(other_state)
+    ui_notifier.on_state_changed(internal_state)
 
     # Check that change_display_text was called the right number of times
     assert len(mock_overlay.change_display_text.calls) == 3

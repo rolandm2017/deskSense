@@ -11,7 +11,7 @@ class UINotifier:
         """
         self.overlay = overlay
 
-    def on_state_changed(self, session: InternalState):
+    def on_state_changed(self, session: InternalState | ProgramSessionData | ChromeSessionData):
         if isinstance(session, ProgramSessionData):
             display_text = session.window_title
             self.overlay.change_display_text(display_text, "lime")
@@ -19,9 +19,17 @@ class UINotifier:
             display_text = f"{session.domain}"
             # display_text = f"Chrome | {session.domain}"
             self.overlay.change_display_text(display_text, "#4285F4")
+        elif isinstance(session, ApplicationInternalState):
+            attached = session.session
+            display_text = attached.window_title
+            self.overlay.change_display_text(display_text, "lime")
+        elif isinstance(session, ChromeInternalState):
+            attached = session.session
+            display_text = f"{attached.domain}"
+            self.overlay.change_display_text(display_text, "#4285F4")
         else:
             print(type(session))
-            raise TypeError("Type wasn't an expected SessionData")
+            raise TypeError("Type wasn't an expected Session or State")
 
 
 def get_program_display_info(window_title):
@@ -36,12 +44,3 @@ def get_chrome_display_info(domain):
         "text": f"Chrome | {domain}",
         "color": "#4285F4"
     }
-
-
-def get_display_info(state):
-    if isinstance(state, ChromeInternalState):
-        print(state.session)
-        return get_chrome_display_info(state.session.domain)
-    else:
-        print(state.session)
-        return get_program_display_info(state.session.window_title)
