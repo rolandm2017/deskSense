@@ -10,7 +10,7 @@ from .debug.ui_notifier import UINotifier
 from .services.chrome_service import ChromeService
 from .services.services import KeyboardService, MouseService, ProgramService
 
-from .db.database import get_db, AsyncSession, async_session_maker
+from .db.database import async_session_maker
 from .db.dao.mouse_dao import MouseDao
 from .db.dao.keyboard_dao import KeyboardDao
 from .db.dao.program_dao import ProgramDao
@@ -21,8 +21,6 @@ from .db.dao.chrome_summary_dao import ChromeSummaryDao
 from .db.dao.summary_logs_dao import ProgramLoggingDao, ChromeLoggingDao
 from .db.dao.video_dao import VideoDao
 from .db.dao.frame_dao import FrameDao
-from .db.dao import chrome_summary_dao
-from .db.dao import program_summary_dao
 
 from .arbiter.activity_arbiter import ActivityArbiter
 from .arbiter.activity_recorder import ActivityRecorder
