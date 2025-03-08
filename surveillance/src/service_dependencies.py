@@ -1,7 +1,11 @@
 # surveillance/src/service_dependencies.py
+from .util.clock import SystemClock
 from fastapi import Depends
 from typing import Callable
 import asyncio
+
+
+from .debug.ui_notifier import UINotifier
 
 from .services.chrome_service import ChromeService
 from .services.services import KeyboardService, MouseService, ProgramService
@@ -17,8 +21,11 @@ from .db.dao.chrome_summary_dao import ChromeSummaryDao
 from .db.dao.summary_logs_dao import ProgramLoggingDao, ChromeLoggingDao
 from .db.dao.video_dao import VideoDao
 from .db.dao.frame_dao import FrameDao
+from .db.dao import chrome_summary_dao
+from .db.dao import program_summary_dao
+
 from .arbiter.activity_arbiter import ActivityArbiter
-from .util.clock import SystemClock
+from .arbiter.activity_recorder import ActivityRecorder
 
 
 # Dependency functions
@@ -111,23 +118,28 @@ async def get_activity_arbiter():
     clock = SystemClock()
     chrome_logging_dao = ChromeLoggingDao(clock, async_session_maker)
     program_logging_dao = ProgramLoggingDao(clock, async_session_maker)
+
+    program_summary_dao = ProgramSummaryDao(
+        clock, program_logging_dao, async_session_maker)
+    chrome_summary_dao = ChromeSummaryDao(
+        clock, chrome_logging_dao, async_session_maker)
     # print("Starting get_activity_arbiter")
 
     global _arbiter_instance
     if not _arbiter_instance:
         print("Creating new Overlay")
         overlay = Overlay()
+        ui_layer = UINotifier(overlay)
+        activity_recorder = ActivityRecorder(
+            program_summary_dao, chrome_summary_dao)
         print("Creating new ActivityArbiter")
         chrome_service = await get_chrome_service()
 
         _arbiter_instance = ActivityArbiter(
-            overlay=overlay,
-            clock=clock,
-            chrome_summary_dao=ChromeSummaryDao(
-                clock, chrome_logging_dao, async_session_maker),
-            program_summary_dao=ProgramSummaryDao(
-                clock, program_logging_dao, async_session_maker)
+            system_clock=clock,
         )
+
+        _arbiter_instance.add_ui_listener(ui_layer.on_state_changed)
 
         # Create wrapper for async handler
         @chrome_service.event_emitter.on('tab_change')

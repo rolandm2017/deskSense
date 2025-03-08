@@ -10,6 +10,7 @@ from ..config.definitions import productive_sites, productive_apps
 from ..util.console_logger import ConsoleLogger
 from ..object.return_types import DaySummary
 from ..util.clock import UserFacingClock
+from ..util.time_formatting import format_for_local_time
 
 
 class DashboardService:
@@ -44,8 +45,8 @@ class DashboardService:
                     productivity = productivity + domain.hours_spent
                 else:
                     leisure = leisure + domain.hours_spent
-            print("starting program summaries loop")
 
+            # print("starting program summaries loop")
             for program in daily_program_summaries:
                 hours_spent: float = float(program.hours_spent)  # type: ignore
                 # print(program.program_name, float(
@@ -59,15 +60,15 @@ class DashboardService:
                     alt_tab_window.append(program.hours_spent)
                     continue  # temp - skipping bugged outputs
                 if program.program_name in productive_apps:
-                    print("< LOG > adding " + program.program_name)
+                    # print("< LOG > adding " + program.program_name)
                     productivity = productivity + hours_spent
                 else:
                     leisure = leisure + hours_spent
             day = {"day": date_as_datetime,
                    "productivity": float(f"{productivity:.4f}"), "leisure": float(f"{leisure:.4f}")}
             # print(day)
-            print("significant programs:")
-            print(significant_programs)
+            # print("significant programs:")
+            # print(significant_programs)
 
             usage_from_days.append(day
                                    )
@@ -136,13 +137,22 @@ class DashboardService:
                 timedelta(days=days_after_sunday)
             mouse_events = await self.timeline_dao.read_day_mice(current_day)
             keyboard_events = await self.timeline_dao.read_day_keyboard(current_day)
+
+            mouse_events_as_local_time = format_for_local_time(mouse_events)
+            keyboard_events_as_local_time = format_for_local_time(
+                keyboard_events)
+
+            for event in mouse_events_as_local_time:
+                print(event.start, event.start.tzinfo)
+
+            # TODO: Format days to convert from utc -> local time
             # print(mouse_events, '102ru')
             # print(keyboard_events, '103ru')
             self.logger.log_days_retrieval("[get_specific_week_timeline]", current_day, len(
                 mouse_events) + len(keyboard_events))
             day = {"date": current_day,
-                   "mouse_events": mouse_events,
-                   "keyboard_events": keyboard_events}
+                   "mouse_events": mouse_events_as_local_time,
+                   "keyboard_events": keyboard_events_as_local_time}
             all_days.append(day)
 
         return all_days, sunday_that_starts_the_week

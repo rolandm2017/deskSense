@@ -58,16 +58,11 @@ class ActivityStateMachine:
         state.session.end_time = now
 
     def get_finished_state(self) -> InternalState | None:
-
         return self.prior_state
 
 
 class TransitionFromProgramMachine:
     def __init__(self, current_state):
-        print(f"Test ApplicationInternalState: {ApplicationInternalState}")
-        print(
-            f"Implementation ApplicationInternalState: {type(current_state).__module__}.{type(current_state).__name__}")
-
         if not isinstance(current_state, ApplicationInternalState):
             print(current_state, '55ru')
             raise TypeError(

@@ -5,9 +5,9 @@ from ..object.arbiter_classes import InternalState
 
 
 class ActivityRecorder:
-    def __init__(self, chrome_summary_dao, program_summary_dao):
-        self.chrome_summary_dao = chrome_summary_dao
+    def __init__(self, program_summary_dao, chrome_summary_dao):
         self.program_summary_dao = program_summary_dao
+        self.chrome_summary_dao = chrome_summary_dao
 
     async def on_state_changed(self, state):
         if not isinstance(state, InternalState):

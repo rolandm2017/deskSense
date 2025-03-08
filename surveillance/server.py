@@ -264,7 +264,6 @@ async def get_timeline_for_dashboard(dashboard_service: DashboardService = Depen
 async def get_program_time_for_dashboard(dashboard_service: DashboardService = Depends(get_dashboard_service)):
     program_data = await dashboard_service.get_program_summary()
     if not isinstance(program_data, list):
-        print(program_data, "here 267ru")
         raise HTTPException(
             status_code=500, detail="Failed to retrieve program chart info")
     return ProgramBarChartContent(columns=manufacture_programs_bar_chart(program_data))
@@ -302,7 +301,7 @@ async def get_productivity_breakdown(week_of: date = Path(..., description="Week
 @app.get("/dashboard/program/summaries/week", response_model=WeeklyProgramContent)
 async def get_program_week_history(dashboard_service: DashboardService = Depends(get_dashboard_service)):
     week_of_data: List[DailyProgramSummary] = await dashboard_service.get_program_summary_weekly()
-    # FIXME: Test on Tuesday, Wednesday to see that they each get their own day
+    # TODO: Test on Tuesday, Wednesday to see that they each get their own day
     if not isinstance(week_of_data, list):
         raise HTTPException(
             status_code=500, detail="Failed to retrieve week of program chart info")
@@ -312,7 +311,7 @@ async def get_program_week_history(dashboard_service: DashboardService = Depends
 @app.get("/dashboard/chrome/summaries/week", response_model=WeeklyChromeContent)
 async def get_chrome_week_history(dashboard_service: DashboardService = Depends(get_dashboard_service)):
     week_of_unsorted_domain_summaries: List[DailyDomainSummary] = await dashboard_service.get_chrome_summary_weekly()
-    # FIXME: Test on Tuesday, Wednesday to see that they each get their own day
+    # TODO: Test on Tuesday, Wednesday to see that they each get their own day
 
     if not isinstance(week_of_unsorted_domain_summaries, list):
         raise HTTPException(

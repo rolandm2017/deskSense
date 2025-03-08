@@ -10,6 +10,7 @@ from ...util.console_logger import ConsoleLogger
 
 class ProgramLoggingDao(BaseQueueingDao):
     def __init__(self, clock, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+        """ Exists mostly for debugging. """
         super().__init__(session_maker=session_maker,
                          batch_size=batch_size, flush_interval=flush_interval)
         self.system_clock = clock
@@ -65,6 +66,8 @@ class ProgramLoggingDao(BaseQueueingDao):
 
 class ChromeLoggingDao(BaseQueueingDao):
     def __init__(self, clock, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+        """ Exists mostly for debugging. """
+
         super().__init__(session_maker=session_maker,
                          batch_size=batch_size, flush_interval=flush_interval)
         self.system_clock = clock

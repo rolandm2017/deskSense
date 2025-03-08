@@ -70,7 +70,7 @@ class ChromeTab(Base):
     id = Column(Integer, primary_key=True, index=True)
     url = Column(String(max_content_len))
     # _ (underscore) because the @property and @tab_title.setter use "tab_title"
-    _tab_title = Column(String(max_content_len), index=True)
+    _tab_title = Column("tab_title", String(max_content_len), index=True)
     start_time = Column(DateTime(timezone=True))
     end_time = Column(DateTime(timezone=True))
     productive = Column(Boolean)
@@ -102,7 +102,7 @@ class DailyProgramSummary(Base):
     id = Column(Integer, primary_key=True, index=True)
     program_name = Column(String)
     hours_spent = Column(Float)
-    # The date on which the program data was gathered
+    # The date on which the program data was gathered, without hh:mm:ss
     gathering_date = Column(DateTime(timezone=True))
 
 
