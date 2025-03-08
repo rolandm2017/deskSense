@@ -11,6 +11,8 @@ from src.services.chrome_service import TabQueue
 from src.arbiter.activity_arbiter import ActivityArbiter
 from src.util.clock import SystemClock
 from src.debug.debug_overlay import Overlay
+from surveillance.src.arbiter.activity_recorder import ActivityRecorder
+from surveillance.src.debug.ui_notifier import UINotifier
 
 # Fixture to read and reconstruct events from the CSV file
 
@@ -53,15 +55,34 @@ def chrome_service_fixture():
     mock_dao = AsyncMock()
     mock_summary_dao = AsyncMock()
 
-    chrome_summary_dao = AsyncMock()
-    program_summary_dao = AsyncMock()
+    # chrome_summary_dao = AsyncMock()
+    # program_summary_dao = AsyncMock()
 
     # Initialize ChromeService with the mocked DAOs
     overlay = Overlay()
-    # TODO: wrap in UI Overlay here
+    ui_layer = UINotifier(overlay)
+
+    # recorder = ActivityRecorder(program_summary_dao, chrome_summary_dao)
     clock = SystemClock()
     arbiter = ActivityArbiter(
-        clock, chrome_summary_dao, program_summary_dao)
+        clock)
+    arbiter.add_ui_listener(ui_layer.on_state_changed)
+
+    program_events = []
+    chrome_events = []
+
+    # Create mock listeners with side effects to record calls
+    mock_program_listener = MagicMock()
+    mock_program_listener.on_program_session_completed = AsyncMock(
+        side_effect=program_events.append)
+
+    mock_chrome_listener = MagicMock()
+    mock_chrome_listener.on_chrome_session_completed = AsyncMock(
+        side_effect=chrome_events.append)
+
+    arbiter.add_program_summary_listener(mock_program_listener)
+    arbiter.add_chrome_summary_listener(mock_chrome_listener)
+
     chrome_service = ChromeService(clock, arbiter, mock_dao)
 
     # Return the initialized ChromeService instance

@@ -61,8 +61,8 @@ def test_format_title():
     assert terminal_formatted_1 == "devil@hades"
     assert terminal_formatted_2 == "zeus@olympus"
 
-    assert chrome1 == "Chrome | Claude.ai"
-    assert chrome2 == "Chrome | Stackoverflow.com"
+    assert chrome1 == "Claude.ai"
+    assert chrome2 == "Stackoverflow.com"
 
     assert just_vscode1 == "VSCode"
     assert just_vscode2 == "VSCode"
