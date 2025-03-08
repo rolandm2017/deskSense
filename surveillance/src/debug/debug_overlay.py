@@ -3,11 +3,15 @@ from queue import Queue, Empty
 import threading
 import re
 
+from ..util.console_logger import ConsoleLogger
+
 
 class Overlay:
-    # FIXME: If it is alt tab window, color it
+    # TODO: If it is alt tab window, color it
     def __init__(self):
-        self.debug = False
+        self.debug = True
+        self.logger = ConsoleLogger()
+
         # print("Overlay init starting")
         # Color mapping for different applications
         self.color_map = {
@@ -25,11 +29,13 @@ class Overlay:
 
         # Create and start the GUI thread
         if self.debug:
+            self.logger.log_yellow("[info] debug mode is on")
             self.gui_thread = threading.Thread(target=self._run_gui)
             self.gui_thread.daemon = True  # Thread will close when main program exits
             self.gui_thread.start()
-
-        # print("Overlay init complete")
+        else:
+            self.logger.log_yellow("[info] No debug display active")
+            # print("Overlay init complete")
 
     def change_display_text(self, new_text, display_color=None):
         """Thread-safe method to change display text"""
@@ -49,8 +55,6 @@ class Overlay:
 
     def _update_display(self, new_text, display_color):
         """Actually update the display (called from main thread)"""
-        # print(
-        # Debug
         # f"Starting _update_display with: {new_text}, {display_color}")
         formatted_text = self.format_title(new_text)
         # print(f"Formatted text: {formatted_text}")  # Debug
@@ -83,8 +87,12 @@ class Overlay:
 
         if "Google Chrome" in title:
             parts = title.split(' - ')
-            site = parts[-2]  # Usually the site name is second-to-last
-            return f"Chrome | {site}"
+            if len(parts) < 2:
+                site = ""
+            else:
+                site = parts[-2]  # Usually the site name is second-to-last
+            # return f"Chrome | {site}"
+            return f"{site}"
         elif "Visual Studio Code" in title:
             return "VSCode"
         elif "Terminal" in title:

@@ -101,8 +101,6 @@ class TimelineEntryDao(BaseQueueingDao):
         )
         async with self.session_maker() as session:
             result = await session.execute(query)
-            print(result)
-            print(result.scalars())
             return result.scalars().all()
 
             # scalars_result = result.scalars()
@@ -130,19 +128,16 @@ class TimelineEntryDao(BaseQueueingDao):
     async def read_day_mice(self, day: datetime) -> List[TimelineEntryObj]:
         is_today = day.strftime(
             "%m %d %Y") == self.system_clock.now().strftime("%m %d %Y")
-        print("FOO")
         if is_today:
             # Precomputed day can't exist yet
             return await self.read_day(day, ChartEventType.MOUSE)
         else:
-            print("BAR")
             # return await self.read_day(day, ChartEventType.MOUSE)
             precomputed_day_entries = await self.read_precomputed_entry_for_day(
                 day, ChartEventType.MOUSE)
             if len(precomputed_day_entries) > 0:
                 return precomputed_day_entries
             else:
-                print("BAZ", day)
                 read_events = await self.read_day(day, ChartEventType.MOUSE)
                 new_precomputed_day = await self.create_precomputed_day(read_events)
                 return new_precomputed_day

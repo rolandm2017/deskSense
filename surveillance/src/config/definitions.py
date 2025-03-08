@@ -1,3 +1,17 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+LOCAL_TIME_ZONE = os.getenv("LOCAL_TIME_ZONE")
+
+if LOCAL_TIME_ZONE is None or LOCAL_TIME_ZONE == "":
+    raise ValueError(
+        "LOCAL_TIME_ZONE environment variable is not set or is empty")
+
+
+local_time_zone = LOCAL_TIME_ZONE
+
 MAX_QUEUE_LENGTH = 40
 
 max_content_len = 120

@@ -2,7 +2,7 @@
 from sqlalchemy import select, func, text
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from asyncio import Queue
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List
 
 from ..models import DailyProgramSummary
@@ -52,13 +52,20 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
 
         # FIXME: maybe the program_session is hanging open while I have the computer sleeping? or something
 
+        # FIXME: Need to define "gathered today" as "between midnight and 11:59 pm on mm-dd"
+
         # ### Check if entry exists for today
         current_time = self.system_clock.now()
-        today = current_time.date()
+        today = self.system_clock.now().replace(hour=0, minute=0, second=0,
+                                                microsecond=0, tzinfo=timezone.utc)
+
         query = select(DailyProgramSummary).where(
             DailyProgramSummary.program_name == target_program_name,
-            func.date(DailyProgramSummary.gathering_date) == today
+            DailyProgramSummary.gathering_date >= today,
+            DailyProgramSummary.gathering_date < today + timedelta(days=1)
         )
+    #     DailyProgramSummary.gathering_date >= today,
+    # DailyProgramSummary.gathering_date < today + timedelta(days=1)
 
         self.logging_dao.create(target_program_name,
                                 usage_duration_in_hours, today)
@@ -84,6 +91,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
                 await self.create(target_program_name, usage_duration_in_hours, today)
 
     async def create(self, target_program_name, duration_in_hours, today):
+        print("Creating:", today)
         async with self.session_maker() as session:
             new_entry = DailyProgramSummary(
                 program_name=target_program_name,

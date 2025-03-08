@@ -1,4 +1,5 @@
 from __future__ import annotations
+from ast import Attribute
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from enum import Enum
@@ -17,7 +18,7 @@ class RecordKeeperCore:
 
 
 class ActivityArbiter:
-    def __init__(self, overlay, clock, chrome_summary_dao: ChromeSummaryDao, program_summary_dao: ProgramSummaryDao):
+    def __init__(self, system_clock):
         """
         This class exists to prevent the Chrome Service from doing ANYTHING but reporting which tab is active.
 
@@ -31,29 +32,32 @@ class ActivityArbiter:
         i.e. "chrome_event_update" and "self.current_is_chrome" before e22d5badb15
         """
         # print("ActivityArbiter init starting")
-
-        self.state_machine = ActivityStateMachine(clock)
-        self.system_clock = clock
+        self.state_machine = ActivityStateMachine(system_clock)
+        self.system_clock = system_clock
 
         self.ui_update_listener = None
         self.program_summary_listener = None
         self.chrome_summary_listener = None
-
-        self.ui_update_listener = None
         # print("ActivityArbiter init complete")
 
     def add_ui_listener(self, listener):
         self.ui_update_listener = listener
 
     def add_program_summary_listener(self, listener):
-        self.program_summary_listener = listener
+        if hasattr(listener, "on_program_session_completed"):
+            self.program_summary_listener = listener
+        else:
+            raise AttributeError("Listener method was missing")
 
     def add_chrome_summary_listener(self, listener):
-        self.chrome_summary_listener = listener
+        if hasattr(listener, "on_chrome_session_completed"):
+            self.chrome_summary_listener = listener
+        else:
+            raise AttributeError("Listener method was missing")
 
     def notify_display_update(self, state):
         if self.ui_update_listener:
-            self.ui_update_listener.on_state_display_update(state)
+            self.ui_update_listener(state)
 
     async def notify_program_summary(self, program_session):
         if self.program_summary_listener:
@@ -64,65 +68,34 @@ class ActivityArbiter:
             await self.chrome_summary_listener.on_chrome_session_completed(chrome_session)
 
     async def set_tab_state(self, tab: ChromeSessionData):
-        await self._transition_state(tab)
+        await self.transition_state(tab)
 
     async def set_program_state(self, event: ProgramSessionData):
-        await self._transition_state(event)
+        await self.transition_state(event)
 
-    # def update_overlay_display(self, updated_state: InternalState):
-
-    #     if isinstance(updated_state, ApplicationInternalState):
-    #         display_text = updated_state.session.window_title
-    #         # if display_text == "Alt-tab window":
-    #         #     print("[LOG]: ", display_text)
-    #         # else:
-    #         #     print("[log]", display_text)
-    #         self.overlay.change_display_text(
-    #             display_text, "lime")  # or whatever color
-    #     else:
-    #         # display_text = f"Chrome | {updated_state.session.domain}"
-    #         display_text = f"{updated_state.session.domain}"
-    #         self.overlay.change_display_text(display_text, "#4285F4")
-
-    # TODO: Separate handling of program state and tab state.
-
-    async def _transition_program(self, program_session):
-        pass
-
-    async def _transition_tab(self, chrome_session):
-        pass
-
-    async def _transition_state(self, new_session: ChromeSessionData | ProgramSessionData):
+    async def transition_state(self, new_session: ChromeSessionData | ProgramSessionData):
         """
         If newly_active = Chrome, start a session for the current tab.
         When Chrome is closed, end the session for the current tab.
 
         When a program is opened, start a session for the program. And vice versa when it closes.
         """
-        now = self.system_clock.now()
         # print("\n" + "✦★✦" * 6 + " DEBUG " + "✦★✦" * 6 + "\n")
 
         if isinstance(new_session, ProgramSessionData):
-            print("[Arb] ", new_session.window_title)
+            print("[Arb]", new_session.window_title)
         else:
-            print("[Tab] ", new_session.domain)
+            print("[Tab]", new_session.domain)
         self.notify_display_update(new_session)
 
-        # Record the duration of the previous state
         if self.state_machine.current_state:
             # ### Calculate the duration that the current state has existed
-            old_session = self.state_machine.current_state.session
+            # end_time & duration is set inside the ASM
+            concluded_session = self.state_machine.current_state.session
 
-            # if old_session.start_time.tzinfo is None:
-            # old_session.start_time = old_session.start_time.astimezone()
-
-            # ### Get the current state's session to put into the summary DAO along w/ the time
-            old_session.duration = now - old_session.start_time
-            # print(now)
-            # print(old_session.start_time)
-            # print(old_session.duration)
-            old_session.end_time = now
-            # print(old_session, '251ru')
+            # Get the current state's session to put into the summary DAO along w/ the time
+            # old_session.duration = now - old_session.start_time
+            # old_session.end_time = now
 
             # ### Create the replacement state
             updated_state = self.state_machine.set_new_session(new_session)
@@ -144,13 +117,14 @@ class ActivityArbiter:
 
             # ### Put outgoing state into the DAO
             # FIXME: what is the point of this state business if the output state isn't used for these args?
-            if isinstance(old_session, ChromeSessionData):
+            if isinstance(concluded_session, ChromeSessionData):
                 # FIXME: [chrome summary dao] adding time  -1 day, 16:00:02.581249  to  localho
                 # FIXME: chrome summary dao] adding time  -1 day, 16:00:03.879910  to  claude.ai
-                await self.notify_chrome_summary(old_session)
+                await self.notify_chrome_summary(concluded_session)
             else:
-                await self.notify_program_summary(old_session)
+                await self.notify_program_summary(concluded_session)
         else:
+            print("first loop")
             if isinstance(new_session, ProgramSessionData):
                 updated_state = ApplicationInternalState(
                     new_session.window_title, False,  new_session)
@@ -161,11 +135,8 @@ class ActivityArbiter:
                     current_tab=new_session.detail,
                     session=new_session
                 )
+            self.state_machine.current_state = updated_state
 
-        # Update the display
-        # self.notify_display_update(new_session)
-        # Set new state
-        self.current_state = updated_state
 
 # TODO: Test the state changes,
 # TODO: Test the arbiter

@@ -402,7 +402,7 @@ class TestProgramSummaryDao:
         test_db_dao = await test_db_dao
 
         # Get today's date
-        today = date.today()
+        today = datetime.now(timezone.utc).date()
 
         change_1 = 13
         change_2 = 12
@@ -414,7 +414,8 @@ class TestProgramSummaryDao:
 
         # Create a datetime object for today at 3:05 PM
         dt = datetime(today.year, today.month, today.day,
-                      15, 5, tzinfo=timezone.utc)
+                      6, 5, tzinfo=timezone.utc)
+        print("base time for dt: ", dt.hour)
         dt2 = dt + timedelta(seconds=change_1)
         dt3 = dt2 + timedelta(seconds=change_2)
         dt4 = dt3 + timedelta(seconds=change_3)
@@ -425,8 +426,11 @@ class TestProgramSummaryDao:
 
         unused = dt + timedelta(hours=1)
 
-        times = [dt, dt2, dt3, dt4, dt5, dt6, dt7, dt8,
-                 unused, unused, unused, unused, unused, unused, unused, unused, unused, unused]
+        times = [dt, dt2, dt3, dt4, dt5, dt6, dt7, dt8]
+
+        for t in times:
+            print(t)
+
         mock_clock = MockClock(times)
         test_db_dao.clock = mock_clock
 
@@ -459,10 +463,13 @@ class TestProgramSummaryDao:
         test_session.end_time = dt + timedelta(minutes=5)
 
         # Add debug prints
+        print("creating test ses", test_session)
         await test_db_dao.create_if_new_else_update(test_session)
 
         # Verify it was created
         entry = await test_db_dao.read_row_for_program(test_vs_code)
+        vvvv = await test_db_dao.read_all()
+        print("VVVVV:", vvvv[0].gathering_date)
         print(f"Retrieved entry: {entry}")
         assert entry is not None
         assert entry.program_name == test_vs_code
@@ -474,15 +481,11 @@ class TestProgramSummaryDao:
             print(v.program_name, v.hours_spent, '400ru')
         assert len(all_entries) == len([1])
 
-        # TODO: Delete all rows in between tests.
-        # TODO: Make the final tests at the end of this file work. The assert hours_spent matches expected.
-
         # 1
         session_data_1: ProgramSessionData = ProgramSessionData()
         session_data_1.window_title = chrome
         session_data_1.detail = "Facebook.com"
         session_data_1.start_time = dt
-
         session_data_1.end_time = dt2
         session_data_1.productive = False
         chrome_time += change_1
@@ -499,7 +502,6 @@ class TestProgramSummaryDao:
         session_data_3.window_title = chrome
         session_data_3.detail = "Facebook.com"
         session_data_3.start_time = dt3
-
         session_data_3.end_time = dt4
         session_data_3.productive = False
         chrome_time += change_3
@@ -544,7 +546,7 @@ class TestProgramSummaryDao:
         for session in sessions:
             await test_db_dao.create_if_new_else_update(session)
 
-        # Verify all programs were created
+        # ### Verify all programs were created
         all_entries = await test_db_dao.read_all()
         print(all_entries, '525ru')
         assert len(all_entries) == len(unique_program_mentions)
@@ -585,15 +587,31 @@ class TestProgramSummaryDao:
         # Original time plus update time
         assert chrome_entry.hours_spent > 2.0  # 5 - 3
 
-        # Test reading by day
-        all_again = await test_db_dao.read_all()
-        print(all_entries, len(all_entries))
-        for v in all_entries:
-            print(v.gathering_date)
+        # ### Test reading by day
         # FIXME
 
-        right_now = datetime.now()
+        right_now = dt
+        print(right_now)
         day_entries = await test_db_dao.read_day(right_now)
+        temptemp = await test_db_dao.read_all()
+        print(len(temptemp), dt)
+
+        # FIXME: dt's date is 2025-03-04 15:05:00+00:00
+        # FIXME: but, the db entries are from the day after, 03-05
+        for k in temptemp:
+            print(k.gathering_date, '600ru')
+        print(dt2)
+        print(dt3)
+        print(dt4)
+        print(dt5)
+        print(dt6)
+        print(dt7)
+        print(dt8)  # FIXME: gathering date is on march 5, but s hould be march 4
+        async with test_db_dao.session_maker() as session:
+            result = await session.execute(text("SELECT program_name, gathering_date FROM daily_program_summaries"))
+            rows = result.fetchall()
+            for row in rows:
+                print(f"Program: {row[0]}, Gathering Date: {row[1]}")
         # day_entries = await test_db_dao.read_day(dt)
         assert len(day_entries) == len(unique_program_mentions)
 
