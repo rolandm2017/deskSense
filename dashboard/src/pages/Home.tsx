@@ -147,14 +147,7 @@ function Home() {
                     </h1>
                 </div>
                 <div>
-                    <h2>
-                        Keyboard & Mouse:
-                        {timeline ? (
-                            `${timeline.keyboardRows.length}, ${timeline?.mouseRows.length}`
-                        ) : (
-                            <p>Loading</p>
-                        )}
-                    </h2>
+                    <h2>Keyboard & Mouse</h2>
                     {/* // TODO: Use Weekly Peripherals chart on Home */}
                     {aggregatedDays !== null ? (
                         <PeripheralsChart days={aggregatedDays} />

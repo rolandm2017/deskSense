@@ -287,7 +287,6 @@ async def get_chrome_time_for_dashboard(dashboard_service: DashboardService = De
 
 @app.get("/dashboard/breakdown/week/{week_of}", response_model=ProductivityBreakdownByWeek)
 async def get_productivity_breakdown(week_of: date = Path(..., description="Week starting date"), dashboard_service: DashboardService = Depends(get_dashboard_service)):
-    print(week_of, "291ru")
     weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(week_of)
     if not isinstance(weeks_overview, list):
         raise HTTPException(
@@ -387,15 +386,8 @@ async def get_timeline_weekly(dashboard_service: DashboardService = Depends(get_
 
 @app.get("/dashboard/timeline/week/{week_of}", response_model=WeeklyTimeline)
 async def get_previous_week_of_timeline(week_of: date = Path(..., description="Week starting date"), dashboard_service: DashboardService = Depends(get_dashboard_service)):
-    timings: Dict[str, float] = {}
-
-    # Time database query
-    db_start = time()
     days, start_of_week = await dashboard_service.get_specific_week_timeline(week_of)
-    timings['database_query'] = time() - db_start
 
-    # Time data processing
-    process_start = time()
     rows: List[DayOfTimelineRows] = []
     for day in days:
         assert isinstance(day, dict)
@@ -410,19 +402,12 @@ async def get_previous_week_of_timeline(week_of: date = Path(..., description="W
                            keyboardRows=pydantic_keyboard_rows)
         row = DayOfTimelineRows(date=day["date"], row=row)
         rows.append(row)
-    timings['data_processing'] = time() - process_start
+
+    # TODO: Convert from UTC to PST for the client
 
     response = WeeklyTimeline(days=rows, start_date=start_of_week)
 
-    # Add all timings to response headers
-    return JSONResponse(
-        content=jsonable_encoder(response),
-        headers={
-            "X-Total-Time": f"{sum(timings.values()) * 1000:.2f}ms",
-            "X-DB-Time": f"{timings['database_query'] * 1000:.2f}ms",
-            "X-Processing-Time": f"{timings['data_processing'] * 1000:.2f}ms"
-        }
-    )
+    return response
 
 
 @app.get("/report/chrome")

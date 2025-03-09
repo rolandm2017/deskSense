@@ -73,7 +73,7 @@ function Weekly() {
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
 
-    const [nextWeekAvailable, setNextWeekAvailable] = useState(false);
+    const [nextWeekAvailable, setNextWeekAvailable] = useState(true);
 
     const [weeklyBreakdown, setWeeklyBreakdown] =
         useState<WeeklyBreakdown | null>(null);
@@ -102,10 +102,11 @@ function Weekly() {
     useEffect(() => {
         const urlParam = searchParams.get("date"); // returns "5432"
         if (urlParam) {
-            const asDate = new Date(urlParam);
+            const urlParamAsDate = new Date(urlParam);
             /* Load data for refreshes on prior weeks. */
             console.log(urlParam, "68ru");
-            loadDataForWeek(asDate);
+            loadDataForWeek(urlParamAsDate);
+            updateNextWeekIsAvailable(urlParamAsDate);
             return;
         }
         /* Load current week's data */
@@ -132,7 +133,6 @@ function Weekly() {
 
         getTimelineForPresentWeek().then((weekly) => {
             setPresentWeekRawTimeline(weekly);
-            // TODO: follow downstream logic and set either currentWeek or PrevWeek depending on which is which
         });
     }, []);
 
@@ -159,10 +159,7 @@ function Weekly() {
         /* Aggregation */
         if (presentWeekRawTimeline && aggregatedTimeline === null) {
             const days: DayOfAggregatedRows[] = [];
-            // FIXME: Days before today are already aggregated on server
-            // FIXME: so you don't need to repeat it here. You really don't. It's an interface problem.
             console.log(presentWeekRawTimeline, "95ru");
-            // FIXME: comes back as 7 days
             const today: DayOfTimelineRows = presentWeekRawTimeline.today;
             console.log(today, "96ru");
 
@@ -203,6 +200,7 @@ function Weekly() {
     function dumpOldData() {
         setAggregatedTimeline(null);
         setPrevWeeksRawTimeline(null);
+        setPresentWeekRawTimeline(null);
     }
 
     function goToPreviousWeek() {
@@ -231,11 +229,19 @@ function Weekly() {
     }
 
     function loadDataForWeek(weekStart: Date) {
+        console.log(weekStart, "234ru");
         getEnhancedChromeUsageForPastWeek(weekStart).then((chrome) => {
             setChrome(chrome);
         });
-        // FIXME: data loads wrong; a mismatch between the weeks ??
+
         getTimelineForPastWeek(weekStart).then((weekly) => {
+            console.log(weekly, "237ru");
+            // // FIXME:
+            // content: "Typing Session 294003";
+            // start: "2025-03-08T03:55:27.826138-08:00"; // 3:55 AM? I was not awake then.
+            // end: "2025-03-08T03:59:13.834464-08:00";
+            // group: "keyboard";
+            // id: "keyboard-294003";
             setPrevWeeksRawTimeline(weekly);
         });
         getEnhancedWeeklyBreakdown(weekStart).then(

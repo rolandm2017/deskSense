@@ -28,12 +28,12 @@ class Overlay:
 
         # Create and start the GUI thread
         if self.debug:
-            self.logger.log_yellow("[info] debug mode is on")
+            self.logger.log_yellow("[info] Debug mode is on")
             self.gui_thread = threading.Thread(target=self._run_gui)
             self.gui_thread.daemon = True  # Thread will close when main program exits
             self.gui_thread.start()
         else:
-            self.logger.log_yellow("[info] No debug display active")
+            self.logger.log_yellow("[info] Inactive debug display")
 
     def change_display_text(self, new_text, display_color=None):
         """Thread-safe method to change display text"""
