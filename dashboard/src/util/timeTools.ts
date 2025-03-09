@@ -2,6 +2,30 @@ export function formatDateForApi(date: Date) {
     return date.toISOString().split("T")[0]; // formats to YYYY-MM-DD
 }
 
+/**
+ * Checks if the given date is in the current week or later
+ * @param viewedWeek The date to check
+ * @returns boolean - true if the date is in the present week or later, false otherwise
+ */
+export function dateIsThePresentWeekOrLater(viewedWeek: Date): boolean {
+    // Get the current date
+    const today = new Date();
+
+    // Set both dates to the beginning of their respective weeks (Sunday)
+    const todayDay = today.getDay(); // 0 for Sunday, 1 for Monday, etc.
+    const startOfCurrentWeek = new Date(today);
+    startOfCurrentWeek.setDate(today.getDate() - todayDay);
+    startOfCurrentWeek.setHours(0, 0, 0, 0); // Set to midnight
+
+    const viewedWeekDay = viewedWeek.getDay();
+    const startOfViewedWeek = new Date(viewedWeek);
+    startOfViewedWeek.setDate(viewedWeek.getDate() - viewedWeekDay);
+    startOfViewedWeek.setHours(0, 0, 0, 0); // Set to midnight
+
+    // Compare the start of the viewed week with the start of the current week
+    return startOfViewedWeek >= startOfCurrentWeek;
+}
+
 export function getPreviousSunday() {
     let today = new Date();
     let daysSinceSunday = today.getDay(); // Sunday is 0

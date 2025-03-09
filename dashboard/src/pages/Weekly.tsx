@@ -37,6 +37,7 @@ import {
     getSundayOfNextWeek,
     formatDate,
     formatDateMmDdYyyy,
+    dateIsThePresentWeekOrLater,
 } from "../util/timeTools";
 import WeeklyUsageChart from "../components/charts/WeeklyBarChart";
 import StackedBarChart from "../components/charts/StackedBarChart";
@@ -72,7 +73,7 @@ function Weekly() {
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
 
-    const [nextWeekAvailable, setNextWeekAvailable] = useState(true);
+    const [nextWeekAvailable, setNextWeekAvailable] = useState(false);
 
     const [weeklyBreakdown, setWeeklyBreakdown] =
         useState<WeeklyBreakdown | null>(null);
@@ -223,8 +224,10 @@ function Weekly() {
         const prevWeekEnd = currentEnd; // Modified
         setEndDate(prevWeekEnd);
 
-        // Do netwoek requests
+        // Do network requests
         loadDataForWeek(prevWeekStart);
+
+        updateNextWeekIsAvailable(prevWeekStart);
     }
 
     function loadDataForWeek(weekStart: Date) {
@@ -251,8 +254,17 @@ function Weekly() {
             setEndDate(concludingSaturday);
             updateUrlParam(nextSunday);
             loadDataForWeek(nextSunday);
+            updateNextWeekIsAvailable(nextSunday);
         } else {
             console.log("No start date found");
+        }
+    }
+
+    function updateNextWeekIsAvailable(newViewingDate: Date) {
+        if (dateIsThePresentWeekOrLater(newViewingDate)) {
+            setNextWeekAvailable(false);
+        } else {
+            setNextWeekAvailable(true);
         }
     }
 
