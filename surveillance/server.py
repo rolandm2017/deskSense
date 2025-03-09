@@ -59,6 +59,9 @@ from src.object.return_types import DaySummary
 from src.util.console_logger import ConsoleLogger
 from src.util.debug_logger import write_temp_log
 
+# Import the router for report endpoints
+from src.routes.report_routes import router as report_router
+
 # Rest of your server.py code...
 
 logger = ConsoleLogger()
@@ -123,6 +126,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(report_router)
+
 
 class HealthResponse(BaseModel):
     status: str
@@ -141,107 +146,6 @@ async def health_check(keyboard_service: KeyboardService = Depends(get_keyboard_
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Health check failed: {str(e)}")
-
-
-@app.get("/report/keyboard/all", response_model=KeyboardReport)
-async def get_all_keyboard_reports(keyboard_service: KeyboardService = Depends(get_keyboard_service)):
-    logger.log_purple("[LOG] keyboard report - all")
-    # FIXME: this should be on the app, not a local variable
-    if not surveillance_state and not surveillance_state.manager.keyboard_tracker:
-        raise HTTPException(status_code=500, detail="Tracker not initialized")
-
-    events = await keyboard_service.get_all_events()
-    if not isinstance(events, list):
-        raise HTTPException(
-            status_code=500, detail="Failed to generate keyboard report")
-
-    logs = [make_keyboard_log(e) for e in events]
-    return KeyboardReport(count=len(events), keyboardLogs=logs)
-
-
-@app.get("/report/keyboard", response_model=KeyboardReport)
-async def get_keyboard_report(keyboard_service: KeyboardService = Depends(get_keyboard_service)):
-    # async def get_keyboard_report(db: Session = Depends(get_db)):
-    logger.log_purple("[LOG] keyboard report")
-    # FIXME: this should be on the app, not a local variable
-    if not surveillance_state and not surveillance_state.manager.keyboard_tracker:
-        raise HTTPException(status_code=500, detail="Tracker not initialized")
-
-    events = await keyboard_service.get_past_days_events()
-
-    if not isinstance(events, list):
-        raise HTTPException(
-            status_code=500, detail="Failed to generate keyboard report")
-
-    logs = [make_keyboard_log(e) for e in events]
-    return KeyboardReport(count=len(events), keyboardLogs=logs)
-
-
-@app.get("/report/mouse/all", response_model=MouseReport)
-async def get_all_mouse_reports(mouse_service: MouseService = Depends(get_mouse_service)):
-    logger.log_purple("[LOG] mouse report - all")
-    if not surveillance_state and not surveillance_state.manager.mouse_tracker:
-        raise HTTPException(status_code=500, detail="Tracker not initialized")
-
-    events = await mouse_service.get_all_events()
-    if not isinstance(events, list):
-        raise HTTPException(
-            status_code=500, detail="Failed to generate mouse report")
-
-    reports = [make_mouse_log(e) for e in events]
-    return MouseReport(count=len(reports), mouseLogs=reports)
-
-
-@app.get("/report/mouse", response_model=MouseReport)
-async def get_mouse_report(mouse_service: MouseService = Depends(get_mouse_service)):
-    logger.log_purple("[LOG] mouse report")
-    if not surveillance_state and not surveillance_state.manager.mouse_tracker:
-        raise HTTPException(status_code=500, detail="Tracker not initialized")
-
-    events = await mouse_service.get_past_days_events()
-    if not isinstance(events, list):
-        raise HTTPException(
-            status_code=500, detail="Failed to generate mouse report")
-
-    reports = [make_mouse_log(e) for e in events]
-    return MouseReport(count=len(reports), mouseLogs=reports)
-
-
-@app.get("/report/program/all", response_model=ProgramActivityReport)
-async def get_all_program_reports(program_service: ProgramService = Depends(get_program_service)):
-    if not surveillance_state and not surveillance_state.manager.program_tracker:
-        raise HTTPException(status_code=500, detail="Tracker not initialized")
-
-    events = await program_service.get_all_events()
-    if not isinstance(events, list):
-        raise HTTPException(
-            status_code=500, detail="Failed to generate program report")
-
-    reports = [make_program_log(e) for e in events]
-    return ProgramActivityReport(count=len(reports), programLogs=reports)
-
-
-@app.get("/report/program", response_model=ProgramActivityReport)
-async def get_program_activity_report(program_service: ProgramService = Depends(get_program_service)):
-    if not surveillance_state and not surveillance_state.manager.program_tracker:
-        raise HTTPException(status_code=500, detail="Tracker not initialized")
-
-    events = await program_service.get_past_days_events()
-    if not isinstance(events, list):
-        raise HTTPException(
-            status_code=500, detail="Failed to generate program report")
-
-    reports = [make_program_log(e) for e in events]
-    return ProgramActivityReport(count=len(reports), programLogs=reports)
-
-
-# ### #
-# ### ##
-# ### ### Dashboard
-# ### ### Dashboard
-# ### ### Dashboard
-# ### ##
-# ### #
 
 
 @app.get("/dashboard/timeline", response_model=TimelineRows)
