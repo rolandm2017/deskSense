@@ -16,7 +16,8 @@ import {
     WeeklyTimeline,
     PartiallyAggregatedWeeklyTimeline,
 } from "../interface/weekly.interface";
-import { formatDateForApi } from "../util/timeTools";
+import { formatDateForApi, getTimezone } from "../util/timeTools";
+import { ensureSunday } from "../util/apiUtil";
 
 const baseRoute = import.meta.env.VITE_API_URL + "/api";
 
@@ -140,7 +141,10 @@ const getWeeklyBreakdown = withErrorHandlingAndArgument<
     WeeklyBreakdown,
     [Date]
 >((date: Date) => {
+    ensureSunday(date);
     const formattedDate = formatDateForApi(date);
+    const timezone = getTimezone(date);
+    // TODO: send timezone
     return api.get(`/dashboard/breakdown/week/${formattedDate}`);
 });
 
@@ -148,7 +152,10 @@ const getTimelineForPastWeek = withErrorHandlingAndArgument<
     WeeklyTimeline,
     [Date]
 >((date: Date) => {
+    ensureSunday(date);
     const formattedDate = formatDateForApi(date);
+    const timezone = getTimezone(date);
+    // TODO: send timezone
     return api.get(`/dashboard/timeline/week/${formattedDate}`);
 });
 
@@ -156,7 +163,10 @@ const getChromeUsageForPastWeek = withErrorHandlingAndArgument<
     WeeklyChromeUsage,
     [Date]
 >((date: Date) => {
+    ensureSunday(date);
     const formattedDate = formatDateForApi(date);
+    const timezone = getTimezone(date);
+    // TODO: send timezone
     return api.get(`/dashboard/chrome/summaries/week/${formattedDate}`);
 });
 
