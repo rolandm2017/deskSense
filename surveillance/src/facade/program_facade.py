@@ -106,8 +106,6 @@ class ProgramApiFacadeCore:
             # <class 'Xlib.error.BadWindow'>:
             #     code = 3, resource_id = <Resource 0x00000000>,
             #     sequence_number = 22, major_opcode = 20, minor_opcode = 0 []
-            # print(e)
-            # print(traceback.format_exc())
             return "Alt-tab window"  # "Alt-Tab Window (Most Likely)"
 
     def _get_active_window_ubuntu(self) -> Optional[Dict]:

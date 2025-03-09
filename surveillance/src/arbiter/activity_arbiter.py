@@ -31,14 +31,12 @@ class ActivityArbiter:
         the current program is Chrome & do such and such if it is or isn't.
         i.e. "chrome_event_update" and "self.current_is_chrome" before e22d5badb15
         """
-        # print("ActivityArbiter init starting")
         self.state_machine = ActivityStateMachine(system_clock)
         self.system_clock = system_clock
 
         self.ui_update_listener = None
         self.program_summary_listener = None
         self.chrome_summary_listener = None
-        # print("ActivityArbiter init complete")
 
     def add_ui_listener(self, listener):
         self.ui_update_listener = listener

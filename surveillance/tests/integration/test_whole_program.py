@@ -39,7 +39,6 @@ async def test_health_check():
 async def test_timeline():
     async with AsyncClient(base_url="http://127.0.0.1:8000") as client:
         response = await client.get("http://127.0.0.1:8000/dashboard/timeline")
-        print(response, '32ru')
         assert response.status_code == 200
 
         timeline_content = response.json()
@@ -66,7 +65,6 @@ async def test_timeline_contains_no_duplicates():
         response = await client.get("http://127.0.0.1:8000/dashboard/timeline")
 
         timeline_content = response.json()
-        # print(timeline_content, '35ru')
         mouse_rows = timeline_content["mouseRows"]
         keyboard_rows = timeline_content["keyboardRows"]
 

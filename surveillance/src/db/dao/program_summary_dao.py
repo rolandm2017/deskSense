@@ -45,7 +45,6 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         if program_session.start_time is None or program_session.end_time is None:
             raise ValueError("Start or end time was None")
         target_program_name = program_session.window_title
-        # print("target program name: ", target_program_name)
         # ### Calculate time difference
         usage_duration_in_hours = (
             program_session.end_time - program_session.start_time).total_seconds() / 3600
@@ -80,7 +79,6 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
                 # if existing_entry is not None:  # Changed from if existing_entry:
                 existing_entry.hours_spent += usage_duration_in_hours
                 if program_session.window_title == "Alt-tab window":
-                    # print(program_session.window_title, "60ru")
                     write_to_debug_log(target_program_name, usage_duration_in_hours,
                                        current_time.strftime("%m-%d %H:%M:%S"))
                 if usage_duration_in_hours > 0.333:
@@ -91,7 +89,6 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
                 await self.create(target_program_name, usage_duration_in_hours, today)
 
     async def create(self, target_program_name, duration_in_hours, today):
-        print("Creating:", today)
         async with self.session_maker() as session:
             new_entry = DailyProgramSummary(
                 program_name=target_program_name,
@@ -158,7 +155,6 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def shutdown(self):
         """Closes the open session without opening a new one"""
-        print("in shutdown for program summary")
         with open("shutdown_proof.txt", "a") as f:
             f.write("shutting down program summary dao")
             f.write("\n")

@@ -301,7 +301,6 @@ async def test_get_program_time_for_dashboard(
     mock_program_summary_data,
     mock_surveillance_state
 ):
-    print("305ru")
     mock_service = DashboardService(AsyncMock(), AsyncMock(), AsyncMock())
     mock_service.get_program_summary = AsyncMock(
         return_value=mock_program_summary_data
@@ -313,7 +312,6 @@ async def test_get_program_time_for_dashboard(
     app.dependency_overrides[get_dashboard_service] = override_get_dashboard_service
 
     try:
-        print("316ru")
         response = test_client.get("/dashboard/program/summaries")
         assert response.status_code == 200
         data = response.json()
@@ -321,7 +319,6 @@ async def test_get_program_time_for_dashboard(
         # Check structure
         assert "columns" in data
         assert len(data["columns"]) == 3
-        print("324ru")
 
         # Verify program summary entry structure
         program_entry = data["columns"][0]

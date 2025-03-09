@@ -64,7 +64,6 @@
 #     assert response.status_code == 200
 
 #     timeline_content = response.json()
-#     print(timeline_content, '35ru')
 #     assert timeline_content["mouseRows"] is not None
 #     assert len(timeline_content["mouseRows"]) > 0
 #     assert timeline_content["keyboardRows"] is not None
@@ -88,7 +87,6 @@
 # #         response = await client.get("http://127.0.0.1:8000/dashboard/timeline")
 
 # #         timeline_content = response.json()
-# #         # print(timeline_content, '35ru')
 # #         mouse_rows = timeline_content["mouseRows"]
 # #         keyboard_rows = timeline_content["keyboardRows"]
 

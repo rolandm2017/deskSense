@@ -73,7 +73,6 @@ class FrameDao(BaseQueueingDao):
                 ]
                 return dtos
         except Exception as e:
-            print(f"Error reading events: {e}")
             raise RuntimeError("Failed to read typing sessions") from e
 
     async def delete(self, id: int):

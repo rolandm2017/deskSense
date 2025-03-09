@@ -117,8 +117,6 @@ def test_key_press_tracking(tracker_and_events, mock_keyboard_facade):
 
         # t1 = tracker.time_of_last_aggregator_update
 
-        print(tracker.aggregator.current_aggregation, '117ru')
-
         assert len(tracker.aggregator.current_aggregation.events) == 3
         assert tracker.recent_count == 3, "A B C is three events"
         assert len(
@@ -136,7 +134,6 @@ def test_key_press_tracking(tracker_and_events, mock_keyboard_facade):
 
         # the char "d"
         assert len(tracker.aggregator.current_aggregation.events) == 1
-        print(tracker.aggregator.current_aggregation, '138ru')
 
         deliverable_for_db = handler_events[0]   # Note "events[0]"
         assert isinstance(deliverable_for_db, KeyboardAggregate)
@@ -156,7 +153,6 @@ def test_key_press_tracking(tracker_and_events, mock_keyboard_facade):
         tracker.run_tracking_loop()
         assert len(tracker.aggregator.current_aggregation.events) == 1
         assert len(handler_events) == 2
-        print(tracker.aggregator.current_aggregation, '159ru')
 
         tracker.system_clock.advance_time(1)
 
@@ -168,7 +164,6 @@ def test_key_press_tracking(tracker_and_events, mock_keyboard_facade):
         tracker.run_tracking_loop()
         mock_keyboard_facade.set_event("L")
         tracker.run_tracking_loop()
-        print(tracker.aggregator.current_aggregation, '160ru')
 
         # assert len(tracker.aggregator.current_aggregation.events) == 2
         assert len(handler_events) == 3
@@ -245,11 +240,9 @@ def test_multiple_handlers_are_called(tracker_and_events, mock_keyboard_facade):
     handler2_calls = []
 
     def handler1(event):
-        print("called 1 ", event)
         handler1_calls.append(event)
 
     def handler2(event):
-        print("called 2 ", event)
         handler2_calls.append(event)
 
     tracker.event_handlers = [handler1, handler2]

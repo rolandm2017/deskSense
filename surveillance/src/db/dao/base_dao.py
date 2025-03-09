@@ -16,12 +16,10 @@ class BaseQueueingDao:
     async def queue_item(self, item, expected_type=None):
         """Common method to queue items and start processing if needed"""
         if isinstance(item, dict):
-            print("[DEBUG]", item, '19ru')
             raise ValueError("Dict found")
         if expected_type and not isinstance(item, expected_type):
             raise ValueError("Mismatch found")
         await self.queue.put(item)
-        # print(f"[DEBUG] Queue item, processing: {self.processing}")
         if not self.processing:
             self.processing = True  # FIXME: I honestly dont know why this is here
             asyncio.create_task(self.process_queue())

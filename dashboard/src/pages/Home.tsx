@@ -38,7 +38,7 @@ function Home() {
     // const [aggregatedTimeline, setAggregatedTimeline] =
     // useState<WeeklyTimelineAggregate | null>(null);
 
-    const [currentWeekRawTimeline, setRawTimeline] =
+    const [presentWeekRawTimeline, setRawTimeline] =
         useState<PartiallyAggregatedWeeklyTimeline | null>(null);
 
     const [aggregatedDays, setAggregatedDays] = useState<
@@ -65,24 +65,24 @@ function Home() {
     }, [chromeSummaries]);
 
     useEffect(() => {
-        if (currentWeekRawTimeline === null) {
+        if (presentWeekRawTimeline === null) {
             getTimelineForPresentWeek().then((weekly) => {
                 // TODO: Get the start and end date
                 // Do I make
                 setRawTimeline(weekly);
             });
         }
-    }, [currentWeekRawTimeline]);
+    }, [presentWeekRawTimeline]);
 
     useEffect(() => {
         /* Aggregation */
-        if (currentWeekRawTimeline && aggregatedDays === null) {
+        if (presentWeekRawTimeline && aggregatedDays === null) {
             const days: DayOfAggregatedRows[] = [];
             // FIXME: Days before today are already aggregated on server
             // FIXME: so you don't need to repeat it here. You really don't. It's an interface problem.
-            console.log(currentWeekRawTimeline, "95ru");
+            console.log(presentWeekRawTimeline, "95ru");
             // FIXME: comes back as 7 days
-            const today: DayOfTimelineRows = currentWeekRawTimeline.today;
+            const today: DayOfTimelineRows = presentWeekRawTimeline.today;
             console.log(today, "96ru");
 
             // Aggregate today:
@@ -94,7 +94,7 @@ function Home() {
                 keyboardRow: aggregateEvents(dayTyping),
             };
             const convertedIntoAggregations: DayOfAggregatedRows[] =
-                currentWeekRawTimeline.beforeToday.map((day) => {
+                presentWeekRawTimeline.beforeToday.map((day) => {
                     return {
                         date: day.date,
                         mouseRow: day.row.mouseRows,
@@ -112,7 +112,7 @@ function Home() {
 
             setAggregatedDays(days);
         }
-    }, [currentWeekRawTimeline, aggregatedDays]);
+    }, [presentWeekRawTimeline, aggregatedDays]);
 
     useEffect(() => {
         if (timeline == null) {
