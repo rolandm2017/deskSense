@@ -29,6 +29,7 @@ from src.object.pydantic_dto import (
 )
 
 from src.object.dashboard_dto import (
+    PartiallyPrecomputedWeeklyTimeline,
     ProductivityBreakdownByWeek,
     ProgramBarChartContent,
     ChromeBarChartContent, TimelineEntrySchema, TimelineRows,
@@ -246,7 +247,8 @@ async def get_program_activity_report(program_service: ProgramService = Depends(
 
 @app.get("/dashboard/timeline", response_model=TimelineRows)
 async def get_timeline_for_dashboard(dashboard_service: DashboardService = Depends(get_dashboard_service)):
-    mouse_rows, keyboard_rows = await dashboard_service.get_timeline()
+    mouse_rows, keyboard_rows = await dashboard_service.get_timeline_for_today()
+    # // TODO: make this be given by day
     if not isinstance(mouse_rows, list) or not isinstance(keyboard_rows, list):
         raise HTTPException(
             status_code=500, detail="Failed to retrieve timeline info")
@@ -343,12 +345,28 @@ async def get_previous_week_chrome_history(week_of: date = Path(..., description
     return WeeklyChromeContent(days=days)
 
 
-@app.get("/dashboard/timeline/week", response_model=WeeklyTimeline)
+@app.get("/dashboard/timeline/week", response_model=PartiallyPrecomputedWeeklyTimeline)
 async def get_timeline_weekly(dashboard_service: DashboardService = Depends(get_dashboard_service)):
-    days, latest_sunday = await dashboard_service.get_current_week_timeline()
+    days_before_today, todays_payload, latest_sunday = await dashboard_service.get_current_week_timeline()
     rows: List[DayOfTimelineRows] = []
 
-    for day in days:
+    assert isinstance(todays_payload, dict)
+    todays_date = todays_payload["date"]
+
+    mouse_rows = todays_payload["mouse_events"]
+    keyboard_rows = todays_payload["keyboard_events"]
+    # Convert SQLAlchemy models to Pydantic models
+    pydantic_mouse_rows = [
+        TimelineEntrySchema.from_orm_model(row) for row in mouse_rows]
+    pydantic_keyboard_rows = [
+        TimelineEntrySchema.from_orm_model(row) for row in keyboard_rows]
+
+    todays_row = TimelineRows(mouseRows=pydantic_mouse_rows,
+                              keyboardRows=pydantic_keyboard_rows)
+
+    todays_payload = DayOfTimelineRows(date=todays_date, row=todays_row)
+
+    for day in days_before_today:
         assert isinstance(day, dict)
         mouse_rows = day["mouse_events"]
         keyboard_rows = day["keyboard_events"]
@@ -364,7 +382,7 @@ async def get_timeline_weekly(dashboard_service: DashboardService = Depends(get_
         row = DayOfTimelineRows(date=day["date"], row=row)
         rows.append(row)
 
-    return WeeklyTimeline(days=rows, start_date=latest_sunday)
+    return PartiallyPrecomputedWeeklyTimeline(beforeToday=rows, today=todays_payload, startDate=latest_sunday)
 
 
 @app.get("/dashboard/timeline/week/{week_of}", response_model=WeeklyTimeline)

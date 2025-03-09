@@ -13,6 +13,7 @@ import {
 } from "../api/getData.api";
 import {
     DayOfChromeUsage,
+    PartiallyAggregatedWeeklyTimeline,
     SocialMediaUsage,
     WeeklyBreakdown,
     WeeklyChromeUsage,
@@ -21,9 +22,9 @@ import {
 } from "../interface/weekly.interface";
 
 import { BarChartDayData } from "../interface/misc.interface";
-import QQPlotV2 from "../components/charts/QQPlotV2";
+import QQPlotV2 from "../components/charts/PeripheralsChart";
 import {
-    DaysOfAggregatedRows,
+    DayOfAggregatedRows,
     WeeklyTimelineAggregate,
 } from "../interface/misc.interface";
 import { aggregateEvents } from "../util/aggregateEvents";
@@ -44,6 +45,9 @@ function Weekly() {
     const [programs, setPrograms] = useState<WeeklyProgramUsage | null>(null);
 
     const [rawTimeline, setRawTimeline] = useState<WeeklyTimeline | null>(null);
+
+    const [currentWeekRawTimeline, setCurrentWeekRawTimeline] =
+        useState<PartiallyAggregatedWeeklyTimeline | null>(null);
     const [aggregatedTimeline, setAggregatedTimeline] =
         useState<WeeklyTimelineAggregate | null>(null);
 
@@ -110,20 +114,20 @@ function Weekly() {
             setPrograms(weekly);
         });
         getTimelineForCurrentWeek().then((weekly) => {
-            // TODO: Get the start and end date
             // Do I make
-            setRawTimeline(weekly);
+            setCurrentWeekRawTimeline(weekly);
+            // TODO: follow downstream logic and set either currentWeek or PrevWeek depending on which is which
         });
     }, []);
 
     useEffect(() => {
         /* Aggregation */
         if (rawTimeline && aggregatedTimeline === null) {
-            const days: DaysOfAggregatedRows[] = [];
+            const days: DayOfAggregatedRows[] = [];
             for (const day of rawTimeline.days) {
                 const dayClicks = day.row.mouseRows;
                 const dayTyping = day.row.keyboardRows;
-                const row: DaysOfAggregatedRows = {
+                const row: DayOfAggregatedRows = {
                     date: day.date,
                     mouseRow: aggregateEvents(dayClicks),
                     keyboardRow: aggregateEvents(dayTyping),
@@ -312,6 +316,8 @@ function Weekly() {
                 </div>
                 <div>
                     {/* <h3>Current Week</h3> */}
+                    <h3 className="mt-4 text-2xl">Keyboard & Mouse Usage</h3>
+
                     <h3 className="text-xl">
                         {startDate && endDate ? (
                             <p className="mt-4">

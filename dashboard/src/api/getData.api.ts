@@ -14,6 +14,7 @@ import {
     WeeklyChromeUsage,
     WeeklyProgramUsage,
     WeeklyTimeline,
+    PartiallyAggregatedWeeklyTimeline,
 } from "../interface/weekly.interface";
 import { formatDateForApi } from "../util/timeTools";
 
@@ -76,9 +77,11 @@ const getProgramReport = withErrorHandling<ProgramActivityReport>(() =>
     api.get("/report/program")
 );
 
-const getTimelineData = withErrorHandling<TimelineRows>(() =>
+const getTodaysTimelineData = withErrorHandling<TimelineRows>(() =>
     api.get("/dashboard/timeline")
 );
+
+// TODO: Make home screen execute a "get week of" where incomplete weeks are OK.
 
 const getProgramSummaries = withErrorHandling<DailyProgramSummaries>(() =>
     api.get("/dashboard/program/summaries")
@@ -104,9 +107,10 @@ const getWeeklyChromeUsage = withErrorHandling<WeeklyChromeUsage>(() =>
     api.get("/dashboard/chrome/summaries/week")
 );
 
-const getTimelineForCurrentWeek = withErrorHandling<WeeklyTimeline>(() =>
-    api.get("/dashboard/timeline/week")
-);
+const getTimelineForCurrentWeek =
+    withErrorHandling<PartiallyAggregatedWeeklyTimeline>(() =>
+        api.get("/dashboard/timeline/week")
+    );
 
 const withErrorHandlingAndArgument = <T, P extends any[]>(
     fn: (...args: P) => Promise<AxiosResponse<T>>
@@ -220,7 +224,7 @@ export {
     getKeyboardReport,
     getMouseReport,
     getProgramReport,
-    getTimelineData,
+    getTodaysTimelineData,
     getProgramSummaries,
     getChromeSummaries,
     getTimelineForCurrentWeek,

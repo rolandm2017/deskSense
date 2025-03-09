@@ -12,13 +12,23 @@ import {
 import {
     getChromeSummaries,
     getProgramSummaries,
-    getTimelineData,
+    getTimelineForCurrentWeek,
+    getTodaysTimelineData,
 } from "../api/getData.api";
 
 import ChromeUsageChart from "../components/charts/ChromeUsageChart";
-import QQPlotV2 from "../components/charts/QQPlotV2Single";
+import PeripheralsChart from "../components/charts/PeripheralsChart";
 import { aggregateEvents } from "../util/aggregateEvents";
-import { AggregatedTimelineEntry } from "../interface/misc.interface";
+import {
+    AggregatedTimelineEntry,
+    DayOfAggregatedRows,
+    WeeklyTimelineAggregate,
+} from "../interface/misc.interface";
+import {
+    DayOfTimelineRows,
+    PartiallyAggregatedWeeklyTimeline,
+    WeeklyTimeline,
+} from "../interface/weekly.interface";
 
 function Home() {
     const [programSummaries, setProgramSummaries] =
@@ -32,6 +42,16 @@ function Home() {
     const [reducedKeyboardEvents, setReducedKeyboardEvents] = useState<
         AggregatedTimelineEntry[]
     >([]);
+
+    const [aggregatedTimeline, setAggregatedTimeline] =
+        useState<WeeklyTimelineAggregate | null>(null);
+
+    const [currentWeekRawTimeline, setRawTimeline] =
+        useState<PartiallyAggregatedWeeklyTimeline | null>(null);
+
+    const [aggregatedDays, setAggregatedDays] = useState<
+        DayOfAggregatedRows[] | null
+    >(null);
 
     // const [barsInput, setBarsInput] = useState<BarChartColumn[]>([]);
 
@@ -57,8 +77,60 @@ function Home() {
     }, [chromeSummaries]);
 
     useEffect(() => {
+        if (currentWeekRawTimeline === null) {
+            getTimelineForCurrentWeek().then((weekly) => {
+                // TODO: Get the start and end date
+                // Do I make
+                setRawTimeline(weekly);
+            });
+        }
+    }, [currentWeekRawTimeline]);
+
+    useEffect(() => {
+        /* Aggregation */
+        if (currentWeekRawTimeline && aggregatedTimeline === null) {
+            const days: DayOfAggregatedRows[] = [];
+            // FIXME: Days before today are already aggregated on server
+            // FIXME: so you don't need to repeat it here. You really don't. It's an interface problem.
+            console.log(currentWeekRawTimeline, "95ru");
+            // FIXME: comes back as 7 days
+            const today: DayOfTimelineRows = currentWeekRawTimeline.today;
+            console.log(today, "96ru");
+
+            // Aggregate today:
+            const dayClicks = today.row.mouseRows;
+            const dayTyping = today.row.keyboardRows;
+            const row: DayOfAggregatedRows = {
+                date: today.date,
+                mouseRow: aggregateEvents(dayClicks),
+                keyboardRow: aggregateEvents(dayTyping),
+            };
+            const convertedIntoAggregations: DayOfAggregatedRows[] =
+                currentWeekRawTimeline.beforeToday.map((day) => {
+                    return {
+                        date: day.date,
+                        mouseRow: day.row.mouseRows,
+                        keyboardRow: day.row.keyboardRows,
+                    };
+                });
+
+            console.log(convertedIntoAggregations);
+            days.push(...convertedIntoAggregations);
+            days.push(row);
+
+            days.forEach((obj, index) => {
+                console.log(`Object ${index} keys:`, Object.keys(obj));
+            });
+
+            setAggregatedDays(days);
+        }
+    }, [currentWeekRawTimeline, aggregatedTimeline]);
+
+    useEffect(() => {
         if (timeline == null) {
-            getTimelineData().then((timeline) => {
+            getTodaysTimelineData().then((timeline) => {
+                // TODO: change endpoint to serve it up by day
+                console.log(timeline, "69ru");
                 setTimeline(timeline);
             });
         }
@@ -67,13 +139,21 @@ function Home() {
     useEffect(() => {
         // reduce timeline rows to avoid CPU hug
         if (timeline) {
-            console.log(timeline.mouseRows.length, "74ru");
-            const reducedMouseEvents = aggregateEvents(timeline.mouseRows);
-            const reducedKeyboardEvents = aggregateEvents(
-                timeline.keyboardRows
-            );
+            // TODO: Want aggregated events by day
+            const reducedMouseEvents: AggregatedTimelineEntry[] =
+                aggregateEvents(timeline.mouseRows);
+            const reducedKeyboardEvents: AggregatedTimelineEntry[] =
+                aggregateEvents(timeline.keyboardRows);
             setReducedMouseEvents(reducedMouseEvents);
             setReducedKeyboardEvents(reducedKeyboardEvents);
+            const onlyEntry: DayOfAggregatedRows = {
+                date: reducedMouseEvents[0].start,
+                mouseRow: reducedMouseEvents,
+                keyboardRow: reducedKeyboardEvents,
+            };
+            const aggregated = [onlyEntry];
+
+            setAggregatedDays(aggregated);
         }
     }, [timeline]);
 
@@ -99,7 +179,12 @@ function Home() {
                     </h1>
                 </div>
                 <div>
-                    <h2>
+                    <h2
+                        onClick={() => {
+                            console.log(timeline);
+                            console.log(aggregatedDays, "182ru");
+                        }}
+                    >
                         Keyboard & Mouse:
                         {timeline ? (
                             `${timeline.keyboardRows.length}, ${timeline?.mouseRows.length}`
@@ -107,15 +192,9 @@ function Home() {
                             <p>Loading</p>
                         )}
                     </h2>
-                    {timeline !== null ? (
-                        // <TimelineWrapper
-                        //     typingSessionLogsInput={timeline?.keyboardRows}
-                        //     mouseLogsInput={timeline?.mouseRows}
-                        // />
-                        <QQPlotV2
-                            mouseEvents={reducedMouseEvents}
-                            keyboardEvents={reducedKeyboardEvents}
-                        />
+                    {/* // TODO: Use Weekly Peripherals chart on Home */}
+                    {timeline !== null && aggregatedDays !== null ? (
+                        <PeripheralsChart days={aggregatedDays} />
                     ) : (
                         <p>Loading...</p>
                     )}
