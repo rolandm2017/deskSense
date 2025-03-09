@@ -12,7 +12,7 @@ import {
 import {
     getChromeSummaries,
     getProgramSummaries,
-    getTimelineForCurrentWeek,
+    getTimelineForPresentWeek,
     getTodaysTimelineData,
 } from "../api/getData.api";
 
@@ -22,12 +22,10 @@ import { aggregateEvents } from "../util/aggregateEvents";
 import {
     AggregatedTimelineEntry,
     DayOfAggregatedRows,
-    WeeklyTimelineAggregate,
 } from "../interface/misc.interface";
 import {
     DayOfTimelineRows,
     PartiallyAggregatedWeeklyTimeline,
-    WeeklyTimeline,
 } from "../interface/weekly.interface";
 
 function Home() {
@@ -36,15 +34,9 @@ function Home() {
     const [chromeSummaries, setChromeSummaries] =
         useState<DailyChromeSummaries | null>(null);
     const [timeline, setTimeline] = useState<TimelineRows | null>(null);
-    const [reducedMouseEvents, setReducedMouseEvents] = useState<
-        AggregatedTimelineEntry[]
-    >([]);
-    const [reducedKeyboardEvents, setReducedKeyboardEvents] = useState<
-        AggregatedTimelineEntry[]
-    >([]);
 
-    const [aggregatedTimeline, setAggregatedTimeline] =
-        useState<WeeklyTimelineAggregate | null>(null);
+    // const [aggregatedTimeline, setAggregatedTimeline] =
+    // useState<WeeklyTimelineAggregate | null>(null);
 
     const [currentWeekRawTimeline, setRawTimeline] =
         useState<PartiallyAggregatedWeeklyTimeline | null>(null);
@@ -52,10 +44,6 @@ function Home() {
     const [aggregatedDays, setAggregatedDays] = useState<
         DayOfAggregatedRows[] | null
     >(null);
-
-    // const [barsInput, setBarsInput] = useState<BarChartColumn[]>([]);
-
-    // TODO: Chrome time dashboard
 
     useEffect(() => {
         if (programSummaries == null) {
@@ -78,7 +66,7 @@ function Home() {
 
     useEffect(() => {
         if (currentWeekRawTimeline === null) {
-            getTimelineForCurrentWeek().then((weekly) => {
+            getTimelineForPresentWeek().then((weekly) => {
                 // TODO: Get the start and end date
                 // Do I make
                 setRawTimeline(weekly);
@@ -88,7 +76,7 @@ function Home() {
 
     useEffect(() => {
         /* Aggregation */
-        if (currentWeekRawTimeline && aggregatedTimeline === null) {
+        if (currentWeekRawTimeline && aggregatedDays === null) {
             const days: DayOfAggregatedRows[] = [];
             // FIXME: Days before today are already aggregated on server
             // FIXME: so you don't need to repeat it here. You really don't. It's an interface problem.
@@ -124,7 +112,7 @@ function Home() {
 
             setAggregatedDays(days);
         }
-    }, [currentWeekRawTimeline, aggregatedTimeline]);
+    }, [currentWeekRawTimeline, aggregatedDays]);
 
     useEffect(() => {
         if (timeline == null) {
@@ -144,8 +132,6 @@ function Home() {
                 aggregateEvents(timeline.mouseRows);
             const reducedKeyboardEvents: AggregatedTimelineEntry[] =
                 aggregateEvents(timeline.keyboardRows);
-            setReducedMouseEvents(reducedMouseEvents);
-            setReducedKeyboardEvents(reducedKeyboardEvents);
             const onlyEntry: DayOfAggregatedRows = {
                 date: reducedMouseEvents[0].start,
                 mouseRow: reducedMouseEvents,
@@ -179,12 +165,7 @@ function Home() {
                     </h1>
                 </div>
                 <div>
-                    <h2
-                        onClick={() => {
-                            console.log(timeline);
-                            console.log(aggregatedDays, "182ru");
-                        }}
-                    >
+                    <h2>
                         Keyboard & Mouse:
                         {timeline ? (
                             `${timeline.keyboardRows.length}, ${timeline?.mouseRows.length}`
