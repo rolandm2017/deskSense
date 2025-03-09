@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone, date
 from ..db.dao.timeline_entry_dao import TimelineEntryDao
 from ..db.dao.program_summary_dao import ProgramSummaryDao
 from ..db.dao.chrome_summary_dao import ChromeSummaryDao
-from ..db.models import DailyDomainSummary, DailyProgramSummary
+from ..db.models import DailyDomainSummary, DailyProgramSummary, TimelineEntryObj
 from ..config.definitions import productive_sites, productive_apps
 from ..util.console_logger import ConsoleLogger
 from ..object.return_types import DaySummary
@@ -105,6 +105,13 @@ class DashboardService:
             else:
                 days_before_today.append(day)
 
+        last = todays_payload
+        mouse_events: List[TimelineEntryObj] = last["mouse_events"]
+        for event in mouse_events:
+            start_time = event.start
+            timezone = start_time.tzinfo  # Gets the timezone info
+            print(f"Start: {start_time}, Timezone: {timezone}")
+
         return days_before_today, todays_payload, last_sunday
 
     async def get_specific_week_timeline(self, week_of):
@@ -143,9 +150,6 @@ class DashboardService:
             keyboard_events_as_local_time = format_for_local_time(
                 keyboard_events)
 
-            # TODO: Format days to convert from utc -> local time
-            # print(mouse_events, '102ru')
-            # print(keyboard_events, '103ru')
             self.logger.log_days_retrieval("[get_specific_week_timeline]", current_day, len(
                 mouse_events) + len(keyboard_events))
             day = {"date": current_day,
