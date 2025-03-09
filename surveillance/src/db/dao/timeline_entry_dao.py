@@ -76,7 +76,7 @@ class TimelineEntryDao(BaseQueueingDao):
         """
         async with self.session_maker() as session:
             async with session.begin():
-                print("adding ", len(rows), " rows")
+
                 session.add_all(rows)
                 await session.commit()
 
@@ -119,8 +119,6 @@ class TimelineEntryDao(BaseQueueingDao):
 
         async with self.session_maker() as session:
             result = await session.execute(query)
-            print(result)
-            print(result.scalars())
             return result.scalars().all()
             # scalars_result = result.scalars()
             # return await await_if_needed(scalars_result)

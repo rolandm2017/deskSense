@@ -126,7 +126,6 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def shutdown(self):
         """Closes the open session without opening a new one"""
-        print("in shutdown for chrome summary")
         with open("shutdown_proof.txt", "a") as f:
             f.write("shutting down Chrome summary dao")
             f.write("\n")

@@ -46,7 +46,6 @@ class DashboardService:
                 else:
                     leisure = leisure + domain.hours_spent
 
-            # print("starting program summaries loop")
             for program in daily_program_summaries:
                 hours_spent: float = float(program.hours_spent)  # type: ignore
                 # print(program.program_name, float(
@@ -66,9 +65,6 @@ class DashboardService:
                     leisure = leisure + hours_spent
             day = {"day": date_as_datetime,
                    "productivity": float(f"{productivity:.4f}"), "leisure": float(f"{leisure:.4f}")}
-            # print(day)
-            # print("significant programs:")
-            # print(significant_programs)
 
             usage_from_days.append(day
                                    )
@@ -146,9 +142,6 @@ class DashboardService:
             mouse_events_as_local_time = format_for_local_time(mouse_events)
             keyboard_events_as_local_time = format_for_local_time(
                 keyboard_events)
-
-            for event in mouse_events_as_local_time:
-                print(event.start, event.start.tzinfo)
 
             # TODO: Format days to convert from utc -> local time
             # print(mouse_events, '102ru')

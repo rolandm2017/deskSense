@@ -174,7 +174,6 @@ class TestProgramSummaryDao:
         existing_entry.configure_mock(**{
             "__str__": lambda: f"DailyProgramSummary(hours_spent={existing_entry.hours_spent})"
         })
-        print("177ru")
 
         # Mock that no existing entry is found
         mock_result = Mock()
@@ -182,12 +181,8 @@ class TestProgramSummaryDao:
         mock_result.scalar_one_or_none.return_value = existing_entry
         mock_session.execute.return_value = mock_result
 
-        print("184ru")
-
         # Act
         await class_mock_dao.create_if_new_else_update(session_data)
-
-        print("190ru")
 
         # Assert
         assert mock_session.execute.called
@@ -428,9 +423,6 @@ class TestProgramSummaryDao:
 
         times = [dt, dt2, dt3, dt4, dt5, dt6, dt7, dt8]
 
-        for t in times:
-            print(t)
-
         mock_clock = MockClock(times)
         test_db_dao.clock = mock_clock
 
@@ -548,7 +540,6 @@ class TestProgramSummaryDao:
 
         # ### Verify all programs were created
         all_entries = await test_db_dao.read_all()
-        print(all_entries, '525ru')
         assert len(all_entries) == len(unique_program_mentions)
 
         # Verify specific program times
@@ -588,7 +579,6 @@ class TestProgramSummaryDao:
         assert chrome_entry.hours_spent > 2.0  # 5 - 3
 
         # ### Test reading by day
-        # FIXME
 
         right_now = dt
         print(right_now)
@@ -596,17 +586,6 @@ class TestProgramSummaryDao:
         temptemp = await test_db_dao.read_all()
         print(len(temptemp), dt)
 
-        # FIXME: dt's date is 2025-03-04 15:05:00+00:00
-        # FIXME: but, the db entries are from the day after, 03-05
-        for k in temptemp:
-            print(k.gathering_date, '600ru')
-        print(dt2)
-        print(dt3)
-        print(dt4)
-        print(dt5)
-        print(dt6)
-        print(dt7)
-        print(dt8)  # FIXME: gathering date is on march 5, but s hould be march 4
         async with test_db_dao.session_maker() as session:
             result = await session.execute(text("SELECT program_name, gathering_date FROM daily_program_summaries"))
             rows = result.fetchall()
@@ -628,8 +607,6 @@ class TestProgramSummaryDao:
         # TEST that the total number of entries
         # reflects the number of unique programs seen
         assert len(all_entries) == 3  # Chrome, VSCode, Discord
-
-        print(all_entries, '450ru')
 
         # TEST that the total computed time is as expected
         chrome_entry = None

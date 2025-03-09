@@ -156,7 +156,6 @@ async def get_all_keyboard_reports(keyboard_service: KeyboardService = Depends(g
             status_code=500, detail="Failed to generate keyboard report")
 
     logs = [make_keyboard_log(e) for e in events]
-    print(type(logs), type(logs[1]))
     return KeyboardReport(count=len(events), keyboardLogs=logs)
 
 
@@ -288,6 +287,7 @@ async def get_chrome_time_for_dashboard(dashboard_service: DashboardService = De
 
 @app.get("/dashboard/breakdown/week/{week_of}", response_model=ProductivityBreakdownByWeek)
 async def get_productivity_breakdown(week_of: date = Path(..., description="Week starting date"), dashboard_service: DashboardService = Depends(get_dashboard_service)):
+    print(week_of, "291ru")
     weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(week_of)
     if not isinstance(weeks_overview, list):
         raise HTTPException(
@@ -442,7 +442,6 @@ async def receive_chrome_tab(
         await chrome_service.tab_queue.add_to_arrival_queue(tab_change_event)
         return  # Returns 204 No Content
     except Exception as e:
-        print(e, '260ru')
         raise HTTPException(
             status_code=500,
             detail="A problem occurred in Chrome Service"

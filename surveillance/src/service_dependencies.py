@@ -121,7 +121,6 @@ async def get_activity_arbiter():
         clock, program_logging_dao, async_session_maker)
     chrome_summary_dao = ChromeSummaryDao(
         clock, chrome_logging_dao, async_session_maker)
-    # print("Starting get_activity_arbiter")
 
     global _arbiter_instance
     if not _arbiter_instance:

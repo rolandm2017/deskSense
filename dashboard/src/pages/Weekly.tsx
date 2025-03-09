@@ -40,6 +40,8 @@ import {
 } from "../util/timeTools";
 import WeeklyUsageChart from "../components/charts/WeeklyBarChart";
 import StackedBarChart from "../components/charts/StackedBarChart";
+import NavigationButtons from "../components/NavigationButtons";
+import StartEndDateDisplay from "../components/StartEndDateDisplay";
 
 // ### ###
 // ### ### ###
@@ -277,19 +279,12 @@ function Weekly() {
         <>
             <div>
                 <h2 className="text-3xl my-2">Weekly Reports</h2>
-
                 <div>
                     <h3 className="text-2xl">Overview</h3>
-                    <h3 className="text-lg">
-                        {startDate && endDate ? (
-                            <p className="mt-4">
-                                Showing {formatDate(startDate)} to{" "}
-                                {formatDate(endDate)}
-                            </p>
-                        ) : (
-                            <p>Loading</p>
-                        )}
-                    </h3>
+                    <StartEndDateDisplay
+                        startDate={startDate}
+                        endDate={endDate}
+                    />
                     {weeklyBreakdown ? (
                         <StackedBarChart
                             title={""}
@@ -297,42 +292,18 @@ function Weekly() {
                         />
                     ) : null}
                 </div>
-                <div className="mt-4 ">
-                    <button
-                        className="mr-2 shadow-lg bg-blue-100"
-                        onClick={() => {
-                            // TODO: If there is no previous week available, grey out the button
-
-                            goToPreviousWeek();
-                        }}
-                    >
-                        Previous
-                    </button>
-                    <button
-                        className="shadow-lg bg-blue-100"
-                        onClick={() => {
-                            if (nextWeekAvailable) {
-                                // FIXME: Go To Next Week fails: Data is not cycled out
-                                goToNextWeek();
-                            }
-                        }}
-                    >
-                        Next
-                    </button>
-                </div>
+                <NavigationButtons
+                    nextWeekAvailable={nextWeekAvailable}
+                    goToPreviousWeek={goToPreviousWeek}
+                    goToNextWeek={goToNextWeek}
+                />
 
                 <div>
                     <h3 className="mt-4 text-2xl">Twitter Usage</h3>
-                    <h3 className="text-lg">
-                        {startDate && endDate ? (
-                            <p className="mt-4">
-                                Showing {formatDate(startDate)} to{" "}
-                                {formatDate(endDate)}
-                            </p>
-                        ) : (
-                            <p>Loading</p>
-                        )}
-                    </h3>
+                    <StartEndDateDisplay
+                        startDate={startDate}
+                        endDate={endDate}
+                    />
                     {
                         chrome ? (
                             <WeeklyUsageChart
@@ -342,42 +313,18 @@ function Weekly() {
                         ) : null // null
                     }
                 </div>
-                <div className="mt-4 ">
-                    <button
-                        className="mr-2 shadow-lg bg-blue-100"
-                        onClick={() => {
-                            // TODO: If there is no previous week available, grey out the button
-
-                            goToPreviousWeek();
-                        }}
-                    >
-                        Previous
-                    </button>
-                    <button
-                        className="shadow-lg bg-blue-100"
-                        onClick={() => {
-                            if (nextWeekAvailable) {
-                                // FIXME: Go To Next Week fails: Data is not cycled out
-                                goToNextWeek();
-                            }
-                        }}
-                    >
-                        Next
-                    </button>
-                </div>
+                <NavigationButtons
+                    nextWeekAvailable={nextWeekAvailable}
+                    goToPreviousWeek={goToPreviousWeek}
+                    goToNextWeek={goToNextWeek}
+                />
                 <div>
                     <h3 className="mt-4 text-2xl">Keyboard & Mouse Usage</h3>
 
-                    <h3 className="text-xl">
-                        {startDate && endDate ? (
-                            <p className="mt-4">
-                                Showing {formatDate(startDate)} to{" "}
-                                {formatDate(endDate)}
-                            </p>
-                        ) : (
-                            <p>Loading</p>
-                        )}
-                    </h3>
+                    <StartEndDateDisplay
+                        startDate={startDate}
+                        endDate={endDate}
+                    />
                     {/* // TODO: Show the DATES being displayed, the range. */}
                     {/* // "Showing Sunday 22 to ..." */}
                     <PeripheralsChart
@@ -385,29 +332,11 @@ function Weekly() {
                     />
                 </div>
 
-                <div className="mt-4 ">
-                    <button
-                        className="mr-2 shadow-lg bg-blue-100"
-                        onClick={() => {
-                            // TODO: If there is no previous week available, grey out the button
-
-                            goToPreviousWeek();
-                        }}
-                    >
-                        Previous
-                    </button>
-                    <button
-                        className="shadow-lg bg-blue-100"
-                        onClick={() => {
-                            if (nextWeekAvailable) {
-                                // FIXME: Go To Next Week fails: Data is not cycled out
-                                goToNextWeek();
-                            }
-                        }}
-                    >
-                        Next
-                    </button>
-                </div>
+                <NavigationButtons
+                    nextWeekAvailable={nextWeekAvailable}
+                    goToPreviousWeek={goToPreviousWeek}
+                    goToNextWeek={goToNextWeek}
+                />
             </div>
         </>
     );

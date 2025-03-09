@@ -21,7 +21,6 @@ def test_aggregate_timeline_events():
     # NOTE: I *ONLY* put in data and assumed it works. Data came direct from read_day_mice
     assert len(grouped) == 1  # 0 gaps of longer than 1,000 ms
     for entry in grouped:
-        print(entry, '24ru')
         assert entry.start is not None, "A timestamp was missing"
         assert entry.end is not None, "An ending timestamp was missing"
     for i in range(0, len(grouped) - 1):
@@ -46,7 +45,6 @@ def test_aggregate_timeline_events_again():
     # NOTE: I *ONLY* put in data and assumed it works. Data came direct from read_day_keyboard
     assert len(grouped) == 2  # 1 gaps of longer than 1,000 ms
     for entry in grouped:
-        print(entry, '47ru')
         assert entry.start is not None, "A timestamp was missing"
         assert entry.end is not None, "An ending timestamp was missing"
     for i in range(0, len(grouped) - 1):

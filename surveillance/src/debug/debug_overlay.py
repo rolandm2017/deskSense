@@ -12,7 +12,6 @@ class Overlay:
         self.debug = False
         self.logger = ConsoleLogger()
 
-        # print("Overlay init starting")
         # Color mapping for different applications
         self.color_map = {
             'Chrome': '#4285F4',    # Google Blue
@@ -35,16 +34,13 @@ class Overlay:
             self.gui_thread.start()
         else:
             self.logger.log_yellow("[info] No debug display active")
-            # print("Overlay init complete")
 
     def change_display_text(self, new_text, display_color=None):
         """Thread-safe method to change display text"""
-        # print("in change_display_text: ", new_text, display_color)
         self.update_queue.put((new_text, display_color))
 
     def process_queue(self):
         """Process all pending updates"""
-        # print(f"Processing queue, size: {self.update_queue.qsize()}")  # Debug
         while not self.update_queue.empty():
             try:
                 text, color = self.update_queue.get_nowait()
@@ -57,16 +53,12 @@ class Overlay:
         """Actually update the display (called from main thread)"""
         # f"Starting _update_display with: {new_text}, {display_color}")
         formatted_text = self.format_title(new_text)
-        # print(f"Formatted text: {formatted_text}")  # Debug
         color = display_color if display_color else self.get_color_for_window(
             new_text)
-        # print(f"Final color: {color}")  # Debug
 
         try:
             self.label.config(text=formatted_text, fg=color)
-            # print("Label configured successfully")  # Debug
             self.window.update()
-            # print("Window updated successfully")  # Debug
         except Exception as e:
             print(f"Error updating display: {e}")  # Debug
 
@@ -125,7 +117,6 @@ class Overlay:
             pady=5
         )
         self.label.pack(expand=True, fill='both')  # Make label fill window
-        # print("Label created and packed")  # Debug
 
         # Position window
         # self.window.geometry('300x100+10+10')  # Give it an explicit size
@@ -134,17 +125,13 @@ class Overlay:
         self.window.deiconify()
         self.window.lift()
         self.window.update()
-        # print("Window initialized")  # Debug
 
         # Start queue check
         self._schedule_queue_check()
-        # print("Queue check scheduled")  # Debug
 
         # Set initial text
         self.change_display_text("Terminal", self.color_map["Terminal"])
-        # print("Initial text set")  # Debug
 
-        # print("Starting mainloop")  # Debug
         self.window.mainloop()
 
     def _schedule_queue_check(self):
