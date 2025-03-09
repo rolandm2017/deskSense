@@ -99,15 +99,15 @@ const getChromeSummaries = withErrorHandling<DailyChromeSummaries>(() =>
 //     api.get("/dashboard/clicking/summaries/week")
 // );
 
-const getWeeklyProgramUsage = withErrorHandling<WeeklyProgramUsage>(() =>
+const getPresentWeekProgramUsage = withErrorHandling<WeeklyProgramUsage>(() =>
     api.get("/dashboard/program/summaries/week")
 );
 
-const getWeeklyChromeUsage = withErrorHandling<WeeklyChromeUsage>(() =>
+const getPresentWeekChromeUsage = withErrorHandling<WeeklyChromeUsage>(() =>
     api.get("/dashboard/chrome/summaries/week")
 );
 
-const getTimelineForCurrentWeek =
+const getTimelineForPresentWeek =
     withErrorHandling<PartiallyAggregatedWeeklyTimeline>(() =>
         api.get("/dashboard/timeline/week")
     );
@@ -227,11 +227,11 @@ export {
     getTodaysTimelineData,
     getProgramSummaries,
     getChromeSummaries,
-    getTimelineForCurrentWeek,
+    getTimelineForPresentWeek,
     // getWeeklyClicking,
     // getWeeklyTyping,
-    getWeeklyChromeUsage,
-    getWeeklyProgramUsage,
+    getPresentWeekProgramUsage,
+    getPresentWeekChromeUsage,
     getTimelineForPastWeek,
     getEnhancedChromeUsageForPastWeek,
     getEnhancedWeeklyBreakdown,

@@ -4,15 +4,16 @@ import { useSearchParams } from "react-router-dom";
 import "../App.css";
 
 import {
-    getWeeklyChromeUsage,
-    getWeeklyProgramUsage,
+    getPresentWeekProgramUsage,
+    getPresentWeekChromeUsage,
     getEnhancedChromeUsageForPastWeek,
-    getTimelineForCurrentWeek,
+    getTimelineForPresentWeek,
     getTimelineForPastWeek,
     getEnhancedWeeklyBreakdown,
 } from "../api/getData.api";
 import {
     DayOfChromeUsage,
+    DayOfTimelineRows,
     PartiallyAggregatedWeeklyTimeline,
     SocialMediaUsage,
     WeeklyBreakdown,
@@ -22,7 +23,7 @@ import {
 } from "../interface/weekly.interface";
 
 import { BarChartDayData } from "../interface/misc.interface";
-import QQPlotV2 from "../components/charts/PeripheralsChart";
+import PeripheralsChart from "../components/charts/PeripheralsChart";
 import {
     DayOfAggregatedRows,
     WeeklyTimelineAggregate,
@@ -40,16 +41,31 @@ import {
 import WeeklyUsageChart from "../components/charts/WeeklyBarChart";
 import StackedBarChart from "../components/charts/StackedBarChart";
 
+// ### ###
+// ### ### ###
+// ### ### ### ###
+// ## Semantic Distinctions
+// "Present Week" → Always refers to the real-world, system-clock-defined week (i.e., today’s calendar week).
+// "Viewed Week" → Refers to the week the user is currently viewing on the dashboard.
+// "Loaded Week" → The week whose data is currently loaded in state (useful internally).
+// ### ### ### ###
+// ### ### ###
+// ### ###
+
 function Weekly() {
     const [chrome, setChrome] = useState<WeeklyChromeUsage | null>(null);
     const [programs, setPrograms] = useState<WeeklyProgramUsage | null>(null);
 
-    const [rawTimeline, setRawTimeline] = useState<WeeklyTimeline | null>(null);
+    // FIXME: why is there three?
 
-    const [currentWeekRawTimeline, setCurrentWeekRawTimeline] =
-        useState<PartiallyAggregatedWeeklyTimeline | null>(null);
+    const [prevWeeksRawTimeline, setPrevWeeksRawTimeline] =
+        useState<WeeklyTimeline | null>(null);
+
     const [aggregatedTimeline, setAggregatedTimeline] =
         useState<WeeklyTimelineAggregate | null>(null);
+
+    const [presentWeekRawTimeline, setPresentWeekRawTimeline] =
+        useState<PartiallyAggregatedWeeklyTimeline | null>(null);
 
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
@@ -59,13 +75,10 @@ function Weekly() {
     const [weeklyBreakdown, setWeeklyBreakdown] =
         useState<WeeklyBreakdown | null>(null);
 
-    // const [socialMediaUsage, setSocialMediaUsage] = useState<
-    //     SocialMediaUsage[] | null
-    // >(null);
-
     const [searchParams, setSearchParams] = useSearchParams();
 
     useEffect(() => {
+        /* Handle setting dates display */
         const urlParam = searchParams.get("date"); // returns "5432"
         if (urlParam) {
             /* Use this URL param data to set the Showing dates */
@@ -76,7 +89,6 @@ function Weekly() {
             return;
         }
         if (startDate === null || endDate === null) {
-            console.log("Getting dates for .... what is this");
             const previousSunday = getPreviousSunday();
             const upcomingSaturday = getUpcomingSaturday();
             setStartDate(previousSunday);
@@ -93,8 +105,13 @@ function Weekly() {
             loadDataForWeek(asDate);
             return;
         }
+        /* Load current week's data */
 
-        getWeeklyChromeUsage().then((weekly: WeeklyChromeUsage) => {
+        getPresentWeekProgramUsage().then((weekly: WeeklyProgramUsage) => {
+            // TODO: Convert date string to new Date() like up above
+            setPrograms(weekly);
+        });
+        getPresentWeekChromeUsage().then((weekly: WeeklyChromeUsage) => {
             // TODO: Move this into the api as a layer
             const withConvertedDateObjs: DayOfChromeUsage[] = weekly.days.map(
                 (day) => {
@@ -109,22 +126,18 @@ function Weekly() {
             };
             setChrome(withFixedDates);
         });
-        getWeeklyProgramUsage().then((weekly: WeeklyProgramUsage) => {
-            // TODO: Convert date string to new Date() like up above
-            setPrograms(weekly);
-        });
-        getTimelineForCurrentWeek().then((weekly) => {
-            // Do I make
-            setCurrentWeekRawTimeline(weekly);
+
+        getTimelineForPresentWeek().then((weekly) => {
+            setPresentWeekRawTimeline(weekly);
             // TODO: follow downstream logic and set either currentWeek or PrevWeek depending on which is which
         });
     }, []);
 
     useEffect(() => {
-        /* Aggregation */
-        if (rawTimeline && aggregatedTimeline === null) {
+        /* Aggregation for previous weeks */
+        if (prevWeeksRawTimeline && aggregatedTimeline === null) {
             const days: DayOfAggregatedRows[] = [];
-            for (const day of rawTimeline.days) {
+            for (const day of prevWeeksRawTimeline.days) {
                 const dayClicks = day.row.mouseRows;
                 const dayTyping = day.row.keyboardRows;
                 const row: DayOfAggregatedRows = {
@@ -137,9 +150,47 @@ function Weekly() {
 
             setAggregatedTimeline({ days });
         }
-    }, [rawTimeline, aggregatedTimeline]);
+    }, [prevWeeksRawTimeline, aggregatedTimeline]);
 
-    // TODO: Aggregate the mouse and keyboard
+    useEffect(() => {
+        /* Aggregation */
+        if (presentWeekRawTimeline && aggregatedTimeline === null) {
+            const days: DayOfAggregatedRows[] = [];
+            // FIXME: Days before today are already aggregated on server
+            // FIXME: so you don't need to repeat it here. You really don't. It's an interface problem.
+            console.log(presentWeekRawTimeline, "95ru");
+            // FIXME: comes back as 7 days
+            const today: DayOfTimelineRows = presentWeekRawTimeline.today;
+            console.log(today, "96ru");
+
+            // Aggregate today:
+            const dayClicks = today.row.mouseRows;
+            const dayTyping = today.row.keyboardRows;
+            const row: DayOfAggregatedRows = {
+                date: today.date,
+                mouseRow: aggregateEvents(dayClicks),
+                keyboardRow: aggregateEvents(dayTyping),
+            };
+            const convertedIntoAggregations: DayOfAggregatedRows[] =
+                presentWeekRawTimeline.beforeToday.map((day) => {
+                    return {
+                        date: day.date,
+                        mouseRow: day.row.mouseRows,
+                        keyboardRow: day.row.keyboardRows,
+                    };
+                });
+
+            console.log(convertedIntoAggregations);
+            days.push(...convertedIntoAggregations);
+            days.push(row);
+
+            days.forEach((obj, index) => {
+                console.log(`Object ${index} keys:`, Object.keys(obj));
+            });
+
+            setAggregatedTimeline({ days });
+        }
+    }, [presentWeekRawTimeline, aggregatedTimeline]);
 
     function updateUrlParam(newDate: Date) {
         const input = formatDateMmDdYyyy(newDate);
@@ -148,7 +199,7 @@ function Weekly() {
 
     function dumpOldData() {
         setAggregatedTimeline(null);
-        setRawTimeline(null);
+        setPrevWeeksRawTimeline(null);
     }
 
     function goToPreviousWeek() {
@@ -180,7 +231,7 @@ function Weekly() {
         });
         // FIXME: data loads wrong; a mismatch between the weeks ??
         getTimelineForPastWeek(weekStart).then((weekly) => {
-            setRawTimeline(weekly);
+            setPrevWeeksRawTimeline(weekly);
         });
         getEnhancedWeeklyBreakdown(weekStart).then(
             (breakdown: WeeklyBreakdown) => {
@@ -315,7 +366,6 @@ function Weekly() {
                     </button>
                 </div>
                 <div>
-                    {/* <h3>Current Week</h3> */}
                     <h3 className="mt-4 text-2xl">Keyboard & Mouse Usage</h3>
 
                     <h3 className="text-xl">
@@ -330,7 +380,7 @@ function Weekly() {
                     </h3>
                     {/* // TODO: Show the DATES being displayed, the range. */}
                     {/* // "Showing Sunday 22 to ..." */}
-                    <QQPlotV2
+                    <PeripheralsChart
                         days={aggregatedTimeline ? aggregatedTimeline.days : []}
                     />
                 </div>
