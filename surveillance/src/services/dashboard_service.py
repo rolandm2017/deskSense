@@ -76,7 +76,7 @@ class DashboardService:
 
         return usage_from_days
 
-    async def get_timeline(self):
+    async def get_timeline_for_today(self):
         today = self.user_clock.now()
         all_mouse_events = await self.timeline_dao.read_day_mice(today)
         all_keyboard_events = await self.timeline_dao.read_day_keyboard(today)
@@ -88,13 +88,15 @@ class DashboardService:
         days_since_sunday = today.weekday() + 1
         last_sunday = today - timedelta(days=days_since_sunday)
 
-        # TODO: let the frontend tell the backend how readily to stitch the timeline events together
+        todays_date = today.date()
 
-        all_days = []
+        days_before_today = []
         # +1 to include today
         for days_after_sunday in range(days_since_sunday + 1):
+
             current_day = last_sunday + timedelta(days=days_after_sunday)
             # Or process them directly like your get_timeline() example:
+            # FIXME: TOday should be returned separate
             mouse_events = await self.timeline_dao.read_day_mice(current_day)
             keyboard_events = await self.timeline_dao.read_day_keyboard(current_day)
             self.logger.log_days_retrieval("[get_current_week_timeline]", current_day, len(
@@ -102,9 +104,12 @@ class DashboardService:
             day = {"date": current_day,
                    "mouse_events": mouse_events,
                    "keyboard_events": keyboard_events}
-            all_days.append(day)
+            if current_day.date() == todays_date:  # Claude will this work?
+                todays_payload = day
+            else:
+                days_before_today.append(day)
 
-        return all_days, last_sunday
+        return days_before_today, todays_payload, last_sunday
 
     async def get_specific_week_timeline(self, week_of):
         if isinstance(week_of, date):

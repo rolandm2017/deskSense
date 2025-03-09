@@ -113,3 +113,9 @@ class DayOfTimelineRows(BaseModel):
 class WeeklyTimeline(BaseModel):
     days: List[DayOfTimelineRows]  # expect 1 to 7
     start_date: datetime
+
+
+class PartiallyPrecomputedWeeklyTimeline(BaseModel):
+    beforeToday: List[DayOfTimelineRows]  # expect 0 to 6
+    today: DayOfTimelineRows
+    startDate: datetime

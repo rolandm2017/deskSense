@@ -12,7 +12,7 @@ export interface AggregatedTimelineEntry {
     eventCount?: number;
 }
 
-export interface DaysOfAggregatedRows {
+export interface DayOfAggregatedRows {
     date: Date;
     mouseRow: AggregatedTimelineEntry[];
     keyboardRow: AggregatedTimelineEntry[];
@@ -20,7 +20,7 @@ export interface DaysOfAggregatedRows {
 
 export interface WeeklyTimelineAggregate {
     // the same as the WeeklyTimeline, but it's been aggregated
-    days: DaysOfAggregatedRows[];
+    days: DayOfAggregatedRows[];
 }
 
 export interface BarChartDayData {

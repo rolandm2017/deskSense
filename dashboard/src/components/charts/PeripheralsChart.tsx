@@ -1,6 +1,10 @@
 import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
-import { DaysOfAggregatedRows } from "../../interface/misc.interface";
+import {
+    AggregatedTimelineEntry,
+    DayOfAggregatedRows,
+} from "../../interface/misc.interface";
+
 import { DayOfChromeUsage } from "../../interface/weekly.interface";
 import { addEventLines } from "../../util/addEventLines";
 
@@ -10,8 +14,8 @@ import { addEventLines } from "../../util/addEventLines";
 /* Current best idea*/
 /* ** ** */
 
-interface QQPlotProps {
-    days: DaysOfAggregatedRows[];
+interface PeripheralsChartProps {
+    days: DayOfAggregatedRows[];
     width?: number;
     height?: number;
     margins?: {
@@ -22,7 +26,7 @@ interface QQPlotProps {
     };
 }
 
-const QQPlotV2: React.FC<QQPlotProps> = ({
+const PeripheralsChart: React.FC<PeripheralsChartProps> = ({
     days,
     width = 640,
     height = 384, // Reduced to 0.6 * 640
@@ -166,7 +170,7 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
          * Claude says it's because of SVG coordinate system being reversed
          */
 
-        days.forEach((day: DaysOfAggregatedRows) => {
+        days.forEach((day: DayOfAggregatedRows) => {
             // console.log(day.date, "126ru");
             const dayName = daysOfWeek[new Date(day.date).getDay()];
 
@@ -174,12 +178,12 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
             const yPosition = y(dayName)! + y.bandwidth() / 2;
 
             // Add mouse events
-            day.mouseRow.forEach((event) => {
+            day.mouseRow.forEach((event: AggregatedTimelineEntry) => {
                 addEventLines(yPosition, event, eventLines, x, y);
             });
 
             // Add keyboard events slightly below mouse events
-            day.keyboardRow.forEach((event) => {
+            day.keyboardRow.forEach((event: AggregatedTimelineEntry) => {
                 addEventLines(yPosition + 10, event, eventLines, x, y);
             });
         });
@@ -192,4 +196,4 @@ const QQPlotV2: React.FC<QQPlotProps> = ({
     );
 };
 
-export default QQPlotV2;
+export default PeripheralsChart;

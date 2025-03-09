@@ -5,6 +5,7 @@ import {
     MouseReport,
     TimelineRows,
 } from "./api.interface";
+import { DayOfAggregatedRows } from "./misc.interface";
 
 export interface DayOfTyping {
     date: Date;
@@ -54,6 +55,12 @@ export interface WeeklyChromeUsage {
 
 export interface WeeklyTimeline {
     days: DayOfTimelineRows[]; // between 1 and 7 entries long
+}
+
+export interface PartiallyAggregatedWeeklyTimeline {
+    beforeToday: DayOfTimelineRows[]; // between 0 and 6 entries long
+    today: DayOfTimelineRows;
+    startDate: string;
 }
 
 /*
