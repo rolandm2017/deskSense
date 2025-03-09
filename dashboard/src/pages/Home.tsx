@@ -69,6 +69,7 @@ function Home() {
             getTimelineForPresentWeek().then((weekly) => {
                 // TODO: Get the start and end date
                 // Do I make
+                console.log(weekly, "72ru");
                 setRawTimeline(weekly);
             });
         }
@@ -76,6 +77,7 @@ function Home() {
 
     useEffect(() => {
         /* Aggregation */
+        console.log(presentWeekRawTimeline, aggregatedDays, "80ru");
         if (presentWeekRawTimeline && aggregatedDays === null) {
             const days: DayOfAggregatedRows[] = [];
             // FIXME: Days before today are already aggregated on server
@@ -114,34 +116,14 @@ function Home() {
         }
     }, [presentWeekRawTimeline, aggregatedDays]);
 
-    useEffect(() => {
-        if (timeline == null) {
-            getTodaysTimelineData().then((timeline) => {
-                // TODO: change endpoint to serve it up by day
-                console.log(timeline, "69ru");
-                setTimeline(timeline);
-            });
-        }
-    }, [timeline]);
-
-    useEffect(() => {
-        // reduce timeline rows to avoid CPU hug
-        if (timeline) {
-            // TODO: Want aggregated events by day
-            const reducedMouseEvents: AggregatedTimelineEntry[] =
-                aggregateEvents(timeline.mouseRows);
-            const reducedKeyboardEvents: AggregatedTimelineEntry[] =
-                aggregateEvents(timeline.keyboardRows);
-            const onlyEntry: DayOfAggregatedRows = {
-                date: reducedMouseEvents[0].start,
-                mouseRow: reducedMouseEvents,
-                keyboardRow: reducedKeyboardEvents,
-            };
-            const aggregated = [onlyEntry];
-
-            setAggregatedDays(aggregated);
-        }
-    }, [timeline]);
+    // useEffect(() => {
+    //     if (timeline == null) {
+    //         getTodaysTimelineData().then((timeline) => {
+    //             // TODO: change endpoint to serve it up by day
+    //             setTimeline(timeline);
+    //         });
+    //     }
+    // }, [timeline]);
 
     // const primaryBg = "#FAFAF9";
     const primaryBlack = "#171717";
@@ -174,7 +156,7 @@ function Home() {
                         )}
                     </h2>
                     {/* // TODO: Use Weekly Peripherals chart on Home */}
-                    {timeline !== null && aggregatedDays !== null ? (
+                    {aggregatedDays !== null ? (
                         <PeripheralsChart days={aggregatedDays} />
                     ) : (
                         <p>Loading...</p>
