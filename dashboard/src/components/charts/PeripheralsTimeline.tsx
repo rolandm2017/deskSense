@@ -6,7 +6,7 @@ import {
 } from "../../interface/misc.interface";
 
 import { DayOfChromeUsage } from "../../interface/weekly.interface";
-import { addEventLines } from "../../util/addEventLines";
+import { addEventLinesForPeripherals } from "../../util/addEventLines";
 
 // https://observablehq.com/@d3/normal-quantile-plot
 // https://observablehq.com/@d3/line-chart-missing-data/2
@@ -179,12 +179,18 @@ const PeripheralsTimeline: React.FC<PeripheralsTimelineProps> = ({
 
             // Add mouse events
             day.mouseRow.forEach((event: AggregatedTimelineEntry) => {
-                addEventLines(yPosition, event, eventLines, x, y);
+                addEventLinesForPeripherals(yPosition, event, eventLines, x, y);
             });
 
             // Add keyboard events slightly below mouse events
             day.keyboardRow.forEach((event: AggregatedTimelineEntry) => {
-                addEventLines(yPosition + 10, event, eventLines, x, y);
+                addEventLinesForPeripherals(
+                    yPosition + 10,
+                    event,
+                    eventLines,
+                    x,
+                    y
+                );
             });
         });
     }, [width, height, margins, days]);

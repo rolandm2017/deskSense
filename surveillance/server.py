@@ -9,13 +9,13 @@ from contextlib import asynccontextmanager
 from pydantic import BaseModel
 import asyncio
 # import time
-from typing import Optional, List, Dict
-from datetime import date
+from typing import Optional, List, Dict, Tuple
+from datetime import date, datetime
 from time import time
 
 
 from src.db.database import init_db, async_session_maker
-from src.db.models import DailyDomainSummary, DailyProgramSummary
+from src.db.models import DailyDomainSummary, DailyProgramSummary, ProgramSummaryLog
 
 # from src.services import MouseService, KeyboardService, ProgramService, DashboardService, ChromeService
 # from src.services import get_mouse_service, get_chrome_service, get_program_service, get_keyboard_service, get_dashboard_service
@@ -32,7 +32,9 @@ from src.object.dashboard_dto import (
     PartiallyPrecomputedWeeklyTimeline,
     ProductivityBreakdownByWeek,
     ProgramBarChartContent,
-    ChromeBarChartContent, TimelineEntrySchema, TimelineRows,
+    ChromeBarChartContent,
+    ProgramTimelineContent,
+    ProgramUsageTimeline, TimelineEntrySchema, TimelineRows,
     WeeklyProgramContent, WeeklyChromeContent,
     WeeklyProgramUsageTimeline, WeeklyTimeline, DayOfTimelineRows
 )
@@ -319,11 +321,41 @@ async def get_previous_week_of_timeline(week_of: date = Path(..., description="W
 
 
 @app.get("/dashboard/programs/usage/timeline", response_model=WeeklyProgramUsageTimeline)
-async def get_program_usage_timeline_by_week(week_of: date = Path(..., description="Week starting date"),
-                                             dashboard_service: DashboardService = Depends(get_dashboard_service)):
-    vvvvvv = await dashboard_service.get_program_usage_timeline(week_of)
+async def get_program_usage_timeline_for_present_week(
+        dashboard_service: DashboardService = Depends(get_dashboard_service)):
+    all_days, start_of_week = await dashboard_service.get_current_week_program_usage_timeline()
 
     days = []
+    for day in all_days:
+        print(day, '330ru')
+        programs: dict[str, ProgramSummaryLog] = day["program_usage_timeline"]
+        print(programs, '332ru')
+        # assert isinstance(programs, dict)
+        date = day["date"]
+
+        # for key, value in programs.items():
+        #     print(key, value)
+
+        # program_timeline_content = ProgramTimelineContent(programName=)
+        # program_usage_timeline = ProgramUsageTimeline(date=date, programs=package=[''])
+    return WeeklyProgramUsageTimeline(days=days)
+
+
+@app.get("/dashboard/programs/usage/timeline/{week_of}", response_model=WeeklyProgramUsageTimeline)
+async def get_program_usage_timeline_by_week(week_of: date = Path(..., description="Week starting date"),
+                                             dashboard_service: DashboardService = Depends(get_dashboard_service)):
+    all_days, start_of_week = await dashboard_service.get_program_usage_timeline_for_week(week_of)
+
+    days = []
+    for day in all_days:
+        programs: dict[str, ProgramSummaryLog] = day["program_usage_timeline"]
+        date = day["date"]
+
+        for key, value in programs.items():
+            print(key, value)
+
+        # program_timeline_content = ProgramTimelineContent(programName=)
+        # program_usage_timeline = ProgramUsageTimeline(date=date, programs=package=[''])
     return WeeklyProgramUsageTimeline(days=days)
 
 

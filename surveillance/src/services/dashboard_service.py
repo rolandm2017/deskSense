@@ -1,11 +1,13 @@
 # dashboard_service.py
-from typing import List, TypedDict
 from datetime import datetime, timedelta, timezone, date
+from typing import List, TypedDict, Dict, Tuple
+
+from ..db.dao.summary_logs_dao import ChromeLoggingDao, ProgramLoggingDao
 
 from ..db.dao.timeline_entry_dao import TimelineEntryDao
 from ..db.dao.program_summary_dao import ProgramSummaryDao
 from ..db.dao.chrome_summary_dao import ChromeSummaryDao
-from ..db.models import DailyDomainSummary, DailyProgramSummary, TimelineEntryObj
+from ..db.models import DailyDomainSummary, DailyProgramSummary, ProgramSummaryLog, TimelineEntryObj
 from ..config.definitions import productive_sites, productive_apps
 from ..util.console_logger import ConsoleLogger
 from ..object.return_types import DaySummary
@@ -14,10 +16,16 @@ from ..util.time_formatting import format_for_local_time
 
 
 class DashboardService:
-    def __init__(self, timeline_dao: TimelineEntryDao, program_summary_dao: ProgramSummaryDao, chrome_summary_dao: ChromeSummaryDao):
+    def __init__(self, timeline_dao: TimelineEntryDao,
+                 program_summary_dao: ProgramSummaryDao,
+                 program_logging_dao: ProgramLoggingDao,
+                 chrome_summary_dao: ChromeSummaryDao,
+                 chrome_logging_dao: ChromeLoggingDao):
         self.timeline_dao = timeline_dao
         self.program_summary_dao = program_summary_dao
+        self.program_logging_dao = program_logging_dao
         self.chrome_summary_dao = chrome_summary_dao
+        self.chrome_logging_dao = chrome_logging_dao
         self.user_clock = UserFacingClock()
         self.logger = ConsoleLogger()
 
@@ -165,7 +173,50 @@ class DashboardService:
 
         return all_days, sunday_that_starts_the_week
 
-    async def get_program_usage_timeline(self, week_of: date):
+    async def get_current_week_program_usage_timeline(self):
+        today = self.user_clock.now()
+
+        is_sunday = today.weekday() == 6
+        if is_sunday:
+            # If the week_of is a sunday, start from there.
+            sunday_that_starts_the_week = today
+            days_since_sunday = 0
+        else:
+            # If the week_of is not a sunday,
+            # go back in time to the most recent sunday,
+            # and start from there. This is error handling
+            offset = 1
+            days_per_week = 7
+            days_since_sunday = (today.weekday() + offset) % days_per_week
+            sunday_that_starts_the_week = today - \
+                timedelta(days=days_since_sunday)
+
+        now = self.user_clock.now()
+        start_of_today = now.replace(hour=0, minute=0, second=0,
+                                     microsecond=0)
+        start_of_tomorrow = start_of_today + timedelta(days=1)
+
+        all_days = []
+
+        for days_after_sunday in range(7):
+            current_day = sunday_that_starts_the_week + \
+                timedelta(days=days_after_sunday)
+            is_in_future = current_day > start_of_tomorrow
+            if is_in_future:
+                continue  # avoid reading future dates from db
+
+            program_usage_timeline: dict[str, ProgramSummaryLog] = await self.program_logging_dao.read_day_as_sorted(current_day)
+
+            self.logger.log_days_retrieval(
+                "[get_current_week_program_usage_timeline]", current_day, len(program_usage_timeline))
+            day = {"date": current_day,
+                   "program_usage_timeline": program_usage_timeline}
+
+            all_days.append(day)
+
+        return all_days, sunday_that_starts_the_week
+
+    async def get_program_usage_timeline_for_week(self, week_of: date) -> Tuple[List[Dict], datetime]:
         if isinstance(week_of, date):
             # Note: The transformation here is a requirement
             week_of = datetime.combine(week_of, datetime.min.time())
@@ -186,18 +237,27 @@ class DashboardService:
             sunday_that_starts_the_week = week_of - \
                 timedelta(days=days_since_sunday)
 
+        now = self.user_clock.now()
+        start_of_today = now.replace(hour=0, minute=0, second=0,
+                                     microsecond=0)
+        start_of_tomorrow = start_of_today + timedelta(days=1)
+
         all_days = []
 
         for days_after_sunday in range(7):
             current_day = sunday_that_starts_the_week + \
                 timedelta(days=days_after_sunday)
 
-            program_usage_timeline = await self.program_usage_timeline_dao.read_day(current_day)
+            is_in_future = current_day > start_of_tomorrow
+            if is_in_future:
+                continue  # avoid reading future dates from db
+
+            program_usage_timeline: dict[str, ProgramSummaryLog] = await self.program_logging_dao.read_day_as_sorted(current_day)
 
             self.logger.log_days_retrieval(
                 "[get_program_usage_timeline]", current_day, len(program_usage_timeline))
             day = {"date": current_day,
-                   "program_usage_timeline": program_usage_timeline, }
+                   "program_usage_timeline": program_usage_timeline}
             all_days.append(day)
 
         return all_days, sunday_that_starts_the_week
