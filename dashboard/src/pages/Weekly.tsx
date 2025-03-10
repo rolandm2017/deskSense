@@ -73,7 +73,7 @@ function Weekly() {
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
 
-    const [nextWeekAvailable, setNextWeekAvailable] = useState(true);
+    const [nextWeekAvailable, setNextWeekAvailable] = useState(false);
 
     const [weeklyBreakdown, setWeeklyBreakdown] =
         useState<WeeklyBreakdown | null>(null);

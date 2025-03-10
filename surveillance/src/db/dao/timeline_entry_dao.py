@@ -126,14 +126,12 @@ class TimelineEntryDao(BaseQueueingDao):
     async def read_day_mice(self, users_systems_day: datetime, user_facing_clock) -> List[TimelineEntryObj]:
         today = user_facing_clock.now().date()
         is_today = today == users_systems_day.date()
-        # FIXME: 'today' is march 9, when it's still march 8.
-        # TODO: Store entires with both the System Time (UTC) and the User's Local TZ
         if is_today:
             # Precomputed day can't exist yet
-            print("is today!!! in mouse 131ru")
+            # print("w", today, "is today!!! in mouse 131ru")
             return await self.read_day(users_systems_day, ChartEventType.MOUSE)
         else:
-            print(users_systems_day, " is not today")
+            # print(users_systems_day, " is not today mouse")
             # return await self.read_day(day, ChartEventType.MOUSE)
             precomputed_day_entries = await self.read_precomputed_entry_for_day(
                 users_systems_day, ChartEventType.MOUSE)
@@ -148,11 +146,11 @@ class TimelineEntryDao(BaseQueueingDao):
         today = user_facing_clock.now().date()
         is_today = today == users_systems_day.date()
         if is_today:
-            print("is today!!! in keyboard 131ru")
+            # print("[w]", today, "is today!!! in keyboard 131ru")
             # Precomputed day can't exist yet
             return await self.read_day(users_systems_day, ChartEventType.KEYBOARD)
         else:
-            print(users_systems_day, " is not today")
+            # print(users_systems_day, " is not today keyboard")
             # return await self.read_day(day, ChartEventType.KEYBOARD)
             precomputed_day_entries = await self.read_precomputed_entry_for_day(
                 users_systems_day, ChartEventType.KEYBOARD)

@@ -135,7 +135,7 @@ async def get_activity_arbiter():
         chrome_service = await get_chrome_service()
 
         _arbiter_instance = ActivityArbiter(
-            user_facing_clock=user_facing_clock,
+            user_facing_clock=user_facing_clock
         )
 
         _arbiter_instance.add_ui_listener(ui_layer.on_state_changed)
