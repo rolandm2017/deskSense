@@ -79,40 +79,46 @@ class DashboardService:
         return all_mouse_events, all_keyboard_events
 
     async def get_current_week_timeline(self):
+        """Returns whichever days have occurred so far in the present week."""
+
         today = self.user_clock.now()
-        # +1 because weekday() counts from Monday=0
-        days_since_sunday = today.weekday() + 1
-        last_sunday = today - timedelta(days=days_since_sunday)
+
+        is_sunday = today.weekday() == 6
+        if is_sunday:
+            # If the week_of is a sunday, start from there.
+            sunday_that_starts_the_week = today
+            days_since_sunday = 0
+        else:
+            # If the week_of is not a sunday,
+            # go back in time to the most recent sunday,
+            # and start from there. This is error handling
+            offset = 1
+            days_per_week = 7
+            days_since_sunday = (today.weekday() + offset) % days_per_week
+            sunday_that_starts_the_week = today - \
+                timedelta(days=days_since_sunday)
+
+        days_before_today = []
 
         todays_date = today.date()
 
-        days_before_today = []
-        # +1 to include today
-        for days_after_sunday in range(days_since_sunday + 1):
-
-            current_day = last_sunday + timedelta(days=days_after_sunday)
-            # Or process them directly like your get_timeline() example:
-            # FIXME: TOday should be returned separate
+        for days_after_sunday in range(7):
+            current_day = sunday_that_starts_the_week + \
+                timedelta(days=days_after_sunday)
             mouse_events = await self.timeline_dao.read_day_mice(current_day, self.user_clock)
             keyboard_events = await self.timeline_dao.read_day_keyboard(current_day, self.user_clock)
+
             self.logger.log_days_retrieval("[get_current_week_timeline]", current_day, len(
                 mouse_events) + len(keyboard_events))
             day = {"date": current_day,
                    "mouse_events": mouse_events,
                    "keyboard_events": keyboard_events}
-            if current_day.date() == todays_date:  # Claude will this work?
-                todays_payload = day
+            if current_day.date() == todays_date:
+                todays_unaggregated_payload = day
             else:
                 days_before_today.append(day)
 
-        last = todays_payload
-        mouse_events: List[TimelineEntryObj] = last["mouse_events"]
-        for event in mouse_events:
-            start_time = event.start
-            timezone = start_time.tzinfo  # Gets the timezone info
-            print(f"Start: {start_time}, Timezone: {timezone}")
-
-        return days_before_today, todays_payload, last_sunday
+        return days_before_today, todays_unaggregated_payload, sunday_that_starts_the_week
 
     async def get_specific_week_timeline(self, week_of):
         if isinstance(week_of, date):
@@ -146,15 +152,15 @@ class DashboardService:
             mouse_events = await self.timeline_dao.read_day_mice(current_day, self.user_clock)
             keyboard_events = await self.timeline_dao.read_day_keyboard(current_day, self.user_clock)
 
-            mouse_events_as_local_time = format_for_local_time(mouse_events)
-            keyboard_events_as_local_time = format_for_local_time(
-                keyboard_events)
+            # mouse_events_as_local_time = format_for_local_time(mouse_events)
+            # keyboard_events_as_local_time = format_for_local_time(
+            # keyboard_events)
 
             self.logger.log_days_retrieval("[get_specific_week_timeline]", current_day, len(
                 mouse_events) + len(keyboard_events))
             day = {"date": current_day,
-                   "mouse_events": mouse_events_as_local_time,
-                   "keyboard_events": keyboard_events_as_local_time}
+                   "mouse_events": mouse_events,
+                   "keyboard_events": keyboard_events}
             all_days.append(day)
 
         return all_days, sunday_that_starts_the_week
