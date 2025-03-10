@@ -1,39 +1,40 @@
 import { useEffect, useState } from "react";
 import "../App.css";
 
-import ProgramUsageChart from "../components/charts/ProgramUsageChart";
+// import ProgramUsageChart from "../components/charts/ProgramUsageChart";
 
 import {
     DailyChromeSummaries,
     DailyProgramSummaries,
-    TimelineRows,
 } from "../interface/api.interface";
 
 import {
     getChromeSummaries,
+    getPresentWeekProgramTimeline,
     getProgramSummaries,
     getTimelineForPresentWeek,
-    getTodaysTimelineData,
 } from "../api/getData.api";
 
-import ChromeUsageChart from "../components/charts/ChromeUsageChart";
+// import ChromeUsageChart from "../components/charts/ChromeUsageChart";
 import PeripheralsTimeline from "../components/charts/PeripheralsTimeline";
 import { aggregateEvents } from "../util/aggregateEvents";
-import {
-    AggregatedTimelineEntry,
-    DayOfAggregatedRows,
-} from "../interface/misc.interface";
+import { DayOfAggregatedRows } from "../interface/misc.interface";
 import {
     DayOfTimelineRows,
     PartiallyAggregatedWeeklyTimeline,
+    WeeklyProgramTimelines,
 } from "../interface/weekly.interface";
+import ProgramTimeline from "../components/charts/ProgramTimeline";
 
 function Home() {
     const [programSummaries, setProgramSummaries] =
         useState<DailyProgramSummaries | null>(null);
     const [chromeSummaries, setChromeSummaries] =
         useState<DailyChromeSummaries | null>(null);
-    const [timeline, setTimeline] = useState<TimelineRows | null>(null);
+    // const [timeline, setTimeline] = useState<TimelineRows | null>(null);
+
+    const [programTimelines, setProgramTimelines] =
+        useState<WeeklyProgramTimelines | null>(null);
 
     // const [aggregatedTimeline, setAggregatedTimeline] =
     // useState<WeeklyTimelineAggregate | null>(null);
@@ -74,6 +75,14 @@ function Home() {
             });
         }
     }, [presentWeekRawTimeline]);
+
+    useEffect(() => {
+        if (programTimelines === null) {
+            getPresentWeekProgramTimeline().then((timelines) => {
+                setProgramTimelines(timelines);
+            });
+        }
+    }, [programTimelines]);
 
     useEffect(() => {
         /* Aggregation */
@@ -167,6 +176,14 @@ function Home() {
                     {/* // TODO: Use Weekly Peripherals chart on Home */}
                     {aggregatedDays !== null ? (
                         <PeripheralsTimeline days={aggregatedDays} />
+                    ) : (
+                        <p>Loading...</p>
+                    )}
+                </div>
+                <div>
+                    <h2>Program Timelines</h2>
+                    {programTimelines !== null ? (
+                        <ProgramTimeline days={programTimelines.days} />
                     ) : (
                         <p>Loading...</p>
                     )}

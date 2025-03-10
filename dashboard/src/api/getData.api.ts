@@ -15,6 +15,7 @@ import {
     WeeklyProgramUsage,
     WeeklyTimeline,
     PartiallyAggregatedWeeklyTimeline,
+    WeeklyProgramTimelines,
 } from "../interface/weekly.interface";
 import { formatDateForApi, getTimezone } from "../util/timeTools";
 import { ensureSunday } from "../util/apiUtil";
@@ -112,6 +113,10 @@ const getTimelineForPresentWeek =
     withErrorHandling<PartiallyAggregatedWeeklyTimeline>(() =>
         api.get("/dashboard/timeline/week")
     );
+
+const getPresentWeekProgramTimeline = withErrorHandling<WeeklyProgramTimelines>(
+    () => api.get("/dashboard/programs/usage/timeline")
+);
 
 const withErrorHandlingAndArgument = <T, P extends any[]>(
     fn: (...args: P) => Promise<AxiosResponse<T>>
@@ -245,4 +250,5 @@ export {
     getTimelineForPastWeek,
     getEnhancedChromeUsageForPastWeek,
     getEnhancedWeeklyBreakdown,
+    getPresentWeekProgramTimeline,
 };

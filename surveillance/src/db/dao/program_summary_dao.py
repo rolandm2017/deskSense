@@ -23,10 +23,10 @@ class DatabaseProtectionError(RuntimeError):
 
 
 class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
-    def __init__(self, logging, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+    def __init__(self, program_logging_dao, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
         # if not callable(session_maker):
         # raise TypeError("session_maker must be callable")
-        self.logging_dao = logging
+        self.program_logging_dao = program_logging_dao
         self.session_maker = session_maker  # Store the session maker instead of db
         self.batch_size = batch_size
         self.flush_interval = flush_interval
@@ -43,6 +43,8 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         """
         if program_session.start_time is None or program_session.end_time is None:
             raise ValueError("Start or end time was None")
+        if program_session.duration is None:
+            raise ValueError("Session duration was None")
         target_program_name = program_session.window_title
         # ### Calculate time difference
         usage_duration_in_hours = (
@@ -61,8 +63,8 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.gathering_date < today + timedelta(days=1)
         )
 
-        self.logging_dao.create(target_program_name,
-                                usage_duration_in_hours, today, right_now)
+        self.program_logging_dao.create(target_program_name,
+                                        usage_duration_in_hours, today, right_now)
 
         async with self.session_maker() as db_session:
             result = await db_session.execute(query)

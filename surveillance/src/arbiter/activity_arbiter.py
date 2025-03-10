@@ -121,7 +121,6 @@ class ActivityArbiter:
             else:
                 await self.notify_program_summary(concluded_session)
         else:
-            print("first loop")
             if isinstance(new_session, ProgramSessionData):
                 updated_state = ApplicationInternalState(
                     new_session.window_title, False,  new_session)

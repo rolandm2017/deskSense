@@ -49,6 +49,10 @@ export interface WeeklyProgramUsage {
     days: DayOfProgramUsage[];
 }
 
+export interface WeeklyProgramTimelines {
+    days: ProgamUsageTimeline[];
+}
+
 export interface WeeklyChromeUsage {
     days: DayOfChromeUsage[];
 }
@@ -80,4 +84,25 @@ export interface BreakdownByDay {
 }
 export interface WeeklyBreakdown {
     days: BreakdownByDay[];
+}
+
+// **
+// ****
+// Program Usage Timeline
+// *
+
+export interface ProgamUsageTimeline {
+    date: Date | string;
+    programs: ProgramTimelineContent[];
+    // events: TimelineEvent[];
+}
+
+export interface ProgramTimelineContent {
+    programName: string;
+    events: TimelineEvent[];
+}
+
+export interface TimelineEvent {
+    startTime: Date;
+    endTime: Date;
 }

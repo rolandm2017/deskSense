@@ -119,3 +119,22 @@ class PartiallyPrecomputedWeeklyTimeline(BaseModel):
     beforeToday: List[DayOfTimelineRows]  # expect 0 to 6
     today: DayOfTimelineRows
     startDate: datetime
+
+
+class TimelineEvent(BaseModel):
+    startTime: datetime
+    endTime: datetime
+
+
+class ProgramTimelineContent(BaseModel):
+    programName: str
+    events: List[TimelineEvent]
+
+
+class ProgramUsageTimeline(BaseModel):
+    date: datetime
+    programs:  List[ProgramTimelineContent]
+
+
+class WeeklyProgramUsageTimeline(BaseModel):
+    days: List[ProgramUsageTimeline]
