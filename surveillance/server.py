@@ -33,7 +33,8 @@ from src.object.dashboard_dto import (
     ProductivityBreakdownByWeek,
     ProgramBarChartContent,
     ChromeBarChartContent, TimelineEntrySchema, TimelineRows,
-    WeeklyProgramContent, WeeklyChromeContent, WeeklyTimeline, DayOfTimelineRows
+    WeeklyProgramContent, WeeklyChromeContent,
+    WeeklyProgramUsageTimeline, WeeklyTimeline, DayOfTimelineRows
 )
 
 from src.util.pydantic_factory import (
@@ -190,7 +191,8 @@ async def get_chrome_time_for_dashboard(dashboard_service: DashboardService = De
 #
 
 @app.get("/dashboard/breakdown/week/{week_of}", response_model=ProductivityBreakdownByWeek)
-async def get_productivity_breakdown(week_of: date = Path(..., description="Week starting date"), dashboard_service: DashboardService = Depends(get_dashboard_service)):
+async def get_productivity_breakdown(week_of: date = Path(..., description="Week starting date"),
+                                     dashboard_service: DashboardService = Depends(get_dashboard_service)):
     weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(week_of)
     if not isinstance(weeks_overview, list):
         raise HTTPException(
@@ -229,7 +231,8 @@ async def get_chrome_week_history(dashboard_service: DashboardService = Depends(
 
 
 @app.get("/dashboard/chrome/summaries/week/{week_of}", response_model=WeeklyChromeContent)
-async def get_previous_week_chrome_history(week_of: date = Path(..., description="Week starting date"), dashboard_service: DashboardService = Depends(get_dashboard_service)):
+async def get_previous_week_chrome_history(week_of: date = Path(..., description="Week starting date"),
+                                           dashboard_service: DashboardService = Depends(get_dashboard_service)):
     week_of_unsorted_domain_summaries: List[DailyDomainSummary] = await dashboard_service.get_previous_week_chrome_summary(week_of)
 
     if not isinstance(week_of_unsorted_domain_summaries, list):
@@ -289,7 +292,8 @@ async def get_timeline_weekly(dashboard_service: DashboardService = Depends(get_
 
 
 @app.get("/dashboard/timeline/week/{week_of}", response_model=WeeklyTimeline)
-async def get_previous_week_of_timeline(week_of: date = Path(..., description="Week starting date"), dashboard_service: DashboardService = Depends(get_dashboard_service)):
+async def get_previous_week_of_timeline(week_of: date = Path(..., description="Week starting date"),
+                                        dashboard_service: DashboardService = Depends(get_dashboard_service)):
     days, start_of_week = await dashboard_service.get_specific_week_timeline(week_of)
 
     rows: List[DayOfTimelineRows] = []
@@ -312,6 +316,15 @@ async def get_previous_week_of_timeline(week_of: date = Path(..., description="W
     response = WeeklyTimeline(days=rows, start_date=start_of_week)
 
     return response
+
+
+@app.get("/dashboard/programs/usage/timeline", response_model=WeeklyProgramUsageTimeline)
+async def get_program_usage_timeline_by_week(week_of: date = Path(..., description="Week starting date"),
+                                             dashboard_service: DashboardService = Depends(get_dashboard_service)):
+    vvvvvv = await dashboard_service.get_program_usage_timeline(week_of)
+
+    days = []
+    return WeeklyProgramUsageTimeline(days=days)
 
 
 @app.get("/report/chrome")

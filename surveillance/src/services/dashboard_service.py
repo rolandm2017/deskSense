@@ -165,6 +165,43 @@ class DashboardService:
 
         return all_days, sunday_that_starts_the_week
 
+    async def get_program_usage_timeline(self, week_of: date):
+        if isinstance(week_of, date):
+            # Note: The transformation here is a requirement
+            week_of = datetime.combine(week_of, datetime.min.time())
+        else:
+            raise TypeError("Expected a date object, got " + str(week_of))
+        is_sunday = week_of.weekday() == 6
+        if is_sunday:
+            # If the week_of is a sunday, start from there.
+            sunday_that_starts_the_week = week_of
+            days_since_sunday = 0
+        else:
+            # If the week_of is not a sunday,
+            # go back in time to the most recent sunday,
+            # and start from there. This is error handling
+            offset = 1
+            days_per_week = 7
+            days_since_sunday = (week_of.weekday() + offset) % days_per_week
+            sunday_that_starts_the_week = week_of - \
+                timedelta(days=days_since_sunday)
+
+        all_days = []
+
+        for days_after_sunday in range(7):
+            current_day = sunday_that_starts_the_week + \
+                timedelta(days=days_after_sunday)
+
+            program_usage_timeline = await self.program_usage_timeline_dao.read_day(current_day)
+
+            self.logger.log_days_retrieval(
+                "[get_program_usage_timeline]", current_day, len(program_usage_timeline))
+            day = {"date": current_day,
+                   "program_usage_timeline": program_usage_timeline, }
+            all_days.append(day)
+
+        return all_days, sunday_that_starts_the_week
+
     async def get_program_summary(self):
         today = self.user_clock.now()
         all = await self.program_summary_dao.read_day(today)

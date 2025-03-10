@@ -132,6 +132,8 @@ class ProgramSummaryLog(Base):
     id = Column(Integer, primary_key=True, index=True)
     program_name = Column(String)
     hours_spent = Column(Float)
+    start_time = Column(DateTime(timezone=True))
+    end_time = Column(DateTime(timezone=True))
     # The date on which the program data was gathered
     gathering_date = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True))
@@ -143,6 +145,8 @@ class DomainSummaryLog(Base):
     id = Column(Integer, primary_key=True, index=True)
     domain_name = Column(String)
     hours_spent = Column(Float)
+    start_time = Column(DateTime(timezone=True))
+    end_time = Column(DateTime(timezone=True))
     # The date on which the program data was gathered
     gathering_date = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True))

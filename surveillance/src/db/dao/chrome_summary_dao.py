@@ -15,8 +15,8 @@ from ...object.classes import ChromeSessionData
 
 
 class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
-    def __init__(self,  logging, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
-        self.logging_dao = logging
+    def __init__(self,  chrome_logging_dao, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+        self.chrome_logging_dao = chrome_logging_dao
         self.session_maker = session_maker  # Store the session maker instead of db
         self.batch_size = batch_size
         self.flush_interval = flush_interval
@@ -29,19 +29,22 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         target_domain_name = chrome_session.domain
 
         # ### Calculate time difference
+        if chrome_session.start_time is None or chrome_session.end_time is None:
+            raise ValueError("Start or end time was None")
         if chrome_session.duration is None:
             raise ValueError("Session duration was None")
         usage_duration_in_hours = chrome_session.duration.total_seconds() / 3600
 
         # ### Check if entry exists for today
-        today = right_now.date()
+        today = right_now.replace(hour=0, minute=0, second=0,
+                                  microsecond=0)  # Still has tz attached
         query = select(DailyDomainSummary).where(
             DailyDomainSummary.domain_name == target_domain_name,
-            func.date(DailyDomainSummary.gathering_date) == today
+            DailyDomainSummary.gathering_date >= today,
+            DailyDomainSummary.gathering_date < today + timedelta(days=1)
         )
 
-        self.logging_dao.create(
-            target_domain_name, usage_duration_in_hours, today)
+        self.chrome_logging_dao.create(chrome_session, right_now)
 
         async with self.session_maker() as session:
             result = await session.execute(query)
