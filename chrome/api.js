@@ -8,7 +8,7 @@ export function reportTabSwitch(domain, title) {
     const payload = {
         url: domain,  // Must match the pydantic definition
         tabTitle: title,
-        startTime: new Date()
+        startTime: new Date(),
     }
     console.log("Sending payload:", payload)
     
