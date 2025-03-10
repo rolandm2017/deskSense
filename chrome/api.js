@@ -24,7 +24,7 @@ export function reportTabSwitch(domain, title) {
             
             console.log("Status Code:", response.status); // Log the status code
             if (response.status === 204) {
-                print("200 good to go")
+                console.log("200 good to go")
             } else {
                 throw new Error(`Request failed with status ${response.status}`);
             }

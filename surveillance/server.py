@@ -47,11 +47,11 @@ from src.services.dashboard_service import DashboardService
 from src.services.chrome_service import ChromeService
 
 from src.services.services import (
-    KeyboardService, MouseService, ProgramService, VideoService
+    KeyboardService, MouseService, ProgramService, TimezoneService, VideoService
 )
 from src.service_dependencies import (
     get_keyboard_service, get_mouse_service, get_program_service,
-    get_dashboard_service, get_chrome_service, get_activity_arbiter,
+    get_dashboard_service, get_chrome_service, get_activity_arbiter, get_timezone_service,
     get_video_service
 )
 from src.object.return_types import DaySummary
@@ -324,11 +324,17 @@ async def get_chrome_report(chrome_service: ChromeService = Depends(get_chrome_s
 @app.post("/chrome/tab", status_code=status.HTTP_204_NO_CONTENT)
 async def receive_chrome_tab(
     tab_change_event: TabChangeEvent,
-    chrome_service: ChromeService = Depends(get_chrome_service)
+    user_id: int,
+    chrome_service: ChromeService = Depends(get_chrome_service),
+    timezone_service: TimezoneService = Depends(get_timezone_service)
 ):
     logger.log_purple("[LOG] Chrome Tab Received")
+    print(tab_change_event, '330ru')
     try:
-        await chrome_service.tab_queue.add_to_arrival_queue(tab_change_event)
+        tz_for_user = timezone_service.get_tz_for_user(user_id)
+        updated_tab_change_event = timezone_service.convert_tab_change_timezone(
+            tab_change_event, tz_for_user)
+        await chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
         return  # Returns 204 No Content
     except Exception as e:
         raise HTTPException(

@@ -55,7 +55,11 @@ class ActivityStateMachine:
 
     def _conclude_session(self, state: InternalState):
         now = self.user_facing_clock.now()
+        print(type(state))
+        # Now - UTC
+        # state.session.start_time - no tzinfo
         duration = now - state.session.start_time
+
         state.session.duration = duration
         state.session.end_time = now
 

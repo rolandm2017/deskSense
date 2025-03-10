@@ -124,7 +124,7 @@ def test_key_press_tracking(tracker_and_events, mock_keyboard_facade):
 
         # Some fiddling
         n = 2
-        tracker.system_clock.advance_time(n)
+        tracker.user_facing_clock.advance_time(n)
 
         mock_keyboard_facade.set_event("D")
         tracker.run_tracking_loop()
@@ -147,14 +147,14 @@ def test_key_press_tracking(tracker_and_events, mock_keyboard_facade):
         #
 
         n = 3
-        tracker.system_clock.advance_time(n)
+        tracker.user_facing_clock.advance_time(n)
 
         mock_keyboard_facade.set_event("I")
         tracker.run_tracking_loop()
         assert len(tracker.aggregator.current_aggregation.events) == 1
         assert len(handler_events) == 2
 
-        tracker.system_clock.advance_time(1)
+        tracker.user_facing_clock.advance_time(1)
 
         # TODO: figure out why j,k,l don't push the events to 3 entries
 
@@ -252,7 +252,7 @@ def test_multiple_handlers_are_called(tracker_and_events, mock_keyboard_facade):
 
     assert len(handler1_calls) == len(handler2_calls) == 0
 
-    tracker.system_clock.advance_time(5)
+    tracker.user_facing_clock.advance_time(5)
 
     mock_keyboard_facade.set_event('y')
     tracker.run_tracking_loop()

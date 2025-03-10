@@ -49,24 +49,20 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             program_session.end_time - program_session.start_time).total_seconds() / 3600
 
         # FIXME: maybe the program_session is hanging open while I have the computer sleeping? or something
-
         # FIXME: Need to define "gathered today" as "between midnight and 11:59 pm on mm-dd"
 
         # ### Check if entry exists for today
-        current_time = right_now
         today = right_now.replace(hour=0, minute=0, second=0,
-                                  microsecond=0)
+                                  microsecond=0)  # Still has tz attached
 
         query = select(DailyProgramSummary).where(
             DailyProgramSummary.program_name == target_program_name,
             DailyProgramSummary.gathering_date >= today,
             DailyProgramSummary.gathering_date < today + timedelta(days=1)
         )
-    #     DailyProgramSummary.gathering_date >= today,
-    # DailyProgramSummary.gathering_date < today + timedelta(days=1)
 
         self.logging_dao.create(target_program_name,
-                                usage_duration_in_hours, today)
+                                usage_duration_in_hours, today, right_now)
 
         async with self.session_maker() as db_session:
             result = await db_session.execute(query)
@@ -77,12 +73,12 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             if existing_entry:
                 # if existing_entry is not None:  # Changed from if existing_entry:
                 existing_entry.hours_spent += usage_duration_in_hours
-                if program_session.window_title == "Alt-tab window":
-                    write_to_debug_log(target_program_name, usage_duration_in_hours,
-                                       current_time.strftime("%m-%d %H:%M:%S"))
-                if usage_duration_in_hours > 0.333:
-                    write_to_large_usage_log(program_session,
-                                             usage_duration_in_hours, current_time.strftime("%m-%d %H:%M:%S"))
+                # if program_session.window_title == "Alt-tab window":
+                #     write_to_debug_log(target_program_name, usage_duration_in_hours,
+                #                        right_now.strftime("%m-%d %H:%M:%S"))
+                # if usage_duration_in_hours > 0.333:
+                #     write_to_large_usage_log(program_session,
+                #                              usage_duration_in_hours, right_now.strftime("%m-%d %H:%M:%S"))
                 await db_session.commit()
             else:
                 await self.create(target_program_name, usage_duration_in_hours, today)
@@ -126,8 +122,12 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def read_day(self, day: datetime) -> List[DailyProgramSummary]:
         """Read all entries for the given day."""
+        today_start = day.replace(
+            hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_start = today_start + timedelta(days=1)
         query = select(DailyProgramSummary).where(
-            func.date(DailyProgramSummary.gathering_date) == day.date()
+            DailyProgramSummary.gathering_date >= today_start,
+            DailyProgramSummary.gathering_date < tomorrow_start
         )
         async with self.session_maker() as session:
             result = await session.execute(query)
@@ -142,14 +142,18 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def read_row_for_program(self, target_program: str, right_now: datetime):
         """Reads the row for the target program for today."""
-        today = right_now.date()
+        today_start = right_now.replace(
+            hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_start = today_start + timedelta(days=1)
+
         query = select(DailyProgramSummary).where(
             DailyProgramSummary.program_name == target_program,
-            func.date(DailyProgramSummary.gathering_date) == today
+            DailyProgramSummary.gathering_date >= today_start,
+            DailyProgramSummary.gathering_date < tomorrow_start
         )
+
         async with self.session_maker() as session:
             result = await session.execute(query)
-            # return await result.scalar_one_or_none()
             return result.scalar_one_or_none()
 
     async def shutdown(self):

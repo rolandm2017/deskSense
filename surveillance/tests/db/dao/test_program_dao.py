@@ -109,7 +109,7 @@ class TestProgramDao:
         mock_result.scalars = Mock(return_value=mock_scalar_result)
         mock_session.execute.return_value = mock_result
 
-        result = await dao.read_past_24h_events()
+        result = await dao.read_past_24h_events(datetime.now())
         assert result == mock_programs
         assert mock_session.execute.called
 

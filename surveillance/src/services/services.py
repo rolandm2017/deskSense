@@ -2,6 +2,9 @@
 from fastapi import Depends
 from typing import List, cast
 
+from surveillance.src.object.pydantic_dto import TabChangeEvent
+from surveillance.src.util.time_formatting import convert_to_timezone
+
 from ..db.dao.mouse_dao import MouseDao
 from ..db.dao.keyboard_dao import KeyboardDao
 from ..db.dao.program_dao import ProgramDao
@@ -11,8 +14,23 @@ from ..db.models import TypingSession, Program, MouseMove
 from ..object.dto import TypingSessionDto
 
 
-from ..config.definitions import productive_sites
+from ..config.definitions import local_time_zone, productive_sites
 from ..util.console_logger import ConsoleLogger
+
+
+class TimezoneService:
+    def __init__(self):
+        pass
+
+    def get_tz_for_user(self, user_id):
+        # TODO: In the future, read from a cache of recently active users.
+        # TODO: If not in cache, read from the db.
+        return local_time_zone
+
+    def convert_tab_change_timezone(self, tab_change_event: TabChangeEvent, new_tz: str):
+        new_datetime_with_tz = convert_to_timezone(tab_change_event.startTime, new_tz: str)
+        tab_change_event.startTime = new_datetime_with_tz
+        return tab_change_event
 
 
 class KeyboardService:

@@ -62,7 +62,7 @@ class KeyboardTrackerCore:
 
     def _is_ready_to_log_to_console(self, current_time):
         # log key presses every 3 sec
-        return self.user_facing_clock.has_elapsed_since(current_time, self.time_of_last_terminal_out, 3)
+        return self.user_facing_clock.seconds_have_elapsed(current_time, self.time_of_last_terminal_out, 3)
 
     def stop(self):
         print("Stopping program")
@@ -74,10 +74,11 @@ class KeyboardTrackerCore:
 
 if __name__ == "__main__":
     api_facade = KeyboardApiFacadeCore()
-    clock = SystemClock()
+    system_clock = SystemClock()
     # instance = KeyboardTracker(clock, api_facade, [end_program_readout, pretend_report_event])
     # uncomment other line to do way too much logging - plus it keylogs
-    instance = KeyboardTrackerCore(clock, api_facade, [pretend_report_event])
+    instance = KeyboardTrackerCore(
+        system_clock, api_facade, [pretend_report_event])
 
     try:
         thread_handler = ThreadedTracker(instance)

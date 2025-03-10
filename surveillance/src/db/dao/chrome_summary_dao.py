@@ -115,10 +115,14 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def read_row_for_domain(self, target_domain: str, right_now: datetime):
         """Reads the row for the target program for today."""
-        today = right_now.date()
+        today_start = right_now.replace(
+            hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_start = today_start + timedelta(days=1)
+
         query = select(DailyDomainSummary).where(
-            DailyDomainSummary.domain_name == target_domain,
-            func.date(DailyDomainSummary.gathering_date) == today
+            DailyDomainSummary.program_name == target_domain,
+            DailyDomainSummary.gathering_date >= today_start,
+            DailyDomainSummary.gathering_date < tomorrow_start
         )
         async with self.session_maker() as session:
             result = await session.execute(query)

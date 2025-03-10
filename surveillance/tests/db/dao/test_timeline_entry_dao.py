@@ -35,7 +35,6 @@ class TestTimelineEntryDao:
 
     @pytest.fixture
     def dao(self, mock_session_maker):
-        clock = SystemClock()
         return TimelineEntryDao(mock_session_maker)
 
     @pytest.mark.asyncio
@@ -140,8 +139,9 @@ class TestTimelineEntryDao:
 
     @pytest.mark.asyncio
     async def test_read_day_mice(self, dao):
-        """TODO: Improve the name of and comment for this test"""
+
         # Arrange
+        clock = SystemClock()  # Could also be userFacingClock for this test
         test_day = datetime.now()
         test_day = test_day - timedelta(days=7)
 
@@ -164,7 +164,8 @@ class TestTimelineEntryDao:
             mocked_create_precomputed_day.return_value = day_result
 
             # Act
-            result = await dao.read_day_mice(test_day)
+
+            result = await dao.read_day_mice(test_day, clock)
 
             # Assert
             # The patched methods should have been called
@@ -184,10 +185,12 @@ class TestTimelineEntryDao:
 
     @pytest.mark.asyncio
     async def test_read_day_keyboard(self, dao):
-        """TODO: Improve the name of and comment for this test"""
+
         # Arrange
-        test_day = datetime.now()
-        test_day = test_day - timedelta(days=7)
+        clock = SystemClock()  # Could also be userFacingClock for this test
+
+        test_day_end = datetime.now()
+        test_day_start = test_day_end - timedelta(days=7)
 
         mock_entries = [Mock(spec=TimelineEntryObj),
                         Mock(spec=TimelineEntryObj)]
@@ -206,7 +209,7 @@ class TestTimelineEntryDao:
             mocked_create_precomputed_day.return_value = day_result
 
             # Act
-            result = await dao.read_day_keyboard(test_day)
+            result = await dao.read_day_keyboard(test_day_start, clock)
 
             # ### Assert
             # The patched methods should have been called
@@ -214,7 +217,7 @@ class TestTimelineEntryDao:
 
             mocked_read_day.assert_called_once()
             mocked_read_day.assert_called_once_with(
-                test_day, ChartEventType.KEYBOARD)
+                test_day_start, ChartEventType.KEYBOARD)
 
             mocked_create_precomputed_day.assert_called_once_with(mock_entries)
 

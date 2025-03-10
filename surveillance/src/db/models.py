@@ -105,6 +105,11 @@ class DailyProgramSummary(Base):
     # The date on which the program data was gathered, without hh:mm:ss
     gathering_date = Column(DateTime(timezone=True))
 
+    def __str__(self):
+        formatted_date = self.gathering_date.strftime(
+            "%Y-%m-%d") if self.gathering_date is not None else "No date"
+        return f"Program: {self.program_name}, Hours: {self.hours_spent:.2f}, Date: {formatted_date}"
+
 
 class DailyDomainSummary(Base):
     __tablename__ = "daily_chrome_summaries"
@@ -114,6 +119,11 @@ class DailyDomainSummary(Base):
     hours_spent = Column(Float)
     # The date on which the program data was gathered
     gathering_date = Column(DateTime(timezone=True))
+
+    def __str__(self):
+        formatted_date = self.gathering_date.strftime(
+            "%Y-%m-%d") if self.gathering_date is not None else "No date"
+        return f"Domain: {self.domain_name}, Hours: {self.hours_spent:.2f}, Date: {formatted_date}"
 
 
 class ProgramSummaryLog(Base):

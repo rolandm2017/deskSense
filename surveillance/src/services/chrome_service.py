@@ -129,6 +129,11 @@ class ChromeService:
         initialized.detail = url_deliverable.tabTitle
         initialized.productive = url_deliverable.url in productive_sites
 
+        temp = url_deliverable.startTime
+        print("DEBUG: ",  temp)
+        print(
+            f"[DEBUG] tzinfo: {temp.tzinfo}")
+
         # NOTE: In the past, the intent was to keep everything in UTC.
         # Now, the intent is to do everything in the user's LTZ, local time zone.
         initialized.start_time = url_deliverable.startTime
