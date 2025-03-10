@@ -47,7 +47,7 @@ class TestMouseDao:
     @pytest.fixture
     def dao(self, mock_session_maker):
         clock = SystemClock()
-        return MouseDao(clock, mock_session_maker)
+        return MouseDao(mock_session_maker)
 
     @pytest.mark.asyncio
     async def test_create_from_start_end_times(self, dao, mock_queue_item):

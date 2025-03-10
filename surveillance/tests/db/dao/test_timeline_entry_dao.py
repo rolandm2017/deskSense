@@ -36,7 +36,7 @@ class TestTimelineEntryDao:
     @pytest.fixture
     def dao(self, mock_session_maker):
         clock = SystemClock()
-        return TimelineEntryDao(clock, mock_session_maker)
+        return TimelineEntryDao(mock_session_maker)
 
     @pytest.mark.asyncio
     async def test_create_from_keyboard_aggregate(self, dao, mock_session):

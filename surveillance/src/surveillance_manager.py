@@ -23,7 +23,7 @@ from .facade.keyboard_facade import KeyboardApiFacadeCore
 from .facade.mouse_facade import UbuntuMouseApiFacadeCore
 from .facade.program_facade import ProgramApiFacadeCore
 from .util.detect_os import OperatingSystemInfo
-from .util.clock import SystemClock
+from .util.clock import SystemClock, UserFacingClock
 from .util.threaded_tracker import ThreadedTracker
 from .arbiter.activity_arbiter import ActivityArbiter
 
@@ -57,20 +57,20 @@ class SurveillanceManager:
         program_facade = ProgramApiFacadeCore(current_os)
 
         self.loop = asyncio.get_event_loop()
-        clock = SystemClock()
+        clock = UserFacingClock()
 
-        self.mouse_dao = MouseDao(clock, self.session_maker)
-        self.keyboard_dao = KeyboardDao(clock, self.session_maker)
-        self.program_dao = ProgramDao(clock, self.session_maker)
-        self.chrome_dao = ChromeDao(clock, self.session_maker)
+        self.mouse_dao = MouseDao(self.session_maker)
+        self.keyboard_dao = KeyboardDao(self.session_maker)
+        self.program_dao = ProgramDao(self.session_maker)
+        self.chrome_dao = ChromeDao(self.session_maker)
 
-        program_summary_logger = ProgramLoggingDao(clock, self.session_maker)
-        chrome_summary_logger = ChromeLoggingDao(clock, self.session_maker)
+        program_summary_logger = ProgramLoggingDao(self.session_maker)
+        chrome_summary_logger = ChromeLoggingDao(self.session_maker)
         self.program_summary_dao = ProgramSummaryDao(
-            clock, program_summary_logger, self.session_maker)
+            program_summary_logger, self.session_maker)
         self.chrome_summary_dao = ChromeSummaryDao(
-            clock, chrome_summary_logger, self.session_maker)
-        self.timeline_dao = TimelineEntryDao(clock, self.session_maker)
+            chrome_summary_logger, self.session_maker)
+        self.timeline_dao = TimelineEntryDao(self.session_maker)
 
         self.keyboard_tracker = KeyboardTrackerCore(
             clock, keyboard_facade, self.handle_keyboard_ready_for_db)

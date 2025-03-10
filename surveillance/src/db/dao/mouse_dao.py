@@ -16,10 +16,10 @@ def get_rid_of_ms(time):
 
 
 class MouseDao(BaseQueueingDao):
-    def __init__(self, clock, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+    def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
         super().__init__(session_maker=session_maker,
                          batch_size=batch_size, flush_interval=flush_interval)
-        self.system_clock = clock
+
         self.logger = ConsoleLogger()
 
     async def create_from_start_end_times(self, start_time: datetime, end_time: datetime):
@@ -62,13 +62,13 @@ class MouseDao(BaseQueueingDao):
         async with self.session_maker() as session:
             return await session.get(MouseMove, mouse_move_id)
 
-    async def read_past_24h_events(self):
+    async def read_past_24h_events(self, right_now: datetime):
         """
         Read mouse movement events that ended within the past 24 hours.
         Returns all movements ordered by their end time.
         """
         query = select(MouseMove).where(
-            MouseMove.end_time >= self.system_clock.now() - timedelta(days=1)
+            MouseMove.end_time >= right_now - timedelta(days=1)
         ).order_by(MouseMove.end_time.desc())
 
         async with self.session_maker() as session:

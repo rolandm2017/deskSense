@@ -16,11 +16,12 @@ from ..util.console_logger import ConsoleLogger
 
 
 class KeyboardService:
-    def __init__(self, dao: KeyboardDao = Depends()):
+    def __init__(self, clock, dao: KeyboardDao = Depends()):
+        self.clock = clock
         self.dao = dao
 
     async def get_past_days_events(self) -> List[TypingSessionDto]:
-        events = await self.dao.read_past_24h_events()
+        events = await self.dao.read_past_24h_events(self.clock.now())
         return events
 
     async def get_all_events(self) -> List[TypingSessionDto]:
@@ -28,11 +29,12 @@ class KeyboardService:
 
 
 class MouseService:
-    def __init__(self, dao: MouseDao = Depends()):
+    def __init__(self, clock, dao: MouseDao = Depends()):
+        self.clock = clock
         self.dao = dao
 
     async def get_past_days_events(self) -> List[MouseMove]:
-        events = await self.dao.read_past_24h_events()
+        events = await self.dao.read_past_24h_events(self.clock.now())
         return events
 
     async def get_all_events(self) -> List[MouseMove]:
@@ -40,11 +42,12 @@ class MouseService:
 
 
 class ProgramService:
-    def __init__(self, dao: ProgramDao = Depends()):
+    def __init__(self, clock, dao: ProgramDao = Depends()):
+        self.clock = clock
         self.dao = dao
 
     async def get_past_days_events(self) -> List[Program]:
-        events = await self.dao.read_past_24h_events()
+        events = await self.dao.read_past_24h_events(self.clock.now())
         return events
 
     async def get_all_events(self) -> List[Program]:

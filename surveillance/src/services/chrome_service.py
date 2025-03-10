@@ -88,11 +88,12 @@ class TabQueue:
 
 
 class ChromeService:
-    def __init__(self, clock, arbiter: ActivityArbiter, dao: ChromeDao = Depends()):
+    def __init__(self, user_facing_clock, arbiter: ActivityArbiter, dao: ChromeDao = Depends()):
         print("╠════════╣")
         print("║ ****** ║ Starting Chrome Service")
         print("╚════════╝")
-        self.system_clock = clock
+        # FIXME: It can't be a user facing clock b/c it's ... global, server wide.
+        self.user_facing_clock = user_facing_clock
         self.arbiter = arbiter
         self.dao = dao
         self.last_entry = None
@@ -128,28 +129,24 @@ class ChromeService:
         initialized.detail = url_deliverable.tabTitle
         initialized.productive = url_deliverable.url in productive_sites
 
-        # Make sure the start time has timezone info
-        # ** Whatever the code says, the intent was to
-        # ** keep all notions of time consistent. Meaning,
-        # ** that the user sent a timestamp from EST
-        # ** and the server received it to process it in UTZC
-        # ** has absolutely no bearing on the calculated duration
-        initialized.start_time = url_deliverable.startTime.astimezone(
-            timezone.utc)
+        # NOTE: In the past, the intent was to keep everything in UTC.
+        # Now, the intent is to do everything in the user's LTZ, local time zone.
+        initialized.start_time = url_deliverable.startTime
 
         self.handle_session_ready_for_arbiter(initialized)
 
         if self.last_entry:
             concluding_session = self.last_entry
             # ### Ensure both datetimes are timezone-naive
-            now_utc = self.system_clock.now()
             # Must be utc already since it is set up there
-            start_time = self.last_entry.start_time
+            concluding_start_time: datetime = self.last_entry.start_time  # type: ignore
+
+            next_session_start_time = initialized.start_time
 
             # duration_of_alt_tab   # used to be a thing
-            duration = now_utc - start_time
+            duration = next_session_start_time - concluding_start_time
             concluding_session.duration = duration
-            concluding_session.end_time = now_utc
+            concluding_session.end_time = next_session_start_time
         self.last_entry = initialized
         self.write_completed_session_to_chrome_dao(concluding_session)
 
@@ -183,4 +180,5 @@ class ChromeService:
         await self.dao.create(event)
 
     async def read_last_24_hrs(self):
-        return await self.dao.read_past_24h_events()
+        right_now = self.user_facing_clock.now()
+        return await self.dao.read_past_24h_events(right_now)

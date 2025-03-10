@@ -74,8 +74,8 @@ class DashboardService:
 
     async def get_timeline_for_today(self):
         today = self.user_clock.now()
-        all_mouse_events = await self.timeline_dao.read_day_mice(today)
-        all_keyboard_events = await self.timeline_dao.read_day_keyboard(today)
+        all_mouse_events = await self.timeline_dao.read_day_mice(today, self.user_clock)
+        all_keyboard_events = await self.timeline_dao.read_day_keyboard(today, self.user_clock)
         return all_mouse_events, all_keyboard_events
 
     async def get_current_week_timeline(self):
@@ -93,8 +93,8 @@ class DashboardService:
             current_day = last_sunday + timedelta(days=days_after_sunday)
             # Or process them directly like your get_timeline() example:
             # FIXME: TOday should be returned separate
-            mouse_events = await self.timeline_dao.read_day_mice(current_day)
-            keyboard_events = await self.timeline_dao.read_day_keyboard(current_day)
+            mouse_events = await self.timeline_dao.read_day_mice(current_day, self.user_clock)
+            keyboard_events = await self.timeline_dao.read_day_keyboard(current_day, self.user_clock)
             self.logger.log_days_retrieval("[get_current_week_timeline]", current_day, len(
                 mouse_events) + len(keyboard_events))
             day = {"date": current_day,
@@ -143,8 +143,8 @@ class DashboardService:
         for days_after_sunday in range(7):
             current_day = sunday_that_starts_the_week + \
                 timedelta(days=days_after_sunday)
-            mouse_events = await self.timeline_dao.read_day_mice(current_day)
-            keyboard_events = await self.timeline_dao.read_day_keyboard(current_day)
+            mouse_events = await self.timeline_dao.read_day_mice(current_day, self.user_clock)
+            keyboard_events = await self.timeline_dao.read_day_keyboard(current_day, self.user_clock)
 
             mouse_events_as_local_time = format_for_local_time(mouse_events)
             keyboard_events_as_local_time = format_for_local_time(
@@ -170,12 +170,14 @@ class DashboardService:
         return all
 
     async def get_program_summary_weekly(self):
-        all = await self.program_summary_dao.read_past_week()
+        right_now = self.user_clock.now()
+        all = await self.program_summary_dao.read_past_week(right_now)
         # FIXME: Ensure that it actually gets all days of week; can't test it on Monday
         return all
 
     async def get_chrome_summary_weekly(self) -> List[DailyDomainSummary]:
-        all = await self.chrome_summary_dao.read_past_week()
+        right_now = self.user_clock.now()
+        all = await self.chrome_summary_dao.read_past_week(right_now)
         # FIXME: Ensure that it actually gets all days of week; can't test it on Monday
         return all
 
@@ -196,9 +198,13 @@ class DashboardService:
         return usage_from_days
 
     async def get_past_month_summaries_programs(self):
-        all = await self.program_summary_dao.read_past_month()
+        right_now = self.user_clock.now()
+
+        all = await self.program_summary_dao.read_past_month(right_now)
         return all
 
     async def get_past_month_summaries_chrome(self):
-        all = await self.chrome_summary_dao.read_past_month()
+        right_now = self.user_clock.now()
+
+        all = await self.chrome_summary_dao.read_past_month(right_now)
         return all

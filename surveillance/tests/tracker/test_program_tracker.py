@@ -79,7 +79,7 @@ def test_start_new_session():
     # Act
     window_change = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg',
                      'window_title': 'program_tracker.py - deskSense - Visual Studio Code'}
-    current_time = tracker.system_clock.now()
+    current_time = tracker.user_facing_clock.now()
     new_session = tracker.start_new_session(
         window_change, current_time)
 
@@ -164,7 +164,7 @@ def test_window_change_triggers_handler():
     }
     facade.listen_for_window_changes.return_value = iter([first_test_item])
 
-    tracker.system_clock.now.assert_not_called()
+    tracker.user_facing_clock.now.assert_not_called()
 
     assert tracker.current_session is None, "Initialization condition wasn't met"
     # assert tracker.current_session.window_title == "", "Initialization conditions weren't met"
@@ -174,7 +174,7 @@ def test_window_change_triggers_handler():
 
     # ### Act - Run the tracker
     tracker.run_tracking_loop()
-    tracker.system_clock.now.assert_called()
+    tracker.user_facing_clock.now.assert_called()
     # There was no session from a prev run so, on_a_different_window is false
     assert tracker.current_session is not None, "Program was still in its init condition"
     assert tracker.current_session.window_title == "Visual Studio Code"
@@ -202,7 +202,7 @@ def test_window_change_triggers_handler():
 
     facade.listen_for_window_changes.return_value = [ex3]
     tracker.run_tracking_loop()
-    assert tracker.system_clock.now.call_count == 2
+    assert tracker.user_facing_clock.now.call_count == 2
 
     # Verify handler was called with session data
     assert window_change_handler.call_count == 2

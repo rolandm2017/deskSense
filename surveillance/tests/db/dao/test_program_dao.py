@@ -37,7 +37,7 @@ class TestProgramDao:
     @pytest.fixture
     def dao(self, mock_session_maker):
         clock = SystemClock()
-        return ProgramDao(clock, mock_session_maker)
+        return ProgramDao(mock_session_maker)
 
     @pytest.mark.asyncio
     async def test_create_happy_path(self, dao):

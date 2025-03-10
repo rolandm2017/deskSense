@@ -20,11 +20,10 @@ class FrameDto:
 
 
 class FrameDao(BaseQueueingDao):
-    def __init__(self, clock, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+    def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
         super().__init__(session_maker=session_maker,
                          batch_size=batch_size, flush_interval=flush_interval)
 
-        self.system_clock = clock
         self.logger = ConsoleLogger()
 
     async def create(self, frame: FrameCreateEvent):
@@ -50,11 +49,11 @@ class FrameDao(BaseQueueingDao):
 
             return dtos
 
-    async def read_past_24h_events(self):
+    async def read_past_24h_events(self, right_now: datetime):
         """Read typing sessions from the past 24 hours, grouped into 5-minute intervals.
         Returns the count of sessions per interval."""
         try:
-            twenty_four_hours_ago = self.system_clock.now() - timedelta(hours=24)
+            twenty_four_hours_ago = right_now - timedelta(hours=24)
 
             query = select(Frame).where(
                 Frame.start_time >= twenty_four_hours_ago

@@ -3,19 +3,21 @@ from ..object.arbiter_classes import ChromeInternalState, ApplicationInternalSta
 from ..util.program_tools import window_is_chrome
 
 
-class OverallState:
-    def __init__(self):
-        self.program_state = None
-        self.chrome_state = None
-        self.latest_update = None
+# class OverallState:
+#     def __init__(self):
+#         self.program_state = None
+#         self.chrome_state = None
+#         self.latest_update = None
 
 
 class ActivityStateMachine:
-    def __init__(self, system_clock):
+    def __init__(self, user_facing_clock):
         """
-        Is a finite state machine
+        Is a finite state machine.
+
+        One instance per user. Meaning, state from User A has no reason to interact with User B's state.
         """
-        self.system_clock = system_clock
+        self.user_facing_clock = user_facing_clock
         self.program_state = ApplicationInternalState("", "", {})
         self.chrome_state = ChromeInternalState("", "", "", {})
         self.current_state: InternalState | None = None
@@ -52,7 +54,7 @@ class ActivityStateMachine:
             self.current_state = updated_state
 
     def _conclude_session(self, state: InternalState):
-        now = self.system_clock.now()
+        now = self.user_facing_clock.now()
         duration = now - state.session.start_time
         state.session.duration = duration
         state.session.end_time = now

@@ -31,41 +31,41 @@ clock = SystemClock()
 
 
 async def get_keyboard_dao() -> KeyboardDao:
-    return KeyboardDao(clock, async_session_maker)
+    return KeyboardDao(async_session_maker)
 
 
 async def get_mouse_dao() -> MouseDao:
-    return MouseDao(clock, async_session_maker)
+    return MouseDao(async_session_maker)
 
 
 async def get_program_dao() -> ProgramDao:
-    return ProgramDao(clock, async_session_maker)
+    return ProgramDao(async_session_maker)
 
 
 async def get_chrome_dao() -> ChromeDao:
-    return ChromeDao(clock, async_session_maker)
+    return ChromeDao(async_session_maker)
 
 
 async def get_timeline_dao() -> TimelineEntryDao:
-    return TimelineEntryDao(clock, async_session_maker)
+    return TimelineEntryDao(async_session_maker)
 
 
 async def get_program_summary_dao() -> ProgramSummaryDao:
-    program_logging_dao = ProgramLoggingDao(clock, async_session_maker)
-    return ProgramSummaryDao(clock, program_logging_dao, async_session_maker)
+    program_logging_dao = ProgramLoggingDao(async_session_maker)
+    return ProgramSummaryDao(program_logging_dao, async_session_maker)
 
 
 async def get_chrome_summary_dao() -> ChromeSummaryDao:
-    chrome_logging_dao = ChromeLoggingDao(clock, async_session_maker)
-    return ChromeSummaryDao(clock, chrome_logging_dao, async_session_maker)
+    chrome_logging_dao = ChromeLoggingDao(async_session_maker)
+    return ChromeSummaryDao(chrome_logging_dao, async_session_maker)
 
 
 async def get_video_dao() -> VideoDao:
-    return VideoDao(clock, async_session_maker)
+    return VideoDao(async_session_maker)
 
 
 async def get_frame_dao() -> FrameDao:
-    return FrameDao(clock, async_session_maker)
+    return FrameDao(async_session_maker)
 
 
 async def get_keyboard_service(dao: KeyboardDao = Depends(get_keyboard_dao)) -> KeyboardService:
@@ -114,13 +114,13 @@ async def get_activity_arbiter():
 
     loop = asyncio.get_event_loop()
     clock = SystemClock()
-    chrome_logging_dao = ChromeLoggingDao(clock, async_session_maker)
-    program_logging_dao = ProgramLoggingDao(clock, async_session_maker)
+    chrome_logging_dao = ChromeLoggingDao(async_session_maker)
+    program_logging_dao = ProgramLoggingDao(async_session_maker)
 
     program_summary_dao = ProgramSummaryDao(
-        clock, program_logging_dao, async_session_maker)
+        program_logging_dao, async_session_maker)
     chrome_summary_dao = ChromeSummaryDao(
-        clock, chrome_logging_dao, async_session_maker)
+        chrome_logging_dao, async_session_maker)
 
     global _arbiter_instance
     if not _arbiter_instance:
@@ -133,7 +133,7 @@ async def get_activity_arbiter():
         chrome_service = await get_chrome_service()
 
         _arbiter_instance = ActivityArbiter(
-            system_clock=clock,
+            user_facing_clock=clock,
         )
 
         _arbiter_instance.add_ui_listener(ui_layer.on_state_changed)
@@ -163,7 +163,7 @@ async def get_chrome_service(dao: ChromeDao = Depends(get_chrome_dao),
         _chrome_service_instance = ChromeService(clock,
                                                  arbiter,
                                                  dao=ChromeDao(
-                                                     clock, async_session_maker)
+                                                     async_session_maker)
 
                                                  )
     return _chrome_service_instance

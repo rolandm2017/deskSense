@@ -104,8 +104,8 @@ async def test_db_dao(async_session_maker):
     """Create a DAO instance with the async session maker"""
     session_maker = await async_session_maker
     clock = SystemClock()
-    logging_dao = ProgramLoggingDao(clock, session_maker)
-    dao = ProgramSummaryDao(clock, logging_dao, session_maker=session_maker)
+    logging_dao = ProgramLoggingDao(session_maker)
+    dao = ProgramSummaryDao(logging_dao, session_maker=session_maker)
     return dao
 
 
@@ -156,8 +156,8 @@ class TestProgramSummaryDao:
     def class_mock_dao(self, mock_session_maker):
         clock = SystemClock()
 
-        logging_dao = ProgramLoggingDao(clock, mock_session_maker)
-        return ProgramSummaryDao(clock,  logging_dao, mock_session_maker)
+        logging_dao = ProgramLoggingDao(mock_session_maker)
+        return ProgramSummaryDao(logging_dao, mock_session_maker)
 
     @pytest.mark.asyncio
     async def test_create_if_new_else_update_new_entry(self, class_mock_dao, mock_session):

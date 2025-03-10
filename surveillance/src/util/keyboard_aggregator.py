@@ -13,8 +13,8 @@ class InProgressAggregation:
 
 
 class EventAggregator:
-    def __init__(self, system_clock, timeout_ms: int):
-        self.system_clock = system_clock
+    def __init__(self, user_facing_clock, timeout_ms: int):
+        self.user_facing_clock = user_facing_clock
         self.timeout_in_sec = timeout_ms / 1000
         # self.current_aggregation: InProgressAggregation | None = None
 
@@ -26,7 +26,7 @@ class EventAggregator:
 
     def set_initialization_aggregation(self):
         # Class relies on times as .timestamp() floats
-        now = self.system_clock.now().timestamp()
+        now = self.user_facing_clock.now().timestamp()
 
         # now, now, [] -> default, as close to meaningless as it gets
         return InProgressAggregation(now, now, [])
@@ -38,7 +38,7 @@ class EventAggregator:
         if not isinstance(timestamp, (int, float)):
             raise TypeError("Timestamp must be a number")
 
-        if timestamp > self.system_clock.now().timestamp():
+        if timestamp > self.user_facing_clock.now().timestamp():
             raise ValueError("Timestamp cannot be in the future")
         if self.current_aggregation and timestamp < self.current_aggregation.end_time:
             print(timestamp)

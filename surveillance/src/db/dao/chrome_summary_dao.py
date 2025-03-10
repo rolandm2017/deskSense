@@ -15,8 +15,7 @@ from ...object.classes import ChromeSessionData
 
 
 class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
-    def __init__(self, clock, logging, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
-        self.system_clock = clock
+    def __init__(self,  logging, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
         self.logging_dao = logging
         self.session_maker = session_maker  # Store the session maker instead of db
         self.batch_size = batch_size
@@ -25,7 +24,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         self.processing = False
         self.logger = ConsoleLogger()
 
-    async def create_if_new_else_update(self, chrome_session: ChromeSessionData):
+    async def create_if_new_else_update(self, chrome_session: ChromeSessionData, right_now: datetime):
         """This method doesn't use queuing since it needs to check the DB state"""
         target_domain_name = chrome_session.domain
 
@@ -35,7 +34,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         usage_duration_in_hours = chrome_session.duration.total_seconds() / 3600
 
         # ### Check if entry exists for today
-        today = self.system_clock.now().date()
+        today = right_now.date()
         query = select(DailyDomainSummary).where(
             DailyDomainSummary.domain_name == target_domain_name,
             func.date(DailyDomainSummary.gathering_date) == today
@@ -60,21 +59,22 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
                       chrome_session.domain, usage_duration_in_hours)
                 await self.create(target_domain_name, usage_duration_in_hours, today)
 
-    async def create(self, target_domain_name, duration_in_hours, today):
+    async def create(self, target_domain_name, duration_in_hours, when_it_was_gathered):
         async with self.session_maker() as session:
             new_entry = DailyDomainSummary(
                 domain_name=target_domain_name,
                 hours_spent=duration_in_hours,
-                gathering_date=today
+                gathering_date=when_it_was_gathered
             )
             session.add(new_entry)
             await session.commit()
 
-    async def read_past_week(self):
-        today = self.system_clock.now()
+    async def read_past_week(self, right_now: datetime):
+        # today = self.system_clock.now()
+
         # +1 because weekday() counts from Monday=0
-        days_since_sunday = today.weekday() + 1
-        last_sunday = today - timedelta(days=days_since_sunday)
+        days_since_sunday = right_now.weekday() + 1
+        last_sunday = right_now - timedelta(days=days_since_sunday)
         query = select(DailyDomainSummary).where(
             func.date(DailyDomainSummary.gathering_date) >= last_sunday.date()
         )
@@ -83,10 +83,10 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             result = await session.execute(query)
             return result.scalars().all()
 
-    async def read_past_month(self):
+    async def read_past_month(self, right_now: datetime):
         """Read all entries from the 1st of the current month through today."""
-        today = self.system_clock.now()
-        start_of_month = today.replace(day=1)  # First day of current month
+        # today = self.system_clock.now()
+        start_of_month = right_now.replace(day=1)  # First day of current month
 
         query = select(DailyDomainSummary).where(
             func.date(DailyDomainSummary.gathering_date) >= start_of_month.date()
@@ -113,9 +113,9 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             result = await session.execute(select(DailyDomainSummary))
             return result.scalars().all()
 
-    async def read_row_for_domain(self, target_domain: str):
+    async def read_row_for_domain(self, target_domain: str, right_now: datetime):
         """Reads the row for the target program for today."""
-        today = self.system_clock.now().date()
+        today = right_now.date()
         query = select(DailyDomainSummary).where(
             DailyDomainSummary.domain_name == target_domain,
             func.date(DailyDomainSummary.gathering_date) == today

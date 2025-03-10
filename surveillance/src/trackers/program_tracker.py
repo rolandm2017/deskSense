@@ -20,7 +20,7 @@ from ..object.classes import ProgramSessionData
 # TODO: report programs that aren't in the apps list.
 
 class ProgramTrackerCore:
-    def __init__(self, clock, program_api_facade, window_change_handler, conclude_session_handler):
+    def __init__(self, user_facing_clock, program_api_facade, window_change_handler, conclude_session_handler):
         """
         !!!!! IMPORTANT - READ THIS FIRST !!!!!
 
@@ -39,7 +39,7 @@ class ProgramTrackerCore:
         If you find yourself adding any of the above, stop and rethink it!
         Create a separate class instead.
         """
-        self.system_clock = clock
+        self.user_facing_clock = user_facing_clock
         self.program_facade: ProgramApiFacadeCore = program_api_facade
         self.window_change_handler = window_change_handler
         self.conclude_session_handler = conclude_session_handler
@@ -69,7 +69,7 @@ class ProgramTrackerCore:
                 if self.current_session is None:
                     raise ValueError("Current session was None")
 
-                current_time: datetime = self.system_clock.now()  # once per loop
+                current_time: datetime = self.user_facing_clock.now()  # once per loop
                 self.conclude_session(current_time)
                 # when a window closes, call that with "conclude_session_handler()" to maintain other flows
                 self.apply_handlers(self.current_session)
@@ -81,7 +81,7 @@ class ProgramTrackerCore:
 
             # initialize
             if self.is_uninitialized():
-                current_time = self.system_clock.now()
+                current_time = self.user_facing_clock.now()
                 new_session = self.start_new_session(
                     window_change, current_time)
                 self.current_session = new_session
@@ -116,7 +116,7 @@ class ProgramTrackerCore:
     def conclude_session(self, end_time: datetime):
         if self.current_session is None:
             raise ValueError("Current session was None")
-        # end_time = self.system_clock.now()
+        # end_time = self.user_facing_clock.now()
         start_time: datetime | None = self.current_session.start_time
         initializing = start_time is None
         if initializing:

@@ -10,11 +10,10 @@ from ...util.console_logger import ConsoleLogger
 
 
 class ProgramDao(BaseQueueingDao):
-    def __init__(self, clock, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+    def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
         super().__init__(session_maker=session_maker,
                          batch_size=batch_size, flush_interval=flush_interval)
 
-        self.system_clock = clock
         self.logger = ConsoleLogger()
 
     async def create(self, session: ProgramSessionData):
@@ -78,13 +77,13 @@ class ProgramDao(BaseQueueingDao):
             result = await session.execute(select(Program))
             return result.scalars().all()
 
-    async def read_past_24h_events(self):
+    async def read_past_24h_events(self, right_now: datetime):
         """
         Read program activity events that ended within the past 24 hours.
         Returns all program sessions ordered by their end time.
         """
         query = select(Program).where(
-            Program.end_time >= self.system_clock.now() - timedelta(days=1)
+            Program.end_time >= right_now - timedelta(days=1)
         ).order_by(Program.end_time.desc())
         async with self.session_maker() as session:
             result = await session.execute(query)
