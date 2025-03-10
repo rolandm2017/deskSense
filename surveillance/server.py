@@ -324,14 +324,14 @@ async def get_chrome_report(chrome_service: ChromeService = Depends(get_chrome_s
 @app.post("/chrome/tab", status_code=status.HTTP_204_NO_CONTENT)
 async def receive_chrome_tab(
     tab_change_event: TabChangeEvent,
-    user_id: int,
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service)
 ):
     logger.log_purple("[LOG] Chrome Tab Received")
-    print(tab_change_event, '330ru')
     try:
-        tz_for_user = timezone_service.get_tz_for_user(user_id)
+        user_id = 1  # temp
+        tz_for_user = timezone_service.get_tz_for_user(
+            user_id)
         updated_tab_change_event = timezone_service.convert_tab_change_timezone(
             tab_change_event, tz_for_user)
         await chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)

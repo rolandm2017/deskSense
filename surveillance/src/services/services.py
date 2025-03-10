@@ -2,8 +2,8 @@
 from fastapi import Depends
 from typing import List, cast
 
-from surveillance.src.object.pydantic_dto import TabChangeEvent
-from surveillance.src.util.time_formatting import convert_to_timezone
+from ..object.pydantic_dto import TabChangeEvent
+from ..util.time_formatting import convert_to_timezone
 
 from ..db.dao.mouse_dao import MouseDao
 from ..db.dao.keyboard_dao import KeyboardDao
@@ -28,7 +28,8 @@ class TimezoneService:
         return local_time_zone
 
     def convert_tab_change_timezone(self, tab_change_event: TabChangeEvent, new_tz: str):
-        new_datetime_with_tz = convert_to_timezone(tab_change_event.startTime, new_tz: str)
+        new_datetime_with_tz = convert_to_timezone(
+            tab_change_event.startTime, new_tz)
         tab_change_event.startTime = new_datetime_with_tz
         return tab_change_event
 

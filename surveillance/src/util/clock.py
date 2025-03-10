@@ -1,6 +1,9 @@
 # clock.py
-from typing import Iterator
+from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta, timezone
+from typing import Iterator
+
+from ..config.definitions import local_time_zone
 
 
 class ClockProtocol:
@@ -24,7 +27,8 @@ class SystemClock(ClockProtocol):
 
 class UserFacingClock(ClockProtocol):
     def now(self) -> datetime:
-        return datetime.now()
+        return datetime.now(ZoneInfo(local_time_zone))
+        # return datetime.now()
 
     def seconds_have_elapsed(self, current_time: datetime, previous_time: datetime, seconds: int) -> bool:
         elapsed = current_time - previous_time
