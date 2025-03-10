@@ -2,6 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 import asyncio
 from datetime import timedelta, datetime, date
+from typing import List
 
 from ...object.classes import ChromeSessionData, ProgramSessionData
 
@@ -30,7 +31,32 @@ class ProgramLoggingDao(BaseQueueingDao):
             gathering_date=right_now.date(),
             created_at_date=right_now
         )
+        print("[pr] Creating ", log_entry)
         asyncio.create_task(self.queue_item(log_entry, ProgramSummaryLog))
+
+    async def read_day_as_sorted(self, day) -> dict[str, ProgramSummaryLog]:
+        start_of_day = day.replace(hour=0, minute=0, second=0,
+                                   microsecond=0)  # Still has tz attached
+        end_of_day = start_of_day + timedelta(days=1)
+
+        query = select(ProgramSummaryLog).where(
+            ProgramSummaryLog.start_time >= start_of_day,
+            ProgramSummaryLog.end_time < end_of_day
+        ).order_by(ProgramSummaryLog.program_name)
+
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            logs = result.scalars().all()
+            print(logs, '49ru')
+
+            # Group the results by program_name
+            grouped_logs = {}
+            for log in logs:
+                if log.program_name not in grouped_logs:
+                    grouped_logs[log.program_name] = []
+                grouped_logs[log.program_name].append(log)
+
+            return grouped_logs
 
     async def read_all(self):
         """Fetch all program log entries"""
@@ -90,7 +116,22 @@ class ChromeLoggingDao(BaseQueueingDao):
             gathering_date=right_now.date(),
             created_at_date=right_now
         )
+        print("[ch] Creating ", log_entry)
         asyncio.create_task(self.queue_item(log_entry, DomainSummaryLog))
+
+    async def read_day_as_sorted(self, day):
+        start_of_day = day.replace(hour=0, minute=0, second=0,
+                                   microsecond=0)  # Still has tz attached
+        end_of_day = start_of_day + timedelta(days=1)
+
+        query = select(DomainSummaryLog).where(
+            DomainSummaryLog.gathering_date >= start_of_day,
+            DomainSummaryLog.gathering_date < end_of_day
+        ).order_by(DomainSummaryLog.domain_name)
+
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            return result.scalars().all()
 
     async def read_all(self):
         """Fetch all domain log entries"""

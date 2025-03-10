@@ -175,6 +175,17 @@ const getChromeUsageForPastWeek = withErrorHandlingAndArgument<
     return api.get(`/dashboard/chrome/summaries/week/${formattedDate}`);
 });
 
+const getProgramTimelineForPastWeek = withErrorHandlingAndArgument<
+    WeeklyChromeUsage,
+    [Date]
+>((date: Date) => {
+    ensureSunday(date);
+    const formattedDate = formatDateForApi(date);
+    const timezone = getTimezone(date);
+    // TODO: send timezone
+    return api.get(`/dashboard/programs/usage/timeline/${formattedDate}`);
+});
+
 // Typescript wizardry
 //
 //

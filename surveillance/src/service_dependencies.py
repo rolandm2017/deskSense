@@ -30,6 +30,9 @@ from .arbiter.activity_recorder import ActivityRecorder
 system_clock = SystemClock()
 user_facing_clock = UserFacingClock()
 
+_program_logging_dao = ProgramLoggingDao(async_session_maker)
+_chrome_logging_dao = ChromeLoggingDao(async_session_maker)
+
 
 async def get_keyboard_dao() -> KeyboardDao:
     return KeyboardDao(async_session_maker)
@@ -52,13 +55,21 @@ async def get_timeline_dao() -> TimelineEntryDao:
 
 
 async def get_program_summary_dao() -> ProgramSummaryDao:
-    program_logging_dao = ProgramLoggingDao(async_session_maker)
-    return ProgramSummaryDao(program_logging_dao, async_session_maker)
+    # program_logging_dao = ProgramLoggingDao(async_session_maker)
+    return ProgramSummaryDao(_program_logging_dao, async_session_maker)
 
 
 async def get_chrome_summary_dao() -> ChromeSummaryDao:
-    chrome_logging_dao = ChromeLoggingDao(async_session_maker)
-    return ChromeSummaryDao(chrome_logging_dao, async_session_maker)
+    # chrome_logging_dao = ChromeLoggingDao(async_session_maker)
+    return ChromeSummaryDao(_chrome_logging_dao, async_session_maker)
+
+
+async def get_program_logging_dao() -> ProgramLoggingDao:
+    return _program_logging_dao
+
+
+async def get_chrome_logging_dao() -> ChromeLoggingDao:
+    return _chrome_logging_dao
 
 
 async def get_video_dao() -> VideoDao:
@@ -94,11 +105,13 @@ async def get_program_service(dao: ProgramDao = Depends(get_program_dao)) -> Pro
 async def get_dashboard_service(
     timeline_dao: TimelineEntryDao = Depends(get_timeline_dao),
     program_summary_dao: ProgramSummaryDao = Depends(get_program_summary_dao),
-    chrome_summary_dao: ChromeSummaryDao = Depends(get_chrome_summary_dao)
+    program_logging_dao: ProgramLoggingDao = Depends(get_program_logging_dao),
+    chrome_summary_dao: ChromeSummaryDao = Depends(get_chrome_summary_dao),
+    chrome_logging_dao: ChromeLoggingDao = Depends(get_chrome_logging_dao)
 ):
     # Lazy import to avoid circular dependency
     from .services.dashboard_service import DashboardService
-    return DashboardService(timeline_dao, program_summary_dao, chrome_summary_dao)
+    return DashboardService(timeline_dao, program_summary_dao, program_logging_dao, chrome_summary_dao, chrome_logging_dao)
 
 
 # Singleton instance of ActivityArbiter

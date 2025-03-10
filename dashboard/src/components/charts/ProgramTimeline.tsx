@@ -2,8 +2,12 @@ import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
 import { AggregatedTimelineEntry } from "../../interface/misc.interface";
 
-import { ProgamUsageTimeline } from "../../interface/weekly.interface";
-import { addEventLines } from "../../util/addEventLines";
+import {
+    ProgamUsageTimeline,
+    ProgramTimelineContent,
+    TimelineEvent,
+} from "../../interface/weekly.interface";
+import { addEventLinesForPrograms } from "../../util/addEventLines";
 
 // https://observablehq.com/@d3/normal-quantile-plot
 // https://observablehq.com/@d3/line-chart-missing-data/2
@@ -44,7 +48,7 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
      * the threshold for, for aggregation.
      *
      */
-    // console.log(days.length, "35ru");
+    console.log(days.length, "35ru");
 
     const svgRef = useRef<SVGSVGElement | null>(null);
 
@@ -178,8 +182,17 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
             const yPosition = y(dayName)! + y.bandwidth() / 2;
 
             // Add mouse events
-            day.events.forEach((event: AggregatedTimelineEntry) => {
-                addEventLines(yPosition, event, eventLines, x, y);
+            day.programs.forEach((program: ProgramTimelineContent) => {
+                program.events.forEach((event: TimelineEvent) => {
+                    addEventLinesForPrograms(
+                        yPosition,
+                        program.programName,
+                        event,
+                        eventLines,
+                        x,
+                        y
+                    );
+                });
             });
         });
     }, [width, height, margins, days]);
