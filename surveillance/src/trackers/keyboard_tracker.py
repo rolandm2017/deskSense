@@ -11,17 +11,17 @@ from ..facade.keyboard_facade import KeyboardApiFacadeCore
 
 
 class KeyboardTrackerCore:
-    def __init__(self, system_clock, keyboard_api_facade, event_handlers):
-        self.system_clock = system_clock
+    def __init__(self, user_facing_clock, keyboard_api_facade, event_handlers):
+        self.user_facing_clock = user_facing_clock
         self.keyboard_facade: KeyboardApiFacadeCore = keyboard_api_facade
         self.event_handlers = event_handlers
 
         self.recent_count = 0
-        self.time_of_last_terminal_out = system_clock.now()
+        self.time_of_last_terminal_out = user_facing_clock.now()
         self.time_of_last_aggregator_update = None
 
         # one sec of no typing => close session
-        self.aggregator = EventAggregator(system_clock, timeout_ms=1000)
+        self.aggregator = EventAggregator(user_facing_clock, timeout_ms=1000)
         self.console_logger = ConsoleLogger()
 
     def run_tracking_loop(self):
@@ -32,7 +32,7 @@ class KeyboardTrackerCore:
             return
         if self.keyboard_facade.event_type_is_key_down(event):
             self.recent_count += 1  # per keystroke
-            current_time = self.system_clock.now()
+            current_time = self.user_facing_clock.now()
             self.time_of_last_aggregator_update = current_time
             # TODO: Add an "autofinish" time, at which point apply_handlers() is called
             finalized_aggregate = self.aggregator.add_event(
@@ -62,7 +62,7 @@ class KeyboardTrackerCore:
 
     def _is_ready_to_log_to_console(self, current_time):
         # log key presses every 3 sec
-        return self.system_clock.has_elapsed_since(current_time, self.time_of_last_terminal_out, 3)
+        return self.user_facing_clock.has_elapsed_since(current_time, self.time_of_last_terminal_out, 3)
 
     def stop(self):
         print("Stopping program")

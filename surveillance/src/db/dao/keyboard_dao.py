@@ -3,7 +3,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from .base_dao import BaseQueueingDao
 from ..models import TypingSession
@@ -17,11 +17,10 @@ def get_rid_of_ms(time):
 
 
 class KeyboardDao(BaseQueueingDao):
-    def __init__(self, clock, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+    def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
         super().__init__(session_maker=session_maker,
                          batch_size=batch_size, flush_interval=flush_interval)
 
-        self.system_clock = clock
         self.logger = ConsoleLogger()
 
     async def create(self, session: KeyboardAggregate):
@@ -72,13 +71,13 @@ class KeyboardDao(BaseQueueingDao):
 
             return dtos
 
-    async def read_past_24h_events(self):
+    async def read_past_24h_events(self, right_now: datetime):
         """
         Read typing sessions from the past 24 hours, grouped into 5-minute intervals.
         Returns the count of sessions per interval.
         """
         try:
-            twenty_four_hours_ago = self.system_clock.now() - timedelta(hours=24)
+            twenty_four_hours_ago = right_now - timedelta(hours=24)
 
             query = select(TypingSession).where(
                 TypingSession.start_time >= twenty_four_hours_ago

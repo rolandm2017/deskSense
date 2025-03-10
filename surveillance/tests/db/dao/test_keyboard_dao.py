@@ -41,7 +41,7 @@ class TestKeyboardDao:
     @pytest.fixture
     def dao(self, mock_session_maker):
         clock = SystemClock()
-        return KeyboardDao(clock, mock_session_maker)
+        return KeyboardDao(mock_session_maker)
 
     @pytest.mark.asyncio
     async def test_create(self, dao, mock_session_maker):

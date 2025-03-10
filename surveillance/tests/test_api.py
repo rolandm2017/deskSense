@@ -257,7 +257,7 @@ async def test_get_timeline_for_dashboard(
 ):
     mouse_entries, keyboard_entries = mock_timeline_data
     mock_service = DashboardService(AsyncMock(), AsyncMock(), AsyncMock())
-    mock_service.get_timeline = AsyncMock(
+    mock_service.get_timeline_for_today = AsyncMock(
         return_value=(mouse_entries, keyboard_entries)
     )
 

@@ -19,8 +19,8 @@ from ..facade.mouse_facade import UbuntuMouseApiFacadeCore, WindowsMouseApiFacad
 
 
 class MouseTrackerCore:
-    def __init__(self, clock, mouse_api_facade, event_handlers, end_program_routine=None):
-        self.system_clock = clock
+    def __init__(self, user_facing_clock, mouse_api_facade, event_handlers, end_program_routine=None):
+        self.user_facing_clock = user_facing_clock
         self.mouse_facade: UbuntuMouseApiFacadeCore = mouse_api_facade
         self.event_handlers = event_handlers
 
@@ -39,7 +39,7 @@ class MouseTrackerCore:
 
     def get_mouse_position(self):
         coords = self.mouse_facade.get_position_coords()
-        coords.timestamp = self.system_clock.now()
+        coords.timestamp = self.user_facing_clock.now()
         return coords
 
     def position_is_same_as_before(self, new_position):
@@ -58,7 +58,7 @@ class MouseTrackerCore:
         # self.console_logger.log_green("[LOG] Start movement window")
         self.is_moving = True
         self.last_position = latest_result
-        self.movement_start_time = self.system_clock.now()
+        self.movement_start_time = self.user_facing_clock.now()
 
     def keep_window_open_and_update(self, latest_reading):
         self.last_position = latest_reading  # I think this is enough

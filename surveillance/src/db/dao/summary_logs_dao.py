@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 import asyncio
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from ..models import DomainSummaryLog, ProgramSummaryLog
 from .base_dao import BaseQueueingDao
@@ -9,20 +9,19 @@ from ...util.console_logger import ConsoleLogger
 
 
 class ProgramLoggingDao(BaseQueueingDao):
-    def __init__(self, clock, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+    def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
         """ Exists mostly for debugging. """
         super().__init__(session_maker=session_maker,
                          batch_size=batch_size, flush_interval=flush_interval)
-        self.system_clock = clock
         self.session_maker = session_maker
 
-    def create(self, program_name, hours_spent, gathering_date):
+    def create(self, program_name, hours_spent, gathering_date, right_now):
         """Log an update to a summary table"""
         log_entry = ProgramSummaryLog(
             program_name=program_name,
             hours_spent=hours_spent,
             gathering_date=gathering_date,
-            created_at=self.system_clock.now()
+            created_at=right_now
         )
         asyncio.create_task(self.queue_item(log_entry, ProgramSummaryLog))
 
@@ -32,9 +31,9 @@ class ProgramLoggingDao(BaseQueueingDao):
             result = await session.execute(select(ProgramSummaryLog))
             return result.scalars().all()
 
-    async def read_last_24_hrs(self):
+    async def read_last_24_hrs(self, right_now: datetime):
         """Fetch all program log entries from the last 24 hours"""
-        cutoff_time = self.system_clock.now() - timedelta(hours=24)
+        cutoff_time = right_now - timedelta(hours=24)
         async with self.session_maker() as session:
             query = select(ProgramSummaryLog).where(
                 ProgramSummaryLog.created_at >= cutoff_time
@@ -65,21 +64,20 @@ class ProgramLoggingDao(BaseQueueingDao):
 
 
 class ChromeLoggingDao(BaseQueueingDao):
-    def __init__(self, clock, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+    def __init__(self,  session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
         """ Exists mostly for debugging. """
 
         super().__init__(session_maker=session_maker,
                          batch_size=batch_size, flush_interval=flush_interval)
-        self.system_clock = clock
         self.session_maker = session_maker
 
-    def create(self, domain_name, hours_spent, gathering_date):
+    def create(self, domain_name, hours_spent, gathering_date, right_now):
         """Log an update to a summary table"""
         log_entry = DomainSummaryLog(
             domain_name=domain_name,
             hours_spent=hours_spent,
             gathering_date=gathering_date,
-            created_at=self.system_clock.now()
+            created_at=right_now
         )
         asyncio.create_task(self.queue_item(log_entry, DomainSummaryLog))
 
@@ -89,9 +87,9 @@ class ChromeLoggingDao(BaseQueueingDao):
             result = await session.execute(select(DomainSummaryLog))
             return result.scalars().all()
 
-    async def read_last_24_hrs(self):
+    async def read_last_24_hrs(self, right_now: datetime):
         """Fetch all domain log entries from the last 24 hours"""
-        cutoff_time = self.system_clock.now() - timedelta(hours=24)
+        cutoff_time = right_now - timedelta(hours=24)
         async with self.session_maker() as session:
             query = select(DomainSummaryLog).where(
                 DomainSummaryLog.created_at >= cutoff_time

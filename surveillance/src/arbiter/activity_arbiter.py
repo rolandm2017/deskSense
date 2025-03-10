@@ -18,7 +18,7 @@ class RecordKeeperCore:
 
 
 class ActivityArbiter:
-    def __init__(self, system_clock):
+    def __init__(self, user_facing_clock):
         """
         This class exists to prevent the Chrome Service from doing ANYTHING but reporting which tab is active.
 
@@ -31,8 +31,7 @@ class ActivityArbiter:
         the current program is Chrome & do such and such if it is or isn't.
         i.e. "chrome_event_update" and "self.current_is_chrome" before e22d5badb15
         """
-        self.state_machine = ActivityStateMachine(system_clock)
-        self.system_clock = system_clock
+        self.state_machine = ActivityStateMachine(user_facing_clock)
 
         self.ui_update_listener = None
         self.program_summary_listener = None

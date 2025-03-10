@@ -204,7 +204,7 @@ def test_multiple_key_presses(tracker_and_events, mock_keyboard_facade):
 
     # FIXME: Keep the tracker and it's times local to this test
 
-    t1_start = tracker_core.system_clock.now()
+    t1_start = tracker_core.user_facing_clock.now()
     assert isinstance(t1_start, datetime)
 
     # Simulate multiple key presses

@@ -35,7 +35,7 @@ async def activity_arbiter_and_setup():
 
     # Create a new arbiter instance for this test
     arbiter = ActivityArbiter(
-        system_clock=clock,
+        user_facing_clock=clock,
     )
 
     # Add UI listener
