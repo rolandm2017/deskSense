@@ -17,10 +17,10 @@ from ...util.sqlalchemy_helper import await_if_needed
 
 
 class TimelineEntryDao(BaseQueueingDao):
-    def __init__(self, clock, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+    def __init__(self, system_clock, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
         super().__init__(session_maker=session_maker,
                          batch_size=batch_size, flush_interval=flush_interval)
-        self.system_clock = clock
+        self.system_clock = system_clock
         self.logger = ConsoleLogger()
 
     async def create_from_keyboard_aggregate(self, content: KeyboardAggregate):
@@ -123,38 +123,45 @@ class TimelineEntryDao(BaseQueueingDao):
             # scalars_result = result.scalars()
             # return await await_if_needed(scalars_result)
 
-    async def read_day_mice(self, day: datetime) -> List[TimelineEntryObj]:
-        is_today = day.strftime(
-            "%m %d %Y") == self.system_clock.now().strftime("%m %d %Y")
+    async def read_day_mice(self, user_system_day: datetime) -> List[TimelineEntryObj]:
+        today = self.system_clock.now().date()
+        is_today = today == user_system_day.date()
+        # FIXME: 'today' is march 9, when it's still march 8.
+        # TODO: Store entires with both the System Time (UTC) and the User's Local TZ
+        print(today, user_system_day.date())
         if is_today:
             # Precomputed day can't exist yet
-            return await self.read_day(day, ChartEventType.MOUSE)
+            print("is today!!! in mouse 131ru")
+            return await self.read_day(user_system_day, ChartEventType.MOUSE)
         else:
+            print(user_system_day, " is not today")
             # return await self.read_day(day, ChartEventType.MOUSE)
             precomputed_day_entries = await self.read_precomputed_entry_for_day(
-                day, ChartEventType.MOUSE)
+                user_system_day, ChartEventType.MOUSE)
             if len(precomputed_day_entries) > 0:
                 return precomputed_day_entries
             else:
-                read_events = await self.read_day(day, ChartEventType.MOUSE)
+                read_events = await self.read_day(user_system_day, ChartEventType.MOUSE)
                 new_precomputed_day = await self.create_precomputed_day(read_events)
                 return new_precomputed_day
 
-    async def read_day_keyboard(self, day: datetime) -> List[TimelineEntryObj]:
-        is_today = day.strftime(
-            "%m %d %Y") == self.system_clock.now().strftime("%m %d %Y")
+    async def read_day_keyboard(self, user_system_day: datetime) -> List[TimelineEntryObj]:
+        today = self.system_clock.now().date()
+        is_today = today == user_system_day.date()
         if is_today:
+            print("is today!!! in keyboard 131ru")
             # Precomputed day can't exist yet
-            return await self.read_day(day, ChartEventType.KEYBOARD)
+            return await self.read_day(user_system_day, ChartEventType.KEYBOARD)
         else:
+            print(user_system_day, " is not today")
             # return await self.read_day(day, ChartEventType.KEYBOARD)
             precomputed_day_entries = await self.read_precomputed_entry_for_day(
-                day, ChartEventType.KEYBOARD)
+                user_system_day, ChartEventType.KEYBOARD)
 
             if len(precomputed_day_entries) > 0:
                 return precomputed_day_entries
             else:
-                read_events = await self.read_day(day, ChartEventType.KEYBOARD)
+                read_events = await self.read_day(user_system_day, ChartEventType.KEYBOARD)
                 new_precomputed_day = await self.create_precomputed_day(read_events)
 
                 return new_precomputed_day
