@@ -105,7 +105,7 @@ class TestKeyboardDao:
         mock_session.execute = AsyncMock(return_value=mock_result)
 
         # Act
-        result = await dao.read_past_24h_events()
+        result = await dao.read_past_24h_events(current_time)
 
         # Assert
         assert len(result) == 2
@@ -120,7 +120,7 @@ class TestKeyboardDao:
 
         # Act & Assert
         with pytest.raises(RuntimeError, match="Failed to read typing sessions"):
-            await dao.read_past_24h_events()
+            await dao.read_past_24h_events(datetime.now())
 
     @pytest.mark.asyncio
     async def test_delete(self, dao, mock_session):

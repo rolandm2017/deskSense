@@ -1,5 +1,5 @@
 # surveillance/src/service_dependencies.py
-from .util.clock import SystemClock
+from .util.clock import SystemClock, UserFacingClock
 from fastapi import Depends
 from typing import Callable
 import asyncio
@@ -8,7 +8,7 @@ import asyncio
 from .debug.ui_notifier import UINotifier
 
 from .services.chrome_service import ChromeService
-from .services.services import KeyboardService, MouseService, ProgramService
+from .services.services import KeyboardService, MouseService, ProgramService, TimezoneService
 
 from .db.database import async_session_maker
 from .db.dao.mouse_dao import MouseDao
@@ -27,7 +27,8 @@ from .arbiter.activity_recorder import ActivityRecorder
 
 
 # Dependency functions
-clock = SystemClock()
+system_clock = SystemClock()
+user_facing_clock = UserFacingClock()
 
 
 async def get_keyboard_dao() -> KeyboardDao:
@@ -68,14 +69,14 @@ async def get_frame_dao() -> FrameDao:
     return FrameDao(async_session_maker)
 
 
+async def get_timezone_service() -> TimezoneService:
+    from .services.services import TimezoneService
+    return TimezoneService()
+
+
 async def get_keyboard_service(dao: KeyboardDao = Depends(get_keyboard_dao)) -> KeyboardService:
     from .services.services import KeyboardService
     return KeyboardService(dao)
-
-# async def get_keyboard_service(dao: KeyboardDao = Depends(KeyboardDao)) -> Callable:
-    # Lazy import to avoid circular dependency
-    # from .services import KeyboardService
-    # return KeyboardService(dao)
 
 
 async def get_mouse_service(dao: MouseDao = Depends(get_mouse_dao)) -> MouseService:
@@ -113,7 +114,8 @@ async def get_activity_arbiter():
     from .db.dao.chrome_summary_dao import ChromeSummaryDao
 
     loop = asyncio.get_event_loop()
-    clock = SystemClock()
+    system_clock = SystemClock()
+    user_facing_clock = UserFacingClock()
     chrome_logging_dao = ChromeLoggingDao(async_session_maker)
     program_logging_dao = ProgramLoggingDao(async_session_maker)
 
@@ -133,7 +135,7 @@ async def get_activity_arbiter():
         chrome_service = await get_chrome_service()
 
         _arbiter_instance = ActivityArbiter(
-            user_facing_clock=clock,
+            user_facing_clock=user_facing_clock,
         )
 
         _arbiter_instance.add_ui_listener(ui_layer.on_state_changed)

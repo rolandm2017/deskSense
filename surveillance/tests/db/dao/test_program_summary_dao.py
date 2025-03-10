@@ -163,10 +163,12 @@ class TestProgramSummaryDao:
     async def test_create_if_new_else_update_new_entry(self, class_mock_dao, mock_session):
         # Arrange
 
+        right_now = datetime.now()
+
         session_data = ProgramSessionData()
         session_data.window_title = "TestProgramFromTest"
-        session_data.start_time = datetime.now()
-        session_data.end_time = datetime.now().replace(hour=datetime.now().hour + 2)
+        session_data.start_time = right_now
+        session_data.end_time = right_now.replace(hour=datetime.now().hour + 2)
 
         # Mock existing entry
         existing_entry = Mock(spec=DailyProgramSummary)
@@ -182,7 +184,7 @@ class TestProgramSummaryDao:
         mock_session.execute.return_value = mock_result
 
         # Act
-        await class_mock_dao.create_if_new_else_update(session_data)
+        await class_mock_dao.create_if_new_else_update(session_data, right_now)
 
         # Assert
         assert mock_session.execute.called
@@ -190,6 +192,7 @@ class TestProgramSummaryDao:
     @pytest.mark.asyncio
     async def test_create_if_new_else_update_existing_entry(self, class_mock_dao, mock_session):
         # Arrange
+        right_now = datetime.now()
         # session_data = {
         #     'window': 'TestProgram',
         #     'start_time': datetime.now(),
@@ -197,8 +200,8 @@ class TestProgramSummaryDao:
         # }
         session_data = ProgramSessionData()
         session_data.window_title = "TestProgram"
-        session_data.start_time = datetime.now()
-        session_data.end_time = datetime.now().replace(hour=datetime.now().hour + 1)
+        session_data.start_time = right_now
+        session_data.end_time = right_now.replace(hour=datetime.now().hour + 1)
 
         # Mock existing entry
         existing_entry = Mock(spec=DailyProgramSummary)
@@ -209,7 +212,7 @@ class TestProgramSummaryDao:
         mock_session.execute.return_value = mock_result
 
         # Act
-        await class_mock_dao.create_if_new_else_update(session_data)
+        await class_mock_dao.create_if_new_else_update(session_data, right_now)
 
         # Assert
         assert mock_session.execute.called
@@ -272,7 +275,7 @@ class TestProgramSummaryDao:
         mock_session.execute.return_value = mock_result
 
         # Act
-        result = await class_mock_dao.read_row_for_program(program_name)
+        result = await class_mock_dao.read_row_for_program(program_name, datetime.now())
 
         # Assert
         assert result is not None
@@ -377,12 +380,12 @@ class TestProgramSummaryDao:
         mock_session.execute.return_value = mock_result
 
         # Act
-        await class_mock_dao.create_if_new_else_update(session_data_1)
-        await class_mock_dao.create_if_new_else_update(session_data_2)
-        await class_mock_dao.create_if_new_else_update(session_data_3)
-        await class_mock_dao.create_if_new_else_update(session_data_4)
-        await class_mock_dao.create_if_new_else_update(session_data_5)
-        await class_mock_dao.create_if_new_else_update(session_data_6)
+        await class_mock_dao.create_if_new_else_update(session_data_1, dt)
+        await class_mock_dao.create_if_new_else_update(session_data_2, dt2)
+        await class_mock_dao.create_if_new_else_update(session_data_3, dt3)
+        await class_mock_dao.create_if_new_else_update(session_data_4, dt4)
+        await class_mock_dao.create_if_new_else_update(session_data_5, dt5)
+        await class_mock_dao.create_if_new_else_update(session_data_6, dt6)
 
         # TODO: Assert that the total time elapsed is what you expect
 
@@ -393,7 +396,7 @@ class TestProgramSummaryDao:
         class_mock_dao.delete_all_rows(safety_switch=True)
 
     @pytest.mark.asyncio
-    async def test_live_database_operations(self, test_db_dao):
+    async def test_series_of_database_operations(self, test_db_dao):
         test_db_dao = await test_db_dao
 
         # Get today's date
@@ -454,24 +457,16 @@ class TestProgramSummaryDao:
         test_session.start_time = dt
         test_session.end_time = dt + timedelta(minutes=5)
 
-        # Add debug prints
-        print("creating test ses", test_session)
-        await test_db_dao.create_if_new_else_update(test_session)
+        await test_db_dao.create_if_new_else_update(test_session, dt)
 
         # Verify it was created
-        entry = await test_db_dao.read_row_for_program(test_vs_code)
-        vvvv = await test_db_dao.read_all()
-        print("VVVVV:", vvvv[0].gathering_date)
-        print(f"Retrieved entry: {entry}")
+        entry = await test_db_dao.read_row_for_program(test_vs_code, dt)
+        all = await test_db_dao.read_all()
+        assert len(
+            all) == 1, "Either the test entry didn't get made, or more than one was made"
         assert entry is not None
         assert entry.program_name == test_vs_code
         assert entry.hours_spent > 0
-
-        # Verify the db is actually empty
-        all_entries = await test_db_dao.read_all()
-        for v in all_entries:
-            print(v.program_name, v.hours_spent, '400ru')
-        assert len(all_entries) == len([1])
 
         # 1
         session_data_1: ProgramSessionData = ProgramSessionData()
@@ -536,7 +531,7 @@ class TestProgramSummaryDao:
         unique_program_mentions = [test_vs_code, chrome, vscode, discord]
 
         for session in sessions:
-            await test_db_dao.create_if_new_else_update(session)
+            await test_db_dao.create_if_new_else_update(session, session.start_time)
 
         # ### Verify all programs were created
         all_entries = await test_db_dao.read_all()
@@ -552,7 +547,7 @@ class TestProgramSummaryDao:
         expected_hours_spent = [
             chrome_time, vscode_time, discord_time, TestVSCode_expected]
         for program in sessions:
-            entry = await test_db_dao.read_row_for_program(program.window_title)
+            entry = await test_db_dao.read_row_for_program(program.window_title, program.start_time)
             assert entry is not None
             assert entry.program_name == program.window_title
             # FIXME - more specific claim pls, and passing
@@ -567,13 +562,13 @@ class TestProgramSummaryDao:
         update_session.start_time = test_update_start_time
         update_session.end_time = test_update_end_time
 
-        await test_db_dao.create_if_new_else_update(update_session)
+        await test_db_dao.create_if_new_else_update(update_session, test_update_start_time)
 
         time_from_chrome_update = test_update_end_time - test_update_start_time
         time_from_chrome_update = time_from_chrome_update.total_seconds()
 
         # Verify the update
-        chrome_entry = await test_db_dao.read_row_for_program(chrome)
+        chrome_entry = await test_db_dao.read_row_for_program(chrome, test_update_start_time)
         assert chrome_entry is not None
         # Original time plus update time
         assert chrome_entry.hours_spent > 2.0  # 5 - 3
@@ -581,10 +576,7 @@ class TestProgramSummaryDao:
         # ### Test reading by day
 
         right_now = dt
-        print(right_now)
         day_entries = await test_db_dao.read_day(right_now)
-        temptemp = await test_db_dao.read_all()
-        print(len(temptemp), dt)
 
         async with test_db_dao.session_maker() as session:
             result = await session.execute(text("SELECT program_name, gathering_date FROM daily_program_summaries"))

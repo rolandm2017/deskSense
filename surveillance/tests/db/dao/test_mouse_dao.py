@@ -108,10 +108,11 @@ class TestMouseDao:
 
     @pytest.mark.asyncio
     async def test_read_past_24h_events(self, dao, mock_session):
+        now = datetime.now()
         mock_moves = [
-            MouseMove(id=1, start_time=datetime.now(),
-                      end_time=datetime.now()),
-            MouseMove(id=2, start_time=datetime.now(), end_time=datetime.now())
+            MouseMove(id=1, start_time=now,
+                      end_time=now),
+            MouseMove(id=2, start_time=now, end_time=now)
         ]
 
         # Setup the mock result chain
@@ -121,7 +122,7 @@ class TestMouseDao:
         mock_result.scalars = Mock(return_value=mock_scalar_result)
         mock_session.execute.return_value = mock_result
 
-        result = await dao.read_past_24h_events()
+        result = await dao.read_past_24h_events(now)
         assert result == mock_moves
 
     @pytest.mark.asyncio
