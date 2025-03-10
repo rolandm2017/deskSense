@@ -23,7 +23,7 @@ import {
 } from "../interface/weekly.interface";
 
 import { BarChartDayData } from "../interface/misc.interface";
-import PeripheralsChart from "../components/charts/PeripheralsChart";
+import PeripheralsTimeline from "../components/charts/PeripheralsTimeline";
 import {
     DayOfAggregatedRows,
     WeeklyTimelineAggregate,
@@ -345,7 +345,7 @@ function Weekly() {
                     />
                     {/* // TODO: Show the DATES being displayed, the range. */}
                     {/* // "Showing Sunday 22 to ..." */}
-                    <PeripheralsChart
+                    <PeripheralsTimeline
                         days={aggregatedTimeline ? aggregatedTimeline.days : []}
                     />
                 </div>
