@@ -63,8 +63,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.gathering_date < today + timedelta(days=1)
         )
 
-        self.program_logging_dao.create(target_program_name,
-                                        usage_duration_in_hours, today, right_now)
+        self.program_logging_dao.create_log(program_session, right_now)
 
         async with self.session_maker() as db_session:
             result = await db_session.execute(query)

@@ -34,7 +34,8 @@ from src.object.dashboard_dto import (
     ProgramBarChartContent,
     ChromeBarChartContent,
     ProgramTimelineContent,
-    ProgramUsageTimeline, TimelineEntrySchema, TimelineRows,
+    ProgramUsageTimeline, TimelineEntrySchema,
+    TimelineEvent, TimelineRows,
     WeeklyProgramContent, WeeklyChromeContent,
     WeeklyProgramUsageTimeline, WeeklyTimeline, DayOfTimelineRows
 )
@@ -327,14 +328,29 @@ async def get_program_usage_timeline_for_present_week(
 
     days = []
     for day in all_days:
-        print(day, '330ru')
         programs: dict[str, ProgramSummaryLog] = day["program_usage_timeline"]
-        print(programs, '332ru')
         # assert isinstance(programs, dict)
         date = day["date"]
 
-        # for key, value in programs.items():
-        #     print(key, value)
+        programs_content = []
+        for key, value_list in programs.items():
+            print(key, ": \n")
+
+            timeline_events = []
+            for program_log in value_list:
+                # Assuming ProgramSummaryLog has startTime and endTime attributes
+                timeline_event = TimelineEvent(
+                    startTime=program_log.start_time,
+                    endTime=program_log.end_time
+                )
+                timeline_events.append(timeline_event)
+
+            content = ProgramTimelineContent(
+                programName=key, events=timeline_events)
+            programs_content.append(content)
+        day_timeline = ProgramUsageTimeline(
+            date=date, programs=programs_content)
+        days.append(day_timeline)
 
         # program_timeline_content = ProgramTimelineContent(programName=)
         # program_usage_timeline = ProgramUsageTimeline(date=date, programs=package=[''])
