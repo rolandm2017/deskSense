@@ -57,11 +57,15 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
 
         d3.select(svgRef.current).selectAll("*").remove();
 
+        const startHour = 5; // outside of debugging, use 5 (5:00 am)
+        const endHour = 23; // outside of debugging, use 23 (11:59 pm)
+        const endMinute = 59;
+
         const x = d3
             .scaleTime()
             .domain([
-                new Date(2024, 0, 1, 5, 0), // 5 AM
-                new Date(2024, 0, 1, 23, 59), // 11:59 PM
+                new Date(2024, 0, 1, startHour, 0), // 5 AM
+                new Date(2024, 0, 1, endHour, endMinute), // 11:59 PM
             ])
             .nice()
             .range([margins.left, width - margins.right]);
@@ -181,19 +185,32 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
             // Get the center of the band for the current day
             const yPosition = y(dayName)! + y.bandwidth() / 2;
 
+            const programsSortedByMostTabbedInto = [...day.programs].sort(
+                (a, b) => b.events.length - a.events.length
+            );
+
+            const topFive = programsSortedByMostTabbedInto.slice(0, 5);
+
             // Add mouse events
-            day.programs.forEach((program: ProgramTimelineContent) => {
-                program.events.forEach((event: TimelineEvent) => {
-                    addEventLinesForPrograms(
-                        yPosition,
+            topFive.forEach(
+                (program: ProgramTimelineContent, programIndex: number) => {
+                    console.log(
                         program.programName,
-                        event,
-                        eventLines,
-                        x,
-                        y
+                        program.events.length,
+                        "188ru"
                     );
-                });
-            });
+                    program.events.forEach((event: TimelineEvent) => {
+                        addEventLinesForPrograms(
+                            yPosition + programIndex * 10,
+                            program.programName,
+                            event,
+                            eventLines,
+                            x,
+                            y
+                        );
+                    });
+                }
+            );
         });
     }, [width, height, margins, days]);
 

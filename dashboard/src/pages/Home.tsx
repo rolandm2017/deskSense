@@ -117,24 +117,13 @@ function Home() {
             days.push(...convertedIntoAggregations);
             days.push(row);
 
-            days.forEach((obj, index) => {
-                console.log(`Object ${index} keys:`, Object.keys(obj));
-            });
+            // days.forEach((obj, index) => {
+            //     console.log(`Object ${index} keys:`, Object.keys(obj));
+            // });
 
-            const temp = days[6];
+            // const temp = days[6];
 
-            console.log(temp, "temp temp 117ru");
-
-            const k = temp.mouseRow;
-            for (const entry of k) {
-                console.log("Raw UTC start:", entry.start);
-                console.log(
-                    "Converted to PST:",
-                    new Date(entry.start).toLocaleString("en-US", {
-                        timeZone: "America/Los_Angeles",
-                    })
-                );
-            }
+            // console.log(temp, "temp temp 117ru");
 
             // setAggregatedDays([temp]);
             setAggregatedDays(days);
