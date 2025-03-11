@@ -142,8 +142,8 @@ async def get_activity_arbiter():
         print("Creating new Overlay")
         overlay = Overlay()
         ui_layer = UINotifier(overlay)
-        activity_recorder = ActivityRecorder(
-            program_summary_dao, chrome_summary_dao)
+        activity_recorder = ActivityRecorder(user_facing_clock,
+                                             program_summary_dao, chrome_summary_dao)
         print("Creating new ActivityArbiter")
         chrome_service = await get_chrome_service()
 
@@ -152,6 +152,8 @@ async def get_activity_arbiter():
         )
 
         _arbiter_instance.add_ui_listener(ui_layer.on_state_changed)
+        _arbiter_instance.add_summary_dao_listener(
+            activity_recorder)
 
         # Create wrapper for async handler
         @chrome_service.event_emitter.on('tab_change')

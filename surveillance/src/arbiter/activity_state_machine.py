@@ -66,6 +66,12 @@ class ActivityStateMachine:
     def get_finished_state(self) -> InternalState | None:
         return self.prior_state
 
+    def conclude_without_replacement(self):
+        """For wrap up when the computer is powering off to avoid sessions left open"""
+        if self.current_state is None:
+            return  # Nothing to wrap up
+        return self.current_state.session
+
 
 class TransitionFromProgramMachine:
     def __init__(self, current_state):

@@ -106,6 +106,7 @@ class ChromeLoggingDao(BaseQueueingDao):
 
     def create(self, session: ChromeSessionData, right_now: datetime):
         """Log an update to a summary table"""
+
         if session.duration is None:
             raise ValueError("Session duration was None")
         log_entry = DomainSummaryLog(

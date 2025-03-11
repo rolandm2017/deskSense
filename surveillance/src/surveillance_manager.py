@@ -115,13 +115,14 @@ class SurveillanceManager:
         pass  # lives in Chrome Service
 
     async def shutdown_handler(self):
-        print("In shutdown handler")
+        print("In shutdown handler RR\nRR\nRR")
         try:
             # TODO: Add Program Summary DAO shutdown -> prevent alt tab window being huge
+            await self.chrome_service.shutdown()  # works despite the lack of highlighting
+            await self.arbiter.shutdown()
             await self.program_summary_dao.shutdown()
             # TODO: Add Chrome Summary DAO shutdown -> similar reasons
             await self.chrome_summary_dao.shutdown()
-            await self.chrome_service.shutdown()  # works despite the lack of highlighting
         except Exception as e:
             print(f"Error during shutdown cleanup: {e}")
 
