@@ -57,7 +57,6 @@ class ActivityStateMachine:
         now = self.user_facing_clock.now()
         # Now - UTC
         # state.session.start_time - no tzinfo
-        print(type(state.session), "60ru")
         duration = now - state.session.start_time
 
         state.session.duration = duration
@@ -70,13 +69,15 @@ class ActivityStateMachine:
         """For wrap up when the computer is powering off to avoid sessions left open"""
         if self.current_state is None:
             return  # Nothing to wrap up
-        return self.current_state.session
+        self._conclude_session(self.current_state)
+        session_for_daos = self.current_state.session
+        self.current_state = None  # Reset for power back on
+        return session_for_daos
 
 
 class TransitionFromProgramMachine:
     def __init__(self, current_state):
         if not isinstance(current_state, ApplicationInternalState):
-            print(current_state, '55ru')
             raise TypeError(
                 "TransitionFromProgramMachine requires an ApplicationInternalState")
 

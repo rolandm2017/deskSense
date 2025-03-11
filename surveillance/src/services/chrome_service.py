@@ -6,6 +6,8 @@ import asyncio
 from datetime import datetime, timedelta, timezone, date
 from operator import attrgetter
 
+from ..config.definitions import power_on_off_debug_file
+
 from ..db.dao.chrome_dao import ChromeDao
 from ..db.dao.chrome_summary_dao import ChromeSummaryDao
 from ..object.classes import ChromeSessionData
@@ -177,6 +179,8 @@ class ChromeService:
         """Mostly just logs the final chrome session to the db"""
         # Also do stuff like, trigger the Arbiter to shutdown the current state w/o replacement, in other funcs
         await self.tab_queue.empty_queue_as_sessions()
+        with open(power_on_off_debug_file, "a") as f:
+            f.write("Shutdown Chrome Service\n")
 
     async def handle_chrome_ready_for_db(self, event):
         await self.dao.create(event)

@@ -65,7 +65,6 @@ def aggregate_timeline_events(events: List[TimelineEntryObj], threshold=half_sec
 #             });
 #             return acc;
 #         }
-#         // console.log(lastEvent, idx, "16ru");
 #         const lastEnd = new Date(lastEvent.end);
 #         if (lastEvent && currStart.getTime() - lastEnd.getTime() < threshold) {
 #             // Merge events that are close together

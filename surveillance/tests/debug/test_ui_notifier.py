@@ -45,7 +45,6 @@ def test_internal_state_change(ui_notifier, mock_overlay):
         "Test Window Title", False, program_session)
 
     # Trigger the state change
-    print(ui_notifier, "49ru")
     ui_notifier.on_state_changed(test_state)
 
     # Check that change_display_text was called with the right arguments

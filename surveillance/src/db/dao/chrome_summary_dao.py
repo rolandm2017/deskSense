@@ -5,6 +5,8 @@ from asyncio import Queue
 from datetime import datetime, timedelta
 from typing import List
 
+from ...config.definitions import power_on_off_debug_file
+
 from ..models import DailyDomainSummary
 from ...util.console_logger import ConsoleLogger
 from ...object.classes import ChromeSessionData
@@ -24,7 +26,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         self.processing = False
         self.logger = ConsoleLogger()
 
-    async def create_if_new_else_update(self, chrome_session: ChromeSessionData, right_now: datetime):
+    async def create_if_new_else_update(self, chrome_session: ChromeSessionData, right_now: datetime, is_shutdown=False):
         """This method doesn't use queuing since it needs to check the DB state"""
         target_domain_name = chrome_session.domain
 
@@ -61,6 +63,10 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
                 print("[debug] NEW session: ",
                       chrome_session.domain, usage_duration_in_hours)
                 await self.create(target_domain_name, usage_duration_in_hours, today)
+        if is_shutdown:
+            with open(power_on_off_debug_file, "a") as f:
+                f.write("shutting down Chrome summary dao")
+                f.write("\n")
 
     async def create(self, target_domain_name, duration_in_hours, when_it_was_gathered):
         async with self.session_maker() as session:
@@ -133,9 +139,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def shutdown(self):
         """Closes the open session without opening a new one"""
-        with open("shutdown_proof.txt", "a") as f:
-            f.write("shutting down Chrome summary dao")
-            f.write("\n")
+
         pass
 
     async def delete(self, id: int):

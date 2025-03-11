@@ -319,7 +319,6 @@ def test_zero_distance_movement(tracker_and_events, mock_mouse_facade):
     # Simulate movement to same position
     mock_mouse_facade.set_cursor_pos(MouseCoords(100, 100))
     tracker.run_tracking_loop()
-    print(tracker, '324ru')
     # Testing starting circumstances
     assert tracker.is_moving is False, "Should be false"
     assert tracker.last_position.x == 100 and tracker.last_position.y == 100

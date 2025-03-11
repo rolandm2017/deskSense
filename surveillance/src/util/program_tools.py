@@ -52,13 +52,10 @@ def is_productive(window_info, productive_apps, productive_sites):
 
     # Check if it's a known application
     is_a_known_productive_program = window_name in productive_apps
-    print(window_name, is_a_known_productive_program, "here 55ru")
     if is_a_known_productive_program:
-        print(is_a_known_productive_program, "56ru")
         # Could still be a "Maybe" case, i.e. Chrome
         is_a_maybe_case = window_info['process_name'] == "Google Chrome"
         if is_a_maybe_case:
-            print(detail, '59ru')
             # access window content to check the sites
             tab_name = detail
             is_productive_site = tab_is_a_productive_tab(

@@ -10,7 +10,7 @@ class ActivityRecorder:
         self.program_summary_dao = program_summary_dao
         self.chrome_summary_dao = chrome_summary_dao
 
-    async def on_state_changed(self, session):
+    async def on_state_changed(self, session, is_shutdown=False):
         if isinstance(session, InternalState):
             print(session)
             raise TypeError(
@@ -24,8 +24,8 @@ class ActivityRecorder:
         right_now = self.user_facing_clock.now()
 
         if isinstance(session, ChromeSessionData):
-            await self.chrome_summary_dao.create_if_new_else_update(session, right_now)
+            await self.chrome_summary_dao.create_if_new_else_update(session, right_now, is_shutdown)
         elif isinstance(session, ProgramSessionData):
-            await self.program_summary_dao.create_if_new_else_update(session, right_now)
+            await self.program_summary_dao.create_if_new_else_update(session, right_now, is_shutdown)
         else:
             raise TypeError("Session was not the right type")

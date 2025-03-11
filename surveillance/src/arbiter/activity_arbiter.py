@@ -1,8 +1,11 @@
 from __future__ import annotations
 from ast import Attribute
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 from enum import Enum
+from typing import Optional
+
+from ..config.definitions import power_on_off_debug_file
+
 
 from ..object.classes import ChromeSessionData, ProgramSessionData
 from ..db.dao.chrome_summary_dao import ChromeSummaryDao
@@ -49,9 +52,9 @@ class ActivityArbiter:
         if self.ui_update_listener:
             self.ui_update_listener(state)
 
-    async def notify_summary_dao(self, session):
+    async def notify_summary_dao(self, session, is_shutdown=False):
         if self.summary_listener:
-            await self.summary_listener.on_state_changed(session)
+            await self.summary_listener.on_state_changed(session, is_shutdown)
 
     async def set_tab_state(self, tab: ChromeSessionData):
         await self.transition_state(tab)
@@ -120,4 +123,6 @@ class ActivityArbiter:
         """Concludes the current state/session without adding a new one"""
         if self.state_machine.current_state:
             concluded_session = self.state_machine.conclude_without_replacement()
-            await self.notify_summary_dao(concluded_session)
+            await self.notify_summary_dao(concluded_session, True)
+            with open(power_on_off_debug_file, "a") as f:
+                f.write("Shutdown Activity Arbiter\n")
