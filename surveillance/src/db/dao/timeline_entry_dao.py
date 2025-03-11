@@ -128,7 +128,6 @@ class TimelineEntryDao(BaseQueueingDao):
         is_today = today == users_systems_day.date()
         if is_today:
             # Precomputed day can't exist yet
-            # print("w", today, "is today!!! in mouse 131ru")
             return await self.read_day(users_systems_day, ChartEventType.MOUSE)
         else:
             # print(users_systems_day, " is not today mouse")
@@ -146,7 +145,6 @@ class TimelineEntryDao(BaseQueueingDao):
         today = user_facing_clock.now().date()
         is_today = today == users_systems_day.date()
         if is_today:
-            # print("[w]", today, "is today!!! in keyboard 131ru")
             # Precomputed day can't exist yet
             return await self.read_day(users_systems_day, ChartEventType.KEYBOARD)
         else:

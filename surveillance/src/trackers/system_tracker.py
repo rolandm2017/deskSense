@@ -9,6 +9,8 @@ import psutil
 from datetime import datetime
 from typing import Callable, Awaitable, Optional
 
+from ..config.definitions import power_on_off_debug_file
+
 
 class SystemPowerTracker:
     # def __init__(self, on_shutdown: Callable[[], Awaitable[None]], loop: asyncio.AbstractEventLoop = None):
@@ -17,7 +19,7 @@ class SystemPowerTracker:
         self.main_loop = None
         self.main_loop_thread = None
         self.asyncio_loop = loop or asyncio.get_event_loop()
-        self.log_file = "power_on_off_times.txt"
+        self.log_file = power_on_off_debug_file
         self._shutdown_in_progress = False
 
         # Log startup
@@ -84,6 +86,8 @@ class SystemPowerTracker:
         if signum == 15:
             reason = "restart program"
         print(f"Triggering shutdown due to: {reason}")
+        self._log_event("\n*\n**\n" + reason + " at " +
+                        str(datetime.now().strftime("%Y-%m-%d")) + "\n")
 
         try:
             self._log_event(reason)

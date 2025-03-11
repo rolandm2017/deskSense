@@ -5,6 +5,8 @@ load_dotenv()
 
 LOCAL_TIME_ZONE = os.getenv("LOCAL_TIME_ZONE")
 
+power_on_off_debug_file = "march10_on_off_times.txt"
+
 if LOCAL_TIME_ZONE is None or LOCAL_TIME_ZONE == "":
     raise ValueError(
         "LOCAL_TIME_ZONE environment variable is not set or is empty")

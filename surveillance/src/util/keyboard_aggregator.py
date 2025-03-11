@@ -42,7 +42,6 @@ class EventAggregator:
             raise ValueError("Timestamp cannot be in the future")
         if self.current_aggregation and timestamp < self.current_aggregation.end_time:
             print(timestamp)
-            print(self.current_aggregation.end_time, '46ru')
             raise ValueError("Timestamps must be in chronological order")
 
         uninitialized = self.current_aggregation is None

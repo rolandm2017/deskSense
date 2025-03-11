@@ -54,7 +54,6 @@ class ProgramLoggingDao(BaseQueueingDao):
         async with self.session_maker() as session:
             result = await session.execute(query)
             logs = result.scalars().all()
-            print(logs, '49ru')
 
             # Group the results by program_name
             grouped_logs = {}

@@ -60,7 +60,6 @@
 # @pytest_asyncio.fixture()
 # async def test_timeline(test_client):
 #     response = test_client.get("/dashboard/timeline")
-#     print(response, '32ru')
 #     assert response.status_code == 200
 
 #     timeline_content = response.json()
