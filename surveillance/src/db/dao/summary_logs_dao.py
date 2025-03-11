@@ -18,18 +18,25 @@ class ProgramLoggingDao(BaseQueueingDao):
                          batch_size=batch_size, flush_interval=flush_interval)
         self.session_maker = session_maker
 
-    def create(self, session: ProgramSessionData, right_now: datetime):
+    def create_log(self, session: ProgramSessionData, right_now: datetime):
         """Log an update to a summary table"""
         # ### Calculate time difference
         if session.duration is None:
             raise ValueError("Session duration was None")
+
+        if session.start_time is None or session.end_time is None:
+            raise ValueError("Start or end time was None")
+
+        usage_duration_in_hours = (
+            session.end_time - session.start_time).total_seconds() / 3600
+
         log_entry = ProgramSummaryLog(
             program_name=session.window_title,
-            hours_spent=session.duration,
+            hours_spent=usage_duration_in_hours,
             start_time=session.start_time,
             end_time=session.end_time,
             gathering_date=right_now.date(),
-            created_at_date=right_now
+            created_at=right_now
         )
         print("[pr] Creating ", log_entry)
         asyncio.create_task(self.queue_item(log_entry, ProgramSummaryLog))
@@ -104,18 +111,23 @@ class ChromeLoggingDao(BaseQueueingDao):
                          batch_size=batch_size, flush_interval=flush_interval)
         self.session_maker = session_maker
 
-    def create(self, session: ChromeSessionData, right_now: datetime):
+    def create_log(self, session: ChromeSessionData, right_now: datetime):
         """Log an update to a summary table"""
-
         if session.duration is None:
             raise ValueError("Session duration was None")
+        if session.start_time is None or session.end_time is None:
+            raise ValueError("Start or end time was None")
+
+        usage_duration_in_hours = (
+            session.end_time - session.start_time).total_seconds() / 3600
+
         log_entry = DomainSummaryLog(
             domain_name=session.domain,
-            hours_spent=session.duration,
+            hours_spent=usage_duration_in_hours,
             start_time=session.start_time,
             end_time=session.end_time,
             gathering_date=right_now.date(),
-            created_at_date=right_now
+            created_at=right_now
         )
         print("[ch] Creating ", log_entry)
         asyncio.create_task(self.queue_item(log_entry, DomainSummaryLog))
