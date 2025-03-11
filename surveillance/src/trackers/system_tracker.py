@@ -1,17 +1,13 @@
-import uvicorn
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop
 from gi.repository import GLib  # type: ignore
 import os
 import signal
-import sys
-import atexit
 import threading
 import asyncio
 import psutil
 from datetime import datetime
 from typing import Callable, Awaitable, Optional
-import concurrent.futures
 
 
 class SystemPowerTracker:
@@ -34,6 +30,9 @@ class SystemPowerTracker:
 
         # Start sleep detection in a separate thread
         self._setup_sleep_detection()
+
+    async def on_power_down(self):
+        await self.on_shutdown()
 
     def _log_event(self, event_type: str):
         """Log a power-related event to the log file"""
@@ -69,7 +68,7 @@ class SystemPowerTracker:
         finally:
             loop.close()
 
-    def _system_shutdown_handler(self, signum, frame):
+    def _system_shutdown_handler(self, signum, frame, reason="shutdown"):
         """Handler for system shutdown/termination signals"""
         if self._shutdown_in_progress:
             return
@@ -79,13 +78,22 @@ class SystemPowerTracker:
         print("\n###")
         print("### System shutdown detected")
         print("###")
-        print(f"Received shutdown signal: {signum}")
-        print("Triggering shutdown due to: shutdown")
+        print(f"Signum: {signum}")
+        print(f"Triggering shutdown due to: {reason}")
 
         try:
-            self._log_event("shutdown")
+            self._log_event(reason)
         except Exception as e:
             print(f"Failed to log shutdown: {e}")
+
+         # Run on_shutdown in the event loop without making this function async
+        future = asyncio.run_coroutine_threadsafe(
+            self.on_power_down(), self.asyncio_loop)
+
+        try:
+            future.result(timeout=2)  # Wait up to 2 seconds
+        except Exception as e:
+            print(f"Error during shutdown function: {e}")
 
         # Run shutdown in a separate thread
         cleanup_thread = threading.Thread(target=self._run_shutdown_in_thread)
@@ -131,34 +139,14 @@ class SystemPowerTracker:
         """Handler for sleep/wake signals"""
         if sleeping:
             print(f"System going to sleep at {datetime.now()}")
-            self._system_shutdown_handler('sleep', None)
+            self._system_shutdown_handler('sleep', None, "Sleep")
         else:
             print(f"System waking up at {datetime.now()}")
             self._log_event("wake")
 
-    # async def system_shutdown_handler(signal_received, frame):
-    #     """Handles shutdown by waiting for tasks briefly, then canceling remaining ones."""
-    #     loop = asyncio.get_running_loop()
-
-    #     # Get all running tasks except the current one
-    #     tasks = [task for task in asyncio.all_tasks() if task is not asyncio.current_task()]
-
-    #     if tasks:
-    #         try:
-    #             # Give tasks 300ms to finish naturally
-    #             await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=0.3)
-    #         except asyncio.TimeoutError:
-    #             # If timeout, cancel remaining tasks
-    #             for task in tasks:
-    #                 task.cancel()
-    #             await asyncio.gather(*tasks, return_exceptions=True)
-
-    #     # Stop the loop and exit
-    #     loop.stop()
-    #     sys.exit(0)
-
-    def stop(self):
+    async def stop(self):
         """Clean shutdown of the power tracker"""
         if self.main_loop and not self._shutdown_in_progress:
             self.main_loop.quit()
             self.main_loop = None
+            await self.on_shutdown()

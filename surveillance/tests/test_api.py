@@ -256,7 +256,8 @@ async def test_get_timeline_for_dashboard(
     mock_surveillance_state
 ):
     mouse_entries, keyboard_entries = mock_timeline_data
-    mock_service = DashboardService(AsyncMock(), AsyncMock(), AsyncMock())
+    mock_service = DashboardService(
+        AsyncMock(), AsyncMock(), AsyncMock(), AsyncMock(), AsyncMock())
     mock_service.get_timeline_for_today = AsyncMock(
         return_value=(mouse_entries, keyboard_entries)
     )
@@ -301,7 +302,8 @@ async def test_get_program_time_for_dashboard(
     mock_program_summary_data,
     mock_surveillance_state
 ):
-    mock_service = DashboardService(AsyncMock(), AsyncMock(), AsyncMock())
+    mock_service = DashboardService(
+        AsyncMock(), AsyncMock(), AsyncMock(), AsyncMock(), AsyncMock())
     mock_service.get_program_summary = AsyncMock(
         return_value=mock_program_summary_data
     )
