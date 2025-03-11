@@ -44,7 +44,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyDomainSummary.gathering_date < today + timedelta(days=1)
         )
 
-        self.chrome_logging_dao.create(chrome_session, right_now)
+        self.chrome_logging_dao.create_log(chrome_session, right_now)
 
         async with self.session_maker() as session:
             result = await session.execute(query)
