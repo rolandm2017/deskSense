@@ -75,10 +75,14 @@ class SystemPowerTracker:
 
         self._shutdown_in_progress = True
 
+        # TODO: On Wakeup, start tracking windows again
+
         print("\n###")
         print("### System shutdown detected")
         print("###")
         print(f"Signum: {signum}")
+        if signum == 15:
+            reason = "restart program"
         print(f"Triggering shutdown due to: {reason}")
 
         try:

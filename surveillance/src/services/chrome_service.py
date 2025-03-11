@@ -170,18 +170,15 @@ class ChromeService:
     def handle_session_ready_for_arbiter(self, session):
         self.event_emitter.emit('tab_change', session)
 
-    # FIXME:
     # FIXME: When Chrome is active, recording time should take place.
     # FIXME: When Chrome goes inactive, recording active time should cease.
-    # FIXME:
 
     async def shutdown(self):
         """Mostly just logs the final chrome session to the db"""
-        pass  # No longer needed in the Arbiter version of the program
-        # Could do stuff like, trigger the Arbiter to shutdown the current state w/o replacement
+        # Also do stuff like, trigger the Arbiter to shutdown the current state w/o replacement, in other funcs
+        await self.tab_queue.empty_queue_as_sessions()
 
     async def handle_chrome_ready_for_db(self, event):
-        # TODO: When switch out of Chrome program, stop counting. Confirm.
         await self.dao.create(event)
 
     async def read_last_24_hrs(self):

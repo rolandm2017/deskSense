@@ -34,21 +34,14 @@ class ActivityArbiter:
         self.state_machine = ActivityStateMachine(user_facing_clock)
 
         self.ui_update_listener = None
-        self.program_summary_listener = None
-        self.chrome_summary_listener = None
+        self.summary_listener = None
 
     def add_ui_listener(self, listener):
         self.ui_update_listener = listener
 
-    def add_program_summary_listener(self, listener):
-        if hasattr(listener, "on_program_session_completed"):
-            self.program_summary_listener = listener
-        else:
-            raise AttributeError("Listener method was missing")
-
-    def add_chrome_summary_listener(self, listener):
-        if hasattr(listener, "on_chrome_session_completed"):
-            self.chrome_summary_listener = listener
+    def add_summary_dao_listener(self, listener):
+        if hasattr(listener, "on_state_changed"):
+            self.summary_listener = listener
         else:
             raise AttributeError("Listener method was missing")
 
@@ -56,13 +49,9 @@ class ActivityArbiter:
         if self.ui_update_listener:
             self.ui_update_listener(state)
 
-    async def notify_program_summary(self, program_session):
-        if self.program_summary_listener:
-            await self.program_summary_listener.on_program_session_completed(program_session)
-
-    async def notify_chrome_summary(self, chrome_session):
-        if self.chrome_summary_listener:
-            await self.chrome_summary_listener.on_chrome_session_completed(chrome_session)
+    async def notify_summary_dao(self, session):
+        if self.summary_listener:
+            await self.summary_listener.on_state_changed(session)
 
     async def set_tab_state(self, tab: ChromeSessionData):
         await self.transition_state(tab)
@@ -95,9 +84,7 @@ class ActivityArbiter:
             # old_session.end_time = now
 
             # ### Create the replacement state
-            updated_state = self.state_machine.set_new_session(new_session)
-
-            # TODO: Handle case where current session was continued, i.e. by "return self"
+            self.state_machine.set_new_session(new_session)
 
             # FIXME: The program is intended to handle Chrome separately from Programs.
             # FIXME: in other words, while Chrome and a tab is stored in the Chrome var,
@@ -114,12 +101,7 @@ class ActivityArbiter:
 
             # ### Put outgoing state into the DAO
             # FIXME: what is the point of this state business if the output state isn't used for these args?
-            if isinstance(concluded_session, ChromeSessionData):
-                # FIXME: [chrome summary dao] adding time  -1 day, 16:00:02.581249  to  localho
-                # FIXME: chrome summary dao] adding time  -1 day, 16:00:03.879910  to  claude.ai
-                await self.notify_chrome_summary(concluded_session)
-            else:
-                await self.notify_program_summary(concluded_session)
+            await self.notify_summary_dao(concluded_session)
         else:
             if isinstance(new_session, ProgramSessionData):
                 updated_state = ApplicationInternalState(
@@ -131,9 +113,11 @@ class ActivityArbiter:
                     current_tab=new_session.detail,
                     session=new_session
                 )
-            self.state_machine.current_state = updated_state
+            self.state_machine.current_state = updated_state\
 
 
-# TODO: Test the state changes,
-# TODO: Test the arbiter
-# TODO: Test the overlay
+    async def shutdown(self):
+        """Concludes the current state/session without adding a new one"""
+        if self.state_machine.current_state:
+            concluded_session = self.state_machine.conclude_without_replacement()
+            await self.notify_summary_dao(concluded_session)
