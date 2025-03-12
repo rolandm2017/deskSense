@@ -9,13 +9,16 @@ import psutil
 from datetime import datetime
 from typing import Callable, Awaitable, Optional
 
+from ..object.enums import SystemStatusType
+
 from ..config.definitions import power_on_off_debug_file
 
 
 class SystemPowerTracker:
     # def __init__(self, on_shutdown: Callable[[], Awaitable[None]], loop: asyncio.AbstractEventLoop = None):
-    def __init__(self, on_shutdown: Callable[[], Awaitable[None]], loop: Optional[asyncio.AbstractEventLoop] = None):
+    def __init__(self, on_shutdown: Callable[[], Awaitable[None]], system_status_dao, loop: Optional[asyncio.AbstractEventLoop] = None):
         self.on_shutdown = on_shutdown
+        self.system_status_dao = system_status_dao
         self.main_loop = None
         self.main_loop_thread = None
         self.asyncio_loop = loop or asyncio.get_event_loop()
@@ -25,6 +28,8 @@ class SystemPowerTracker:
         # Log startup
         self._log_event("startup")
 
+        self.asyncio_loop.create_task(self._log_startup_status())
+
         # Setup signal handlers
         signal.signal(signal.SIGTERM, self._system_shutdown_handler)
         signal.signal(signal.SIGINT, self._system_shutdown_handler)
@@ -32,6 +37,9 @@ class SystemPowerTracker:
 
         # Start sleep detection in a separate thread
         self._setup_sleep_detection()
+
+    async def _log_startup_status(self):
+        await self.system_status_dao.create_status(SystemStatusType.STARTUP, datetime.now())
 
     async def on_power_down(self):
         await self.on_shutdown()
@@ -83,23 +91,43 @@ class SystemPowerTracker:
         print("### System shutdown detected")
         print("###")
         print(f"Signum: {signum}")
-        if signum == 15:
+        print("> TYPE:", type(signum))
+        HOT_RELOAD_SIGNUM = 15
+        CTRL_C_SIGNUM_AKA_INTERRUPT = 2
+        print(signum == HOT_RELOAD_SIGNUM,
+              signum == CTRL_C_SIGNUM_AKA_INTERRUPT)
+        if signum == HOT_RELOAD_SIGNUM:
             reason = "restart program"
+        elif signum == CTRL_C_SIGNUM_AKA_INTERRUPT:
+            reason = "Ctrl C or Interrupt"
+        else:
+
+            reason = "Unknown: " + str(signum)
         print(f"Triggering shutdown due to: {reason}")
-        self._log_event("\n*\n**\n" + reason + " at " +
-                        str(datetime.now().strftime("%Y-%m-%d")) + "\n")
+
+        if reason == "shutdown":
+            # TODO: Wrap into an asyncio threadsafe coroutine
+            self.system_status_dao.create_status(
+                SystemStatusType.SHUTDOWN, datetime.now())
+
+        if reason == "restart program":
+            # TODO: Wrap into an asyncio threadsafe coroutine
+            self.system_status_dao.create_status(
+                SystemStatusType.HOT_RELOAD_STARTED, datetime.now())
 
         try:
-            self._log_event(reason)
+            self._log_event("\n*\n**\n" + reason)
         except Exception as e:
             print(f"Failed to log shutdown: {e}")
 
          # Run on_shutdown in the event loop without making this function async
-        future = asyncio.run_coroutine_threadsafe(
-            self.on_power_down(), self.asyncio_loop)
+        # future = asyncio.run_coroutine_threadsafe(
+            # self.on_power_down(), self.asyncio_loop)
 
         try:
-            future.result(timeout=2)  # Wait up to 2 seconds
+            # blocking - prevents computer shutdown
+            self._block_shutdown_until_complete(self.on_power_down)
+            # future.result(timeout=2)  # Wait up to 2 seconds
         except Exception as e:
             print(f"Error during shutdown function: {e}")
 
@@ -122,6 +150,12 @@ class SystemPowerTracker:
 
         print("Shutdown complete.")
         os._exit(0)  # Ensure the main process exits cleanly
+
+    def _block_shutdown_until_complete(self, function):
+        asyncio.run(function())
+
+    def _block_shutdown_until_complete_with_args(self, function, *args):
+        asyncio.run(function(args))
 
     def _setup_sleep_detection(self):
         """Initialize and start the sleep detection loop in a separate thread"""
@@ -147,10 +181,16 @@ class SystemPowerTracker:
         """Handler for sleep/wake signals"""
         if sleeping:
             print(f"System going to sleep at {datetime.now()}")
+
+            self._block_shutdown_until_complete_with_args(
+                self.system_status_dao.create_status, SystemStatusType.SLEEP, datetime.now())
             self._system_shutdown_handler('sleep', None, "Sleep")
         else:
             print(f"System waking up at {datetime.now()}")
-            self._log_event("wake")
+
+            self.system_status_dao.create_status(
+                SystemStatusType.WAKE, datetime.now())
+            self._log_event("** wake")
 
     async def stop(self):
         """Clean shutdown of the power tracker"""

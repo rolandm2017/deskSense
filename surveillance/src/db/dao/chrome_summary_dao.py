@@ -1,7 +1,6 @@
 # daily_summary_dao.py
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import async_sessionmaker
-from asyncio import Queue
 from datetime import datetime, timedelta
 from typing import List
 
@@ -22,8 +21,6 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         self.session_maker = session_maker  # Store the session maker instead of db
         self.batch_size = batch_size
         self.flush_interval = flush_interval
-        self.queue = Queue()
-        self.processing = False
         self.logger = ConsoleLogger()
 
     async def create_if_new_else_update(self, chrome_session: ChromeSessionData, right_now: datetime, is_shutdown=False):

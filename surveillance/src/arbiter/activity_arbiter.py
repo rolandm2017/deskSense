@@ -1,8 +1,6 @@
 from __future__ import annotations
 from ast import Attribute
 from datetime import datetime, timedelta, timezone
-from enum import Enum
-from typing import Optional
 
 from ..config.definitions import power_on_off_debug_file
 

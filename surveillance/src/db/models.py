@@ -9,7 +9,7 @@ from sqlalchemy import Column as SQLAlchemyColumn
 from typing import Union, Any, Optional
 from datetime import datetime
 from .database import Base
-from ..object.enums import ChartEventType
+from ..object.enums import ChartEventType, SystemStatusType
 from ..config.definitions import max_content_len
 
 
@@ -263,6 +263,21 @@ class PrecomputedTimelineEntry(Base):
         )
 
     # count = Column(Integer)  # could be nice to know how many events went into an entry.
+
+
+class SystemStatus(Base):
+    """
+    Made to help track when the user is using their machine.
+
+    If the machine is powered off at time t, after, there should be no open program/Chrome sessions.
+
+    If the machine powers on at time t, surely no sessions should be open before t.
+    """
+    __tablename__ = "system_change_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+    status = Column(SQLAlchemyEnum(SystemStatusType))
+    created_at = Column(DateTime(timezone=True))
 
 
 class Video(Base):
