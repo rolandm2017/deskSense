@@ -196,8 +196,7 @@ class SystemPowerTracker:
     async def _run_shutdown_tasks(self, status_type: SystemStatusType, reason: str):
         """Run all shutdown-related async tasks"""
         print(f"Starting shutdown tasks, status: {status_type}")
-
-        success = await self.system_status_dao.emergency_write(status_type, datetime.now())
+        success = await self.system_status_dao.create_status(status_type, datetime.now())
 
         if success:
             print("Database write completed successfully")

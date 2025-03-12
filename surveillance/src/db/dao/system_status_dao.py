@@ -1,4 +1,5 @@
 from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select, desc, func
 import asyncio
 from datetime import datetime
@@ -17,10 +18,10 @@ class SystemStatusDao:
     should always always get priority, i.e. no queue!
     """
 
-    def __init__(self, session_maker: async_sessionmaker, shutdown_session_maker, batch_size=100, flush_interval=5):
+    def __init__(self, async_session_maker: async_sessionmaker, sync_session_maker: sessionmaker, batch_size=100, flush_interval=5):
         """ Exists mostly for debugging. """
-        self.session_maker = session_maker
-        self.shutdown_session_maker = shutdown_session_maker
+        self.async_session_maker = async_session_maker
+        self.shutdown_session_maker = sync_session_maker
         self.batch_size = batch_size
         self.flush_interval = flush_interval
         self.logger = ConsoleLogger()
@@ -38,41 +39,60 @@ class SystemStatusDao:
         print(f"DAO accepting new event loop for power tracking")
         self.power_tracker_loop = loop
 
+    def write_sync(self, status: SystemStatusType, now: datetime):
+        with self.shutdown_session_maker() as session:
+            new_status = SystemStatus(
+                status=status,
+                created_at=now
+            )
+            session.add(new_status)
+            session.commit()
+            print("Synchronous database commit successful")
+            self.logger.log_white_multiple(
+                "[system status dao] recorded status change: ", status)
+            return True
+
+    async def async_write(self, status: SystemStatusType, now: datetime):
+        async with self.async_session_maker() as session:
+            new_status = SystemStatus(
+                status=status,
+                created_at=now
+            )
+            session.add(new_status)
+            await session.commit()
+            print("Database commit successful")
+            self.logger.log_white_multiple(
+                "[system status dao] recorded status change: ", status)
+            return True
+
     async def create_status(self, status: SystemStatusType, now: datetime):
         """Create a status entry with awareness of which event loop to use"""
         print(f"[debug - create_status] {status}, type: {type(status)}")
 
         # Select the appropriate session maker based on status type
-        if status in [SystemStatusType.SHUTDOWN, SystemStatusType.CTRL_C_SIGNAL,
-                      SystemStatusType.HOT_RELOAD_STARTED, SystemStatusType.SLEEP]:
-            session_maker = self.shutdown_session_maker
-            print(f"Using shutdown session maker for {status}")
-        else:
-            session_maker = self.session_maker
-            print(f"Using regular session maker for {status}")
-
+        status_to_write = status
         try:
-            # Process STARTUP/HOT_RELOAD logic
             if status == SystemStatusType.STARTUP:
                 latest_status = await self.read_latest_status()
                 print("[info] Found status: ", latest_status)
                 if latest_status == SystemStatusType.HOT_RELOAD_STARTED:
-                    # It's not only a STARTUP, it's recovering from a hot reload.
-                    status = SystemStatusType.HOT_RELOAD_RECOVERY
+                    status_to_write = SystemStatusType.HOT_RELOAD_CONCLUDED
 
-            print(f"Writing status to database: {status}")
+            critical_statuses = [
+                SystemStatusType.HOT_RELOAD_STARTED,
+                SystemStatusType.CTRL_C_SIGNAL,
+                SystemStatusType.SHUTDOWN,
+                SystemStatusType.SLEEP
+            ]
 
-            # Create and use a session bound to the appropriate session maker
-            async with session_maker() as session:
-                new_status = SystemStatus(
-                    status=status,
-                    created_at=now
-                )
-                session.add(new_status)
-                await session.commit()
-                print("Database commit successful")
-                self.logger.log_white_multiple(
-                    "[system status dao] recorded status change: ", status)
+            if status in critical_statuses:
+                print(
+                    f"Using synchronous SQLAlchemy for critical status: {status}")
+                # Use synchronous session in the current thread
+                return self.write_sync(status_to_write, now)
+
+            else:
+                return await self.async_write(status_to_write, now)
 
         except Exception as e:
             print(f"Error in create_status: {e}")
@@ -96,6 +116,8 @@ class SystemStatusDao:
             # Map Python enum value to database enum value (convert to uppercase)
             # Use the enum name which is uppercase (e.g., CTRL_C_SIGNAL)
             db_status = status.name
+
+            print("writing " + db_status + " :: ")
 
             # Direct SQL insert without SQLAlchemy
             await conn.execute(
@@ -125,7 +147,7 @@ class SystemStatusDao:
             query = select(SystemStatus).where(
                 SystemStatus.id == max_id_subquery)
 
-            async with self.session_maker() as session:  # Use regular session maker
+            async with self.async_session_maker() as session:  # Use regular session maker
                 result = await session.execute(query)
                 latest_status = result.scalar_one_or_none()
 
