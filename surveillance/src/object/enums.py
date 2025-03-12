@@ -9,3 +9,16 @@ class MouseEvent(str, Enum):
 class ChartEventType(Enum):
     MOUSE = "mouse"
     KEYBOARD = "keyboard"
+
+
+class SystemStatusType(Enum):
+    POWER_ON = "power on"
+    SHUTDOWN = "shutdown"
+    CTRL_C_SIGNAL = "ctrl_c_signal"
+    # Tells the db to ignore the next power_on signal, as it's a restart due to code change
+    HOT_RELOAD_STARTED = "restart_signal"
+    # Tells the db that this is the server coming back online from a code change
+    HOT_RELOAD_RECOVERY = "restart_recovery"
+    STARTUP = "startup"
+    SLEEP = "sleep"
+    WAKE = "wake"

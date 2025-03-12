@@ -5,6 +5,8 @@ import asyncio
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
+from .db.dao.system_status_dao import SystemStatusDao
+
 
 from .db.dao.mouse_dao import MouseDao
 from .db.dao.keyboard_dao import KeyboardDao
@@ -59,6 +61,8 @@ class SurveillanceManager:
         self.loop = asyncio.get_event_loop()
         clock = UserFacingClock()
 
+        system_status_dao = SystemStatusDao(self.session_maker)
+
         self.mouse_dao = MouseDao(self.session_maker)
         self.keyboard_dao = KeyboardDao(self.session_maker)
         self.program_dao = ProgramDao(self.session_maker)
@@ -80,7 +84,8 @@ class SurveillanceManager:
         self.program_tracker = ProgramTrackerCore(
             clock, program_facade, self.handle_window_change, self.handle_program_ready_for_db)
         #
-        self.system_tracker = SystemPowerTracker(self.shutdown_handler)
+        self.system_tracker = SystemPowerTracker(
+            self.shutdown_handler, system_status_dao)
 
         self.keyboard_thread = ThreadedTracker(self.keyboard_tracker)
         self.mouse_thread = ThreadedTracker(self.mouse_tracker)
