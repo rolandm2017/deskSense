@@ -37,9 +37,6 @@ class SystemPowerTracker:
         print(system_status_dao, '36ru')
         system_status_dao.accept_power_tracker_loop(self.asyncio_loop)
         self.system_status_dao = system_status_dao
-        print(
-            f"Database URL for system status: {self.system_status_dao.connection_string[-25:]}")
-
         # State tracking
         self._shutdown_in_progress = False
         self._shutdown_complete = threading.Event()
@@ -196,8 +193,7 @@ class SystemPowerTracker:
     async def _run_shutdown_tasks(self, status_type: SystemStatusType, reason: str):
         """Run all shutdown-related async tasks"""
         print(f"Starting shutdown tasks, status: {status_type}")
-
-        success = await self.system_status_dao.emergency_write(status_type, datetime.now())
+        success = await self.system_status_dao.create_status(status_type, datetime.now())
 
         if success:
             print("Database write completed successfully")

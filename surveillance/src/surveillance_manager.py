@@ -4,6 +4,7 @@ from pathlib import Path
 import asyncio
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 from .db.dao.system_status_dao import SystemStatusDao
 
@@ -33,7 +34,7 @@ from .arbiter.activity_arbiter import ActivityArbiter
 
 
 class SurveillanceManager:
-    def __init__(self, session_maker: async_sessionmaker, shutdown_session_maker: async_sessionmaker, chrome_service, arbiter, shutdown_signal=None):
+    def __init__(self, session_maker: async_sessionmaker, shutdown_session_maker: sessionmaker, chrome_service, arbiter, shutdown_signal=None):
         self.session_maker = session_maker
         self.chrome_service = chrome_service
 
