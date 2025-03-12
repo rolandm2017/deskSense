@@ -14,7 +14,7 @@ from datetime import date, datetime
 from time import time
 
 
-from src.db.database import init_db, async_session_maker
+from src.db.database import init_db, async_session_maker, shutdown_session_maker
 from src.db.models import DailyDomainSummary, DailyProgramSummary, ProgramSummaryLog
 
 # from src.services import MouseService, KeyboardService, ProgramService, DashboardService, ChromeService
@@ -63,17 +63,13 @@ from src.object.return_types import DaySummary
 from src.util.console_logger import ConsoleLogger
 from src.util.debug_logger import write_temp_log
 
-# Import the router for report endpoints
-from src.routes.report_routes import router as report_router
 
-# Rest of your server.py code...
+from src.routes.report_routes import router as report_router
 
 logger = ConsoleLogger()
 
 
 # Main class in this file
-
-
 class SurveillanceState:
     def __init__(self):
         self.manager: Optional[SurveillanceManager] = None
@@ -83,13 +79,6 @@ class SurveillanceState:
 
 
 surveillance_state = SurveillanceState()
-
-
-# def track_productivity():
-#     while surveillance_state.is_running:
-#         # surveillance_state.manager.program_tracker.track_window()
-#         assert surveillance_state.manager is not None
-#         # surveillance_state.manager.program_tracker.attach_listener()
 
 
 @asynccontextmanager
@@ -105,7 +94,7 @@ async def lifespan(app: FastAPI):
     arbiter = await get_activity_arbiter()
     # Use the session_maker directly
     surveillance_state.manager = SurveillanceManager(
-        async_session_maker, chrome_service, arbiter)
+        async_session_maker, shutdown_session_maker, chrome_service, arbiter)
     surveillance_state.manager.start_trackers()
 
     yield
