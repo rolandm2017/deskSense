@@ -18,7 +18,7 @@ class SystemStatusType(Enum):
     # Tells the db to ignore the next power_on signal, as it's a restart due to code change
     HOT_RELOAD_STARTED = "restart_signal"  # Hot reload
     # Tells the db that this is the server coming back online from a code change
-    HOT_RELOAD_RECOVERY = "restart_recovery"  # Hot reload
+    HOT_RELOAD_CONCLUDED = "restart_recovery"  # Hot reload
     STARTUP = "startup"  # Program comes online
     SLEEP = "sleep"  # User puts the computer to sleep
     WAKE = "wake"  # User wakes the computer from sleep
