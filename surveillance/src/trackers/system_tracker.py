@@ -1,51 +1,66 @@
+import asyncio
+import signal
+import threading
+import os
+import psutil
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop
 from gi.repository import GLib  # type: ignore
-import os
-import signal
-import threading
-import asyncio
-import psutil
 from datetime import datetime
 from typing import Callable, Awaitable, Optional
 
 from ..object.enums import SystemStatusType
 
-from ..config.definitions import power_on_off_debug_file
-
 
 class SystemPowerTracker:
-    # def __init__(self, on_shutdown: Callable[[], Awaitable[None]], loop: asyncio.AbstractEventLoop = None):
-    def __init__(self, on_shutdown: Callable[[], Awaitable[None]], system_status_dao, loop: Optional[asyncio.AbstractEventLoop] = None):
+    def __init__(self,
+
+                 on_shutdown: Callable[[], Awaitable[None]],
+                 system_status_dao,
+                 loop: Optional[asyncio.AbstractEventLoop] = None,
+                 log_file: Optional[str] = None):
+        """
+        Initialize the system power tracker.
+
+        Args:
+            system_status_dao: DAO for recording system status events
+            on_shutdown: Callback to run when shutting down
+            loop: Asyncio event loop (or default if None)
+            log_file: Optional file path for debug logging
+        """
+        print("[info] Claude's power tracker!")
+
+        # Core properties
         self.on_shutdown = on_shutdown
-        self.system_status_dao = system_status_dao
-        self.main_loop = None
-        self.main_loop_thread = None
         self.asyncio_loop = loop or asyncio.get_event_loop()
-        self.log_file = power_on_off_debug_file
+        self.log_file = log_file
+        print(system_status_dao, '36ru')
+        system_status_dao.accept_power_tracker_loop(self.asyncio_loop)
+        self.system_status_dao = system_status_dao
+        print(
+            f"Database URL for system status: {self.system_status_dao.connection_string[-25:]}")
+
+        # State tracking
         self._shutdown_in_progress = False
+        self._shutdown_complete = threading.Event()
 
-        # Log startup
-        self._log_event("startup")
-
-        self.asyncio_loop.create_task(self._log_startup_status())
-
-        # Setup signal handlers
-        signal.signal(signal.SIGTERM, self._system_shutdown_handler)
-        signal.signal(signal.SIGINT, self._system_shutdown_handler)
-        signal.signal(signal.SIGHUP, self._system_shutdown_handler)
-
-        # Start sleep detection in a separate thread
+        # Setup signals and sleep detection
+        self._setup_signal_handlers()
         self._setup_sleep_detection()
 
+        # Log startup immediately
+        self._log_event("startup")
+        self.asyncio_loop.create_task(self._log_startup_status())
+
     async def _log_startup_status(self):
+        """Record startup in the database"""
         await self.system_status_dao.create_status(SystemStatusType.STARTUP, datetime.now())
 
-    async def on_power_down(self):
-        await self.on_shutdown()
-
     def _log_event(self, event_type: str):
-        """Log a power-related event to the log file"""
+        """Log event to debug file if configured"""
+        if not self.log_file:
+            return
+
         try:
             with open(self.log_file, "a") as f:
                 f.write(
@@ -53,148 +68,188 @@ class SystemPowerTracker:
         except Exception as e:
             print(f"Failed to log event: {e}")
 
-    def _run_shutdown_in_thread(self):
-        """Run shutdown handler with timeout and task cancellation"""
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-        async def shutdown():
-            tasks = [t for t in asyncio.all_tasks(
-            ) if t is not asyncio.current_task()]
-            if tasks:
-                try:
-                    await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=0.3)
-                except asyncio.TimeoutError:
-                    for task in tasks:
-                        task.cancel()
-                    await asyncio.gather(*tasks, return_exceptions=True)
-
-            loop.stop()
-
-        try:
-            loop.run_until_complete(shutdown())
-        except Exception as e:
-            print(f"Error in shutdown handler: {e}")
-        finally:
-            loop.close()
-
-    def _system_shutdown_handler(self, signum, frame, reason="shutdown"):
-        """Handler for system shutdown/termination signals"""
-        if self._shutdown_in_progress:
-            return
-
-        self._shutdown_in_progress = True
-
-        # TODO: On Wakeup, start tracking windows again
-
-        print("\n###")
-        print("### System shutdown detected")
-        print("###")
-        print(f"Signum: {signum}")
-        print("> TYPE:", type(signum))
-        HOT_RELOAD_SIGNUM = 15
-        CTRL_C_SIGNUM_AKA_INTERRUPT = 2
-        print(signum == HOT_RELOAD_SIGNUM,
-              signum == CTRL_C_SIGNUM_AKA_INTERRUPT)
-        if signum == HOT_RELOAD_SIGNUM:
-            reason = "restart program"
-        elif signum == CTRL_C_SIGNUM_AKA_INTERRUPT:
-            reason = "Ctrl C or Interrupt"
-        else:
-
-            reason = "Unknown: " + str(signum)
-        print(f"Triggering shutdown due to: {reason}")
-
-        if reason == "shutdown":
-            # TODO: Wrap into an asyncio threadsafe coroutine
-            self.system_status_dao.create_status(
-                SystemStatusType.SHUTDOWN, datetime.now())
-
-        if reason == "restart program":
-            # TODO: Wrap into an asyncio threadsafe coroutine
-            self.system_status_dao.create_status(
-                SystemStatusType.HOT_RELOAD_STARTED, datetime.now())
-
-        try:
-            self._log_event("\n*\n**\n" + reason)
-        except Exception as e:
-            print(f"Failed to log shutdown: {e}")
-
-         # Run on_shutdown in the event loop without making this function async
-        # future = asyncio.run_coroutine_threadsafe(
-            # self.on_power_down(), self.asyncio_loop)
-
-        try:
-            # blocking - prevents computer shutdown
-            self._block_shutdown_until_complete(self.on_power_down)
-            # future.result(timeout=2)  # Wait up to 2 seconds
-        except Exception as e:
-            print(f"Error during shutdown function: {e}")
-
-        # Run shutdown in a separate thread
-        cleanup_thread = threading.Thread(target=self._run_shutdown_in_thread)
-        cleanup_thread.start()
-        cleanup_thread.join(timeout=2.0)  # Wait up to 2 seconds for cleanup
-
-        # Gracefully shut down Uvicorn subprocesses
-        current_pid = os.getpid()
-        for child in psutil.Process(current_pid).children(recursive=True):
-            print(f"Shutting down Uvicorn process: {child.pid}")
-            child.terminate()  # Sends SIGTERM to allow graceful shutdown
-            try:
-                child.wait(timeout=5)  # Wait for the process to exit
-            except psutil.TimeoutExpired:
-                print(
-                    f"Process {child.pid} did not exit in time. Forcing shutdown.")
-                child.kill()  # Force kill if it doesn't exit in time
-
-        print("Shutdown complete.")
-        os._exit(0)  # Ensure the main process exits cleanly
-
-    def _block_shutdown_until_complete(self, function):
-        asyncio.run(function())
-
-    def _block_shutdown_until_complete_with_args(self, function, *args):
-        asyncio.run(function(args))
+    def _setup_signal_handlers(self):
+        """Set up OS signal handlers"""
+        signal.signal(signal.SIGTERM, self._handle_shutdown_signal)
+        signal.signal(signal.SIGINT, self._handle_shutdown_signal)
+        signal.signal(signal.SIGHUP, self._handle_shutdown_signal)
 
     def _setup_sleep_detection(self):
-        """Initialize and start the sleep detection loop in a separate thread"""
+        """Initialize sleep detection using dbus"""
         try:
             DBusGMainLoop(set_as_default=True)
             bus = dbus.SystemBus()
-
             bus.add_signal_receiver(
-                self._handle_prepare_for_sleep,
+                self._handle_sleep_signal,
                 'PrepareForSleep',
                 'org.freedesktop.login1.Manager',
                 'org.freedesktop.login1'
             )
 
+            # Run GLib main loop in a daemon thread
             self.main_loop = GLib.MainLoop()
             self.main_loop_thread = threading.Thread(
                 target=self.main_loop.run, daemon=True)
             self.main_loop_thread.start()
         except Exception as e:
             print(f"Failed to setup sleep detection: {e}")
+            self.main_loop = None
+            self.main_loop_thread = None
 
-    def _handle_prepare_for_sleep(self, sleeping: bool):
-        """Handler for sleep/wake signals"""
+    def _handle_shutdown_signal(self, signum, frame):
+        """Handle shutdown signals (SIGTERM, SIGINT, SIGHUP)"""
+        # Prevent multiple shutdown attempts
+        if self._shutdown_in_progress:
+            return
+        self._shutdown_in_progress = True
+
+        # Determine reason and status type based on signal
+        if signum == 15:  # SIGTERM
+            reason = "restart program"
+            status_type = SystemStatusType.HOT_RELOAD_STARTED
+        elif signum == 2:  # SIGINT
+            reason = "Ctrl+C or Interrupt"
+            status_type = SystemStatusType.CTRL_C_SIGNAL
+        elif signum == 1:  # SIGHUP
+            reason = "Terminal closed"
+            status_type = SystemStatusType.SHUTDOWN
+        else:
+            reason = f"Unknown signal: {signum}"
+            status_type = SystemStatusType.SHUTDOWN
+
+        print(f"\n### System shutdown detected (signal {signum})")
+        print(f"Triggering shutdown due to: {reason}")
+
+        # Run shutdown tasks
+        self._initiate_shutdown(status_type, reason)
+
+    def _handle_sleep_signal(self, sleeping: bool):
+        """Handle sleep/wake signals from dbus"""
         if sleeping:
             print(f"System going to sleep at {datetime.now()}")
-
-            self._block_shutdown_until_complete_with_args(
-                self.system_status_dao.create_status, SystemStatusType.SLEEP, datetime.now())
-            self._system_shutdown_handler('sleep', None, "Sleep")
+            self._initiate_shutdown(SystemStatusType.SLEEP, "System sleep")
         else:
             print(f"System waking up at {datetime.now()}")
+            # Note: This runs on wake and doesn't need to block
+            asyncio.run_coroutine_threadsafe(
+                self.system_status_dao.create_status(
+                    SystemStatusType.WAKE, datetime.now()),
+                self.asyncio_loop
+            )
+            self._log_event("wake")
 
-            self.system_status_dao.create_status(
-                SystemStatusType.WAKE, datetime.now())
-            self._log_event("** wake")
+    def _initiate_shutdown(self, status_type: SystemStatusType, reason: str):
+        """Common code path for all shutdown scenarios"""
+        # Log the event
+        self._log_event(reason)
+
+        print(f"Initiating shutdown with status: {status_type}")
+
+        # Create a new thread to handle the shutdown process
+        # This ensures the main thread can respond to signals and doesn't get blocked
+        shutdown_thread = threading.Thread(
+            target=self._run_shutdown_in_thread,
+            args=(status_type, reason)
+        )
+        shutdown_thread.start()
+
+        # Wait for the shutdown thread to complete
+        # Use a shorter timeout for sleep events
+        timeout = 5.0 if status_type != SystemStatusType.SLEEP else 1.0
+        print(f"Waiting up to {timeout}s for shutdown tasks to complete...")
+        shutdown_thread.join(timeout=timeout)
+
+        if shutdown_thread.is_alive():
+            print("Warning: Shutdown tasks did not complete in time")
+        else:
+            print("Shutdown tasks completed successfully")
+
+        # Perform final cleanup
+        print("Running final cleanup")
+        self._perform_final_cleanup(status_type)
+
+    def _run_shutdown_in_thread(self, status_type: SystemStatusType, reason: str):
+        """Run shutdown tasks in a dedicated thread"""
+        # Create a new event loop for this thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        print(
+            f"Current loop in shutdown thread: {id(asyncio.get_event_loop())}")
+
+        print(f"Thread ID for shutdown: {threading.get_ident()}")
+
+        try:
+            # Tell the DAO about our loop
+            self.system_status_dao.accept_power_tracker_loop(loop)
+
+            # Run our async tasks in the new loop
+            print(f"Thread started for shutdown tasks: {status_type}")
+            loop.run_until_complete(
+                self._run_shutdown_tasks(status_type, reason))
+            print("Thread completed all shutdown tasks")
+        except Exception as e:
+            print(f"Error in shutdown thread: {e}")
+        finally:
+            loop.close()
+
+    async def _run_shutdown_tasks(self, status_type: SystemStatusType, reason: str):
+        """Run all shutdown-related async tasks"""
+        print(f"Starting shutdown tasks, status: {status_type}")
+
+        success = await self.system_status_dao.emergency_write(status_type, datetime.now())
+
+        if success:
+            print("Database write completed successfully")
+        else:
+            print("Database write failed")
+
+        # try:
+        #     print("Attempting database write...")
+        #     await self.system_status_dao.create_status(status_type, datetime.now())
+        #     print("Database write successful! for " + str(status_type))
+        # except Exception as db_error:
+        #     print(f"Database write failed: {db_error}")
+
+        try:
+            print("Running on_shutdown callback...")
+            await self.on_shutdown()
+            print("on_shutdown callback completed!")
+        except Exception as callback_error:
+            print(f"on_shutdown callback failed: {callback_error}")
+
+        print("All shutdown tasks completed")
+
+    def _perform_final_cleanup(self, status_type):
+        """Final cleanup operations before exiting"""
+        print(f"Final cleanup for status: {status_type}")
+
+        # Stop the main loop if it's running
+        if hasattr(self, 'main_loop') and self.main_loop:
+            self.main_loop.quit()
+
+        # Clean up child processes
+        try:
+            current_pid = os.getpid()
+            for child in psutil.Process(current_pid).children(recursive=True):
+                child.terminate()
+                try:
+                    child.wait(timeout=0.2)  # Short timeout
+                except psutil.TimeoutExpired:
+                    child.kill()
+        except Exception as e:
+            print(f"Error cleaning up processes: {e}")
+
+        # Only exit on actual shutdown (not sleep)
+        # This was comparing to a string when it should be comparing to enum value
+        if status_type != SystemStatusType.SLEEP:
+            print("Shutdown complete.")
+            os._exit(0)
 
     async def stop(self):
-        """Clean shutdown of the power tracker"""
-        if self.main_loop and not self._shutdown_in_progress:
-            self.main_loop.quit()
-            self.main_loop = None
-            await self.on_shutdown()
+        """Gracefully stop the tracker (for manual shutdown)"""
+        if not self._shutdown_in_progress:
+            self._shutdown_in_progress = True
+            await self._run_shutdown_tasks(SystemStatusType.SHUTDOWN, "Manual stop")
+            if self.main_loop:
+                self.main_loop.quit()

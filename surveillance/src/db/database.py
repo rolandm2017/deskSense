@@ -26,6 +26,12 @@ async_session_maker = async_sessionmaker(
     expire_on_commit=False
 )
 
+shutdown_session_maker = async_sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False
+)
+
 Base = declarative_base()
 
 # Dependency for FastAPI endpoints

@@ -33,7 +33,7 @@ from .arbiter.activity_arbiter import ActivityArbiter
 
 
 class SurveillanceManager:
-    def __init__(self, session_maker: async_sessionmaker, chrome_service, arbiter, shutdown_signal=None):
+    def __init__(self, session_maker: async_sessionmaker, shutdown_session_maker: async_sessionmaker, chrome_service, arbiter, shutdown_signal=None):
         self.session_maker = session_maker
         self.chrome_service = chrome_service
 
@@ -61,7 +61,8 @@ class SurveillanceManager:
         self.loop = asyncio.get_event_loop()
         clock = UserFacingClock()
 
-        system_status_dao = SystemStatusDao(self.session_maker)
+        system_status_dao = SystemStatusDao(
+            self.session_maker, shutdown_session_maker)
 
         self.mouse_dao = MouseDao(self.session_maker)
         self.keyboard_dao = KeyboardDao(self.session_maker)
