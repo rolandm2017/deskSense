@@ -42,31 +42,28 @@ async def activity_arbiter_and_setup():
     arbiter.add_ui_listener(ui_layer.on_state_changed)
 
     # Create an event log
-    program_events = []
-    chrome_events = []
+    events = []
+
+    def event_handler(session, shutdown):
+        events.append(session)
 
     # Create mock listeners with side effects to record calls
-    mock_program_listener = MagicMock()
-    mock_program_listener.on_program_session_completed = AsyncMock(
-        side_effect=program_events.append)
+    mock_activity_recorder = AsyncMock()
+    mock_activity_recorder.on_state_changed = AsyncMock(
+        side_effect=event_handler)
 
-    mock_chrome_listener = MagicMock()
-    mock_chrome_listener.on_chrome_session_completed = AsyncMock(
-        side_effect=chrome_events.append)
-
-    arbiter.add_program_summary_listener(mock_program_listener)
-    arbiter.add_chrome_summary_listener(mock_chrome_listener)
+    arbiter.add_summary_dao_listener(mock_activity_recorder)
 
     # Optionally mock the chrome service integration
     # mock_chrome_service = MagicMock()
     # mock_chrome_service.event_emitter.on = MagicMock()
 
-    return arbiter, program_events, chrome_events, ui_layer, mock_program_listener, mock_chrome_listener
+    return arbiter, events, ui_layer, mock_activity_recorder
 
 
 @pytest.mark.asyncio
 async def test_activity_arbiter(activity_arbiter_and_setup):
-    arbiter, program_events, chrome_events, ui_layer, mock_program_listener, mock_chrome_listener = activity_arbiter_and_setup
+    arbiter, events, ui_layer, mock_activity_recorder = activity_arbiter_and_setup
 
     # Setup: How much time should pass?
     expected_sum_of_time = 45 * 60  # 45 minutes, as per the arbiter_events.py file
@@ -90,25 +87,26 @@ async def test_activity_arbiter(activity_arbiter_and_setup):
     remaining_open_session_offset = 1
 
     # ### Test some basic assumptions
-    output_events = program_events + chrome_events
 
-    assert len(program_events) > 0, "Not even one event made it"
-    assert len(chrome_events) > 0, "Not even one event made it"
+    assert len(events) > 0, "Not even one event made it"
+
+    program_events = [e for e in events if isinstance(e, ProgramSessionData)]
+    chrome_events = [e for e in events if isinstance(e, ChromeSessionData)]
 
     assert all(isinstance(log, ProgramSessionData)
                for log in program_events), "A program event wasn't a program session"
     assert all(isinstance(log, ChromeSessionData)
                for log in chrome_events), "A Chrome event wasn't a Chrome session"
 
-    assert any(isinstance(obj.duration, int) for obj in output_events) is False
-    assert all(isinstance(obj.duration, timedelta) for obj in output_events)
+    assert any(isinstance(obj.duration, int) for obj in events) is False
+    assert all(isinstance(obj.duration, timedelta) for obj in events)
 
     # ### Test DAO notifications
-    assert mock_program_listener.on_program_session_completed.call_count == len(
+    assert mock_activity_recorder.on_state_changed.call_count == len(
         # NOTE: Would be "- 1" if the final input was a ProgramSession
-        program_sessions_in_test)
-    assert mock_chrome_listener.on_chrome_session_completed.call_count == len(
-        chrome_sessions_in_test) - remaining_open_session_offset
+        program_sessions_in_test) + len(chrome_sessions_in_test) - remaining_open_session_offset
+    # assert mock_activity_recorder.on_state_changed.call_count == len(
+    # chrome_sessions_in_test) - remaining_open_session_offsetz
 
     # Total number of recorded Program DAO entries was as expected
     assert len(program_events) == len(
@@ -124,7 +122,7 @@ async def test_activity_arbiter(activity_arbiter_and_setup):
 
     # ### The total time elapsed is what was expected
     total = timedelta()
-    for e in output_events:
+    for e in events:
         total = total + e.duration
 
     total_duration = total.total_seconds()
@@ -132,10 +130,10 @@ async def test_activity_arbiter(activity_arbiter_and_setup):
     assert expected_sum_of_time == total_duration
 
     # ### Check that sessions all received durations and end times
-    assert all(log.end_time is not None for log in output_events)
-    assert all(log.duration is not None for log in output_events)
+    assert all(log.end_time is not None for log in events)
+    assert all(log.duration is not None for log in events)
 
-    chronological = sorted(output_events, key=lambda obj: obj.start_time)
+    chronological = sorted(events, key=lambda obj: obj.start_time)
 
     # ### Assert the nth entry is concluded when the (n + 1)th entry starts
 

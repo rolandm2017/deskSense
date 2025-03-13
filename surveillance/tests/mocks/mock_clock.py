@@ -19,7 +19,7 @@ class MockClock(ClockProtocol):
         except StopIteration:
             raise RuntimeError("MockClock ran out of times")
 
-    def has_elapsed_since(self, current_time: datetime, previous_time: datetime, seconds: int) -> bool:
+    def seconds_have_elapsed(self, current_time: datetime, previous_time: datetime, seconds: int) -> bool:
         """Check if the specified number of seconds has elapsed between two times."""
         elapsed = current_time - previous_time
         return elapsed >= timedelta(seconds=seconds)

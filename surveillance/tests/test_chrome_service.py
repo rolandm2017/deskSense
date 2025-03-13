@@ -73,15 +73,14 @@ def chrome_service_fixture():
 
     # Create mock listeners with side effects to record calls
     mock_program_listener = MagicMock()
-    mock_program_listener.on_program_session_completed = AsyncMock(
+    mock_program_listener.on_program_session_completed = AsyncMock(  # FIXME: This method no longer exists in the code
         side_effect=program_events.append)
 
     mock_chrome_listener = MagicMock()
-    mock_chrome_listener.on_chrome_session_completed = AsyncMock(
+    mock_chrome_listener.on_chrome_session_completed = AsyncMock(  # FIXME: This method no longer exists in the code
         side_effect=chrome_events.append)
 
-    arbiter.add_program_summary_listener(mock_program_listener)
-    arbiter.add_chrome_summary_listener(mock_chrome_listener)
+    arbiter.add_summary_dao_listener(mock_program_listener)
 
     chrome_service = ChromeService(clock, arbiter, mock_dao)
 
