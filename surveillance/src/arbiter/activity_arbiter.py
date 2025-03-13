@@ -51,6 +51,7 @@ class ActivityArbiter:
             self.ui_update_listener(state)
 
     async def notify_summary_dao(self, session, is_shutdown=False):
+        # print(self.summary_listener, session, "54ru")
         if self.summary_listener:
             await self.summary_listener.on_state_changed(session, is_shutdown)
 

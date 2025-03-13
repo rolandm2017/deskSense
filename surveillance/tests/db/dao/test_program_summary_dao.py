@@ -1,3 +1,4 @@
+from gc import set_debug
 import pytest
 from unittest.mock import AsyncMock, Mock, MagicMock
 from datetime import datetime, date, timedelta, timezone
@@ -43,9 +44,9 @@ async def async_engine():
     async with admin_engine.connect() as conn:
         # Terminate existing connections more safely
         await conn.execute(text("""
-            SELECT pg_terminate_backend(pid) 
-            FROM pg_stat_activity 
-            WHERE datname = 'dsTestDb' 
+            SELECT pg_terminate_backend(pid)
+            FROM pg_stat_activity
+            WHERE datname = 'dsTestDb'
             AND pid <> pg_backend_pid()
         """))
 
@@ -78,8 +79,8 @@ async def async_engine():
         )
         async with admin_engine.connect() as conn:
             await conn.execute(text("""
-                SELECT pg_terminate_backend(pid) 
-                FROM pg_stat_activity 
+                SELECT pg_terminate_backend(pid)
+                FROM pg_stat_activity
                 WHERE datname = 'dsTestDb'
                 AND pid <> pg_backend_pid()
             """))
@@ -168,7 +169,9 @@ class TestProgramSummaryDao:
         session_data = ProgramSessionData()
         session_data.window_title = "TestProgramFromTest"
         session_data.start_time = right_now
-        session_data.end_time = right_now.replace(hour=datetime.now().hour + 2)
+        later = right_now.replace(hour=datetime.now().hour + 2)
+        session_data.end_time = later
+        session_data.duration = later - right_now
 
         # Mock existing entry
         existing_entry = Mock(spec=DailyProgramSummary)
@@ -201,7 +204,9 @@ class TestProgramSummaryDao:
         session_data = ProgramSessionData()
         session_data.window_title = "TestProgram"
         session_data.start_time = right_now
-        session_data.end_time = right_now.replace(hour=datetime.now().hour + 1)
+        later = right_now.replace(hour=datetime.now().hour + 1)
+        session_data.end_time = later
+        session_data.duration = later - right_now
 
         # Mock existing entry
         existing_entry = Mock(spec=DailyProgramSummary)
@@ -330,6 +335,8 @@ class TestProgramSummaryDao:
         dt2 = dt + timedelta(seconds=13)
         session_data_1.end_time = dt2
         session_data_1.productive = False
+        session_data_1.duration = dt2 - dt
+
         # 2
         session_data_2: ProgramSessionData = ProgramSessionData()
         session_data_2.window_title = "VSCode"
@@ -338,6 +345,7 @@ class TestProgramSummaryDao:
         dt3 = dt2 + timedelta(seconds=12)
         session_data_2.end_time = dt3
         session_data_2.productive = True
+        session_data_2.duration = dt3 - dt2
 
         # 3
         session_data_3: ProgramSessionData = ProgramSessionData()
@@ -347,6 +355,8 @@ class TestProgramSummaryDao:
         dt4 = dt3 + timedelta(seconds=28)
         session_data_3.end_time = dt4
         session_data_3.productive = False
+        session_data_3.duration = dt4 - dt3
+
         # 4
         session_data_4: ProgramSessionData = ProgramSessionData()
         session_data_4.window_title = "VSCode"
@@ -355,6 +365,8 @@ class TestProgramSummaryDao:
         dt5 = dt4 + timedelta(seconds=22)
         session_data_4.end_time = dt5
         session_data_4.productive = True
+        session_data_4.duration = dt5 - dt4
+
         # 5
         session_data_5: ProgramSessionData = ProgramSessionData()
         session_data_5.window_title = "Discord"
@@ -363,6 +375,8 @@ class TestProgramSummaryDao:
         dt6 = dt5 + timedelta(seconds=25)
         session_data_5.end_time = dt6
         session_data_5.productive = False
+        session_data_5.duration = dt6 - dt5
+
         # 6
         session_data_6: ProgramSessionData = ProgramSessionData()
         session_data_6.window_title = "Chrome"
@@ -371,6 +385,7 @@ class TestProgramSummaryDao:
         dt7 = dt6 + timedelta(seconds=25)
         session_data_6.end_time = dt7
         session_data_6.productive = True
+        session_data_6.duration = dt7 - dt6
 
         existing_entry = Mock(spec=DailyProgramSummary)
         existing_entry.hours_spent = 1.0
@@ -455,7 +470,9 @@ class TestProgramSummaryDao:
         test_session = ProgramSessionData()
         test_session.window_title = test_vs_code
         test_session.start_time = dt
-        test_session.end_time = dt + timedelta(minutes=5)
+        dt_modified = dt + timedelta(minutes=5)
+        test_session.end_time = dt_modified
+        test_session.duration = dt_modified - dt
 
         await test_db_dao.create_if_new_else_update(test_session, dt)
 
@@ -475,6 +492,7 @@ class TestProgramSummaryDao:
         session_data_1.start_time = dt
         session_data_1.end_time = dt2
         session_data_1.productive = False
+        session_data_1.duration = dt2 - dt
         chrome_time += change_1
         # 2
         session_data_2: ProgramSessionData = ProgramSessionData()
@@ -483,6 +501,7 @@ class TestProgramSummaryDao:
         session_data_2.start_time = dt2
         session_data_2.end_time = dt3
         session_data_2.productive = True
+        session_data_2.duration = dt3 - dt2
         vscode_time += change_2
         # 3
         session_data_3: ProgramSessionData = ProgramSessionData()
@@ -491,6 +510,7 @@ class TestProgramSummaryDao:
         session_data_3.start_time = dt3
         session_data_3.end_time = dt4
         session_data_3.productive = False
+        session_data_3.duration = dt4 - dt3
         chrome_time += change_3
         # 4
         session_data_4: ProgramSessionData = ProgramSessionData()
@@ -499,6 +519,7 @@ class TestProgramSummaryDao:
         session_data_4.start_time = dt4
         session_data_4.end_time = dt5
         session_data_4.productive = True
+        session_data_4.duration = dt5 - dt4
         vscode_time += change_4
         # 5
         session_data_5: ProgramSessionData = ProgramSessionData()
@@ -507,6 +528,7 @@ class TestProgramSummaryDao:
         session_data_5.start_time = dt5
         session_data_5.end_time = dt6
         session_data_5.productive = False
+        session_data_5.duration = dt6 - dt5
         discord_time += change_5
         # 6
         session_data_6: ProgramSessionData = ProgramSessionData()
@@ -515,6 +537,7 @@ class TestProgramSummaryDao:
         session_data_6.start_time = dt6
         session_data_6.end_time = dt7
         session_data_6.productive = True
+        session_data_6.duration = dt7 - dt6
         chrome_time += change_6
         # 7
         session_data_7: ProgramSessionData = ProgramSessionData()
@@ -523,6 +546,7 @@ class TestProgramSummaryDao:
         session_data_7.start_time = dt7
         session_data_7.end_time = dt8
         session_data_7.productive = True
+        session_data_7.duration = dt8 - dt7
         vscode_time += change_7
 
         sessions = [session_data_1, session_data_2, session_data_3,
@@ -561,6 +585,7 @@ class TestProgramSummaryDao:
         test_update_end_time = dt + timedelta(hours=5)
         update_session.start_time = test_update_start_time
         update_session.end_time = test_update_end_time
+        update_session.duration = test_update_end_time - test_update_start_time
 
         await test_db_dao.create_if_new_else_update(update_session, test_update_start_time)
 

@@ -26,18 +26,20 @@ class KeyboardTrackerCore:
 
     def run_tracking_loop(self):
         event = self.keyboard_facade.read_event()
+        print(event, '34ru')
         if self.keyboard_facade.is_ctrl_c(event):
             print("### KEYBOARD TRACKER: Detected Ctrl+C ###")
             self.keyboard_facade.trigger_ctrl_c()  # stop program
             return
         if self.keyboard_facade.event_type_is_key_down(event):
             self.recent_count += 1  # per keystroke
+            print("36ru")
             current_time = self.user_facing_clock.now()
             self.time_of_last_aggregator_update = current_time
             # TODO: Add an "autofinish" time, at which point apply_handlers() is called
             finalized_aggregate = self.aggregator.add_event(
                 current_time.timestamp())
-
+            print("41ru")
             if finalized_aggregate is not None:
                 session = self.aggregator.package_aggregate_for_db(
                     finalized_aggregate)
