@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import async_sessionmaker
 import asyncio
 from datetime import timedelta, datetime, date
@@ -63,6 +63,49 @@ class ProgramLoggingDao(BaseQueueingDao):
                 grouped_logs[log.program_name].append(log)
 
             return grouped_logs
+
+    async def find_orphans(self,  latest_shutdown_time, startup_time):
+        """
+        Finds orphaned sessions that:
+        1. Started before shutdown but never ended (end_time is None)
+        2. Started before shutdown but ended after next startup (impossible)
+
+        Args:
+            latest_shutdown_time: Timestamp when system shut down
+            startup_time: Timestamp when system started up again
+        """
+        query = select(ProgramSummaryLog).where(
+            # Started before shutdown
+            ProgramSummaryLog.start_time <= latest_shutdown_time,
+            # AND (end_time is None OR end_time is after next startup)
+            or_(
+                ProgramSummaryLog.end_time == None,  # Sessions never closed
+                ProgramSummaryLog.end_time >= startup_time  # End time after startup
+            )
+        ).order_by(ProgramSummaryLog.start_time)
+
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            return result.scalars().all()
+
+    async def find_phantoms(self, latest_shutdown_time, startup_time):
+        """
+        Finds phantom sessions that impossibly started while the system was off.
+
+        Args:
+            latest_shutdown_time: Timestamp when system shut down
+            startup_time: Timestamp when system started up again
+        """
+        query = select(ProgramSummaryLog).where(
+            # Started after shutdown
+            ProgramSummaryLog.start_time > latest_shutdown_time,
+            # But before startup
+            ProgramSummaryLog.start_time < startup_time
+        ).order_by(ProgramSummaryLog.start_time)
+
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            return result.scalars().all()
 
     async def read_all(self):
         """Fetch all program log entries"""
@@ -140,6 +183,49 @@ class ChromeLoggingDao(BaseQueueingDao):
             DomainSummaryLog.gathering_date >= start_of_day,
             DomainSummaryLog.gathering_date < end_of_day
         ).order_by(DomainSummaryLog.domain_name)
+
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            return result.scalars().all()
+
+    async def find_orphans(self,  latest_shutdown_time, startup_time):
+        """
+        Finds orphaned sessions that:
+        1. Started before shutdown but never ended (end_time is None)
+        2. Started before shutdown but ended after next startup (impossible)
+
+        Args:
+            latest_shutdown_time: Timestamp when system shut down
+            startup_time: Timestamp when system started up again
+        """
+        query = select(DomainSummaryLog).where(
+            # Started before shutdown
+            DomainSummaryLog.start_time <= latest_shutdown_time,
+            # AND (end_time is None OR end_time is after next startup)
+            or_(
+                DomainSummaryLog.end_time == None,  # Sessions never closed
+                DomainSummaryLog.end_time >= startup_time  # End time after startup
+            )
+        ).order_by(DomainSummaryLog.start_time)
+
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            return result.scalars().all()
+
+    async def find_phantoms(self, latest_shutdown_time, startup_time):
+        """
+        Finds phantom sessions that impossibly started while the system was off.
+
+        Args:
+            latest_shutdown_time: Timestamp when system shut down
+            startup_time: Timestamp when system started up again
+        """
+        query = select(DomainSummaryLog).where(
+            # Started after shutdown
+            DomainSummaryLog.start_time > latest_shutdown_time,
+            # But before startup
+            DomainSummaryLog.start_time < startup_time
+        ).order_by(DomainSummaryLog.start_time)
 
         async with self.session_maker() as session:
             result = await session.execute(query)

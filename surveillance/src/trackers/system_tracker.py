@@ -14,9 +14,9 @@ from ..object.enums import SystemStatusType
 
 class SystemPowerTracker:
     def __init__(self,
-
                  on_shutdown: Callable[[], Awaitable[None]],
                  system_status_dao,
+                 check_session_integrity,
                  loop: Optional[asyncio.AbstractEventLoop] = None,
                  log_file: Optional[str] = None):
         """
@@ -34,9 +34,11 @@ class SystemPowerTracker:
         self.on_shutdown = on_shutdown
         self.asyncio_loop = loop or asyncio.get_event_loop()
         self.log_file = log_file
-        print(system_status_dao, '36ru')
+
         system_status_dao.accept_power_tracker_loop(self.asyncio_loop)
+
         self.system_status_dao = system_status_dao
+        self.signal_check_session_integrity = check_session_integrity
         # State tracking
         self._shutdown_in_progress = False
         self._shutdown_complete = threading.Event()
@@ -47,11 +49,19 @@ class SystemPowerTracker:
 
         # Log startup immediately
         self._log_event("startup")
-        self.asyncio_loop.create_task(self._log_startup_status())
+        right_now = datetime.now()
+        self.asyncio_loop.create_task(self._log_startup_status(right_now))
+        self.asyncio_loop.create_task(self._check_session_integrity(right_now))
 
-    async def _log_startup_status(self):
+    async def _log_startup_status(self, latest_startup_time):
         """Record startup in the database"""
-        await self.system_status_dao.create_status(SystemStatusType.STARTUP, datetime.now())
+        await self.system_status_dao.create_status(SystemStatusType.STARTUP, latest_startup_time)
+
+    async def _check_session_integrity(self, latest_startup_time):
+        """Signal system ready for integrity check"""
+        latest_shutdown = await self.system_status_dao.read_latest_shutdown()
+        self.signal_check_session_integrity(
+            latest_shutdown, latest_startup_time)
 
     def _log_event(self, event_type: str):
         """Log event to debug file if configured"""

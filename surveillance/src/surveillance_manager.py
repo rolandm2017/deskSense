@@ -6,7 +6,9 @@ import asyncio
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import sessionmaker
 
+
 from .db.dao.system_status_dao import SystemStatusDao
+from .db.dao.session_integrity_dao import SessionIntegrityDao
 
 
 from .db.dao.mouse_dao import MouseDao
@@ -62,6 +64,11 @@ class SurveillanceManager:
         self.loop = asyncio.get_event_loop()
         clock = UserFacingClock()
 
+        program_summary_logger = ProgramLoggingDao(self.session_maker)
+        chrome_summary_logger = ChromeLoggingDao(self.session_maker)
+
+        self.session_integrity_dao = SessionIntegrityDao(
+            program_summary_logger, chrome_summary_logger, self.session_maker)
         system_status_dao = SystemStatusDao(
             self.session_maker, shutdown_session_maker)
 
@@ -70,12 +77,11 @@ class SurveillanceManager:
         self.program_dao = ProgramDao(self.session_maker)
         self.chrome_dao = ChromeDao(self.session_maker)
 
-        program_summary_logger = ProgramLoggingDao(self.session_maker)
-        chrome_summary_logger = ChromeLoggingDao(self.session_maker)
         self.program_summary_dao = ProgramSummaryDao(
             program_summary_logger, self.session_maker)
         self.chrome_summary_dao = ChromeSummaryDao(
             chrome_summary_logger, self.session_maker)
+
         self.timeline_dao = TimelineEntryDao(self.session_maker)
 
         self.keyboard_tracker = KeyboardTrackerCore(
@@ -87,7 +93,7 @@ class SurveillanceManager:
             clock, program_facade, self.handle_window_change, self.handle_program_ready_for_db)
         #
         self.system_tracker = SystemPowerTracker(
-            self.shutdown_handler, system_status_dao)
+            self.shutdown_handler, system_status_dao, self.check_session_integrity)
 
         self.keyboard_thread = ThreadedTracker(self.keyboard_tracker)
         self.mouse_thread = ThreadedTracker(self.mouse_tracker)
@@ -100,6 +106,11 @@ class SurveillanceManager:
         self.keyboard_thread.start()
         self.mouse_thread.start()
         self.program_thread.start()
+
+    def check_session_integrity(self, latest_shutdown, latest_startup):
+        # FIXME: get latest times from system status dao
+        self.loop.create_task(self.session_integrity_dao.audit_sessions(
+            latest_shutdown, latest_startup))
 
     def handle_keyboard_ready_for_db(self, event):
         self.loop.create_task(
