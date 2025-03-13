@@ -1,3 +1,7 @@
+from datetime import datetime
+from typing import List
+
+from ..db.models import DailyDomainSummary, DailyProgramSummary
 from ..object.classes import ProgramSessionData
 from ..object.pydantic_dto import TabChangeEvent
 
@@ -42,3 +46,18 @@ def write_temp_log(event: TabChangeEvent):
             str(event.startTime)}"
         f.write(out)
         f.write("\n")
+
+
+def get_current_day_log_name(log_date: str):
+    return "session_integrity_log - " + log_date + ".txt"
+
+
+def print_and_log(sessions: List[DailyProgramSummary] | List[DailyDomainSummary], startup_time: datetime):
+    log_identifier = startup_time.strftime("%m-%d %H:%M:%S")
+    log_for_current_day = get_current_day_log_name(log_identifier)
+    with open(log_for_current_day, "a") as f:
+        f.write("\n::\n::::\nlog_identifier" + ": ")
+        for session in sessions:
+            print(session)
+            f.write(str(session))
+            f.write("\n")

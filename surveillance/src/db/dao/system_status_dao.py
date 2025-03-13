@@ -33,6 +33,41 @@ class SystemStatusDao:
         print(f"DAO accepting new event loop for power tracking")
         self.power_tracker_loop = loop
 
+    async def create_status(self, status: SystemStatusType, now: datetime):
+        """Create a status entry with awareness of which event loop to use"""
+        # Select the appropriate session maker based on status type
+        status_to_write = status
+        try:
+            if status == SystemStatusType.STARTUP:
+                latest_status = await self.read_latest_status()
+                print("[info] Found status: ", latest_status)
+                if latest_status == SystemStatusType.HOT_RELOAD_STARTED:
+                    status_to_write = SystemStatusType.HOT_RELOAD_CONCLUDED
+                    # TODO: If status is a hot reload, make the concluding entry delete both, for cleanliness
+                    # return self.clean_hot_reload_entry(latest_status_id)
+
+            critical_statuses = [
+                SystemStatusType.HOT_RELOAD_STARTED,
+                SystemStatusType.CTRL_C_SIGNAL,
+                SystemStatusType.SHUTDOWN,
+                SystemStatusType.SLEEP
+            ]
+
+            if status in critical_statuses:
+                print(
+                    f"Using synchronous SQLAlchemy for critical status: {status}")
+                # Use synchronous session in the current thread
+                return self.write_sync(status_to_write, now)
+
+            else:
+                return await self.async_write(status_to_write, now)
+
+        except Exception as e:
+            print(f"Error in create_status: {e}")
+            import traceback
+            traceback.print_exc()
+            # Don't re-raise - this is critical shutdown code
+
     def write_sync(self, status: SystemStatusType, now: datetime):
         with self.shutdown_session_maker() as session:
             new_status = SystemStatus(
@@ -58,41 +93,6 @@ class SystemStatusDao:
             self.logger.log_white_multiple(
                 "[system status dao] recorded status change: ", status)
             return True
-
-    async def create_status(self, status: SystemStatusType, now: datetime):
-        """Create a status entry with awareness of which event loop to use"""
-        print(f"[debug - create_status] {status}, type: {type(status)}")
-
-        # Select the appropriate session maker based on status type
-        status_to_write = status
-        try:
-            if status == SystemStatusType.STARTUP:
-                latest_status = await self.read_latest_status()
-                print("[info] Found status: ", latest_status)
-                if latest_status == SystemStatusType.HOT_RELOAD_STARTED:
-                    status_to_write = SystemStatusType.HOT_RELOAD_CONCLUDED
-
-            critical_statuses = [
-                SystemStatusType.HOT_RELOAD_STARTED,
-                SystemStatusType.CTRL_C_SIGNAL,
-                SystemStatusType.SHUTDOWN,
-                SystemStatusType.SLEEP
-            ]
-
-            if status in critical_statuses:
-                print(
-                    f"Using synchronous SQLAlchemy for critical status: {status}")
-                # Use synchronous session in the current thread
-                return self.write_sync(status_to_write, now)
-
-            else:
-                return await self.async_write(status_to_write, now)
-
-        except Exception as e:
-            print(f"Error in create_status: {e}")
-            import traceback
-            traceback.print_exc()
-            # Don't re-raise - this is critical shutdown code
 
     async def emergency_write(self, status: SystemStatusType, now: datetime):
         """
@@ -152,4 +152,33 @@ class SystemStatusDao:
                     return None
         except Exception as e:
             print(f"Error reading latest status: {e}")
+            return None
+
+    async def read_latest_shutdown(self):
+        try:
+            # Query the latest status entry where status is one of the shutdown types
+            query = select(SystemStatus).where(
+                SystemStatus.status.in_([
+                    SystemStatusType.SHUTDOWN,
+                    SystemStatusType.CTRL_C_SIGNAL,
+                    SystemStatusType.HOT_RELOAD_STARTED,
+                    SystemStatusType.SLEEP
+                ])
+            ).order_by(desc(SystemStatus.created_at)).limit(1)
+
+            async with self.async_session_maker() as session:
+                result = await session.execute(query)
+                latest_status = result.scalar_one_or_none()
+
+                if latest_status:
+                    self.logger.log_white_multiple(
+                        "[dao] Found latest shutdown status: ", latest_status.status)
+                    return latest_status.created_at
+                else:
+                    self.logger.log_purple("[dao] No shutdown status found")
+                    return None
+        except Exception as e:
+            print(f"Error reading latest shutdown status: {e}")
+            import traceback
+            traceback.print_exc()
             return None
