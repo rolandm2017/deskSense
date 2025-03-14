@@ -29,7 +29,7 @@ class SystemStatusDao:
         self.emerg_connection_string = SYNCHRONOUS_DB_URL
 
     def accept_power_tracker_loop(self, loop):
-        """Set the event loop to use for power tracker operations"""
+        """Set the event loop to use for power tracker operations. Means it's shared with whatever did the insert"""
         print(f"DAO accepting new event loop for power tracking")
         self.power_tracker_loop = loop
 
@@ -101,6 +101,9 @@ class SystemStatusDao:
 
         🙌
         """
+
+        # NOTE: This IS NOT a method you "just use". Am trying to move away from using it. Use write_sync and async_write.
+
         print(f"[EMERGENCY] Writing {status} to database")
 
         try:

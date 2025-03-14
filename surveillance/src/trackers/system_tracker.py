@@ -110,6 +110,8 @@ class SystemPowerTracker:
             return
         self._shutdown_in_progress = True
 
+        print(signum, "HERE 113ru")
+
         # Determine reason and status type based on signal
         if signum == 15:  # SIGTERM
             reason = "restart program"
@@ -122,12 +124,15 @@ class SystemPowerTracker:
             status_type = SystemStatusType.SHUTDOWN
         else:
             reason = f"Unknown signal: {signum}"
+            with open("unkown_signal_logs.txt", "a") as f:
+                f.write("\n" + str(signum) + "\n")
             status_type = SystemStatusType.SHUTDOWN
 
         print(f"\n### System shutdown detected (signal {signum})")
         print(f"Triggering shutdown due to: {reason}")
 
         # Run shutdown tasks
+        print(self._initiate_shutdown, '135ru')
         self._initiate_shutdown(status_type, reason)
 
     def _handle_sleep_signal(self, sleeping: bool):
@@ -209,13 +214,6 @@ class SystemPowerTracker:
             print("Database write completed successfully")
         else:
             print("Database write failed")
-
-        # try:
-        #     print("Attempting database write...")
-        #     await self.system_status_dao.create_status(status_type, datetime.now())
-        #     print("Database write successful! for " + str(status_type))
-        # except Exception as db_error:
-        #     print(f"Database write failed: {db_error}")
 
         try:
             print("Running on_shutdown callback...")
