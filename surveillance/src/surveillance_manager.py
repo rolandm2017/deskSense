@@ -6,6 +6,8 @@ import asyncio
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import sessionmaker
 
+from datetime import datetime
+
 
 from .db.dao.system_status_dao import SystemStatusDao
 from .db.dao.session_integrity_dao import SessionIntegrityDao
@@ -107,10 +109,14 @@ class SurveillanceManager:
         self.mouse_thread.start()
         self.program_thread.start()
 
-    def check_session_integrity(self, latest_shutdown, latest_startup):
+    def check_session_integrity(self, latest_shutdown_time: datetime | None, latest_startup_time: datetime):
         # FIXME: get latest times from system status dao
-        self.loop.create_task(self.session_integrity_dao.audit_sessions(
-            latest_shutdown, latest_startup))
+        if latest_shutdown_time is None:
+            self.loop.create_task(
+                self.session_integrity_dao.audit_first_startup(latest_startup_time))
+        else:
+            self.loop.create_task(self.session_integrity_dao.audit_sessions(
+                latest_shutdown_time, latest_startup_time))
 
     def handle_keyboard_ready_for_db(self, event):
         self.loop.create_task(

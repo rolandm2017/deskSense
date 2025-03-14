@@ -157,7 +157,7 @@ class SystemStatusDao:
             print(f"Error reading latest status: {e}")
             return None
 
-    async def read_latest_shutdown(self):
+    async def read_latest_shutdown(self) -> SystemStatus | None:
         try:
             # Query the latest status entry where status is one of the shutdown types
             query = select(SystemStatus).where(
@@ -176,7 +176,7 @@ class SystemStatusDao:
                 if latest_status:
                     self.logger.log_white_multiple(
                         "[dao] Found latest shutdown status: ", latest_status.status)
-                    return latest_status.created_at
+                    return latest_status
                 else:
                     self.logger.log_purple("[dao] No shutdown status found")
                     return None

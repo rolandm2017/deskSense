@@ -1,5 +1,5 @@
 # mock_clock.py
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Iterator
 
 
@@ -14,6 +14,9 @@ class MockClock(ClockProtocol):
     def now(self) -> datetime:
         try:
             self._current_time = next(self.times)
+            if self._current_time.tzinfo is None:
+                self._current_time = self._current_time.replace(
+                    tzinfo=timezone.utc)
             print("[debug] Returning ", self._current_time)
             return self._current_time
         except StopIteration:

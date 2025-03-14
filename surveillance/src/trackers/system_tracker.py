@@ -9,6 +9,8 @@ from gi.repository import GLib  # type: ignore
 from datetime import datetime
 from typing import Callable, Awaitable, Optional
 
+from surveillance.src.db.models import SystemStatus
+
 from ..object.enums import SystemStatusType
 
 
@@ -58,10 +60,19 @@ class SystemPowerTracker:
         await self.system_status_dao.create_status(SystemStatusType.STARTUP, latest_startup_time)
 
     async def _check_session_integrity(self, latest_startup_time):
-        """Signal system ready for integrity check"""
-        latest_shutdown = await self.system_status_dao.read_latest_shutdown()
-        self.signal_check_session_integrity(
-            latest_shutdown, latest_startup_time)
+        """
+        Signal system ready for integrity check.
+
+        Code ultimately sends a response to ... "audit_sessions" in SessionIntegrityDAO.
+        """
+        latest_shutdown_log: SystemStatus | None = await self.system_status_dao.read_latest_shutdown()
+        if latest_shutdown_log:
+            self.signal_check_session_integrity(
+                latest_shutdown_log, latest_startup_time)
+        else:
+            no_shutdown_found: None = latest_shutdown_log
+            self.signal_check_session_integrity(
+                no_shutdown_found, latest_startup_time)
 
     def _log_event(self, event_type: str):
         """Log event to debug file if configured"""
