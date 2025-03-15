@@ -138,6 +138,11 @@ class ProgramSummaryLog(Base):
     gathering_date = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True))
 
+    def __str__(self):
+        return f"ProgramSummaryLog(program_name={self.program_name}, hours_spent={self.hours_spent}, " \
+            f"start_time={self.start_time}, end_time={self.end_time}, " \
+            f"gathering_date={self.gathering_date}, created_at={self.created_at})"
+
 
 class DomainSummaryLog(Base):
     __tablename__ = "domain_summary_logs"
@@ -150,6 +155,11 @@ class DomainSummaryLog(Base):
     # The date on which the program data was gathered
     gathering_date = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True))
+
+    def __str__(self):
+        return f"DomainSummaryLog(domain_name={self.domain_name}, hours_spent={self.hours_spent}, " \
+            f"start_time={self.start_time}, end_time={self.end_time}, " \
+            f"gathering_date={self.gathering_date}, created_at={self.created_at})"
 
 
 class TimelineEntryObj(Base):
