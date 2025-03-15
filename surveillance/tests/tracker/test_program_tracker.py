@@ -1,6 +1,7 @@
 import pytest
-from datetime import datetime, timedelta
 from unittest.mock import Mock, MagicMock
+
+from datetime import datetime, timedelta, timezone
 
 from ..mocks.mock_clock import MockClock
 
@@ -141,12 +142,13 @@ def test_conclude_session():
 
 def test_window_change_triggers_handler():
     """Test that window changes trigger event handlers"""
-    time_from_previous_program = datetime(2024, 1, 1, 12, 0)
-    t1 = datetime(2024, 1, 1, 12, 2)
-    t2 = datetime(2024, 1, 1, 12, 3)
-    t3 = datetime(2024, 1, 1, 12, 4)
-    t4 = datetime(2024, 1, 1, 12, 7)
-    t5 = datetime(2024, 1, 1, 12, 10)
+    time_from_previous_program = datetime(
+        2024, 1, 1, 12, 0, tzinfo=timezone.utc)
+    t1 = datetime(2024, 1, 1, 12, 2, tzinfo=timezone.utc)
+    t2 = datetime(2024, 1, 1, 12, 3, tzinfo=timezone.utc)
+    t3 = datetime(2024, 1, 1, 12, 4, tzinfo=timezone.utc)
+    t4 = datetime(2024, 1, 1, 12, 7, tzinfo=timezone.utc)
+    t5 = datetime(2024, 1, 1, 12, 10, tzinfo=timezone.utc)
 
     times = [t1, t2, t3, t4, t5]
     clock = MockClock(times)
@@ -192,6 +194,8 @@ def test_window_change_triggers_handler():
     assert deliverable.window_title == "Visual Studio Code"  #
     assert deliverable.detail == "test.py"
     # The second time clock.now() is called, i.e. not 1st window, but the 2nd
+    print(deliverable.start_time)
+    print(t1)
     assert deliverable.start_time == t1
     # Because the window change handler reports the started sessions
     assert deliverable.end_time is None
