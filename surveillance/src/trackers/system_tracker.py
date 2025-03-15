@@ -9,7 +9,7 @@ from gi.repository import GLib  # type: ignore
 from datetime import datetime
 from typing import Callable, Awaitable, Optional
 
-from surveillance.src.db.models import SystemStatus
+from ..db.models import SystemStatus
 
 from ..object.enums import SystemStatusType
 
@@ -68,7 +68,7 @@ class SystemPowerTracker:
         latest_shutdown_log: SystemStatus | None = await self.system_status_dao.read_latest_shutdown()
         if latest_shutdown_log:
             self.signal_check_session_integrity(
-                latest_shutdown_log, latest_startup_time)
+                latest_shutdown_log.created_at, latest_startup_time)
         else:
             no_shutdown_found: None = latest_shutdown_log
             self.signal_check_session_integrity(
