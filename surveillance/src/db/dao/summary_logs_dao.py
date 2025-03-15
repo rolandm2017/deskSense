@@ -27,14 +27,18 @@ class ProgramLoggingDao(BaseQueueingDao):
         if session.start_time is None or session.end_time is None:
             raise ValueError("Start or end time was None")
 
-        usage_duration_in_hours = (
+        usage_duration_in_hours_based_on_start_end_times = (
             session.end_time - session.start_time).total_seconds() / 3600
+
+        usage_duration_based_on_duration_property = session.duration.total_seconds() / \
+            3600.0
 
         log_entry = ProgramSummaryLog(
             program_name=session.window_title,
-            hours_spent=usage_duration_in_hours,
+            hours_spent=usage_duration_in_hours_based_on_start_end_times,
             start_time=session.start_time,
             end_time=session.end_time,
+            duration=usage_duration_based_on_duration_property,
             gathering_date=right_now.date(),
             created_at=right_now
         )
@@ -160,14 +164,18 @@ class ChromeLoggingDao(BaseQueueingDao):
         if session.start_time is None or session.end_time is None:
             raise ValueError("Start or end time was None")
 
-        usage_duration_in_hours = (
+        usage_duration_in_hours_based_on_start_end_times = (
             session.end_time - session.start_time).total_seconds() / 3600
+
+        usage_duration_based_on_duration_property = session.duration.total_seconds() / \
+            3600.0
 
         log_entry = DomainSummaryLog(
             domain_name=session.domain,
-            hours_spent=usage_duration_in_hours,
+            hours_spent=usage_duration_in_hours_based_on_start_end_times,
             start_time=session.start_time,
             end_time=session.end_time,
+            duration=usage_duration_based_on_duration_property,
             gathering_date=right_now.date(),
             created_at=right_now
         )

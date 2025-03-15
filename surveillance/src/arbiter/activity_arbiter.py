@@ -51,7 +51,6 @@ class ActivityArbiter:
             self.ui_update_listener(state)
 
     async def notify_summary_dao(self, session, is_shutdown=False):
-        # print(self.summary_listener, session, "54ru")
         if self.summary_listener:
             await self.summary_listener.on_state_changed(session, is_shutdown)
 
@@ -80,6 +79,7 @@ class ActivityArbiter:
             # ### Calculate the duration that the current state has existed
             # end_time & duration is set inside the ASM
             concluded_session = self.state_machine.current_state.session
+            print("[debug]", concluded_session)
 
             # Get the current state's session to put into the summary DAO along w/ the time
             # old_session.duration = now - old_session.start_time

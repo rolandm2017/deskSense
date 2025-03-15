@@ -47,3 +47,36 @@ class UserFacingClock(ClockProtocol):
         """Get midnight for the specified day"""
         target = date or self.now()
         return datetime.combine(target.date(), datetime.min.time())
+
+    def is_timezone_aware(self, dt):
+        """
+        Check if a datetime object has timezone information.
+
+        Args:
+            dt (datetime): The datetime object to check
+
+        Returns:
+            bool: True if the datetime has timezone info, False otherwise
+        """
+        return dt.tzinfo is not None and dt.tzinfo.utcoffset(dt) is not None
+
+    def timezones_are_same(self, dt1, dt2):
+        """
+        Check if two datetime objects have the same timezone.
+        Both datetimes must be timezone-aware for this comparison to be meaningful.
+
+        Args:
+            dt1 (datetime): First datetime object
+            dt2 (datetime): Second datetime object
+
+        Returns:
+            bool: True if both datetimes have the same timezone, False otherwise
+
+        Raises:
+            ValueError: If either datetime is not timezone-aware
+        """
+        if not self.is_timezone_aware(dt1) or not self.is_timezone_aware(dt2):
+            raise ValueError("Both datetime objects must be timezone-aware")
+
+        # Compare the UTC offsets at the specific times
+        return dt1.tzinfo.utcoffset(dt1) == dt2.tzinfo.utcoffset(dt2)

@@ -4,6 +4,8 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from datetime import datetime, timedelta, timezone
 from typing import List
 
+from ...util.errors import SuspiciousDurationError
+
 
 from ...config.definitions import power_on_off_debug_file
 
@@ -74,6 +76,16 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             existing_entry = result.scalar_one_or_none()
 
             if existing_entry:
+                impossibly_long_day = existing_entry.hours_spent > 24
+                if impossibly_long_day:
+                    self.logger.log_red(
+                        "[critical] " + str(existing_entry.hours_spent) + " for " + existing_entry.domain_name)
+                    raise SuspiciousDurationError("long day")
+                if program_session.duration and program_session.duration > timedelta(hours=1):
+                    self.logger.log_red(
+                        "[critical] " + str(program_session.duration) + " for " + existing_entry.domain_name)
+                    raise SuspiciousDurationError("duration")
+                # TODO: If duration > some_sus_threshold, throw err
                 # if existing_entry is not None:  # Changed from if existing_entry:
                 existing_entry.hours_spent += usage_duration_in_hours
                 # if program_session.window_title == "Alt-tab window":

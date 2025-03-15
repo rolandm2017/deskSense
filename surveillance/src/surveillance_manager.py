@@ -129,6 +129,7 @@ class SurveillanceManager:
         self.loop.create_task(self.mouse_dao.create_from_window(event))
 
     def handle_window_change(self, event):
+        print("[debug]", event, "132ru")
         self.loop.create_task(self.arbiter.set_program_state(event))
 
     # FIXME: Am double counting for sure
