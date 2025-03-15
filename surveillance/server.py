@@ -128,13 +128,11 @@ class HealthResponse(BaseModel):
 
 
 @app.get("/health", response_model=HealthResponse)
-async def health_check(keyboard_service: KeyboardService = Depends(get_keyboard_service)):
+async def health_check():
     logger.log_purple("[LOG] health check")
     try:
-        # FIXME: this should be on the app, not a local variable
         if not surveillance_state and not surveillance_state.manager.keyboard_tracker:
             return {"status": "error", "detail": "Tracker not initialized"}
-        await keyboard_service.get_all_events()
         return {"status": "healthy"}
     except Exception as e:
         raise HTTPException(

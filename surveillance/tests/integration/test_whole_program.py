@@ -30,9 +30,9 @@ def client():
 async def test_health_check():
     async with AsyncClient(base_url="http://127.0.0.1:8000") as client:
         response = await client.get("http://127.0.0.1:8000/health")
-
-        assert response.json()["status"] == "healthy"
         assert response.status_code == 200
+        body = response.json()
+        assert body["status"] == "healthy"
 
 
 @pytest.mark.asyncio
