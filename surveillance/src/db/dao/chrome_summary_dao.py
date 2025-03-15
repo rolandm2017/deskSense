@@ -1,8 +1,11 @@
 # daily_summary_dao.py
+import traceback
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from datetime import datetime, timedelta
 from typing import List
+
+from ...util.errors import SuspiciousDurationError
 
 from ...config.definitions import power_on_off_debug_file
 
@@ -52,6 +55,17 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             existing_entry = result.scalar_one_or_none()
 
             if existing_entry:
+                if chrome_session.duration and chrome_session.duration > timedelta(hours=1):
+                    self.logger.log_red(
+                        "[critical - duration] " + str(chrome_session.duration) + " for " + existing_entry.domain_name)
+                    raise SuspiciousDurationError("duration")
+                impossibly_long_day = existing_entry.hours_spent > 24
+                if impossibly_long_day:
+                    self.logger.log_red(
+                        "[critical - long day] " + str(existing_entry.hours_spent) + " for " + existing_entry.domain_name)
+                    raise SuspiciousDurationError("long day")
+
+                # TODO: If duration > some_sus_threshold, throw err
                 self.logger.log_white_multiple("[chrome summary dao] adding time ",
                                                chrome_session.duration, " to ", existing_entry.domain_name)
                 existing_entry.hours_spent += usage_duration_in_hours

@@ -134,6 +134,7 @@ class ProgramSummaryLog(Base):
     hours_spent = Column(Float)
     start_time = Column(DateTime(timezone=True))
     end_time = Column(DateTime(timezone=True))
+    duration = Column(Float, nullable=True)
     # The date on which the program data was gathered
     gathering_date = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True))
@@ -152,6 +153,7 @@ class DomainSummaryLog(Base):
     hours_spent = Column(Float)
     start_time = Column(DateTime(timezone=True))
     end_time = Column(DateTime(timezone=True))
+    duration = Column(Float, nullable=True)
     # The date on which the program data was gathered
     gathering_date = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True))

@@ -121,8 +121,6 @@ class SystemPowerTracker:
             return
         self._shutdown_in_progress = True
 
-        print(signum, "HERE 113ru")
-
         # Determine reason and status type based on signal
         if signum == 15:  # SIGTERM
             reason = "restart program"
@@ -143,7 +141,6 @@ class SystemPowerTracker:
         print(f"Triggering shutdown due to: {reason}")
 
         # Run shutdown tasks
-        print(self._initiate_shutdown, '135ru')
         self._initiate_shutdown(status_type, reason)
 
     def _handle_sleep_signal(self, sleeping: bool):

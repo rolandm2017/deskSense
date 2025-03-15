@@ -1,6 +1,11 @@
+from datetime import timedelta
+
+
 from ..object.classes import ChromeSessionData, ProgramSessionData
 from ..object.arbiter_classes import ChromeInternalState, ApplicationInternalState, InternalState
 from ..util.program_tools import window_is_chrome
+from ..util.errors import MismatchedTimezonesError, SuspiciousDurationError, TimezoneUnawareError
+from ..util.console_logger import ConsoleLogger
 
 
 # class OverallState:
@@ -27,6 +32,7 @@ class ActivityStateMachine:
         self.transition_from_chrome = TransitionFromChromeMachine(
             self.chrome_state)
         self.state_listeners = []
+        self.logger = ConsoleLogger()
 
     def set_new_session(self, next_state: ProgramSessionData | ChromeSessionData):
         if self.current_state:
@@ -57,8 +63,28 @@ class ActivityStateMachine:
         now = self.user_facing_clock.now()
         # Now - UTC
         # state.session.start_time - no tzinfo
-        print(state.session, "60ru")
-        duration = now - state.session.start_time
+        # FIXME: getting vals like 8h01m, 8h02m
+        session_start = state.session.start_time
+
+        if not self.user_facing_clock.is_timezone_aware(now):
+            raise TimezoneUnawareError("now")
+        elif not self.user_facing_clock.is_timezone_aware(session_start):
+            raise TimezoneUnawareError("now")
+        elif not self.user_facing_clock.timezones_are_same(now, session_start):
+            raise MismatchedTimezonesError()
+        else:
+            print(now.tzinfo, now)
+            print(session_start.tzinfo, session_start)
+            self.logger.log_blue("[debug] none of those errors happened")
+
+        duration = now - session_start
+        if duration > timedelta(hours=1):
+            self.logger.log_red_multiple(
+                "[critical - Concl Session] :: ", str(duration))
+            raise SuspiciousDurationError("duration")
+        else:
+
+            self.logger.log_blue("[debug] duration was ok: " + str(duration))
 
         state.session.duration = duration
         state.session.end_time = now
