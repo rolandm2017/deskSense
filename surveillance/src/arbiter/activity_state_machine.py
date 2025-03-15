@@ -57,6 +57,7 @@ class ActivityStateMachine:
         now = self.user_facing_clock.now()
         # Now - UTC
         # state.session.start_time - no tzinfo
+        print(state.session, "60ru")
         duration = now - state.session.start_time
 
         state.session.duration = duration

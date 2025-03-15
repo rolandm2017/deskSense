@@ -16,11 +16,13 @@ class ChromeSessionData:
         self.domain = ""
         self.detail = ""
         self.start_time = None
+        self.end_time = None
         self.duration = None
         self.productive = False
 
     def __str__(self):
-        return f"ChromeSessionData(domain='{self.domain}', detail='{self.detail}', \n\tstart_time={self.start_time}, \n\tend_time={self.end_time}, duration={self.duration}, productive={self.productive})"
+        end_time = self.end_time if self.end_time else "tbd"
+        return f"ChromeSessionData(domain='{self.domain}', detail='{self.detail}', \n\tstart_time={self.start_time}, \n\tend_time={end_time}, duration={self.duration}, productive={self.productive})"
 
 
 class ProgramSessionData:
@@ -40,7 +42,8 @@ class ProgramSessionData:
         self.productive = False
 
     def __str__(self):
-        return f"ProgramSessionData(window_title='{self.window_title}', detail='{self.detail}', \n\tstart_time={self.start_time}, \n\tend_time={self.end_time}, duration={self.duration}, productive={self.productive})"
+        end_time = self.end_time if self.end_time else "tbd"
+        return f"ProgramSessionData(window_title='{self.window_title}', detail='{self.detail}', \n\tstart_time={self.start_time}, \n\tend_time={end_time}, duration={self.duration}, productive={self.productive})"
 
 
 class KeyboardAggregate:
