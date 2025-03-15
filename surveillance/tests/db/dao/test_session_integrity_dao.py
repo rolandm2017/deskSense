@@ -4,7 +4,7 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, Mock, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy import select, text
+from sqlalchemy import select, text, func
 
 from dotenv import load_dotenv
 import os
@@ -314,83 +314,99 @@ async def full_test_environment(
         "domain_logs": test_domain_logs,
         "daos": test_dao_instances
     }
+# Create a function that directly cleans up tables - this is simpler and more reliable
 
 
-@pytest.fixture(scope="function", autouse=True)
-async def cleanup_database(async_engine):
-    """Automatically clean up the database after each test"""
-    yield
+async def truncate_test_tables(engine):
+    """Truncate all test tables directly"""
+    # NOTE: IF you run the tests in a broken manner,
+    # ####  the first run AFTER fixing the break
+    # ####  MAY still look broken.
+    # ####  Because the truncation happens *at the end of* a test.
 
-    # Clean the specific tables after the test
-    async with async_engine.begin() as conn:
+    async with engine.begin() as conn:
         await conn.execute(text("TRUNCATE program_summary_logs RESTART IDENTITY CASCADE"))
         await conn.execute(text("TRUNCATE domain_summary_logs RESTART IDENTITY CASCADE"))
         await conn.execute(text("TRUNCATE system_change_log RESTART IDENTITY CASCADE"))
+        print("Tables truncated")
 
 
+# Modify your test functions to call the cleanup explicitly
 @pytest.mark.asyncio
 async def test_find_orphans(full_test_environment):
     """Test that orphaned sessions are correctly identified"""
-    # No need to await, the fixture already returns a resolved dictionary
     env = full_test_environment
+
+    # Get values from the environment
+    engine = env["engine"]
     shutdown_time = env["power_events"]["shutdown_time"]
     startup_time = env["power_events"]["startup_time"]
-
-    # Get the session integrity DAO
     session_integrity_dao = env["daos"]["session_integrity_dao"]
 
-    # Find orphans
-    program_orphans, domain_orphans = await session_integrity_dao.find_orphans(
-        shutdown_time, startup_time
-    )
+    try:
+        # Find orphans
+        program_orphans, domain_orphans = await session_integrity_dao.find_orphans(
+            shutdown_time, startup_time
+        )
 
-    # We should have 2 program orphans and 2 domain orphans
-    assert len(program_orphans) == 2
-    assert len(domain_orphans) == 2
+        # Assertions
+        assert len(program_orphans) == 2
+        assert len(domain_orphans) == 2
+        assert any(log.program_name == "Notepad" for log in program_orphans)
+        assert any(log.program_name == "Outlook" for log in program_orphans)
+        assert any(log.domain_name ==
+                   "stackoverflow.com" for log in domain_orphans)
+        assert any(log.domain_name == "youtube.com" for log in domain_orphans)
 
-    # Check the specific orphans we're expecting
-    assert any(log.program_name == "Notepad" for log in program_orphans)
-    assert any(log.program_name == "Outlook" for log in program_orphans)
-
-    assert any(log.domain_name == "stackoverflow.com" for log in domain_orphans)
-    assert any(log.domain_name == "youtube.com" for log in domain_orphans)
+    finally:
+        # Clean up after test, regardless of whether it passed or failed
+        await truncate_test_tables(engine)
 
 
 @pytest.mark.asyncio
 async def test_find_phantoms(full_test_environment):
     """Test that phantom sessions are correctly identified"""
-    # No need to await, the fixture already returns a resolved dictionary
     env = full_test_environment
+
+    # Get values from the environment
+    engine = env["engine"]
     shutdown_time = env["power_events"]["shutdown_time"]
     startup_time = env["power_events"]["startup_time"]
-
-    # Get the session integrity DAO
     session_integrity_dao = env["daos"]["session_integrity_dao"]
 
-    # Find phantoms
-    program_phantoms, domain_phantoms = await session_integrity_dao.find_phantoms(
-        shutdown_time, startup_time
-    )
+    try:
+        # Find phantoms
+        program_phantoms, domain_phantoms = await session_integrity_dao.find_phantoms(
+            shutdown_time, startup_time
+        )
 
-    # We should have 1 program phantom and 1 domain phantom
-    assert len(program_phantoms) == 1
-    assert len(domain_phantoms) == 1
+        # Assertions
+        assert len(program_phantoms) == 1
+        assert len(domain_phantoms) == 1
+        assert program_phantoms[0].program_name == "Firefox"
+        assert domain_phantoms[0].domain_name == "reddit.com"
 
-    # Check the specific phantoms we're expecting
-    assert program_phantoms[0].program_name == "Firefox"
-    assert domain_phantoms[0].domain_name == "reddit.com"
+    finally:
+        # Clean up after test, regardless of whether it passed or failed
+        await truncate_test_tables(engine)
 
 
 @pytest.mark.asyncio
 async def test_audit_sessions(full_test_environment):
     """Test the complete audit_sessions method"""
-    # No need to await, the fixture already returns a resolved dictionary
     env = full_test_environment
+
+    # Get values from the environment
+    engine = env["engine"]
     shutdown_time = env["power_events"]["shutdown_time"]
     startup_time = env["power_events"]["startup_time"]
-
-    # Get the session integrity DAO
     session_integrity_dao = env["daos"]["session_integrity_dao"]
 
-    # Run the full audit
-    await session_integrity_dao.audit_sessions(shutdown_time, startup_time)
+    try:
+        # Run the full audit
+        await session_integrity_dao.audit_sessions(shutdown_time, startup_time)
+        # Test passes if no exceptions are raised
+
+    finally:
+        # Clean up after test, regardless of whether it passed or failed
+        await truncate_test_tables(engine)
