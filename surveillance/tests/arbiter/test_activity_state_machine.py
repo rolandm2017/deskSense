@@ -2,6 +2,8 @@
 import pytest
 
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+import time
 
 from src.arbiter.activity_state_machine import ActivityStateMachine, TransitionFromChromeMachine, TransitionFromProgramMachine
 from src.object.classes import ChromeSessionData, ProgramSessionData
@@ -12,11 +14,10 @@ from src.object.arbiter_classes import ApplicationInternalState, ChromeInternalS
 from ..mocks.mock_clock import MockClock
 
 
-# @pytest.mark.skip(reason="These tests are not ready yet")
 class TestActivityStateMachine:
     def test_load_first_state(self):
 
-        t1 = datetime.now()
+        t1 = datetime.now().astimezone()
         t2 = t1 + timedelta(seconds=4)
         t3 = t2 + timedelta(seconds=8)
         t4 = t3 + timedelta(seconds=10)
@@ -64,7 +65,7 @@ class TestActivityStateMachine:
 
     def test_handle_series(self):
 
-        t1 = datetime.now()
+        t1 = datetime.now().astimezone()
         t2 = t1 + timedelta(seconds=6)
         t3 = t2 + timedelta(seconds=5)
         t4 = t3 + timedelta(seconds=4)
