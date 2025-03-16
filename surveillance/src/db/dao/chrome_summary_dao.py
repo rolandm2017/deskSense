@@ -53,13 +53,16 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             # existing_entry = await result.scalar_one_or_none()  # Adding await here makes the program fail
             # This is how it is properly done, this unawaited version works
             existing_entry = result.scalar_one_or_none()
-
+            self.logger.log_yellow_multiple(
+                "[debug]", str(chrome_session.duration))
             if existing_entry:
+
                 if chrome_session.duration and chrome_session.duration > timedelta(hours=1):
                     self.logger.log_red(
                         "[critical - duration] " + str(chrome_session.duration) + " for " + existing_entry.domain_name)
                     raise SuspiciousDurationError("duration")
-                impossibly_long_day = existing_entry.hours_spent > 24
+
+                impossibly_long_day = existing_entry.hours_spent > 16
                 if impossibly_long_day:
                     self.logger.log_red(
                         "[critical - long day] " + str(existing_entry.hours_spent) + " for " + existing_entry.domain_name)
