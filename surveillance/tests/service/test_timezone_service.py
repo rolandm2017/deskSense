@@ -29,8 +29,6 @@ def test_convert_tab_change_timezone():
 
     start_time = updated_tab_change_event.startTime
 
-    assert isinstance(start_time, datetime)
-
     assert str(start_time.tzinfo) == local_time_zone
 
     offset = start_time.utcoffset()
@@ -38,3 +36,40 @@ def test_convert_tab_change_timezone():
     offset_hours = int(offset.total_seconds() / 3600)
 
     assert offset_hours in [regular_tz_offset, daylight_savings_tz_offset]
+
+
+def test_real_scenario():
+    # from receive_chrome_tab:
+    #
+    # print(tab_change_event.startTime, "=== === 381ru") => 2025-03-16 01: 27: 17.175000+00: 00 == = == = 381ru
+    # print(tz_for_user) => America/Los_Angeles
+    # tabTitle = 'Timezone Conversion Issue' url = 'chatgpt.com' startTime = datetime.datetime(2025, 3, 15, 10, 27, 17, 175000, tzinfo= < DstTzInfo 'America/Los_Angeles' PDT-1 day, 17: 00: 00 DST > ) 386ru
+    # 2025-03-15 10: 27: 17.175000-07: 00 387ru
+    #
+
+    # ### Cook start scenario:
+    march_16_at_1_am = datetime(2025, 3, 16, 1, 27, 17)
+    event = TabChangeEvent(tabTitle="foo", url="bar",
+                           startTime=march_16_at_1_am)
+    tz_for_user = timezone_service.get_tz_for_user(
+        9000)
+    updated_tab_change_event = timezone_service.convert_tab_change_timezone(
+        event, tz_for_user)
+
+    assert str(updated_tab_change_event.startTime.tzinfo) == local_time_zone
+
+    offset = updated_tab_change_event.startTime.utcoffset()
+    assert hasattr(offset, "total_seconds") and offset is not None
+    offset_hours = int(offset.total_seconds() / 3600)
+
+    assert offset_hours in [regular_tz_offset, daylight_savings_tz_offset]
+
+    # Test that the new time really really did come out as intended
+
+    output_hours = updated_tab_change_event.startTime.hour
+
+    expected_hours = (march_16_at_1_am.hour + regular_tz_offset) % 24
+    expected_hours_v2 = (march_16_at_1_am.hour +
+                         daylight_savings_tz_offset) % 24
+
+    assert output_hours in [expected_hours, expected_hours_v2]

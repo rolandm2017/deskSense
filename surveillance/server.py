@@ -383,6 +383,7 @@ async def receive_chrome_tab(
         # NOTE: tab_change_event.startTime is in UTC
         tz_for_user = timezone_service.get_tz_for_user(
             user_id)
+        print(tz_for_user)
         updated_tab_change_event = timezone_service.convert_tab_change_timezone(
             tab_change_event, tz_for_user)
 

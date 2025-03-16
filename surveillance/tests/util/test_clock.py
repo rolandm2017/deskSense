@@ -115,3 +115,5 @@ def test_timezones_are_same():
 
     assert user_facing_clock.timezones_are_same(aware_dt, aware_dt_2)
     assert user_facing_clock.timezones_are_same(another, another_v2)
+    assert not user_facing_clock.timezones_are_same(
+        aware_dt, another), "Different TZ datetimes failed detection"
