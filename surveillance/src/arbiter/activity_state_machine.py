@@ -66,25 +66,26 @@ class ActivityStateMachine:
         # FIXME: getting vals like 8h01m, 8h02m
         session_start = state.session.start_time
 
-        if not self.user_facing_clock.is_timezone_aware(now):
-            raise TimezoneUnawareError("now")
-        elif not self.user_facing_clock.is_timezone_aware(session_start):
-            raise TimezoneUnawareError("now")
-        elif not self.user_facing_clock.timezones_are_same(now, session_start):
-            raise MismatchedTimezonesError()
-        else:
-            print(now.tzinfo, now)
-            print(session_start.tzinfo, session_start)
-            self.logger.log_blue("[debug] none of those errors happened")
-
         duration = now - session_start
-        if duration > timedelta(hours=1):
-            self.logger.log_red_multiple(
-                "[critical - Concl Session] :: ", str(duration))
-            raise SuspiciousDurationError("duration")
-        else:
 
-            self.logger.log_blue("[debug] duration was ok: " + str(duration))
+        # if not self.user_facing_clock.is_timezone_aware(now):
+        #     raise TimezoneUnawareError("now")
+        # elif not self.user_facing_clock.is_timezone_aware(session_start):
+        #     raise TimezoneUnawareError("now")
+        # elif not self.user_facing_clock.timezones_are_same(now, session_start):
+        #     raise MismatchedTimezonesError()
+        # else:
+        #     print(now.tzinfo, now)
+        #     print(session_start.tzinfo, session_start)
+        #     self.logger.log_blue("[debug] none of those errors happened")
+
+        # if duration > timedelta(hours=1):
+        #     self.logger.log_red_multiple(
+        #         "[critical - Concl Session] :: ", str(duration))
+        #     raise SuspiciousDurationError("duration")
+        # else:
+
+        #     self.logger.log_blue("[debug] duration was ok: " + str(duration))
 
         state.session.duration = duration
         state.session.end_time = now

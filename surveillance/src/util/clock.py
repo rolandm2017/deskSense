@@ -27,12 +27,26 @@ class SystemClock(ClockProtocol):
 
 class UserFacingClock(ClockProtocol):
     def now(self) -> datetime:
+        # utc_now = datetime.now(timezone.utc)
+
+        # # Convert it to the local timezone explicitly
+        # local_now = utc_now.astimezone(ZoneInfo(local_time_zone))
+
+        # return local_now
         return datetime.now(ZoneInfo(local_time_zone))
         # return datetime.now()
 
     def seconds_have_elapsed(self, current_time: datetime, previous_time: datetime, seconds: int) -> bool:
-        elapsed = current_time - previous_time
-        return elapsed >= timedelta(seconds=seconds)
+        """
+        Arguments dictate that the 1st arg is closer to the present than the 2nd arg.
+        Alternatively: The 2nd arg happened further in the past than the 1st.
+        """
+        if current_time > previous_time:
+            elapsed = current_time - previous_time
+            print(elapsed, seconds, '47ru')
+            return elapsed >= timedelta(seconds=seconds)
+        else:
+            raise ValueError("current_time must be later than previous_time.")
 
     def get_start_of_week(self, user_tz, date):
         pass
