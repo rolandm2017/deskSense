@@ -5,13 +5,12 @@ from typing import List, cast
 
 from ..db.models import TimelineEntryObj
 
-from ..config.definitions import local_time_zone
+from ..config.definitions import local_time_zone, daylight_savings_tz_offset
 
 
 def account_for_timezone_offset(dt, users_local_tz_offset):
-    utc_tz = pytz.timezone('UTC')
-    offset = 8  # utc to
-    return dt - timedelta(hours=offset)
+
+    return dt + timedelta(hours=users_local_tz_offset)
 
 
 def convert_to_timezone(dt, timezone_str):
@@ -32,8 +31,10 @@ def convert_to_timezone(dt, timezone_str):
     # Convert to the target timezone
     target_tz = pytz.timezone(timezone_str)
     with_updated_tz = dt.astimezone(target_tz)
-    with_updated_time = account_for_timezone_offset(with_updated_tz, None)
-    return with_updated_time
+    # with_updated_time = account_for_timezone_offset(
+    #     with_updated_tz, daylight_savings_tz_offset)
+    # return with_updated_time
+    return with_updated_tz
 
 
 def format_for_local_time(events: List[TimelineEntryObj]) -> List[TimelineEntryObj]:
@@ -43,13 +44,11 @@ def format_for_local_time(events: List[TimelineEntryObj]) -> List[TimelineEntryO
         # Create a copy or modify in-place as needed
         entry_copy = event  # or make a deep copy if needed
 
-        # Convert start time to PST
         start_value = cast(datetime, entry_copy.start)
         if start_value:
             entry_copy.start = convert_to_timezone(  # type: ignore
                 start_value, local_time_zone)
 
-        # Convert end time to PST
         end_value = cast(datetime, entry_copy.end)
         if end_value:
             entry_copy.end = convert_to_timezone(  # type: ignore
