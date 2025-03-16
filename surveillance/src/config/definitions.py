@@ -5,6 +5,12 @@ load_dotenv()
 
 LOCAL_TIME_ZONE = os.getenv("LOCAL_TIME_ZONE")
 
+local_tz_offset = os.getenv("LOCAL_TIME_OFFSET")
+local_tz_dst_offset = os.getenv("LOCAL_TIME_OFFSET_DST")
+
+if local_tz_dst_offset is None or local_tz_offset is None:
+    raise ValueError("Failed to load timezone offsets")
+
 power_on_off_debug_file = "march10_on_off_times.txt"
 
 if LOCAL_TIME_ZONE is None or LOCAL_TIME_ZONE == "":
@@ -13,6 +19,8 @@ if LOCAL_TIME_ZONE is None or LOCAL_TIME_ZONE == "":
 
 
 local_time_zone = LOCAL_TIME_ZONE
+regular_tz_offset = int(local_tz_offset)
+daylight_savings_tz_offset = int(local_tz_dst_offset)
 
 MAX_QUEUE_LENGTH = 40
 
