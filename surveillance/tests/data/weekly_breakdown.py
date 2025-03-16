@@ -24,7 +24,7 @@ def create_chrome_session_test_data() -> List:
     github_session.domain = "github.com"
     github_session.detail = "Pull request review"
     github_session.start_time = add_time(march_2_2025, 9, 15, 0)
-    github_session.end_time = add_time(march_2_2025, 11, 0, 0)
+    github_session.end_time = add_time(march_2_2025, 9, 30, 0)
     github_session.duration = github_session.end_time - github_session.start_time
     github_session.productive = True
     chrome_sessions.append(github_session)
@@ -76,7 +76,7 @@ def create_chrome_session_test_data() -> List:
     chatgpt_session.domain = "chat.openai.com"
     chatgpt_session.detail = "Debugging code issues"
     chatgpt_session.start_time = add_time(march_2_2025, 16, 0, 0)
-    chatgpt_session.end_time = add_time(march_2_2025, 17, 6, 0)
+    chatgpt_session.end_time = add_time(march_2_2025, 16, 6, 0)
     chatgpt_session.duration = chatgpt_session.end_time - chatgpt_session.start_time
     chatgpt_session.productive = True
     chrome_sessions.append(chatgpt_session)
@@ -88,7 +88,7 @@ def create_chrome_session_test_data() -> List:
     github_session2.domain = "github.com"
     github_session2.detail = "Code review and commits"
     github_session2.start_time = add_time(march_3_2025, 9, 0, 0)
-    github_session2.end_time = add_time(march_3_2025, 11, 6, 0)
+    github_session2.end_time = add_time(march_3_2025, 9, 16, 0)
     github_session2.duration = github_session2.end_time - github_session2.start_time
     github_session2.productive = True
     chrome_sessions.append(github_session2)
@@ -98,7 +98,7 @@ def create_chrome_session_test_data() -> List:
     jira_session.domain = "jira.company.com"
     jira_session.detail = "Task management and updates"
     jira_session.start_time = add_time(march_3_2025, 11, 15, 0)
-    jira_session.end_time = add_time(march_3_2025, 12, 45, 0)
+    jira_session.end_time = add_time(march_3_2025, 11, 45, 0)
     jira_session.duration = jira_session.end_time - jira_session.start_time
     jira_session.productive = True
     chrome_sessions.append(jira_session)
@@ -139,7 +139,7 @@ def create_chrome_session_test_data() -> List:
     chatgpt_session2 = ChromeSessionData()
     chatgpt_session2.domain = "chat.openai.com"
     chatgpt_session2.detail = "Generating test data"
-    chatgpt_session2.start_time = add_time(march_3_2025, 16, 0, 0)
+    chatgpt_session2.start_time = add_time(march_3_2025, 16, 50, 0)
     chatgpt_session2.end_time = add_time(march_3_2025, 17, 24, 0)
     chatgpt_session2.duration = chatgpt_session2.end_time - chatgpt_session2.start_time
     chatgpt_session2.productive = True
@@ -158,8 +158,8 @@ def create_program_session_test_data() -> List:
     vscode_session = ProgramSessionData()
     vscode_session.window_title = "Visual Studio Code"
     vscode_session.detail = "Working on async SQLAlchemy project"
-    vscode_session.start_time = add_time(march_2_2025, 9, 0, 0)
-    vscode_session.end_time = add_time(march_2_2025, 11, 45, 0)
+    vscode_session.start_time = add_time(march_2_2025, 9, 45, 0)
+    vscode_session.end_time = add_time(march_2_2025, 10, 15, 0)
     vscode_session.duration = vscode_session.end_time - vscode_session.start_time
     vscode_session.productive = True
     program_sessions.append(vscode_session)
@@ -168,7 +168,7 @@ def create_program_session_test_data() -> List:
     excel_session = ProgramSessionData()
     excel_session.window_title = "Microsoft Excel"
     excel_session.detail = "Data analysis for project metrics"
-    excel_session.start_time = add_time(march_2_2025, 12, 0, 0)
+    excel_session.start_time = add_time(march_2_2025, 12, 39, 0)
     excel_session.end_time = add_time(march_2_2025, 13, 27, 0)
     excel_session.duration = excel_session.end_time - excel_session.start_time
     excel_session.productive = True
@@ -199,16 +199,13 @@ def create_program_session_test_data() -> List:
     pycharm_session.window_title = "PyCharm"
     pycharm_session.detail = "Database model development"
     pycharm_session.start_time = add_time(march_2_2025, 14, 30, 0)
-    pycharm_session.end_time = add_time(march_2_2025, 17, 45, 0)
-    pycharm_session.duration = pycharm_session.end_time - pycharm_session.start_time
-    pycharm_session.productive = True
-    program_sessions.append(pycharm_session)
+    pycharm_session.end_time = add_time(march_2_2025, 15, 11, 0)
 
     # Spotify session
     spotify_session = ProgramSessionData()
     spotify_session.window_title = "Spotify"
     spotify_session.detail = "Background music while working"
-    spotify_session.start_time = add_time(march_2_2025, 9, 0, 0)
+    spotify_session.start_time = add_time(march_2_2025, 12, 49, 0)
     spotify_session.end_time = add_time(march_2_2025, 13, 30, 0)
     spotify_session.duration = spotify_session.end_time - spotify_session.start_time
     spotify_session.productive = False  # Background app
@@ -220,7 +217,7 @@ def create_program_session_test_data() -> List:
     vscode_session2 = ProgramSessionData()
     vscode_session2.window_title = "Visual Studio Code"
     vscode_session2.detail = "Test suite development"
-    vscode_session2.start_time = add_time(march_3_2025, 9, 0, 0)
+    vscode_session2.start_time = add_time(march_3_2025, 12, 0, 0)
     vscode_session2.end_time = add_time(march_3_2025, 12, 30, 0)
     vscode_session2.duration = vscode_session2.end_time - vscode_session2.start_time
     vscode_session2.productive = True
@@ -230,7 +227,7 @@ def create_program_session_test_data() -> List:
     zoom_session = ProgramSessionData()
     zoom_session.window_title = "Zoom"
     zoom_session.detail = "Team standups and planning meeting"
-    zoom_session.start_time = add_time(march_3_2025, 13, 0, 0)
+    zoom_session.start_time = add_time(march_3_2025, 14, 1, 0)
     zoom_session.end_time = add_time(march_3_2025, 15, 0, 0)
     zoom_session.duration = zoom_session.end_time - zoom_session.start_time
     zoom_session.productive = True
@@ -240,7 +237,7 @@ def create_program_session_test_data() -> List:
     word_session = ProgramSessionData()
     word_session.window_title = "Microsoft Word"
     word_session.detail = "Documentation writing"
-    word_session.start_time = add_time(march_3_2025, 15, 10, 0)
+    word_session.start_time = add_time(march_3_2025, 15, 25, 0)
     word_session.end_time = add_time(march_3_2025, 16, 22, 0)
     word_session.duration = word_session.end_time - word_session.start_time
     word_session.productive = True
@@ -250,7 +247,7 @@ def create_program_session_test_data() -> List:
     chrome_session = ProgramSessionData()
     chrome_session.window_title = "Chrome"
     chrome_session.detail = "Web browsing for work research"
-    chrome_session.start_time = add_time(march_3_2025, 9, 15, 0)
+    chrome_session.start_time = add_time(march_3_2025, 12, 15, 0)
     chrome_session.end_time = add_time(march_3_2025, 13, 0, 0)
     chrome_session.duration = chrome_session.end_time - chrome_session.start_time
     chrome_session.productive = True
@@ -270,7 +267,7 @@ def create_program_session_test_data() -> List:
     slack_session2 = ProgramSessionData()
     slack_session2.window_title = "Slack"
     slack_session2.detail = "End of day team updates"
-    slack_session2.start_time = add_time(march_3_2025, 17, 30, 0)
+    slack_session2.start_time = add_time(march_3_2025, 17, 50, 0)
     slack_session2.end_time = add_time(march_3_2025, 18, 45, 0)
     slack_session2.duration = slack_session2.end_time - slack_session2.start_time
     slack_session2.productive = True
@@ -338,7 +335,7 @@ def create_duplicate_program_sessions() -> List:
     vscode_session_dup = ProgramSessionData()
     vscode_session_dup.window_title = "Visual Studio Code"
     vscode_session_dup.detail = "Debugging database connections"
-    vscode_session_dup.start_time = add_time(march_3_2025, 15, 0, 0)
+    vscode_session_dup.start_time = add_time(march_3_2025, 15, 40, 0)
     vscode_session_dup.end_time = add_time(march_3_2025, 16, 30, 0)
     vscode_session_dup.duration = vscode_session_dup.end_time - \
         vscode_session_dup.start_time
@@ -360,7 +357,7 @@ def create_duplicate_program_sessions() -> List:
     chrome_session_dup.window_title = "Chrome"
     chrome_session_dup.detail = "Researching SQLAlchemy async features"
     chrome_session_dup.start_time = add_time(march_3_2025, 16, 45, 0)
-    chrome_session_dup.end_time = add_time(march_3_2025, 18, 0, 0)
+    chrome_session_dup.end_time = add_time(march_3_2025, 17, 20, 0)
     chrome_session_dup.duration = chrome_session_dup.end_time - \
         chrome_session_dup.start_time
     chrome_session_dup.productive = True
@@ -370,7 +367,7 @@ def create_duplicate_program_sessions() -> List:
     pycharm_session_dup = ProgramSessionData()
     pycharm_session_dup.window_title = "PyCharm"
     pycharm_session_dup.detail = "Schema improvements"
-    pycharm_session_dup.start_time = add_time(march_2_2025, 18, 0, 0)
+    pycharm_session_dup.start_time = add_time(march_2_2025, 18, 50, 0)
     pycharm_session_dup.end_time = add_time(march_2_2025, 19, 15, 0)
     pycharm_session_dup.duration = pycharm_session_dup.end_time - \
         pycharm_session_dup.start_time
