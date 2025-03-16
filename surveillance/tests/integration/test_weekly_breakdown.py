@@ -27,7 +27,7 @@ from src.db.dao.chrome_summary_dao import ChromeSummaryDao
 from src.db.dao.summary_logs_dao import ProgramLoggingDao, ChromeLoggingDao
 
 from src.db.models import Base, DailyDomainSummary, DailyProgramSummary
-from surveillance.tests.data.weekly_breakdown import create_chrome_session_test_data, create_duplicate_chrome_sessions, create_duplicate_program_sessions, create_program_session_test_data
+from ..data.weekly_breakdown import create_chrome_session_test_data, create_duplicate_chrome_sessions, create_duplicate_program_sessions, create_program_session_test_data, march_2_2025, march_3_2025
 
 from ..mocks.mock_clock import MockClock
 
@@ -78,7 +78,7 @@ async def async_engine():
     test_engine = create_async_engine(
         ASYNC_TEST_DB_URL,
         # echo=True,
-        isolation_level="AUTOCOMMIT"  # Add this
+        isolation_level="AUTOCOMMIT"
     )
 
     # Create all tables
@@ -122,7 +122,7 @@ async def async_session_maker(async_engine):
 async def setup_parts(async_session_maker):
     """
     Fixture that initializes a DashboardService instance for testing.
-    This connects to the real database.
+    This connects to the test db, unless there is an unforseen problem.
     """
 
     session_maker_async: async_sessionmaker = await async_session_maker
@@ -152,56 +152,74 @@ async def setup_parts(async_session_maker):
 
 @pytest.fixture
 async def setup_with_populated_db(setup_parts):
-    # Write test data and populate the test db. DO NOT use the real db.
-    # Write test data and populate the test db. DO NOT use the real db.
-    # Write test data and populate the test db. DO NOT use the real db.
-    # Write test data and populate the test db. DO NOT use the real db.
-    service = setup_parts[0]
-    program_summary_dao = setup_parts[1]
-    chrome_summary_dao = setup_parts[2]
+    # Write test data and populate the test db. DO NOT use the real db. You will mess it up.
+    # Write test data and populate the test db. DO NOT use the real db. You will mess it up.
+    # Write test data and populate the test db. DO NOT use the real db. You will mess it up.
+    # Write test data and populate the test db. DO NOT use the real db. You will mess it up.
+    parts = await anext(setup_parts)
+    service, program_summary_dao, chrome_summary_dao = parts
 
-    test_data_programs = [
-        create_program_session_test_data(),  create_duplicate_program_sessions()]
-    test_data_chrome = [create_chrome_session_test_data(),
-                        create_duplicate_chrome_sessions()]
+    test_data_programs = create_program_session_test_data() + \
+        create_duplicate_program_sessions()
+    test_data_chrome = create_chrome_session_test_data() + \
+        create_duplicate_chrome_sessions()
 
     for session in test_data_programs:
-        await program_summary_dao.create_if_new_else_update(session)
+        right_now_arg = session.end_time  # type:ignore
+        await program_summary_dao.create_if_new_else_update(session, right_now_arg)
     for session in test_data_chrome:
-        await chrome_summary_dao.create_if_new_else_update(session)
+        right_now_arg = session.end_time  # type:ignore
+        await chrome_summary_dao.create_if_new_else_update(session, right_now_arg)
 
     yield service, program_summary_dao, chrome_summary_dao
 
 
 @pytest.mark.asyncio
 async def test_reading_individual_days(setup_with_populated_db):
-    program_summary_dao = setup_with_populated_db[1]
-    chrome_summary_dao = setup_with_populated_db[2]
-    feb_23_2025_dt = datetime(2025, 2, 23)  # Year, Month, Day
-    feb_24 = feb_23_2025_dt + timedelta(days=1)
-    feb_25 = feb_23_2025_dt + timedelta(days=2)
+    parts = await anext(setup_with_populated_db)
+    service, program_summary_dao, chrome_summary_dao = parts
 
-    # NOTE that this date IS in the test data.
+    test_day_1 = march_2_2025
+    test_day_2 = march_3_2025
+    test_day_3 = march_3_2025 + timedelta(days=1)
 
-    daily_chrome_summaries: List[DailyDomainSummary] = await chrome_summary_dao.read_day(feb_23_2025_dt)
-    daily_program_summaries: List[DailyProgramSummary] = await program_summary_dao.read_day(feb_23_2025_dt)
+    # NOTE that this date is in the test data for sure! it's circular.
+
+    daily_program_summaries: List[DailyProgramSummary] = await program_summary_dao.read_day(test_day_1)
+    daily_chrome_summaries: List[DailyDomainSummary] = await chrome_summary_dao.read_day(test_day_1)
+
+    daily_program_summaries_2: List[DailyProgramSummary] = await program_summary_dao.read_day(test_day_2)
+    daily_chrome_summaries_2: List[DailyDomainSummary] = await chrome_summary_dao.read_day(test_day_2)
+
+    count_of_march_2 = 16  # ctrl + f "start_time = add_time(march_2_2025"
+    count_of_march_3 = 16  # ctrl + f "start_time = add_time(march_3_2025"
+
+    assert len(daily_program_summaries) + \
+        len(daily_chrome_summaries) == count_of_march_2
+    assert len(daily_program_summaries_2) + \
+        len(daily_chrome_summaries_2) == count_of_march_3
+
+    zero_pop_day_programs: List[DailyProgramSummary] = await program_summary_dao.read_day(test_day_3)
+    zero_pop_day_chrome: List[DailyDomainSummary] = await chrome_summary_dao.read_day(test_day_3)
+
+    assert len(zero_pop_day_programs) + len(zero_pop_day_chrome) == 0
 
 
-# @pytest.mark.asyncio
-# async def test_week_of_feb_23(setup_with_populated_db):
-#     dashboard_service = setup_with_populated_db[0]
+# # @pytest.mark.asyncio
+# # async def test_week_of_feb_23(setup_with_populated_db):
+# #     dashboard_service = setup_with_populated_db[0]
 
-#     feb_23_2025_dt = datetime(2025, 2, 23)  # Year, Month, Day
-#     weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(feb_23_2025_dt)
+# #     feb_23_2025_dt = datetime(2025, 2, 23)  # Year, Month, Day
+# #     weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(feb_23_2025_dt)
 
-#     # Assert that no  day has more than 24 hours of recorded time
+# #     # Assert that no  day has more than 24 hours of recorded time
 
 
-# @pytest.mark.asyncio
-# async def test_week_of_march_2(setup_with_populated_db):
-#     dashboard_service = setup_with_populated_db[0]
-#     march_2_2025_dt = datetime(2025, 3, 2)  # Year, Month, Day
+# # @pytest.mark.asyncio
+# # async def test_week_of_march_2(setup_with_populated_db):
+# #     dashboard_service = setup_with_populated_db[0]
+# #     march_2_2025_dt = datetime(2025, 3, 2)  # Year, Month, Day
 
-#     weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(march_2_2025_dt)
+# #     weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(march_2_2025_dt)
 
-#     # Assert that no  day has more than 24 hours of recorded time
+# #     # Assert that no  day has more than 24 hours of recorded time
