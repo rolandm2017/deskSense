@@ -46,7 +46,7 @@ class ProgramSessionData:
         return f"ProgramSessionData(window_title='{self.window_title}', detail='{self.detail}', \n\tstart_time={self.start_time}, \n\tend_time={end_time}, duration={self.duration}, productive={self.productive})"
 
 
-class KeyboardAggregate:
+class KeyboardAggregate:  # TODO: Rename "PeripheralsAggregatee" & use in Mouse Aggregator
     """
     A deliverable that becomes a database entry.
 
@@ -60,6 +60,22 @@ class KeyboardAggregate:
 
     def __str__(self):
         return f"Keyboard aggregate from {self.start_time} to {self.end_time}"
+
+
+class PeripheralAggregate:
+    """
+    A deliverable that becomes a database entry.
+
+    This is the FINISHED package.
+    """
+
+    def __init__(self, start_time, end_time, count_of_events=None):
+        self.start_time = start_time
+        self.end_time = end_time
+        self.count = count_of_events
+
+    def __str__(self):
+        return f"Peripheral aggregate from {self.start_time} to {self.end_time}"
 
 
 class MouseCoords:
