@@ -79,7 +79,6 @@ class ActivityArbiter:
             # ### Calculate the duration that the current state has existed
             # end_time & duration is set inside the ASM
             concluded_session = self.state_machine.current_state.session
-            print("[debug]", concluded_session)
 
             # Get the current state's session to put into the summary DAO along w/ the time
             # old_session.duration = now - old_session.start_time

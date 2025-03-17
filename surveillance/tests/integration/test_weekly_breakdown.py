@@ -1,10 +1,10 @@
-import pytest
-
+# tests/integration/test_weekly_breakdown.py
 
 # The file is testing this:
 # @app.get("/dashboard/breakdown/week/{week_of}", response_model=ProductivityBreakdownByWeek)
 
 # But without the hassle of running the server to make a GET request.
+import pytest
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy import text
@@ -27,7 +27,21 @@ from src.db.dao.chrome_summary_dao import ChromeSummaryDao
 from src.db.dao.summary_logs_dao import ProgramLoggingDao, ChromeLoggingDao
 
 from src.db.models import Base, DailyDomainSummary, DailyProgramSummary
-from ..data.weekly_breakdown import create_chrome_session_test_data, create_duplicate_chrome_sessions, create_duplicate_program_sessions, create_program_session_test_data, march_2_2025, march_3_2025
+from src.object.classes import ChromeSessionData, ProgramSessionData
+from ..data.weekly_breakdown_programs import (
+    duplicate_programs_march_2, duplicate_programs_march_3rd,
+    programs_march_2nd, programs_march_3rd,
+    march_2_2025, march_3_2025,
+    march_2_program_count, march_3_program_count, unique_programs, feb_program_count,
+    programs_feb_23, programs_feb_24, programs_feb_26
+)
+from ..data.weekly_breakdown_chrome import (
+    duplicates_chrome_march_2, duplicates_chrome_march_3rd,
+    chrome_march_2nd, chrome_march_3rd,
+    march_2_chrome_count, march_3_chrome_count, unique_domains, feb_chrome_count,
+    chrome_feb_23, chrome_feb_24, chrome_feb_26
+)
+
 
 from ..mocks.mock_clock import MockClock
 
@@ -145,33 +159,141 @@ async def setup_parts(async_session_maker):
         chrome_logging_dao=chrome_logging_dao
     )
 
-    yield service, program_summary_dao, chrome_summary_dao
+    yield service, program_summary_dao, chrome_summary_dao, session_maker_async
     # Clean up if needed
     # If your DAOs have close methods, you could call them here
 
 
+async def truncate_test_tables(session_maker_async):
+    """Truncate all test tables directly"""
+    # NOTE: IF you run the tests in a broken manner,
+    # ####  the first run AFTER fixing the break
+    # ####  MAY still look broken.
+    # ####  Because the truncation happens *at the end of* a test.
+
+    async with session_maker_async() as session:
+        await session.execute(text("TRUNCATE daily_program_summaries RESTART IDENTITY CASCADE"))
+        await session.execute(text("TRUNCATE daily_chrome_summaries RESTART IDENTITY CASCADE"))
+        await session.execute(text("TRUNCATE program_summary_logs RESTART IDENTITY CASCADE"))
+        await session.execute(text("TRUNCATE domain_summary_logs RESTART IDENTITY CASCADE"))
+        await session.execute(text("TRUNCATE system_change_log RESTART IDENTITY CASCADE"))
+        await session.commit()
+        print("Super truncated tables")
+
+
 @pytest.fixture
 async def setup_with_populated_db(setup_parts):
+
     # Write test data and populate the test db. DO NOT use the real db. You will mess it up.
     # Write test data and populate the test db. DO NOT use the real db. You will mess it up.
     # Write test data and populate the test db. DO NOT use the real db. You will mess it up.
     # Write test data and populate the test db. DO NOT use the real db. You will mess it up.
     parts = await anext(setup_parts)
-    service, program_summary_dao, chrome_summary_dao = parts
+    service, program_summary_dao, chrome_summary_dao, session_maker_async = parts
 
-    test_data_programs = create_program_session_test_data() + \
-        create_duplicate_program_sessions()
-    test_data_chrome = create_chrome_session_test_data() + \
-        create_duplicate_chrome_sessions()
+    await truncate_test_tables(session_maker_async)
 
+    test_data_feb_programs = programs_feb_23() + programs_feb_24() + \
+        programs_feb_26()
+    test_data_feb_chrome = chrome_feb_23() + chrome_feb_24() + \
+        chrome_feb_26()
+
+    for s in test_data_feb_programs:
+        await program_summary_dao.create_if_new_else_update(s, s.end_time)
+    for s in test_data_feb_chrome:
+        await chrome_summary_dao.create_if_new_else_update(s, s.end_time)
+
+    test_data_programs = programs_march_2nd() + programs_march_3rd() + \
+        duplicate_programs_march_2() + duplicate_programs_march_3rd()
+    test_data_chrome = chrome_march_2nd() + \
+        chrome_march_3rd() + duplicates_chrome_march_2() + \
+        duplicates_chrome_march_3rd()
+
+    assert all(isinstance(s, ProgramSessionData)
+               for s in test_data_programs), "There was a bug in setup"
+    assert all(isinstance(s, ChromeSessionData)
+               for s in test_data_chrome), "There was a bug in setup"
+
+    programs_sum = timedelta()
+    chrome_sum = timedelta()
+    for session in test_data_programs:
+        programs_sum = programs_sum + session.duration
+    for session in test_data_chrome:
+        chrome_sum = chrome_sum + session.duration
+    print(programs_sum, chrome_sum)
     for session in test_data_programs:
         right_now_arg = session.end_time  # type:ignore
+        programs_sum = programs_sum + session.duration
+        # print(session.window_title, session.duration)
         await program_summary_dao.create_if_new_else_update(session, right_now_arg)
+
     for session in test_data_chrome:
         right_now_arg = session.end_time  # type:ignore
+        # print(session.domain, session.duration)
         await chrome_summary_dao.create_if_new_else_update(session, right_now_arg)
 
     yield service, program_summary_dao, chrome_summary_dao
+
+
+@pytest.mark.asyncio
+async def test_read_all(setup_with_populated_db):
+    """This test is mostly testing setup conditions for other tests."""
+    parts = await anext(setup_with_populated_db)
+    service, program_summary_dao, chrome_summary_dao = parts
+
+    # # But first, do some basic sanity checks:
+    all_for_verification = await program_summary_dao.read_all()
+
+    feb_vals = []
+
+    march_2_vals = []
+    march_3rd_vals = []
+
+    # FIXME:
+    for v in all_for_verification:
+        if v.gathering_date.month == 2:
+            feb_vals.append(v)
+        elif v.gathering_date.day == 2:
+            march_2_vals.append(v)
+        elif v.gathering_date.day == 3:
+            march_3rd_vals.append(v)
+        else:
+            print(v, 'unexpected date for gathering_date')
+
+    # So they're actually, like, there.
+    assert len(feb_vals) == feb_program_count
+    assert len(
+        march_2_vals) == march_2_program_count, "A Program was missing"
+    assert len(
+        march_3rd_vals) == march_3_program_count, "A Program was missing"
+
+    feb_vals_chrome = []
+
+    chrome_march2_vals = []
+    chrome_march_3rd_vals = []
+
+    all_domains_for_verify = await chrome_summary_dao.read_all()
+
+    for v in all_domains_for_verify:
+        if v.gathering_date.month == 2:
+            feb_vals_chrome.append(v)
+        elif v.gathering_date.day == 2:
+            chrome_march2_vals.append(v)
+        elif v.gathering_date.day == 3:
+            chrome_march_3rd_vals.append(v)
+        else:
+            print(v, 'unexpected date for start_time')
+
+    assert len(feb_vals_chrome) == feb_chrome_count
+    assert len(
+        chrome_march2_vals) == march_2_chrome_count, "A Chrome entry was missing"
+    assert len(
+        chrome_march_3rd_vals) == march_3_chrome_count, "A Chrome entry was missing"
+
+    assert all(x.gathering_date.day ==
+               2 for x in chrome_march2_vals), "Failed to sort"
+    assert all(x.gathering_date.day ==
+               3 for x in chrome_march_3rd_vals), "Failed to sort"
 
 
 @pytest.mark.asyncio
@@ -179,20 +301,33 @@ async def test_reading_individual_days(setup_with_populated_db):
     parts = await anext(setup_with_populated_db)
     service, program_summary_dao, chrome_summary_dao = parts
 
-    test_day_1 = march_2_2025
-    test_day_2 = march_3_2025
     test_day_3 = march_3_2025 + timedelta(days=1)
 
     # NOTE that this date is in the test data for sure! it's circular.
 
-    daily_program_summaries: List[DailyProgramSummary] = await program_summary_dao.read_day(test_day_1)
-    daily_chrome_summaries: List[DailyDomainSummary] = await chrome_summary_dao.read_day(test_day_1)
+    daily_program_summaries: List[DailyProgramSummary] = await program_summary_dao.read_day(march_2_2025)
+    daily_chrome_summaries: List[DailyDomainSummary] = await chrome_summary_dao.read_day(march_2_2025)
 
-    daily_program_summaries_2: List[DailyProgramSummary] = await program_summary_dao.read_day(test_day_2)
-    daily_chrome_summaries_2: List[DailyDomainSummary] = await chrome_summary_dao.read_day(test_day_2)
+    print(len(daily_program_summaries), march_2_program_count)
+    assert len(daily_program_summaries) == march_2_program_count
+    assert len(daily_chrome_summaries) == march_2_chrome_count
 
-    count_of_march_2 = 16  # ctrl + f "start_time = add_time(march_2_2025"
-    count_of_march_3 = 16  # ctrl + f "start_time = add_time(march_3_2025"
+    # ### Assert that the expected programs, domains are all in there
+
+    # ### Continue asserting that expected domains, programs are all in there
+
+    march_3_modified = march_3_2025 + timedelta(hours=1, minutes=9, seconds=33)
+
+    daily_program_summaries_2: List[DailyProgramSummary] = await program_summary_dao.read_day(march_3_modified)
+    daily_chrome_summaries_2: List[DailyDomainSummary] = await chrome_summary_dao.read_day(march_3_modified)
+
+    assert len(
+        daily_program_summaries_2) == march_3_program_count, "A program session didn't load"
+    assert len(
+        daily_chrome_summaries_2) == march_3_chrome_count, "A Chrome session didn't load"
+
+    count_of_march_2 = march_2_program_count + march_2_chrome_count
+    count_of_march_3 = march_3_program_count + march_3_chrome_count
 
     assert len(daily_program_summaries) + \
         len(daily_chrome_summaries) == count_of_march_2
@@ -205,14 +340,27 @@ async def test_reading_individual_days(setup_with_populated_db):
     assert len(zero_pop_day_programs) + len(zero_pop_day_chrome) == 0
 
 
-# # @pytest.mark.asyncio
-# # async def test_week_of_feb_23(setup_with_populated_db):
-# #     dashboard_service = setup_with_populated_db[0]
+@pytest.mark.asyncio
+async def test_week_of_feb_23(setup_with_populated_db):
+    parts = await anext(setup_with_populated_db)
+    service, program_summary_dao, chrome_summary_dao = parts
+    dashboard_service = service
 
-# #     feb_23_2025_dt = datetime(2025, 2, 23)  # Year, Month, Day
-# #     weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(feb_23_2025_dt)
+    feb_23_2025_dt = datetime(2025, 2, 23)  # Year, Month, Day
+    # ### ###
+    # # Check the test data to see what's in here
+    # ### ###
+    weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(feb_23_2025_dt)
 
-# #     # Assert that no  day has more than 24 hours of recorded time
+    assert all(isinstance(d, dict)
+               for d in weeks_overview), "Expected types not found"
+    assert all(
+        "day" in d and "productivity" in d and "leisure" in d for d in weeks_overview), "Expected keys not found"
+
+    # Assert that no  day has more than 16 hours of recorded time
+    sums = [d["productivity"] + d["leisure"] for d in weeks_overview]
+    assert all(
+        x < 16 for x in sums), "Some day had 16 hours or more of time recorded"
 
 
 # # @pytest.mark.asyncio

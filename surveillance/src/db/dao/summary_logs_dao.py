@@ -42,7 +42,7 @@ class ProgramLoggingDao(BaseQueueingDao):
             gathering_date=right_now.date(),
             created_at=right_now
         )
-        print("[pr] Creating ", log_entry)
+        # print("[pr] Creating ", log_entry)
         asyncio.create_task(self.queue_item(log_entry, ProgramSummaryLog))
 
     async def read_day_as_sorted(self, day) -> dict[str, ProgramSummaryLog]:
@@ -179,7 +179,7 @@ class ChromeLoggingDao(BaseQueueingDao):
             gathering_date=right_now.date(),
             created_at=right_now
         )
-        print("[ch] Creating ", log_entry)
+        # print("[ch] Creating ", log_entry)
         asyncio.create_task(self.queue_item(log_entry, DomainSummaryLog))
 
     async def read_day_as_sorted(self, day):
