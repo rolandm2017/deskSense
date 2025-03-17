@@ -79,11 +79,11 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
                 impossibly_long_day = existing_entry.hours_spent > 24
                 if impossibly_long_day:
                     self.logger.log_red(
-                        "[critical] " + str(existing_entry.hours_spent) + " for " + existing_entry.domain_name)
+                        "[critical] " + str(existing_entry.hours_spent) + " for " + existing_entry.program_name)
                     raise SuspiciousDurationError("long day")
                 if program_session.duration and program_session.duration > timedelta(hours=1):
                     self.logger.log_red(
-                        "[critical] " + str(program_session.duration) + " for " + existing_entry.domain_name)
+                        "[critical] " + str(program_session.duration) + " for " + existing_entry.program_name)
                     raise SuspiciousDurationError("duration")
                 # TODO: If duration > some_sus_threshold, throw err
                 # if existing_entry is not None:  # Changed from if existing_entry:
@@ -96,6 +96,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
                 #                              usage_duration_in_hours, right_now.strftime("%m-%d %H:%M:%S"))
                 await db_session.commit()
             else:
+                # print("creating entry for day ", today)
                 await self.create(target_program_name, usage_duration_in_hours, today)
         if is_shutdown:
             with open(power_on_off_debug_file, "a") as f:

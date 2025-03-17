@@ -53,8 +53,8 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             # existing_entry = await result.scalar_one_or_none()  # Adding await here makes the program fail
             # This is how it is properly done, this unawaited version works
             existing_entry = result.scalar_one_or_none()
-            self.logger.log_yellow_multiple(
-                "[debug]", str(chrome_session.duration))
+            # self.logger.log_yellow_multiple(
+            #     "[debug]", str(chrome_session.duration))
             if existing_entry:
 
                 if chrome_session.duration and chrome_session.duration > timedelta(hours=1):
@@ -75,7 +75,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
                 await session.commit()
             else:
                 print("[debug] NEW session: ",
-                      chrome_session.domain, usage_duration_in_hours)
+                      chrome_session.domain, usage_duration_in_hours, chrome_session.start_time.day)
                 await self.create(target_domain_name, usage_duration_in_hours, today)
         if is_shutdown:
             with open(power_on_off_debug_file, "a") as f:
@@ -121,9 +121,12 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def read_day(self, day: datetime) -> List[DailyDomainSummary]:
         """Read all entries for the given day."""
+        today_start = day.replace(hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_start = today_start + timedelta(days=1)
 
         query = select(DailyDomainSummary).where(
-            func.date(DailyDomainSummary.gathering_date) == day.date()
+            DailyDomainSummary.gathering_date >= today_start,
+            DailyDomainSummary.gathering_date < tomorrow_start
         )
         async with self.session_maker() as session:
 

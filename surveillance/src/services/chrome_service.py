@@ -144,21 +144,6 @@ class ChromeService:
         # NOTE: In the past, the intent was to keep everything in UTC.
         # Now, the intent is to do everything in the user's LTZ, local time zone.
         initialized.start_time = url_deliverable.startTime
-        print(initialized, "142ru")
-
-        ## ## ##
-        # TEST
-        ## ## ##
-
-        now = self.user_facing_clock.now()
-        start_time = url_deliverable.startTime
-        # 2025-03-15 21: 30: 18.013898+00: 00
-        self.logger.log_yellow_multiple("now:", str(now))
-
-        # 2025-03-15 06: 30: 12.663000-07: 00
-        self.logger.log_yellow_multiple("start time:", start_time)
-        self.logger.log_yellow_multiple(
-            "difference", now - start_time)  # 8: 00: 05.350898
 
         self.handle_session_ready_for_arbiter(initialized)
 
@@ -182,7 +167,6 @@ class ChromeService:
             concluding_session.duration = duration
             concluding_session.end_time = next_session_start_time
         self.last_entry = initialized
-        print(concluding_session, '161ru')
         self.write_completed_session_to_chrome_dao(concluding_session)
 
     def write_completed_session_to_chrome_dao(self, session):
@@ -198,7 +182,6 @@ class ChromeService:
         dao_task.add_done_callback(on_task_done)
 
     def handle_session_ready_for_arbiter(self, session):
-        print("[debug]", session, "177ru")
         self.event_emitter.emit('tab_change', session)
 
     # FIXME: When Chrome is active, recording time should take place.

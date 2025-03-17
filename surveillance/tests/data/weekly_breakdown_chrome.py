@@ -1,3 +1,4 @@
+from src.object.classes import ChromeSessionData
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
@@ -21,13 +22,104 @@ def add_time(base_date, hours=0, minutes=0, seconds=0):
 # grep -o '\.domain = "[^"]*"' surveillance/tests/data/weekly_breakdown.py | sort | uniq | wc -l
 # 10
 
-unique_domains = 10
 
-# counted manually from Ctrl + F "t_time = add_time(march_2_2"
-march_2_chrome_count = 0
+# Define the base dates
+feb_23_2025 = datetime(2025, 2, 23, tzinfo=timezone.utc)
+feb_24_2025 = datetime(2025, 2, 24, tzinfo=timezone.utc)
+feb_26_2025 = datetime(2025, 2, 26, tzinfo=timezone.utc)
 
 
-def create_chrome_session_test_data() -> List:
+def chrome_feb_23() -> List:
+    chrome_sessions = []
+
+    # GitHub session
+    github_session = ChromeSessionData()
+    github_session.domain = "github.com"
+    github_session.detail = "Repository setup and initial commits"
+    github_session.start_time = add_time(feb_23_2025, 9, 30, 0)
+    github_session.end_time = add_time(feb_23_2025, 10, 45, 0)
+    github_session.duration = github_session.end_time - github_session.start_time
+    github_session.productive = True
+    chrome_sessions.append(github_session)
+
+    # StackOverflow session
+    stackoverflow_session = ChromeSessionData()
+    stackoverflow_session.domain = "stackoverflow.com"
+    stackoverflow_session.detail = "Research on async database access"
+    stackoverflow_session.start_time = add_time(feb_23_2025, 15, 45, 0)
+    stackoverflow_session.end_time = add_time(feb_23_2025, 16, 30, 0)
+    stackoverflow_session.duration = stackoverflow_session.end_time - \
+        stackoverflow_session.start_time
+    stackoverflow_session.productive = True
+    chrome_sessions.append(stackoverflow_session)
+
+    return chrome_sessions
+
+
+def chrome_feb_24() -> List:
+    chrome_sessions = []
+
+    # Docs session
+    docs_session = ChromeSessionData()
+    docs_session.domain = "docs.python.org"
+    docs_session.detail = "Reviewing SQLAlchemy documentation"
+    docs_session.start_time = add_time(feb_24_2025, 11, 20, 0)
+    docs_session.end_time = add_time(feb_24_2025, 12, 15, 0)
+    docs_session.duration = docs_session.end_time - docs_session.start_time
+    docs_session.productive = True
+    chrome_sessions.append(docs_session)
+
+    # YouTube session
+    youtube_session = ChromeSessionData()
+    youtube_session.domain = "youtube.com"
+    youtube_session.detail = "Video tutorial on database optimization"
+    youtube_session.start_time = add_time(feb_24_2025, 16, 0, 0)
+    youtube_session.end_time = add_time(feb_24_2025, 16, 40, 0)
+    youtube_session.duration = youtube_session.end_time - youtube_session.start_time
+    youtube_session.productive = True
+    chrome_sessions.append(youtube_session)
+
+    return chrome_sessions
+
+
+def chrome_feb_26() -> List:
+    chrome_sessions = []
+
+    # GitHub session
+    github_session = ChromeSessionData()
+    github_session.domain = "github.com"
+    github_session.detail = "Code review and PR discussions"
+    github_session.start_time = add_time(feb_26_2025, 9, 15, 0)
+    github_session.end_time = add_time(feb_26_2025, 10, 30, 0)
+    github_session.duration = github_session.end_time - github_session.start_time
+    github_session.productive = True
+    chrome_sessions.append(github_session)
+
+    # ChatGPT session
+    chatgpt_session = ChromeSessionData()
+    chatgpt_session.domain = "chat.openai.com"
+    chatgpt_session.detail = "Getting help with test data generation"
+    chatgpt_session.start_time = add_time(feb_26_2025, 14, 0, 0)
+    chatgpt_session.end_time = add_time(feb_26_2025, 15, 15, 0)
+    chatgpt_session.duration = chatgpt_session.end_time - chatgpt_session.start_time
+    chatgpt_session.productive = True
+    chrome_sessions.append(chatgpt_session)
+
+    return chrome_sessions
+
+
+# Count for reference
+feb_23_chrome_count = len(chrome_feb_23())
+feb_24_chrome_count = len(chrome_feb_24())
+feb_26_chrome_count = len(chrome_feb_26())
+
+feb_chrome_count = feb_23_chrome_count + \
+    feb_24_chrome_count + feb_26_chrome_count
+
+unique_domains = 10  # in march
+
+
+def chrome_march_2nd() -> List:
     chrome_sessions = []
 
     # March 2, 2025 sessions
@@ -94,7 +186,12 @@ def create_chrome_session_test_data() -> List:
     chatgpt_session.productive = True
     chrome_sessions.append(chatgpt_session)
 
+    return chrome_sessions
+
+
+def chrome_march_3rd() -> List:
     # March 3, 2025 sessions
+    chrome_sessions = []
 
     # GitHub session day 2
     github_session2 = ChromeSessionData()
@@ -162,32 +259,10 @@ def create_chrome_session_test_data() -> List:
 
 
 # Four duplicate Chrome session entries
-def create_duplicate_chrome_sessions() -> List:
+def duplicates_chrome_march_2() -> List:
     duplicate_chrome_sessions = []
 
-    # Duplicate 1: GitHub session (with slight time variation)
-    github_session_dup = ChromeSessionData()
-    github_session_dup.domain = "github.com"
-    github_session_dup.detail = "Repository browsing"
-    github_session_dup.start_time = add_time(march_3_2025, 14, 0, 0)
-    github_session_dup.end_time = add_time(march_3_2025, 14, 45, 0)
-    github_session_dup.duration = github_session_dup.end_time - \
-        github_session_dup.start_time
-    github_session_dup.productive = True
-    duplicate_chrome_sessions.append(github_session_dup)
-
-    # Duplicate 2: YouTube session (with slight time variation)
-    youtube_session_dup = ChromeSessionData()
-    youtube_session_dup.domain = "youtube.com"
-    youtube_session_dup.detail = "Watching programming tutorials"
-    youtube_session_dup.start_time = add_time(march_3_2025, 16, 0, 0)
-    youtube_session_dup.end_time = add_time(march_3_2025, 16, 45, 0)
-    youtube_session_dup.duration = youtube_session_dup.end_time - \
-        youtube_session_dup.start_time
-    youtube_session_dup.productive = True
-    duplicate_chrome_sessions.append(youtube_session_dup)
-
-    # Duplicate 3: ChatGPT session (with slight time variation)
+    # Duplicate 1: ChatGPT session (with slight time variation)
     chatgpt_session_dup = ChromeSessionData()
     chatgpt_session_dup.domain = "chat.openai.com"
     chatgpt_session_dup.detail = "Asking for coding help"
@@ -198,7 +273,7 @@ def create_duplicate_chrome_sessions() -> List:
     chatgpt_session_dup.productive = True
     duplicate_chrome_sessions.append(chatgpt_session_dup)
 
-    # Duplicate 4: StackOverflow session (with slight time variation)
+    # Duplicate 2: StackOverflow session (with slight time variation)
     stackoverflow_session_dup = ChromeSessionData()
     stackoverflow_session_dup.domain = "stackoverflow.com"
     stackoverflow_session_dup.detail = "Finding solutions to SQLAlchemy issues"
@@ -210,6 +285,39 @@ def create_duplicate_chrome_sessions() -> List:
     duplicate_chrome_sessions.append(stackoverflow_session_dup)
 
     return duplicate_chrome_sessions
+
+
+def duplicates_chrome_march_3rd() -> List:
+    duplicate_chrome_sessions = []
+
+    # Duplicate 3: GitHub session (with slight time variation)
+    github_session_dup = ChromeSessionData()
+    github_session_dup.domain = "github.com"
+    github_session_dup.detail = "Repository browsing"
+    github_session_dup.start_time = add_time(march_3_2025, 14, 0, 0)
+    github_session_dup.end_time = add_time(march_3_2025, 14, 45, 0)
+    github_session_dup.duration = github_session_dup.end_time - \
+        github_session_dup.start_time
+    github_session_dup.productive = True
+    duplicate_chrome_sessions.append(github_session_dup)
+
+    # Duplicate 4: YouTube session (with slight time variation)
+    youtube_session_dup = ChromeSessionData()
+    youtube_session_dup.domain = "youtube.com"
+    youtube_session_dup.detail = "Watching programming tutorials"
+    youtube_session_dup.start_time = add_time(march_3_2025, 16, 0, 0)
+    youtube_session_dup.end_time = add_time(march_3_2025, 16, 45, 0)
+    youtube_session_dup.duration = youtube_session_dup.end_time - \
+        youtube_session_dup.start_time
+    youtube_session_dup.productive = True
+    duplicate_chrome_sessions.append(youtube_session_dup)
+
+    return duplicate_chrome_sessions
+
+
+# counted manually from Ctrl + F "t_time = add_time(march_2_2"
+march_2_chrome_count = len(chrome_march_2nd())
+march_3_chrome_count = len(chrome_march_3rd())
 
 
 # Example usage:

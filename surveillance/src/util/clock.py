@@ -43,7 +43,6 @@ class UserFacingClock(ClockProtocol):
         """
         if current_time > previous_time:
             elapsed = current_time - previous_time
-            print(elapsed, seconds, '47ru')
             return elapsed >= timedelta(seconds=seconds)
         else:
             raise ValueError("current_time must be later than previous_time.")

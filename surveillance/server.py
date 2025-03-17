@@ -378,17 +378,13 @@ async def receive_chrome_tab(
     logger.log_purple("[LOG] Chrome Tab Received")
     try:
         user_id = 1  # temp
-        print(tab_change_event.startTime, "=== === 381ru")
 
-        # NOTE: tab_change_event.startTime is in UTC
+        # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
         tz_for_user = timezone_service.get_tz_for_user(
             user_id)
-        print(tz_for_user)
         updated_tab_change_event = timezone_service.convert_tab_change_timezone(
             tab_change_event, tz_for_user)
 
-        print(updated_tab_change_event, "386ru")
-        print(updated_tab_change_event.startTime, '387ru')
         await chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
         return  # Returns 204 No Content
     except Exception as e:
