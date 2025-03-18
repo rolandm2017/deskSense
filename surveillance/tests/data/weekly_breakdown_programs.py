@@ -20,7 +20,7 @@ def add_time(base_date, hours=0, minutes=0, seconds=0):
     return base_date + timedelta(hours=hours, minutes=minutes, seconds=seconds)
 
 
-# grep -o '\.window_title = "[^"]*"' surveillance/tests/data/weekly_breakdown.py | sort | uniq | wc -l
+# grep -o '\.window_title = "[^TEST"]*"' surveillance/tests/data/weekly_breakdown.py | sort | uniq | wc -l
 # 11
 
 # grep -o '\.domain = "[^"]*"' surveillance/tests/data/weekly_breakdown.py | sort | uniq | wc -l
@@ -38,7 +38,7 @@ def programs_feb_23() -> List:
 
     # VSCode session
     vscode_session = ProgramSessionData()
-    vscode_session.window_title = "Visual Studio Code"
+    vscode_session.window_title = "Visual Studio CodeTEST"
     vscode_session.detail = "Initial project setup"
     vscode_session.start_time = add_time(feb_23_2025, 10, 15, 0)
     vscode_session.end_time = add_time(feb_23_2025, 11, 45, 0)
@@ -48,7 +48,7 @@ def programs_feb_23() -> List:
 
     # Notion session
     notion_session = ProgramSessionData()
-    notion_session.window_title = "Notion"
+    notion_session.window_title = "NotionTEST"
     notion_session.detail = "Sprint planning documentation"
     notion_session.start_time = add_time(feb_23_2025, 14, 20, 0)
     notion_session.end_time = add_time(feb_23_2025, 15, 35, 0)
@@ -64,7 +64,7 @@ def programs_feb_24() -> List:
 
     # PyCharm session
     pycharm_session = ProgramSessionData()
-    pycharm_session.window_title = "PyCharm"
+    pycharm_session.window_title = "PyCharmTEST"
     pycharm_session.detail = "Refactoring database models"
     pycharm_session.start_time = add_time(feb_24_2025, 9, 30, 0)
     pycharm_session.end_time = add_time(feb_24_2025, 11, 15, 0)
@@ -74,7 +74,7 @@ def programs_feb_24() -> List:
 
     # Zoom session
     zoom_session = ProgramSessionData()
-    zoom_session.window_title = "Zoom"
+    zoom_session.window_title = "ZoomTEST"
     zoom_session.detail = "Weekly team sync"
     zoom_session.start_time = add_time(feb_24_2025, 13, 0, 0)
     zoom_session.end_time = add_time(feb_24_2025, 14, 15, 0)
@@ -90,7 +90,7 @@ def programs_feb_26() -> List:
 
     # Visual Studio Code session
     vscode_session = ProgramSessionData()
-    vscode_session.window_title = "Visual Studio Code"
+    vscode_session.window_title = "Visual Studio CodeTEST"
     vscode_session.detail = "Implementing new API endpoints"
     vscode_session.start_time = add_time(feb_26_2025, 10, 0, 0)
     vscode_session.end_time = add_time(feb_26_2025, 12, 30, 0)
@@ -100,7 +100,7 @@ def programs_feb_26() -> List:
 
     # Slack session
     slack_session = ProgramSessionData()
-    slack_session.window_title = "Slack"
+    slack_session.window_title = "SlackTEST"
     slack_session.detail = "Project coordination"
     slack_session.start_time = add_time(feb_26_2025, 15, 45, 0)
     slack_session.end_time = add_time(feb_26_2025, 16, 20, 0)
@@ -130,7 +130,7 @@ def programs_march_2nd() -> List:
 
     # VSCode session
     vscode_session = ProgramSessionData()
-    vscode_session.window_title = "Visual Studio Code"
+    vscode_session.window_title = "Visual Studio CodeTEST"
     vscode_session.detail = "Working on async SQLAlchemy project"
     vscode_session.start_time = add_time(march_2_2025, 9, 45, 0)
     vscode_session.end_time = add_time(march_2_2025, 10, 15, 0)
@@ -140,7 +140,7 @@ def programs_march_2nd() -> List:
 
     # Excel session
     excel_session = ProgramSessionData()
-    excel_session.window_title = "Microsoft Excel"
+    excel_session.window_title = "Microsoft ExcelTEST"
     excel_session.detail = "Data analysis for project metrics"
     excel_session.start_time = add_time(march_2_2025, 12, 39, 0)
     excel_session.end_time = add_time(march_2_2025, 13, 27, 0)
@@ -150,7 +150,7 @@ def programs_march_2nd() -> List:
 
     # Slack session
     slack_session = ProgramSessionData()
-    slack_session.window_title = "Slack"
+    slack_session.window_title = "SlackTEST"
     slack_session.detail = "Team communication"
     slack_session.start_time = add_time(march_2_2025, 13, 30, 0)
     slack_session.end_time = add_time(march_2_2025, 14, 18, 0)
@@ -160,7 +160,7 @@ def programs_march_2nd() -> List:
 
     # Alt-tab session
     alt_tab_session = ProgramSessionData()
-    alt_tab_session.window_title = "Alt-tab window"
+    alt_tab_session.window_title = "Alt-tab windowTEST"
     alt_tab_session.detail = "Switching between applications"
     alt_tab_session.start_time = add_time(march_2_2025, 14, 20, 0)
     alt_tab_session.end_time = add_time(march_2_2025, 14, 29, 0)
@@ -170,7 +170,7 @@ def programs_march_2nd() -> List:
 
     # PyCharm session
     pycharm_session = ProgramSessionData()
-    pycharm_session.window_title = "PyCharm"
+    pycharm_session.window_title = "PyCharmTEST"
     pycharm_session.detail = "Database model development"
     pycharm_session.start_time = add_time(march_2_2025, 14, 30, 0)
     pycharm_session.end_time = add_time(march_2_2025, 15, 11, 0)
@@ -180,7 +180,7 @@ def programs_march_2nd() -> List:
 
     # Spotify session
     spotify_session = ProgramSessionData()
-    spotify_session.window_title = "Spotify"
+    spotify_session.window_title = "SpotifyTEST"
     spotify_session.detail = "Background music while working"
     spotify_session.start_time = add_time(march_2_2025, 12, 49, 0)
     spotify_session.end_time = add_time(march_2_2025, 13, 30, 0)
@@ -197,7 +197,7 @@ def programs_march_3rd() -> List:
 
     # VSCode session day 2
     vscode_session2 = ProgramSessionData()
-    vscode_session2.window_title = "Visual Studio Code"
+    vscode_session2.window_title = "Visual Studio CodeTEST"
     vscode_session2.detail = "Test suite development"
     vscode_session2.start_time = add_time(march_3_2025, 12, 0, 0)
     vscode_session2.end_time = add_time(march_3_2025, 12, 30, 0)
@@ -207,7 +207,7 @@ def programs_march_3rd() -> List:
 
     # Zoom session
     zoom_session = ProgramSessionData()
-    zoom_session.window_title = "Zoom"
+    zoom_session.window_title = "ZoomTEST"
     zoom_session.detail = "Team standups and planning meeting"
     zoom_session.start_time = add_time(march_3_2025, 14, 1, 0)
     zoom_session.end_time = add_time(march_3_2025, 15, 0, 0)
@@ -217,7 +217,7 @@ def programs_march_3rd() -> List:
 
     # Word session
     word_session = ProgramSessionData()
-    word_session.window_title = "Microsoft Word"
+    word_session.window_title = "Microsoft WordTEST"
     word_session.detail = "Documentation writing"
     word_session.start_time = add_time(march_3_2025, 15, 25, 0)
     word_session.end_time = add_time(march_3_2025, 16, 22, 0)
@@ -227,7 +227,7 @@ def programs_march_3rd() -> List:
 
     # Chrome session
     chrome_session = ProgramSessionData()
-    chrome_session.window_title = "Chrome"
+    chrome_session.window_title = "ChromeTEST"
     chrome_session.detail = "Web browsing for work research"
     chrome_session.start_time = add_time(march_3_2025, 12, 15, 0)
     chrome_session.end_time = add_time(march_3_2025, 13, 0, 0)
@@ -237,7 +237,7 @@ def programs_march_3rd() -> List:
 
     # Notion session
     notion_session = ProgramSessionData()
-    notion_session.window_title = "Notion"
+    notion_session.window_title = "NotionTEST"
     notion_session.detail = "Project planning and notes"
     notion_session.start_time = add_time(march_3_2025, 16, 30, 0)
     notion_session.end_time = add_time(march_3_2025, 17, 24, 0)
@@ -247,7 +247,7 @@ def programs_march_3rd() -> List:
 
     # Slack session day 2
     slack_session2 = ProgramSessionData()
-    slack_session2.window_title = "Slack"
+    slack_session2.window_title = "SlackTEST"
     slack_session2.detail = "End of day team updates"
     slack_session2.start_time = add_time(march_3_2025, 17, 50, 0)
     slack_session2.end_time = add_time(march_3_2025, 18, 45, 0)
@@ -264,7 +264,7 @@ def duplicate_programs_march_2() -> List:
 
     # Duplicate 1: Slack session (with slight time variation)
     slack_session_dup = ProgramSessionData()
-    slack_session_dup.window_title = "Slack"
+    slack_session_dup.window_title = "SlackTEST"
     slack_session_dup.detail = "Quick team check-in"
     slack_session_dup.start_time = add_time(march_2_2025, 15, 0, 0)
     slack_session_dup.end_time = add_time(march_2_2025, 15, 30, 0)
@@ -274,7 +274,7 @@ def duplicate_programs_march_2() -> List:
 
     # Duplicate 2: PyCharm session (with slight time variation)
     pycharm_session_dup = ProgramSessionData()
-    pycharm_session_dup.window_title = "PyCharm"
+    pycharm_session_dup.window_title = "PyCharmTEST"
     pycharm_session_dup.detail = "Schema improvements"
     pycharm_session_dup.start_time = add_time(march_2_2025, 18, 50, 0)
     pycharm_session_dup.end_time = add_time(march_2_2025, 19, 15, 0)
@@ -291,7 +291,7 @@ def duplicate_programs_march_3rd() -> List:
 
     # Duplicate 3: Chrome program session (with slight time variation)
     chrome_session_dup = ProgramSessionData()
-    chrome_session_dup.window_title = "Chrome"
+    chrome_session_dup.window_title = "ChromeTEST"
     chrome_session_dup.detail = "Researching SQLAlchemy async features"
     chrome_session_dup.start_time = add_time(march_3_2025, 16, 45, 0)
     chrome_session_dup.end_time = add_time(march_3_2025, 17, 20, 0)
@@ -302,7 +302,7 @@ def duplicate_programs_march_3rd() -> List:
 
     # Duplicate 4: VSCode session (with slight time variation)
     vscode_session_dup = ProgramSessionData()
-    vscode_session_dup.window_title = "Visual Studio Code"
+    vscode_session_dup.window_title = "Visual Studio CodeTEST"
     vscode_session_dup.detail = "Debugging database connections"
     vscode_session_dup.start_time = add_time(march_3_2025, 15, 40, 0)
     vscode_session_dup.end_time = add_time(march_3_2025, 16, 30, 0)
