@@ -19,7 +19,7 @@ def add_time(base_date, hours=0, minutes=0, seconds=0):
 # grep -o '\.window_title = "[^"]*"' surveillance/tests/data/weekly_breakdown.py | sort | uniq | wc -l
 # 11
 
-# grep -o '\.domain = "[^"]*"' surveillance/tests/data/weekly_breakdown.py | sort | uniq | wc -l
+# grep -o '\.domain = "[^TEST"]*"' surveillance/tests/data/weekly_breakdown.py | sort | uniq | wc -l
 # 10
 
 
@@ -34,7 +34,7 @@ def chrome_feb_23() -> List:
 
     # GitHub session
     github_session = ChromeSessionData()
-    github_session.domain = "github.com"
+    github_session.domain = "github.comTEST"
     github_session.detail = "Repository setup and initial commits"
     github_session.start_time = add_time(feb_23_2025, 9, 30, 0)
     github_session.end_time = add_time(feb_23_2025, 10, 45, 0)
@@ -44,7 +44,7 @@ def chrome_feb_23() -> List:
 
     # StackOverflow session
     stackoverflow_session = ChromeSessionData()
-    stackoverflow_session.domain = "stackoverflow.com"
+    stackoverflow_session.domain = "stackoverflow.comTEST"
     stackoverflow_session.detail = "Research on async database access"
     stackoverflow_session.start_time = add_time(feb_23_2025, 15, 45, 0)
     stackoverflow_session.end_time = add_time(feb_23_2025, 16, 30, 0)
@@ -61,7 +61,7 @@ def chrome_feb_24() -> List:
 
     # Docs session
     docs_session = ChromeSessionData()
-    docs_session.domain = "docs.python.org"
+    docs_session.domain = "docs.python.orgTEST"
     docs_session.detail = "Reviewing SQLAlchemy documentation"
     docs_session.start_time = add_time(feb_24_2025, 11, 20, 0)
     docs_session.end_time = add_time(feb_24_2025, 12, 15, 0)
@@ -71,7 +71,7 @@ def chrome_feb_24() -> List:
 
     # YouTube session
     youtube_session = ChromeSessionData()
-    youtube_session.domain = "youtube.com"
+    youtube_session.domain = "youtube.comTEST"
     youtube_session.detail = "Video tutorial on database optimization"
     youtube_session.start_time = add_time(feb_24_2025, 16, 0, 0)
     youtube_session.end_time = add_time(feb_24_2025, 16, 40, 0)
@@ -87,7 +87,7 @@ def chrome_feb_26() -> List:
 
     # GitHub session
     github_session = ChromeSessionData()
-    github_session.domain = "github.com"
+    github_session.domain = "github.comTEST"
     github_session.detail = "Code review and PR discussions"
     github_session.start_time = add_time(feb_26_2025, 9, 15, 0)
     github_session.end_time = add_time(feb_26_2025, 10, 30, 0)
@@ -97,7 +97,7 @@ def chrome_feb_26() -> List:
 
     # ChatGPT session
     chatgpt_session = ChromeSessionData()
-    chatgpt_session.domain = "chat.openai.com"
+    chatgpt_session.domain = "chat.openai.comTEST"
     chatgpt_session.detail = "Getting help with test data generation"
     chatgpt_session.start_time = add_time(feb_26_2025, 14, 0, 0)
     chatgpt_session.end_time = add_time(feb_26_2025, 15, 15, 0)
@@ -126,7 +126,7 @@ def chrome_march_2nd() -> List:
 
     # GitHub session
     github_session = ChromeSessionData()
-    github_session.domain = "github.com"
+    github_session.domain = "github.comTEST"
     github_session.detail = "Pull request review"
     github_session.start_time = add_time(march_2_2025, 9, 15, 0)
     github_session.end_time = add_time(march_2_2025, 9, 30, 0)
@@ -136,7 +136,7 @@ def chrome_march_2nd() -> List:
 
     # StackOverflow session
     stackoverflow_session = ChromeSessionData()
-    stackoverflow_session.domain = "stackoverflow.com"
+    stackoverflow_session.domain = "stackoverflow.comTEST"
     stackoverflow_session.detail = "Researching SQLAlchemy async issues"
     stackoverflow_session.start_time = add_time(march_2_2025, 11, 5, 0)
     stackoverflow_session.end_time = add_time(march_2_2025, 11, 59, 0)
@@ -147,7 +147,7 @@ def chrome_march_2nd() -> List:
 
     # YouTube session
     youtube_session = ChromeSessionData()
-    youtube_session.domain = "youtube.com"
+    youtube_session.domain = "youtube.comTEST"
     youtube_session.detail = "Python async tutorials"
     youtube_session.start_time = add_time(march_2_2025, 13, 0, 0)
     youtube_session.end_time = add_time(march_2_2025, 13, 30, 0)
@@ -157,7 +157,7 @@ def chrome_march_2nd() -> List:
 
     # Python docs session
     python_docs_session = ChromeSessionData()
-    python_docs_session.domain = "docs.python.org"
+    python_docs_session.domain = "docs.python.orgTEST"
     python_docs_session.detail = "Reading asyncio documentation"
     python_docs_session.start_time = add_time(march_2_2025, 14, 0, 0)
     python_docs_session.end_time = add_time(march_2_2025, 14, 45, 0)
@@ -168,7 +168,7 @@ def chrome_march_2nd() -> List:
 
     # Gmail session
     gmail_session = ChromeSessionData()
-    gmail_session.domain = "mail.google.com"
+    gmail_session.domain = "mail.google.comTEST"
     gmail_session.detail = "Checking work emails"
     gmail_session.start_time = add_time(march_2_2025, 15, 0, 0)
     gmail_session.end_time = add_time(march_2_2025, 15, 24, 0)
@@ -178,7 +178,7 @@ def chrome_march_2nd() -> List:
 
     # ChatGPT session
     chatgpt_session = ChromeSessionData()
-    chatgpt_session.domain = "chat.openai.com"
+    chatgpt_session.domain = "chat.openai.comTEST"
     chatgpt_session.detail = "Debugging code issues"
     chatgpt_session.start_time = add_time(march_2_2025, 16, 0, 0)
     chatgpt_session.end_time = add_time(march_2_2025, 16, 6, 0)
@@ -195,7 +195,7 @@ def chrome_march_3rd() -> List:
 
     # GitHub session day 2
     github_session2 = ChromeSessionData()
-    github_session2.domain = "github.com"
+    github_session2.domain = "github.comTEST"
     github_session2.detail = "Code review and commits"
     github_session2.start_time = add_time(march_3_2025, 9, 0, 0)
     github_session2.end_time = add_time(march_3_2025, 9, 16, 0)
@@ -205,7 +205,7 @@ def chrome_march_3rd() -> List:
 
     # Jira session
     jira_session = ChromeSessionData()
-    jira_session.domain = "jira.company.com"
+    jira_session.domain = "jira.company.comTEST"
     jira_session.detail = "Task management and updates"
     jira_session.start_time = add_time(march_3_2025, 11, 15, 0)
     jira_session.end_time = add_time(march_3_2025, 11, 45, 0)
@@ -215,7 +215,7 @@ def chrome_march_3rd() -> List:
 
     # AWS console session
     aws_session = ChromeSessionData()
-    aws_session.domain = "aws.amazon.com"
+    aws_session.domain = "aws.amazon.comTEST"
     aws_session.detail = "EC2 instance management"
     aws_session.start_time = add_time(march_3_2025, 13, 30, 0)
     aws_session.end_time = add_time(march_3_2025, 14, 21, 0)
@@ -225,7 +225,7 @@ def chrome_march_3rd() -> List:
 
     # Confluence session
     confluence_session = ChromeSessionData()
-    confluence_session.domain = "confluence.company.com"
+    confluence_session.domain = "confluence.company.comTEST"
     confluence_session.detail = "Documentation updates"
     confluence_session.start_time = add_time(march_3_2025, 14, 30, 0)
     confluence_session.end_time = add_time(march_3_2025, 15, 6, 0)
@@ -236,7 +236,7 @@ def chrome_march_3rd() -> List:
 
     # YouTube break session
     youtube_break_session = ChromeSessionData()
-    youtube_break_session.domain = "youtube.com"
+    youtube_break_session.domain = "youtube.comTEST"
     youtube_break_session.detail = "Short break watching videos"
     youtube_break_session.start_time = add_time(march_3_2025, 15, 15, 0)
     youtube_break_session.end_time = add_time(march_3_2025, 15, 33, 0)
@@ -247,7 +247,7 @@ def chrome_march_3rd() -> List:
 
     # ChatGPT session day 2
     chatgpt_session2 = ChromeSessionData()
-    chatgpt_session2.domain = "chat.openai.com"
+    chatgpt_session2.domain = "chat.openai.comTEST"
     chatgpt_session2.detail = "Generating test data"
     chatgpt_session2.start_time = add_time(march_3_2025, 16, 50, 0)
     chatgpt_session2.end_time = add_time(march_3_2025, 17, 24, 0)
@@ -264,7 +264,7 @@ def duplicates_chrome_march_2() -> List:
 
     # Duplicate 1: ChatGPT session (with slight time variation)
     chatgpt_session_dup = ChromeSessionData()
-    chatgpt_session_dup.domain = "chat.openai.com"
+    chatgpt_session_dup.domain = "chat.openai.comTEST"
     chatgpt_session_dup.detail = "Asking for coding help"
     chatgpt_session_dup.start_time = add_time(march_2_2025, 15, 30, 0)
     chatgpt_session_dup.end_time = add_time(march_2_2025, 16, 15, 0)
@@ -275,7 +275,7 @@ def duplicates_chrome_march_2() -> List:
 
     # Duplicate 2: StackOverflow session (with slight time variation)
     stackoverflow_session_dup = ChromeSessionData()
-    stackoverflow_session_dup.domain = "stackoverflow.com"
+    stackoverflow_session_dup.domain = "stackoverflow.comTEST"
     stackoverflow_session_dup.detail = "Finding solutions to SQLAlchemy issues"
     stackoverflow_session_dup.start_time = add_time(march_2_2025, 16, 30, 0)
     stackoverflow_session_dup.end_time = add_time(march_2_2025, 17, 15, 0)
@@ -292,7 +292,7 @@ def duplicates_chrome_march_3rd() -> List:
 
     # Duplicate 3: GitHub session (with slight time variation)
     github_session_dup = ChromeSessionData()
-    github_session_dup.domain = "github.com"
+    github_session_dup.domain = "github.comTEST"
     github_session_dup.detail = "Repository browsing"
     github_session_dup.start_time = add_time(march_3_2025, 14, 0, 0)
     github_session_dup.end_time = add_time(march_3_2025, 14, 45, 0)
@@ -303,7 +303,7 @@ def duplicates_chrome_march_3rd() -> List:
 
     # Duplicate 4: YouTube session (with slight time variation)
     youtube_session_dup = ChromeSessionData()
-    youtube_session_dup.domain = "youtube.com"
+    youtube_session_dup.domain = "youtube.comTEST"
     youtube_session_dup.detail = "Watching programming tutorials"
     youtube_session_dup.start_time = add_time(march_3_2025, 16, 0, 0)
     youtube_session_dup.end_time = add_time(march_3_2025, 16, 45, 0)
