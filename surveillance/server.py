@@ -29,6 +29,7 @@ from src.object.pydantic_dto import (
 )
 
 from src.object.dashboard_dto import (
+    MouseEventsPayload,
     PartiallyPrecomputedWeeklyTimeline,
     ProductivityBreakdownByWeek,
     ProgramBarChartContent,
@@ -51,11 +52,11 @@ from src.services.dashboard_service import DashboardService
 from src.services.chrome_service import ChromeService
 
 from src.services.services import (
-    KeyboardService, MouseService, ProgramService, TimezoneService, VideoService
+    KeyboardService, MouseService, ProgramService, TimezoneService, TrackerService, VideoService
 )
 from src.service_dependencies import (
     get_keyboard_service, get_mouse_service, get_program_service,
-    get_dashboard_service, get_chrome_service, get_activity_arbiter, get_timezone_service,
+    get_dashboard_service, get_chrome_service, get_activity_arbiter, get_timezone_service, get_tracker_service,
     get_video_service
 )
 from src.object.return_types import DaySummary
@@ -65,6 +66,7 @@ from src.util.debug_logger import write_temp_log
 
 
 from src.routes.report_routes import router as report_router
+from src.util.clock import UserFacingClock
 
 logger = ConsoleLogger()
 
@@ -137,6 +139,22 @@ async def health_check():
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Health check failed: {str(e)}")
+
+
+user_facing_clock = UserFacingClock()
+
+
+@app.post("/tracker/keyboard", status_code=status.HTTP_204_NO_CONTENT)
+def receive_keyboard_event(tracker_service: TrackerService = Depends(get_tracker_service)):
+    now = user_facing_clock.now()
+    tracker_service.receive_keyboard_event(now)
+    return  # 204
+
+
+@app.post("/tracker/mouse", status_code=status.HTTP_204_NO_CONTENT)
+def receive_mouse_payload(events_payload: MouseEventsPayload, tracker_service: TrackerService = Depends(get_tracker_service)):
+    tracker_service.receive_mouse_events(events_payload)
+    return  # 204
 
 
 @app.get("/dashboard/timeline", response_model=TimelineRows)

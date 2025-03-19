@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from datetime import datetime, timedelta
 from typing import List
 
-from ..models import DailyDomainSummary, DailyProgramSummary
+from ..models import DailyDomainSummary, DailyProgramSummary, DomainSummaryLog, ProgramSummaryLog
 from ...object.classes import ChromeSessionData
 from ...util.console_logger import ConsoleLogger
 from ...util.debug_logger import print_and_log
@@ -39,19 +39,21 @@ class SessionIntegrityDao:
                 "[info] Orphans and phantoms: 0, 0, 0, 0")
         else:
             self.logger.log_red_multiple(
-                "Orphans and phantoms found:", a, b, c, d)
-        print_and_log(program_orphans, startup_time)
-        print_and_log(domain_orphans, startup_time)
-        print_and_log(program_phantoms, startup_time)
-        print_and_log(domain_phantoms, startup_time)
+                "[debug] Orphans and phantoms found:", a, b, c, d)
+            self.logger.log_red("[debug] Program was offline between " +
+                                str(latest_shutdown_time) + " and " + str(startup_time))
+            print_and_log(program_orphans, latest_shutdown_time, startup_time)
+            print_and_log(domain_orphans, latest_shutdown_time, startup_time)
+            print_and_log(program_phantoms, latest_shutdown_time, startup_time)
+            print_and_log(domain_phantoms, latest_shutdown_time, startup_time)
 
     async def find_orphans(self, latest_shutdown: datetime, startup_time: datetime):
         """Find sessions that were never properly closed -- still open after shutdown."""
         # Implementation that uses system_status_dao to get power events
         # and checks against program/chrome logs
-        programs: List[DailyProgramSummary] = await self.program_logging_dao.find_orphans(
+        programs: List[ProgramSummaryLog] = await self.program_logging_dao.find_orphans(
             latest_shutdown, startup_time)
-        domains: List[DailyDomainSummary] = await self.chrome_logging_dao.find_orphans(latest_shutdown, startup_time)
+        domains: List[DomainSummaryLog] = await self.chrome_logging_dao.find_orphans(latest_shutdown, startup_time)
         return programs, domains
 
     async def find_phantoms(self, latest_shutdown: datetime, startup_time: datetime):
@@ -60,9 +62,9 @@ class SessionIntegrityDao:
         A phantom is a session that has its start time as "when the computer was surely off."
         """
         # Implementation that checks for session start times during power-off periods
-        programs: List[DailyProgramSummary] = await self.program_logging_dao.find_phantoms(
+        programs: List[ProgramSummaryLog] = await self.program_logging_dao.find_phantoms(
             latest_shutdown, startup_time)
-        domains: List[DailyDomainSummary] = await self.chrome_logging_dao.find_phantoms(latest_shutdown, startup_time)
+        domains: List[DomainSummaryLog] = await self.chrome_logging_dao.find_phantoms(latest_shutdown, startup_time)
         return programs, domains
 
     async def audit_first_startup(self, startup_time: datetime):
@@ -79,7 +81,8 @@ class SessionIntegrityDao:
         else:
             self.logger.log_red_multiple(
                 "Orphans and phantoms found:", a, b, c, d)
-        print_and_log(program_orphans, startup_time)
-        print_and_log(domain_orphans, startup_time)
-        print_and_log(program_phantoms, startup_time)
-        print_and_log(domain_phantoms, startup_time)
+            print_and_log(program_orphans, the_beginning_of_time, startup_time)
+            print_and_log(domain_orphans, the_beginning_of_time, startup_time)
+            print_and_log(program_phantoms,
+                          the_beginning_of_time, startup_time)
+            print_and_log(domain_phantoms, the_beginning_of_time, startup_time)

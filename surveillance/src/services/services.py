@@ -2,6 +2,12 @@
 from fastapi import Depends
 from typing import List, cast
 
+from ..object.dashboard_dto import MouseEventsPayload
+
+from ..object.classes import PeripheralAggregate
+
+from ..facade.keyboard_facade import KeyboardFacadeCore
+
 from ..object.pydantic_dto import TabChangeEvent
 from ..util.time_formatting import convert_to_timezone
 
@@ -32,6 +38,19 @@ class TimezoneService:
             tab_change_event.startTime, new_tz)
         tab_change_event.startTime = new_datetime_with_tz
         return tab_change_event
+
+
+class TrackerService:
+    def __init__(self, keyboard_facade, mouse_facade) -> None:
+        # TODO: Make this singleton or at least all from the same place
+        self.keyboard_facade = keyboard_facade
+        self.mouse_facade = mouse_facade
+
+    def receive_keyboard_event(self, time):
+        self.keyboard_facade.receive_key(time)
+
+    def receive_mouse_events(self, payload: MouseEventsPayload):
+        self.mouse_facade.receive_payload(payload)
 
 
 class KeyboardService:

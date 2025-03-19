@@ -1,3 +1,4 @@
+# Old way
 import threading
 import time
 

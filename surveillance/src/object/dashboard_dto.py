@@ -138,3 +138,9 @@ class ProgramUsageTimeline(BaseModel):
 
 class WeeklyProgramUsageTimeline(BaseModel):
     days: List[ProgramUsageTimeline]
+
+
+class MouseEventsPayload(BaseModel):
+    start_time: datetime
+    end_time: datetime
+    count: int

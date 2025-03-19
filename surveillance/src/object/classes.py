@@ -59,7 +59,7 @@ class KeyboardAggregate:  # TODO: Rename "PeripheralsAggregatee" & use in Mouse 
         self.count = count_of_events
 
     def __str__(self):
-        return f"Keyboard aggregate from {self.start_time} to {self.end_time}"
+        return f"Keyboard aggregate from {self.start_time} to {self.end_time} with {self.count} events"
 
 
 class PeripheralAggregate:
