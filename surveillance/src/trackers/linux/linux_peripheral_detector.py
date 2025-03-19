@@ -1,4 +1,4 @@
-# New way
+# linux_peripheral_detector.py
 from evdev import InputDevice, ecodes
 
 import threading
@@ -10,9 +10,10 @@ from time import monotonic
 import os
 from dotenv import load_dotenv
 
-from surveillance.src.object.classes import PeripheralAggregate
-
 from .linux_api import post_keyboard_event, post_mouse_events
+
+from ...object.classes import PeripheralAggregate
+
 from ...util.mouse_aggregator import MouseEventAggregator
 from ...util.clock import SystemClock
 
@@ -32,6 +33,9 @@ class MouseEventDispatch:
 
     As long as a new event comes in from within the span of the timer, the window
     is kept open for more events to be recorded.
+
+    The goal of this class is to reduce 100-200 POST events per sec
+    down to 1-4 POST events per 2-3 sec. Requests have high overhead.
     """
 
     def __init__(self, event_aggregator, event_ready_handler):
@@ -43,6 +47,8 @@ class MouseEventDispatch:
         self.event_ready_handler = event_ready_handler
 
     def add_to_aggregator(self, mouse_event: float):
+        # TODO: So you startt he aggregate with a datetime, then track time differences with a monotonic,
+        # TODO Then conclude it with another datetime
 
         # TODO: On start new aggregate, record the time. I mean a datetime.
         # TODO: On conclude an aggregate, record the end_time as datetime.
@@ -77,7 +83,7 @@ class MouseEventDispatch:
     #     await self.event_ready_handler()
 
 
-def monitor_keyboard(device_path):
+def monitor_keyboard(device_path, post_keyboard_event):
     """
     Monitor keyboard events in a separate thread using the efficient read_loop()
 
@@ -91,10 +97,9 @@ def monitor_keyboard(device_path):
             is_key_down_event = event.value == 1
             if event.type == ecodes.EV_KEY and is_key_down_event:  # type: ignore
                 print(f"Key {event.code} pressed")
-                if MODE != "DEBUG":
-                    post_keyboard_event()
-                else:
-                    print("Posting event")
+
+                post_keyboard_event()
+
     except Exception as e:
         print(f"Keyboard monitoring error: {e}")
 
@@ -109,6 +114,10 @@ def debug_logger(agg: PeripheralAggregate):
     print(agg)
 
 
+def debug_logger_simple():
+    print("keyboard event")
+
+
 mouse_event_handler = post_mouse_events
 
 
@@ -120,7 +129,13 @@ def monitor_mouse(device_path):
     Monitor mouse events in a separate thread using the efficient read_loop()
 
     Note that events show up FAST, like as a rapid stream, think 50-100 a sec of mouse move.
+
+    Captures all relevant mouse events including:
+    - Mouse movement (EV_REL with REL_X or REL_Y)
+    - Mouse button clicks (EV_KEY)
+    - Mouse wheel scrolling (EV_REL with REL_WHEEL or REL_HWHEEL)
     """
+
     try:
         mouse = InputDevice(device_path)
         print(f"Monitoring mouse: {mouse.name}")
@@ -128,7 +143,7 @@ def monitor_mouse(device_path):
         for event in mouse.read_loop():
             if event.type == ecodes.EV_REL:  # type: ignore
                 if event.code == ecodes.REL_X or event.code == ecodes.REL_Y:  # type: ignore
-                    print(f"Mouse moved: {event.value}")
+                    # print(f"Mouse moved: {event.value}")
                     # print(
 
                     # f"Mouse {'X' if event.code == ecodes.REL_X else 'Y'} moved: {event.value}")
@@ -162,14 +177,28 @@ if __name__ == "__main__":
 
     MODE = "DEBUG"
 
-    if keyboard_path is None or mouse_path is None:
-        raise ValueError("Failed to load peripheral paths")
+    # Initialize the clock and aggregator
+    clock = SystemClock()
+    timeout_ms = 50
+    mouse_aggregator = MouseEventAggregator(clock, timeout_ms)
+
+    # Create event dispatch with conditional handler based on debug mode
+    mouse_event_dispatch = MouseEventDispatch(
+        mouse_aggregator, debug_logger
+    )
 
     # Create and start threads
     keyboard_thread = threading.Thread(
-        target=monitor_keyboard, args=(keyboard_path,), daemon=True)
+        target=monitor_keyboard,
+        args=(keyboard_path, debug_logger_simple),
+        daemon=True
+    )
+
     mouse_thread = threading.Thread(
-        target=monitor_mouse, args=(mouse_path,), daemon=True)
+        target=monitor_mouse,
+        args=(mouse_path, mouse_event_dispatch),
+        daemon=True
+    )
 
     keyboard_thread.start()
     mouse_thread.start()
