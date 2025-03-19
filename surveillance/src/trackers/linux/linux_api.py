@@ -6,7 +6,7 @@ from requests.exceptions import RequestException
 import os
 from dotenv import load_dotenv
 
-from ...object.classes import PeripheralAggregate
+from ...object.classes import MouseAggregate
 
 
 load_dotenv()
@@ -45,7 +45,7 @@ def post_keyboard_event():
         print(f"POST request error: {err}")
 
 
-def post_mouse_events(aggregate: PeripheralAggregate):
+def post_mouse_events(aggregate: MouseAggregate):
     """
     Send an empty POST request when a keyboard event is detected.
 

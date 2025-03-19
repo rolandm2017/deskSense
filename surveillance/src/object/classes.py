@@ -62,7 +62,7 @@ class KeyboardAggregate:  # TODO: Rename "PeripheralsAggregatee" & use in Mouse 
         return f"Keyboard aggregate from {self.start_time} to {self.end_time} with {self.count} events"
 
 
-class PeripheralAggregate:
+class MouseAggregate:
     """
     A deliverable that becomes a database entry.
 
