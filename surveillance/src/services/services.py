@@ -4,7 +4,6 @@ from typing import List, cast
 
 from ..object.dashboard_dto import MouseEventsPayload
 
-from ..object.classes import PeripheralAggregate
 
 from ..facade.keyboard_facade import KeyboardFacadeCore
 

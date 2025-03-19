@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 from .linux_api import post_keyboard_event, post_mouse_events
 
-from ...object.classes import PeripheralAggregate
+from ...object.classes import MouseAggregate
 
 from ...util.mouse_aggregator import MouseEventAggregator
 from ...util.clock import SystemClock
@@ -23,6 +23,9 @@ load_dotenv()
 class MouseMoveEvent:
     def __init__(self, time):
         self.time = time
+
+
+timeout_ms = 400
 
 
 class MouseEventDispatch:
@@ -39,12 +42,14 @@ class MouseEventDispatch:
     """
 
     def __init__(self, event_aggregator, event_ready_handler):
-        fifty_ms = 0.05  # NOTE: 100 ms is a LONG time in mouse move events
-        self.max_delay = fifty_ms
-        self.MAX_AGGREGATIONS = 100
-        self.event_aggregator: MouseEventAggregator = event_aggregator
+        # fifty_ms = 0.1  # NOTE: 100 ms is a LONG time in mouse move events
+        fifty_ms = 0.4  # NOTE: 100 ms is a LONG time in mouse move events
+        self.max_delay = timeout_ms / 1000  # ms / 1000 ms/sec
+        self.MAX_AGGREGATIONS = 400
+        self.event_aggregator = event_aggregator
         self.debounce_timer = None
         self.event_ready_handler = event_ready_handler
+        self._timer_lock = threading.Lock()  # Add a lock for thread safety
 
     def add_to_aggregator(self, mouse_event: float):
         # TODO: So you startt he aggregate with a datetime, then track time differences with a monotonic,
@@ -53,34 +58,55 @@ class MouseEventDispatch:
         # TODO: On start new aggregate, record the time. I mean a datetime.
         # TODO: On conclude an aggregate, record the end_time as datetime.
         # TODO: Still use monotonic to decide when sufficient time has passed.
+
+        # Add the event to the aggregator
+        if self.event_aggregator.event_count == 0:
+            self.start_time = datetime.now()
         self.event_aggregator.add_event(mouse_event)
 
+        # If we've reached the maximum number of events, handle it immediately
         if self.event_aggregator.current_aggregation and self.event_aggregator.current_aggregation.event_count >= self.MAX_AGGREGATIONS:
-            assert self.debounce_timer is not None, "Debounce timer was None when it should exist"
-            self.debounce_timer.cancel()
+            print("beyond max count of aggregates")
+            with self._timer_lock:
+                if self.debounce_timer:
+                    self.debounce_timer.cancel()
+                    self.debounce_timer = None
             self.handle_finished()
             return
 
-        if self.debounce_timer:
-            self.debounce_timer.cancel()
+        # Cancel any existing timer
+        with self._timer_lock:
+            if self.debounce_timer:
+                self.debounce_timer.cancel()
+                self.debounce_timer = None
 
-        self.debounce_timer = threading.Timer(
-            self.max_delay, self.handle_finished)
-        self.debounce_timer.daemon = True
-        self.debounce_timer.start()
+            # Create a new timer
+            print("Starting timer: ", datetime.now().strftime("%M:%S.%f")[:-3])
+            self.debounce_timer = threading.Timer(
+                self.max_delay, self.handle_finished)
+            self.debounce_timer.daemon = True
+            self.debounce_timer.start()
 
     def handle_finished(self):
+        print("Ending timer: ", datetime.now().strftime("%M:%S.%f")[:-3])
+        # Clear the timer reference
+        with self._timer_lock:
+            self.debounce_timer = None
+
+        # Process the aggregate
         possibly_aggregate = self.event_aggregator.current_aggregation
 
         if possibly_aggregate is not None:
             aggregate_to_complete = possibly_aggregate
             finished_aggregate = self.event_aggregator.package_aggregate(
                 aggregate_to_complete)
+            print("Event ready handler")
+            print("[start]", finished_aggregate.start_time)
+            print("[end]", finished_aggregate.end_time)
+            print("[duration]", finished_aggregate.end_time -
+                  finished_aggregate.start_time)
+            deliverable = {"start": self.start_time, "end": datetime.now()}
             self.event_ready_handler(finished_aggregate)
-
-    # async def debounced_process(self):
-    #     await asyncio.sleep(self.max_delay)
-    #     await self.event_ready_handler()
 
 
 def monitor_keyboard(device_path, post_keyboard_event):
@@ -106,11 +132,10 @@ def monitor_keyboard(device_path, post_keyboard_event):
 
 clock = SystemClock()
 
-timeout_ms = 50
 mouse_aggregator = MouseEventAggregator(clock, timeout_ms)
 
 
-def debug_logger(agg: PeripheralAggregate):
+def debug_logger(agg: MouseAggregate):
     print(agg)
 
 
@@ -175,7 +200,7 @@ if __name__ == "__main__":
     keyboard_path = os.getenv("UBUNTU_KEYBOARD_PATH")
     mouse_path = os.getenv("UBUNTU_MOUSE_PATH")
 
-    MODE = "DEBUG"
+    MODE = "DEBUG"  # Clue for developer, not actually used
 
     # Initialize the clock and aggregator
     clock = SystemClock()

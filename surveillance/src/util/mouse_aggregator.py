@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from dataclasses import dataclass
 from typing import List, Callable
 
-from ..object.classes import PeripheralAggregate
+from ..object.classes import MouseAggregate
 
 
 @dataclass
@@ -26,7 +26,7 @@ class MouseEventAggregator:
         # now, now, [] -> default, as close to meaningless as it gets
         return InProgressAggregation(now, now, 0)
 
-    def add_event(self, timestamp: float) -> None | PeripheralAggregate:
+    def add_event(self, timestamp: float) -> None | MouseAggregate:
         """A timestamp must be a datetime.timestamp() result."""
         if timestamp is None:
             raise TypeError("Timestamp cannot be None")
@@ -74,10 +74,10 @@ class MouseEventAggregator:
 
         return completed
 
-    def package_aggregate(self, aggregate: InProgressAggregation) -> PeripheralAggregate:
+    def package_aggregate(self, aggregate: InProgressAggregation) -> MouseAggregate:
         """
         Aggregate comes out of this class as start_time, end_time, event_count. 
         """
         start = aggregate.start_time
         end = aggregate.end_time
-        return PeripheralAggregate(start, end, aggregate.event_count)
+        return MouseAggregate(start, end, aggregate.event_count)
