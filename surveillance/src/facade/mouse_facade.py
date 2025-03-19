@@ -1,16 +1,11 @@
 # type: ignore
 
-# might have to cram into a ubuntu specific conditional import
-from Xlib import display, X
-# might have to cram into a ubuntu specific conditional import
-from Xlib.ext import record
-# might have to cram into a ubuntu specific conditional import
-from Xlib.protocol import rq
 
 from collections import deque
 
-
 from datetime import datetime
+
+from typing import TypedDict
 
 from ..util.detect_os import OperatingSystemInfo
 from ..object.classes import MouseCoords
@@ -22,6 +17,11 @@ if os_type.is_ubuntu:
     from Xlib import display
 
 
+class MouseEvent(TypedDict):
+    start: str  # or datetime, float, etc. depending on your needs
+    end: str    # same type as start
+
+
 class MouseFacadeCore:
     def __init__(self):
         # self.listener = keyboard.Listener(on_press=self._on_press)
@@ -31,7 +31,7 @@ class MouseFacadeCore:
     # def _on_press(self, key):
     #     self.current_event = key
 
-    def receive_key(self, time: datetime):
+    def add_event(self, time: MouseEvent):
         self.queue.append(time.timestamp())
 
     # def get_next_event(self):
@@ -97,19 +97,6 @@ class WindowsMouseApiFacade:
 
         # Clean up
         ctypes.windll.user32.UnhookWindowsHookEx(hook)
-
-
-some_dict = {
-    'core_requests': (0, 0),
-    'core_replies': (0, 0),
-    'ext_requests': (0, 0, 0, 0),
-    'ext_replies': (0, 0, 0, 0),
-    'delivered_events': (0, 0),
-    'device_events': (X.MotionNotify, X.MotionNotify),
-    'errors': (0, 0),
-    'client_started': False,
-    'client_died': False,
-}
 
 
 class UbuntuMouseApiFacadeCore:

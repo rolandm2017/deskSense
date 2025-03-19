@@ -50,7 +50,7 @@ class KeyboardAggregate:  # TODO: Rename "PeripheralsAggregatee" & use in Mouse 
     """
     A deliverable that becomes a database entry.
 
-    This is the FINISHED package.
+    This is the finished package.
     """
 
     def __init__(self, start_time, end_time, count_of_events=None):
@@ -66,7 +66,7 @@ class MouseAggregate:
     """
     A deliverable that becomes a database entry.
 
-    This is the FINISHED package.
+    This is the finished package.
     """
 
     def __init__(self, start_time, end_time, count_of_events=None):
@@ -75,7 +75,7 @@ class MouseAggregate:
         self.count = count_of_events
 
     def __str__(self):
-        return f"Peripheral aggregate from {self.start_time} to {self.end_time}"
+        return f"Mouse aggregate from {self.start_time} to {self.end_time}"
 
 
 class MouseCoords:

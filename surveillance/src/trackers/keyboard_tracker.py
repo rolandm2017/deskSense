@@ -28,7 +28,6 @@ class KeyboardTrackerCore:
         self.logger = ConsoleLogger()
 
     def run_tracking_loop(self):
-        print("Here", datetime.now())
         event = self.keyboard_facade.read_event()
         # if self.keyboard_facade.is_ctrl_c(event):
         #     print("### KEYBOARD TRACKER: Detected Ctrl+C ###")

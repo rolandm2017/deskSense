@@ -13,7 +13,8 @@ class KeyboardFacadeCore:
     # def _on_press(self, key):
     #     self.current_event = key
 
-    def receive_key(self, time: datetime):
+    def add_event(self, time: datetime):
+        """It really does need to be a timestamp, because later, the EventAggregator compares timestamps.`"""
         self.queue.append(time.timestamp())
 
     # def get_next_event(self):
