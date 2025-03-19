@@ -5,18 +5,13 @@ Wrapper to run the linux_peripheral_detector from the project root.
 # File is surveillance/peripherals.py
 from src.trackers.linux.linux_peripheral_detector import monitor_keyboard, monitor_mouse
 import src.trackers.linux.linux_peripheral_detector as detector
-from src.util.mouse_aggregator import MouseEventAggregator
-from src.util.clock import SystemClock
 import threading
 import os
 import sys
 
 from dotenv import load_dotenv
 
-# First load the environment variables
 load_dotenv()
-
-# Create debug logger functions
 
 
 def debug_logger_aggregate(agg):
@@ -28,13 +23,12 @@ def debug_logger_keyboard():
     """Debug logger that just prints keyboard events without making network requests"""
     print("DEBUG - Keyboard event detected")
 
-# THIS IS THE KEY TRICK:
 # We define custom functions BEFORE importing the module
 # Then we monkey-patch the module to use our functions
 
 
 # Conditionally set the handlers based on debug mode
-DEBUG = True
+DEBUG = False
 
 if DEBUG:
     print("Running in DEBUG mode - no network requests will be made")
@@ -42,7 +36,6 @@ if DEBUG:
     POST_KEYBOARD_FUNC = debug_logger_keyboard
     POST_MOUSE_FUNC = debug_logger_aggregate
 else:
-    print("Running in PRODUCTION mode - events will be sent to server")
     # We'd use the real network functions later
     POST_KEYBOARD_FUNC = None  # Will be set to the real function
     POST_MOUSE_FUNC = None     # Will be set to the real function
@@ -53,8 +46,8 @@ else:
 
 if DEBUG:
     # Override the global handlers with our debug versions
-    detector.post_keyboard_event = POST_KEYBOARD_FUNC
-    detector.post_mouse_events = POST_MOUSE_FUNC
+    detector.publish_keyboard_event = POST_KEYBOARD_FUNC
+    detector.publish_mouse_events = POST_MOUSE_FUNC
 
     # CRITICAL: Replace the global mouse_event_dispatch with a debug version
     detector.mouse_event_dispatch = detector.MouseEventDispatch(
@@ -62,8 +55,6 @@ if DEBUG:
         POST_MOUSE_FUNC
     )
 else:
-    # In production mode, we'd use the real functions, but we don't need
-    # to patch anything since they're already set up correctly
     pass
 
 # Now we can safely import the rest

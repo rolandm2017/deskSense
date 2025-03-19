@@ -24,12 +24,12 @@ class EventAggregator:
     def set_callback(self, callback: Callable):  # function
         self._on_aggregation_complete = callback
 
-    def set_initialization_aggregation(self):
-        # Class relies on times as .timestamp() floats
-        now = self.user_facing_clock.now().timestamp()
+    # def set_initialization_aggregation(self):
+    #     # Class relies on times as .timestamp() floats
+    #     now = self.user_facing_clock.now().timestamp()
 
-        # now, now, [] -> default, as close to meaningless as it gets
-        return InProgressAggregation(now, now, [])
+    #     # now, now, [] -> default, as close to meaningless as it gets
+    #     return InProgressAggregation(now, now, [])
 
     def add_event(self, timestamp: float) -> None | list[datetime]:
         """A timestamp must be a datetime.timestamp() result."""
@@ -81,11 +81,12 @@ class EventAggregator:
             timestamp, timestamp, [timestamp])
 
     def force_complete(self) -> InProgressAggregation | None:
+        """Used only in stop() and hence """
         if not self.current_aggregation:
             return None
 
         completed = self.current_aggregation
-        self.current_aggregation = self.set_initialization_aggregation()
+        # self.current_aggregation = self.set_initialization_aggregation()
 
         if self._on_aggregation_complete:
             self._on_aggregation_complete(completed)

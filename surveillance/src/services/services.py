@@ -39,17 +39,17 @@ class TimezoneService:
         return tab_change_event
 
 
-class TrackerService:
-    def __init__(self, keyboard_facade, mouse_facade) -> None:
-        # TODO: Make this singleton or at least all from the same place
-        self.keyboard_facade = keyboard_facade
-        self.mouse_facade = mouse_facade
+# class TrackerService:
+#     def __init__(self, keyboard_facade, mouse_facade) -> None:
+#         # TODO: Make this singleton or at least all from the same place
+#         self.keyboard_facade = keyboard_facade
+#         self.mouse_facade = mouse_facade
 
-    def receive_keyboard_event(self, time):
-        self.keyboard_facade.receive_key(time)
+#     def receive_keyboard_event(self, time):
+#         self.keyboard_facade.receive_key(time)
 
-    def receive_mouse_events(self, payload: MouseEventsPayload):
-        self.mouse_facade.receive_payload(payload)
+#     def receive_mouse_events(self, payload: MouseEventsPayload):
+#         self.mouse_facade.receive_payload(payload)
 
 
 class KeyboardService:

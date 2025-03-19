@@ -71,6 +71,7 @@ class MouseTrackerCore:
 
     def run_tracking_loop(self):
         latest_result = self.get_mouse_position()
+        # TODO: Turn Mouse Move into a time based aggregator like Keyboard Tracker
         if self.is_moving:
             has_stopped = self.position_is_same_as_before(latest_result)
             if has_stopped:
