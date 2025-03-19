@@ -19,10 +19,6 @@ class MouseEventAggregator:
         self.ms_timeout = timeout_ms  # Think 10 or 50
 
         self.current_aggregation: InProgressAggregation | None = None
-        self._on_aggregation_complete = None
-
-    def set_callback(self, callback: Callable):  # function
-        self._on_aggregation_complete = callback
 
     def set_initialization_aggregation(self):
         now = self.clock.now()
@@ -55,12 +51,10 @@ class MouseEventAggregator:
         session_window_has_elapsed = next_added_timestamp_difference > self.ms_timeout
         if session_window_has_elapsed:
             # "If no mouse moves within <timeout_ms> ms, end sesion; report session to db"
-            finished_aggregate = self.package_aggregate_for_db(
+            finished_aggregate = self.package_aggregate(
                 self.current_aggregation)
             self.start_new_aggregate(timestamp)
 
-            if self._on_aggregation_complete:
-                self._on_aggregation_complete(finished_aggregate)
             return finished_aggregate
 
         self.current_aggregation.end_time = timestamp
@@ -78,32 +72,12 @@ class MouseEventAggregator:
         completed = self.current_aggregation
         self.current_aggregation = self.set_initialization_aggregation()
 
-        if self._on_aggregation_complete:
-            self._on_aggregation_complete(completed)
-
         return completed
 
-    def package_aggregate_for_db(self, aggregate: InProgressAggregation) -> PeripheralAggregate:
+    def package_aggregate(self, aggregate: InProgressAggregation) -> PeripheralAggregate:
         """
         Aggregate comes out of this class as start_time, end_time, event_count. 
         """
         start = aggregate.start_time
         end = aggregate.end_time
         return PeripheralAggregate(start, end, aggregate.event_count)
-
-
-# # Example usage:
-# def on_session_complete(session: Aggregation):
-#     print(f"Session completed: {len(session.events)} events")
-#     print(f"Duration: {session.end_time - session.start_time:.2f}s")
-
-# grouper = EventAggregator(timeout_ms=1000)
-# grouper.set_callback(on_session_complete)
-
-# # Simulate events
-# events = [time(), time() + 0.2, time() + 0.4, time() + 2.0]
-# for t in events:
-#     grouper.add_event(t)
-
-# # Force complete any remaining session
-# grouper.force_complete()

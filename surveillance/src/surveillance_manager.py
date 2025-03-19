@@ -9,6 +9,14 @@ from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 
 
+from .arbiter.activity_arbiter import ActivityArbiter
+
+
+from .facade.facade_singletons import get_keyboard_facade_instance
+from .facade.keyboard_facade import KeyboardFacadeCore
+from .facade.mouse_facade import UbuntuMouseApiFacadeCore
+from .facade.program_facade import ProgramApiFacadeCore
+
 from .db.dao.system_status_dao import SystemStatusDao
 from .db.dao.session_integrity_dao import SessionIntegrityDao
 
@@ -26,13 +34,9 @@ from .trackers.mouse_tracker import MouseTrackerCore
 from .trackers.keyboard_tracker import KeyboardTrackerCore
 from .trackers.program_tracker import ProgramTrackerCore
 from .trackers.system_tracker import SystemPowerTracker
-from .facade.keyboard_facade import KeyboardApiFacadeCore
-from .facade.mouse_facade import UbuntuMouseApiFacadeCore
-from .facade.program_facade import ProgramApiFacadeCore
 from .util.detect_os import OperatingSystemInfo
 from .util.clock import SystemClock, UserFacingClock
 from .util.threaded_tracker import ThreadedTracker
-from .arbiter.activity_arbiter import ActivityArbiter
 
 # from .keyboard_tracker import KeyActivityTracker
 
@@ -58,7 +62,7 @@ class SurveillanceManager:
 
         current_os = OperatingSystemInfo()
 
-        keyboard_facade = KeyboardApiFacadeCore()
+        keyboard_facade = get_keyboard_facade_instance()
         # TODO: choose the mouseApi facade based on OS
         mouse_facade = UbuntuMouseApiFacadeCore()
         program_facade = ProgramApiFacadeCore(current_os)
@@ -139,7 +143,6 @@ class SurveillanceManager:
         pass  # lives in Chrome Service
 
     async def shutdown_handler(self):
-        print("In shutdown handler RR\nRR\nRR")
         try:
             # TODO: Add Program Summary DAO shutdown -> prevent alt tab window being huge
             await self.chrome_service.shutdown()  # works despite the lack of highlighting

@@ -8,7 +8,8 @@ import asyncio
 from .debug.ui_notifier import UINotifier
 
 from .services.chrome_service import ChromeService
-from .services.services import KeyboardService, MouseService, ProgramService, TimezoneService
+from .services.services import KeyboardService, MouseService, ProgramService, TimezoneService, TrackerService
+from .facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
 
 from .db.database import async_session_maker
 from .db.dao.mouse_dao import MouseDao
@@ -78,6 +79,12 @@ async def get_video_dao() -> VideoDao:
 
 async def get_frame_dao() -> FrameDao:
     return FrameDao(async_session_maker)
+
+
+def get_tracker_service() -> TrackerService:
+    keyboard_facade = get_keyboard_facade_instance()
+    mouse_facade = get_mouse_facade_instance()
+    return TrackerService(keyboard_facade, mouse_facade)
 
 
 async def get_timezone_service() -> TimezoneService:

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List
 
-from ..db.models import DailyDomainSummary, DailyProgramSummary
+from ..db.models import DailyDomainSummary, DailyProgramSummary, DomainSummaryLog, ProgramSummaryLog
 from ..object.classes import ProgramSessionData
 from ..object.pydantic_dto import TabChangeEvent
 
@@ -52,12 +52,30 @@ def get_current_day_log_name(log_date: str):
     return "session_integrity_log - " + log_date + ".txt"
 
 
-def print_and_log(sessions: List[DailyProgramSummary] | List[DailyDomainSummary], startup_time: datetime):
+def print_and_log(sessions: List[ProgramSummaryLog] | List[DomainSummaryLog], latest_shutdown_time: datetime, startup_time: datetime):
     log_identifier = startup_time.strftime("%m-%d")
     log_for_current_day = get_current_day_log_name(log_identifier)
+
     with open(log_for_current_day, "a") as f:
+        # latest_entry = f.read
+        # if latest_entry == "log_identifier: ":
+        #     return
+        # else:
         f.write("\n::\n::::\nlog_identifier" + ": ")
+        f.write("[shutdown time] " + str(latest_shutdown_time))
+        f.write("[startup at] " + str(startup_time))
         for session in sessions:
-            print(session)
+            # print(session)
             f.write(str(session))
             f.write("\n")
+
+
+def latest_line_is_log_identifier(log_file):
+    with open(log_file, "r") as f:
+        # Read all lines and store in a list
+        lines = f.readlines()
+
+        # Get the last n lines
+        last_line = lines[-1:]
+
+        return last_line

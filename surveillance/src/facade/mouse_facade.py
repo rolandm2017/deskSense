@@ -7,6 +7,11 @@ from Xlib.ext import record
 # might have to cram into a ubuntu specific conditional import
 from Xlib.protocol import rq
 
+from collections import deque
+
+
+from datetime import datetime
+
 from ..util.detect_os import OperatingSystemInfo
 from ..object.classes import MouseCoords
 
@@ -17,12 +22,30 @@ if os_type.is_ubuntu:
     from Xlib import display
 
 
-class MouseApiFacade:
-    def __init__(self, os_info):
-        pass
+class MouseFacadeCore:
+    def __init__(self):
+        # self.listener = keyboard.Listener(on_press=self._on_press)
+        # self.listener.start()
+        self.queue = deque()
 
-    def get_cursor_pos(self):
-        pass
+    # def _on_press(self, key):
+    #     self.current_event = key
+
+    def receive_key(self, time: datetime):
+        self.queue.append(time.timestamp())
+
+    # def get_next_event(self):
+    #     if self.queue:
+    #         return self.queue.popleft()  # O(1) operation
+    #     return None
+
+    def read_event(self):
+        if self.queue:
+            return self.queue.popleft()  # O(1) operation
+        return None
+        # event = self.current_event
+        # self.current_event = None
+        # return event
 
 
 class WindowsMouseApiFacade:
@@ -99,41 +122,3 @@ class UbuntuMouseApiFacadeCore:
         """Single position check from X11"""
         query = self.display.screen().root.query_pointer()
         return MouseCoords(query.root_x, query.root_y)
-
-# class UbuntuMouseApiFacade:
-#     def __init__(self):
-#         from Xlib import display
-#         from threading import Thread
-#         import time
-
-#         self.running = False
-#         self.current_position = (0, 0)
-#         self.thread = None
-
-#         self.display = display.Display()
-#         self.Thread = Thread
-#         self.sleep = time.sleep
-
-#     def _track_mouse(self):
-#         """Private method to continuously update the mouse position in a separate thread."""
-#         while self.running:
-#             query = self.display.screen().root.query_pointer()
-#             self.current_position = (query.root_x, query.root_y)
-#             self.sleep(0.1)  # Polling delay to reduce CPU usage
-
-#     def start(self):
-#         """Start tracking the mouse position in a separate thread."""
-#         if not self.running:
-#             self.running = True
-#             self.thread = self.Thread(target=self._track_mouse, daemon=True)
-#             self.thread.start()
-
-#     def stop(self):
-#         """Stop tracking the mouse position and clean up resources."""
-#         if self.running:
-#             self.running = False
-#             self.thread.join()
-
-#     def get_position(self):
-#         """Get the current mouse position as a tuple (x, y)."""
-#         return self.current_position

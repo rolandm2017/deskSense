@@ -1,5 +1,8 @@
 # keyboard_tracker.py
+# Old way
 import time
+
+from datetime import datetime
 
 from ..util.end_program_routine import end_program_readout, pretend_report_event
 from ..object.classes import KeyboardAggregate
@@ -7,31 +10,32 @@ from ..util.clock import SystemClock
 from ..util.threaded_tracker import ThreadedTracker
 from ..util.keyboard_aggregator import EventAggregator, InProgressAggregation
 from ..util.console_logger import ConsoleLogger
-from ..facade.keyboard_facade import KeyboardApiFacadeCore
+from ..facade.keyboard_facade import KeyboardFacadeCore
 
 
 class KeyboardTrackerCore:
     def __init__(self, user_facing_clock, keyboard_api_facade, event_handlers):
         self.user_facing_clock = user_facing_clock
-        self.keyboard_facade: KeyboardApiFacadeCore = keyboard_api_facade
+        self.keyboard_facade: KeyboardFacadeCore = keyboard_api_facade
         self.event_handlers = event_handlers
 
-        self.recent_count = 0
+        # self.recent_count = 0
         self.time_of_last_terminal_out = user_facing_clock.now()
         self.time_of_last_aggregator_update = None
 
         # one sec of no typing => close session
         self.aggregator = EventAggregator(user_facing_clock, timeout_ms=1000)
-        self.console_logger = ConsoleLogger()
+        self.logger = ConsoleLogger()
 
     def run_tracking_loop(self):
+        print("Here", datetime.now())
         event = self.keyboard_facade.read_event()
-        if self.keyboard_facade.is_ctrl_c(event):
-            print("### KEYBOARD TRACKER: Detected Ctrl+C ###")
-            self.keyboard_facade.trigger_ctrl_c()  # stop program
-            return
+        # if self.keyboard_facade.is_ctrl_c(event):
+        #     print("### KEYBOARD TRACKER: Detected Ctrl+C ###")
+        #     self.keyboard_facade.trigger_ctrl_c()  # stop program
+        #     return
         if self.keyboard_facade.event_type_is_key_down(event):
-            self.recent_count += 1  # per keystroke
+            # self.recent_count += 1  # per keystroke
             current_time = self.user_facing_clock.now()
             self.time_of_last_aggregator_update = current_time
             # TODO: Add an "autofinish" time, at which point apply_handlers() is called
@@ -41,18 +45,19 @@ class KeyboardTrackerCore:
                 session = self.aggregator.package_aggregate_for_db(
                     finalized_aggregate)
                 self.apply_handlers(session)
-            if self._is_ready_to_log_to_console(current_time):
-                # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-                # @@@@ Never log the actual key pressed @@@@
-                # self.console_logger.log_key_presses(self.recent_count)
-                self.recent_count = 0
-                self.update_time(current_time)
+            # if self._is_ready_to_log_to_console(current_time):
+            #     # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+            #     # @@@@ Never log the actual key pressed @@@@
+            #     # self.console_logger.log_key_presses(self.recent_count)
+            #     self.recent_count = 0
+            #     self.update_time(current_time)
 
-    def update_time(self, new_time):  # Method exists to enhance testability
-        self.time_of_last_terminal_out = new_time
+    # def update_time(self, new_time):  # Method exists to enhance testability
+        # self.time_of_last_terminal_out = new_time
 
     def apply_handlers(self, content: KeyboardAggregate | InProgressAggregation):
         # length_of_session = content.end_time - content.start_time
+        self.logger.log_green("[info]" + str(content))
         if isinstance(self.event_handlers, list):
             for handler in self.event_handlers:
                 handler(content)  # emit an event
@@ -72,7 +77,7 @@ class KeyboardTrackerCore:
 
 
 if __name__ == "__main__":
-    api_facade = KeyboardApiFacadeCore()
+    api_facade = KeyboardFacadeCore()
     system_clock = SystemClock()
     # instance = KeyboardTracker(clock, api_facade, [end_program_readout, pretend_report_event])
     # uncomment other line to do way too much logging - plus it keylogs
