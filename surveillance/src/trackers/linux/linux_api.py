@@ -1,4 +1,4 @@
-# New way
+# linux_api.py
 import requests
 from requests.exceptions import RequestException
 
