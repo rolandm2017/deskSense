@@ -15,13 +15,13 @@ from ..util.threaded_tracker import ThreadedTracker
 from ..object.enums import MouseEvent
 from ..object.classes import MouseCoords, MouseMoveWindow
 from ..util.console_logger import ConsoleLogger
-from ..facade.mouse_facade import UbuntuMouseApiFacadeCore, WindowsMouseApiFacade
+from ..facade.mouse_facade import MouseFacadeCore
 
 
 class MouseTrackerCore:
     def __init__(self, user_facing_clock, mouse_api_facade, event_handlers, end_program_routine=None):
         self.user_facing_clock = user_facing_clock
-        self.mouse_facade: UbuntuMouseApiFacadeCore = mouse_api_facade
+        self.mouse_facade: MouseFacadeCore = mouse_api_facade
         self.event_handlers = event_handlers
 
         self.end_program_func = end_program_routine
@@ -38,8 +38,8 @@ class MouseTrackerCore:
         self.mouse_movement_window = "Closed"
 
     def get_mouse_position(self):
-        coords = self.mouse_facade.get_position_coords()
-        coords.timestamp = self.user_facing_clock.now()
+        coords = self.mouse_facade.read_event()
+        # coords.timestamp = self.user_facing_clock.now()
         return coords
 
     def position_is_same_as_before(self, new_position):
@@ -119,26 +119,26 @@ def handler(v, k):
     print(v, k)
 
 
-if __name__ == "__main__":
-    os_type = OperatingSystemInfo()
-    if os_type.is_ubuntu:
-        facade_type = UbuntuMouseApiFacadeCore
-    elif os_type.is_windows:
-        facade_type = WindowsMouseApiFacade
-    api_facade = facade_type()
-    folder = Path("/tmp")
+# if __name__ == "__main__":
+#     os_type = OperatingSystemInfo()
+#     if os_type.is_ubuntu:
+#         facade_type = UbuntuMouseApiFacadeCore
+#     elif os_type.is_windows:
+#         facade_type = WindowsMouseApiFacade
+#     api_facade = facade_type()
+#     folder = Path("/tmp")
 
-    clock = SystemClock()
+#     clock = SystemClock()
 
-    try:
-        tracker = MouseTrackerCore(
-            clock, api_facade, [end_program_readout, pretend_report_event])
-        thread_handler = ThreadedTracker(tracker)
-        thread_handler.start()
-        # Add a way to keep the main thread alive
-        while True:
-            time.sleep(0.3)
-    except KeyboardInterrupt:
-        thread_handler.stop()
-        # Give the thread time to clean up
-        time.sleep(0.3)
+#     try:
+#         tracker = MouseTrackerCore(
+#             clock, api_facade, [end_program_readout, pretend_report_event])
+#         thread_handler = ThreadedTracker(tracker)
+#         thread_handler.start()
+#         # Add a way to keep the main thread alive
+#         while True:
+#             time.sleep(0.3)
+#     except KeyboardInterrupt:
+#         thread_handler.stop()
+#         # Give the thread time to clean up
+#         time.sleep(0.3)

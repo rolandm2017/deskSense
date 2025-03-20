@@ -1,51 +1,120 @@
-# In your main application
+import asyncio
 import zmq
-import json
+import zmq.asyncio
 from datetime import datetime
 
-from .facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
+import traceback
 
-context = zmq.Context()
-socket = context.socket(zmq.SUB)
-socket.connect("tcp://127.0.0.1:5555")
-socket.setsockopt_string(zmq.SUBSCRIBE, "")  # Subscribe to all messages
 
-keyboard_facade = get_keyboard_facade_instance()
-mouse_facade = get_mouse_facade_instance()
+class MessageReceiver:
+    def __init__(self, zmq_url="tcp://127.0.0.1:5555"):
+        """Initialize the message receiver with a ZMQ URL."""
+        self.zmq_url = zmq_url
+        self.context = zmq.asyncio.Context()
+        self.socket = self.context.socket(zmq.SUB)
+        self.socket.connect(self.zmq_url)
+        # Subscribe to all messages
+        self.socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
-# Process messages
-while True:
-    message = socket.recv_json()
-    try:
-        if isinstance(message, bytes):
-            event = json.loads(message.decode('utf-8'))
-        elif isinstance(message, str):
-            event = json.loads(message)
+        self.event_queue = asyncio.Queue()
+        self.handlers = {}
+        self.is_running = False
+        self.tasks = []
+
+    def register_handler(self, event_type, handler):
+        """Register a handler function for a specific event type."""
+        self.handlers[event_type] = handler
+
+    async def zmq_listener(self):
+        """Continuously receive messages from ZMQ and add them to the queue."""
+        while self.is_running:
+            try:
+                message = await self.socket.recv_json()
+                await self.event_queue.put(message)
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                print(f"Error in ZMQ listener: {e}")
+
+    async def process_events(self):
+        """Process events from the queue asynchronously."""
+        while self.is_running:
+            try:
+                event = await self.event_queue.get()
+                try:
+                    if "type" in event:
+                        event_type = event["type"]
+                        if event_type in self.handlers:
+                            print(event_type, event, "46ru")
+                            print(self.handlers[event_type], '47ru')
+                            await self.handlers[event_type](event)
+                        else:
+                            print(
+                                f"No handler registered for event type: {event_type}")
+                    else:
+                        print(
+                            f"Unexpected message format (missing 'type'): {event}")
+
+                except Exception as e:
+                    print(f"Error processing message: {e}")
+                    traceback.print_exc()  # This prints the full traceback
+                finally:
+                    self.event_queue.task_done()
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                print(f"Error in event processor: {e}")
+
+    def start(self):
+        """Start the message receiver in a way that doesn't require async/await."""
+        # Create a new event loop if one doesn't exist
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            # No event loop in current thread
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        self.is_running = True
+
+        # Define the coroutines to run
+        async def run_tasks():
+            self.tasks = [
+                asyncio.create_task(self.zmq_listener()),
+                asyncio.create_task(self.process_events())
+            ]
+            await asyncio.gather(*self.tasks)
+
+        # Run the coroutines in the event loop
+        if loop.is_running():
+            # If the loop is already running (we're in an async context),
+            # create a task
+            future = asyncio.ensure_future(run_tasks(), loop=loop)
+            return future
         else:
-            # It might already be deserialized
-            event = message
+            # If the loop is not running, run it until complete
+            try:
+                return loop.run_until_complete(run_tasks())
+            except KeyboardInterrupt:
+                print("Keyboard interrupt received, stopping...")
+            finally:
+                self.stop()
+                loop.close()
 
-        # Now process the event
-        if isinstance(event, dict) and "type" in event:
-            if event["type"] == "keyboard" and "timestamp" in event:
-                iso_string = str(event["timestamp"])
-                converted_datetime = datetime.fromisoformat(iso_string)
-                keyboard_facade.add_event(converted_datetime)
-            elif event["type"] == "mouse":
-                # Event is a dict containing:
-                # "start": aggregate["start"].isoformat(),
-                # "end": aggregate["end"].isoformat()
-                print(event, "38ru")
-                event_dict = {
-                    "start": event["start"],
-                    "end": event["end"]
-                }
+    def stop(self):
+        """Stop the message receiver."""
+        self.is_running = False
+        # Cancel any running tasks
+        for task in self.tasks:
+            if not task.done():
+                task.cancel()
 
-                mouse_facade.add_event(event_dict)  # type: ignore
-        else:
-            print(f"Received unexpected message format: {type(event)}")
-            print(f"Message content: {event}")
-    except json.JSONDecodeError:
-        print("Failed to decode JSON from message:", message)
-    except Exception as e:
-        print(f"Error processing message: {e}")
+        # Close ZMQ socket and context
+        self.socket.close()
+        self.context.term()
+
+    async def async_stop(self):
+        """Stop the message receiver asynchronously."""
+        self.stop()
+        # Give time for tasks to be cancelled
+        await asyncio.sleep(0.5)

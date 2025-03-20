@@ -2,6 +2,8 @@
 from pathlib import Path
 
 import asyncio
+import zmq
+import zmq.asyncio
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import sessionmaker
@@ -12,10 +14,11 @@ from datetime import datetime
 from .arbiter.activity_arbiter import ActivityArbiter
 
 
-from .facade.facade_singletons import get_keyboard_facade_instance
+from .facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
 from .facade.keyboard_facade import KeyboardFacadeCore
-from .facade.mouse_facade import UbuntuMouseApiFacadeCore
+from .facade.mouse_facade import MouseFacadeCore
 from .facade.program_facade import ProgramApiFacadeCore
+from .facade.receive_messages import MessageReceiver
 
 from .db.dao.system_status_dao import SystemStatusDao
 from .db.dao.session_integrity_dao import SessionIntegrityDao
@@ -52,6 +55,8 @@ class SurveillanceManager:
         self.start_time = None
         self.session_data = []
 
+        self.message_receiver = MessageReceiver("tcp://127.0.0.1:5555")
+
         # Get the project root (parent of src directory)
         # This gets us surveillance/src/productivity_tracker.py
         current_file = Path(__file__)
@@ -64,7 +69,7 @@ class SurveillanceManager:
 
         keyboard_facade = get_keyboard_facade_instance()
         # TODO: choose the mouseApi facade based on OS
-        mouse_facade = UbuntuMouseApiFacadeCore()
+        mouse_facade = get_mouse_facade_instance()
         program_facade = ProgramApiFacadeCore(current_os)
 
         self.loop = asyncio.get_event_loop()
@@ -90,6 +95,14 @@ class SurveillanceManager:
 
         self.timeline_dao = TimelineEntryDao(self.session_maker)
 
+        # Register handlers for different event types
+        self.message_receiver.register_handler(
+            "keyboard", keyboard_facade.handle_keyboard_message)
+        self.message_receiver.register_handler(
+            "mouse", mouse_facade.handle_mouse_message)
+
+        self.operate_facade()
+
         self.keyboard_tracker = KeyboardTrackerCore(
             clock, keyboard_facade, self.handle_keyboard_ready_for_db)
         self.mouse_tracker = MouseTrackerCore(
@@ -112,6 +125,11 @@ class SurveillanceManager:
         self.keyboard_thread.start()
         self.mouse_thread.start()
         self.program_thread.start()
+
+    def operate_facade(self):
+        """Start the message receiver."""
+        print("[info] message receiver starting")
+        self.message_receiver.start()
 
     def check_session_integrity(self, latest_shutdown_time: datetime | None, latest_startup_time: datetime):
         # FIXME: get latest times from system status dao
@@ -159,6 +177,9 @@ class SurveillanceManager:
         self.keyboard_thread.stop()
         self.mouse_thread.stop()
         self.program_thread.stop()
+
+        await self.message_receiver.async_stop()
+
         self.is_running = False
         # Add any async cleanup operations here
         await asyncio.sleep(0.5)  # Give threads time to clean up
