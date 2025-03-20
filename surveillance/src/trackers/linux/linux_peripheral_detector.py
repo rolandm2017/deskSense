@@ -1,4 +1,17 @@
 # linux_peripheral_detector.py
+"""
+This part of the program runs separately because
+1. The rest will live in a Docker container, but
+2. This part must stay outside of the container to witness keyboard events, mouse events.
+
+** Please note that this part of the program MUST live outside of the container. **
+
+A small benefit, secondary, is
+3. It's easier to monitor CPU usage.
+
+There was a fourth reason that is now forgotten. It might be
+4. It's easier to run this code all async, limiting async/await contagion, if it's a separate program.
+"""
 
 from evdev import InputDevice, ecodes
 
@@ -12,28 +25,10 @@ from .message_dispatch import publish_keyboard_event, publish_mouse_events
 
 from ...object.classes import MouseAggregate
 
-
 load_dotenv()
-
-"""
-This part of the program runs separately because
-1. The rest will live in a Docker container, but
-2. This part must stay outside of the container to witness keyboard events, mouse events.
-
-A small benefit, secondary, is
-3. It's easier to monitor CPU usage.
-
-There was a fourth reason that is now forgotten. It might be
-4. It's easier to run this code all async, limiting async/await contagion, if it's a separate program.
-"""
-
-# TODO: The current post request logic might cause overhead, sending many requests for each event. Grouping events together could reduce the load.
 
 
 # TODO: Consider asynchronous I/O for better performance, allowing more events to be processed without blocking.
-#
-
-# TODO: Using a queue to offload POST requests to a worker thread could help instead of creating a new connection per request
 
 
 class MouseEventAggregator:
