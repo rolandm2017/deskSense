@@ -112,7 +112,6 @@ class MouseEventDispatch:
                 self.debounce_timer = None
 
             # Create a new timer
-            print("Starting timer: ", datetime.now().strftime("%M:%S.%f")[:-3])
             self.debounce_timer = threading.Timer(
                 self.max_delay, self.handle_finished)
             self.debounce_timer.daemon = True
