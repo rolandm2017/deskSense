@@ -101,7 +101,6 @@ def test_key_press_tracking(tracker_and_events, mock_keyboard_facade):
         # Test a setup condition
 
         mock_keyboard_facade.set_event('A')
-        print("104ru")
         tracker.run_tracking_loop()
 
         mock_keyboard_facade.set_event("B")
