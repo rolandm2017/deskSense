@@ -22,8 +22,21 @@ class MessageReceiver:
         self.tasks = []
 
     def register_handler(self, event_type, handler):
-        """Register a handler function for a specific event type."""
-        self.handlers[event_type] = handler
+        """
+        Register a handler function for a specific event type.
+
+        This is done to hamstring the creeping crawl of async/await
+        that would spread through a bunch of code that runs just fine synchronously.
+        """
+        # If it's already an async function, use it directly
+        if asyncio.iscoroutinefunction(handler):
+            self.handlers[event_type] = handler
+        else:
+            # Otherwise, wrap it in an async function
+            async def async_wrapper(event):
+                handler(event)
+
+            self.handlers[event_type] = async_wrapper
 
     async def zmq_listener(self):
         """Continuously receive messages from ZMQ and add them to the queue."""
@@ -45,8 +58,8 @@ class MessageReceiver:
                     if "type" in event:
                         event_type = event["type"]
                         if event_type in self.handlers:
-                            print(event_type, event, "46ru")
-                            print(self.handlers[event_type], '47ru')
+                            # print(event_type, event, "46ru")
+                            # print(self.handlers[event_type], '47ru')
                             await self.handlers[event_type](event)
                         else:
                             print(
@@ -58,6 +71,7 @@ class MessageReceiver:
                 except Exception as e:
                     print(f"Error processing message: {e}")
                     traceback.print_exc()  # This prints the full traceback
+                    raise
                 finally:
                     self.event_queue.task_done()
             except asyncio.CancelledError:

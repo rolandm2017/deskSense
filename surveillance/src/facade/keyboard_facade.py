@@ -12,12 +12,12 @@ class KeyboardFacadeCore:
         """Handle keyboard events from the message receiver."""
         if "timestamp" in event:
             print(event, 'in keyboard facade 20ru')
-            converted_datetime = datetime.fromisoformat(event["timestamp"])
-            self.add_event(converted_datetime)
+            # TODO: Just send the timestamp on the Recorder side
+            self.add_event(event["timestamp"])
 
-    def add_event(self, time: datetime):
+    def add_event(self, time: float):
         """It really does need to be a timestamp, because later, the EventAggregator compares timestamps.`"""
-        self.queue.append(time.timestamp())
+        self.queue.append(time)
 
     def read_event(self):
         if self.queue:
@@ -25,5 +25,9 @@ class KeyboardFacadeCore:
         return None
 
     def event_type_is_key_down(self, event):
-        # print(event, event is not None, "21vv")
         return event is not None  # If event exists, it was a key press
+
+    def get_all_events(self):
+        all_events = list(self.queue)
+        self.queue.clear()
+        return all_events
