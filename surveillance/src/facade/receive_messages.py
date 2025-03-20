@@ -58,8 +58,6 @@ class MessageReceiver:
                     if "type" in event:
                         event_type = event["type"]
                         if event_type in self.handlers:
-                            # print(event_type, event, "46ru")
-                            # print(self.handlers[event_type], '47ru')
                             await self.handlers[event_type](event)
                         else:
                             print(

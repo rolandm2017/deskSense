@@ -287,11 +287,9 @@ async def test_read_latest_shutdown(setup_test_db):
     await dao.create_status(SystemStatusType.SLEEP, dt1)
     print("dt1: ", dt1)
     latest_shutdown = await dao.read_latest_shutdown()
-    print("dt?:", latest_shutdown.created_at, "290ru")
     assert latest_shutdown is not None
     assert latest_shutdown.status == SystemStatusType.SLEEP
     print(latest_shutdown.created_at)
-    print(dt1, "292ru")
     assert latest_shutdown.created_at == dt1
 
     # Test SHUTDOWN

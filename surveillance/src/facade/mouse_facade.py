@@ -10,6 +10,8 @@ from typing import TypedDict, List
 from ..util.detect_os import OperatingSystemInfo
 from ..object.classes import MouseCoords, MouseEvent
 
+from .monitoring import FacadeMonitoring
+
 os_type = OperatingSystemInfo()
 if os_type.is_windows:
     from win32api import GetCursorPos
@@ -24,7 +26,6 @@ class MouseFacadeCore:
     async def handle_mouse_message(self, event):
         """Handle mouse events from the message receiver."""
         if "start" in event and "end" in event:
-            print(event, "in mouse facade core 34ru")
             # TODO: Just send a datetime.timestamp() since that's what will happen later
             event_dict = {
                 "start": event["start"],
@@ -36,6 +37,12 @@ class MouseFacadeCore:
         self.queue.append(event)
 
     def read_event(self):
+        if not hasattr(self, 'monitoring'):
+            self.monitoring = FacadeMonitoring("Mouse")
+
+        queue_length = len(self.queue)
+        self.monitoring.record_queue_length(queue_length)
+
         if self.queue:
             return self.queue.popleft()  # O(1) operation
         return None

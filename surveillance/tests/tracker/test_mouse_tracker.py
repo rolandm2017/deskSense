@@ -10,7 +10,7 @@ import tempfile
 from src.util.detect_os import OperatingSystemInfo
 from src.util.threaded_tracker import ThreadedTracker
 from src.trackers.mouse_tracker import MouseTrackerCore, MouseEvent
-from src.facade.mouse_facade import UbuntuMouseApiFacadeCore, MouseCoords
+from src.facade.mouse_facade import MouseCoords
 
 from ..mocks.mock_clock import MockClock
 
