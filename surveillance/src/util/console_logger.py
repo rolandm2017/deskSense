@@ -83,3 +83,9 @@ class ConsoleLogger:
         message = func_name + " :: " + \
             date.strftime('%m-%d') + " :: " + str(events_count)
         self.log_purple(message)
+
+    def log_green_then_white(self, green, white):
+        if self.active:
+            green_part = f"\033[92m{green}\033[0m"
+            total = green_part + white
+            print(total)
