@@ -63,9 +63,6 @@ class MouseEventAggregator:
         self.count = 0
 
 
-debug_timeout_ms = 400
-
-
 class MouseEventDispatch:
     """
     Moving the mouse in any non-tiny manner yields a stream of perhaps 50 to 100 events
@@ -75,15 +72,15 @@ class MouseEventDispatch:
     As long as a new event comes in from within the span of the timer, the window
     is kept open for more events to be recorded.
 
-    The goal of this class is to reduce 100-200 POST events per sec
-    down to 1-4 POST events per 2-3 sec. Requests have high overhead.
+    The goal of this class is to reduce 100-200 events per sec
+    down to 1-4 events per 2-3 sec. Requests have high overhead.
     """
 
     def __init__(self, event_aggregator, event_ready_handler):
         # fifty_ms = 0.1  # NOTE: 100 ms is a LONG time in mouse move events
-        fifty_ms = 0.4  # NOTE: 100 ms is a LONG time in mouse move events
+        debug_timeout_ms = 100  # NOTE: 100 ms is a LONG time in mouse move events
         self.max_delay = debug_timeout_ms / 1000  # ms / 1000 ms/sec
-        self.MAX_AGGREGATIONS = 100
+        self.MAX_AGGREGATIONS = 100  # in a single package
         self.event_aggregator = event_aggregator
         self.debounce_timer = None
         self.event_ready_handler = event_ready_handler
@@ -129,8 +126,9 @@ class MouseEventDispatch:
             end_time = datetime.now()
             print("[end]", end_time)
             print("[duration]", end_time - self.start_time)
+            end_time = end_time.timestamp()
             deliverable = {"type": "mouse",
-                           "start": self.start_time, "end": end_time}
+                           "start": self.start_time.timestamp(), "end": end_time}
             self.event_aggregator.reset()
             self.event_ready_handler(deliverable)
 
@@ -142,13 +140,14 @@ def monitor_keyboard(device_path, send_keyboard_event):
     Keyboard events appear slowly relative to the mouse.
     """
     try:
+        print("path:", device_path, send_keyboard_event)
         keyboard = InputDevice(device_path)
         print(f"Monitoring keyboard: {keyboard.name}")
 
         for event in keyboard.read_loop():
             is_key_down_event = event.value == 1
             if event.type == ecodes.EV_KEY and is_key_down_event:  # type: ignore
-                print(f"Key {event.code} pressed")
+                # print(f"Key {event.code} pressed")
 
                 send_keyboard_event()
 
@@ -198,6 +197,7 @@ def monitor_mouse(device_path):
 
                     # f"Mouse {'X' if event.code == ecodes.REL_X else 'Y'} moved: {event.value}")
                     mouse_event_dispatch.add_to_aggregator()
+                    # pass
             elif event.type == ecodes.EV_KEY:  # type: ignore
                 button_names = {
                     ecodes.BTN_LEFT: "left",  # type: ignore
@@ -208,6 +208,7 @@ def monitor_mouse(device_path):
                 }
 
                 if event.code in button_names:
+                    # pass
                     # action = "pressed" if event.value == 1 else "released" if event.value == 0 else "repeated"
                     # button = button_names.get(
                     #     event.code, f"button {event.code}")

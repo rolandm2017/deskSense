@@ -46,36 +46,44 @@ class ProgramSessionData:
         return f"ProgramSessionData(window_title='{self.window_title}', detail='{self.detail}', \n\tstart_time={self.start_time}, \n\tend_time={end_time}, duration={self.duration}, productive={self.productive})"
 
 
-class KeyboardAggregate:  # TODO: Rename "PeripheralsAggregatee" & use in Mouse Aggregator
+class MouseEvent(TypedDict):
+    start: float
+    end: float
+
+
+class PeripheralAggregate:
     """
+    Base class for all peripheral aggregates.
     A deliverable that becomes a database entry.
 
-    This is the finished package.
+    This is the finished package template.
     """
 
     def __init__(self, start_time, end_time, count_of_events=None):
         self.start_time = start_time
         self.end_time = end_time
         self.count = count_of_events
+
+    def __str__(self):
+        return f"Peripheral aggregate from {self.start_time} to {self.end_time} with {self.count} events"
+
+
+class KeyboardAggregate(PeripheralAggregate):
+    """
+    Keyboard-specific implementation of PeripheralAggregate.
+    """
 
     def __str__(self):
         return f"Keyboard aggregate from {self.start_time} to {self.end_time} with {self.count} events"
 
 
-class MouseAggregate:
+class MouseAggregate(PeripheralAggregate):
     """
-    A deliverable that becomes a database entry.
-
-    This is the finished package.
+    Mouse-specific implementation of PeripheralAggregate.
     """
-
-    def __init__(self, start_time, end_time, count_of_events=None):
-        self.start_time = start_time
-        self.end_time = end_time
-        self.count = count_of_events
 
     def __str__(self):
-        return f"Mouse aggregate from {self.start_time} to {self.end_time}"
+        return f"Mouse aggregate from {self.start_time} to {self.end_time} with {self.count} events"
 
 
 class MouseCoords:

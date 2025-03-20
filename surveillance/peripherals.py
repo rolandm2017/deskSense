@@ -4,6 +4,7 @@ Wrapper to run the linux_peripheral_detector from the project root.
 """
 # File is surveillance/peripherals.py
 from src.trackers.linux.linux_peripheral_detector import monitor_keyboard, monitor_mouse
+from src.trackers.linux.message_dispatch import publish_keyboard_event, publish_mouse_events
 import src.trackers.linux.linux_peripheral_detector as detector
 import threading
 import os
@@ -36,9 +37,9 @@ if DEBUG:
     POST_KEYBOARD_FUNC = debug_logger_keyboard
     POST_MOUSE_FUNC = debug_logger_aggregate
 else:
-    # We'd use the real network functions later
-    POST_KEYBOARD_FUNC = None  # Will be set to the real function
-    POST_MOUSE_FUNC = None     # Will be set to the real function
+    # We'd use the real ZMQ functions later
+    POST_KEYBOARD_FUNC = publish_keyboard_event  # Will be set to the real function
+    POST_MOUSE_FUNC = publish_mouse_events     # Will be set to the real function
 
 # Now we can import the module and patch it
 

@@ -8,6 +8,7 @@ class ThreadedTracker:
 
     def __init__(self, core_tracker):
         self.core = core_tracker
+        self.interval = 0.05  # seconds
         self.stop_event = threading.Event()
         self.hook_thread = None
         self.is_running = False
@@ -22,7 +23,8 @@ class ThreadedTracker:
     def _monitor_core(self):
         while not self.stop_event.is_set():
             self.core.run_tracking_loop()
-            time.sleep(0.1)
+            # might lead to some events not getting read if too sparse
+            time.sleep(self.interval)
 
     def stop(self):
         self.stop_event.set()

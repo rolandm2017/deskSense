@@ -1,8 +1,11 @@
 from datetime import datetime, timezone
 from dataclasses import dataclass
-from typing import List, Callable
+from multiprocessing import Value
+from typing import List, Callable, Optional, Type
 
-from ..object.classes import KeyboardAggregate
+# Import the base and derived classes
+
+from ..object.classes import PeripheralAggregate, KeyboardAggregate, MouseAggregate
 
 
 @dataclass
@@ -13,25 +16,19 @@ class InProgressAggregation:
 
 
 class EventAggregator:
-    def __init__(self, user_facing_clock, timeout_ms: int):
+    def __init__(self, user_facing_clock, timeout_ms: int,
+                 aggregate_class: Type[PeripheralAggregate] = KeyboardAggregate):
         self.user_facing_clock = user_facing_clock
         self.timeout_in_sec = timeout_ms / 1000
-        # self.current_aggregation: InProgressAggregation | None = None
-
-        self.current_aggregation: InProgressAggregation | None = None
+        self.current_aggregation: Optional[InProgressAggregation] = None
         self._on_aggregation_complete = None
+        # Store which type of aggregate to create
+        self.aggregate_class = aggregate_class
 
-    def set_callback(self, callback: Callable):  # function
+    def set_callback(self, callback: Callable):
         self._on_aggregation_complete = callback
 
-    # def set_initialization_aggregation(self):
-    #     # Class relies on times as .timestamp() floats
-    #     now = self.user_facing_clock.now().timestamp()
-
-    #     # now, now, [] -> default, as close to meaningless as it gets
-    #     return InProgressAggregation(now, now, [])
-
-    def add_event(self, timestamp: float) -> None | list[datetime]:
+    def add_event(self, timestamp: float) -> Optional[List[datetime]]:
         """A timestamp must be a datetime.timestamp() result."""
         if timestamp is None:
             raise TypeError("Timestamp cannot be None")
@@ -49,19 +46,16 @@ class EventAggregator:
             self.current_aggregation = InProgressAggregation(
                 timestamp, timestamp, [timestamp])
             return None
+        if self.current_aggregation is None:
+            raise ValueError("Should be impossible to get None here")
 
-        next_added_timestamp_difference = timestamp - \
-            self.current_aggregation.end_time  # type: ignore
+        next_added_timestamp_difference = timestamp - self.current_aggregation.end_time
         session_window_has_elapsed = next_added_timestamp_difference > self.timeout_in_sec
         if session_window_has_elapsed:
-            # "If no keystroke within 300 ms, end sesion; report session to db"
-            events_in_session = self.current_aggregation.events  # type: ignore
-            completed_to_report = self.convert_events_to_timestamps(events_in_session
-                                                                    )
-            #
-            # "Completed report" will be used to get the first and last entry,
-            # to see "start_time", "end_time"
-            #
+            # "If no keystroke within timeout, end session; report session to db"
+            events_in_session = self.current_aggregation.events
+            completed_to_report = self.convert_events_to_timestamps(
+                events_in_session)
 
             self.start_new_aggregate(timestamp)
 
@@ -69,8 +63,8 @@ class EventAggregator:
                 self._on_aggregation_complete(completed_to_report)
             return completed_to_report
 
-        self.current_aggregation.end_time = timestamp  # type: ignore
-        self.current_aggregation.events.append(timestamp)  # type: ignore
+        self.current_aggregation.end_time = timestamp
+        self.current_aggregation.events.append(timestamp)
         return None
 
     def convert_events_to_timestamps(self, current_agg_events):
@@ -80,41 +74,43 @@ class EventAggregator:
         self.current_aggregation = InProgressAggregation(
             timestamp, timestamp, [timestamp])
 
-    def force_complete(self) -> InProgressAggregation | None:
-        """Used only in stop() and hence """
+    def force_complete(self) -> Optional[InProgressAggregation]:
+        """Used only in stop() and when shutting down"""
         if not self.current_aggregation:
             return None
 
         completed = self.current_aggregation
-        # self.current_aggregation = self.set_initialization_aggregation()
+        self.current_aggregation = None
 
         if self._on_aggregation_complete:
-            self._on_aggregation_complete(completed)
+            events_as_datetimes = self.convert_events_to_timestamps(
+                completed.events)
+            self._on_aggregation_complete(events_as_datetimes)
 
         return completed
 
-    def package_aggregate_for_db(self, aggregate: list) -> KeyboardAggregate:
+    def package_keyboard_events_for_db(self, aggregate: list) -> KeyboardAggregate:
         """
         Aggregate comes out as an array of datetimes. 
         The DB must get an obj with start_time, end_time.
+        Uses the configured aggregate_class to determine which type to create.
         """
         start = aggregate[0]
         end = aggregate[-1]
         return KeyboardAggregate(start, end, len(aggregate))
 
+    def package_mouse_events_for_db(self, aggregate: list) -> MouseAggregate:
+        """
+        Aggregate comes out as an array of datetimes. 
+        The DB must get an obj with start_time, end_time.
+        Uses the configured aggregate_class to determine which type to create.
+        """
+        start = aggregate[0]
+        end = aggregate[-1]
+        return MouseAggregate(start, end, len(aggregate))
 
-# # Example usage:
-# def on_session_complete(session: Aggregation):
-#     print(f"Session completed: {len(session.events)} events")
-#     print(f"Duration: {session.end_time - session.start_time:.2f}s")
-
-# grouper = EventAggregator(timeout_ms=1000)
-# grouper.set_callback(on_session_complete)
-
-# # Simulate events
-# events = [time(), time() + 0.2, time() + 0.4, time() + 2.0]
-# for t in events:
-#     grouper.add_event(t)
-
-# # Force complete any remaining session
-# grouper.force_complete()
+    def set_aggregate_class(self, aggregate_class: Type[PeripheralAggregate]):
+        """
+        Change the type of aggregate being created (e.g., from keyboard to mouse)
+        """
+        self.aggregate_class = aggregate_class
