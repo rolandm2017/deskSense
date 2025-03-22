@@ -1,4 +1,11 @@
 """
+
+####
+#
+#  Tool for inspecting tracker times for {mouse, keyboard} vs {programs, chrome}
+#
+####
+
 Run the script, and see:
 1. How much time was spent moving the peripherals?
 2. How much time was spent total on programs/Chrome?

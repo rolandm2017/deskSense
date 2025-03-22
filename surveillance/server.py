@@ -1,5 +1,4 @@
 # server.py
-from src.util.debug_logger import capture_data_for_tests
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Depends, status, Request
 from fastapi import Path
 from fastapi.middleware.cors import CORSMiddleware
@@ -45,6 +44,7 @@ from src.surveillance_manager import FacadeInjector, SurveillanceManager
 from src.services.dashboard_service import DashboardService
 from src.services.chrome_service import ChromeService
 
+
 from src.services.services import (
     KeyboardService, MouseService, ProgramService, TimezoneService,  VideoService
 )
@@ -55,8 +55,8 @@ from src.service_dependencies import (
 )
 from src.object.return_types import DaySummary
 
+from src.util.debug_logger import capture_chrome_data_for_tests
 from src.util.console_logger import ConsoleLogger
-from src.util.debug_logger import write_temp_log
 
 
 from src.routes.report_routes import router as report_router
@@ -382,7 +382,7 @@ async def receive_chrome_tab(
         user_id = 1  # temp
 
         # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
-        capture_data_for_tests(tab_change_event)
+        # capture_chrome_data_for_tests(tab_change_event)
         tz_for_user = timezone_service.get_tz_for_user(
             user_id)
         updated_tab_change_event = timezone_service.convert_tab_change_timezone(
@@ -391,6 +391,9 @@ async def receive_chrome_tab(
         await chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
         return  # Returns 204 No Content
     except Exception as e:
+        print(e)
+        raise
+
         raise HTTPException(
             status_code=500,
             detail="A problem occurred in Chrome Service"
