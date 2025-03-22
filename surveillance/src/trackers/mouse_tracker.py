@@ -14,8 +14,7 @@ from ..facade.mouse_facade import MouseFacadeCore
 
 
 class MouseTrackerCore:
-    def __init__(self, user_facing_clock, mouse_api_facade, event_handlers, end_program_routine=None):
-        self.user_facing_clock = user_facing_clock
+    def __init__(self,  mouse_api_facade, event_handlers, end_program_routine=None):
         self.mouse_facade: MouseFacadeCore = mouse_api_facade
         self.event_handlers = event_handlers
 
@@ -24,7 +23,7 @@ class MouseTrackerCore:
         self.end_program_func = end_program_routine
 
         self.aggregator = EventAggregator(
-            user_facing_clock, timeout_ms=1000, aggregate_class=MouseAggregate)
+            timeout_ms=1000, aggregate_class=MouseAggregate)
         self.logger = ConsoleLogger()
 
     def run_tracking_loop(self):

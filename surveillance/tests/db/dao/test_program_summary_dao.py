@@ -17,7 +17,6 @@ from src.util.clock import SystemClock
 
 from ...mocks.mock_clock import MockClock
 
-# Load environment variables from .env file
 load_dotenv()
 
 # Get the test database connection string

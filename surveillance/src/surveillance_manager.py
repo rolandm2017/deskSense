@@ -3,6 +3,7 @@ from pathlib import Path
 
 import asyncio
 import zmq
+import traceback
 import zmq.asyncio
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
@@ -11,13 +12,6 @@ from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 
 
-from .arbiter.activity_arbiter import ActivityArbiter
-
-
-from .facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
-from .facade.keyboard_facade import KeyboardFacadeCore
-from .facade.mouse_facade import MouseFacadeCore
-from .facade.program_facade import ProgramApiFacadeCore
 from .facade.receive_messages import MessageReceiver
 
 from .db.dao.system_status_dao import SystemStatusDao
@@ -41,11 +35,19 @@ from .util.detect_os import OperatingSystemInfo
 from .util.clock import SystemClock, UserFacingClock
 from .util.threaded_tracker import ThreadedTracker
 
-# from .keyboard_tracker import KeyActivityTracker
+
+class FacadeInjector:
+    def __init__(self, keyboard, mouse, program) -> None:
+        self.get_keyboard_facade_instance = keyboard
+        self.get_mouse_facade_instance = mouse
+        self.program_facade = program  # must receive OS arg
 
 
 class SurveillanceManager:
-    def __init__(self, session_maker: async_sessionmaker, shutdown_session_maker: sessionmaker, chrome_service, arbiter, shutdown_signal=None):
+    def __init__(self, session_maker: async_sessionmaker, shutdown_session_maker: sessionmaker, chrome_service, arbiter, facades, shutdown_signal=None):
+        """
+        Facades argument is DI for testability.
+        """
         self.session_maker = session_maker
         self.chrome_service = chrome_service
 
@@ -57,20 +59,11 @@ class SurveillanceManager:
 
         self.message_receiver = MessageReceiver("tcp://127.0.0.1:5555")
 
-        # Get the project root (parent of src directory)
-        # This gets us surveillance/src/productivity_tracker.py
-        current_file = Path(__file__)
-        project_root = current_file.parent.parent  # Goes up two levels to surveillance/
-
-        self.data_dir = project_root / 'productivity_logs'
-        self.data_dir.mkdir(exist_ok=True)
-
         current_os = OperatingSystemInfo()
 
-        keyboard_facade = get_keyboard_facade_instance()
-        # TODO: choose the mouseApi facade based on OS
-        mouse_facade = get_mouse_facade_instance()
-        program_facade = ProgramApiFacadeCore(current_os)
+        keyboard_facade = facades.get_keyboard_facade_instance()
+        mouse_facade = facades.get_mouse_facade_instance()
+        program_facade = facades.program_facade(current_os)
 
         self.loop = asyncio.get_event_loop()
         clock = UserFacingClock()
@@ -101,12 +94,11 @@ class SurveillanceManager:
         self.message_receiver.register_handler(
             "mouse", mouse_facade.handle_mouse_message)
 
-        self.operate_facade()
-
         self.keyboard_tracker = KeyboardTrackerCore(
-            clock, keyboard_facade, self.handle_keyboard_ready_for_db)
+            keyboard_facade, self.handle_keyboard_ready_for_db)
         self.mouse_tracker = MouseTrackerCore(
-            clock, mouse_facade, self.handle_mouse_ready_for_db)
+            mouse_facade, self.handle_mouse_ready_for_db)
+        self.operate_facades()
         # Program tracker
         self.program_tracker = ProgramTrackerCore(
             clock, program_facade, self.handle_window_change, self.handle_program_ready_for_db)
@@ -118,15 +110,13 @@ class SurveillanceManager:
         self.mouse_thread = ThreadedTracker(self.mouse_tracker)
         self.program_thread = ThreadedTracker(self.program_tracker)
 
-        # self.key_tracker = KeyActivityTracker(self.data_dir)
-
     def start_trackers(self):
         self.is_running = True
         self.keyboard_thread.start()
         self.mouse_thread.start()
         self.program_thread.start()
 
-    def operate_facade(self):
+    def operate_facades(self):
         """Start the message receiver."""
         print("[info] message receiver starting")
         self.message_receiver.start()
@@ -162,13 +152,13 @@ class SurveillanceManager:
 
     async def shutdown_handler(self):
         try:
-            # TODO: Add Program Summary DAO shutdown -> prevent alt tab window being huge
             await self.chrome_service.shutdown()  # works despite the lack of highlighting
             await self.arbiter.shutdown()
             await self.program_summary_dao.shutdown()
-            # TODO: Add Chrome Summary DAO shutdown -> similar reasons
             await self.chrome_summary_dao.shutdown()
         except Exception as e:
+            print(self.chrome_service,  " none?")
+            traceback.print_exc()
             print(f"Error during shutdown cleanup: {e}")
 
     async def cleanup(self):
