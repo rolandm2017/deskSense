@@ -1,4 +1,5 @@
 # server.py
+from src.util.debug_logger import capture_data_for_tests
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Depends, status, Request
 from fastapi import Path
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,14 +20,7 @@ from src.db.models import DailyDomainSummary, DailyProgramSummary, ProgramSummar
 
 # from src.services import MouseService, KeyboardService, ProgramService, DashboardService, ChromeService
 # from src.services import get_mouse_service, get_chrome_service, get_program_service, get_keyboard_service, get_dashboard_service
-from src.object.pydantic_dto import (
-    KeyboardReport,
-    MouseReport,
-    ProgramActivityReport,
-    TabChangeEvent,
-    VideoCreateEvent, FrameCreateEvent, VideoCreateConfirmation,
-
-)
+from src.object.pydantic_dto import TabChangeEvent
 
 from src.object.dashboard_dto import (
     MouseEventsPayload,
@@ -46,7 +40,7 @@ from src.util.pydantic_factory import (
     manufacture_chrome_bar_chart, manufacture_programs_bar_chart,
     DtoMapper
 )
-from src.surveillance_manager import SurveillanceManager
+from src.surveillance_manager import FacadeInjector, SurveillanceManager
 
 from src.services.dashboard_service import DashboardService
 from src.services.chrome_service import ChromeService
@@ -66,7 +60,10 @@ from src.util.debug_logger import write_temp_log
 
 
 from src.routes.report_routes import router as report_router
+from src.routes.video_routes import router as video_routes
 from src.util.clock import UserFacingClock
+from src.facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
+from src.facade.program_facade import ProgramApiFacadeCore
 
 logger = ConsoleLogger()
 
@@ -94,9 +91,11 @@ async def lifespan(app: FastAPI):
 
     chrome_service = await get_chrome_service()
     arbiter = await get_activity_arbiter()
-    # Use the session_maker directly
+
+    facades = FacadeInjector(get_keyboard_facade_instance,
+                             get_mouse_facade_instance, ProgramApiFacadeCore)
     surveillance_state.manager = SurveillanceManager(
-        async_session_maker, shutdown_session_maker, chrome_service, arbiter)
+        async_session_maker, shutdown_session_maker, chrome_service, arbiter, facades)
     surveillance_state.manager.start_trackers()
 
     yield
@@ -122,6 +121,7 @@ app.add_middleware(
 )
 
 app.include_router(report_router)
+app.include_router(video_routes)
 
 
 class HealthResponse(BaseModel):
@@ -382,6 +382,7 @@ async def receive_chrome_tab(
         user_id = 1  # temp
 
         # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
+        capture_data_for_tests(tab_change_event)
         tz_for_user = timezone_service.get_tz_for_user(
             user_id)
         updated_tab_change_event = timezone_service.convert_tab_change_timezone(
@@ -396,32 +397,6 @@ async def receive_chrome_tab(
         )
 
 # TODO: Endpoint for the Camera stuff
-
-
-@app.post("/video/new", response_model=VideoCreateConfirmation)
-async def receive_video_info(video_create_event: VideoCreateEvent, video_service: VideoService = Depends(get_video_service)):
-    logger.log_purple("[LOG] Video create event")
-    try:
-        video_id = await video_service.create_new_video(video_create_event)
-        return VideoCreateConfirmation(video_id=video_id)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail="A problem occurred in Video Service"
-        )
-
-
-@app.post("/video/frame", status_code=status.HTTP_204_NO_CONTENT)
-async def receive_frame_info(frame_create_event: FrameCreateEvent, video_service: VideoService = Depends(get_video_service)):
-    logger.log_purple("[LOG] Video create event")
-    try:
-        await video_service.add_frame_to_video(frame_create_event)
-        return
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail="A problem occurred in Video Service"
-        )
 
 
 if __name__ == "__main__":
