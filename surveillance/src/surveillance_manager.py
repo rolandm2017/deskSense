@@ -12,6 +12,8 @@ from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 
 
+from .arbiter.activity_arbiter import ActivityArbiter
+
 from .facade.receive_messages import MessageReceiver
 
 from .db.dao.system_status_dao import SystemStatusDao
@@ -44,7 +46,7 @@ class FacadeInjector:
 
 
 class SurveillanceManager:
-    def __init__(self, session_maker: async_sessionmaker, shutdown_session_maker: sessionmaker, chrome_service, arbiter, facades, shutdown_signal=None):
+    def __init__(self, session_maker: async_sessionmaker, shutdown_session_maker: sessionmaker, chrome_service, arbiter: ActivityArbiter, facades, shutdown_signal=None):
         """
         Facades argument is DI for testability.
         """
