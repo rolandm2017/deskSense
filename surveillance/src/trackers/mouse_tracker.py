@@ -14,13 +14,11 @@ from ..facade.mouse_facade import MouseFacadeCore
 
 
 class MouseTrackerCore:
-    def __init__(self,  mouse_api_facade, event_handlers, end_program_routine=None):
+    def __init__(self,  mouse_api_facade, event_handlers):
         self.mouse_facade: MouseFacadeCore = mouse_api_facade
         self.event_handlers = event_handlers
 
         self.event_handlers = event_handlers
-
-        self.end_program_func = end_program_routine
 
         self.aggregator = EventAggregator(
             timeout_ms=1000, aggregate_class=MouseAggregate)
