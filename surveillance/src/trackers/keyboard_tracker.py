@@ -8,7 +8,7 @@ from ..util.end_program_routine import end_program_readout, pretend_report_event
 from ..object.classes import KeyboardAggregate
 from ..util.clock import SystemClock
 from ..util.threaded_tracker import ThreadedTracker
-from ..util.keyboard_aggregator import EventAggregator, InProgressAggregation
+from ..util.event_aggregator import EventAggregator, InProgressAggregation
 from ..util.console_logger import ConsoleLogger
 from ..facade.keyboard_facade import KeyboardFacadeCore
 

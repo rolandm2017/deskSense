@@ -29,28 +29,16 @@ class EventAggregator:
 
     def add_event(self, timestamp: float) -> Optional[List[datetime]]:
         """A timestamp must be a datetime.timestamp() result."""
-        if timestamp is None:
-            raise TypeError("Timestamp cannot be None")
-        if not isinstance(timestamp, (int, float)):
-            raise TypeError("Timestamp must be a number")
-
-        # if timestamp > self.user_facing_clock.now().timestamp():
-            # raise ValueError("Timestamp cannot be in the future")
-        if self.current_aggregation and timestamp < self.current_aggregation.end_time:
-            print(timestamp)
-            raise ValueError("Timestamps must be in chronological order")
+        self.validate_input(timestamp)
 
         uninitialized = self.current_aggregation is None
         if uninitialized:
-            self.current_aggregation = InProgressAggregation(
-                timestamp, timestamp, [timestamp])
+            self.start_new_aggregate(timestamp)
             return None
         if self.current_aggregation is None:
             raise ValueError("Should be impossible to get None here")
 
-        next_added_timestamp_difference = timestamp - self.current_aggregation.end_time
-        session_window_has_elapsed = next_added_timestamp_difference > self.timeout_in_sec
-        if session_window_has_elapsed:
+        if self.session_window_has_elapsed(timestamp):
             # "If no keystroke within timeout, end session; report session to db"
             events_in_session = self.current_aggregation.events
             completed_to_report = self.convert_events_to_timestamps(
@@ -61,17 +49,35 @@ class EventAggregator:
             if self._on_aggregation_complete:
                 self._on_aggregation_complete(completed_to_report)
             return completed_to_report
+        else:
+            print("window has not elapsed")
 
         self.current_aggregation.end_time = timestamp
         self.current_aggregation.events.append(timestamp)
         return None
 
-    def convert_events_to_timestamps(self, current_agg_events):
-        return [datetime.fromtimestamp(t, tz=timezone.utc) for t in current_agg_events]
+    def validate_input(self, timestamp):
+        if timestamp is None:
+            raise TypeError("Timestamp cannot be None")
+        if not isinstance(timestamp, (int, float)):
+            raise TypeError("Timestamp must be a number")
+        if self.current_aggregation and timestamp < self.current_aggregation.end_time:
+            print(timestamp)
+            raise ValueError("Timestamps must be in chronological order")
 
     def start_new_aggregate(self, timestamp):
         self.current_aggregation = InProgressAggregation(
             timestamp, timestamp, [timestamp])
+
+    def session_window_has_elapsed(self, timestamp):
+        if self.current_aggregation is None:
+            raise ValueError("Aggregation was None after initialization")
+        next_added_timestamp_difference = timestamp - self.current_aggregation.end_time
+        session_window_has_elapsed = next_added_timestamp_difference > self.timeout_in_sec
+        return session_window_has_elapsed
+
+    def convert_events_to_timestamps(self, current_agg_events):
+        return [datetime.fromtimestamp(t, tz=timezone.utc) for t in current_agg_events]
 
     def force_complete(self) -> Optional[InProgressAggregation]:
         """Used only in stop() and when shutting down"""

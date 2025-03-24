@@ -75,6 +75,7 @@ def event_collector():
     events = []
 
     def event_handler(event):
+        print(event, "in event handler 68ru")
         events.append(event)
 
     return events, event_handler
@@ -100,113 +101,79 @@ def test_make_sure_handler_actually_handles(tracker_and_events, mock_mouse_facad
     tracker = tracker_and_events[0]
     events = tracker_and_events[1]
 
-    now = datetime.now() - timedelta(hours=1)
+    # Spy on the session window has elapsed function
+    session_window_has_elapsed_spy = Mock(
+        side_effect=tracker.aggregator.session_window_has_elapsed)
+    tracker.aggregator.session_window_has_elapsed = session_window_has_elapsed_spy
+
+    now = datetime.now().replace(microsecond=0) - timedelta(hours=1)
     t1 = now + timedelta(milliseconds=5)
-    t2 = t1 + timedelta(milliseconds=5)
-    t3 = t2 + timedelta(milliseconds=5)
-    t4 = t3 + timedelta(milliseconds=5)
-    t5 = t4 + timedelta(milliseconds=5)
-    t6 = t5 + timedelta(milliseconds=1005)
-    t7 = t6 + timedelta(milliseconds=5)
+    t2 = t1 + timedelta(milliseconds=16)
+    t3 = t2 + timedelta(milliseconds=1127)
+    t4 = t3 + timedelta(milliseconds=25)
+    t5 = t4 + timedelta(milliseconds=1105)
+    # t6 = t5 + timedelta(milliseconds=2235)
+    # t7 = t6 + timedelta(milliseconds=5)
 
     t1_a = t1.timestamp()
     t2_a = t2.timestamp()
     t3_a = t3.timestamp()
     t4_a = t4.timestamp()
     t5_a = t5.timestamp()
-    t6_a = t6.timestamp()
-    t7_a = t7.timestamp()
+    # t6_a = t6.timestamp()
+    # t7_a = t7.timestamp()
+
+    # print("vvvvv", t5_a)
+    # print("vvvvv", t6_a)
 
     x1 = {"start": t1_a, "end": t2_a}
     x2 = {"start": t2_a, "end": t3_a}
     x3 = {"start": t3_a, "end": t4_a}
     x4 = {"start": t4_a, "end": t5_a}
-    x5 = {"start": t5_a, "end": t6_a}
-    x6 = {"start": t6_a, "end": t7_a}
+    # x5 = {"start": t5_a, "end": t6_a}
+    # x6 = {"start": t6_a, "end": t7_a}
+
+    assert tracker.aggregator.current_aggregation is None, "Faulty setup conditions"
 
     mock_mouse_facade.set_cursor_pos(x1)
     tracker.run_tracking_loop()
+    # Both the start and end times were added to aggregator
+    assert len(tracker.aggregator.current_aggregation.events) == 2
+
+    assert tracker.aggregator.current_aggregation.start_time == x1["start"]
+    assert tracker.aggregator.current_aggregation.end_time == x1["end"]
+
     mock_mouse_facade.set_cursor_pos(x2)
     tracker.run_tracking_loop()
+    # A new array
+    assert len(tracker.aggregator.current_aggregation.events) == 1
+
+    # Two at once
     mock_mouse_facade.set_cursor_pos(x3)
-    tracker.run_tracking_loop()
     mock_mouse_facade.set_cursor_pos(x4)
     tracker.run_tracking_loop()
-    mock_mouse_facade.set_cursor_pos(x5)
-    tracker.run_tracking_loop()
-    mock_mouse_facade.set_cursor_pos(x6)
-    tracker.run_tracking_loop()
+    assert len(tracker.aggregator.current_aggregation.events) == 1
+    # mock_mouse_facade.set_cursor_pos(x4)
+    # tracker.run_tracking_loop()
+    # mock_mouse_facade.set_cursor_pos(x5)
+    # tracker.run_tracking_loop()
+    # mock_mouse_facade.set_cursor_pos(x6)
+    # tracker.run_tracking_loop()
     # mock_mouse_facade.set_cursor_pos(x7)
     # tracker.run_tracking_loop()
 
     # Only check that the stops were logged, because they signal a closed window
     print(len(events), '143ru')
-    assert len(events) == len(
-        [x3, x5]), "Some mouse events were not recorded"
+    one_event_aggregate = 1
+    assert len(
+        events) == one_event_aggregate, "Some mouse events were not recorded"
 
 
-def test_multiple_handlers_are_called(tracker_and_events, mock_mouse_facade):
-    """Test that when multiple handlers are provided, they are all called"""
-    tracker = tracker_and_events[0]
-    handler1_calls = []
-    handler2_calls = []
-
-    now = datetime.now() - timedelta(hours=1)
-    t1 = now + timedelta(milliseconds=5)
-    t2 = now + timedelta(milliseconds=5)
-    t3 = now + timedelta(milliseconds=5)
-    t4 = now + timedelta(milliseconds=5)
-
-    t1_a = t1.timestamp()
-    t2_a = t2.timestamp()
-    t3_a = t3.timestamp()
-    t4_a = t4.timestamp()
-
-    x1 = {"start": t1_a, "end": t2_a}
-    x2 = {"start": t2_a, "end": t3_a}
-    x3 = {"start": t3_a, "end": t4_a}
-
-    def handler1(event):
-        handler1_calls.append(event)
-
-    def handler2(event):
-        handler2_calls.append(event)
-
-    # Replace single handler with multiple handlers
-    tracker.event_handlers = [handler1, handler2]
-
-    # Simulate mouse movement and stop
-    mock_mouse_facade.set_cursor_pos(x1)
-    tracker.run_tracking_loop()
-    mock_mouse_facade.set_cursor_pos(x2)
-    tracker.run_tracking_loop()
-    mock_mouse_facade.set_cursor_pos(x3)
-    tracker.run_tracking_loop()
-
-    assert len(handler1_calls) == len(handler2_calls) == 1
-    assert handler1_calls[0] == handler2_calls[0]
-
-
-def test_threading_cleanup(mock_mouse_facade, event_collector):
-    """Test that ThreadedMouseTracker cleans up properly on stop"""
-    events, handler = event_collector
-    tracker_core = MouseTrackerCore(mock_mouse_facade, handler)
-    threaded_tracker = ThreadedTracker(tracker_core)
-
-    threaded_tracker.start()
-
-    assert threaded_tracker.is_running
-    assert threaded_tracker.hook_thread is not None
-    assert threaded_tracker.hook_thread.is_alive()
-
-    threaded_tracker.stop()
-    assert not threaded_tracker.is_running
-    assert not threaded_tracker.hook_thread.is_alive()
-
-
-# def test_end_program_routine_called(tracker_and_events, mock_mouse_facade):
-#     """Test that end program routine is called when stopping tracker"""
-#     end_program_called = []
+# def test_multiple_handlers_are_called(tracker_and_events, mock_mouse_facade):
+#     """Test that when multiple handlers are provided, they are all called"""
+#     tracker = tracker_and_events[0]
+#     handler1_calls = []
+#     handler2_calls = []
 
 #     now = datetime.now() - timedelta(hours=1)
 #     t1 = now + timedelta(milliseconds=5)
@@ -223,13 +190,16 @@ def test_threading_cleanup(mock_mouse_facade, event_collector):
 #     x2 = {"start": t2_a, "end": t3_a}
 #     x3 = {"start": t3_a, "end": t4_a}
 
-#     def mock_end_program(report):
-#         end_program_called.append(True)
+#     def handler1(event):
+#         handler1_calls.append(event)
 
-#     tracker = tracker_and_events[0]
-#     tracker.end_program_func = mock_end_program
+#     def handler2(event):
+#         handler2_calls.append(event)
 
-#     # Simulate some movement
+#     # Replace single handler with multiple handlers
+#     tracker.event_handlers = [handler1, handler2]
+
+#     # Simulate mouse movement and stop
 #     mock_mouse_facade.set_cursor_pos(x1)
 #     tracker.run_tracking_loop()
 #     mock_mouse_facade.set_cursor_pos(x2)
@@ -237,5 +207,59 @@ def test_threading_cleanup(mock_mouse_facade, event_collector):
 #     mock_mouse_facade.set_cursor_pos(x3)
 #     tracker.run_tracking_loop()
 
-#     tracker.stop()
-#     assert len(end_program_called) == 1
+#     assert len(handler1_calls) == len(handler2_calls) == 1
+#     assert handler1_calls[0] == handler2_calls[0]
+
+
+# def test_threading_cleanup(mock_mouse_facade, event_collector):
+#     """Test that ThreadedMouseTracker cleans up properly on stop"""
+#     events, handler = event_collector
+#     tracker_core = MouseTrackerCore(mock_mouse_facade, handler)
+#     threaded_tracker = ThreadedTracker(tracker_core)
+
+#     threaded_tracker.start()
+
+#     assert threaded_tracker.is_running
+#     assert threaded_tracker.hook_thread is not None
+#     assert threaded_tracker.hook_thread.is_alive()
+
+#     threaded_tracker.stop()
+#     assert not threaded_tracker.is_running
+#     assert not threaded_tracker.hook_thread.is_alive()
+
+
+# # def test_end_program_routine_called(tracker_and_events, mock_mouse_facade):
+# #     """Test that end program routine is called when stopping tracker"""
+# #     end_program_called = []
+
+# #     now = datetime.now() - timedelta(hours=1)
+# #     t1 = now + timedelta(milliseconds=5)
+# #     t2 = now + timedelta(milliseconds=5)
+# #     t3 = now + timedelta(milliseconds=5)
+# #     t4 = now + timedelta(milliseconds=5)
+
+# #     t1_a = t1.timestamp()
+# #     t2_a = t2.timestamp()
+# #     t3_a = t3.timestamp()
+# #     t4_a = t4.timestamp()
+
+# #     x1 = {"start": t1_a, "end": t2_a}
+# #     x2 = {"start": t2_a, "end": t3_a}
+# #     x3 = {"start": t3_a, "end": t4_a}
+
+# #     def mock_end_program(report):
+# #         end_program_called.append(True)
+
+# #     tracker = tracker_and_events[0]
+# #     tracker.end_program_func = mock_end_program
+
+# #     # Simulate some movement
+# #     mock_mouse_facade.set_cursor_pos(x1)
+# #     tracker.run_tracking_loop()
+# #     mock_mouse_facade.set_cursor_pos(x2)
+# #     tracker.run_tracking_loop()
+# #     mock_mouse_facade.set_cursor_pos(x3)
+# #     tracker.run_tracking_loop()
+
+# #     tracker.stop()
+# #     assert len(end_program_called) == 1

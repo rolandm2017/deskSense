@@ -5,7 +5,7 @@ from typing import List
 from dataclasses import dataclass
 from datetime import timedelta
 
-from src.util.keyboard_aggregator import EventAggregator, InProgressAggregation
+from surveillance.src.util.event_aggregator import EventAggregator, InProgressAggregation
 
 from src.util.clock import SystemClock
 from surveillance.tests.mocks.mock_clock import MockClock
@@ -30,9 +30,68 @@ def test_new_aggregation_creation():
     assert aggregator.current_aggregation.events == [timestamp]
 
 
-def test_events_within_timeout():
-    base_time = system_clock.now() - timedelta(seconds=10)
+def test_valid_input_is_validated():
+    pass
 
+
+def test_session_window_has_elapsed():
+    """Is the difference beyond the timeout? Or within it?"""
+    thousand_ms = 1000
+    aggregator = EventAggregator(timeout_ms=thousand_ms)
+
+    # Arrange
+    t1 = system_clock.now() - timedelta(hours=1)
+    initial_time = t1.timestamp()
+
+    aggregator.start_new_aggregate(initial_time)
+
+    t2 = t1 + timedelta(milliseconds=10)
+    time_within_window = t2.timestamp()
+
+    t3 = t2 + timedelta(thousand_ms + 5)
+    beyond_window = t3.timestamp()
+
+    # Act, assert
+    assert aggregator.session_window_has_elapsed(time_within_window) is False
+    assert aggregator.session_window_has_elapsed(
+        beyond_window), "Window did not elapse correctly"
+
+
+def test_session_window_for_tiny_changes():
+    thousand_ms = 1000
+    aggregator = EventAggregator(timeout_ms=thousand_ms)
+
+    t1 = system_clock.now() - timedelta(hours=1)
+    t2 = t1 + timedelta(milliseconds=5)
+    t3 = t2 + timedelta(milliseconds=5)
+    t4 = t3 + timedelta(milliseconds=5)
+
+    aggregator.start_new_aggregate(t1.timestamp())
+
+    assert not aggregator.session_window_has_elapsed(t2.timestamp())
+    assert not aggregator.session_window_has_elapsed(t3.timestamp())
+    assert not aggregator.session_window_has_elapsed(t4.timestamp())
+
+
+def test_session_window_for_large_changes():
+    thousand_ms = 1000
+    aggregator = EventAggregator(timeout_ms=thousand_ms)
+
+    t1 = system_clock.now() - timedelta(hours=1)
+    t2 = t1 + timedelta(seconds=5)  # 5 sec!
+    t3 = t2 + timedelta(seconds=5)
+    t4 = t3 + timedelta(seconds=5)
+
+    aggregator.start_new_aggregate(t1.timestamp())
+
+    assert aggregator.session_window_has_elapsed(t2.timestamp())
+
+    aggregator.start_new_aggregate(t2.timestamp())
+
+    assert aggregator.session_window_has_elapsed(t3.timestamp())
+
+
+def test_events_within_timeout():
     t1 = system_clock.now() - timedelta(seconds=10)
     t2 = t1 + timedelta(milliseconds=200)
     t3 = t2 + timedelta(milliseconds=212)
