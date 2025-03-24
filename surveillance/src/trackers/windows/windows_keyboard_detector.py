@@ -6,6 +6,8 @@ import os
 import time
 from datetime import datetime
 
+from ..message_dispatch import publish_keyboard_event, publish_mouse_events
+
 # Set up logging
 logging.basicConfig(
     filename='keylog.txt',
@@ -26,6 +28,7 @@ def on_key_event(event):
     if event.event_type == 'down':
         # Log to console
         key_name = event.name
+        publish_keyboard_event()
         if len(key_name) == 1:
             # For regular characters, show the character
             print(f"Key pressed: {key_name}, ASCII: {ord(key_name)}, Time: {datetime.now().strftime('%H:%M:%S')}")
