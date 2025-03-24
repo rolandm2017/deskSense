@@ -14,7 +14,7 @@ from ..db.models import SystemStatus
 from ..object.enums import SystemStatusType
 
 
-class SystemPowerTracker:
+class UbuntuSystemPowerTracker:
     def __init__(self,
                  on_shutdown: Callable[[], Awaitable[None]],
                  system_status_dao,

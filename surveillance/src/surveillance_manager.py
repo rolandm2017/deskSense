@@ -36,7 +36,6 @@ from .services.chrome_service import ChromeService
 from .trackers.mouse_tracker import MouseTrackerCore
 from .trackers.keyboard_tracker import KeyboardTrackerCore
 from .trackers.program_tracker import ProgramTrackerCore
-from .trackers.system_tracker import SystemPowerTracker
 from .util.detect_os import OperatingSystemInfo
 from .util.clock import SystemClock, UserFacingClock
 from .util.threaded_tracker import ThreadedTracker
@@ -110,9 +109,15 @@ class SurveillanceManager:
         # Program tracker
         self.program_tracker = ProgramTrackerCore(
             clock, program_facade, self.handle_window_change, self.handle_program_ready_for_db)
-        #
-        self.system_tracker = SystemPowerTracker(
-            self.shutdown_handler, system_status_dao, self.check_session_integrity)
+        
+
+        if current_os.is_windows:
+            from .trackers.windows_system_tracker import WindowsSystemPowerTracker
+            self.system_tracker = WindowsSystemPowerTracker(self.shutdown_handler, system_status_dao, self.check_session_integrity)
+        else:
+            from .trackers.ubuntu_system_tracker import UbuntuSystemPowerTracker
+            self.system_tracker = UbuntuSystemPowerTracker(
+                self.shutdown_handler, system_status_dao, self.check_session_integrity)
 
         self.keyboard_thread = ThreadedTracker(self.keyboard_tracker)
         self.mouse_thread = ThreadedTracker(self.mouse_tracker)
