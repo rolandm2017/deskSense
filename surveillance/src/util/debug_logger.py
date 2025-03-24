@@ -1,5 +1,7 @@
 from datetime import datetime
+from sqlite3 import TimestampFromTicks
 from typing import List
+import json
 
 from ..db.models import DailyDomainSummary, DailyProgramSummary, DomainSummaryLog, ProgramSummaryLog
 from ..object.classes import ProgramSessionData
@@ -79,3 +81,19 @@ def latest_line_is_log_identifier(log_file):
         last_line = lines[-1:]
 
         return last_line
+
+
+def capture_program_data_for_tests(program, time):
+    dict_str = json.dumps(program, indent=4)
+    time_str = str(time)
+    with open("captures_for_test_data_-_programs.txt", "a") as f:
+        f.write(time_str)
+        f.write("\n")
+        f.write(dict_str)
+        f.write("\n\n")
+
+
+def capture_chrome_data_for_tests(tab_event):
+    with open("captures_for_test_data_-_Chrome.txt", "a") as f:
+        f.write(str(tab_event))
+        f.write("\n")

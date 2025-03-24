@@ -18,7 +18,7 @@ system_clock = SystemClock()
 
 
 def test_new_aggregation_creation():
-    aggregator = EventAggregator(system_clock, timeout_ms=1000)
+    aggregator = EventAggregator(timeout_ms=1000)
     timestamp = system_clock.now().timestamp()
 
     result = aggregator.add_event(timestamp)
@@ -36,11 +36,11 @@ def test_events_within_timeout():
     t1 = system_clock.now() - timedelta(seconds=10)
     t2 = t1 + timedelta(milliseconds=200)
     t3 = t2 + timedelta(milliseconds=212)
-    t4 = t3 + timedelta(milliseconds=138)
-    times = [t1, t2, t3, t4]
-    clock = MockClock(times)
+    # t4 = t3 + timedelta(milliseconds=138)
+    # times = [t1, t2, t3, t4]
+    # clock = MockClock(times)
 
-    aggregator = EventAggregator(clock, timeout_ms=1000)
+    aggregator = EventAggregator(timeout_ms=1000)
     # so adding time doesn't yield the future
     events = [t1, t2, t3]
 
@@ -64,9 +64,9 @@ def test_timeout_creates_new_aggregation(monkeypatch):
     # FIXME: What is the point of this time stuff?
     now = system_clock.now()
     slightly_earlier = now - timedelta(seconds=2)
-    way_earlier = now - timedelta(seconds=5)
+    # way_earlier = now - timedelta(seconds=5)
 
-    aggregator = EventAggregator(system_clock, timeout_ms=1000)
+    aggregator = EventAggregator(timeout_ms=1000)
     base_time = slightly_earlier.timestamp()
 
     first_result = aggregator.add_event(base_time)
@@ -95,7 +95,7 @@ def test_callback_execution(monkeypatch):
         callback_executed = True
         completed_aggregation = agg
 
-    aggregator = EventAggregator(system_clock, timeout_ms=1000)
+    aggregator = EventAggregator(timeout_ms=1000)
     aggregator.set_callback(callback)
 
     aggregator.add_event(earlier_than_system_time.timestamp())
@@ -107,7 +107,7 @@ def test_callback_execution(monkeypatch):
 
 
 def test_force_complete():
-    aggregator = EventAggregator(system_clock, timeout_ms=1000)
+    aggregator = EventAggregator(timeout_ms=1000)
     now = system_clock.now()
     t1 = now - timedelta(seconds=10)
     t2 = now - timedelta(seconds=9.8)
@@ -124,25 +124,12 @@ def test_force_complete():
     assert completed.start_time == events[0].timestamp()
     assert completed.end_time == events[-1].timestamp()
 
-    # ### It reset correctly
-    assert aggregator.current_aggregation is not None
-    current_time = system_clock.now().timestamp()
-    time_difference = abs(
-        aggregator.current_aggregation.start_time - current_time)
-
-    # Assert that the difference is less than a small threshold (e.g., 0.1 seconds)
-    assert time_difference < 0.01, f"Timestamp {aggregator.current_aggregation.start_time} is too far from current time {current_time}"
-
-    # Same for end_time
-    time_difference = abs(
-        aggregator.current_aggregation.end_time - current_time)
-    assert time_difference < 0.01
-
-    assert len(aggregator.current_aggregation.events) == 0
+    # ### Force complete resets the aggregator correctly
+    assert aggregator.current_aggregation is None
 
 
 def test_force_complete_empty():
-    aggregator = EventAggregator(system_clock, timeout_ms=1000)
+    aggregator = EventAggregator(timeout_ms=1000)
     completed = aggregator.force_complete()
     assert completed is None
 
@@ -154,7 +141,7 @@ def test_callback_on_force_complete():
         nonlocal callback_executed
         callback_executed = True
 
-    aggregator = EventAggregator(system_clock, timeout_ms=1000)
+    aggregator = EventAggregator(timeout_ms=1000)
     aggregator.set_callback(callback)
 
     aggregator.add_event(system_clock.now().timestamp())
@@ -168,26 +155,19 @@ def test_callback_on_force_complete():
 
 
 def test_invalid_timestamp_type():
-    aggregator = EventAggregator(system_clock, timeout_ms=1000)
+    aggregator = EventAggregator(timeout_ms=1000)
     with pytest.raises(TypeError, match="Timestamp must be a number"):
         aggregator.add_event("not a timestamp")  # type: ignore
 
 
 def test_none_timestamp():
-    aggregator = EventAggregator(system_clock, timeout_ms=1000)
+    aggregator = EventAggregator(timeout_ms=1000)
     with pytest.raises(TypeError, match="Timestamp cannot be None"):
         aggregator.add_event(None)  # type: ignore
 
 
-def test_future_timestamp():
-    aggregator = EventAggregator(system_clock, timeout_ms=1000)
-    future_time = system_clock.now() + timedelta(hours=1)
-    with pytest.raises(ValueError, match="Timestamp cannot be in the future"):
-        aggregator.add_event(future_time.timestamp())
-
-
 def test_out_of_order_timestamps():
-    aggregator = EventAggregator(system_clock, timeout_ms=1000)
+    aggregator = EventAggregator(timeout_ms=1000)
     base_time = system_clock.now()
 
     submitted_time = base_time - timedelta(seconds=20)

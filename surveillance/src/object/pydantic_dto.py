@@ -49,6 +49,11 @@ class TabChangeEvent(BaseModel):
     url: str
     startTime: datetime
 
+    def __str__(self) -> str:
+        """Custom string representation of the TabChangeEvent."""
+        formatted_time = self.startTime.strftime("%Y-%m-%d %H:%M:%S")
+        return f"TabChangeEvent(tabTitle='{self.tabTitle}', url='{self.url}', startTime='{formatted_time}')"
+
 # Video recording stuff
 
 

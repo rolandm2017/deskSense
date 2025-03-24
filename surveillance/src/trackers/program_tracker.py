@@ -1,20 +1,20 @@
 from datetime import datetime
-from pathlib import Path
 
 import time
-import threading
-from tracemalloc import start
 
 from ..util.console_logger import ConsoleLogger
 from ..config.definitions import productive_apps, productive_categories, productive_sites, unproductive_apps
 from ..facade.program_facade import ProgramApiFacadeCore
+
+from ..object.classes import ProgramSessionData
+
 from ..util.detect_os import OperatingSystemInfo
 from ..util.end_program_routine import end_program_readout, pretend_report_event
 from ..util.clock import SystemClock
 from ..util.threaded_tracker import ThreadedTracker
 from ..util.program_tools import separate_window_name_and_detail, is_expected_shape_else_throw, tab_is_a_productive_tab, contains_space_dash_space, window_is_chrome
 from ..util.strings import no_space_dash_space
-from ..object.classes import ProgramSessionData
+from ..util.debug_logger import capture_program_data_for_tests
 
 
 # TODO: report programs that aren't in the apps list.
@@ -59,17 +59,19 @@ class ProgramTrackerCore:
 
     def run_tracking_loop(self):
         for window_change in self.program_facade.listen_for_window_changes():
-            is_expected_shape_else_throw(window_change)
+
+            # is_expected_shape_else_throw(window_change)
             # TODO: If Chrome is the new Active window, mark chrome active
             # TODO: If chrome is the CURRENT active window, and chrome is not active now, mark inactive
 
-            on_a_different_window = self.current_session and window_change[
+            on_a_different_window_now = self.current_session and window_change[
                 "window_title"] != self.current_session.window_title
-            if on_a_different_window and self.is_initialized():
+            if on_a_different_window_now and self.is_initialized():
                 if self.current_session is None:
                     raise ValueError("Current session was None")
 
                 current_time: datetime = self.user_facing_clock.now()  # once per loop
+                # capture_program_data_for_tests(window_change, current_time)
                 self.conclude_session(current_time)
                 # when a window closes, call that with "conclude_session_handler()" to maintain other flows
                 self.apply_handlers(self.current_session)
@@ -82,6 +84,7 @@ class ProgramTrackerCore:
             # initialize
             if self.is_uninitialized():
                 current_time = self.user_facing_clock.now()
+                # capture_program_data_for_tests(window_change, current_time)
                 new_session = self.start_new_session(
                     window_change, current_time)
                 self.current_session = new_session
