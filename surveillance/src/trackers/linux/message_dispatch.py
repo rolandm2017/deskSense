@@ -14,12 +14,16 @@ load_dotenv()
 
 # In the peripheral detector
 
-# Setup ZMQ publisher
 context = zmq.Context()
 socket = context.socket(zmq.PUB)
 socket.bind("tcp://127.0.0.1:5555")
 
-# Replace your POST functions
+# Advantages over HTTP:
+
+# Much lower overhead per message
+# Non-blocking operation
+# Built-in queuing
+# No need to establish a new connection for each message
 
 
 def publish_keyboard_event():

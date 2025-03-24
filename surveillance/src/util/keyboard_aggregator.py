@@ -16,9 +16,8 @@ class InProgressAggregation:
 
 
 class EventAggregator:
-    def __init__(self, user_facing_clock, timeout_ms: int,
+    def __init__(self, timeout_ms: int,
                  aggregate_class: Type[PeripheralAggregate] = KeyboardAggregate):
-        self.user_facing_clock = user_facing_clock
         self.timeout_in_sec = timeout_ms / 1000
         self.current_aggregation: Optional[InProgressAggregation] = None
         self._on_aggregation_complete = None
@@ -35,8 +34,8 @@ class EventAggregator:
         if not isinstance(timestamp, (int, float)):
             raise TypeError("Timestamp must be a number")
 
-        if timestamp > self.user_facing_clock.now().timestamp():
-            raise ValueError("Timestamp cannot be in the future")
+        # if timestamp > self.user_facing_clock.now().timestamp():
+            # raise ValueError("Timestamp cannot be in the future")
         if self.current_aggregation and timestamp < self.current_aggregation.end_time:
             print(timestamp)
             raise ValueError("Timestamps must be in chronological order")

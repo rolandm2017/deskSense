@@ -14,16 +14,16 @@ from ..facade.keyboard_facade import KeyboardFacadeCore
 
 
 class KeyboardTrackerCore:
-    def __init__(self, user_facing_clock, keyboard_api_facade, event_handlers):
-        self.user_facing_clock = user_facing_clock
+    def __init__(self, keyboard_api_facade, event_handlers):
+        # self.user_facing_clock = user_facing_clock
         self.keyboard_facade: KeyboardFacadeCore = keyboard_api_facade
         self.event_handlers = event_handlers
 
         # self.recent_count = 0
-        self.time_of_last_terminal_out = user_facing_clock.now()
+        # self.time_of_last_terminal_out = user_facing_clock.now()
 
         # one sec of no typing => close session
-        self.aggregator = EventAggregator(user_facing_clock, timeout_ms=1000)
+        self.aggregator = EventAggregator(timeout_ms=1000)
         self.logger = ConsoleLogger()
 
     def run_tracking_loop(self):
