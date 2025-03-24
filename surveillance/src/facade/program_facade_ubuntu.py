@@ -1,44 +1,31 @@
 import psutil
-from typing import Dict, Optional
+from Xlib import display, X
+
+from typing import Dict, Optional, Generator
+
 from ..util.console_logger import ConsoleLogger
 
 
-class ProgramApiFacadeCore:
+class UbuntuProgramFacadeCore:
     def __init__(self, os):
         self.console_logger = ConsoleLogger()
-        self.is_windows = os.is_windows
-        self.is_ubuntu = os.is_ubuntu
         self.Xlib = None
-        self.display = None
-        self.X = None
-        if self.is_windows:
-            import win32gui
-            import win32process
-            self.win32gui = win32gui
-            self.win32process = win32process
-            self.display = None
-            self.X = None
-        else:
-            # from Xlib import X, display
-            from Xlib import display, X
-            self.display = display
-            self.X = X
+        self.display = display
+        self.X = X
 
     def read_current_program_info(self) -> Dict:
-        if self.is_windows:
-            return self._read_windows()
         return self._read_ubuntu()
 
-    def _read_windows(self) -> Dict:
-        window = self.win32gui.GetForegroundWindow()
-        pid = self.win32process.GetWindowThreadProcessId(window)[1]
-        process = psutil.Process(pid)
-        return {
-            "os": "Windows",
-            "pid": pid,
-            "process_name": process.name(),
-            "window_title": self.win32gui.GetWindowText(window)
-        }
+    # def _read_windows(self) -> Dict:
+    #     window = self.win32gui.GetForegroundWindow()
+    #     pid = self.win32process.GetWindowThreadProcessId(window)[1]
+    #     process = psutil.Process(pid)
+    #     return {
+    #         "os": "Windows",
+    #         "pid": pid,
+    #         "process_name": process.name(),
+    #         "window_title": self.win32gui.GetWindowText(window)
+    #     }
 
     def listen_for_window_changes(self):
         if self.X is None or self.display is None:
@@ -117,3 +104,30 @@ class ProgramApiFacadeCore:
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 continue
         return None
+    
+    def setup_window_hook(self) -> Generator[Dict, None, None]:
+        """
+        X11 implementation using event hooks for efficient window change detection.
+        This method sets up an X11 event mask that triggers on window focus changes.
+        
+        Yields:
+            Dict: Information about the new active window after each focus change.
+        """
+        # Select events on the root window
+        self.root.change_attributes(event_mask=X.PropertyChangeMask)
+        
+        # Get atoms we need to watch
+        net_active_window = self.display.intern_atom('_NET_ACTIVE_WINDOW')
+        
+        while True:
+            event = self.display.next_event()
+            
+            # Check if it's a property change event on the root window
+            if (event.type == X.PropertyNotify and 
+                event.window == self.root and 
+                event.atom == net_active_window):
+                
+                window_info = self._read_x11()
+                print(f"Window changed: {window_info['window_title']} ({window_info['process_name']})")
+                yield window_info
+

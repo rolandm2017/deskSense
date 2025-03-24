@@ -3,7 +3,6 @@ import signal
 import threading
 import os
 import psutil
-from gi.repository import GLib  # type: ignore
 from datetime import datetime
 from typing import Callable, Awaitable, Optional
 

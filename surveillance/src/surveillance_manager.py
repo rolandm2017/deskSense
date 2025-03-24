@@ -64,7 +64,7 @@ class SurveillanceManager:
 
         keyboard_facade = facades.get_keyboard_facade_instance()
         mouse_facade = facades.get_mouse_facade_instance()
-        program_facade = facades.program_facade(current_os)
+        program_facade = facades.program_facade(current_os)(arg1, arg2,arg3)
 
         self.loop = asyncio.get_event_loop()
         clock = UserFacingClock()
@@ -109,9 +109,10 @@ class SurveillanceManager:
             from .trackers.windows_system_tracker import WindowsSystemPowerTracker
             self.system_tracker = WindowsSystemPowerTracker(self.shutdown_handler, system_status_dao, self.check_session_integrity)
         else:
-            from .trackers.ubuntu_system_tracker import UbuntuSystemPowerTracker
-            self.system_tracker = UbuntuSystemPowerTracker(
-                self.shutdown_handler, system_status_dao, self.check_session_integrity)
+            self.system_tracker = None
+            # from .trackers.ubuntu_system_tracker import UbuntuSystemPowerTracker
+            # self.system_tracker = UbuntuSystemPowerTracker(
+                # self.shutdown_handler, system_status_dao, self.check_session_integrity)
 
         self.keyboard_thread = ThreadedTracker(self.keyboard_tracker)
         self.mouse_thread = ThreadedTracker(self.mouse_tracker)

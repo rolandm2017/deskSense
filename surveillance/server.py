@@ -63,7 +63,9 @@ from src.routes.report_routes import router as report_router
 from src.routes.video_routes import router as video_routes
 from src.util.clock import UserFacingClock
 from src.facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
-from src.facade.program_facade import ProgramApiFacadeCore
+# from src.facade.program_facade import ProgramApiFacadeCore
+from src.facade.program_facade_windows import WindowsProgramFacadeCore
+from src.facade.program_facade_ubuntu import UbuntuProgramFacadeCore
 
 logger = ConsoleLogger()
 
@@ -92,8 +94,14 @@ async def lifespan(app: FastAPI):
     chrome_service = await get_chrome_service()
     arbiter = await get_activity_arbiter()
 
+    def choose_program_facade(os):
+        if os.is_windows:
+            return WindowsProgramFacadeCore()
+        else:
+            return UbuntuProgramFacadeCore()
+
     facades = FacadeInjector(get_keyboard_facade_instance,
-                             get_mouse_facade_instance, ProgramApiFacadeCore)
+                             get_mouse_facade_instance, choose_program_facade)
     surveillance_state.manager = SurveillanceManager(
         async_session_maker, shutdown_session_maker, chrome_service, arbiter, facades)
     surveillance_state.manager.start_trackers()
