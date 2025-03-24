@@ -80,7 +80,6 @@ def test_session_window_for_large_changes():
     t1 = system_clock.now() - timedelta(hours=1)
     t2 = t1 + timedelta(seconds=5)  # 5 sec!
     t3 = t2 + timedelta(seconds=5)
-    t4 = t3 + timedelta(seconds=5)
 
     aggregator.start_new_aggregate(t1.timestamp())
 
