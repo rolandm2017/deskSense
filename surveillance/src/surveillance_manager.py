@@ -64,7 +64,7 @@ class SurveillanceManager:
 
         keyboard_facade = facades.get_keyboard_facade_instance()
         mouse_facade = facades.get_mouse_facade_instance()
-        program_facade = facades.program_facade(current_os)(arg1, arg2,arg3)
+        program_facade = facades.program_facade(current_os)
 
         self.loop = asyncio.get_event_loop()
         clock = UserFacingClock()

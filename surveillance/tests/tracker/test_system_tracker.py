@@ -5,8 +5,9 @@ from unittest.mock import AsyncMock, Mock, MagicMock
 
 from datetime import datetime, timedelta
 
+from src.util.detect_os import OperatingSystemInfo
 
-from src.trackers.system_tracker import SystemPowerTracker
+
 from surveillance.src.object.enums import SystemStatusType
 
 
@@ -18,13 +19,21 @@ from surveillance.src.object.enums import SystemStatusType
 def fake_on_shutdown():
     return 1
 
+# TODO: Write Ubuntu only and Windows only tests
 
+@pytest.mark.skipif(
+    OperatingSystemInfo().is_ubuntu == True,
+    reason="Test only applicable on Ubuntu systems"
+)
 def test_signal_handling_ignores_multiple_requests(monkeypatch):
     on_shutdown = Mock()
     system_status_dao = AsyncMock()
     check_sys = Mock()
 
-    obj = SystemPowerTracker(on_shutdown, system_status_dao, check_sys)
+    from src.trackers.windows_system_tracker import WindowsSystemPowerTracker
+    # from src.trackers.ubuntu_system_tracker import UbuntuSystemPowerTracker
+
+    obj = WindowsSystemPowerTracker(on_shutdown, system_status_dao, check_sys)
 
     # Monkeypatch the shutdown method to check if it's called
     called_signals = []
@@ -44,7 +53,10 @@ def test_signal_handling_ignores_multiple_requests(monkeypatch):
     assert len(called_signals) == 1, "Expected exactly one signal to get through"
     assert len(called_reasons) == 1, "Expected exactly one reason to get through"
 
-
+@pytest.mark.skipif(
+    OperatingSystemInfo().is_ubuntu == True,
+    reason="Test only applicable on Ubuntu systems"
+)
 def test_signal_handling(monkeypatch):
     """
     Note that hot reload, Ctrl C, Shutdown are handled here. 
@@ -54,7 +66,9 @@ def test_signal_handling(monkeypatch):
     system_status_dao = AsyncMock()
     check_sys = Mock()
 
-    obj = SystemPowerTracker(on_shutdown, system_status_dao, check_sys)
+    from src.trackers.windows_system_tracker import WindowsSystemPowerTracker
+
+    obj = WindowsSystemPowerTracker(on_shutdown, system_status_dao, check_sys)
 
     # Monkeypatch the shutdown method to check if it's called
     called_signals = []

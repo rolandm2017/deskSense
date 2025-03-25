@@ -64,8 +64,6 @@ from src.routes.video_routes import router as video_routes
 from src.util.clock import UserFacingClock
 from src.facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
 # from src.facade.program_facade import ProgramApiFacadeCore
-from src.facade.program_facade_windows import WindowsProgramFacadeCore
-from src.facade.program_facade_ubuntu import UbuntuProgramFacadeCore
 
 logger = ConsoleLogger()
 
@@ -96,8 +94,10 @@ async def lifespan(app: FastAPI):
 
     def choose_program_facade(os):
         if os.is_windows:
+            from src.facade.program_facade_windows import WindowsProgramFacadeCore
             return WindowsProgramFacadeCore()
         else:
+            from src.facade.program_facade_ubuntu import UbuntuProgramFacadeCore
             return UbuntuProgramFacadeCore()
 
     facades = FacadeInjector(get_keyboard_facade_instance,

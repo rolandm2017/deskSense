@@ -3,10 +3,12 @@ from Xlib import display, X
 
 from typing import Dict, Optional, Generator
 
+from .program_facade_base import ProgramFacadeInterface
+
 from ..util.console_logger import ConsoleLogger
 
 
-class UbuntuProgramFacadeCore:
+class UbuntuProgramFacadeCore(ProgramFacadeInterface):
     def __init__(self, os):
         self.console_logger = ConsoleLogger()
         self.Xlib = None

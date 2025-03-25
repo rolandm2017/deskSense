@@ -4,7 +4,9 @@ import time
 
 from ..util.console_logger import ConsoleLogger
 from ..config.definitions import productive_apps, productive_categories, productive_sites, unproductive_apps
-from ..facade.program_facade import ProgramApiFacadeCore
+
+from ..facade.program_facade_base import ProgramFacadeInterface
+
 
 from ..object.classes import ProgramSessionData
 
@@ -40,7 +42,7 @@ class ProgramTrackerCore:
         Create a separate class instead.
         """
         self.user_facing_clock = user_facing_clock
-        self.program_facade: ProgramApiFacadeCore = program_api_facade
+        self.program_facade: ProgramFacadeInterface = program_api_facade
         self.window_change_handler = window_change_handler
         self.conclude_session_handler = conclude_session_handler
         # self.chrome_event_update = chrome_event_update
@@ -150,7 +152,16 @@ class ProgramTrackerCore:
 
 if __name__ == "__main__":
     os_type = OperatingSystemInfo()
-    program_api_facade = ProgramApiFacadeCore(os_type)
+
+    def choose_program_facade(os):
+        if os.is_windows:
+            from ..facade.program_facade_windows import WindowsProgramFacadeCore
+            return WindowsProgramFacadeCore()
+        else:
+            from ..facade.program_facade_ubuntu import UbuntuProgramFacadeCore
+            return UbuntuProgramFacadeCore()
+
+    program_api_facade = choose_program_facade(os_type)
 
     # folder = Path("/tmp")
 
