@@ -23,18 +23,17 @@ class ActivityStateMachine:
         One instance per user. Meaning, state from User A has no reason to interact with User B's state.
         """
         self.user_facing_clock = user_facing_clock
-        self.program_state = ApplicationInternalState("", "", {})
-        self.chrome_state = ChromeInternalState("", "", "", {})
         self.current_state: InternalState | None = None
         self.prior_state: InternalState | None = None
-        self.transition_from_program = TransitionFromProgramMachine(
-            self.program_state)
-        self.transition_from_chrome = TransitionFromChromeMachine(
-            self.chrome_state)
+        self.transition_from_program = self._initialize_program_machine()
+        self.transition_from_chrome = self._initialize_chrome_machine()
         self.state_listeners = []
         self.logger = ConsoleLogger()
 
     def set_new_session(self, next_state: ProgramSessionData | ChromeSessionData):
+
+        if self.is_initialization_session(next_state):
+            raise ValueError("next_state cannot be an empty dictionary")
         if self.current_state:
             prior_update_was_program = isinstance(
                 self.current_state, ApplicationInternalState)
@@ -59,36 +58,47 @@ class ActivityStateMachine:
                     "Chrome", True, next_state.domain, next_state)
             self.current_state = updated_state
 
+    def is_initialization_session(self, some_dict):
+        """Asks 'is it an empty dict?'"""
+        return isinstance(some_dict, dict) and not some_dict
+
     def _conclude_session(self, state: InternalState):
+        if self.is_initialization_session(state.session):
+            return
         now = self.user_facing_clock.now()
         # Now - UTC
         # state.session.start_time - no tzinfo
-        # FIXME: getting vals like 8h01m, 8h02m
+        # FIXME: session is an empty dict sometimes. was on ApplicationInternalState.
+        print(state, '66ru')
+        print(state.session, "67ru")  # FIXME: "{} 67ru"
+        print(type(state.session), "68ru")
         session_start = state.session.start_time
 
         duration = now - session_start
 
-        # if not self.user_facing_clock.is_timezone_aware(now):
-        #     raise TimezoneUnawareError("now")
-        # elif not self.user_facing_clock.is_timezone_aware(session_start):
-        #     raise TimezoneUnawareError("now")
-        # elif not self.user_facing_clock.timezones_are_same(now, session_start):
-        #     raise MismatchedTimezonesError()
-        # else:
-        #     print(now.tzinfo, now)
-        #     print(session_start.tzinfo, session_start)
-        #     self.logger.log_blue("[debug] none of those errors happened")
-
-        # if duration > timedelta(hours=1):
-        #     self.logger.log_red_multiple(
-        #         "[critical - Concl Session] :: ", str(duration))
-        #     raise SuspiciousDurationError("duration")
-        # else:
-
-        #     self.logger.log_blue("[debug] duration was ok: " + str(duration))
-
         state.session.duration = duration
         state.session.end_time = now
+
+    def _initialize(self, first_session):
+        if isinstance(first_session, ProgramSessionData):
+            is_chrome = window_is_chrome(first_session.window_title)
+            updated_state = ApplicationInternalState(
+                first_session.window_title, is_chrome, first_session)
+        else:
+            assert isinstance(first_session, ChromeSessionData)
+            updated_state = ChromeInternalState(
+                "Chrome", True, first_session.domain, first_session)
+        return updated_state
+
+    def _initialize_program_machine(self):
+        start_state = ApplicationInternalState("", "", {})
+        return TransitionFromProgramMachine(
+            start_state)
+
+    def _initialize_chrome_machine(self):
+        start_state = ChromeInternalState("", "", "", {})
+        return TransitionFromChromeMachine(
+            start_state)
 
     def get_finished_state(self) -> InternalState | None:
         return self.prior_state

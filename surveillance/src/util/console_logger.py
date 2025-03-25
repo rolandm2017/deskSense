@@ -1,8 +1,13 @@
 from datetime import datetime
 
+import platform
+        
+
 
 class ConsoleLogger:
     def __init__(self):
+        from colorama import init
+        init()  # This enables ANSI color support on Windows
         self.active = True  # changed manually
 
     def log_mouse_move(self, win32_cursor_pos):

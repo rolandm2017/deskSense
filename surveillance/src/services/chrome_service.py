@@ -182,6 +182,7 @@ class ChromeService:
         dao_task.add_done_callback(on_task_done)
 
     def handle_session_ready_for_arbiter(self, session):
+        print(session, type(session), "185ru")
         self.event_emitter.emit('tab_change', session)
 
     # FIXME: When Chrome is active, recording time should take place.

@@ -68,11 +68,11 @@ class ActivityArbiter:
         When a program is opened, start a session for the program. And vice versa when it closes.
         """
         # print("\n" + "✦★✦" * 6 + " DEBUG " + "✦★✦" * 6 + "\n")
-
         if isinstance(new_session, ProgramSessionData):
             print("[Arb]", new_session.window_title)
         else:
             print("[Tab]", new_session.domain)
+        assert not isinstance(new_session, dict), "Found an empty dictionary as session"
         self.notify_display_update(new_session)
 
         if self.state_machine.current_state:
@@ -80,28 +80,12 @@ class ActivityArbiter:
             # end_time & duration is set inside the ASM
             concluded_session = self.state_machine.current_state.session
 
-            # Get the current state's session to put into the summary DAO along w/ the time
-            # old_session.duration = now - old_session.start_time
-            # old_session.end_time = now
-
             # ### Create the replacement state
             self.state_machine.set_new_session(new_session)
 
-            # FIXME: The program is intended to handle Chrome separately from Programs.
-            # FIXME: in other words, while Chrome and a tab is stored in the Chrome var,
-            # FIXME: all that can stay maintained separately from whatever the Programs is doing.
-            # if chrome_active:
-            #     start_session_for_tab()
-            # else:
-            #     record_program_session()
-
-            # if active_program.is_chrome:
-            #     tab_session.resume()
-            # else:
-            #     tab_session.idle()
-
+            if self.state_machine.is_initialization_session(concluded_session):
+                return
             # ### Put outgoing state into the DAO
-            # FIXME: what is the point of this state business if the output state isn't used for these args?
             await self.notify_summary_dao(concluded_session)
         else:
             if isinstance(new_session, ProgramSessionData):

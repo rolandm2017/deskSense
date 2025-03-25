@@ -65,6 +65,13 @@ from src.util.clock import UserFacingClock
 from src.facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
 # from src.facade.program_facade import ProgramApiFacadeCore
 
+import sys
+import os
+
+# Force unbuffered output
+sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', buffering=1)
+print("SERVER STARTING WITH UNBUFFERED OUTPUT")
+
 logger = ConsoleLogger()
 
 
