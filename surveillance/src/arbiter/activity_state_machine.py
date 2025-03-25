@@ -68,10 +68,6 @@ class ActivityStateMachine:
         now = self.user_facing_clock.now()
         # Now - UTC
         # state.session.start_time - no tzinfo
-        # FIXME: session is an empty dict sometimes. was on ApplicationInternalState.
-        print(state, '66ru')
-        print(state.session, "67ru")  # FIXME: "{} 67ru"
-        print(type(state.session), "68ru")
         session_start = state.session.start_time
 
         duration = now - session_start
