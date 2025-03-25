@@ -10,10 +10,11 @@ import time
 
 from typing import Dict, Generator
 
+from .program_facade_base import ProgramFacadeInterface
+
 from ..util.console_logger import ConsoleLogger
 
-
-class WindowsProgramFacadeCore:
+class WindowsProgramFacadeCore(ProgramFacadeInterface):
     def __init__(self):
         self.console_logger = ConsoleLogger()
         self.win32gui = win32gui

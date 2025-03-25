@@ -2,7 +2,6 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 
-from src.facade.program_facade import ProgramApiFacadeCore
 from src.util.detect_os import OperatingSystemInfo
 
 
@@ -11,8 +10,9 @@ from src.util.detect_os import OperatingSystemInfo
     reason="Test only applicable on Ubuntu systems"
 )
 def test_program_facade_on_ubuntu():
-    os_info = OperatingSystemInfo()
-    facade = ProgramApiFacadeCore(os_info)
+    from src.facade.program_facade_ubuntu import UbuntuProgramFacadeCore
+
+    facade = UbuntuProgramFacadeCore()
 
     program_info = facade._read_ubuntu()
 
@@ -27,8 +27,9 @@ def test_program_facade_on_ubuntu():
     reason="Test only applicable on Windows systems"
 )
 def test_program_facade_on_windows():
-    os_info = OperatingSystemInfo()
-    facade = ProgramApiFacadeCore(os_info)
+    from src.facade.program_facade_windows import WindowsProgramFacadeCore
+
+    facade = WindowsProgramFacadeCore()
 
     program_info = facade._read_windows()
 
@@ -66,12 +67,15 @@ real_program_responses = [
 ]
 
 
+@pytest.mark.skipif(
+    OperatingSystemInfo().is_windows == True,
+    reason="Test only applicable on Ubuntu systems"
+)
 def test_listen_for_window_changes():
-    os_info = MagicMock()
-    os_info.is_windows = False
-    os_info.is_ubuntu = True
 
-    facade = ProgramApiFacadeCore(os_info)
+    from src.facade.program_facade_ubuntu import UbuntuProgramFacadeCore
+
+    facade = UbuntuProgramFacadeCore()
 
     mock_display = MagicMock()
     mock_root = MagicMock()

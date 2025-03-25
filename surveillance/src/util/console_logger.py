@@ -33,6 +33,9 @@ class ConsoleLogger:
     def system_message(self, arg):
         self.log_green(arg)
 
+    def debug(self, message):
+        self.log_yellow(message)
+
     def log_yellow(self, message):
         if self.active:
             print(f"\033[93m{message}\033[0m")
