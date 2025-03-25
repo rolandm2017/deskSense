@@ -28,6 +28,7 @@ from .db.dao.timeline_entry_dao import TimelineEntryDao
 from .db.dao.program_summary_dao import ProgramSummaryDao
 from .db.dao.chrome_summary_dao import ChromeSummaryDao
 from .db.dao.summary_logs_dao import ProgramLoggingDao, ChromeLoggingDao
+from .object.classes import ProgramSessionData
 from .services.chrome_service import ChromeService
 from .trackers.mouse_tracker import MouseTrackerCore
 from .trackers.keyboard_tracker import KeyboardTrackerCore
@@ -149,6 +150,8 @@ class SurveillanceManager:
         self.loop.create_task(self.mouse_dao.create_from_window(event))
 
     def handle_window_change(self, event):
+        print(event, type(event), "153ru")
+        # assert isinstance(event, ProgramSessionData)
         self.loop.create_task(self.arbiter.set_program_state(event))
 
     # FIXME: Am double counting for sure
