@@ -29,16 +29,14 @@ class DatabaseProtectionError(RuntimeError):
 
 
 class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
-    def __init__(self, program_logging_dao, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+    def __init__(self, program_logging_dao, session_maker: async_sessionmaker):
         # if not callable(session_maker):
         # raise TypeError("session_maker must be callable")
         self.program_logging_dao = program_logging_dao
-        self.session_maker = session_maker  # Store the session maker instead of db
-        self.batch_size = batch_size
-        self.flush_interval = flush_interval
+        self.session_maker = session_maker 
         self.logger = ConsoleLogger()
 
-    async def create_if_new_else_update(self, program_session: ProgramSessionData, right_now: datetime, is_shutdown=False):
+    async def create_if_new_else_update(self, program_session: ProgramSessionData, right_now: datetime):
         """
         This method doesn't use queuing since it needs to check the DB state.
 
@@ -49,6 +47,9 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             raise ValueError("Start or end time was None")
         if program_session.duration is None:
             raise ValueError("Session duration was None")
+        
+        self.program_logging_dao.create_log(program_session, right_now)
+
         target_program_name = program_session.window_title
         # TODO: Let the SessionHeartbeat update times
         # ### Calculate time difference
@@ -68,7 +69,6 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.gathering_date < today + timedelta(days=1)
         )
 
-        self.program_logging_dao.create_log(program_session, right_now)
 
         async with self.session_maker() as db_session:
             result = await db_session.execute(query)
@@ -99,10 +99,6 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             else:
                 # print("creating entry for day ", today)
                 await self.create(target_program_name, usage_duration_in_hours, today)
-        if is_shutdown:
-            with open(power_on_off_debug_file, "a") as f:
-                f.write("shutting down program summary dao")
-                f.write("\n")
 
     async def create(self, target_program_name, duration_in_hours, when_it_was_gathered):
         async with self.session_maker() as session:
@@ -115,7 +111,6 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             await session.commit()
 
     async def read_past_week(self, right_now: datetime):
-        # today = self.system_clock.now()
         # +1 because weekday() counts from Monday=0
         days_since_sunday = right_now.weekday() + 1
         last_sunday = right_now - timedelta(days=days_since_sunday)
@@ -130,7 +125,6 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def read_past_month(self, right_now: datetime):
         """Read all entries from the 1st of the current month through today."""
-        # today = self.system_clock.now()
         start_of_month = right_now.replace(day=1)  # First day of current month
 
         query = select(DailyProgramSummary).where(
@@ -176,6 +170,62 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         async with self.session_maker() as session:
             result = await session.execute(query)
             return result.scalar_one_or_none()
+        
+    async def push_window_ahead_ten_sec(self, session: ProgramSessionData, right_now):
+        """Finds the given session and adds ten sec to its end_time"""
+        target_program_name = session.window_title
+        today_start = right_now.replace(
+            hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_start = today_start + timedelta(days=1)
+
+        query = select(DailyProgramSummary).where(
+            DailyProgramSummary.program_name == target_program_name,
+            DailyProgramSummary.gathering_date >= today_start,
+            DailyProgramSummary.gathering_date < tomorrow_start
+        )        
+        async with self.session_maker() as session:
+            program: DailyProgramSummary = session.scalars(query).first()
+            # Update it if found
+            if program:
+                program.hours_spent = program.hours_spent + timedelta(seconds=10)
+                session.commit()
+            else:
+                # If the code got here, the summary wasn't even created yet,
+                # which is likely! for the first time a program enters the program
+                self.logger.log_white_multiple("INFO:", f"first time {target_program_name} appears today")
+                self.create_if_new_else_update(session, right_now)
+
+    async def deduct_remaining_duration(self, session, duration, right_now):
+        """
+        When a session is concluded, it was concluded partway thru the 10 sec window
+        
+        9 times out of 10. So we deduct the unfinished duration from its hours_spent.
+        """
+        target_program_name = session.window_title
+        today_start = right_now.replace(
+            hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_start = today_start + timedelta(days=1)
+
+        query = select(DailyProgramSummary).where(
+            DailyProgramSummary.program_name == target_program_name,
+            DailyProgramSummary.gathering_date >= today_start,
+            DailyProgramSummary.gathering_date < tomorrow_start
+        )        
+        # Update it if found
+        async with self.session_maker() as session:
+            program: DailyProgramSummary = session.scalars(query).first()
+            # Update it if found
+            if program:
+                program.hours_spent = program.hours_spent - timedelta(seconds=duration)
+                session.commit()
+            else:
+                # If the code got here, the summary wasn't even created yet,
+                # which is likely! for the first time a program enters the program,
+                # if it is cut off before the first 10 sec window elapses.
+                self.logger.log_white_multiple("INFO:", f"first time {target_program_name} appears today")
+                self.create_if_new_else_update(session, right_now)
+
+                
 
     async def shutdown(self):
         """Closes the open session without opening a new one"""

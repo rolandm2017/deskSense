@@ -19,21 +19,23 @@ from ...object.classes import ChromeSessionData
 
 
 class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
-    def __init__(self,  chrome_logging_dao, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+    def __init__(self,  chrome_logging_dao, session_maker: async_sessionmaker):
         self.chrome_logging_dao = chrome_logging_dao
-        self.session_maker = session_maker  # Store the session maker instead of db
-        self.batch_size = batch_size
-        self.flush_interval = flush_interval
+        self.session_maker = session_maker 
         self.logger = ConsoleLogger()
 
-    async def create_if_new_else_update(self, chrome_session: ChromeSessionData, right_now: datetime, is_shutdown=False):
+    async def create_if_new_else_update(self, chrome_session: ChromeSessionData, right_now: datetime):
         """This method doesn't use queuing since it needs to check the DB state"""
-        target_domain_name = chrome_session.domain
-        # ### Calculate time difference
+        
         if chrome_session.start_time is None or chrome_session.end_time is None:
             raise ValueError("Start or end time was None")
         if chrome_session.duration is None:
             raise ValueError("Session duration was None")
+        target_domain_name = chrome_session.domain
+        
+        self.chrome_logging_dao.create_log(chrome_session, right_now)
+
+        # ### Calculate time difference
         usage_duration_in_hours = chrome_session.duration.total_seconds() / 3600
 
         # TODO: Let the SessionHeartbeat update times
@@ -45,8 +47,6 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyDomainSummary.gathering_date >= today,
             DailyDomainSummary.gathering_date < today + timedelta(days=1)
         )
-
-        self.chrome_logging_dao.create_log(chrome_session, right_now)
 
         async with self.session_maker() as session:
             result = await session.execute(query)
@@ -77,10 +77,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
                 print("[debug] NEW session: ",
                       chrome_session.domain, usage_duration_in_hours, chrome_session.start_time.day)
                 await self.create(target_domain_name, usage_duration_in_hours, today)
-        if is_shutdown:
-            with open(power_on_off_debug_file, "a") as f:
-                f.write("shutting down Chrome summary dao")
-                f.write("\n")
+      
 
     async def create(self, target_domain_name, duration_in_hours, when_it_was_gathered):
         async with self.session_maker() as session:
@@ -93,7 +90,6 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             await session.commit()
 
     async def read_past_week(self, right_now: datetime):
-        # today = self.system_clock.now()
 
         # +1 because weekday() counts from Monday=0
         days_since_sunday = right_now.weekday() + 1
@@ -108,7 +104,6 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     async def read_past_month(self, right_now: datetime):
         """Read all entries from the 1st of the current month through today."""
-        # today = self.system_clock.now()
         start_of_month = right_now.replace(day=1)  # First day of current month
 
         query = select(DailyDomainSummary).where(
@@ -153,6 +148,60 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         async with self.session_maker() as session:
             result = await session.execute(query)
             return await result.scalar_one_or_none()
+        
+    async def push_window_ahead_ten_sec(self, session: ChromeSessionData, right_now):
+        """Finds the given session and adds ten sec to its end_time"""
+        target_domain = session.domain
+        today_start = right_now.replace(
+            hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_start = today_start + timedelta(days=1)
+
+        query = select(DailyDomainSummary).where(
+            DailyDomainSummary.domain_name == target_domain,
+            DailyDomainSummary.gathering_date >= today_start,
+            DailyDomainSummary.gathering_date < tomorrow_start
+        )        
+        async with self.session_maker() as session:
+            domain: DailyDomainSummary = session.scalars(query).first()
+            # Update it if found
+            if domain:
+                domain.hours_spent = domain.hours_spent + timedelta(seconds=10)
+                session.commit()
+            else:
+                # FIXME: If the code got here, the summary wasn't even created yet,
+                # which is likely! for the first time a program enters the program
+                self.logger.log_white_multiple("INFO:", f"first time {target_domain} appears today")
+                self.create_if_new_else_update(session, right_now)
+
+    async def deduct_remaining_duration(self, session, duration, right_now):
+        """
+        When a session is concluded, it was concluded partway thru the 10 sec window
+        
+        9 times out of 10. So we deduct the unfinished duration from its hours_spent.
+        """
+        target_domain = session.domain
+        today_start = right_now.replace(
+            hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_start = today_start + timedelta(days=1)
+
+        query = select(DailyDomainSummary).where(
+            DailyDomainSummary.domain_name == target_domain,
+            DailyDomainSummary.gathering_date >= today_start,
+            DailyDomainSummary.gathering_date < tomorrow_start
+        )        
+        # Update it if found
+        async with self.session_maker() as session:
+            domain: DailyDomainSummary = session.scalars(query).first()
+            # Update it if found
+            if domain:
+                domain.hours_spent = domain.hours_spent - timedelta(seconds=duration)
+                session.commit()
+            else:
+                # If the code got here, the summary wasn't even created yet,
+                # which is likely! for the first time a program enters the program,
+                # if it is cut off before the first 10 sec window elapses.
+                self.logger.log_white_multiple("INFO:", f"first time {target_domain} appears today")
+                self.create_if_new_else_update(session, right_now)
 
     async def shutdown(self):
         """Closes the open session without opening a new one"""

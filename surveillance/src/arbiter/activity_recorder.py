@@ -10,7 +10,7 @@ class ActivityRecorder:
         self.program_summary_dao = program_summary_dao
         self.chrome_summary_dao = chrome_summary_dao
 
-    async def on_state_changed(self, session, is_shutdown=False):
+    async def on_state_changed(self, session):
         if isinstance(session, InternalState):
             print(session)
             raise TypeError(
@@ -23,10 +23,12 @@ class ActivityRecorder:
 
         right_now = self.user_facing_clock.now()
 
-        if isinstance(session, ChromeSessionData):
-            await self.chrome_summary_dao.create_if_new_else_update(session, right_now, is_shutdown)
-        elif isinstance(session, ProgramSessionData):
-            await self.program_summary_dao.create_if_new_else_update(session, right_now, is_shutdown)
+        if isinstance(session, ProgramSessionData):
+            # await self.program_summary_dao.do_the_remaining_work(session, right_now)
+            await self.program_summary_dao.create_if_new_else_update(session, right_now)
+        elif isinstance(session, ChromeSessionData):
+            # await self.chrome_summary_dao.do_the_remaining_work(session, right_now)
+            await self.chrome_summary_dao.create_if_new_else_update(session, right_now)
         else:
             raise TypeError("Session was not the right type")
 
@@ -35,11 +37,27 @@ class ActivityRecorder:
         Pushes the end of the window forward ten sec so that, 
         when the computer shuts down, the end time was "about right" anyways.
         """
-        pass
+        right_now = self.user_facing_clock.now()
+        if isinstance(session, ProgramSessionData):
+            # await self.program_summary_dao.do_the_remaining_work(session, right_now)
+            await self.program_summary_dao.push_window_ahead_ten_sec(session, right_now)
+        elif isinstance(session, ChromeSessionData):
+            # await self.chrome_summary_dao.do_the_remaining_work(session, right_now)
+            await self.chrome_summary_dao.push_window_ahead_ten_sec(session, right_now)
+        else:
+            raise TypeError("Session was not the right type")
 
     async def deduct_duration(self, duration, session):
         """
         Deducts t seconds from the duration of a session. 
         Here, the session's current window was cut short by a new session taking it's place.
         """
-        pass
+        right_now = self.user_facing_clock.now()
+        if isinstance(session, ProgramSessionData):
+            # await self.program_summary_dao.do_the_remaining_work(session, right_now)
+            await self.program_summary_dao.deduct_remaining_duration(session, duration, right_now)
+        elif isinstance(session, ChromeSessionData):
+            # await self.chrome_summary_dao.do_the_remaining_work(session, right_now)
+            await self.chrome_summary_dao.deduct_remaining_duration(session, duration, right_now)
+        else:
+            raise TypeError("Session was not the right type")
