@@ -12,6 +12,9 @@ class ClockProtocol:
 
     def seconds_have_elapsed(self, current_time: datetime, previous_time: datetime, seconds: int) -> bool:
         raise NotImplementedError
+    
+    def today(self) -> datetime:
+        raise NotImplementedError
 
 
 class SystemClock(ClockProtocol):
@@ -26,6 +29,9 @@ class SystemClock(ClockProtocol):
 
 
 class UserFacingClock(ClockProtocol):
+    def __init__(self):
+        self.today = self.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        
     def now(self) -> datetime:
         # utc_now = datetime.now(timezone.utc)
 
@@ -34,7 +40,15 @@ class UserFacingClock(ClockProtocol):
 
         # return local_now
         return datetime.now(ZoneInfo(local_time_zone))
-        # return datetime.now()
+    
+    def today(self):
+        """
+        If today hasn't changed, just return today.
+        
+        But if the program has run to long that .today now is yesterday, update it first.
+        """
+        # TODO: Make the code match the comment
+        return self.today
 
     def seconds_have_elapsed(self, current_time: datetime, previous_time: datetime, seconds: int) -> bool:
         """
