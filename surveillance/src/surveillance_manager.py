@@ -106,14 +106,6 @@ class SurveillanceManager:
             clock, program_facade, self.handle_window_change, self.handle_program_ready_for_db)
         
 
-        if current_os.is_windows:
-            from .trackers.windows_system_tracker import WindowsSystemPowerTracker
-            self.system_tracker = WindowsSystemPowerTracker(self.shutdown_handler, system_status_dao, self.check_session_integrity)
-        else:
-            self.system_tracker = None
-            # from .trackers.ubuntu_system_tracker import UbuntuSystemPowerTracker
-            # self.system_tracker = UbuntuSystemPowerTracker(
-                # self.shutdown_handler, system_status_dao, self.check_session_integrity)
 
         self.keyboard_thread = ThreadedTracker(self.keyboard_tracker)
         self.mouse_thread = ThreadedTracker(self.mouse_tracker)

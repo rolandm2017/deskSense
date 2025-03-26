@@ -50,6 +50,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         if program_session.duration is None:
             raise ValueError("Session duration was None")
         target_program_name = program_session.window_title
+        # TODO: Let the SessionHeartbeat update times
         # ### Calculate time difference
         usage_duration_in_hours = (
             program_session.end_time - program_session.start_time).total_seconds() / 3600
