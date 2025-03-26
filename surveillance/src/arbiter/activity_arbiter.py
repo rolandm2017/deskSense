@@ -12,7 +12,7 @@ from ..db.dao.program_summary_dao import ProgramSummaryDao
 from .activity_state_machine import ActivityStateMachine
 from ..object.arbiter_classes import ChromeInternalState, ApplicationInternalState, InternalState
 
-from .session_heartbeat import SessionHeartbeat
+from .session_heartbeat import KeepAliveEngine, ThreadedEngineContainer
 
 
 class RecordKeeperCore:
@@ -86,7 +86,11 @@ class ActivityArbiter:
             self.state_machine.set_new_session(new_session)
      
             self.current_heartbeat.stop()  # stop the old one from prev loop
-            self.current_heartbeat = SessionHeartbeat(new_session, self.summary_listener)
+
+            new_keep_alive_engine = KeepAliveEngine(new_session, self.summary_listener)
+            self.current_heartbeat = ThreadedEngineContainer(new_keep_alive_engine)
+            self.current_heartbeat.start()
+
 
             if self.state_machine.is_initialization_session(concluded_session):
                 return
@@ -103,7 +107,10 @@ class ActivityArbiter:
                     current_tab=new_session.detail,
                     session=new_session
                 )
-            self.current_heartbeat = SessionHeartbeat(new_session, self.summary_listener)
+
+            new_keep_alive_engine = KeepAliveEngine(new_session, self.summary_listener)
+            self.current_heartbeat = ThreadedEngineContainer(new_keep_alive_engine)
+            self.current_heartbeat.start()
             self.state_machine.current_state = updated_state
 
 

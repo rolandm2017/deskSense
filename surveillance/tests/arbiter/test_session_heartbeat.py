@@ -113,6 +113,7 @@ def test_multiple_whole_loops():
     # Assert
     conclude_spy.assert_not_called
     add_ten_mock.call_count == 2
+    assert instance.elapsed == total % 10  # 3
 
     # Act again
     instance.conclude()
