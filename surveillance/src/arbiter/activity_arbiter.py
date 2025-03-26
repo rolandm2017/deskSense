@@ -84,6 +84,8 @@ class ActivityArbiter:
 
             # ### Create the replacement state
             self.state_machine.set_new_session(new_session)
+
+            # TODO: Make heartbeat also update the logging, for in case computer shuts down
             
             self.current_heartbeat.stop()  # stop the old one from prev loop
             self.current_heartbeat = SessionHeartbeat(new_session, self.summary_listener)

@@ -149,7 +149,7 @@ async def get_activity_arbiter():
         print("Creating new Overlay")
         overlay = Overlay()
         ui_layer = UINotifier(overlay)
-        activity_recorder = ActivityRecorder(user_facing_clock,
+        activity_recorder = ActivityRecorder(user_facing_clock, program_logging_dao, chrome_logging_dao,
                                              program_summary_dao, chrome_summary_dao)
         print("Creating new ActivityArbiter")
         chrome_service = await get_chrome_service()
