@@ -29,3 +29,17 @@ class ActivityRecorder:
             await self.program_summary_dao.create_if_new_else_update(session, right_now, is_shutdown)
         else:
             raise TypeError("Session was not the right type")
+
+    async def add_ten_sec_to_end_time(self, session):
+        """
+        Pushes the end of the window forward ten sec so that, 
+        when the computer shuts down, the end time was "about right" anyways.
+        """
+        pass
+
+    async def deduct_duration(self, duration, session):
+        """
+        Deducts t seconds from the duration of a session. 
+        Here, the session's current window was cut short by a new session taking it's place.
+        """
+        pass

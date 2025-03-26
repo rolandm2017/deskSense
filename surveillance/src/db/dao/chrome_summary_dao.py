@@ -29,7 +29,6 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
     async def create_if_new_else_update(self, chrome_session: ChromeSessionData, right_now: datetime, is_shutdown=False):
         """This method doesn't use queuing since it needs to check the DB state"""
         target_domain_name = chrome_session.domain
-
         # ### Calculate time difference
         if chrome_session.start_time is None or chrome_session.end_time is None:
             raise ValueError("Start or end time was None")
@@ -37,6 +36,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             raise ValueError("Session duration was None")
         usage_duration_in_hours = chrome_session.duration.total_seconds() / 3600
 
+        # TODO: Let the SessionHeartbeat update times
         # ### Check if entry exists for today
         today = right_now.replace(hour=0, minute=0, second=0,
                                   microsecond=0)  # Still has tz attached

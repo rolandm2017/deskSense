@@ -12,6 +12,8 @@ from ..db.dao.program_summary_dao import ProgramSummaryDao
 from .activity_state_machine import ActivityStateMachine
 from ..object.arbiter_classes import ChromeInternalState, ApplicationInternalState, InternalState
 
+from .session_heartbeat import SessionHeartbeat
+
 
 class RecordKeeperCore:
     def __init__(self):
@@ -82,6 +84,19 @@ class ActivityArbiter:
 
             # ### Create the replacement state
             self.state_machine.set_new_session(new_session)
+            
+            self.current_heartbeat.stop()  # stop the old one from prev loop
+            self.current_heartbeat = SessionHeartbeat(new_session, self.summary_listener)
+            
+            # elapsed = 0
+            # while self.state_machine.current_state == new_session:
+            #     elapsed += 1
+            #     sleep(0.5)
+            #     if elapsed == 10:
+            #         pulse_add_ten()
+            #         elapsed = 0
+            # add_remainder(10 - elapsed)
+
 
             if self.state_machine.is_initialization_session(concluded_session):
                 return
@@ -98,7 +113,8 @@ class ActivityArbiter:
                     current_tab=new_session.detail,
                     session=new_session
                 )
-            self.state_machine.current_state = updated_state\
+            self.current_heartbeat = SessionHeartbeat(new_session, self.summary_listener)
+            self.state_machine.current_state = updated_state
 
 
     async def shutdown(self):

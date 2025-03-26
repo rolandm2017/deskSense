@@ -289,9 +289,6 @@ async def test_recording_and_reading_sessions(async_session_maker, shutdown_sess
     create_spy = Mock(side_effect=surveillance_manager.program_dao.create)
     surveillance_manager.program_dao.create = create_spy
 
-    # Prevent odd shutdown triggers from firing when tests close
-    surveillance_manager.system_tracker = None  # type: ignore
-
     # Checkpoint:
     # The Arbiter was called with the expected values
     assert spy_on_set_program_state.call_count == len(real_program_events) - 1
