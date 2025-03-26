@@ -59,12 +59,9 @@ class ActivityRecorder:
     async def update_or_create_log(self, logging_dao: ProgramLoggingDao | ChromeLoggingDao, session):
         # Note that the cost of the read in find_session occurs 
         # once per 8 ish sec, which is a very low cost
-        print(logging_dao, "session, ", session, "here 62ru")
         if logging_dao.find_session(session):
-            print("weeeee 64ru")
             await logging_dao.push_window_ahead_ten_sec(session)
         else:
-            print(" vvvvvvvvvvvvvvvv Here 66ru")
             await logging_dao.start_session(session)
 
     async def deduct_duration(self, duration_in_sec: int, session):

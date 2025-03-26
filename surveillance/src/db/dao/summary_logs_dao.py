@@ -11,6 +11,7 @@ from .base_dao import BaseQueueingDao
 from ...util.console_logger import ConsoleLogger
 from ...util.errors import ImpossibleToGetHereError
 from ...util.dao_wrapper import validate_session
+from ...util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
 
 
 class ProgramLoggingDao(BaseQueueingDao):
@@ -24,11 +25,9 @@ class ProgramLoggingDao(BaseQueueingDao):
     def create_log(self, session: ProgramSessionData, right_now: datetime):
         """Log an update to a summary table"""
         # ### Calculate time difference
-        start_end_time_duration_as_hours = (
-            session.end_time - session.start_time).total_seconds() / 3600
+        start_end_time_duration_as_hours = convert_start_end_times_to_hours(session)
 
-        duration_property_as_hours = session.duration.total_seconds() / \
-            3600.0
+        duration_property_as_hours = convert_duration_to_hours(session)
 
         log_entry = ProgramSummaryLog(
             program_name=session.window_title,
@@ -58,9 +57,6 @@ class ProgramLoggingDao(BaseQueueingDao):
         asyncio.create_task(self.queue_item(log_entry, ProgramSummaryLog))
 
     async def find_session(self, session: ChromeSessionData):
-        return self.read_log_for_session(session)
-
-    async def read_log_for_session(self, session: ChromeSessionData):
         query = select(DomainSummaryLog).where(
             DomainSummaryLog.start_time == session.start_time
         )
@@ -130,69 +126,68 @@ class ProgramLoggingDao(BaseQueueingDao):
             # But before startup
             ProgramSummaryLog.start_time < startup_time
         ).order_by(ProgramSummaryLog.start_time)
-
-        async with self.session_maker() as session:
-            result = await session.execute(query)
-            return result.scalars().all()
+        return self.execute_query(query)
 
     async def read_all(self):
         """Fetch all program log entries"""
-        async with self.session_maker() as session:
-            result = await session.execute(select(ProgramSummaryLog))
-            return result.scalars().all()
+        query = select(ProgramSummaryLog)
+        return self.execute_query(query)
 
     async def read_last_24_hrs(self, right_now: datetime):
         """Fetch all program log entries from the last 24 hours"""
         cutoff_time = right_now - timedelta(hours=24)
-        async with self.session_maker() as session:
-            query = select(ProgramSummaryLog).where(
-                ProgramSummaryLog.created_at >= cutoff_time
-            ).order_by(ProgramSummaryLog.created_at.desc())
-            result = await session.execute(query)
-            return result.scalars().all()
+        query = select(ProgramSummaryLog).where(
+            ProgramSummaryLog.created_at >= cutoff_time
+        ).order_by(ProgramSummaryLog.created_at.desc())
+        return self.execute_query(query)
 
     async def read_suspicious_entries(self):
         """Get entries with durations longer than 20 minutes"""
         suspicious_duration = 0.33333333  # 20 minutes in hours
-        async with self.session_maker() as session:
-            query = select(ProgramSummaryLog).where(
+        query = select(ProgramSummaryLog).where(
                 ProgramSummaryLog.hours_spent > suspicious_duration
             ).order_by(ProgramSummaryLog.hours_spent.desc())
-            result = await session.execute(query)
-            return result.scalars().all()
-
+        return self.execute_query(query)
+        
     async def read_suspicious_alt_tab_windows(self):
         """Get alt-tab windows with durations longer than 10 seconds"""
         alt_tab_threshold = 0.0027777  # 10 seconds in hours, or 10/3600
-        async with self.session_maker() as session:
-            query = select(ProgramSummaryLog).where(
+        query = select(ProgramSummaryLog).where(
                 ProgramSummaryLog.program_name == "Alt-tab window",
                 ProgramSummaryLog.hours_spent > alt_tab_threshold
             ).order_by(ProgramSummaryLog.hours_spent.desc())
-            result = await session.execute(query)
-            return result.scalars().all()
+        return self.execute_query(query)
         
     async def push_window_ahead_ten_sec(self, session: ProgramSessionData):
-        log: ProgramSummaryLog = await self.read_log_for_session(session)
-        if log:
-            log.end_time = session.end_time + timedelta(seconds=10)
-            async with self.session_maker() as db_session:
-                db_session.add(log)
-                await db_session.commit()
-        else:
+        log: ProgramSummaryLog = await self.find_session(session)
+        if not log:
             raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")
+        log.end_time = session.end_time + timedelta(seconds=10)
+        async with self.session_maker() as db_session:
+            db_session.add(log)
+            await db_session.commit()
 
     async def finalize_log(self, session: ProgramSessionData):
         """Overwrite value from the heartbeat. Expect something to ALWAYS be in the db already at this point."""
-        log: ProgramSummaryLog = await self.read_log_for_session(session)
-        if log:
-            log.end_time = session.end_time
-            async with self.session_maker() as db_session:
-                db_session.add(log)
-                await db_session.commit()
-        else:
+        log: ProgramSummaryLog = await self.find_session(session)
+        if not log:
             raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")
+        log.end_time = session.end_time
+        async with self.session_maker() as db_session:
+            db_session.add(log)
+            await db_session.commit()
 
+    async def execute_query(self, query):
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            return result.scalars().all()
+
+#
+# #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #  
+#   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #
+# #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #  
+#   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #
+#
 
 class ChromeLoggingDao(BaseQueueingDao):
     def __init__(self,  session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
@@ -205,11 +200,9 @@ class ChromeLoggingDao(BaseQueueingDao):
     @validate_session
     def create_log(self, session: ChromeSessionData, right_now: datetime):
         """Log an update to a summary table"""
-        start_end_time_duration_as_hours = (
-            session.end_time - session.start_time).total_seconds() / 3600
+        start_end_time_duration_as_hours = convert_start_end_times_to_hours(session)
 
-        duration_property_as_hours = session.duration.total_seconds() / \
-            3600.0
+        duration_property_as_hours = convert_duration_to_hours(session)
 
         log_entry = DomainSummaryLog(
             domain_name=session.domain,
@@ -239,9 +232,6 @@ class ChromeLoggingDao(BaseQueueingDao):
 
 
     async def find_session(self, session: ChromeSessionData):
-        return self.read_log_for_session(session)
-
-    async def read_log_for_session(self, session: ChromeSessionData):
         query = select(DomainSummaryLog).where(
             DomainSummaryLog.start_time == session.start_time
         )
@@ -258,10 +248,7 @@ class ChromeLoggingDao(BaseQueueingDao):
             DomainSummaryLog.gathering_date >= start_of_day,
             DomainSummaryLog.gathering_date < end_of_day
         ).order_by(DomainSummaryLog.domain_name)
-
-        async with self.session_maker() as session:
-            result = await session.execute(query)
-            return result.scalars().all()
+        return self.execute_query(query)
 
     async def find_orphans(self,  latest_shutdown_time, startup_time):
         """
@@ -282,10 +269,7 @@ class ChromeLoggingDao(BaseQueueingDao):
                 DomainSummaryLog.end_time >= startup_time  # End time after startup
             )
         ).order_by(DomainSummaryLog.start_time)
-
-        async with self.session_maker() as session:
-            result = await session.execute(query)
-            return result.scalars().all()
+        return self.execute_query(query)
 
     async def find_phantoms(self, latest_shutdown_time, startup_time):
         """
@@ -301,45 +285,42 @@ class ChromeLoggingDao(BaseQueueingDao):
             # But before startup
             DomainSummaryLog.start_time < startup_time
         ).order_by(DomainSummaryLog.start_time)
-
-        async with self.session_maker() as session:
-            result = await session.execute(query)
-            return result.scalars().all()
+        return self.execute_query(query)
 
     async def read_all(self):
         """Fetch all domain log entries"""
-        async with self.session_maker() as session:
-            result = await session.execute(select(DomainSummaryLog))
-            return result.scalars().all()
+        query = select(DomainSummaryLog)
+        return self.execute_query(query)
 
     async def read_last_24_hrs(self, right_now: datetime):
         """Fetch all domain log entries from the last 24 hours"""
         cutoff_time = right_now - timedelta(hours=24)
-        async with self.session_maker() as session:
-            query = select(DomainSummaryLog).where(
+        query = select(DomainSummaryLog).where(
                 DomainSummaryLog.created_at >= cutoff_time
             ).order_by(DomainSummaryLog.created_at.desc())
-            result = await session.execute(query)
-            return result.scalars().all()
+        return self.execute_query(query)
 
     async def push_window_ahead_ten_sec(self, session: ChromeSessionData):
-        log: DomainSummaryLog = await self.read_log_for_session(session)
-        if log:
-            log.end_time = session.end_time + timedelta(seconds=10)
-            async with self.session_maker() as db_session:
-                db_session.add(log)
-                await db_session.commit()
-        else:
+        log: DomainSummaryLog = await self.find_session(session)
+        if not log:
             raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")
+        log.end_time = session.end_time + timedelta(seconds=10)
+        async with self.session_maker() as db_session:
+            db_session.add(log)
+            await db_session.commit()
 
 
     async def finalize_log(self, session: ChromeSessionData):
         """Overwrite value from the heartbeat. Expect something to ALWAYS be in the db already at this point."""
-        log: DomainSummaryLog = await self.read_log_for_session(session)
-        if log:
-            log.end_time = session.end_time
-            async with self.session_maker() as db_session:
-                db_session.add(log)
-                await db_session.commit()
-        else:
+        log: DomainSummaryLog = await self.find_session(session)
+        if not log:
             raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")
+        log.end_time = session.end_time
+        async with self.session_maker() as db_session:
+            db_session.add(log)
+            await db_session.commit()
+
+    async def execute_query(self, query):
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            return result.scalars().all()

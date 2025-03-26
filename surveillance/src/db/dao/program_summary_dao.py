@@ -195,7 +195,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
                 self.logger.log_white_multiple("INFO:", f"first time {target_program_name} appears today")
                 self.create_if_new_else_update(session, right_now)
 
-    async def deduct_remaining_duration(self, session, duration_in_sec: int, today_start):
+    async def deduct_remaining_duration(self, session: ProgramSessionData, duration_in_sec: int, today_start):
         """
         When a session is concluded, it was concluded partway thru the 10 sec window
         
@@ -223,7 +223,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
                 # which is likely! for the first time a program enters the program,
                 # if it is cut off before the first 10 sec window elapses.
                 self.logger.log_white_multiple("INFO:", f"first time {target_program_name} appears today")
-                self.create_if_new_else_update(session, right_now)
+                self.create_if_new_else_update(session, session.start_time)
 
                 
 
