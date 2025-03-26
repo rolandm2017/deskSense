@@ -195,7 +195,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
                 self.logger.log_white_multiple("INFO:", f"first time {target_program_name} appears today")
                 self.create_if_new_else_update(session, right_now)
 
-    async def deduct_remaining_duration(self, session, duration, today_start):
+    async def deduct_remaining_duration(self, session, duration_in_sec: int, today_start):
         """
         When a session is concluded, it was concluded partway thru the 10 sec window
         
@@ -216,7 +216,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             program: DailyProgramSummary = session.scalars(query).first()
             # Update it if found
             if program:
-                program.hours_spent = program.hours_spent - timedelta(seconds=duration)
+                program.hours_spent = program.hours_spent - timedelta(seconds=duration_in_sec)
                 session.commit()
             else:
                 # If the code got here, the summary wasn't even created yet,
