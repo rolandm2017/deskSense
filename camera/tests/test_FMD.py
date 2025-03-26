@@ -42,7 +42,6 @@ def find_missing_numbers(your_arr, n):
 
 class TestForegroundMotionDetector:
     def test_3s_of_stillness(self):
-        print("40ru")
         wall_vid = test_vid_dir + three_sec_stillness
 
         detector = ForegroundMotionDetector()

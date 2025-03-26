@@ -1,65 +1,152 @@
-import asyncio
 import signal
-import threading
-import os
-import psutil
+
+from win32gui import PumpMessages
+from win32con import WM_POWERBROADCAST, PBT_APMSUSPEND, PBT_APMRESUMESUSPEND
+from win32gui import CreateWindow, WNDCLASS, RegisterClass, DefWindowProc
+from win32api import PostQuitMessage
+
+from ctypes import windll, WINFUNCTYPE, POINTER, wintypes
+
+import sys
+import ctypes
+import logging
+import asyncio
 from datetime import datetime
+
 from typing import Callable, Awaitable, Optional
 
-import win32api
-import win32con
-import win32gui
-import win32ts
+import time
+
 
 from ..db.models import SystemStatus
 
 from ..object.enums import SystemStatusType
 
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+
+# Windows API setup
+user32 = ctypes.windll.user32
+kernel32 = ctypes.windll.kernel32
+
+def on_exit(signum, frame):
+    logging.info("Process exiting...")
+    sys.exit(0)
+
 class WindowsSystemPowerTracker:
-    def __init__(self,
+    def __init__(self, 
                  on_shutdown: Callable[[], Awaitable[None]],
                  system_status_dao,
                  check_session_integrity,
                  loop: Optional[asyncio.AbstractEventLoop] = None,
                  log_file: Optional[str] = None):
-        """
-        Initialize the system power tracker.
-
-        Args:
-            system_status_dao: DAO for recording system status events
-            on_shutdown: Callback to run when shutting down
-            loop: Asyncio event loop (or default if None)
-            log_file: Optional file path for debug logging
-        """
-        print("[info] Claude's power tracker!")
-
-        # Core properties
+        """Tries to do the same thing as Ubuntu's power tracker, but on Windows"""
         self.on_shutdown = on_shutdown
-        self.asyncio_loop = loop or asyncio.get_event_loop()
-        self.log_file = log_file
-
-        system_status_dao.accept_power_tracker_loop(self.asyncio_loop)
-
         self.system_status_dao = system_status_dao
-        self.signal_check_session_integrity = check_session_integrity
+        self.check_session_integrity = check_session_integrity
+
+        self.asyncio_loop = loop or asyncio.get_event_loop()
+
         # State tracking
         self._shutdown_in_progress = False
-        self._shutdown_complete = threading.Event()
 
-        # Setup signals and sleep detection
+        self._register_event_hooks()
+        # self._log_startup_status()
+        # self._check_session_integrity()
+
         self._setup_signal_handlers()
         self._setup_sleep_detection()
 
-        # Log startup immediately
-        self._log_event("startup")
         right_now = datetime.now()
+
         self.asyncio_loop.create_task(self._log_startup_status(right_now))
         self.asyncio_loop.create_task(self._check_session_integrity(right_now))
 
-    async def _log_startup_status(self, latest_startup_time):
-        """Record startup in the database"""
-        await self.system_status_dao.create_status(SystemStatusType.STARTUP, latest_startup_time)
+        signal.signal(signal.SIGINT, self._handle_exit)
+        signal.signal(signal.SIGTERM, self._handle_exit)
+
+    def _register_event_hooks(self):
+        self._power_notify_handle = ctypes.windll.user32.RegisterPowerSettingNotification(
+            ctypes.windll.kernel32.GetConsoleWindow(),
+            ctypes.byref(wintypes.GUID('{5D3E9A59-E9D5-4B00-A6BD-FF34FF516548}')),
+            0
+        )
+
+    def _handle_shutdown_signal(self, signum, frame):
+        """Handle shutdown signals (SIGTERM, SIGINT, SIGHUP)"""
+        # Prevent multiple shutdown attempts
+        if self._shutdown_in_progress:
+            return
+        self._shutdown_in_progress = True
+
+    def _setup_signal_handlers(self):
+        """Sets up signal handlers to gracefully handle termination signals (CTRL+C, termination events, etc.)."""
+        signal.signal(signal.SIGINT, self._handle_exit)  # Handles CTRL+C
+        signal.signal(signal.SIGTERM, self._handle_exit) # Handles termination requests
+        windll.kernel32.SetConsoleCtrlHandler(
+            WINFUNCTYPE(wintypes.BOOL, wintypes.DWORD)(self._handle_console_signal), True
+        )
+
+    def _setup_sleep_detection(self):
+        """
+        Sets up a hidden window to listen for Windows power events (sleep/wake notifications).
+        """
+      
+        
+        def wnd_proc(hwnd, msg, wparam, lparam):
+            """
+            Window procedure to handle power-related messages.
+            
+            Args:
+                hwnd: Window handle.
+                msg: Message identifier.
+                wparam: First message parameter.
+                lparam: Second message parameter.
+            
+            Returns:
+                Default window procedure response.
+            """
+            if msg == WM_POWERBROADCAST:
+                if wparam == PBT_APMSUSPEND:
+                    self.system_status_dao.create_status(SystemStatusType.SLEEP)
+                elif wparam == PBT_APMRESUMESUSPEND:
+                    self.system_status_dao.create_status(SystemStatusType.WAKE)
+            return DefWindowProc(hwnd, msg, wparam, lparam)
+        
+        class_name = "PowerNotifyWindow"
+        wnd_class = WNDCLASS()
+        wnd_class.lpfnWndProc = wnd_proc
+        wnd_class.lpszClassName = class_name
+        RegisterClass(wnd_class)
+        hwnd = CreateWindow(class_name, "PowerNotify", 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        
+        def listen_for_events():
+            """
+            Starts an event listener loop to process system power events.
+            """
+            try:
+                PumpMessages()
+            except KeyboardInterrupt:
+                PostQuitMessage(0)
+        
+        import threading
+        threading.Thread(target=listen_for_events, daemon=True).start()
+
+
+    def _setup_sleep_detection(self):
+        """Detect when Windows is going to sleep"""
+        pass
+
+    def _handle_exit(self, signum, frame):
+        self._run_shutdown_tasks()
+        sys.exit(0)
+
+    def _run_shutdown_tasks(self):
+        self.system_status_dao.create_status(SystemStatusType.SHUTDOWN)
+        self.on_shutdown()
+
+    async def _log_startup_status(self):
+        await self.system_status_dao.create_status(SystemStatusType.STARTUP)
 
     async def _check_session_integrity(self, latest_startup_time):
         """
@@ -76,204 +163,13 @@ class WindowsSystemPowerTracker:
             self.signal_check_session_integrity(
                 no_shutdown_found, latest_startup_time)
 
-    def _log_event(self, event_type: str):
-        """Log event to debug file if configured"""
-        if not self.log_file:
-            return
+    def on_shutdown(self):
+        print("System is shutting down...")
 
+    def listen(self):
+        print("Listening for system power events...")
         try:
-            with open(self.log_file, "a") as f:
-                f.write(
-                    f"{event_type} at: {datetime.now().strftime('%m-%d %H:%M:%S')}\n")
-        except Exception as e:
-            print(f"Failed to log event: {e}")
-
-    def _setup_signal_handlers(self):
-        """Set up OS signal handlers"""
-        print("Setting up OS signal handlers")
-        signal.signal(signal.SIGINT, self._handle_shutdown_signal)  # Ctrl-C
-
-         # Use Windows-specific handlers for other termination events
-        try:
-            # Register for console close and other events
-            def handle_console_event(ctrl_type):
-                if ctrl_type in (win32con.CTRL_CLOSE_EVENT, 
-                                win32con.CTRL_LOGOFF_EVENT, 
-                                win32con.CTRL_SHUTDOWN_EVENT):
-                    self._handle_shutdown_signal(1, None)  # Use 1 as SIGHUP equivalent
-                    return True
-                elif ctrl_type == win32con.CTRL_BREAK_EVENT:
-                    self._handle_shutdown_signal(signal.SIGTERM.value, None)  # Use SIGTERM value 
-                    return True
-                return False
-                
-            win32api.SetConsoleCtrlHandler(handle_console_event, True)
-        except Exception as e:
-            print(f"Failed to set up console event handler: {e}")
-
-    def _setup_sleep_detection(self):
-        """Initialize sleep detection using dbus"""
-        try:
-            print("here")
-
-            # Run GLib main loop in a daemon thread
-            self.main_loop = GLib.MainLoop()
-            self.main_loop_thread = threading.Thread(
-                target=self.main_loop.run, daemon=True)
-            self.main_loop_thread.start()
-        except Exception as e:
-            print(f"Failed to setup sleep detection: {e}")
-            self.main_loop = None
-            self.main_loop_thread = None
-
-    def _handle_shutdown_signal(self, signum, frame):
-        """Handle shutdown signals (SIGTERM, SIGINT, SIGHUP)"""
-        # Prevent multiple shutdown attempts
-        if self._shutdown_in_progress:
-            return
-        self._shutdown_in_progress = True
-
-        # Determine reason and status type based on signal
-        if signum == 15:  # SIGTERM
-            reason = "restart program"
-            status_type = SystemStatusType.HOT_RELOAD_STARTED
-        elif signum == 2:  # SIGINT
-            reason = "Ctrl+C or Interrupt"
-            status_type = SystemStatusType.CTRL_C_SIGNAL
-        elif signum == 1:  # SIGHUP
-            reason = "Terminal closed"
-            status_type = SystemStatusType.SHUTDOWN
-        else:
-            reason = f"Unknown signal: {signum}"
-            with open("unkown_signal_logs.txt", "a") as f:
-                f.write("\n" + str(signum) + "\n")
-            status_type = SystemStatusType.SHUTDOWN
-
-        print(f"\n### System shutdown detected (signal {signum})")
-        print(f"Triggering shutdown due to: {reason}")
-
-        # Run shutdown tasks
-        self._initiate_shutdown(status_type, reason)
-
-    def _handle_sleep_signal(self, sleeping: bool):
-        """Handle sleep/wake signals from dbus"""
-        if sleeping:
-            print(f"System going to sleep at {datetime.now()}")
-            self._initiate_shutdown(SystemStatusType.SLEEP, "System sleep")
-        else:
-            print(f"System waking up at {datetime.now()}")
-            # Note: This runs on wake and doesn't need to block
-            asyncio.run_coroutine_threadsafe(
-                self.system_status_dao.create_status(
-                    SystemStatusType.WAKE, datetime.now()),
-                self.asyncio_loop
-            )
-            self._log_event("wake")
-
-    def _initiate_shutdown(self, status_type: SystemStatusType, reason: str):
-        """Common code path for all shutdown scenarios"""
-        # Log the event
-        self._log_event(reason)
-
-        print(f"Initiating shutdown with status: {status_type}")
-
-        # Create a new thread to handle the shutdown process
-        # This ensures the main thread can respond to signals and doesn't get blocked
-        shutdown_thread = threading.Thread(
-            target=self._run_shutdown_in_thread,
-            args=(status_type, reason)
-        )
-        shutdown_thread.start()
-
-        # Wait for the shutdown thread to complete
-        # Use a shorter timeout for sleep events
-        timeout = 5.0 if status_type != SystemStatusType.SLEEP else 1.0
-        print(f"Waiting up to {timeout}s for shutdown tasks to complete...")
-        shutdown_thread.join(timeout=timeout)
-
-        if shutdown_thread.is_alive():
-            print("Warning: Shutdown tasks did not complete in time")
-        else:
-            print("Shutdown tasks completed successfully")
-
-        # Perform final cleanup
-        print("Running final cleanup")
-        self._perform_final_cleanup(status_type)
-
-    def _run_shutdown_in_thread(self, status_type: SystemStatusType, reason: str):
-        """Run shutdown tasks in a dedicated thread"""
-        # Create a new event loop for this thread
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-        print(
-            f"Current loop in shutdown thread: {id(asyncio.get_event_loop())}")
-
-        print(f"Thread ID for shutdown: {threading.get_ident()}")
-
-        try:
-            # Tell the DAO about our loop
-            self.system_status_dao.accept_power_tracker_loop(loop)
-
-            # Run our async tasks in the new loop
-            print(f"Thread started for shutdown tasks: {status_type}")
-            loop.run_until_complete(
-                self._run_shutdown_tasks(status_type, reason))
-            print("Thread completed all shutdown tasks")
-        except Exception as e:
-            print(f"Error in shutdown thread: {e}")
-        finally:
-            loop.close()
-
-    async def _run_shutdown_tasks(self, status_type: SystemStatusType, reason: str):
-        """Run all shutdown-related async tasks"""
-        print(f"Starting shutdown tasks, status: {status_type}")
-        success = await self.system_status_dao.create_status(status_type, datetime.now())
-
-        if success:
-            print("Database write completed successfully")
-        else:
-            print("Database write failed")
-
-        try:
-            print("Running on_shutdown callback...")
-            await self.on_shutdown()
-            print("on_shutdown callback completed!")
-        except Exception as callback_error:
-            print(f"on_shutdown callback failed: {callback_error}")
-
-        print("All shutdown tasks completed")
-
-    def _perform_final_cleanup(self, status_type):
-        """Final cleanup operations before exiting"""
-        print(f"Final cleanup for status: {status_type}")
-
-        # Stop the main loop if it's running
-        if hasattr(self, 'main_loop') and self.main_loop:
-            self.main_loop.quit()
-
-        # Clean up child processes
-        try:
-            current_pid = os.getpid()
-            for child in psutil.Process(current_pid).children(recursive=True):
-                child.terminate()
-                try:
-                    child.wait(timeout=0.2)  # Short timeout
-                except psutil.TimeoutExpired:
-                    child.kill()
-        except Exception as e:
-            print(f"Error cleaning up processes: {e}")
-
-        # Only exit on actual shutdown (not sleep)
-        # This was comparing to a string when it should be comparing to enum value
-        if status_type != SystemStatusType.SLEEP:
-            print("Shutdown complete.")
-            os._exit(0)
-
-    async def stop(self):
-        """Gracefully stop the tracker (for manual shutdown)"""
-        if not self._shutdown_in_progress:
-            self._shutdown_in_progress = True
-            await self._run_shutdown_tasks(SystemStatusType.SHUTDOWN, "Manual stop")
-            if self.main_loop:
-                self.main_loop.quit()
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            self._handle_exit(signal.SIGINT, None)

@@ -43,7 +43,6 @@ class UbuntuSystemPowerTracker:
         self.signal_check_session_integrity = check_session_integrity
         # State tracking
         self._shutdown_in_progress = False
-        self._shutdown_complete = threading.Event()
 
         # Setup signals and sleep detection
         self._setup_signal_handlers()
