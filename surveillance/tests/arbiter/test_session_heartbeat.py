@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch, Mock
 import threading
 import time
 
-from src.arbiter.session_heartbeat import SessionHeartbeat
+from src.arbiter.session_heartbeat import KeepAliveEngine
 
 class MockDaoConn:
     def __init__(self):
@@ -17,116 +17,144 @@ class MockDaoConn:
     def deduct_duration(self):
         pass
 
-def test_start():
-    session = {}
-    dao_conn = MockDaoConn()
-    instance = SessionHeartbeat(session, dao_conn)
+# Custom sleep function that does nothing
+def fast_sleep(_):
+    pass
 
-    # Act
-    instance.start()
-
-    # Assert
-    assert instance.is_running is True
-
-    # Clean up
-    instance.stop()
-
-def test_stop():
-    session = {}
-    dao_conn = MockDaoConn()
-    instance = SessionHeartbeat(session, dao_conn)
-
-    instance.start()
-    # Act
-    instance.stop()
-
-    # Assert
-    assert instance.is_running is False
-    
 
 def test_hit_max_window():
-    greater_than_ten = 11
-    exactly_ten = 10
-    less_than_ten = 9
-
-    instance = SessionHeartbeat()
-
-    # Test the test conditions
-    assert instance.max_interval == 10
-
-    assert instance._hit_max_window(less_than_ten) is False
-    assert instance._hit_max_window(exactly_ten) is True
-    assert instance._hit_max_window(greater_than_ten) is True
-
-
-def test_heartbeat_pulses_without_waiting(self):
     dao_mock = MagicMock()
     add_ten_mock = MagicMock()
     dao_mock.add_ten_sec_to_end_time = add_ten_mock
     session = "test_session"
-    
-    # Custom sleep function that doesn't actually delay
-    def fast_sleep(_):
-        pass
 
-    instance = SessionHeartbeat(session, dao_mock, sleep_fn=fast_sleep)
-    instance.start()
-    
-    # Simulate the heartbeat running briefly
-    time.sleep(0.1)  # Let thread process
-    
-    instance.stop()
+    greater_than_ten = 11
+    exactly_ten = 10
+    less_than_ten = 9
+
+    instance = KeepAliveEngine(session, dao_mock)
+
+    # Test the test conditions
+    assert instance.max_interval == 10
+
+    instance.elapsed = less_than_ten
+    assert instance._hit_max_window() is False
+    instance.elapsed = exactly_ten
+    assert instance._hit_max_window() is True
+    instance.elapsed = greater_than_ten
+    assert instance._hit_max_window() is True
+
+
+def test_iterate_loop():
+    dao_mock = MagicMock()
+    add_ten_mock = MagicMock()
+    dao_mock.add_ten_sec_to_end_time = add_ten_mock
+    session = "test_session"
+
+    instance = KeepAliveEngine(session, dao_mock)
+    assert instance.elapsed == 0
+
+    instance.iterate_loop()
+    assert instance.elapsed == 1
+
+    instance.iterate_loop()
+    instance.iterate_loop()
+    assert instance.elapsed == 3
 
     # Ensure _pulse_add_ten() was called at least once
-    dao_mock.add_ten_sec_to_end_time.assert_called()
+    dao_mock.add_ten_sec_to_end_time.assert_not_called()
 
 
 
 def test_running_for_three_sec():
     dao_mock = MagicMock()
+    add_ten_mock = MagicMock()
+    deduct_duration_mock = MagicMock()
+    dao_mock.deduct_duration = deduct_duration_mock
+    dao_mock.add_ten_sec_to_end_time = add_ten_mock
     session = "test_session"
 
-    # Custom sleep function that does nothing
-    def fast_sleep(_):
-        pass
+    instance = KeepAliveEngine(session, dao_mock)
+    assert instance.elapsed == 0
 
-    heartbeat = SessionHeartbeat(session, dao_mock, sleep_fn=fast_sleep)
+    instance.iterate_loop()
+    assert instance.elapsed == 1
 
-    # Run _run_heartbeat in a separate thread
-    thread = threading.Thread(target=heartbeat._run_heartbeat)
-    thread.start()
+    instance.iterate_loop()
+    instance.iterate_loop()
+    assert instance.elapsed == 3
 
-    # Let it run for 3 loops
-    while heartbeat._loop_count < 3:
-        time.sleep(0.01)  # Give thread some time to process
-
-    heartbeat.stop()
-    thread.join()
-
-    # Assert that it looped exactly 3 times
-    assert heartbeat._loop_count == 3
+    add_ten_mock.assert_not_called()
+    deduct_duration_mock.assert_not_called()    
 
 
 
-def test_early_termination(self):
+def test_multiple_whole_loops():
+    dao_mock = MagicMock()
+    add_ten_mock = MagicMock()
+    deduct_duration_mock = MagicMock()
+    dao_mock.deduct_duration = deduct_duration_mock
+    dao_mock.add_ten_sec_to_end_time = add_ten_mock
+    session = "test_session"
+
+    instance = KeepAliveEngine(session, dao_mock)
+
+    conclude_spy = Mock(side_effect=instance.conclude)
+    instance.conclude = conclude_spy
+
+    two_whole_loops = 20
+    and_then_some = 3
+    total = two_whole_loops + and_then_some
+
+    for i in range(total):
+        instance.iterate_loop()
+
+
+    # Assert
+    conclude_spy.assert_not_called
+    add_ten_mock.call_count == 2
+
+    # Act again
+    instance.conclude()
+    remainder = instance.calculate_remaining_window(and_then_some)
+
+    assert 10 - and_then_some == remainder, "Setup conditions not met in test"
+    # Assert
+    deduct_duration_mock.assert_called_with(remainder, session)  
+
+
+def test_window_usage_calculation():
     dao_mock = MagicMock()
     add_ten_mock = MagicMock()
     dao_mock.deduct_duration = add_ten_mock
     session = "test_session"
-    def fast_sleep(_):
-            pass
 
-    instance = SessionHeartbeat(session, dao_mock, sleep_fn=fast_sleep)
-    instance.start()
-    
-    # Run three times
-    time.sleep(0.1)  
+    instance = KeepAliveEngine(session, dao_mock)
 
-    # Stop early
-    instance.stop()
+    full_window = 10
+    used_amt = 3
 
-    # Assert
-    assert dao_mock.deduct_duration.called_once
-    assert dao_mock.deduct_duration.called_with(10 - 3)
+    remainder = instance.calculate_remaining_window(used_amt)
 
+    assert remainder == full_window - used_amt
+
+
+def test_conclude():
+    dao_mock = MagicMock()
+    add_ten_mock = MagicMock()
+    dao_mock.deduct_duration = add_ten_mock
+    session = "test_session"
+
+    instance = KeepAliveEngine(session, dao_mock)
+    instance.iterate_loop()
+    assert instance.elapsed == 1
+
+    instance.iterate_loop()
+    instance.iterate_loop()
+    assert instance.elapsed == 3
+
+    # Act
+    instance.conclude()
+
+    assert dao_mock.deduct_duration.call_count == 1
     
