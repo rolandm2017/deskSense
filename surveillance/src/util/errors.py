@@ -20,3 +20,9 @@ class MismatchedTimezonesError(ValueError):
 
     def __init__(self):
         super().__init__("Mismatched timezones detected.")
+
+class ImpossibleToGetHereError(ValueError):
+    """For DAO paths that ought to be unreachable if other code worked"""
+    
+    def __init__(self, *args):
+        super().__init__(*args)

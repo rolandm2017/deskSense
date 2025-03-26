@@ -9,6 +9,8 @@ from ...object.classes import ChromeSessionData, ProgramSessionData
 from ..models import DomainSummaryLog, ProgramSummaryLog
 from .base_dao import BaseQueueingDao
 from ...util.console_logger import ConsoleLogger
+from ...util.errors import ImpossibleToGetHereError
+from ...util.dao_wrapper import validate_session
 
 
 class ProgramLoggingDao(BaseQueueingDao):
@@ -18,32 +20,54 @@ class ProgramLoggingDao(BaseQueueingDao):
                          batch_size=batch_size, flush_interval=flush_interval)
         self.session_maker = session_maker
 
+    @validate_session
     def create_log(self, session: ProgramSessionData, right_now: datetime):
         """Log an update to a summary table"""
         # ### Calculate time difference
-        if session.duration is None:
-            raise ValueError("Session duration was None")
-
-        if session.start_time is None or session.end_time is None:
-            raise ValueError("Start or end time was None")
-
-        usage_duration_in_hours_based_on_start_end_times = (
+        start_end_time_duration_as_hours = (
             session.end_time - session.start_time).total_seconds() / 3600
 
-        usage_duration_based_on_duration_property = session.duration.total_seconds() / \
+        duration_property_as_hours = session.duration.total_seconds() / \
             3600.0
 
         log_entry = ProgramSummaryLog(
             program_name=session.window_title,
-            hours_spent=usage_duration_in_hours_based_on_start_end_times,
+            hours_spent=start_end_time_duration_as_hours,
             start_time=session.start_time,
             end_time=session.end_time,
-            duration=usage_duration_based_on_duration_property,
+            duration=duration_property_as_hours,
             gathering_date=right_now.date(),
             created_at=right_now
         )
         # print("[pr] Creating ", log_entry)
         asyncio.create_task(self.queue_item(log_entry, ProgramSummaryLog))
+
+    @validate_session
+    def start_session(self, session: ProgramSessionData):
+        unknown = None
+        start_window_end = session.start_time + timedelta(seconds=10)
+        log_entry = ProgramSummaryLog(
+            program_name=session.window_title,
+            hours_spent=unknown,
+            start_time=session.start_time,
+            end_time=start_window_end,
+            duration=unknown,
+            gathering_date=session.start_time.date(),
+            created_at=session.start_time
+        )
+        asyncio.create_task(self.queue_item(log_entry, ProgramSummaryLog))
+
+    async def find_session(self, session: ChromeSessionData):
+        return self.read_log_for_session(session)
+
+    async def read_log_for_session(self, session: ChromeSessionData):
+        query = select(DomainSummaryLog).where(
+            DomainSummaryLog.start_time == session.start_time
+        )
+        async with self.session_maker() as db_session:
+            result = await db_session.execute(query)
+            return result.scalar_one_or_none()
+
 
     async def read_day_as_sorted(self, day) -> dict[str, ProgramSummaryLog]:
         start_of_day = day.replace(hour=0, minute=0, second=0,
@@ -147,6 +171,27 @@ class ProgramLoggingDao(BaseQueueingDao):
             ).order_by(ProgramSummaryLog.hours_spent.desc())
             result = await session.execute(query)
             return result.scalars().all()
+        
+    async def push_window_ahead_ten_sec(self, session: ProgramSessionData):
+        log: ProgramSummaryLog = await self.read_log_for_session(session)
+        if log:
+            log.end_time = session.end_time + timedelta(seconds=10)
+            async with self.session_maker() as db_session:
+                db_session.add(log)
+                await db_session.commit()
+        else:
+            raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")
+
+    async def finalize_log(self, session: ProgramSessionData):
+        """Overwrite value from the heartbeat. Expect something to ALWAYS be in the db already at this point."""
+        log: ProgramSummaryLog = await self.read_log_for_session(session)
+        if log:
+            log.end_time = session.end_time
+            async with self.session_maker() as db_session:
+                db_session.add(log)
+                await db_session.commit()
+        else:
+            raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")
 
 
 class ChromeLoggingDao(BaseQueueingDao):
@@ -157,30 +202,52 @@ class ChromeLoggingDao(BaseQueueingDao):
                          batch_size=batch_size, flush_interval=flush_interval)
         self.session_maker = session_maker
 
+    @validate_session
     def create_log(self, session: ChromeSessionData, right_now: datetime):
         """Log an update to a summary table"""
-        if session.duration is None:
-            raise ValueError("Session duration was None")
-        if session.start_time is None or session.end_time is None:
-            raise ValueError("Start or end time was None")
-
-        usage_duration_in_hours_based_on_start_end_times = (
+        start_end_time_duration_as_hours = (
             session.end_time - session.start_time).total_seconds() / 3600
 
-        usage_duration_based_on_duration_property = session.duration.total_seconds() / \
+        duration_property_as_hours = session.duration.total_seconds() / \
             3600.0
 
         log_entry = DomainSummaryLog(
             domain_name=session.domain,
-            hours_spent=usage_duration_in_hours_based_on_start_end_times,
+            hours_spent=start_end_time_duration_as_hours,
             start_time=session.start_time,
             end_time=session.end_time,
-            duration=usage_duration_based_on_duration_property,
+            duration=duration_property_as_hours,
             gathering_date=right_now.date(),
             created_at=right_now
         )
-        # print("[ch] Creating ", log_entry)
         asyncio.create_task(self.queue_item(log_entry, DomainSummaryLog))
+
+    @validate_session
+    def start_session(self, session: ChromeSessionData):
+        unknown = None
+        starting_window_end = session.start_time + timedelta(seconds=10)
+        log_entry = DomainSummaryLog(
+            domain_name=session.domain,
+            hours_spent=unknown,
+            start_time=session.start_time,
+            end_time=starting_window_end,
+            duration=unknown,
+            gathering_date=session.start_time.date(),
+            created_at=session.start_time
+        )
+        asyncio.create_task(self.queue_item(log_entry, DomainSummaryLog))
+
+
+    async def find_session(self, session: ChromeSessionData):
+        return self.read_log_for_session(session)
+
+    async def read_log_for_session(self, session: ChromeSessionData):
+        query = select(DomainSummaryLog).where(
+            DomainSummaryLog.start_time == session.start_time
+        )
+        async with self.session_maker() as db_session:
+            result = await db_session.execute(query)
+            return result.scalar_one_or_none()
 
     async def read_day_as_sorted(self, day):
         start_of_day = day.replace(hour=0, minute=0, second=0,
@@ -254,3 +321,25 @@ class ChromeLoggingDao(BaseQueueingDao):
             ).order_by(DomainSummaryLog.created_at.desc())
             result = await session.execute(query)
             return result.scalars().all()
+
+    async def push_window_ahead_ten_sec(self, session: ChromeSessionData):
+        log: DomainSummaryLog = await self.read_log_for_session(session)
+        if log:
+            log.end_time = session.end_time + timedelta(seconds=10)
+            async with self.session_maker() as db_session:
+                db_session.add(log)
+                await db_session.commit()
+        else:
+            raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")
+
+
+    async def finalize_log(self, session: ChromeSessionData):
+        """Overwrite value from the heartbeat. Expect something to ALWAYS be in the db already at this point."""
+        log: DomainSummaryLog = await self.read_log_for_session(session)
+        if log:
+            log.end_time = session.end_time
+            async with self.session_maker() as db_session:
+                db_session.add(log)
+                await db_session.commit()
+        else:
+            raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")
