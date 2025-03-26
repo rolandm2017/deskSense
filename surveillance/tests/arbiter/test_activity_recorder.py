@@ -1,6 +1,6 @@
-from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock
 import pytest
+from unittest.mock import AsyncMock, MagicMock
+from datetime import datetime, timedelta
 
 from src.arbiter.activity_recorder import ActivityRecorder
 
