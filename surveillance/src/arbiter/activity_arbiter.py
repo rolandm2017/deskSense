@@ -84,21 +84,9 @@ class ActivityArbiter:
 
             # ### Create the replacement state
             self.state_machine.set_new_session(new_session)
-
-            # TODO: Make heartbeat also update the logging, for in case computer shuts down
-            
+     
             self.current_heartbeat.stop()  # stop the old one from prev loop
             self.current_heartbeat = SessionHeartbeat(new_session, self.summary_listener)
-            
-            # elapsed = 0
-            # while self.state_machine.current_state == new_session:
-            #     elapsed += 1
-            #     sleep(0.5)
-            #     if elapsed == 10:
-            #         pulse_add_ten()
-            #         elapsed = 0
-            # add_remainder(10 - elapsed)
-
 
             if self.state_machine.is_initialization_session(concluded_session):
                 return

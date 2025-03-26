@@ -16,7 +16,7 @@ The concluding will occur by the Arbiter
 """
 
 class SessionHeartbeat:
-    def __init__(self, session, dao_connection):
+    def __init__(self, session, dao_connection, sleep_fn=time.sleep):
         self.session = session
         self.dao = dao_connection
         self.interval = 1  # seconds
@@ -24,6 +24,8 @@ class SessionHeartbeat:
         self.stop_event = threading.Event()
         self.hook_thread = None
         self.is_running = False
+        self.sleep_fn = sleep_fn  # More testable
+        self._loop_count = 0 
 
     def start(self):
         """
@@ -38,17 +40,16 @@ class SessionHeartbeat:
         elapsed = 0
         while not self.stop_event.is_set():
             elapsed += 1
-            time.sleep(self.interval)
+            self._loop_count += 1  # for testing
+            self.sleep_fn(self.interval)  # Use injected sleep function
             if self._hit_max_window(elapsed):
                 self._pulse_add_ten()
                 elapsed = 0
         # Conclude by deducting the part we didn't get to
-        # NOTE: Disregard above & below. Deducting the remainder doesn't really need to happen!
-        # NOTE: The concluded session will be passed to the Summary DAO, which will overwrite
         self._deduct_remainder(elapsed)
 
     def _hit_max_window(self, duration):
-        return self.max_interval == duration
+        return self.max_interval <= duration
 
     def _pulse_add_ten(self):
         """

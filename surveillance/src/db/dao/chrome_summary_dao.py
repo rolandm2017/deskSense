@@ -173,15 +173,15 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
                 self.logger.log_white_multiple("INFO:", f"first time {target_domain} appears today")
                 self.create_if_new_else_update(session, right_now)
 
-    async def deduct_remaining_duration(self, session, duration, right_now):
+    async def deduct_remaining_duration(self, session, duration, today_start):
         """
         When a session is concluded, it was concluded partway thru the 10 sec window
         
         9 times out of 10. So we deduct the unfinished duration from its hours_spent.
         """
         target_domain = session.domain
-        today_start = right_now.replace(
-            hour=0, minute=0, second=0, microsecond=0)
+        # today_start = right_now.replace(
+        #     hour=0, minute=0, second=0, microsecond=0)
         tomorrow_start = today_start + timedelta(days=1)
 
         query = select(DailyDomainSummary).where(

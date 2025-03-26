@@ -15,6 +15,9 @@ class ClockProtocol:
     
     def today(self) -> datetime:
         raise NotImplementedError
+    
+    def today_start(self) -> datetime:
+        raise NotImplementedError
 
 
 class SystemClock(ClockProtocol):
@@ -49,6 +52,10 @@ class UserFacingClock(ClockProtocol):
         """
         # TODO: Make the code match the comment
         return self.today
+    
+    def today_start(self):
+        return datetime.now(ZoneInfo(local_time_zone)).replace(
+            hour=0, minute=0, second=0, microsecond=0)
 
     def seconds_have_elapsed(self, current_time: datetime, previous_time: datetime, seconds: int) -> bool:
         """
