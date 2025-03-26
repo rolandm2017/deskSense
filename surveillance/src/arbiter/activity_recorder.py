@@ -27,8 +27,6 @@ class ActivityRecorder:
         if session.duration is None:
             raise ValueError("Session duration was not set")
 
-        right_now = self.user_facing_clock.now()
-
         if isinstance(session, ProgramSessionData):
             await self.program_logging_dao.finalize_log(session)
             # await self.program_logging_dao.create_log(session, right_now)
@@ -67,12 +65,12 @@ class ActivityRecorder:
         Deducts t seconds from the duration of a session. 
         Here, the session's current window was cut short by a new session taking it's place.
         """
-        right_now = self.user_facing_clock.now()
+        today_start = self.user_facing_clock.today_start()
         if isinstance(session, ProgramSessionData):
             # await self.program_summary_dao.do_the_remaining_work(session, right_now)
-            await self.program_summary_dao.deduct_remaining_duration(session, duration, right_now)
+            await self.program_summary_dao.deduct_remaining_duration(session, duration, today_start)
         elif isinstance(session, ChromeSessionData):
             # await self.chrome_summary_dao.do_the_remaining_work(session, right_now)
-            await self.chrome_summary_dao.deduct_remaining_duration(session, duration, right_now)
+            await self.chrome_summary_dao.deduct_remaining_duration(session, duration, today_start)
         else:
             raise TypeError("Session was not the right type")
