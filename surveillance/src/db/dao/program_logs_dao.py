@@ -13,6 +13,7 @@ from ...util.console_logger import ConsoleLogger
 from ...util.errors import ImpossibleToGetHereError
 from ...util.dao_wrapper import validate_session, guarantee_start_time
 from ...util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
+from ...util.time_formatting import convert_to_utc, get_start_of_day
 
 #
 # #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #  
@@ -58,24 +59,26 @@ class ProgramLoggingDao(BaseQueueingDao):
     @guarantee_start_time
     def start_session(self, session: ProgramSessionData):
         unknown = None
-        start_window_end = session.start_time + timedelta(seconds=10)
+        base_start_time = convert_to_utc(session.start_time)
+        start_of_day = get_start_of_day(session.start_time)
+        start_of_day_as_utc = convert_to_utc(start_of_day)
+        start_window_end = base_start_time + timedelta(seconds=10)
         log_entry = ProgramSummaryLog(
             program_name=session.window_title,
             hours_spent=unknown,
-            start_time=session.start_time,
+            start_time=base_start_time,
             end_time=start_window_end,
             duration=unknown,
-            gathering_date=session.start_time.date(),
-            created_at=session.start_time
+            gathering_date=start_of_day_as_utc,
+            created_at=base_start_time
         )
         asyncio.create_task(self.queue_item(log_entry, ProgramSummaryLog))
 
     async def find_session(self, session: ProgramSessionData):
-        print(session.start_time, "60ru")
         # the database is storing and returning times in UTC
-        start_time_as_utc = session.start_time.astimezone(timezone.utc)
-        query = select(DomainSummaryLog).where(
-            DomainSummaryLog.start_time == start_time_as_utc
+        start_time_as_utc = convert_to_utc(session.start_time)
+        query = select(ProgramSummaryLog).where(
+            ProgramSummaryLog.start_time == start_time_as_utc
         )
         async with self.session_maker() as db_session:
             result = await db_session.execute(query)
