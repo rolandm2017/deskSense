@@ -1,6 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy import text
 
+
+
+
 import warnings
 import pytest
 
@@ -11,6 +14,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 
+from surveillance.src.db.models import Base
 
 
 
@@ -111,7 +115,7 @@ async def async_engine():
     test_engine = create_async_engine(
         ASYNC_TEST_DB_URL,
         # echo=True,
-        isolation_level="AUTOCOMMIT"  # Add this
+        isolation_level="AUTOCOMMIT"
     )
 
     # Create all tables
@@ -139,6 +143,8 @@ async def async_engine():
         await admin_engine.dispose()
 
 
+
+
 @pytest.fixture(scope="function")
 async def async_session_maker(async_engine):
     """Create an async session maker"""
@@ -148,4 +154,91 @@ async def async_session_maker(async_engine):
         class_=AsyncSession,
         expire_on_commit=False
     )
+    return session_maker
+
+
+
+SYNC_TEST_DB_URL = os.getenv("SYNC_TEST_DB_URL")
+
+# if ASYNC_TEST_DB_URL is None:
+#     raise ValueError("ASYNC_TEST_DB_URL environment variable is not set")
+
+if SYNC_TEST_DB_URL is None:
+    raise ValueError("SYNC_TEST_DB_URL environment variable is not set")
+
+
+@pytest.fixture(scope="function")
+def sync_engine():
+    """Create a synchronous PostgreSQL engine for testing"""
+    # Create engine that connects to default postgres database
+    if SYNC_TEST_DB_URL is None:
+        raise ValueError("SYNC_TEST_DB_URL was None")
+
+    from sqlalchemy import create_engine, text
+
+    # Extract the default postgres database URL
+    default_url = SYNC_TEST_DB_URL.rsplit('/', 1)[0] + '/postgres'
+    admin_engine = create_engine(
+        default_url,
+        isolation_level="AUTOCOMMIT"
+    )
+
+    with admin_engine.connect() as conn:
+        # Terminate existing connections more safely
+        conn.execute(text("""
+            SELECT pg_terminate_backend(pid)
+            FROM pg_stat_activity
+            WHERE datname = 'dsTestDb'
+            AND pid <> pg_backend_pid()
+        """))
+
+        # Drop and recreate database
+        conn.execute(text("DROP DATABASE IF EXISTS dsTestDb"))
+        conn.execute(text("CREATE DATABASE dsTestDb"))
+
+    admin_engine.dispose()
+
+    # Create engine for test database
+    test_engine = create_engine(
+        # pool_pre_ping resolves a bug
+        SYNC_TEST_DB_URL, isolation_level="AUTOCOMMIT", pool_pre_ping=True)
+
+    # Create all tables
+    with test_engine.begin() as conn:
+        Base.metadata.create_all(conn)
+
+    try:
+        yield test_engine
+    finally:
+        test_engine.dispose()
+
+        # Clean up by dropping test database
+        admin_engine = create_engine(
+            default_url,
+            isolation_level="AUTOCOMMIT"
+        )
+        with admin_engine.connect() as conn:
+            conn.execute(text("""
+                SELECT pg_terminate_backend(pid)
+                FROM pg_stat_activity
+                WHERE datname = 'dsTestDb'
+                AND pid <> pg_backend_pid()
+            """))
+            conn.execute(text("DROP DATABASE IF EXISTS dsTestDb"))
+        admin_engine.dispose()
+
+
+@pytest.fixture(scope="function")
+def shutdown_session_maker(sync_engine):
+    """Create a synchronous session maker"""
+    from sqlalchemy.orm import sessionmaker
+
+    session_maker = sessionmaker(
+        sync_engine,
+        expire_on_commit=False
+    )
+
+    # session_factory = sessionmaker(bind=sync_engine, expire_on_commit=False)
+
+    # shutdown_session_maker = scoped_session(session_factory)
     return session_maker

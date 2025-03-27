@@ -28,70 +28,20 @@ if ASYNC_TEST_DB_URL is None:
 if SYNC_TEST_DB_URL is None:
     raise ValueError("SYNC_TEST_DB_URL environment variable is not set")
 
+# FIXME: Test is slow as a turtle
+# FIXME: Test is slow as a turtle
+# FIXME: Test is slow as a turtle
+# FIXME: Test is slow as a turtle
+# FIXME: Test is slow as a turtle
+# FIXME: Test is slow as a turtle
+# FIXME: Test is slow as a turtle
 
-@pytest_asyncio.fixture(scope="function")
-async def async_engine():
-    """Create an async PostgreSQL engine for testing"""
-    # Create engine that connects to default postgres database
-    if ASYNC_TEST_DB_URL is None:
-        raise ValueError("ASYNC_TEST_DB_URL was None")
-    default_url = ASYNC_TEST_DB_URL.rsplit('/', 1)[0] + '/postgres'
-    admin_engine = create_async_engine(
-        default_url,
-        isolation_level="AUTOCOMMIT"
-    )
-
-    async with admin_engine.connect() as conn:
-        # Terminate existing connections more safely
-        await conn.execute(text("""
-            SELECT pg_terminate_backend(pid)
-            FROM pg_stat_activity
-            WHERE datname = 'dsTestDb'
-            AND pid <> pg_backend_pid()
-        """))
-
-        # Drop and recreate database
-        await conn.execute(text("DROP DATABASE IF EXISTS dsTestDb"))
-        await conn.execute(text("CREATE DATABASE dsTestDb"))
-
-    await admin_engine.dispose()
-
-    # Create engine for test database
-    test_engine = create_async_engine(
-        ASYNC_TEST_DB_URL,
-        # echo=True,
-        isolation_level="AUTOCOMMIT"
-    )
-
-    # Create all tables
-    async with test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    try:
-        yield test_engine
-    finally:
-        await test_engine.dispose()
-
-        # Clean up by dropping test database
-        admin_engine = create_async_engine(
-            default_url,  # Connect to default db for cleanup
-            isolation_level="AUTOCOMMIT"
-        )
-        async with admin_engine.connect() as conn:
-            await conn.execute(text("""
-                SELECT pg_terminate_backend(pid)
-                FROM pg_stat_activity
-                WHERE datname = 'dsTestDb'
-                AND pid <> pg_backend_pid()
-            """))
-            await conn.execute(text("DROP DATABASE IF EXISTS dsTestDb"))
-        await admin_engine.dispose()
 
 
 @pytest_asyncio.fixture(scope="function")
 async def async_session_maker(async_engine):
     """Create an async session maker"""
-    # Instead of anext(), just use async_engine directly since we've fixed the yield
+    # Instead of anext(), just us0e async_engine directly since we've fixed the yield
     session_maker = async_sessionmaker(
         bind=async_engine,
         expire_on_commit=False

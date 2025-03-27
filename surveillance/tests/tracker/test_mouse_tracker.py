@@ -4,7 +4,6 @@ import pytest
 from unittest.mock import Mock, patch
 from pathlib import Path
 from datetime import datetime, timedelta
-import tempfile
 
 from src.util.detect_os import OperatingSystemInfo
 from src.util.threaded_tracker import ThreadedTracker
@@ -51,16 +50,6 @@ class MockMouseFacade():
 #     ]
 #     return MockClock(times)
 
-
-@pytest.fixture
-def temp_data_dir():
-    """Create a temporary directory for test data."""
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        tmp_path = Path(tmpdirname)
-        yield tmp_path
-        # Cleanup: remove any CSV files
-        for csv_file in tmp_path.glob('*.csv'):
-            csv_file.unlink()
 
 
 @pytest.fixture
