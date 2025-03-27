@@ -1,6 +1,6 @@
+import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy import text
-
 
 
 
@@ -123,7 +123,7 @@ async def async_engine():
         await conn.run_sync(Base.metadata.create_all)
 
     try:
-        yield test_engine
+        return test_engine
     finally:
         await test_engine.dispose()
 
@@ -145,17 +145,17 @@ async def async_engine():
 
 
 
-@pytest.fixture(scope="function")
+@pytest_asyncio.fixture(scope="function")
 async def async_session_maker(async_engine):
     """Create an async session maker"""
-    engine = await anext(async_engine)  # Use anext() instead of await
+    # engine = await anext(async_engine)  # Use anext() instead of await
+    engine = await async_engine  # Simply await the engine
     session_maker = async_sessionmaker(
         engine,
         class_=AsyncSession,
         expire_on_commit=False
     )
     return session_maker
-
 
 
 SYNC_TEST_DB_URL = os.getenv("SYNC_TEST_DB_URL")

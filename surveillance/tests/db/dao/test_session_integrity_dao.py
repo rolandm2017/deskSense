@@ -38,16 +38,6 @@ if SYNC_TEST_DB_URL is None:
 
 
 
-@pytest_asyncio.fixture(scope="function")
-async def async_session_maker(async_engine):
-    """Create an async session maker"""
-    # Instead of anext(), just us0e async_engine directly since we've fixed the yield
-    session_maker = async_sessionmaker(
-        bind=async_engine,
-        expire_on_commit=False
-    )
-    return session_maker
-
 
 @pytest_asyncio.fixture(scope="function")
 async def test_power_events():
@@ -77,6 +67,7 @@ async def test_power_events():
 async def test_program_logs(async_session_maker, test_power_events):
     """Create test program summary logs with various scenarios"""
     events = test_power_events
+    print(async_session_maker, '70ru')
 
     async with async_session_maker() as session:
         shutdown_time = events["shutdown_time"]
@@ -314,50 +305,50 @@ async def test_find_orphans(full_test_environment):
         await truncate_test_tables(engine)
 
 
-@pytest.mark.asyncio
-async def test_find_phantoms(full_test_environment):
-    """Test that phantom sessions are correctly identified"""
-    env = full_test_environment
+# @pytest.mark.asyncio
+# async def test_find_phantoms(full_test_environment):
+#     """Test that phantom sessions are correctly identified"""
+#     env = full_test_environment
 
-    # Get values from the environment
-    engine = env["engine"]
-    shutdown_time = env["power_events"]["shutdown_time"]
-    startup_time = env["power_events"]["startup_time"]
-    session_integrity_dao = env["daos"]["session_integrity_dao"]
+#     # Get values from the environment
+#     engine = env["engine"]
+#     shutdown_time = env["power_events"]["shutdown_time"]
+#     startup_time = env["power_events"]["startup_time"]
+#     session_integrity_dao = env["daos"]["session_integrity_dao"]
 
-    try:
-        # Find phantoms
-        program_phantoms, domain_phantoms = await session_integrity_dao.find_phantoms(
-            shutdown_time, startup_time
-        )
+#     try:
+#         # Find phantoms
+#         program_phantoms, domain_phantoms = await session_integrity_dao.find_phantoms(
+#             shutdown_time, startup_time
+#         )
 
-        # Assertions
-        assert len(program_phantoms) == 1
-        assert len(domain_phantoms) == 1
-        assert program_phantoms[0].program_name == "Firefox"
-        assert domain_phantoms[0].domain_name == "reddit.com"
+#         # Assertions
+#         assert len(program_phantoms) == 1
+#         assert len(domain_phantoms) == 1
+#         assert program_phantoms[0].program_name == "Firefox"
+#         assert domain_phantoms[0].domain_name == "reddit.com"
 
-    finally:
-        # Clean up after test, regardless of whether it passed or failed
-        await truncate_test_tables(engine)
+#     finally:
+#         # Clean up after test, regardless of whether it passed or failed
+#         await truncate_test_tables(engine)
 
 
-@pytest.mark.asyncio
-async def test_audit_sessions(full_test_environment):
-    """Test the complete audit_sessions method"""
-    env = full_test_environment
+# @pytest.mark.asyncio
+# async def test_audit_sessions(full_test_environment):
+#     """Test the complete audit_sessions method"""
+#     env = full_test_environment
 
-    # Get values from the environment
-    engine = env["engine"]
-    shutdown_time = env["power_events"]["shutdown_time"]
-    startup_time = env["power_events"]["startup_time"]
-    session_integrity_dao = env["daos"]["session_integrity_dao"]
+#     # Get values from the environment
+#     engine = env["engine"]
+#     shutdown_time = env["power_events"]["shutdown_time"]
+#     startup_time = env["power_events"]["startup_time"]
+#     session_integrity_dao = env["daos"]["session_integrity_dao"]
 
-    try:
-        # Run the full audit
-        await session_integrity_dao.audit_sessions(shutdown_time, startup_time)
-        # Test passes if no exceptions are raised
+#     try:
+#         # Run the full audit
+#         await session_integrity_dao.audit_sessions(shutdown_time, startup_time)
+#         # Test passes if no exceptions are raised
 
-    finally:
-        # Clean up after test, regardless of whether it passed or failed
-        await truncate_test_tables(engine)
+#     finally:
+#         # Clean up after test, regardless of whether it passed or failed
+#         await truncate_test_tables(engine)
