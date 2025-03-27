@@ -4,9 +4,6 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from datetime import datetime, timedelta, timezone
 from typing import List
 
-from ...util.errors import SuspiciousDurationError
-
-
 from ...config.definitions import power_on_off_debug_file
 
 from ..models import DailyProgramSummary
@@ -14,9 +11,9 @@ from ..models import DailyProgramSummary
 
 from ...object.classes import ProgramSessionData
 from ...util.console_logger import ConsoleLogger
-from ...util.debug_logger import write_to_debug_log, write_to_large_usage_log
+ 
 from ...util.clock import SystemClock
-
+from ...util.debug_util import notice_suspicious_durations, log_if_needed
 
 class DatabaseProtectionError(RuntimeError):
     """Custom exception for database protection violations."""
@@ -33,6 +30,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         # if not callable(session_maker):
         # raise TypeError("session_maker must be callable")
         self.program_logging_dao = program_logging_dao
+        self.debug = False  
         self.session_maker = session_maker 
         self.logger = ConsoleLogger()
 
@@ -78,24 +76,11 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             existing_entry = result.scalar_one_or_none()
 
             if existing_entry:
-                impossibly_long_day = existing_entry.hours_spent > 24
-                if impossibly_long_day:
-                    self.logger.log_red(
-                        "[critical] " + str(existing_entry.hours_spent) + " for " + existing_entry.program_name)
-                    raise SuspiciousDurationError("long day")
-                if program_session.duration and program_session.duration > timedelta(hours=1):
-                    self.logger.log_red(
-                        "[critical] " + str(program_session.duration) + " for " + existing_entry.program_name)
-                    raise SuspiciousDurationError("duration")
-                # TODO: If duration > some_sus_threshold, throw err
-                # if existing_entry is not None:  # Changed from if existing_entry:
+                if self.debug:
+                    notice_suspicious_durations(existing_entry, program_session)
+                    # log_if_needed()  
                 existing_entry.hours_spent += usage_duration_in_hours
-                # if program_session.window_title == "Alt-tab window":
-                #     write_to_debug_log(target_program_name, usage_duration_in_hours,
-                #                        right_now.strftime("%m-%d %H:%M:%S"))
-                # if usage_duration_in_hours > 0.333:
-                #     write_to_large_usage_log(program_session,
-                #                              usage_duration_in_hours, right_now.strftime("%m-%d %H:%M:%S"))
+
                 await db_session.commit()
             else:
                 # print("creating entry for day ", today)

@@ -5,13 +5,14 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from datetime import datetime, timedelta
 from typing import List
 
-from ...util.errors import SuspiciousDurationError
-
 from ...config.definitions import power_on_off_debug_file
 
 from ..models import DailyDomainSummary
 from ...util.console_logger import ConsoleLogger
 from ...object.classes import ChromeSessionData
+
+from ...util.errors import SuspiciousDurationError
+from ...util.debug_util import notice_suspicious_durations, log_if_needed
 
 # @@@@ @@@@ @@@@ @@@@ @@@@
 # NOTE: Does not use BaseQueueDao - Because ... <insert reason here when recalled>
@@ -21,6 +22,7 @@ from ...object.classes import ChromeSessionData
 class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
     def __init__(self,  chrome_logging_dao, session_maker: async_sessionmaker):
         self.chrome_logging_dao = chrome_logging_dao
+        self.debug = False
         self.session_maker = session_maker 
         self.logger = ConsoleLogger()
 
@@ -54,22 +56,9 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             # existing_entry = await result.scalar_one_or_none()  # Adding await here makes the program fail
             # This is how it is properly done, this unawaited version works
             existing_entry = result.scalar_one_or_none()
-            # self.logger.log_yellow_multiple(
-            #     "[debug]", str(chrome_session.duration))
-            if existing_entry:
-
-                if chrome_session.duration and chrome_session.duration > timedelta(hours=1):
-                    self.logger.log_red(
-                        "[critical - duration] " + str(chrome_session.duration) + " for " + existing_entry.domain_name)
-                    raise SuspiciousDurationError("duration")
-
-                impossibly_long_day = existing_entry.hours_spent > 16
-                if impossibly_long_day:
-                    self.logger.log_red(
-                        "[critical - long day] " + str(existing_entry.hours_spent) + " for " + existing_entry.domain_name)
-                    raise SuspiciousDurationError("long day")
-
-                # TODO: If duration > some_sus_threshold, throw err
+            if existing_entry:                
+                if self.debug:
+                    notice_suspicious_durations(existing_entry, chrome_session)
                 self.logger.log_white_multiple("[chrome summary dao] adding time ",
                                                chrome_session.duration, " to ", existing_entry.domain_name)
                 existing_entry.hours_spent += usage_duration_in_hours

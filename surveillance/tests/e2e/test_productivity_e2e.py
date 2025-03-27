@@ -55,20 +55,6 @@ load_dotenv()
 
 
 
-@pytest.fixture(scope="function")
-def shutdown_session_maker(sync_engine):
-    """Create a synchronous session maker"""
-    from sqlalchemy.orm import sessionmaker
-
-    session_maker = sessionmaker(
-        sync_engine,
-        expire_on_commit=False
-    )
-
-    # session_factory = sessionmaker(bind=sync_engine, expire_on_commit=False)
-
-    # shutdown_session_maker = scoped_session(session_factory)
-    return session_maker
 
 
 #       oooox
