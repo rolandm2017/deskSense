@@ -2,7 +2,9 @@
 from datetime import datetime, timedelta, timezone, date
 from typing import List, TypedDict, Dict, Tuple
 
-from ..db.dao.summary_logs_dao import ChromeLoggingDao, ProgramLoggingDao
+from ..db.dao.program_logs_dao import ProgramLoggingDao
+from ..db.dao.chrome_logs_dao import ChromeLoggingDao
+
 
 from ..db.dao.timeline_entry_dao import TimelineEntryDao
 from ..db.dao.program_summary_dao import ProgramSummaryDao

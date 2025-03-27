@@ -10,7 +10,9 @@ from dotenv import load_dotenv
 import os
 
 from src.db.dao.program_summary_dao import ProgramSummaryDao
-from src.db.dao.summary_logs_dao import ProgramLoggingDao
+
+from src.db.dao.program_logs_dao import ProgramLoggingDao
+from src.db.dao.chrome_logs_dao import ChromeLoggingDao
 from src.db.models import DailyProgramSummary, Base
 from src.object.classes import ProgramSessionData
 from src.util.clock import SystemClock

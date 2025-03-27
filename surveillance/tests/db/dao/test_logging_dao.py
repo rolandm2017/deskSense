@@ -127,18 +127,31 @@ async def test_dao_instances(async_session_maker):
         "chrome_logging_dao": chrome_logging_dao,
     }
 
-async def truncate_test_tables(async_session_maker):
+async def truncate_test_tables(async_engine):
     """Truncate all test tables directly"""
     # NOTE: IF you run the tests in a broken manner,
     # ####  the first run AFTER fixing the break
     # ####  MAY still look broken.
     # ####  Because the truncation happens *at the end of* a test.
 
-    async with async_session_maker.begin() as conn:
+    async with async_engine.begin() as conn:
         await conn.execute(text("TRUNCATE program_summary_logs RESTART IDENTITY CASCADE"))
         await conn.execute(text("TRUNCATE domain_summary_logs RESTART IDENTITY CASCADE"))
         await conn.execute(text("TRUNCATE system_change_log RESTART IDENTITY CASCADE"))
         print("Tables truncated")
+
+@pytest_asyncio.fixture(autouse=True, scope="function")
+async def clean_tables(async_engine):
+    # async_session_maker = await async_session_maker
+    """Clean tables before each test"""
+    # Clean before test
+    await truncate_test_tables(async_engine)
+    
+    # Run the test
+    yield
+    
+    # Clean after test
+    await truncate_test_tables(async_engine)
 
 
 @pytest.fixture
@@ -158,9 +171,9 @@ def mock_session_data():
     return test_program_session, test_chrome_session
 
 @pytest.mark.asyncio
-async def test_start_session(async_session_maker, mock_session_data):
+async def test_start_session(async_session_maker, mock_session_data, async_engine):
     try: 
-        async_session_maker = await async_session_maker
+        # async_session_maker = await async_session_maker
         program_session, chrome_session = mock_session_data
         program_dao = ProgramLoggingDao(async_session_maker)
         chrome_dao = ChromeLoggingDao(async_session_maker)
@@ -177,12 +190,12 @@ async def test_start_session(async_session_maker, mock_session_data):
         queue_item_mock_program.assert_called_once()
         queue_item_mock_chrome.assert_called_once()
     finally:
-        await truncate_test_tables(async_session_maker)
+        await truncate_test_tables(async_engine)
     
 @pytest.mark.asyncio
-async def test_find_session(async_session_maker, mock_session_data):
+async def test_find_session(async_session_maker, mock_session_data, async_engine):
     try:
-        async_session_maker = await async_session_maker
+        # async_session_maker = await async_session_maker
         program_session, chrome_session = mock_session_data
 
         program_dao = ProgramLoggingDao(async_session_maker)
@@ -202,13 +215,16 @@ async def test_find_session(async_session_maker, mock_session_data):
         assert program_dao is not None
         assert chrome_dao is not None
 
-        program_dao.start_session(program_session)
-        chrome_dao.start_session(chrome_session)
+        await program_dao.start_session(program_session)
+        await chrome_dao.start_session(chrome_session)
 
         # ### Test more setup conditions: The writes both worked
 
         programs = await program_dao.read_all()
         domains = await chrome_dao.read_all()
+
+        queue_item_spy_programs.assert_called_once()
+        queue_item_spy_chrome.assert_called_once()
 
         assert len(programs) == 1
         assert len(domains) == 1
@@ -269,18 +285,18 @@ async def test_find_session(async_session_maker, mock_session_data):
         assert isinstance(args[0], DomainSummaryLog)
         assert args[1] is DomainSummaryLog  # Second arg should be the class itself
     finally:
-        await truncate_test_tables(async_session_maker)
+        await truncate_test_tables(async_engine)
 
 @pytest.mark.asyncio
-async def test_push_window_ahead(async_session_maker):
-    async_session_maker = await async_session_maker
+async def test_push_window_ahead(async_session_maker, async_engine):
+    # async_session_maker = await async_session_maker
     program_dao = ProgramLoggingDao(async_session_maker)
     chrome_dao = ChromeLoggingDao(async_session_maker)
     
 
 @pytest.mark.asyncio
-async def test_start_session(async_session_maker):
-    async_session_maker = await async_session_maker
+async def test_start_session(async_session_maker, async_engine):
+    # async_session_maker = await async_session_maker
     program_dao = ProgramLoggingDao(async_session_maker)
     chrome_dao = ChromeLoggingDao(async_session_maker)
 
@@ -319,6 +335,7 @@ async def nonexistent_session():
 #     try:
 #         program_dao = ProgramLoggingDao(async_session_maker)
 #         chrome_dao = ChromeLoggingDao(async_session_maker)
+
 
 #         doesnt_exist = nonexistent_session()
 #         with pytest.raises(ImpossibleToGetHereError):
