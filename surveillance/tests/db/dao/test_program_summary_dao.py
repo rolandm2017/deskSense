@@ -21,84 +21,22 @@ from ...mocks.mock_clock import MockClock
 
 load_dotenv()
 
-# Get the test database connection string
-ASYNC_TEST_DB_URL = ASYNC_TEST_DB_URL = os.getenv(
-    'ASYNC_TEST_DB_URL')
 
-# Optional: Add error handling if the variable is required
-if ASYNC_TEST_DB_URL is None:
-    raise ValueError("TEST_DB_STRING environment variable is not set")
+# FIXME: OSerror
+# FIXME: OSerror
+# FIXME: OSerror
+# FIXME: OSerror
+# FIXME: OSerror
 
+# # Get the test database connection string
 
-@pytest.fixture(scope="function")
-async def async_engine():
-    """Create an async PostgreSQL engine for testing"""
-    # Create engine that connects to default postgres database
-    if ASYNC_TEST_DB_URL is None:
-        raise ValueError("ASYNC_TEST_DB_URL was None")
-    default_url = ASYNC_TEST_DB_URL.rsplit('/', 1)[0] + '/postgres'
-    admin_engine = create_async_engine(
-        default_url,
-        isolation_level="AUTOCOMMIT"
-    )
-
-    async with admin_engine.connect() as conn:
-        # Terminate existing connections more safely
-        await conn.execute(text("""
-            SELECT pg_terminate_backend(pid)
-            FROM pg_stat_activity
-            WHERE datname = 'dsTestDb'
-            AND pid <> pg_backend_pid()
-        """))
-
-        # Drop and recreate database
-        await conn.execute(text("DROP DATABASE IF EXISTS dsTestDb"))
-        await conn.execute(text("CREATE DATABASE dsTestDb"))
-
-    await admin_engine.dispose()
-
-    # Create engine for test database
-    test_engine = create_async_engine(
-        ASYNC_TEST_DB_URL,
-        # echo=True,
-        isolation_level="AUTOCOMMIT"  # Add this
-    )
-
-    # Create all tables
-    async with test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    try:
-        yield test_engine
-    finally:
-        await test_engine.dispose()
-
-        # Clean up by dropping test database
-        admin_engine = create_async_engine(
-            default_url,  # Connect to default db for cleanup
-            isolation_level="AUTOCOMMIT"
-        )
-        async with admin_engine.connect() as conn:
-            await conn.execute(text("""
-                SELECT pg_terminate_backend(pid)
-                FROM pg_stat_activity
-                WHERE datname = 'dsTestDb'
-                AND pid <> pg_backend_pid()
-            """))
-            await conn.execute(text("DROP DATABASE IF EXISTS dsTestDb"))
-        await admin_engine.dispose()
+# # Optional: Add error handling if the variable is required
+# if ASYNC_TEST_DB_URL is None:
+#     raise ValueError("TEST_DB_STRING environment variable is not set")
 
 
-@pytest.fixture(scope="function")
-async def async_session_maker(async_engine):
-    """Create an async session maker"""
-    engine = await anext(async_engine)  # Use anext() instead of await
-    session_maker = async_sessionmaker(
-        engine,
-        class_=AsyncSession,
-        expire_on_commit=False
-    )
-    return session_maker
+
+
 
 
 @pytest.fixture(scope="function")
