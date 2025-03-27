@@ -6,12 +6,14 @@ from unittest.mock import AsyncMock, MagicMock, Mock
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy import text
 
+from zoneinfo import ZoneInfo
+from datetime import datetime, timedelta, timezone
+
 
 from dotenv import load_dotenv
 import os
 
 
-from datetime import datetime, timedelta
 
 from src.arbiter.activity_recorder import ActivityRecorder
 
@@ -27,6 +29,7 @@ from src.object.classes import ProgramSessionData, ChromeSessionData
 from src.util.errors import ImpossibleToGetHereError
 
 
+timezone_for_test_data = ZoneInfo('America/New_York')
 
 load_dotenv()
 
@@ -142,12 +145,12 @@ def mock_session_data():
     test_program_session = ProgramSessionData()  
     test_program_session.window_title = "Discord"
     test_program_session.detail = "The Programmer's Hangout"
-    test_program_session.start_time = datetime(2025, 2, 1, 1, 0, 4, 0)
+    test_program_session.start_time = datetime(2025, 2, 1, 1, 0, 4, 0, tzinfo=timezone_for_test_data)
     test_program_session.productive = False
     test_chrome_session = ChromeSessionData()
     test_chrome_session.domain = "chatgpt.com"
     test_chrome_session.detail = "gpt Chat Repository"
-    test_chrome_session.start_time = datetime(2025, 2, 1, 1, 0, 5, 0)
+    test_chrome_session.start_time = datetime(2025, 2, 1, 1, 0, 5, 0, tzinfo=timezone_for_test_data)
     test_chrome_session.duration = timedelta(minutes=1)
     test_chrome_session.productive = True
 
@@ -208,8 +211,12 @@ async def test_find_session(async_session_maker, mock_session_data):
 
         assert len(programs) == 1
         assert len(domains) == 1
+        
         assert programs[0].start_time == program_session.start_time
         assert domains[0].start_time == chrome_session.start_time
+        # assert programs[0].start_time.astimezone(timezone.utc) == program_session.start_time.astimezone(timezone.utc)
+    
+        # assert domains[0].start_time.astimezone(timezone.utc) == chrome_session.start_time.astimezone(timezone.utc)
 
         nonexistent_program = ProgramSessionData()
         nonexistent_chrome = ChromeSessionData()
