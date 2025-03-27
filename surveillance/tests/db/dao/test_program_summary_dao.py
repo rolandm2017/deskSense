@@ -108,13 +108,23 @@ class TestProgramSummaryDao:
         session_data = ProgramSessionData()
         session_data.window_title = "TestProgramFromTest"
         session_data.start_time = right_now
-        later = right_now.replace(hour=datetime.now().hour + 2)
+
+        # awful in-test math to produce a good start/end time for a session
+        minutes = right_now.minute + 15
+        if minutes > 60:
+            updated_minutes = minutes % 60
+            later = right_now
+            later.replace(hour=later.hour + 1, minute=updated_minutes)
+        else:
+            later = right_now
+            later.replace(minute=minutes)
+
         session_data.end_time = later
         session_data.duration = later - right_now
 
         # Mock existing entry
         existing_entry = Mock(spec=DailyProgramSummary)
-        existing_entry.hours_spent = 1.0
+        existing_entry.hours_spent = 0.25
         existing_entry.configure_mock(**{
             "__str__": lambda: f"DailyProgramSummary(hours_spent={existing_entry.hours_spent})"
         })
@@ -356,6 +366,11 @@ class TestProgramSummaryDao:
         # Get today's date
         today = datetime.now(timezone.utc).date()
 
+        v = await test_db_dao.read_all()
+        for k in v:
+
+            print(k.program_name, k.hours_spent, '361ru')
+
         change_1 = 13
         change_2 = 12
         change_3 = 28
@@ -375,8 +390,6 @@ class TestProgramSummaryDao:
         dt6 = dt5 + timedelta(seconds=change_5)
         dt7 = dt6 + timedelta(seconds=change_6)
         dt8 = dt7 + timedelta(seconds=change_7)
-
-        unused = dt + timedelta(hours=1)
 
         times = [dt, dt2, dt3, dt4, dt5, dt6, dt7, dt8]
 
@@ -494,6 +507,8 @@ class TestProgramSummaryDao:
         unique_program_mentions = [test_vs_code, chrome, vscode, discord]
 
         for session in sessions:
+            if session.window_title == chrome:
+                print(session, "495ru")
             await test_db_dao.create_if_new_else_update(session, session.start_time)
 
         # ### Verify all programs were created
@@ -525,6 +540,8 @@ class TestProgramSummaryDao:
         update_session.start_time = test_update_start_time
         update_session.end_time = test_update_end_time
         update_session.duration = test_update_end_time - test_update_start_time
+
+        # FIXME: duration = 2 hours
 
         await test_db_dao.create_if_new_else_update(update_session, test_update_start_time)
 
