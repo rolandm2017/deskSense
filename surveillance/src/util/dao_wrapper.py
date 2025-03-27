@@ -9,3 +9,11 @@ def validate_session(func):
             raise ValueError("Start or end time was None")
         return func(self, session, *args, **kwargs)
     return wrapper
+
+def guarantee_start_time(func):
+    @wraps(func)
+    def wrapper(self, session, *args, **kwargs):
+        if session.start_time is None:
+            raise ValueError("Start time was None")
+        return func(self, session, *args, **kwargs)
+    return wrapper

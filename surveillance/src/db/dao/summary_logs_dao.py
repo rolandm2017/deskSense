@@ -10,7 +10,7 @@ from ..models import DomainSummaryLog, ProgramSummaryLog
 from .base_dao import BaseQueueingDao
 from ...util.console_logger import ConsoleLogger
 from ...util.errors import ImpossibleToGetHereError
-from ...util.dao_wrapper import validate_session
+from ...util.dao_wrapper import validate_session, guarantee_start_time
 from ...util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
 
 
@@ -41,7 +41,7 @@ class ProgramLoggingDao(BaseQueueingDao):
         # print("[pr] Creating ", log_entry)
         asyncio.create_task(self.queue_item(log_entry, ProgramSummaryLog))
 
-    @validate_session
+    @guarantee_start_time
     def start_session(self, session: ProgramSessionData):
         unknown = None
         start_window_end = session.start_time + timedelta(seconds=10)
@@ -126,12 +126,12 @@ class ProgramLoggingDao(BaseQueueingDao):
             # But before startup
             ProgramSummaryLog.start_time < startup_time
         ).order_by(ProgramSummaryLog.start_time)
-        return self.execute_query(query)
+        return await self.execute_query(query)
 
     async def read_all(self):
         """Fetch all program log entries"""
         query = select(ProgramSummaryLog)
-        return self.execute_query(query)
+        return await self.execute_query(query)
 
     async def read_last_24_hrs(self, right_now: datetime):
         """Fetch all program log entries from the last 24 hours"""
@@ -139,7 +139,7 @@ class ProgramLoggingDao(BaseQueueingDao):
         query = select(ProgramSummaryLog).where(
             ProgramSummaryLog.created_at >= cutoff_time
         ).order_by(ProgramSummaryLog.created_at.desc())
-        return self.execute_query(query)
+        return await self.execute_query(query)
 
     async def read_suspicious_entries(self):
         """Get entries with durations longer than 20 minutes"""
@@ -147,7 +147,7 @@ class ProgramLoggingDao(BaseQueueingDao):
         query = select(ProgramSummaryLog).where(
                 ProgramSummaryLog.hours_spent > suspicious_duration
             ).order_by(ProgramSummaryLog.hours_spent.desc())
-        return self.execute_query(query)
+        return await self.execute_query(query)
         
     async def read_suspicious_alt_tab_windows(self):
         """Get alt-tab windows with durations longer than 10 seconds"""
@@ -156,7 +156,7 @@ class ProgramLoggingDao(BaseQueueingDao):
                 ProgramSummaryLog.program_name == "Alt-tab window",
                 ProgramSummaryLog.hours_spent > alt_tab_threshold
             ).order_by(ProgramSummaryLog.hours_spent.desc())
-        return self.execute_query(query)
+        return await self.execute_query(query)
         
     async def push_window_ahead_ten_sec(self, session: ProgramSessionData):
         log: ProgramSummaryLog = await self.find_session(session)
@@ -215,7 +215,7 @@ class ChromeLoggingDao(BaseQueueingDao):
         )
         asyncio.create_task(self.queue_item(log_entry, DomainSummaryLog))
 
-    @validate_session
+    @guarantee_start_time
     def start_session(self, session: ChromeSessionData):
         unknown = None
         starting_window_end = session.start_time + timedelta(seconds=10)
@@ -248,7 +248,7 @@ class ChromeLoggingDao(BaseQueueingDao):
             DomainSummaryLog.gathering_date >= start_of_day,
             DomainSummaryLog.gathering_date < end_of_day
         ).order_by(DomainSummaryLog.domain_name)
-        return self.execute_query(query)
+        return await self.execute_query(query)
 
     async def find_orphans(self,  latest_shutdown_time, startup_time):
         """
@@ -269,7 +269,7 @@ class ChromeLoggingDao(BaseQueueingDao):
                 DomainSummaryLog.end_time >= startup_time  # End time after startup
             )
         ).order_by(DomainSummaryLog.start_time)
-        return self.execute_query(query)
+        return await self.execute_query(query)
 
     async def find_phantoms(self, latest_shutdown_time, startup_time):
         """
@@ -285,12 +285,12 @@ class ChromeLoggingDao(BaseQueueingDao):
             # But before startup
             DomainSummaryLog.start_time < startup_time
         ).order_by(DomainSummaryLog.start_time)
-        return self.execute_query(query)
+        return await self.execute_query(query)
 
     async def read_all(self):
         """Fetch all domain log entries"""
         query = select(DomainSummaryLog)
-        return self.execute_query(query)
+        return await self.execute_query(query)
 
     async def read_last_24_hrs(self, right_now: datetime):
         """Fetch all domain log entries from the last 24 hours"""
@@ -298,7 +298,7 @@ class ChromeLoggingDao(BaseQueueingDao):
         query = select(DomainSummaryLog).where(
                 DomainSummaryLog.created_at >= cutoff_time
             ).order_by(DomainSummaryLog.created_at.desc())
-        return self.execute_query(query)
+        return await self.execute_query(query)
 
     async def push_window_ahead_ten_sec(self, session: ChromeSessionData):
         log: DomainSummaryLog = await self.find_session(session)
