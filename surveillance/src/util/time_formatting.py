@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import pytz
 
 from typing import List, cast
@@ -6,6 +6,13 @@ from typing import List, cast
 from ..db.models import TimelineEntryObj
 
 from ..config.definitions import local_time_zone, daylight_savings_tz_offset
+
+def convert_to_utc(dt: datetime):
+    return dt.astimezone(timezone.utc)
+
+def get_start_of_day(dt: datetime):
+    """If you put in March 3 3:00 PM PST, you will get out march 3 12:00 AM *PST*! """
+    return dt.replace(hour=0, minute=0, second=0, microsecond=0)
 
 
 def account_for_timezone_offset(dt, users_local_tz_offset):

@@ -233,41 +233,41 @@ async def test_find_session(async_session_maker, mock_session_data):
         nonexistent_chrome.start_time = whenever
 
         # Act
-        # dne_one = await program_dao.find_session(nonexistent_program)
-        # dne_two = await chrome_dao.find_session(nonexistent_chrome)
+        dne_one = await program_dao.find_session(nonexistent_program)
+        dne_two = await chrome_dao.find_session(nonexistent_chrome)
 
         program_log: ProgramSummaryLog = await program_dao.find_session(program_session)
-        # chrome_log: DomainSummaryLog = await chrome_dao.find_session(chrome_session)
+        chrome_log: DomainSummaryLog = await chrome_dao.find_session(chrome_session)
 
         # Assert
 
         # The nonexistent ones
-        # assert dne_one is None
-        # assert dne_two is None
+        assert dne_one is None
+        assert dne_two is None
 
         # "Session found"
         assert program_log is not None
-        # assert chrome_log is not None
-        # assert isinstance(program_log, ProgramSummaryLog)
-        # assert isinstance(chrome_log, DomainSummaryLog)
-        # assert program_log.id is not None
-        # assert chrome_log.id is not None
+        assert chrome_log is not None
+        assert isinstance(program_log, ProgramSummaryLog)
+        assert isinstance(chrome_log, DomainSummaryLog)
+        assert program_log.id is not None
+        assert chrome_log.id is not None
 
-        # assert program_log.start_time == program_session.start_time.astimezone(timezone.utc)
-        # assert chrome_log.start_time == chrome_session.start_time.astimezone(timezone.utc)
+        assert program_log.start_time == program_session.start_time.astimezone(timezone.utc)
+        assert chrome_log.start_time == chrome_session.start_time.astimezone(timezone.utc)
         
-        # queue_item_spy_programs.assert_called_once()
-        # args, _ = queue_item_spy_programs.call_args
-        # assert len(args) == 2
-        # assert isinstance(args[0], ProgramSummaryLog)
-        # assert args[1] is ProgramSummaryLog  # Second arg should be the class itself
+        queue_item_spy_programs.assert_called_once()
+        args, _ = queue_item_spy_programs.call_args
+        assert len(args) == 2
+        assert isinstance(args[0], ProgramSummaryLog)
+        assert args[1] is ProgramSummaryLog  # Second arg should be the class itself
 
         
-        # queue_item_spy_chrome.assert_called_once()
-        # args, _ = queue_item_spy_chrome.call_args
-        # assert len(args) == 2
-        # assert isinstance(args[0], DomainSummaryLog)
-        # assert args[1] is DomainSummaryLog  # Second arg should be the class itself
+        queue_item_spy_chrome.assert_called_once()
+        args, _ = queue_item_spy_chrome.call_args
+        assert len(args) == 2
+        assert isinstance(args[0], DomainSummaryLog)
+        assert args[1] is DomainSummaryLog  # Second arg should be the class itself
     finally:
         await truncate_test_tables(async_session_maker)
 
