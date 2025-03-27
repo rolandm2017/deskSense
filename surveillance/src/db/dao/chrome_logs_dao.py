@@ -37,7 +37,7 @@ class ChromeLoggingDao(BaseQueueingDao):
         self.session_maker = session_maker
 
     @validate_session
-    def create_log(self, session: ChromeSessionData, right_now: datetime):
+    async def create_log(self, session: ChromeSessionData, right_now: datetime):
         """Log an update to a summary table"""
         start_end_time_duration_as_hours = convert_start_end_times_to_hours(session)
 
@@ -52,10 +52,10 @@ class ChromeLoggingDao(BaseQueueingDao):
             gathering_date=right_now.date(),
             created_at=right_now
         )
-        asyncio.create_task(self.queue_item(log_entry, DomainSummaryLog))
+        await self.queue_item(log_entry, DomainSummaryLog)
 
     @guarantee_start_time
-    def start_session(self, session: ChromeSessionData):
+    async def start_session(self, session: ChromeSessionData):
         unknown = None
         base_start_time = convert_to_utc(session.start_time)
         start_of_day = get_start_of_day(session.start_time)
@@ -70,8 +70,7 @@ class ChromeLoggingDao(BaseQueueingDao):
             gathering_date=start_of_day_as_utc,
             created_at=session.start_time
         )
-        asyncio.create_task(self.queue_item(log_entry, DomainSummaryLog))
-
+        await self.queue_item(log_entry, DomainSummaryLog)
 
     async def find_session(self, session: ChromeSessionData):
         start_time_as_utc = convert_to_utc(session.start_time)

@@ -37,7 +37,7 @@ class ProgramLoggingDao(BaseQueueingDao):
         self.session_maker = session_maker
 
     @validate_session
-    def create_log(self, session: ProgramSessionData, right_now: datetime):
+    async def create_log(self, session: ProgramSessionData, right_now: datetime):
         """Log an update to a summary table"""
         # ### Calculate time difference
         start_end_time_duration_as_hours = convert_start_end_times_to_hours(session)
@@ -54,10 +54,11 @@ class ProgramLoggingDao(BaseQueueingDao):
             created_at=right_now
         )
         # print("[pr] Creating ", log_entry)
-        asyncio.create_task(self.queue_item(log_entry, ProgramSummaryLog))
+        await self.queue_item(log_entry, ProgramSummaryLog)
+
 
     @guarantee_start_time
-    def start_session(self, session: ProgramSessionData):
+    async def start_session(self, session: ProgramSessionData):
         unknown = None
         base_start_time = convert_to_utc(session.start_time)
         start_of_day = get_start_of_day(session.start_time)
@@ -72,7 +73,7 @@ class ProgramLoggingDao(BaseQueueingDao):
             gathering_date=start_of_day_as_utc,
             created_at=base_start_time
         )
-        asyncio.create_task(self.queue_item(log_entry, ProgramSummaryLog))
+        await self.queue_item(log_entry, ProgramSummaryLog)
 
     async def find_session(self, session: ProgramSessionData):
         # the database is storing and returning times in UTC

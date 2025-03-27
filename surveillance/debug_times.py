@@ -27,7 +27,12 @@ from src.services.dashboard_service import DashboardService
 from src.db.dao.timeline_entry_dao import TimelineEntryDao
 from src.db.dao.program_summary_dao import ProgramSummaryDao
 from src.db.dao.chrome_summary_dao import ChromeSummaryDao
-from src.db.dao.summary_logs_dao import ChromeLoggingDao, ProgramLoggingDao
+
+from src.db.dao.program_logs_dao import ProgramLoggingDao
+from src.db.dao.chrome_logs_dao import ChromeLoggingDao
+
+from src.db.dao.program_logs_dao import ProgramLoggingDao
+from src.db.dao.chrome_logs_dao import ChromeLoggingDao
 
 from src.util.console_logger import ConsoleLogger
 

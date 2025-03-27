@@ -19,7 +19,10 @@ from .db.dao.timeline_entry_dao import TimelineEntryDao
 from .db.dao.program_summary_dao import ProgramSummaryDao
 from .db.dao.chrome_dao import ChromeDao
 from .db.dao.chrome_summary_dao import ChromeSummaryDao
-from .db.dao.summary_logs_dao import ProgramLoggingDao, ChromeLoggingDao
+from .db.dao.program_logs_dao import ProgramLoggingDao
+from .db.dao.chrome_logs_dao import ChromeLoggingDao
+
+
 from .db.dao.video_dao import VideoDao
 from .db.dao.frame_dao import FrameDao
 

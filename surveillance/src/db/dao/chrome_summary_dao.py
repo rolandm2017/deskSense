@@ -33,6 +33,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             raise ValueError("Session duration was None")
         target_domain_name = chrome_session.domain
         
+        # No need to await this part
         self.chrome_logging_dao.create_log(chrome_session, right_now)
 
         # ### Calculate time difference

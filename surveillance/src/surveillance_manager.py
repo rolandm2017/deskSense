@@ -27,7 +27,9 @@ from .db.dao.program_dao import ProgramDao
 from .db.dao.timeline_entry_dao import TimelineEntryDao
 from .db.dao.program_summary_dao import ProgramSummaryDao
 from .db.dao.chrome_summary_dao import ChromeSummaryDao
-from .db.dao.summary_logs_dao import ProgramLoggingDao, ChromeLoggingDao
+from .db.dao.program_logs_dao import ProgramLoggingDao
+from .db.dao.chrome_logs_dao import ChromeLoggingDao
+
 from .object.classes import ProgramSessionData
 from .services.chrome_service import ChromeService
 from .trackers.mouse_tracker import MouseTrackerCore

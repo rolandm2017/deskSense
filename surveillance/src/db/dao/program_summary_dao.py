@@ -48,6 +48,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         if program_session.duration is None:
             raise ValueError("Session duration was None")
         
+        # No need to await this part
         self.program_logging_dao.create_log(program_session, right_now)
 
         target_program_name = program_session.window_title
