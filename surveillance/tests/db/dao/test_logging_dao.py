@@ -52,11 +52,11 @@ load_dotenv()
 
 
 @pytest_asyncio.fixture(scope="function")
-async def test_dao_instances(async_session_maker):
+async def test_dao_instances(plain_asm):
     """Create the necessary DAO instances for session integrity testing"""
     # Create the DAOs
-    program_logging_dao = ProgramLoggingDao(async_session_maker)
-    chrome_logging_dao = ChromeLoggingDao(async_session_maker)
+    program_logging_dao = ProgramLoggingDao(plain_asm)
+    chrome_logging_dao = ChromeLoggingDao(plain_asm)
 
     
     return {
@@ -108,12 +108,12 @@ def mock_session_data():
     return test_program_session, test_chrome_session
 
 @pytest.mark.asyncio
-async def test_start_session(async_session_maker, mock_session_data, async_engine):
+async def test_start_session(plain_asm, mock_session_data, async_engine):
     try: 
         # async_session_maker = await async_session_maker
         program_session, chrome_session = mock_session_data
-        program_dao = ProgramLoggingDao(async_session_maker)
-        chrome_dao = ChromeLoggingDao(async_session_maker)
+        program_dao = ProgramLoggingDao(plain_asm)
+        chrome_dao = ChromeLoggingDao(plain_asm)
         queue_item_mock_program = AsyncMock()
         queue_item_mock_chrome = AsyncMock()
         program_dao.queue_item = queue_item_mock_program
@@ -130,13 +130,12 @@ async def test_start_session(async_session_maker, mock_session_data, async_engin
         await truncate_test_tables(async_engine)
     
 @pytest.mark.asyncio
-async def test_find_session(async_session_maker, mock_session_data, async_engine):
+async def test_find_session(plain_asm, mock_session_data, async_engine):
     try:
-        # async_session_maker = await async_session_maker
         program_session, chrome_session = mock_session_data
 
-        program_dao = ProgramLoggingDao(async_session_maker)
-        chrome_dao = ChromeLoggingDao(async_session_maker)
+        program_dao = ProgramLoggingDao(plain_asm)
+        chrome_dao = ChromeLoggingDao(plain_asm)
 
         queue_item_spy_programs = Mock(side_effect=program_dao.queue_item)
         queue_item_spy_chrome = Mock(side_effect=chrome_dao.queue_item)
@@ -225,17 +224,15 @@ async def test_find_session(async_session_maker, mock_session_data, async_engine
         await truncate_test_tables(async_engine)
 
 @pytest.mark.asyncio
-async def test_push_window_ahead(async_session_maker, async_engine):
-    # async_session_maker = await async_session_maker
-    program_dao = ProgramLoggingDao(async_session_maker)
-    chrome_dao = ChromeLoggingDao(async_session_maker)
+async def test_push_window_ahead(plain_asm, async_engine):
+    program_dao = ProgramLoggingDao(plain_asm)
+    chrome_dao = ChromeLoggingDao(plain_asm)
     
 
 @pytest.mark.asyncio
-async def test_start_session(async_session_maker, async_engine):
-    # async_session_maker = await async_session_maker
-    program_dao = ProgramLoggingDao(async_session_maker)
-    chrome_dao = ChromeLoggingDao(async_session_maker)
+async def test_start_session(plain_asm, async_engine):
+    program_dao = ProgramLoggingDao(plain_asm)
+    chrome_dao = ChromeLoggingDao(plain_asm)
 
 
 @pytest.mark.asyncio
@@ -250,34 +247,32 @@ async def nonexistent_session():
     return session
 
 
-# @pytest.mark.asyncio
-# async def test_push_window_error(async_session_maker):
-#     async_session_maker = await async_session_maker
-#     try:
-#         program_dao = ProgramLoggingDao(async_session_maker)
-#         chrome_dao = ChromeLoggingDao(async_session_maker)
+@pytest.mark.asyncio
+async def test_push_window_error(plain_asm):
+    try:
+        program_dao = ProgramLoggingDao(plain_asm)
+        chrome_dao = ChromeLoggingDao(plain_asm)
 
-#         doesnt_exist = nonexistent_session()
-#         with pytest.raises(ImpossibleToGetHereError):
-#             program_dao.push_window_ahead_ten_sec(doesnt_exist)
-#         with pytest.raises(ImpossibleToGetHereError):
-#             chrome_dao.push_window_ahead_ten_sec(doesnt_exist)
-#     finally:
-#         await truncate_test_tables(async_session_maker)
-
-
-# @pytest.mark.asyncio
-# async def test_finalize_log_error(async_session_maker):
-#     async_session_maker = await async_session_maker
-#     try:
-#         program_dao = ProgramLoggingDao(async_session_maker)
-#         chrome_dao = ChromeLoggingDao(async_session_maker)
+        doesnt_exist = nonexistent_session()
+        with pytest.raises(ImpossibleToGetHereError):
+            program_dao.push_window_ahead_ten_sec(doesnt_exist)
+        with pytest.raises(ImpossibleToGetHereError):
+            chrome_dao.push_window_ahead_ten_sec(doesnt_exist)
+    finally:
+        await truncate_test_tables(plain_asm)
 
 
-#         doesnt_exist = nonexistent_session()
-#         with pytest.raises(ImpossibleToGetHereError):
-#             program_dao.finalize_log(doesnt_exist)
-#         with pytest.raises(ImpossibleToGetHereError):
-#             chrome_dao.finalize_log(doesnt_exist)
-#     finally:
-#         await truncate_test_tables(async_session_maker)
+@pytest.mark.asyncio
+async def test_finalize_log_error(plain_asm):
+    try:
+        program_dao = ProgramLoggingDao(plain_asm)
+        chrome_dao = ChromeLoggingDao(plain_asm)
+
+
+        doesnt_exist = nonexistent_session()
+        with pytest.raises(ImpossibleToGetHereError):
+            program_dao.finalize_log(doesnt_exist)
+        with pytest.raises(ImpossibleToGetHereError):
+            chrome_dao.finalize_log(doesnt_exist)
+    finally:
+        await truncate_test_tables(plain_asm)

@@ -67,7 +67,7 @@ if ASYNC_TEST_DB_URL is None:
 
 @pytest_asyncio.fixture
 async def plain_async_engine_and_asm():
-
+    """Plain because it lacks the bunch of db cmds in the other function"""
     test_engine = create_async_engine(
         ASYNC_TEST_DB_URL,
         # echo=True,
@@ -80,6 +80,12 @@ async def plain_async_engine_and_asm():
     )
 
     return test_engine, async_session_maker
+
+@pytest_asyncio.fixture
+async def plain_asm(plain_async_engine_and_asm):
+    _, asm = plain_async_engine_and_asm
+
+    return asm
 
 
 @pytest_asyncio.fixture
@@ -144,17 +150,17 @@ async def async_engine():
 
 
 
-@pytest_asyncio.fixture(scope="function")
-async def async_session_maker(async_engine):
-    """Create an async session maker"""
-    # engine = await anext(async_engine)  # Use anext() instead of await
-    engine = await async_engine  # Simply await the engine
-    session_maker = async_sessionmaker(
-        engine,
-        class_=AsyncSession,
-        expire_on_commit=False
-    )
-    return session_maker
+# @pytest_asyncio.fixture(scope="function")
+# async def async_session_maker(async_engine):
+#     """Create an async session maker"""
+#     # engine = await anext(async_engine)  # Use anext() instead of await
+#     engine = await async_engine  # Simply await the engine
+#     session_maker = async_sessionmaker(
+#         engine,
+#         class_=AsyncSession,
+#         expire_on_commit=False
+#     )
+#     return session_maker
 
 
 SYNC_TEST_DB_URL = os.getenv("SYNC_TEST_DB_URL")

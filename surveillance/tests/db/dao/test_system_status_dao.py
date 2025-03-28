@@ -16,11 +16,11 @@ from src.object.enums import SystemStatusType
 
 from ...mocks.mock_clock import MockClock
 
-# FIXME: OSerror
-# FIXME: OSerror
-# FIXME: OSerror
-# FIXME: OSerror
-# FIXME: OSerror
+# FIXME: Tests are wayyyyyy too slow here 
+# FIXME: Tests are wayyyyyy too slow here 
+# FIXME: Tests are wayyyyyy too slow here 
+# FIXME: Tests are wayyyyyy too slow here 
+# FIXME: Tests are wayyyyyy too slow here 
 
 # Load environment variables from .env file
 load_dotenv()
@@ -36,9 +36,9 @@ load_dotenv()
 
 
 @pytest.fixture(scope="function")
-async def test_db_dao(async_session_maker, shutdown_session_maker):
+async def test_db_dao(plain_async_engine_and_asm, shutdown_session_maker):
     """Create a DAO instance with the async session maker"""
-    session_maker_async = await async_session_maker
+    _, asm = plain_async_engine_and_asm
 
     dt1 = datetime.now() - timedelta(seconds=20)
     dt2 = dt1 + timedelta(seconds=1)
@@ -48,7 +48,7 @@ async def test_db_dao(async_session_maker, shutdown_session_maker):
     times = [dt1, dt2, dt3, dt4, dt5]
     clock = MockClock(times)
 
-    dao = SystemStatusDao(session_maker_async, shutdown_session_maker)
+    dao = SystemStatusDao(asm, shutdown_session_maker)
 
     current_loop = asyncio.get_event_loop()
     dao.accept_power_tracker_loop(current_loop)

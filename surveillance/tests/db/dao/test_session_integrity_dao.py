@@ -238,8 +238,7 @@ async def test_dao_instances(async_session_maker):
 
 @pytest_asyncio.fixture(scope="function")
 async def full_test_environment(
-    async_engine,
-    async_session_maker,
+    plain_async_engine_and_asm,
     test_power_events,
     test_program_logs,
     test_domain_logs,
@@ -248,11 +247,12 @@ async def full_test_environment(
     """
     Combines all fixtures to provide a complete test environment
     """
+    engine, asm = plain_async_engine_and_asm
     # Store the awaited engine, not the coroutine
-    engine = await async_engine
+
     return {
         "engine": engine,
-        "session_maker": async_session_maker,
+        "session_maker": asm,
         "power_events": test_power_events,
         "program_logs": test_program_logs,
         "domain_logs": test_domain_logs,
