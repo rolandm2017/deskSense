@@ -480,7 +480,7 @@ class TestProgramSummaryDao:
         session_data_5.end_time = dt6
         session_data_5.productive = False
         session_data_5.duration = dt6 - dt5
-        Ventrilo_time += change_5
+        ventrilo_time += change_5
         # 6
         session_data_6: ProgramSessionData = ProgramSessionData()
         session_data_6.window_title = chrome
@@ -522,7 +522,7 @@ class TestProgramSummaryDao:
         # expected_hours_spent = [
         #     chrome_expected, pycharm_expected, Ventrilo_expected, TestPyCharm_expected]
         expected_hours_spent = [
-            chrome_time, pycharm_time, Ventrilo_time, TestPyCharm_expected]
+            chrome_time, pycharm_time, ventrilo_time, TestPyCharm_expected]
         for program in sessions:
             entry = await test_db_dao.read_row_for_program(program.window_title, program.start_time)
             assert entry is not None

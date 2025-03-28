@@ -64,12 +64,12 @@ async def test_power_events():
 
 
 @pytest_asyncio.fixture(scope="function")
-async def test_program_logs(async_session_maker, test_power_events):
+async def test_program_logs(plain_asm, test_power_events):
     """Create test program summary logs with various scenarios"""
     events = test_power_events
-    print(async_session_maker, '70ru')
+    print(plain_asm, '70ru')
 
-    async with async_session_maker() as session:
+    async with plain_asm() as session:
         shutdown_time = events["shutdown_time"]
         startup_time = events["startup_time"]
         base_time = events["base_time"]
@@ -140,11 +140,11 @@ async def test_program_logs(async_session_maker, test_power_events):
 
 
 @pytest_asyncio.fixture(scope="function")
-async def test_domain_logs(async_session_maker, test_power_events):
+async def test_domain_logs(plain_asm, test_power_events):
     """Create test domain summary logs with various scenarios"""
     events = test_power_events
 
-    async with async_session_maker() as session:
+    async with plain_asm() as session:
         shutdown_time = events["shutdown_time"]
         startup_time = events["startup_time"]
         base_time = events["base_time"]
@@ -216,17 +216,17 @@ async def test_domain_logs(async_session_maker, test_power_events):
 
 
 @pytest_asyncio.fixture(scope="function")
-async def test_dao_instances(async_session_maker):
+async def test_dao_instances(plain_asm):
     """Create the necessary DAO instances for session integrity testing"""
     # Create the DAOs
-    program_logging_dao = ProgramLoggingDao(async_session_maker)
-    chrome_logging_dao = ChromeLoggingDao(async_session_maker)
+    program_logging_dao = ProgramLoggingDao(plain_asm)
+    chrome_logging_dao = ChromeLoggingDao(plain_asm)
 
     # Create the session integrity dao
     session_integrity_dao = SessionIntegrityDao(
         program_logging_dao=program_logging_dao,
         chrome_logging_dao=chrome_logging_dao,
-        session_maker=async_session_maker
+        session_maker=plain_asm
     )
 
     return {
