@@ -60,31 +60,36 @@ print(f"Project root added to path: {project_root}")
 print(f"Sys path: {sys.path}")
 
 
-
-
-
-# TODO:
-# if logging_dao.find_session(session):
-#     print("weeeee 64ru")
-#     await logging_dao.push_window_ahead_ten_sec(session)
-# else:
-#     print(" vvvvvvvvvvvvvvvv Here 66ru")
-#     await logging_dao.start_session(session)
-
-
-
 load_dotenv()
 
-# Get the test database connection string
 ASYNC_TEST_DB_URL = ASYNC_TEST_DB_URL = os.getenv(
     'ASYNC_TEST_DB_URL')
 
-# Optional: Add error handling if the variable is required
 if ASYNC_TEST_DB_URL is None:
     raise ValueError("TEST_DB_STRING environment variable is not set")
 
+# DB_URL = os.getenv("DB_URL")
+# engine = create_engine(DB_URL)
+# Session = sessionmaker(bind=engine, expire_on_commit=False)
 
-@pytest.fixture(scope="function")
+@pytest_asyncio.fixture
+async def plain_async_engine():
+
+    test_engine = create_async_engine(
+        ASYNC_TEST_DB_URL,
+        # echo=True,
+        isolation_level="AUTOCOMMIT"
+    )
+    async_session_maker = async_sessionmaker(
+        test_engine,
+        class_=AsyncSession,
+        expire_on_commit=False
+    )
+
+    return async_session_maker
+
+
+@pytest_asyncio.fixture
 async def async_engine():
     """Create an async PostgreSQL engine for testing"""
     # Create engine that connects to default postgres database

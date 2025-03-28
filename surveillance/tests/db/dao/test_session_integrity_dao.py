@@ -248,8 +248,10 @@ async def full_test_environment(
     """
     Combines all fixtures to provide a complete test environment
     """
+    # Store the awaited engine, not the coroutine
+    engine = await async_engine
     return {
-        "engine": async_engine,
+        "engine": engine,
         "session_maker": async_session_maker,
         "power_events": test_power_events,
         "program_logs": test_program_logs,
