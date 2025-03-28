@@ -34,8 +34,8 @@ def test_format_title():
     chrome_window = "Claude.ai - Google Chrome"
     chrome_window2 = "Stackoverflow.com - Google Chrome"
 
-    vscode = "Visual Studio Code"
-    vscode2 = "Visual Studio Code - myfile.py"
+    pycharm = "PyCharm"
+    pycharm2 = "PyCharm - myfile.py"
 
     plain_terminal = "Foo foo Terminal foo"
 
@@ -49,8 +49,8 @@ def test_format_title():
     chrome1 = overlay.format_title(chrome_window)
     chrome2 = overlay.format_title(chrome_window2)
 
-    just_vscode1 = overlay.format_title(vscode)
-    just_vscode2 = overlay.format_title(vscode2)
+    just_pycharm1 = overlay.format_title(pycharm)
+    just_pycharm2 = overlay.format_title(pycharm2)
 
     just_terminal = overlay.format_title(plain_terminal)
 
@@ -64,8 +64,8 @@ def test_format_title():
     assert chrome1 == "Claude.ai"
     assert chrome2 == "Stackoverflow.com"
 
-    assert just_vscode1 == "VSCode"
-    assert just_vscode2 == "VSCode"
+    assert just_pycharm1 == "PyCharm"
+    assert just_pycharm2 == "PyCharm"
 
     assert just_terminal == "Terminal"
 

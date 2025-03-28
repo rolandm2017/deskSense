@@ -179,7 +179,7 @@ class TestTransitionFromProgram:
         tfpm = TransitionFromProgramMachine(current_state)
 
         next_session = ProgramSessionData()
-        next_session.window_title = "VSCode"
+        next_session.window_title = "PyCharm"
         next_session.detail = "api.py"
         next_session.start_time = now + timedelta(seconds=2)
 
@@ -274,10 +274,10 @@ class TestTransitionFromChrome:
         system_clock = SystemClock()
 
         session = ProgramSessionData()
-        session.window_title = "VSCode"
+        session.window_title = "PyCharm"
         session.detail = "test_my_wonerful_code.py"
         session.start_time = system_clock.now()
-        current_state = ApplicationInternalState("VSCode", False, session)
+        current_state = ApplicationInternalState("PyCharm", False, session)
 
         with pytest.raises(TypeError, match="requires a ChromeInternalState"):
             tfcm = TransitionFromChromeMachine(current_state)

@@ -179,23 +179,28 @@ class TimelineEntryObj(Base):
 
     clientFacingId = Column(
         String,
-        Computed(
-            "CASE WHEN \"group\" = 'MOUSE' THEN 'mouse-' || id::TEXT ELSE 'keyboard-' || id::TEXT END",
-            # postgresql_persisted=True  # Add this back
-            persisted=True
-        )
+        # "Sqlalchemy db-agnostic language" - Claude
+        Computed("CASE WHEN \"group\" = 'MOUSE' THEN 'mouse-' || id ELSE 'keyboard-' || id END", persisted=True)
+        
+        # Computed(
+        #     "CASE WHEN \"group\" = 'MOUSE' THEN 'mouse-' || id::TEXT ELSE 'keyboard-' || id::TEXT END",
+        #     # postgresql_persisted=True  # Add this back
+        #     persisted=True
+        # )
     )
 
     group = Column(SQLAlchemyEnum(ChartEventType))
 
     content = Column(
         String,
-        Computed(
-            "CASE WHEN \"group\" = 'MOUSE' THEN 'Mouse Event ' || id::TEXT ELSE 'Typing Session ' || id::TEXT END",
-            # postgresql_persisted=True,  # Add this back
-            persisted=True
+        # "Sqlalchemy db-agnostic language" - Claude
+        Computed("CASE WHEN \"group\" = 'MOUSE' THEN 'Mouse Event ' || id ELSE 'Typing Session ' || id END", persisted=True)
+        # Computed(
+        #     "CASE WHEN \"group\" = 'MOUSE' THEN 'Mouse Event ' || id::TEXT ELSE 'Typing Session ' || id::TEXT END",
+        #     # postgresql_persisted=True,  # Add this back
+        #     persisted=True
 
-        )
+        # )
     )
 
     start = Column(DateTime(timezone=True))

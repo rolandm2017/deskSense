@@ -94,7 +94,7 @@ async def clean_tables(async_engine):
 @pytest.fixture
 def mock_session_data():
     test_program_session = ProgramSessionData()  
-    test_program_session.window_title = "Discord"
+    test_program_session.window_title = "Ventrilo"
     test_program_session.detail = "The Programmer's Hangout"
     test_program_session.start_time = datetime(2025, 2, 1, 1, 0, 4, 0, tzinfo=timezone_for_test_data)
     test_program_session.productive = False

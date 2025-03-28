@@ -5,7 +5,7 @@ from src.object.arbiter_classes import InternalState, ChromeInternalState, Appli
 
 class TestInternalState:
     def test_lacks_current_tab(self):
-        state = InternalState("VSCode", False, {})
+        state = InternalState("PyCharm", False, {})
 
         assert not hasattr(
             state, 'current_tab'), "Internal state is not supposed to have a current tab"

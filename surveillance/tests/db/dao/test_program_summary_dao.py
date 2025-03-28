@@ -261,6 +261,9 @@ class TestProgramSummaryDao:
         mock_session.delete.assert_not_called()
         assert not mock_session.commit.called
 
+
+
+
     @pytest.mark.asyncio
     async def test_several_consecutive_writes(self, class_mock_dao, mock_session):
 
@@ -284,7 +287,7 @@ class TestProgramSummaryDao:
 
         # 2
         session_data_2: ProgramSessionData = ProgramSessionData()
-        session_data_2.window_title = "VSCode"
+        session_data_2.window_title = "PyCharm"
         session_data_2.detail = "some_code.py"
         session_data_2.start_time = dt2
         dt3 = dt2 + timedelta(seconds=12)
@@ -304,7 +307,7 @@ class TestProgramSummaryDao:
 
         # 4
         session_data_4: ProgramSessionData = ProgramSessionData()
-        session_data_4.window_title = "VSCode"
+        session_data_4.window_title = "PyCharm"
         session_data_4.detail = "MyFile.tsx"
         session_data_4.start_time = dt4
         dt5 = dt4 + timedelta(seconds=22)
@@ -314,7 +317,7 @@ class TestProgramSummaryDao:
 
         # 5
         session_data_5: ProgramSessionData = ProgramSessionData()
-        session_data_5.window_title = "Discord"
+        session_data_5.window_title = "Ventrilo"
         session_data_5.detail = "Pyre - Exercises in Futility"
         session_data_5.start_time = dt5
         dt6 = dt5 + timedelta(seconds=25)
@@ -407,12 +410,12 @@ class TestProgramSummaryDao:
             initial_entries) == 0, "Database should be empty at start of test"
 
         chrome = "Chrome"
-        vscode = "VSCode"
-        discord = "Discord"
-        test_vs_code = "TestVSCode"
+        pycharm = "PyCharm"
+        ventrilo = "Ventrilo"
+        test_vs_code = "TestPyCharm"
         chrome_time = 0
-        vscode_time = 0
-        discord_time = 0
+        pycharm_time = 0
+        ventrilo_time = 0
 
         # First create a single entry and verify it works
         test_session = ProgramSessionData()
@@ -444,13 +447,13 @@ class TestProgramSummaryDao:
         chrome_time += change_1
         # 2
         session_data_2: ProgramSessionData = ProgramSessionData()
-        session_data_2.window_title = vscode
+        session_data_2.window_title = pycharm
         session_data_2.detail = "some_code.py"
         session_data_2.start_time = dt2
         session_data_2.end_time = dt3
         session_data_2.productive = True
         session_data_2.duration = dt3 - dt2
-        vscode_time += change_2
+        pycharm_time += change_2
         # 3
         session_data_3: ProgramSessionData = ProgramSessionData()
         session_data_3.window_title = chrome
@@ -462,22 +465,22 @@ class TestProgramSummaryDao:
         chrome_time += change_3
         # 4
         session_data_4: ProgramSessionData = ProgramSessionData()
-        session_data_4.window_title = vscode
+        session_data_4.window_title = pycharm
         session_data_4.detail = "MyFile.tsx"
         session_data_4.start_time = dt4
         session_data_4.end_time = dt5
         session_data_4.productive = True
         session_data_4.duration = dt5 - dt4
-        vscode_time += change_4
+        pycharm_time += change_4
         # 5
         session_data_5: ProgramSessionData = ProgramSessionData()
-        session_data_5.window_title = discord
+        session_data_5.window_title = ventrilo
         session_data_5.detail = "Pyre - Exercises in Futility"
         session_data_5.start_time = dt5
         session_data_5.end_time = dt6
         session_data_5.productive = False
         session_data_5.duration = dt6 - dt5
-        discord_time += change_5
+        Ventrilo_time += change_5
         # 6
         session_data_6: ProgramSessionData = ProgramSessionData()
         session_data_6.window_title = chrome
@@ -489,18 +492,18 @@ class TestProgramSummaryDao:
         chrome_time += change_6
         # 7
         session_data_7: ProgramSessionData = ProgramSessionData()
-        session_data_7.window_title = vscode
+        session_data_7.window_title = pycharm
         session_data_7.detail = "some_file.py"
         session_data_7.start_time = dt7
         session_data_7.end_time = dt8
         session_data_7.productive = True
         session_data_7.duration = dt8 - dt7
-        vscode_time += change_7
+        pycharm_time += change_7
 
         sessions = [session_data_1, session_data_2, session_data_3,
                     session_data_4, session_data_5, session_data_6, session_data_7]
 
-        unique_program_mentions = [test_vs_code, chrome, vscode, discord]
+        unique_program_mentions = [test_vs_code, chrome, pycharm, ventrilo]
 
         for session in sessions:
             if session.window_title == chrome:
@@ -513,13 +516,13 @@ class TestProgramSummaryDao:
 
         # Verify specific program times
         # chrome_expected = 13 + 28 + 25
-        # vscode_expected = 12 + 22 + 120
-        # discord_expected = 25
-        TestVSCode_expected = 5 * 60
+        # pycharm_expected = 12 + 22 + 120
+        # Ventrilo_expected = 25
+        TestPyCharm_expected = 5 * 60
         # expected_hours_spent = [
-        #     chrome_expected, vscode_expected, discord_expected, TestVSCode_expected]
+        #     chrome_expected, pycharm_expected, Ventrilo_expected, TestPyCharm_expected]
         expected_hours_spent = [
-            chrome_time, vscode_time, discord_time, TestVSCode_expected]
+            chrome_time, pycharm_time, Ventrilo_time, TestPyCharm_expected]
         for program in sessions:
             entry = await test_db_dao.read_row_for_program(program.window_title, program.start_time)
             assert entry is not None
@@ -575,28 +578,28 @@ class TestProgramSummaryDao:
 
         # TEST that the total number of entries
         # reflects the number of unique programs seen
-        assert len(all_entries) == 3  # Chrome, VSCode, Discord
+        assert len(all_entries) == 3  # Chrome, PyCharm, Ventrilo
 
         # TEST that the total computed time is as expected
         chrome_entry = None
-        vscode_entry = None
-        discord_entry = None
+        pycharm_entry = None
+        ventrilo_entry = None
 
         for entry in all_entries:
             if entry.program_name == "Chrome":
                 chrome_entry = entry
-            elif entry.program_name == "VSCode":
-                vscode_entry = entry
-            elif entry.program_name == "Discord":
-                discord_entry = entry
+            elif entry.program_name == "PyCharm":
+                pycharm_entry = entry
+            elif entry.program_name == "Ventrilo":
+                ventrilo_entry = entry
 
         #
         # # 3600 = 60 sec * 60 min = 3600 sec per hour
         #
-        assert vscode_entry is not None
-        assert discord_entry is not None
+        assert pycharm_entry is not None
+        assert ventrilo_entry is not None
         assert chrome_entry is not None
-        assert vscode_entry.hours_spent == vscode_time / 3600
-        assert discord_entry.hours_spent == discord_time / 3600
+        assert pycharm_entry.hours_spent == pycharm_time / 3600
+        assert ventrilo_entry.hours_spent == ventrilo_time / 3600
         assert chrome_entry.hours_spent == (
             chrome_time / 3600) + (time_from_chrome_update / 3600)
