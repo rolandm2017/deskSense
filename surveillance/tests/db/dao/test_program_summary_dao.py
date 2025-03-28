@@ -35,21 +35,22 @@ load_dotenv()
 #     raise ValueError("TEST_DB_STRING environment variable is not set")
 
 @pytest.fixture(scope="function")
-async def test_db_dao(async_session_maker):
+async def test_db_dao( plain_async_engine_and_asm):
     """Create a DAO instance with the async session maker"""
-    session_maker = await async_session_maker
+    _, asm = plain_async_engine_and_asm
+
     clock = SystemClock()
-    logging_dao = ProgramLoggingDao(session_maker)
-    dao = ProgramSummaryDao(logging_dao, session_maker=session_maker)
+    logging_dao = ProgramLoggingDao(asm)
+    dao = ProgramSummaryDao(logging_dao, session_maker=asm)
     return dao
 
 
 @pytest.fixture(autouse=True)
-async def cleanup_database(async_session_maker):
+async def cleanup_database(plain_async_engine_and_asm):
     """Automatically clean up the database after each test"""
     # Clean before test
-    session_maker = await async_session_maker
-    async with session_maker() as session:
+    engine, asm = plain_async_engine_and_asm
+    async with asm() as session:
         await session.execute(text("DELETE FROM daily_program_summaries"))
         await session.execute(text("ALTER SEQUENCE daily_program_summaries_id_seq RESTART WITH 1"))
         await session.commit()
@@ -57,7 +58,7 @@ async def cleanup_database(async_session_maker):
     yield
 
     # Clean after test
-    async with session_maker() as session:
+    async with asm() as session:
         await session.execute(text("DELETE FROM daily_program_summaries"))
         await session.execute(text("ALTER SEQUENCE daily_program_summaries_id_seq RESTART WITH 1"))
         await session.commit()
