@@ -20,7 +20,7 @@ cinema4d = "Maxon Cinema 4D"
 # # Social media
 # #
 
-slack = "Slack"
+slack = "Slack"  # Discord substitute
 
 tiktok = "tiktok"  # substitute for x.com
 

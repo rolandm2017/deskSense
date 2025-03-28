@@ -6,15 +6,15 @@ from src.util.clock import SystemClock
 
 # ## Order:
 # Chrome - Claude
-# VSCode
+# PyCharm
 # Chrome - Claude
 # Chrome - StackOverflow
-# VSCode
+# PyCharm
 # Ventrilo
 # Chrome - StackOverflow
 # Chrome - Twitter.com
 # Ventrilo
-# VSCode
+# PyCharm
 # Postman
 # Ventrilo
 # Chrome - Twitter.com
@@ -22,7 +22,7 @@ from src.util.clock import SystemClock
 
 # Summary:
 # (3) Chrome - Claude
-# (3) VSCode
+# (3) PyCharm
 # (3) Ventrilo
 # (2) Chrome - StackOverflow
 # (2) Chrome - Twitter.com
@@ -39,7 +39,7 @@ twitter = "Twitter.com"
 
 # ## Programs
 postman = "Postman"
-vscode = "VSCode"
+pycharm = "PyCharm"
 ventrilo = "Ventrilo"
 
 dt = datetime(2025, 1, 25, 15, 5)
@@ -73,9 +73,9 @@ session1.detail = "Python code refactoring"
 session1.start_time = t1
 session1.productive = True
 
-# 2. VSCode
+# 2. Pycharm
 session2 = ProgramSessionData()
-session2.window_title = vscode
+session2.window_title = pycharm
 session2.detail = "main.py - project_tracker"
 session2.start_time = t2
 session2.productive = True
@@ -94,9 +94,9 @@ session4.detail = "Python datetime questions"
 session4.start_time = t4
 session4.productive = True
 
-# 5. VSCode
+# 5. Pycharm
 session5 = ProgramSessionData()
-session5.window_title = vscode
+session5.window_title = pycharm
 session5.detail = "utils.py - time formatting functions"
 session5.start_time = t5
 session5.productive = True
@@ -129,9 +129,9 @@ session9.detail = "Python Developers - #off-topic"
 session9.start_time = t9
 session9.productive = False
 
-# 10. VSCode
+# 10. Pycharm
 session10 = ProgramSessionData()
-session10.window_title = vscode
+session10.window_title = pycharm
 session10.detail = "session_tracker.py - debugging"
 session10.start_time = t10
 session10.productive = True

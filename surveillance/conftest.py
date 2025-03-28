@@ -126,7 +126,9 @@ async def plain_async_engine_and_asm():
         expire_on_commit=False
     )
 
-    return test_engine, async_session_maker
+    # return test_engine, async_session_maker
+    yield test_engine, async_session_maker
+    
 
 @pytest_asyncio.fixture
 async def plain_asm(plain_async_engine_and_asm):

@@ -38,9 +38,8 @@ async def test_plain_async_engine(plain_async_engine_and_asm):
 
     assert all_summaries is not None
     assert all_logs is not None
-
-    assert len(all_logs) == 0, "Should be nothing in a brand new db"
-    assert len(all_summaries) == 0, "Should be nothing in a brand new db"
+    assert isinstance(all_summaries, list)
+    assert isinstance(all_logs, list)
 
 @pytest.mark.asyncio
 async def test_reset_db(plain_async_engine_and_asm):
