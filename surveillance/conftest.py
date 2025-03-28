@@ -55,15 +55,40 @@ print(f"Sys path: {sys.path}")
 
 load_dotenv()
 
+@pytest_asyncio.fixture
+async def async_db_session_in_mem():
+    # Create an async in-memory SQLite database
+    # Note: SQLite needs special URI format for async mode
+    engine = create_async_engine(
+        "sqlite+aiosqlite:///:memory:",
+        echo=False,
+    )
+    
+    # Create all tables defined in your models
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
+    # Create async session
+    session_maker: async_sessionmaker  = async_sessionmaker(
+        engine, expire_on_commit=False, class_=AsyncSession
+    )
+
+    
+
+    yield session_maker 
+    
+    async with session_maker () as session:
+        await session.rollback()
+    
+    # Teardown: drop all tables
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+
 ASYNC_TEST_DB_URL = ASYNC_TEST_DB_URL = os.getenv(
     'ASYNC_TEST_DB_URL')
 
 if ASYNC_TEST_DB_URL is None:
     raise ValueError("TEST_DB_STRING environment variable is not set")
-
-# DB_URL = os.getenv("DB_URL")
-# engine = create_engine(DB_URL)
-# Session = sessionmaker(bind=engine, expire_on_commit=False)
 
 @pytest_asyncio.fixture
 async def plain_async_engine_and_asm():
@@ -73,6 +98,28 @@ async def plain_async_engine_and_asm():
         # echo=True,
         isolation_level="AUTOCOMMIT"
     )
+
+    async with test_engine.connect() as conn:
+        # forcibly terminates all active connections to the 'dsTestDb' database 
+        # except for the connection that's executing this query
+        await conn.execute(text("""
+            SELECT pg_terminate_backend(pid)
+            FROM pg_stat_activity
+            WHERE datname = 'dsTestDb'
+            AND pid <> pg_backend_pid()
+        """))
+
+        # Drop and recreate database
+        await conn.execute(text("DROP DATABASE IF EXISTS dsTestDb"))
+        await conn.execute(text("CREATE DATABASE dsTestDb"))
+
+    await test_engine.dispose()
+
+    # Create all tables
+    async with test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+
     async_session_maker = async_sessionmaker(
         test_engine,
         class_=AsyncSession,
@@ -146,21 +193,6 @@ async def async_engine():
             """))
             await conn.execute(text("DROP DATABASE IF EXISTS dsTestDb"))
         await admin_engine.dispose()
-
-
-
-
-# @pytest_asyncio.fixture(scope="function")
-# async def async_session_maker(async_engine):
-#     """Create an async session maker"""
-#     # engine = await anext(async_engine)  # Use anext() instead of await
-#     engine = await async_engine  # Simply await the engine
-#     session_maker = async_sessionmaker(
-#         engine,
-#         class_=AsyncSession,
-#         expire_on_commit=False
-#     )
-#     return session_maker
 
 
 SYNC_TEST_DB_URL = os.getenv("SYNC_TEST_DB_URL")
@@ -243,7 +275,4 @@ def shutdown_session_maker(sync_engine):
         expire_on_commit=False
     )
 
-    # session_factory = sessionmaker(bind=sync_engine, expire_on_commit=False)
-
-    # shutdown_session_maker = scoped_session(session_factory)
     return session_maker

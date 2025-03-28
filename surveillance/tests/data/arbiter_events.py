@@ -10,20 +10,20 @@ from src.util.clock import SystemClock
 # Chrome - Claude
 # Chrome - StackOverflow
 # VSCode
-# Discord
+# Ventrilo
 # Chrome - StackOverflow
 # Chrome - Twitter.com
-# Discord
+# Ventrilo
 # VSCode
 # Postman
-# Discord
+# Ventrilo
 # Chrome - Twitter.com
 # Chrome - Claude
 
 # Summary:
 # (3) Chrome - Claude
 # (3) VSCode
-# (3) Discord
+# (3) Ventrilo
 # (2) Chrome - StackOverflow
 # (2) Chrome - Twitter.com
 # (1) Postman
@@ -40,7 +40,7 @@ twitter = "Twitter.com"
 # ## Programs
 postman = "Postman"
 vscode = "VSCode"
-discord = "Discord"
+ventrilo = "Ventrilo"
 
 dt = datetime(2025, 1, 25, 15, 5)
 
@@ -101,9 +101,9 @@ session5.detail = "utils.py - time formatting functions"
 session5.start_time = t5
 session5.productive = True
 
-# 6. Discord
+# 6. Ventrilo
 session6 = ProgramSessionData()
-session6.window_title = discord
+session6.window_title = ventrilo
 session6.detail = "Python Developers - #help-requests"
 session6.start_time = t6
 session6.productive = True
@@ -122,9 +122,9 @@ session8.detail = "Tech news feed"
 session8.start_time = t8
 session8.productive = False
 
-# 9. Discord
+# 9. Ventrilo
 session9 = ProgramSessionData()
-session9.window_title = discord
+session9.window_title = ventrilo
 session9.detail = "Python Developers - #off-topic"
 session9.start_time = t9
 session9.productive = False
@@ -143,9 +143,9 @@ session11.detail = "API testing - session endpoints"
 session11.start_time = t11
 session11.productive = True
 
-# 12. Discord
+# 12. Ventrilo
 session12 = ProgramSessionData()
-session12.window_title = discord
+session12.window_title = ventrilo
 session12.detail = "API Development - #general"
 session12.start_time = t12
 session12.productive = True

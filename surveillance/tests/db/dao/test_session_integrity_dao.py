@@ -108,7 +108,7 @@ async def test_program_logs(async_session_maker, test_power_events):
         program_logs = [
             # Normal session: started and ended before shutdown
             ProgramSummaryLog(
-                program_name="VSCode",
+                program_name="PyCharm",
                 hours_spent=2.0,
                 start_time=shutdown_time - timedelta(hours=3),
                 end_time=shutdown_time - timedelta(hours=1),

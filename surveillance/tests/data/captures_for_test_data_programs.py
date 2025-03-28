@@ -6,13 +6,13 @@ program_data = [{"time": "2025-03-22 16:14:50.201399-07:00",
                      "window_title": "X. It\u2019s what\u2019s happening / X - Google Chrome"
                  }},
 
-                {"time": "2025-03-22 16:15:47.157373-07:00",
-                 "event": {
-                     "os": "Ubuntu",
-                     "pid": 25797,
-                     "process_name": "Discord",
-                     "window_title": "#tech-chat | The Programmer's Hangout - Discord"
-                 }},
+                # {"time": "2025-03-22 16:15:47.157373-07:00",
+                #  "event": {
+                #      "os": "Ubuntu",
+                #      "pid": 25797,
+                #      "process_name": "Discord",
+                #      "window_title": "#tech-chat | The Programmer's Hangout - Discord"
+                #  }},
 
                 {"time": "2025-03-22 16:15:55.237392-07:00",
                  "event": {
@@ -46,13 +46,13 @@ program_data = [{"time": "2025-03-22 16:14:50.201399-07:00",
                      "window_title": "captures_for_test_data_-_Chrome.txt - deskSense - Visual Studio Code"
                  }},
 
-                {"time": "2025-03-22 16:17:00.947841-07:00",
-                 "event": {
-                     "os": "Ubuntu",
-                     "pid": 2988,
-                     "process_name": "gnome-shell",
-                     "window_title": "#tech-chat | The Programmer's Hangout - Discord"
-                 }},
+                # {"time": "2025-03-22 16:17:00.947841-07:00",
+                #  "event": {
+                #      "os": "Ubuntu",
+                #      "pid": 2988,
+                #      "process_name": "gnome-shell",
+                #      "window_title": "#tech-chat | The Programmer's Hangout - Discord"
+                #  }},
 
                 {"time": "2025-03-22 16:17:13.306823-07:00",
                  "event": {

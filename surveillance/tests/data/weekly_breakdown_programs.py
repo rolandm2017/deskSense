@@ -36,15 +36,15 @@ feb_26_2025 = datetime(2025, 2, 26, tzinfo=timezone.utc)
 def programs_feb_23() -> List:
     program_sessions = []
 
-    # VSCode session
-    vscode_session = ProgramSessionData()
-    vscode_session.window_title = "Visual Studio CodeTEST"
-    vscode_session.detail = "Initial project setup"
-    vscode_session.start_time = add_time(feb_23_2025, 10, 15, 0)
-    vscode_session.end_time = add_time(feb_23_2025, 11, 45, 0)
-    vscode_session.duration = vscode_session.end_time - vscode_session.start_time
-    vscode_session.productive = True
-    program_sessions.append(vscode_session)
+    # Pycharm session
+    pycharm_session = ProgramSessionData()
+    pycharm_session.window_title = "Visual Studio CodeTEST"
+    pycharm_session.detail = "Initial project setup"
+    pycharm_session.start_time = add_time(feb_23_2025, 10, 15, 0)
+    pycharm_session.end_time = add_time(feb_23_2025, 11, 45, 0)
+    pycharm_session.duration = pycharm_session.end_time - pycharm_session.start_time
+    pycharm_session.productive = True
+    program_sessions.append(pycharm_session)
 
     # Notion session
     notion_session = ProgramSessionData()
@@ -89,14 +89,14 @@ def programs_feb_26() -> List:
     program_sessions = []
 
     # Visual Studio Code session
-    vscode_session = ProgramSessionData()
-    vscode_session.window_title = "Visual Studio CodeTEST"
-    vscode_session.detail = "Implementing new API endpoints"
-    vscode_session.start_time = add_time(feb_26_2025, 10, 0, 0)
-    vscode_session.end_time = add_time(feb_26_2025, 12, 30, 0)
-    vscode_session.duration = vscode_session.end_time - vscode_session.start_time
-    vscode_session.productive = True
-    program_sessions.append(vscode_session)
+    pycharm_session = ProgramSessionData()
+    pycharm_session.window_title = "Visual Studio CodeTEST"
+    pycharm_session.detail = "Implementing new API endpoints"
+    pycharm_session.start_time = add_time(feb_26_2025, 10, 0, 0)
+    pycharm_session.end_time = add_time(feb_26_2025, 12, 30, 0)
+    pycharm_session.duration = pycharm_session.end_time - pycharm_session.start_time
+    pycharm_session.productive = True
+    program_sessions.append(pycharm_session)
 
     # Slack session
     slack_session = ProgramSessionData()
@@ -128,15 +128,15 @@ def programs_march_2nd() -> List:
     # March 2, 2025 sessions
     program_sessions = []
 
-    # VSCode session
-    vscode_session = ProgramSessionData()
-    vscode_session.window_title = "Visual Studio CodeTEST"
-    vscode_session.detail = "Working on async SQLAlchemy project"
-    vscode_session.start_time = add_time(march_2_2025, 9, 45, 0)
-    vscode_session.end_time = add_time(march_2_2025, 10, 15, 0)
-    vscode_session.duration = vscode_session.end_time - vscode_session.start_time
-    vscode_session.productive = True
-    program_sessions.append(vscode_session)
+    # Pycharm session
+    pycharm_session = ProgramSessionData()
+    pycharm_session.window_title = "Visual Studio CodeTEST"
+    pycharm_session.detail = "Working on async SQLAlchemy project"
+    pycharm_session.start_time = add_time(march_2_2025, 9, 45, 0)
+    pycharm_session.end_time = add_time(march_2_2025, 10, 15, 0)
+    pycharm_session.duration = pycharm_session.end_time - pycharm_session.start_time
+    pycharm_session.productive = True
+    program_sessions.append(pycharm_session)
 
     # Excel session
     excel_session = ProgramSessionData()
@@ -195,15 +195,15 @@ def programs_march_3rd() -> List:
     # March 3, 2025 sessions
     program_sessions = []
 
-    # VSCode session day 2
-    vscode_session2 = ProgramSessionData()
-    vscode_session2.window_title = "Visual Studio CodeTEST"
-    vscode_session2.detail = "Test suite development"
-    vscode_session2.start_time = add_time(march_3_2025, 12, 0, 0)
-    vscode_session2.end_time = add_time(march_3_2025, 12, 30, 0)
-    vscode_session2.duration = vscode_session2.end_time - vscode_session2.start_time
-    vscode_session2.productive = True
-    program_sessions.append(vscode_session2)
+    # Pycharm session day 2
+    pycharm_session2 = ProgramSessionData()
+    pycharm_session2.window_title = "Visual Studio CodeTEST"
+    pycharm_session2.detail = "Test suite development"
+    pycharm_session2.start_time = add_time(march_3_2025, 12, 0, 0)
+    pycharm_session2.end_time = add_time(march_3_2025, 12, 30, 0)
+    pycharm_session2.duration = pycharm_session2.end_time - pycharm_session2.start_time
+    pycharm_session2.productive = True
+    program_sessions.append(pycharm_session2)
 
     # Zoom session
     zoom_session = ProgramSessionData()
@@ -300,16 +300,16 @@ def duplicate_programs_march_3rd() -> List:
     chrome_session_dup.productive = True
     duplicate_program_sessions.append(chrome_session_dup)
 
-    # Duplicate 4: VSCode session (with slight time variation)
-    vscode_session_dup = ProgramSessionData()
-    vscode_session_dup.window_title = "Visual Studio CodeTEST"
-    vscode_session_dup.detail = "Debugging database connections"
-    vscode_session_dup.start_time = add_time(march_3_2025, 15, 40, 0)
-    vscode_session_dup.end_time = add_time(march_3_2025, 16, 30, 0)
-    vscode_session_dup.duration = vscode_session_dup.end_time - \
-        vscode_session_dup.start_time
-    vscode_session_dup.productive = True
-    duplicate_program_sessions.append(vscode_session_dup)
+    # Duplicate 4: Pycharm session (with slight time variation)
+    pycharm_session_dup = ProgramSessionData()
+    pycharm_session_dup.window_title = "Visual Studio CodeTEST"
+    pycharm_session_dup.detail = "Debugging database connections"
+    pycharm_session_dup.start_time = add_time(march_3_2025, 15, 40, 0)
+    pycharm_session_dup.end_time = add_time(march_3_2025, 16, 30, 0)
+    pycharm_session_dup.duration = pycharm_session_dup.end_time - \
+        pycharm_session_dup.start_time
+    pycharm_session_dup.productive = True
+    duplicate_program_sessions.append(pycharm_session_dup)
 
     return duplicate_program_sessions
 
