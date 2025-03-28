@@ -89,112 +89,73 @@ ASYNC_TEST_DB_URL = ASYNC_TEST_DB_URL = os.getenv(
 
 if ASYNC_TEST_DB_URL is None:
     raise ValueError("TEST_DB_STRING environment variable is not set")
-
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(scope="function")
 async def plain_async_engine_and_asm():
-    """Plain because it lacks the bunch of db cmds in the other function"""
-    test_engine = create_async_engine(
-        ASYNC_TEST_DB_URL,
-        # echo=True,
-        isolation_level="AUTOCOMMIT"
-    )
-
-    async with test_engine.connect() as conn:
-        # forcibly terminates all active connections to the 'dsTestDb' database 
-        # except for the connection that's executing this query
-        await conn.execute(text("""
-            SELECT pg_terminate_backend(pid)
-            FROM pg_stat_activity
-            WHERE datname = 'dsTestDb'
-            AND pid <> pg_backend_pid()
-        """))
-
-        # Drop and recreate database
-        await conn.execute(text("DROP DATABASE IF EXISTS dsTestDb"))
-        await conn.execute(text("CREATE DATABASE dsTestDb"))
-
-    await test_engine.dispose()
-
-    # Create all tables
-    async with test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-
-    async_session_maker = async_sessionmaker(
-        test_engine,
-        class_=AsyncSession,
-        expire_on_commit=False
-    )
-
-    # return test_engine, async_session_maker
-    yield test_engine, async_session_maker
-    
-
-@pytest_asyncio.fixture
-async def plain_asm(plain_async_engine_and_asm):
-    _, asm = plain_async_engine_and_asm
-
-    return asm
-
-
-@pytest_asyncio.fixture
-async def async_engine():
-    """Create an async PostgreSQL engine for testing"""
-    # Create engine that connects to default postgres database
-    if ASYNC_TEST_DB_URL is None:
-        raise ValueError("ASYNC_TEST_DB_URL was None")
+    """Create a fresh engine and session maker for each test"""    
+    # Connect to default postgres db for setup
     default_url = ASYNC_TEST_DB_URL.rsplit('/', 1)[0] + '/postgres'
     admin_engine = create_async_engine(
         default_url,
-        isolation_level="AUTOCOMMIT"
+        isolation_level="AUTOCOMMIT",
+        pool_pre_ping=True,
+        echo=False
     )
-
-    async with admin_engine.connect() as conn:
-        # forcibly terminates all active connections to the 'dsTestDb' database 
-        # except for the connection that's executing this query
+    
+    # Clear and recreate test db
+    async with admin_engine.begin() as conn:
         await conn.execute(text("""
             SELECT pg_terminate_backend(pid)
             FROM pg_stat_activity
             WHERE datname = 'dsTestDb'
             AND pid <> pg_backend_pid()
         """))
-
-        # Drop and recreate database
         await conn.execute(text("DROP DATABASE IF EXISTS dsTestDb"))
         await conn.execute(text("CREATE DATABASE dsTestDb"))
-
+    
     await admin_engine.dispose()
-
-    # Create engine for test database
+    
+    # Create engine for test database with better connection handling
     test_engine = create_async_engine(
         ASYNC_TEST_DB_URL,
-        # echo=True,
-        isolation_level="AUTOCOMMIT"
+        echo=False,
+        pool_pre_ping=True,  # Verify connection before use
+        pool_recycle=3600,   # Recycle connections after 1 hour
+        pool_timeout=30,     # Wait 30 seconds for connection
+        max_overflow=10,     # Allow 10 connections beyond pool_size
+        pool_size=5,         # Maintain 5 connections in the pool
     )
-
+    
     # Create all tables
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-
+    
+    # Create session factory with explicit close behavior
+    async_session_maker = async_sessionmaker(
+        test_engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        autoflush=True,
+        autocommit=False
+    )
+    
+    # Return both engine and session maker
     try:
-        return test_engine
+        yield test_engine, async_session_maker
     finally:
+        # Ensure proper cleanup
         await test_engine.dispose()
 
-        # Clean up by dropping test database
-        admin_engine = create_async_engine(
-            default_url,  # Connect to default db for cleanup
-            isolation_level="AUTOCOMMIT"
-        )
-        async with admin_engine.connect() as conn:
-            await conn.execute(text("""
-                SELECT pg_terminate_backend(pid)
-                FROM pg_stat_activity
-                WHERE datname = 'dsTestDb'
-                AND pid <> pg_backend_pid()
-            """))
-            await conn.execute(text("DROP DATABASE IF EXISTS dsTestDb"))
-        await admin_engine.dispose()
+@pytest_asyncio.fixture(scope="function")
+async def plain_asm(plain_async_engine_and_asm):
+    """Extract just the session maker from the engine fixture"""
+    _, asm = plain_async_engine_and_asm
+    return asm
+
+@pytest_asyncio.fixture(scope="function")
+async def async_engine(plain_async_engine_and_asm):
+    """Extract just the engine from the fixture"""
+    engine, _ = plain_async_engine_and_asm
+    return engine
 
 
 SYNC_TEST_DB_URL = os.getenv("SYNC_TEST_DB_URL")
