@@ -2,8 +2,6 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy import text
 
-
-
 import warnings
 import pytest
 
@@ -15,8 +13,6 @@ from dotenv import load_dotenv
 import os
 
 from surveillance.src.db.models import Base
-
-
 
 
 @pytest.fixture(autouse=True)
@@ -38,11 +34,8 @@ def anyio_backend():
 
 pytest_plugins = ["pytest_asyncio"]
 
-
 def pytest_configure(config):
     config.option.asyncio_default_fixture_loop_scope = "function"
-
-
 
 #
 # # Make the tests run fine on both Ubuntu AND Windows
@@ -73,7 +66,7 @@ if ASYNC_TEST_DB_URL is None:
 # Session = sessionmaker(bind=engine, expire_on_commit=False)
 
 @pytest_asyncio.fixture
-async def plain_async_engine():
+async def plain_async_engine_and_asm():
 
     test_engine = create_async_engine(
         ASYNC_TEST_DB_URL,
@@ -86,7 +79,7 @@ async def plain_async_engine():
         expire_on_commit=False
     )
 
-    return async_session_maker
+    return test_engine, async_session_maker
 
 
 @pytest_asyncio.fixture
@@ -102,7 +95,8 @@ async def async_engine():
     )
 
     async with admin_engine.connect() as conn:
-        # Terminate existing connections more safely
+        # forcibly terminates all active connections to the 'dsTestDb' database 
+        # except for the connection that's executing this query
         await conn.execute(text("""
             SELECT pg_terminate_backend(pid)
             FROM pg_stat_activity
