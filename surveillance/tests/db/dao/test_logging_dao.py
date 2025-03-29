@@ -193,13 +193,12 @@ async def test_find_session(plain_asm, mock_session_data):
     assert dne_chrome is None, "Non-existent chrome session should return None"
     
     # Additional assertions if found
-    if program_found and chrome_found:
-        assert isinstance(program_found, ProgramSummaryLog)
-        assert isinstance(chrome_found, DomainSummaryLog)
-        assert program_found.id is not None
-        assert chrome_found.id is not None
-        assert program_found.start_time == program_session.start_time.astimezone(timezone.utc)
-        assert chrome_found.start_time == chrome_session.start_time.astimezone(timezone.utc)
+    assert isinstance(program_found, ProgramSummaryLog)
+    assert isinstance(chrome_found, DomainSummaryLog)
+    assert program_found.id is not None
+    assert chrome_found.id is not None
+    assert program_found.start_time == program_session.start_time.astimezone(timezone.utc)
+    assert chrome_found.start_time == chrome_session.start_time.astimezone(timezone.utc)
 
 @pytest.mark.asyncio
 async def test_push_window_ahead(plain_asm, mock_session_data):
