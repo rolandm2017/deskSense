@@ -15,12 +15,13 @@ import os
 from surveillance.src.db.models import Base
 
 
-@pytest.fixture(autouse=True)
-def ignore_resource_warnings():
-    # TODO: actually get rid of the src of warnings
-    # TODO: Claude told me to do this
-    warnings.filterwarnings("ignore", category=RuntimeWarning)
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
+# @pytest.fixture(autouse=True)
+# def ignore_resource_warnings():
+#     """Claude told me to do this. Note the TODO below"""
+#     # TODO: actually get rid of the src of warnings
+    
+#     warnings.filterwarnings("ignore", category=RuntimeWarning)
+#     warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 # Fixture allegedly solves
@@ -62,7 +63,7 @@ if ASYNC_TEST_DB_URL is None:
     raise ValueError("TEST_DB_STRING environment variable is not set")
 
 @pytest_asyncio.fixture(scope="function")
-async def plain_async_engine_and_asm():
+async def async_engine_and_asm():
     """Create a fresh engine and session maker for each test"""    
     # Connect to default postgres db for setup
     default_url = ASYNC_TEST_DB_URL.rsplit('/', 1)[0] + '/postgres'
@@ -118,15 +119,15 @@ async def plain_async_engine_and_asm():
         await test_engine.dispose()
 
 @pytest_asyncio.fixture(scope="function")
-async def plain_asm(plain_async_engine_and_asm):
+async def plain_asm(async_engine_and_asm):
     """Extract just the session maker from the engine fixture"""
-    _, asm = plain_async_engine_and_asm
+    _, asm = async_engine_and_asm
     return asm
 
 @pytest_asyncio.fixture(scope="function")
-async def async_engine(plain_async_engine_and_asm):
+async def async_engine(async_engine_and_asm):
     """Extract just the engine from the fixture"""
-    engine, _ = plain_async_engine_and_asm
+    engine, _ = async_engine_and_asm
     return engine
 
 
@@ -231,7 +232,7 @@ def sync_engine():
 
 @pytest.fixture(scope="function")
 def shutdown_session_maker(sync_engine):
-    """Create a synchronous session maker"""
+    """Create a synchronous session maker. So-called because it *only* goes into a SystemStatusDAO."""
     from sqlalchemy.orm import sessionmaker
 
     session_maker = sessionmaker(
@@ -242,12 +243,6 @@ def shutdown_session_maker(sync_engine):
     return session_maker
 
 
-@pytest_asyncio.fixture(autouse=True)
-async def close_db_connections(plain_async_engine_and_asm):
-    engine, asm = plain_async_engine_and_asm
-    yield
-    print("Disposing!")
-    await engine.dispose()  # Dispose of the engine after the test
 
 # @pytest.fixture(autouse=True)
 # def descriptor_debug():

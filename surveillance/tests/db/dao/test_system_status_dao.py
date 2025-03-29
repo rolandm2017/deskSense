@@ -16,9 +16,9 @@ from ...mocks.mock_clock import MockClock
 # FIXME: Tests are wayyyyyy too slow here 
 
 @pytest_asyncio.fixture(scope="function")
-async def test_db_dao(plain_async_engine_and_asm, shutdown_session_maker):
+async def test_db_dao(async_engine_and_asm, shutdown_session_maker):
     """Create a DAO instance with the async session maker"""
-    _, asm = plain_async_engine_and_asm
+    _, asm = async_engine_and_asm
 
     dt1 = datetime.now() - timedelta(seconds=20)
     dt2 = dt1 + timedelta(seconds=1)
@@ -36,7 +36,7 @@ async def test_db_dao(plain_async_engine_and_asm, shutdown_session_maker):
     await dao.async_session_maker().close()  # Close session explicitly
 
 
-@pytest.fixture(autouse=True)
+@pytest_asyncio.fixture(autouse=True)
 async def setup_test_db(test_db_dao):
     """Runs before each test automatically"""
     dao, clock = test_db_dao
@@ -50,7 +50,7 @@ async def setup_test_db(test_db_dao):
 
 @pytest.mark.asyncio
 async def test_read_latest_status(setup_test_db):
-    dao, clock = await setup_test_db
+    dao, clock = setup_test_db
     now = clock.now().replace(tzinfo=timezone.utc)
 
     # Test starting conditions:
@@ -71,7 +71,7 @@ async def test_read_latest_status(setup_test_db):
 
 @pytest.mark.asyncio
 async def test_create_different_statuses(setup_test_db):
-    dao, clock = await setup_test_db
+    dao, clock = setup_test_db
     now = clock.now().replace(tzinfo=timezone.utc)
 
     # Test starting conditions:
@@ -108,7 +108,7 @@ async def test_create_different_statuses(setup_test_db):
 
 @pytest.mark.asyncio
 async def test_read_latest_shutdown(setup_test_db):
-    dao, clock = await setup_test_db
+    dao, clock = setup_test_db
     dt1 = clock.now().replace(tzinfo=timezone.utc)
 
     # Test starting conditions:
@@ -155,7 +155,7 @@ async def test_read_latest_shutdown(setup_test_db):
 
 @pytest.mark.asyncio
 async def test_read_latest_status_returns_none_if_no_statuses(setup_test_db):
-    dao, clock = await setup_test_db
+    dao, clock = setup_test_db
 
     latest_status = await dao.read_latest_status()
     assert latest_status is None
@@ -164,7 +164,7 @@ async def test_read_latest_status_returns_none_if_no_statuses(setup_test_db):
 
 @pytest.mark.asyncio
 async def test_read_latest_shutdown_returns_none_if_no_statuses(setup_test_db):
-    dao, clock = await setup_test_db
+    dao, clock = setup_test_db
 
     latest_shutdown = await dao.read_latest_shutdown()
     assert latest_shutdown is None

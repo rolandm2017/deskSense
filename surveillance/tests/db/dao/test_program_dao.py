@@ -3,23 +3,43 @@ import pytest_asyncio
 from unittest.mock import AsyncMock, Mock, MagicMock
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy import text
+
 
 from src.db.dao.program_dao import ProgramDao
 from src.db.models import Program
 from src.object.classes import ProgramSessionData
 from src.util.clock import SystemClock
 
+async def truncate_table(async_session_maker):
+    """Utility function to truncate a specific table for testing purposes.
+    Should ONLY be used in test environments."""
+    async with async_session_maker() as session:
+        async with session.begin():
+            # Using raw SQL to truncate the table and reset sequences
+            await session.execute(text(f'TRUNCATE TABLE program_changes RESTART IDENTITY CASCADE'))
 
 class TestProgramDao:
+    @pytest.fixture
+    def mock_session(self):
+        """Create a mock session with necessary async methods"""
+        session = AsyncMock(spec=AsyncSession)
+        session.commit = AsyncMock()
+        session.refresh = AsyncMock()
+        session.execute = AsyncMock()
+        session.delete = AsyncMock()
+        session.get = AsyncMock()
+        session.add = AsyncMock()
+        return session
+    
     @pytest_asyncio.fixture()
-    async def dao(self, plain_async_engine_and_asm):
+    async def dao(self, async_engine_and_asm):
         """Create a fresh DAO for each test"""
-        _, asm = plain_async_engine_and_asm
+        _, asm = async_engine_and_asm
         dao_instance = ProgramDao(asm)
         yield dao_instance
         # Explicit cleanup if needed
-        if hasattr(dao_instance, 'close') and callable(dao_instance.close):
-            await dao_instance.close()
+        await truncate_table(asm)
 
     @pytest.mark.asyncio
     async def test_create_happy_path(self, dao):

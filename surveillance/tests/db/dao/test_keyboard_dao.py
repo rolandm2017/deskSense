@@ -22,8 +22,8 @@ async def truncate_table(async_session_maker):
             await session.execute(text(f'TRUNCATE TABLE typing_sessions RESTART IDENTITY CASCADE'))
 
 @pytest_asyncio.fixture
-async def dao( plain_async_engine_and_asm):
-    _, asm = plain_async_engine_and_asm
+async def dao( async_engine_and_asm):
+    _, asm = async_engine_and_asm
     yield KeyboardDao(asm)
     await truncate_table(asm)
 

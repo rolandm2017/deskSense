@@ -63,13 +63,14 @@ load_dotenv()
 
 
 @pytest.fixture
-async def setup_parts(async_session_maker):
+async def setup_parts(async_engine_and_asm):
     """
     Fixture that initializes a DashboardService instance for testing.
     This connects to the test db, unless there is an unforseen problem.
     """
+    _, asm = async_engine_and_asm
 
-    session_maker_async: async_sessionmaker = await async_session_maker
+    session_maker_async: async_sessionmaker = asm
 
     # Get all required DAOs
     timeline_dao = TimelineEntryDao(session_maker_async)
