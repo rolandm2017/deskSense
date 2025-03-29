@@ -14,7 +14,6 @@ def notice_suspicious_durations(existing_entry, program_session):
             "[critical] " + str(existing_entry.hours_spent) + " for " + existing_entry.program_name)
         raise SuspiciousDurationError("long day")
     if program_session.duration and program_session.duration > timedelta(hours=1):
-        print(program_session, ' ** ** 87ru')
         logger.log_red(
             "[critical] " + str(program_session.duration) + " for " + existing_entry.program_name)
         raise SuspiciousDurationError("duration")

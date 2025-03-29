@@ -55,40 +55,12 @@ print(f"Sys path: {sys.path}")
 
 load_dotenv()
 
-@pytest_asyncio.fixture
-async def async_db_session_in_mem():
-    # Create an async in-memory SQLite database
-    # Note: SQLite needs special URI format for async mode
-    engine = create_async_engine(
-        "sqlite+aiosqlite:///:memory:",
-        echo=False,
-    )
-    
-    # Create all tables defined in your models
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    
-    # Create async session
-    session_maker: async_sessionmaker  = async_sessionmaker(
-        engine, expire_on_commit=False, class_=AsyncSession
-    )
-
-    
-
-    yield session_maker 
-    
-    async with session_maker () as session:
-        await session.rollback()
-    
-    # Teardown: drop all tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-
 ASYNC_TEST_DB_URL = ASYNC_TEST_DB_URL = os.getenv(
     'ASYNC_TEST_DB_URL')
 
 if ASYNC_TEST_DB_URL is None:
     raise ValueError("TEST_DB_STRING environment variable is not set")
+
 @pytest_asyncio.fixture(scope="function")
 async def plain_async_engine_and_asm():
     """Create a fresh engine and session maker for each test"""    
@@ -157,6 +129,35 @@ async def async_engine(plain_async_engine_and_asm):
     engine, _ = plain_async_engine_and_asm
     return engine
 
+
+@pytest_asyncio.fixture
+async def async_db_session_in_mem():
+    # Create an async in-memory SQLite database
+    # Note: SQLite needs special URI format for async mode
+    engine = create_async_engine(
+        "sqlite+aiosqlite:///:memory:",
+        echo=False,
+    )
+    
+    # Create all tables defined in your models
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
+    # Create async session
+    session_maker: async_sessionmaker  = async_sessionmaker(
+        engine, expire_on_commit=False, class_=AsyncSession
+    )
+
+    
+
+    yield session_maker 
+    
+    async with session_maker () as session:
+        await session.rollback()
+    
+    # Teardown: drop all tables
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
 SYNC_TEST_DB_URL = os.getenv("SYNC_TEST_DB_URL")
 
@@ -240,6 +241,13 @@ def shutdown_session_maker(sync_engine):
 
     return session_maker
 
+
+@pytest_asyncio.fixture(autouse=True)
+async def close_db_connections(plain_async_engine_and_asm):
+    engine, asm = plain_async_engine_and_asm
+    yield
+    print("Disposing!")
+    await engine.dispose()  # Dispose of the engine after the test
 
 # @pytest.fixture(autouse=True)
 # def descriptor_debug():

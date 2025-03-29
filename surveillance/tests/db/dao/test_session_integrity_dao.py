@@ -67,7 +67,6 @@ async def test_power_events():
 async def test_program_logs(plain_asm, test_power_events):
     """Create test program summary logs with various scenarios"""
     events = test_power_events
-    print(plain_asm, '70ru')
 
     async with plain_asm() as session:
         shutdown_time = events["shutdown_time"]
