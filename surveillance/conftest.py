@@ -239,3 +239,28 @@ def shutdown_session_maker(sync_engine):
     )
 
     return session_maker
+
+
+# @pytest.fixture(autouse=True)
+# def descriptor_debug():
+#     import os
+#     import psutil
+    
+#     # Get current process
+#     process = psutil.Process()
+    
+#     # Print open file handles at start
+#     open_files = process.open_files()
+#     print(f"SETUP: Open file handles: {len(open_files)}")
+#     if len(open_files) > 10:  # Only print details if there are many
+#         for file in open_files[:5]:  # Print first 5 for brevity
+#             print(f"  - {file.path}")
+    
+#     yield
+    
+#     # Print open file handles at end
+#     open_files = process.open_files()
+#     print(f"TEARDOWN: Open file handles: {len(open_files)}")
+#     if len(open_files) > 10:
+#         for file in open_files[:5]:
+#             print(f"  - {file.path}")

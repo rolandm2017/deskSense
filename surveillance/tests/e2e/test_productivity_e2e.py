@@ -70,7 +70,7 @@ load_dotenv()
 # First, events are recorded.
 
 @pytest.mark.asyncio
-async def test_recording_and_reading_sessions(async_session_maker, shutdown_session_maker):
+async def test_recording_and_reading_sessions(plain_asm, shutdown_session_maker):
 
     program_facade = Mock()
 
@@ -91,13 +91,13 @@ async def test_recording_and_reading_sessions(async_session_maker, shutdown_sess
 
     program_facade.listen_for_window_changes.side_effect = real_program_events
 
-    program_logging_dao = ProgramLoggingDao(async_session_maker)
-    chrome_logging_dao = ChromeLoggingDao(async_session_maker)
+    program_logging_dao = ProgramLoggingDao(plain_asm)
+    chrome_logging_dao = ChromeLoggingDao(plain_asm)
 
     program_summary_dao = ProgramSummaryDao(
-        program_logging_dao, async_session_maker)
+        program_logging_dao, plain_asm)
     chrome_summary_dao = ChromeSummaryDao(
-        chrome_logging_dao, async_session_maker)
+        chrome_logging_dao, plain_asm)
 
     # Create spies on the DAOs' create_if_new_else_update methods
     program_summary_spy = Mock(
@@ -133,7 +133,7 @@ async def test_recording_and_reading_sessions(async_session_maker, shutdown_sess
 
     chrome_svc = ChromeService(clock, activity_arbiter)
     surveillance_manager = SurveillanceManager(
-        async_session_maker, shutdown_session_maker, chrome_svc, activity_arbiter, facades)
+        plain_asm, shutdown_session_maker, chrome_svc, activity_arbiter, facades)
 
     create_spy = Mock(side_effect=surveillance_manager.program_dao.create)
     surveillance_manager.program_dao.create = create_spy

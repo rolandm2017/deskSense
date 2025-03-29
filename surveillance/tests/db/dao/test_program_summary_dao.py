@@ -1,5 +1,6 @@
-from gc import set_debug
 import pytest
+import pytest_asyncio
+
 from unittest.mock import AsyncMock, Mock, MagicMock
 from datetime import datetime, date, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -34,7 +35,7 @@ load_dotenv()
 # if ASYNC_TEST_DB_URL is None:
 #     raise ValueError("TEST_DB_STRING environment variable is not set")
 
-@pytest.fixture(scope="function")
+@pytest_asyncio.fixture(scope="function")
 async def test_db_dao( plain_async_engine_and_asm):
     """Create a DAO instance with the async session maker"""
     _, asm = plain_async_engine_and_asm
@@ -42,7 +43,13 @@ async def test_db_dao( plain_async_engine_and_asm):
     clock = SystemClock()
     logging_dao = ProgramLoggingDao(asm)
     dao = ProgramSummaryDao(logging_dao, session_maker=asm)
-    return dao
+    yield dao
+    # Add explicit cleanup
+    try:
+        if hasattr(dao, 'close') and callable(dao.close):
+            await dao.close()
+    except Exception as e:
+        print(f"Error during DAO cleanup: {e}")
 
 
 @pytest.fixture(autouse=True)
@@ -58,10 +65,13 @@ async def cleanup_database(plain_async_engine_and_asm):
     yield
 
     # Clean after test
-    async with asm() as session:
-        await session.execute(text("DELETE FROM daily_program_summaries"))
-        await session.execute(text("ALTER SEQUENCE daily_program_summaries_id_seq RESTART WITH 1"))
-        await session.commit()
+    try:
+        async with asm() as session:
+            await session.execute(text("DELETE FROM daily_program_summaries"))
+            await session.execute(text("ALTER SEQUENCE daily_program_summaries_id_seq RESTART WITH 1"))
+            await session.commit()
+    except Exception as e:
+        print(f"Error during database cleanup: {e}")
 
 
 class TestProgramSummaryDao:
@@ -360,7 +370,6 @@ class TestProgramSummaryDao:
 
     @pytest.mark.asyncio
     async def test_series_of_database_operations(self, test_db_dao):
-        test_db_dao = await test_db_dao
 
         # Get today's date
         today = datetime.now(timezone.utc).date()
