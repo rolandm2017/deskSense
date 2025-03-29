@@ -34,9 +34,9 @@ timezone_for_test_data = ZoneInfo('America/New_York')
 load_dotenv()
 
 @pytest_asyncio.fixture(scope="function")
-async def test_dao_instances(plain_async_engine_and_asm):
+async def test_dao_instances(async_engine_and_asm):
     """Create the necessary DAO instances for session integrity testing"""
-    engine, asm = plain_async_engine_and_asm
+    engine, asm = async_engine_and_asm
     # Create the DAOs
     program_logging_dao = ProgramLoggingDao(asm)
     chrome_logging_dao = ChromeLoggingDao(asm)
@@ -60,9 +60,9 @@ async def truncate_test_tables(async_engine):
         print("Tables truncated")
 
 @pytest_asyncio.fixture(autouse=True, scope="function")
-async def clean_tables(plain_async_engine_and_asm):
+async def clean_tables(async_engine_and_asm):
     """Clean tables before each test"""
-    engine, _ = plain_async_engine_and_asm
+    engine, _ = async_engine_and_asm
     # async_session_maker = await async_session_maker
     # Clean before test
     await truncate_test_tables(engine)

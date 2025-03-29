@@ -47,7 +47,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             raise ValueError("Session duration was None")
         
         # No need to await this part
-        self.program_logging_dao.create_log(program_session, right_now)
+        await self.program_logging_dao.create_log(program_session, right_now)
 
         target_program_name = program_session.window_title
         # TODO: Let the SessionHeartbeat update times

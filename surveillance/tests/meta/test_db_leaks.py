@@ -25,8 +25,8 @@ gooder4 = "tests/db/dao/test_mouse_dao.py"
 # suspicious_files = [suspicious_file1,suspicious_file2,suspicious_file3,suspicious_file4,suspicious_file0]
 
 @pytest.mark.asyncio
-async def test_db_leaks(plain_async_engine_and_asm):
-    engine, _ = plain_async_engine_and_asm
+async def test_db_leaks(async_engine_and_asm):
+    engine, _ = async_engine_and_asm
     """Runs a test file and checks for leaked DB connections."""
     
     # Run Pytest on the target test file
@@ -65,8 +65,8 @@ async def test_db_leaks(plain_async_engine_and_asm):
 
 
 @pytest.mark.asyncio
-async def test_db_leak_debug(plain_async_engine_and_asm):
-    engine, _ = plain_async_engine_and_asm
+async def test_db_leak_debug(async_engine_and_asm):
+    engine, _ = async_engine_and_asm
 
     before_conns = await get_checkedout_conns(engine)
     logger.debug(f"Checked-out connections before test: {before_conns}")

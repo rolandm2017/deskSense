@@ -35,28 +35,32 @@ load_dotenv()
 # if ASYNC_TEST_DB_URL is None:
 #     raise ValueError("TEST_DB_STRING environment variable is not set")
 
-@pytest_asyncio.fixture(scope="function")
-async def test_db_dao( plain_async_engine_and_asm):
-    """Create a DAO instance with the async session maker"""
-    _, asm = plain_async_engine_and_asm
+async def truncate_table(async_session_maker):
+    """Utility function to truncate a specific table for testing purposes.
+    Should ONLY be used in test environments."""
+    async with async_session_maker() as session:
+        async with session.begin():
+            # Using raw SQL to truncate the table and reset sequences
+            await session.execute(text(f'TRUNCATE TABLE program_summary_logs RESTART IDENTITY CASCADE'))
+            await session.execute(text(f'TRUNCATE TABLE daily_program_summaries RESTART IDENTITY CASCADE'))
 
-    clock = SystemClock()
+
+@pytest_asyncio.fixture(scope="function")
+async def test_db_dao( async_engine_and_asm):
+    """Create a DAO instance with the async session maker"""
+    _, asm = async_engine_and_asm
+
     logging_dao = ProgramLoggingDao(asm)
     dao = ProgramSummaryDao(logging_dao, session_maker=asm)
     yield dao
     # Add explicit cleanup
-    try:
-        if hasattr(dao, 'close') and callable(dao.close):
-            await dao.close()
-    except Exception as e:
-        print(f"Error during DAO cleanup: {e}")
-
+    await truncate_table(asm)
 
 @pytest_asyncio.fixture(autouse=True)
-async def cleanup_database(plain_async_engine_and_asm):
+async def cleanup_database(async_engine_and_asm):
     """Automatically clean up the database after each test"""
     # Clean before test
-    engine, asm = plain_async_engine_and_asm
+    engine, asm = async_engine_and_asm
     async with asm() as session:
         await session.execute(text("DELETE FROM daily_program_summaries"))
         await session.execute(text("ALTER SEQUENCE daily_program_summaries_id_seq RESTART WITH 1"))
@@ -366,7 +370,7 @@ class TestProgramSummaryDao:
         assert mock_session.execute.call_count == 6
         assert mock_session.commit.call_count == 6
         # Clean up
-        class_mock_dao.delete_all_rows(safety_switch=True)
+        await class_mock_dao.delete_all_rows(safety_switch=True)
 
     @pytest.mark.asyncio
     async def test_series_of_database_operations(self, test_db_dao):
