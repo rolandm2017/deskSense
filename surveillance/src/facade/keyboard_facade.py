@@ -13,7 +13,6 @@ class KeyboardFacadeCore:
     def handle_keyboard_message(self, event):
         """Handle keyboard events from the message receiver."""
         if "timestamp" in event:
-            print(event, 'in keyboard facade 20ru')
             # TODO: Just send the timestamp on the Recorder side
             self.add_event(event["timestamp"])
 

@@ -129,8 +129,6 @@ async def main():
 
     week_of_productivity = await get_productivity_for_week(chosen_week)
 
-    # for v in week_of_productivity:
-    #     print(v, '90ru')
 
     daily_packages = []
 
@@ -138,7 +136,6 @@ async def main():
 
     # productivity = get_productive_hours_for_day(
     #     chosen_week, week_of_productivity)
-    # print(productivity, "100ru")
 
     for i in range(7):
         current_day = chosen_week + timedelta(days=i)

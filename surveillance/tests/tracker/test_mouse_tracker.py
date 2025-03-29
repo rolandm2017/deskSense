@@ -129,7 +129,6 @@ def test_make_sure_handler_actually_handles(tracker_and_events, mock_mouse_facad
     # tracker.run_tracking_loop()
 
     # Only check that the stops were logged, because they signal a closed window
-    print(len(events), '143ru')
     assert len(events) == len(
         [x3, x5]), "Some mouse events were not recorded"
 

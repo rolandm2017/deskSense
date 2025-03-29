@@ -1,14 +1,11 @@
 
 import pytest
+import pytest_asyncio
 from unittest.mock import AsyncMock, Mock, MagicMock
 
 from datetime import datetime, date, timedelta, timezone
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy import text
 import asyncio
-
-import os
-from dotenv import load_dotenv
 
 from src.db.dao.system_status_dao import SystemStatusDao
 from src.db.models import SystemStatus, Base
@@ -17,25 +14,8 @@ from src.object.enums import SystemStatusType
 from ...mocks.mock_clock import MockClock
 
 # FIXME: Tests are wayyyyyy too slow here 
-# FIXME: Tests are wayyyyyy too slow here 
-# FIXME: Tests are wayyyyyy too slow here 
-# FIXME: Tests are wayyyyyy too slow here 
-# FIXME: Tests are wayyyyyy too slow here 
 
-# Load environment variables from .env file
-load_dotenv()
-
-# # Get the test database connection string
-# ASYNC_TEST_DB_URL = os.getenv(
-#     'ASYNC_TEST_DB_URL')
-
-
-
-
-
-
-
-@pytest.fixture(scope="function")
+@pytest_asyncio.fixture(scope="function")
 async def test_db_dao(plain_async_engine_and_asm, shutdown_session_maker):
     """Create a DAO instance with the async session maker"""
     _, asm = plain_async_engine_and_asm
@@ -52,13 +32,14 @@ async def test_db_dao(plain_async_engine_and_asm, shutdown_session_maker):
 
     current_loop = asyncio.get_event_loop()
     dao.accept_power_tracker_loop(current_loop)
-    return dao, clock
+    yield dao, clock
+    await dao.async_session_maker().close()  # Close session explicitly
 
 
 @pytest.fixture(autouse=True)
 async def setup_test_db(test_db_dao):
     """Runs before each test automatically"""
-    dao, clock = await test_db_dao
+    dao, clock = test_db_dao
 
     async with dao.async_session_maker() as session:
         await session.execute(text("TRUNCATE TABLE system_change_log RESTART IDENTITY CASCADE"))
