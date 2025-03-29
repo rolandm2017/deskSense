@@ -52,7 +52,7 @@ async def test_db_dao( plain_async_engine_and_asm):
         print(f"Error during DAO cleanup: {e}")
 
 
-@pytest.fixture(autouse=True)
+@pytest_asyncio.fixture(autouse=True)
 async def cleanup_database(plain_async_engine_and_asm):
     """Automatically clean up the database after each test"""
     # Clean before test
@@ -117,7 +117,7 @@ class TestProgramSummaryDao:
 
         # awful in-test math to produce a good start/end time for a session
         minutes = right_now.minute + 15
-        if minutes > 60:
+        if minutes >= 60:
             updated_minutes = minutes % 60
             later = right_now
             later.replace(hour=later.hour + 1, minute=updated_minutes)
@@ -375,9 +375,6 @@ class TestProgramSummaryDao:
         today = datetime.now(timezone.utc).date()
 
         v = await test_db_dao.read_all()
-        for k in v:
-
-            print(k.program_name, k.hours_spent, '361ru')
 
         change_1 = 13
         change_2 = 12
@@ -515,8 +512,6 @@ class TestProgramSummaryDao:
         unique_program_mentions = [test_vs_code, chrome, pycharm, ventrilo]
 
         for session in sessions:
-            if session.window_title == chrome:
-                print(session, "495ru")
             await test_db_dao.create_if_new_else_update(session, session.start_time)
 
         # ### Verify all programs were created
