@@ -19,10 +19,8 @@ class ActivityRecorder:
 
     def validate_session(self, session):
         if session.end_time is None:
-            print(session)
             raise ValueError("Session end time was not set")
         if session.duration is None:
-            print(session)
             raise ValueError("Session duration was not set")
 
     async def on_state_changed(self, session):
@@ -38,7 +36,6 @@ class ActivityRecorder:
             # await self.chrome_summary_dao.create_if_new_else_update(session, right_now)
         else:
             if isinstance(session, InternalState):
-                print(session)
                 raise TypeError(
                     "Argument was an InternalState when it should be a Session")
             raise TypeError("Session was not the right type")
@@ -60,7 +57,9 @@ class ActivityRecorder:
     async def update_or_create_log(self, logging_dao: ProgramLoggingDao | ChromeLoggingDao, session):
         # Note that the cost of the read in find_session occurs 
         # once per 8 ish sec, which is a very low cost
-        if logging_dao.find_session(session):
+        session_exists = await logging_dao.find_session(session)
+
+        if session_exists:
             await logging_dao.push_window_ahead_ten_sec(session)
         else:
             await logging_dao.start_session(session)

@@ -11,6 +11,13 @@ from src.db.models import Program
 from src.object.classes import ProgramSessionData
 from src.util.clock import SystemClock
 
+import psutil
+
+process = psutil.Process()
+open_files = process.open_files()
+num_open_files = len(open_files)
+print(f"Num of open files: {num_open_files}")
+
 async def truncate_table(async_session_maker):
     """Utility function to truncate a specific table for testing purposes.
     Should ONLY be used in test environments."""
@@ -152,3 +159,8 @@ class TestProgramDao:
     #     assert result is None
     #     mock_session.delete.assert_not_called()
     #     assert not mock_session.commit.called
+
+process = psutil.Process()
+open_files = process.open_files()
+num_open_files = len(open_files)
+print(f"END: Num of open files: {num_open_files}")

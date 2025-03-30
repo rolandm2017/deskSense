@@ -64,19 +64,17 @@ class BaseQueueingDao:
                 await session.commit()
 
     async def cleanup(self):
-        """Clean up resources and cancel any background tasks.
-        This method should be called when you're done with the DAO.
-        """
-        if self._queue_task and not self._queue_task.done():
+        """Clean up resources and cancel any background tasks."""
+        if hasattr(self, '_queue_task') and self._queue_task and not self._queue_task.done():
             # Cancel the background task
             self._queue_task.cancel()
             try:
-                # Wait for cancellation to complete
-                await self._queue_task
-            except asyncio.CancelledError:
-                pass  # This exception is expected when cancelling
+                # Wait for cancellation to complete with a timeout
+                await asyncio.wait_for(asyncio.shield(self._queue_task), timeout=2.0)
+            except (asyncio.CancelledError, asyncio.TimeoutError):
+                pass  # Expected exceptions during cancellation
 
-        # If there are any items left in the queue, process them
+        # Process any remaining items in the queue
         remaining_items = []
         while not self.queue.empty():
             try:
@@ -85,7 +83,7 @@ class BaseQueueingDao:
             except asyncio.QueueEmpty:
                 break
 
-        # Save any remaining items
+        # Save any remaining items if there are any
         if remaining_items:
             try:
                 await self._save_batch(remaining_items)

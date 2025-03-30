@@ -13,6 +13,15 @@ from src.object.enums import SystemStatusType
 
 from ...mocks.mock_clock import MockClock
 
+
+import psutil
+
+process = psutil.Process()
+open_files = process.open_files()
+num_open_files = len(open_files)
+print(f"Num of open files: {num_open_files}")
+
+
 # FIXME: Tests are wayyyyyy too slow here 
 
 @pytest_asyncio.fixture(scope="function")
@@ -169,3 +178,8 @@ async def test_read_latest_shutdown_returns_none_if_no_statuses(setup_test_db):
     latest_shutdown = await dao.read_latest_shutdown()
     assert latest_shutdown is None
     assert not hasattr(latest_shutdown, "status")
+
+process = psutil.Process()
+open_files = process.open_files()
+num_open_files = len(open_files)
+print(f"END: Num of open files: {num_open_files}")

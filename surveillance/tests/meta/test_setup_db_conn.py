@@ -49,9 +49,10 @@ async def test_plain_async_engine(async_engine_and_asm):
 @pytest.mark.asyncio
 async def test_sqlite(async_db_session_in_mem):
       # Try to use it
-    assert isinstance(async_db_session_in_mem, async_sessionmaker)
-    log_dao = ProgramLoggingDao(async_db_session_in_mem)
-    sum_dao = ProgramSummaryDao(log_dao, async_db_session_in_mem)
+    eng, asm = async_db_session_in_mem
+    assert isinstance(asm, async_sessionmaker)
+    log_dao = ProgramLoggingDao(asm)
+    sum_dao = ProgramSummaryDao(log_dao, asm)
 
     all_summaries = await sum_dao.read_all()
     all_logs = await log_dao.read_all()

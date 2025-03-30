@@ -1,175 +1,272 @@
+import pytest
+import pytest_asyncio
+import asyncio
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlalchemy import Column, Integer, String, Text, DateTime, Table, MetaData
+from sqlalchemy.orm import declarative_base
+from datetime import datetime, timedelta
+
+from dotenv import load_dotenv
+import os
 
 
-# import pytest
-# import pytest_asyncio
-# from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-# from sqlalchemy.orm import declarative_base
-# from sqlalchemy import Column, Integer, String
-# import asyncio
-# from unittest.mock import Mock, patch
-# from datetime import datetime
+import logging
 
-# # Import your BaseQueueingDao
-# from src.db.dao.base_dao import BaseQueueingDao
+import psutil
 
-# # Create a test model
-# Base = declarative_base()
+process = psutil.Process()
+open_files = process.open_files()
+num_open_files = len(open_files)
 
 
-# class TestModel(Base):
-#     __tablename__ = 'test_model'
-#     id = Column(Integer, primary_key=True)
-#     value = Column(String)
-
-#     def __repr__(self):
-#         return f"TestModel(id={self.id}, value='{self.value}')"
-
-# # Fixtures
+from src.db.dao.base_dao import BaseQueueingDao
+from src.db.dao.program_logs_dao import ProgramLoggingDao
+from src.db.dao.program_dao import ProgramDao
 
 
-# @pytest_asyncio.fixture
-# async def async_engine():
-#     engine = create_async_engine('sqlite+aiosqlite:///:memory:')
-#     async with engine.begin() as conn:
-#         await conn.run_sync(Base.metadata.create_all)
-#     yield engine
-#     await engine.dispose()
+load_dotenv()
+
+ASYNC_TEST_DB_URL = ASYNC_TEST_DB_URL = os.getenv(
+    'ASYNC_TEST_DB_URL')
+
+if ASYNC_TEST_DB_URL is None:
+    raise ValueError("TEST_DB_STRING environment variable is not set")
 
 
-# @pytest_asyncio.fixture
-# async def db_session(async_engine):
-#     async with AsyncSession(async_engine) as session:
-#         yield session
+# Helper function to check open connections
+async def get_checkedout_conns(engine):
+    """Get number of checked-out connections from the pool"""
+    async with engine.connect() as conn:
+        return await conn.run_sync(lambda sync_conn: sync_conn.engine.pool.checkedout())
 
 
-# @pytest_asyncio.fixture
-# def dao(db_session):
-#     return BaseQueueingDao(db_session, batch_size=2, flush_interval=1)
+# At the top of your test file
+print("MODULE LOAD - Checking for existing connections")
 
-# # Tests
+async def check_initial_connections():
+    engine = create_async_engine(ASYNC_TEST_DB_URL)
+    conns = await get_checkedout_conns(engine)
+    print(f"INITIAL CONNECTION COUNT: {conns}")
+    if conns > 0:
+        import traceback
+        print("STACK TRACE AT MODULE LOAD:")
+        traceback.print_stack()
 
+# Run the async function
+asyncio.run(check_initial_connections())
 
-# @pytest.mark.asyncio
-# async def test_queue_item_starts_processing(dao):
-#     """Test that queueing an item starts processing if not already started"""
-#     assert not dao.processing
-#     test_item = TestModel(value="test1")
-#     await dao.queue_item(test_item)
-#     assert dao.processing
+# Create a test model
+Base = declarative_base()
 
-
-# @pytest.mark.asyncio
-# async def test_batch_processing(dao):
-#     """Test that items are processed in batches"""
-#     test_items = [
-#         TestModel(value=f"test{i}")
-#         for i in range(3)
-#     ]
-
-#     for item in test_items:
-#         await dao.queue_item(item)
-
-#     # Wait for processing
-#     await asyncio.sleep(2)
-
-#     # Check items were saved
-#     result = await dao.db.execute("SELECT COUNT(*) FROM test_model")
-#     count = (await result.first())[0]
-#     assert count == 3
+class JustForTestsModel(Base):
+    __tablename__ = "test_cleanup_model"
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.now())
 
 
-# @pytest.mark.asyncio
-# async def test_batch_size_respected(dao):
-#     """Test that batch size limit is respected"""
-#     test_items = [
-#         TestModel(value=f"test{i}")
-#         for i in range(5)
-#     ]
-
-#     processed_batches = []
-
-#     # Mock _save_batch to track batch sizes
-#     original_save_batch = dao._save_batch
-
-#     async def mock_save_batch(batch):
-#         processed_batches.append(len(batch))
-#         await original_save_batch(batch)
-
-#     dao._save_batch = mock_save_batch
-
-#     for item in test_items:
-#         await dao.queue_item(item)
-
-#     # Wait for processing
-#     await asyncio.sleep(3)
-
-#     # Check that no batch exceeded the batch size
-#     assert all(size <= dao.batch_size for size in processed_batches)
+# Create a test DAO that inherits from BaseQueueingDao
+class JustForTestsDao(BaseQueueingDao):
+    """Simple DAO implementation for testing the BaseQueueingDao cleanup functionality"""
+    def __init__(self, session_maker, batch_size=10, flush_interval=1):
+        super().__init__(session_maker=session_maker, batch_size=batch_size, flush_interval=flush_interval)
+    
+    async def create_test_item(self, name, description=""):
+        """Create a test item and queue it"""
+        item = JustForTestsModel(name=name, description=description)
+        await self.queue_item(item, JustForTestsModel)
+        return item
 
 
-# @pytest.mark.asyncio
-# async def test_error_handling(dao):
-#     """Test error handling during batch processing"""
-#     test_item = TestModel(value="test1")
-
-#     # Mock _save_batch to raise an exception
-#     async def mock_save_batch(batch):
-#         raise Exception("Test error")
-
-#     dao._save_batch = mock_save_batch
-
-#     # Should not raise exception
-#     await dao.queue_item(test_item)
-#     await asyncio.sleep(1)
-#     assert True  # If we get here, the error was handled
+DEFAULT_BOOTSTRAP_CONNECTION = 1
 
 
-# @pytest.mark.asyncio
-# async def test_flush_interval(dao):
-#     """Test that items are flushed after the flush interval"""
-#     test_item = TestModel(value="test1")
-#     await dao.queue_item(test_item)
+@pytest_asyncio.fixture(scope="function")
+async def test_db():
+    """Set up a test database"""
+    # Create engine and sessionmaker
+    engine = create_async_engine(ASYNC_TEST_DB_URL)
+    async_session = async_sessionmaker(engine, expire_on_commit=False)
+    
+    # Create tables
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
+    yield engine, async_session
+    
+    # Clean up - drop tables
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
-#     # Wait less than flush interval
-#     await asyncio.sleep(0.5)
-#     result = await dao.db.execute("SELECT COUNT(*) FROM test_model")
-#     count_before = (await result.first())[0]
+@pytest.mark.asyncio
+async def test_cleanup_properly_closes_connections(test_db):
+    engine, async_session = test_db
+    
+    # Get initial connection count (may be 1)
+    initial_conns = await get_checkedout_conns(engine)
+    print(f"Initial connections: {initial_conns}")
+    
+    # Create a DAO instance
+    test_dao = JustForTestsDao(async_session, batch_size=5, flush_interval=1)
+    
+    # Queue some items
+    for i in range(10):
+        await test_dao.create_test_item(f"Test {i}", f"Description {i}")
+    
+    # Wait for processing
+    await asyncio.sleep(2)
+    
+    # Get connections during processing
+    processing_conns = await get_checkedout_conns(engine)
+    print(f"Connections during processing: {processing_conns}")
+    
+    # Call cleanup
+    await test_dao.cleanup()
+    await asyncio.sleep(1)
+    
+    # Verify we're back to the initial connection count
+    final_conns = await get_checkedout_conns(engine)
+    assert final_conns == initial_conns, f"Expected {initial_conns} connections after cleanup, got {final_conns}"
 
-#     # Wait for flush interval
-#     await asyncio.sleep(1)
-#     result = await dao.db.execute("SELECT COUNT(*) FROM test_model")
-#     count_after = (await result.first())[0]
 
-#     assert count_before == 0
-#     assert count_after == 1
+@pytest.mark.asyncio
+async def test_multiple_daos_cleanup(test_db):
+    """Test cleanup with multiple DAOs using the same connection pool"""
+    engine, async_session = test_db
+    
+    # Create multiple DAO instances
+    test_dao1 = JustForTestsDao(async_session, batch_size=3, flush_interval=1)
+    test_dao2 = JustForTestsDao(async_session, batch_size=3, flush_interval=1)
+    test_dao3 = JustForTestsDao(async_session, batch_size=3, flush_interval=1)
+    
+    # Queue items to all DAOs to trigger background tasks
+    for i in range(5):
+        await test_dao1.create_test_item(f"DAO1 Test {i}")
+        await test_dao2.create_test_item(f"DAO2 Test {i}")
+        await test_dao3.create_test_item(f"DAO3 Test {i}")
+    
+    # Wait for some processing to happen
+    await asyncio.sleep(2)
+    
+    # Check connections during processing
+    processing_conns = await get_checkedout_conns(engine)
+    print(f"Connections during processing: {processing_conns}")
+    
+    # Clean up all DAOs
+    await test_dao1.cleanup()
+    await test_dao2.cleanup()
+    await test_dao3.cleanup()
+    
+    # Wait for cleanup to complete fully
+    await asyncio.sleep(1)
+    
+    # Verify all connections are closed
+    final_conns = await get_checkedout_conns(engine)
+    assert final_conns == DEFAULT_BOOTSTRAP_CONNECTION, f"Expected 0 connections after cleanup, got {final_conns}"
 
 
-# @pytest.mark.asyncio
-# async def test_type_checking(dao):
-#     """Test that items are checked for correct type when specified"""
-#     class WrongType:
-#         pass
+@pytest.mark.asyncio
+async def test_async_context_manager(test_db):
+    """Test the async context manager protocol of BaseQueueingDao"""
+    engine, async_session = test_db
+    
+    # Use the DAO as an async context manager
+    async with JustForTestsDao(async_session, batch_size=3, flush_interval=1) as test_dao:
+        for i in range(5):
+            await test_dao.create_test_item(f"CM Test {i}")
+        
+        # Wait for some processing
+        await asyncio.sleep(2)
+    
+    # Context manager should have called cleanup automatically
+    # Wait a moment for any async cleanup to complete
+    await asyncio.sleep(1)
+    
+    # Verify connections are closed
+    final_conns = await get_checkedout_conns(engine)
+    assert final_conns == DEFAULT_BOOTSTRAP_CONNECTION, f"Expected 0 connections after context manager exit, got {final_conns}"
 
-#     test_item = TestModel(value="test1")
-#     wrong_item = WrongType()
 
-#     # Should work with correct type
-#     await dao.queue_item(test_item, TestModel)
+@pytest.mark.asyncio
+async def test_cleanup_with_pending_items(test_db):
+    """Test cleanup works properly with items still in the queue"""
+    engine, async_session = test_db
+    
+    # Create DAO with slow flush interval
+    test_dao = JustForTestsDao(async_session, batch_size=10, flush_interval=5)
+    
+    # Queue a bunch of items that won't flush immediately
+    for i in range(20):
+        await test_dao.create_test_item(f"Pending Test {i}")
+    
+    # Call cleanup immediately without waiting
+    # This should handle pending items properly
+    await test_dao.cleanup()
+    
+    # Verify connections are closed
+    final_conns = await get_checkedout_conns(engine)
+    assert final_conns == DEFAULT_BOOTSTRAP_CONNECTION, f"Expected 0 connections after cleanup with pending items, got {final_conns}"
+    
+    # Verify data was saved properly despite early cleanup
+    async with async_session() as session:
+        from sqlalchemy import select
+        result = await session.execute(select(JustForTestsModel).where(JustForTestsModel.name.like("Pending Test%")))
+        items = result.scalars().all()
+        assert len(items) == 20, f"Expected 20 items saved, found {len(items)}"
 
-#     # Should raise ValueError with wrong type
-#     with pytest.raises(ValueError):
-#         await dao.queue_item(wrong_item, TestModel)
 
+from src.object.classes import ProgramSessionData
 
-# @pytest.mark.asyncio
-# async def test_queue_empty_handling(dao):
-#     """Test handling of empty queue"""
-#     test_item = TestModel(value="test1")
-#     await dao.queue_item(test_item)
+@pytest.mark.asyncio
+async def test_program_dao_conns(test_db):
+    engine, async_session = test_db
+    program_dao = ProgramDao(async_session)
 
-#     # Wait for processing
-#     await asyncio.sleep(2)
+    t1 = datetime.now()
+    t1 = t1 - timedelta(seconds=60)
+    t2 = t1 + timedelta(seconds=10)
 
-#     # Queue should be empty but processing should continue
-#     assert dao.queue.empty()
-#     assert dao.processing
+    session = ProgramSessionData()
+    session.window_title = "TikTok"
+    session.detail = "The Latest Sam Salek Shenanigans"
+    session.start_time = t1
+    session.end_time = t2
+
+    await program_dao.create(session)
+    v = await program_dao.read_all()
+    
+    await program_dao.cleanup()
+    
+    # Test there are no open conns here
+    # Verify connections are closed
+    final_conns = await get_checkedout_conns(engine)
+    assert final_conns == DEFAULT_BOOTSTRAP_CONNECTION, f"Expected 0 connections after cleanup with pending items, got {final_conns}"
+
+@pytest.mark.asyncio
+async def test_logging_dao_conns(test_db):
+    engine, async_session = test_db
+
+    logging_dao = ProgramLoggingDao(async_session)
+
+    t1 = datetime.now()
+    t1 = t1 - timedelta(seconds=90)
+    t2 = t1 + timedelta(seconds=15)
+
+    session = ProgramSessionData()
+    session.window_title = "Photoshop"
+    session.detail = "Recreating ArrogantKei"
+    session.start_time = t1
+    session.end_time = t2
+    session.duration = t2 - t1
+
+    await logging_dao.create_log(session, t1)
+    v = await logging_dao.read_all()
+
+    await logging_dao.cleanup()
+
+    # Test there are no open conns here
+    # Verify connections are closed
+    final_conns = await get_checkedout_conns(engine)
+    assert final_conns == DEFAULT_BOOTSTRAP_CONNECTION, f"Expected 0 connections after cleanup with pending items, got {final_conns}"
