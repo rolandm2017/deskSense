@@ -195,7 +195,7 @@ async def test_cleanup_with_pending_items(test_db):
     engine, async_session = test_db
     
     # Create DAO with slow flush interval
-    test_dao = JustForTestsDao(async_session, batch_size=10, flush_interval=5)
+    test_dao = JustForTestsDao(async_session, batch_size=10, flush_interval=1)
     
     # Queue a bunch of items that won't flush immediately
     for i in range(20):

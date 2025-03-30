@@ -165,6 +165,11 @@ async def setup_with_populated_db(setup_parts):
 
     yield service, program_summary_dao, chrome_summary_dao
 
+    await program_summary_dao.program_logging_dao.cleanup()
+    await chrome_summary_dao.chrome_logging_dao.cleanup()
+    # await program_summary_dao.cleanup()
+    # await chrome_summary_dao.cleanup()
+
 
 @pytest.mark.asyncio
 async def test_read_all(setup_with_populated_db):
