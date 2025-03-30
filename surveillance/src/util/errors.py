@@ -26,3 +26,11 @@ class ImpossibleToGetHereError(ValueError):
     
     def __init__(self, *args):
         super().__init__(*args)
+
+
+class WayTooLongWaitError(ValueError):
+    """For a DAO queue flush value that would make the tasks hang open for ages"""
+    def __init__(self, time, *args):
+        message = f"Sleeping the code for {time} seconds is way too long"
+        super().__init__(message, *args)
+        self.time = time  # Store the time value as an attribute

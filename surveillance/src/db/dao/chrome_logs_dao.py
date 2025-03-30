@@ -29,7 +29,7 @@ class ChromeLoggingDao(BaseQueueingDao):
     - Methods return UTC timestamps regardless of input timezone
     - Input datetimes should be timezone-aware
     - Date comparisons are performed in UTC"""
-    def __init__(self,  session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+    def __init__(self,  session_maker: async_sessionmaker, batch_size=100, flush_interval=1):
         """ Exists mostly for debugging. """
 
         super().__init__(session_maker=session_maker,

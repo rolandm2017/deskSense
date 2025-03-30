@@ -3,6 +3,7 @@ from asyncio import Queue
 import asyncio
 import traceback
 
+from ...util.errors import WayTooLongWaitError
 
 class BaseQueueingDao:
     """
@@ -13,9 +14,11 @@ class BaseQueueingDao:
 
     The point is to (a) prevent bottlenecks and (b) avoid wasted overhead resources.
     """
-    def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+    def __init__(self, session_maker: async_sessionmaker, batch_size=30, flush_interval=1):
         self.session_maker = session_maker
         self.batch_size = batch_size
+        if flush_interval > 1:
+            raise WayTooLongWaitError(flush_interval)
         self.flush_interval = flush_interval
         self.queue = Queue()
         self.processing = False
@@ -28,13 +31,17 @@ class BaseQueueingDao:
         if expected_type and not isinstance(item, expected_type):
             raise ValueError("Mismatch found")
         await self.queue.put(item)
-        if not self.processing:
+
+        no_task_running = not self._queue_task or self._queue_task.done()
+        if no_task_running:
             self.processing = True
             self._queue_task = asyncio.create_task(self.process_queue())  # Store the task reference
 
     async def process_queue(self):
         """Generic queue processing logic"""
-        while self.processing:
+        idle_count = 0  # Count idle iterations
+
+        while idle_count < 3 and self.processing:  # Exit if idle too many times
             batch = []
             try:
                 while len(batch) < self.batch_size:
@@ -42,8 +49,11 @@ class BaseQueueingDao:
                         if batch:
                             await self._save_batch_to_db(batch)
                             batch = []  # Clear the batch after saving
+                        idle_count += 1
                         await asyncio.sleep(self.flush_interval)
                         continue
+                    else:
+                        idle_count = 0  # Reset idle count on activity
 
                     item = await self.queue.get()
                     batch.append(item)
@@ -58,11 +68,12 @@ class BaseQueueingDao:
                         await self._save_batch_to_db(batch)
                     except Exception as e:
                         print(f"Error saving final batch during cleanup: {e}")
-                self.processing = False
                 return  # Exit the task
             except Exception as e:
                 traceback.print_exc()
                 print(f"Error processing batch: {e}")
+        self._queue_task = None  # Reset task reference when exiting
+        self.processing = False
 
     async def _save_batch_to_db(self, batch):
         """Save a batch of items to the database"""
@@ -73,14 +84,8 @@ class BaseQueueingDao:
 
     async def cleanup(self):
         """Clean up resources and cancel any background tasks."""
-        # if hasattr(self, "_queued_tasks") and len(self._queued_tasks) > 0:
-        #     for task in self._queued_tasks:
-        #         task.cancel()
-        #         try:
-        #             # Wait for cancellation to complete with a timeout
-        #             await asyncio.wait_for(asyncio.shield(task), timeout=0.5)
-        #         except (asyncio.CancelledError, asyncio.TimeoutError):
-        #             pass  # Expected exceptions during cancellation
+        self.processing = False  # break the loop
+        print(self._queue_task, "87ru")
         if hasattr(self, '_queue_task') and self._queue_task and not self._queue_task.done():
             # Cancel the background task
             self._queue_task.cancel()
@@ -89,6 +94,7 @@ class BaseQueueingDao:
                 await asyncio.wait_for(asyncio.shield(self._queue_task), timeout=2.0)
             except (asyncio.CancelledError, asyncio.TimeoutError):
                 pass  # Expected exceptions during cancellation
+            self._queue_task = None
 
         # Process any remaining items in the queue
         remaining_items = []
@@ -106,7 +112,6 @@ class BaseQueueingDao:
             except Exception as e:
                 print(f"Error saving remaining items during cleanup: {e}")
 
-        self.processing = False
         
     async def __aenter__(self):
         """Support for async context manager protocol"""

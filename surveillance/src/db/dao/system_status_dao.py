@@ -17,7 +17,7 @@ class SystemStatusDao:
     should always always get priority, i.e. no queue!
     """
 
-    def __init__(self, async_session_maker: async_sessionmaker, sync_session_maker: sessionmaker, batch_size=100, flush_interval=5):
+    def __init__(self, async_session_maker: async_sessionmaker, sync_session_maker: sessionmaker, batch_size=100, flush_interval=1):
         """ Exists mostly for debugging. """
         self.async_session_maker = async_session_maker
         self.shutdown_session_maker = sync_session_maker

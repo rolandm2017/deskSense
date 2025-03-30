@@ -11,7 +11,7 @@ from ...config.definitions import max_content_len
 
 
 class ChromeDao(BaseQueueingDao):
-    def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
+    def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=1):
         super().__init__(session_maker=session_maker,
                          batch_size=batch_size, flush_interval=flush_interval)
         self.logger = ConsoleLogger()

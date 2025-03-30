@@ -64,8 +64,8 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
                 existing_entry.hours_spent += usage_duration_in_hours
                 await session.commit()
             else:
-                print("[debug] NEW session: ",
-                      chrome_session.domain, usage_duration_in_hours, chrome_session.start_time.day)
+                # print("[debug] New session: ",
+                #       chrome_session.domain, usage_duration_in_hours, chrome_session.start_time.day)
                 await self.create(target_domain_name, usage_duration_in_hours, today)
       
 
