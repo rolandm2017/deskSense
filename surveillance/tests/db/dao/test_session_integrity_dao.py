@@ -18,6 +18,15 @@ from src.db.dao.chrome_logs_dao import ChromeLoggingDao
 # Load environment variables from .env file
 load_dotenv()
 
+
+import psutil
+
+process = psutil.Process()
+open_files = process.open_files()
+num_open_files = len(open_files)
+print(f"Num of open files: {num_open_files}")
+
+
 # Get the test database connection string
 ASYNC_TEST_DB_URL = os.getenv('ASYNC_TEST_DB_URL')
 SYNC_TEST_DB_URL = os.getenv("SYNC_TEST_DB_URL")
@@ -36,19 +45,7 @@ if SYNC_TEST_DB_URL is None:
 # FIXME: Test is slow as a turtle
 # FIXME: Test is slow as a turtle
 
-# At the end of test_session_integrity_dao.py
-@pytest.fixture(scope="session", autouse=True)
-def cleanup_all_connections():
-    yield
-    # This runs after all tests
-    asyncio.run(cleanup_connections())
 
-async def cleanup_connections():
-    # Force close any lingering connections
-    engine = create_async_engine(ASYNC_TEST_DB_URL)
-    # Implementation depends on your DB - for PostgreSQL:
-    async with engine.begin() as conn:
-        await conn.execute(text("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = current_database()"))
 
 
 @pytest.fixture(scope="function")
@@ -370,3 +367,8 @@ async def test_find_orphans(full_test_environment):
 #         # Clean up after test, regardless of whether it passed or failed
 #         await truncate_test_tables(engine)
 
+
+process = psutil.Process()
+open_files = process.open_files()
+num_open_files = len(open_files)
+print(f"END: Num of open files: {num_open_files}")

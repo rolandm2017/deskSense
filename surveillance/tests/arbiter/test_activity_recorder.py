@@ -75,6 +75,26 @@ async def test_on_state_changed_chrome(activity_recorder, mock_daos, chrome_sess
     mock_daos['chrome_logging'].finalize_log.assert_awaited_once_with(chrome_session)
     mock_daos['program_logging'].finalize_log.assert_not_awaited()
 
+
+@pytest.mark.parametrize("session_exists", [True, False])
+@pytest.mark.asyncio
+async def test_update_or_create_log(activity_recorder, session_exists):
+    logging_dao = AsyncMock()
+    session = "test-session"
+
+    logging_dao.find_session = AsyncMock(return_value=session_exists)
+
+    update_or_create_log = activity_recorder.update_or_create_log  # Replace with actual class
+
+    await update_or_create_log(logging_dao, session)
+
+    if session_exists:
+        logging_dao.push_window_ahead_ten_sec.assert_awaited_once_with(session)
+        logging_dao.start_session.assert_not_called()
+    else:
+        logging_dao.push_window_ahead_ten_sec.assert_not_called()
+        logging_dao.start_session.assert_awaited_once_with(session)
+
 @pytest.mark.asyncio
 async def test_add_ten_sec_program(activity_recorder, mock_daos, program_session):
     # Create a brand new mock (no shared state)
@@ -97,16 +117,34 @@ async def test_add_ten_sec_chrome_new_session(activity_recorder, mock_daos, chro
     mock_daos['chrome_logging'].find_session.return_value = False  # Make sure it returns False
     start_session_mock = AsyncMock()
     mock_daos["chrome_logging"].start_session = start_session_mock
-    push_mock = AsyncMock()
-    mock_daos["chrome_logging"].push_window_ahead_ten_sec = push_mock
     
+    push_mock_for_programs = AsyncMock()
+    push_mock_for_chrome = AsyncMock()
+
+    mock_daos["program_logging"].push_window_ahead_ten_sec = push_mock_for_programs
+    mock_daos["chrome_logging"].push_window_ahead_ten_sec = push_mock_for_chrome
+
+    # Spy on update_or_create_log:
+    original_update_or_create_log = activity_recorder.update_or_create_log
+    update_or_create_log_spy = AsyncMock(wraps=original_update_or_create_log)
+    activity_recorder.update_or_create_log = update_or_create_log_spy
+
+    
+    # Act
     await activity_recorder.add_ten_sec_to_end_time(chrome_session)
     
-    # These assertions need to be against AsyncMock, not MagicMock
+    # Assert
+    update_or_create_log_spy.assert_awaited_once_with(mock_daos["chrome_logging"], chrome_session)
+    # Restore the original state of the recorder:
+    activity_recorder.update_or_create_log = original_update_or_create_log
+    
+    start_session_mock.assert_awaited_once()
+    
+    push_mock_for_programs.assert_not_awaited()
+    push_mock_for_chrome.assert_not_called()  # Because that's the "if session exists" path
+
     mock_daos['chrome_summary'].push_window_ahead_ten_sec.assert_awaited_once_with(chrome_session)
     mock_daos['chrome_logging'].find_session.assert_called_once_with(chrome_session)
-    push_mock.assert_not_awaited()
-    start_session_mock.assert_awaited_once()
 
 @pytest.mark.asyncio
 async def test_deduct_duration_program(activity_recorder, mock_daos, program_session, mock_clock):

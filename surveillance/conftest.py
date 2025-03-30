@@ -62,6 +62,8 @@ ASYNC_TEST_DB_URL = ASYNC_TEST_DB_URL = os.getenv(
 if ASYNC_TEST_DB_URL is None:
     raise ValueError("TEST_DB_STRING environment variable is not set")
 
+
+
 @pytest_asyncio.fixture(scope="function")
 async def async_engine_and_asm():
     """Create a fresh engine and session maker for each test"""    
@@ -151,7 +153,7 @@ async def async_db_session_in_mem():
 
     
 
-    yield session_maker 
+    yield engine, session_maker
     
     async with session_maker () as session:
         await session.rollback()

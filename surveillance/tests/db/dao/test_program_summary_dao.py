@@ -22,6 +22,12 @@ from ...mocks.mock_clock import MockClock
 
 load_dotenv()
 
+import psutil
+
+process = psutil.Process()
+open_files = process.open_files()
+num_open_files = len(open_files)
+print(f"Num of open files: {num_open_files}")
 
 # FIXME: OSerror
 # FIXME: OSerror
@@ -612,3 +618,8 @@ class TestProgramSummaryDao:
         assert ventrilo_entry.hours_spent == ventrilo_time / 3600
         assert chrome_entry.hours_spent == (
             chrome_time / 3600) + (time_from_chrome_update / 3600)
+
+process = psutil.Process()
+open_files = process.open_files()
+num_open_files = len(open_files)
+print(f"END: Num of open files: {num_open_files}")

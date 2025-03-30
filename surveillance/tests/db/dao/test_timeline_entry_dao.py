@@ -11,6 +11,13 @@ from src.object.enums import ChartEventType
 from src.util.clock import SystemClock
 
 
+import psutil
+
+process = psutil.Process()
+open_files = process.open_files()
+num_open_files = len(open_files)
+print(f"Num of open files: {num_open_files}")
+
 # FIXME: OSerror
 # FIXME: OSerror
 # FIXME: OSerror
@@ -279,3 +286,9 @@ class TestTimelineEntryDao:
         assert result is None
         mock_session.delete.assert_not_called()
         assert not mock_session.commit.called
+
+
+process = psutil.Process()
+open_files = process.open_files()
+num_open_files = len(open_files)
+print(f"END: Num of open files: {num_open_files}")
