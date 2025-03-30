@@ -8,18 +8,15 @@ from typing import List
 
 from .base_dao import BaseQueueingDao
 from ..models import TimelineEntryObj, PrecomputedTimelineEntry
-from ...object.dto import ProgramDto
 from ...object.classes import KeyboardAggregate, MouseMoveWindow
 from ...object.enums import ChartEventType
 from ...util.console_logger import ConsoleLogger
 from ...util.timeline_event_aggregator import aggregate_timeline_events
-from ...util.sqlalchemy_helper import await_if_needed
 
 
 class TimelineEntryDao(BaseQueueingDao):
     def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
-        super().__init__(session_maker=session_maker,
-                         batch_size=batch_size, flush_interval=flush_interval)
+        super().__init__(session_maker=session_maker, batch_size=batch_size, flush_interval=flush_interval)
 
         self.logger = ConsoleLogger()
 

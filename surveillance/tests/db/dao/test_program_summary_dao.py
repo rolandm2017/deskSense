@@ -54,6 +54,7 @@ async def test_db_dao( async_engine_and_asm):
     dao = ProgramSummaryDao(logging_dao, session_maker=asm)
     yield dao
     # Add explicit cleanup
+    await logging_dao.cleanup()
     await truncate_table(asm)
 
 @pytest_asyncio.fixture(autouse=True)

@@ -1,7 +1,6 @@
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select, desc, func
-import asyncio
 from datetime import datetime
 import asyncpg
 
