@@ -114,7 +114,9 @@ class ChromeService:
         # Set up event handlers
         # self.event_emitter.on('tab_processed', self.log_tab_event)
 
-        self.loop = asyncio.get_event_loop()
+        # self.loop = asyncio.get_event_loop()
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
         self.logger = ConsoleLogger()
 
     # TODO: Log a bunch of real chrome tab submissions, use them in a test

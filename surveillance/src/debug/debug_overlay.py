@@ -91,6 +91,8 @@ class Overlay:
             return "Terminal"
         elif len(title) > 30:  # Truncate very long titles
             return title[:27] + "..."
+        elif "PyCharm" in title:
+            return "PyCharm"
         return title
 
     def _run_gui(self):

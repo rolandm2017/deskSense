@@ -65,7 +65,7 @@ def test_format_title():
     assert chrome2 == "Stackoverflow.com"
 
     assert just_pycharm1 == "PyCharm"
-    assert just_pycharm2 == "PyCharm"
+    assert just_pycharm2 == "PyCharm"  # FIXME:  AssertionError: assert 'PyCharm - myfile.py' == 'PyCharm'
 
     assert just_terminal == "Terminal"
 

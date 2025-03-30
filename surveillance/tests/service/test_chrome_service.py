@@ -27,12 +27,17 @@ def event_fixture():
     # while you use Chrome.
     #
     # Get the directory of the current script
+    # Get the current directory
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Construct the path to the events.csv file
-    events_csv_path = os.path.join(current_dir, "data", "events.csv")
+    # Go up one level
+    parent_dir = os.path.dirname(current_dir)
 
-    with open(events_csv_path, "r") as f:
+    # Construct the path to the events.csv file
+    events_csv_path = os.path.join(parent_dir, "data", "events.csv")
+    print(events_csv_path, '34ru')
+
+    with open(events_csv_path, "r", encoding="utf-8") as f:
         events = f.readlines()
 
         reconstructed = []
@@ -109,7 +114,7 @@ def chrome_service_with_mock():
 
     # Create mock dao
     mock_dao = AsyncMock()
-
+    
     # Create a custom ChromeService that uses our mock
     class TestChromeService(ChromeService):
         def __init__(self, *args, **kwargs):
@@ -180,7 +185,8 @@ def is_chronological(array):
     return True
 
 
-def test_order_message_queue(event_fixture, chrome_service_fixture):
+@pytest.mark.asyncio
+async def test_order_message_queue(event_fixture, chrome_service_fixture):
     start_of_events = 100
     selected_events = event_fixture[start_of_events:]
 
@@ -195,7 +201,7 @@ def test_order_message_queue(event_fixture, chrome_service_fixture):
         chrome_service_fixture.tab_queue.ordered_messages) == 0, "Initial environment had a problem"
 
     # ### Act
-    chrome_service_fixture.tab_queue.order_message_queue()
+    await chrome_service_fixture.tab_queue.order_message_queue()
 
     # ### Assert
     output = chrome_service_fixture.tab_queue.ordered_messages
