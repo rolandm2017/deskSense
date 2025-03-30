@@ -36,7 +36,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         target_domain_name = chrome_session.domain
         
         # No need to await this part
-        self.chrome_logging_dao.create_log(chrome_session, right_now)
+        await self.chrome_logging_dao.create_log(chrome_session, right_now)
 
         # ### Calculate time difference
         usage_duration_in_hours = chrome_session.duration.total_seconds() / 3600

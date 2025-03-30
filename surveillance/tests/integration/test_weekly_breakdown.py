@@ -5,6 +5,7 @@
 
 # But without the hassle of running the server to make a GET request.
 import pytest
+import pytest_asyncio
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy import text
@@ -62,7 +63,7 @@ load_dotenv()
 
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def setup_parts(async_engine_and_asm):
     """
     Fixture that initializes a DashboardService instance for testing.
@@ -112,15 +113,14 @@ async def truncate_test_tables(session_maker_async):
         print("Super truncated tables")
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def setup_with_populated_db(setup_parts):
 
     # Write test data and populate the test db. DO NOT use the real db. You will mess it up.
     # Write test data and populate the test db. DO NOT use the real db. You will mess it up.
     # Write test data and populate the test db. DO NOT use the real db. You will mess it up.
     # Write test data and populate the test db. DO NOT use the real db. You will mess it up.
-    parts = await anext(setup_parts)
-    service, program_summary_dao, chrome_summary_dao, session_maker_async = parts
+    service, program_summary_dao, chrome_summary_dao, session_maker_async = setup_parts
 
     await truncate_test_tables(session_maker_async)
 
@@ -169,8 +169,8 @@ async def setup_with_populated_db(setup_parts):
 @pytest.mark.asyncio
 async def test_read_all(setup_with_populated_db):
     """This test is mostly testing setup conditions for other tests."""
-    parts = await anext(setup_with_populated_db)
-    service, program_summary_dao, chrome_summary_dao = parts
+    # parts = await anext(setup_with_populated_db)
+    _, program_summary_dao, chrome_summary_dao = setup_with_populated_db
 
     # # But first, do some basic sanity checks:
     all_for_verification = await program_summary_dao.read_all()
@@ -229,8 +229,7 @@ async def test_read_all(setup_with_populated_db):
 
 @pytest.mark.asyncio
 async def test_reading_individual_days(setup_with_populated_db):
-    parts = await anext(setup_with_populated_db)
-    service, program_summary_dao, chrome_summary_dao = parts
+    _, program_summary_dao, chrome_summary_dao = setup_with_populated_db
 
     test_day_3 = march_3_2025 + timedelta(days=1)
 
@@ -273,8 +272,7 @@ async def test_reading_individual_days(setup_with_populated_db):
 
 @pytest.mark.asyncio
 async def test_week_of_feb_23(setup_with_populated_db):
-    parts = await anext(setup_with_populated_db)
-    service, program_summary_dao, chrome_summary_dao = parts
+    service, _, _ = setup_with_populated_db
     dashboard_service = service
 
     feb_23_2025_dt = datetime(2025, 2, 23)  # Year, Month, Day
