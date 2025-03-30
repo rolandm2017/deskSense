@@ -36,11 +36,23 @@ if SYNC_TEST_DB_URL is None:
 # FIXME: Test is slow as a turtle
 # FIXME: Test is slow as a turtle
 
+# At the end of test_session_integrity_dao.py
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_all_connections():
+    yield
+    # This runs after all tests
+    asyncio.run(cleanup_connections())
+
+async def cleanup_connections():
+    # Force close any lingering connections
+    engine = create_async_engine(ASYNC_TEST_DB_URL)
+    # Implementation depends on your DB - for PostgreSQL:
+    async with engine.begin() as conn:
+        await conn.execute(text("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = current_database()"))
 
 
-
-@pytest_asyncio.fixture(scope="function")
-async def test_power_events():
+@pytest.fixture(scope="function")
+def test_power_events():
     """Define test shutdown and startup times for session integrity testing"""
     # Define timezone to ensure consistency
     tz = timezone.utc
@@ -228,11 +240,15 @@ async def test_dao_instances(plain_asm):
         session_maker=plain_asm
     )
 
-    return {
+    yield {
         "program_logging_dao": program_logging_dao,
         "chrome_logging_dao": chrome_logging_dao,
         "session_integrity_dao": session_integrity_dao
     }
+
+    await program_logging_dao.cleanup()
+    await chrome_logging_dao.cleanup()
+    # session_integrity_dao.cleanup()
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -353,3 +369,4 @@ async def test_find_orphans(full_test_environment):
 #     finally:
 #         # Clean up after test, regardless of whether it passed or failed
 #         await truncate_test_tables(engine)
+

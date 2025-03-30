@@ -1,4 +1,3 @@
-# base_dao.py
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from asyncio import Queue
 import asyncio
@@ -11,7 +10,8 @@ class BaseQueueingDao:
         self.batch_size = batch_size
         self.flush_interval = flush_interval
         self.queue = Queue()
-        self.processing = False  # FIXME: I honestly dont know why this is here
+        self.processing = False
+        self._queue_task = None  # Store reference to the background task
 
     async def queue_item(self, item, expected_type=None):
         """Common method to queue items and start processing if needed"""
@@ -21,8 +21,8 @@ class BaseQueueingDao:
             raise ValueError("Mismatch found")
         await self.queue.put(item)
         if not self.processing:
-            self.processing = True  # FIXME: I honestly dont know why this is here
-            asyncio.create_task(self.process_queue())
+            self.processing = True
+            self._queue_task = asyncio.create_task(self.process_queue())  # Store the task reference
 
     async def process_queue(self):
         """Generic queue processing logic"""
@@ -32,8 +32,8 @@ class BaseQueueingDao:
                 while len(batch) < self.batch_size:
                     if self.queue.empty():
                         if batch:
-                            # Claude: Traceback shows this was called
                             await self._save_batch(batch)
+                            batch = []  # Clear the batch after saving
                         await asyncio.sleep(self.flush_interval)
                         continue
 
@@ -43,9 +43,17 @@ class BaseQueueingDao:
                 if batch:
                     await self._save_batch(batch)
 
+            except asyncio.CancelledError:
+                # Handle cancellation gracefully
+                if batch:  # Save any remaining items before exiting
+                    try:
+                        await self._save_batch(batch)
+                    except Exception as e:
+                        print(f"Error saving final batch during cleanup: {e}")
+                self.processing = False
+                return  # Exit the task
             except Exception as e:
                 traceback.print_exc()
-
                 print(f"Error processing batch: {e}")
 
     async def _save_batch(self, batch):
@@ -54,3 +62,67 @@ class BaseQueueingDao:
             async with session.begin():
                 session.add_all(batch)
                 await session.commit()
+
+    async def cleanup(self):
+        """Clean up resources and cancel any background tasks.
+        This method should be called when you're done with the DAO.
+        """
+        if self._queue_task and not self._queue_task.done():
+            # Cancel the background task
+            self._queue_task.cancel()
+            try:
+                # Wait for cancellation to complete
+                await self._queue_task
+            except asyncio.CancelledError:
+                pass  # This exception is expected when cancelling
+
+        # If there are any items left in the queue, process them
+        remaining_items = []
+        while not self.queue.empty():
+            try:
+                item = self.queue.get_nowait()
+                remaining_items.append(item)
+            except asyncio.QueueEmpty:
+                break
+
+        # Save any remaining items
+        if remaining_items:
+            try:
+                await self._save_batch(remaining_items)
+            except Exception as e:
+                print(f"Error saving remaining items during cleanup: {e}")
+
+        self.processing = False
+        
+    async def __aenter__(self):
+        """Support for async context manager protocol"""
+        return self
+        
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Ensure cleanup happens when using 'async with'"""
+        await self.cleanup()
+
+# NOTE from me & Claude:
+
+# There was a leak of some kind, keeping the program running even after the OS (language?) attempted to clean everything up.
+# As Claude explains:
+"""
+The fundamental issue is that you're creating a background task 
+with asyncio.create_task() but never storing a reference to it or 
+providing a way to cancel it. This task contains an 
+infinite while True loop that keeps a database connection open.
+"""
+
+# # In BaseQueueingDao.__init__
+# self.processing = False  # Flag that controls whether the background task is started
+
+# # In BaseQueueingDao.queue_item
+# if not self.processing:
+#     self.processing = True
+#     asyncio.create_task(self.process_queue())  # Creates a background task but never stores a reference to it
+
+# # In BaseQueueingDao.process_queue
+# while True:  # Infinite loop that keeps running even after test completes
+#     # ... processing logic ...
+#     async with self.session_maker() as session:  # Opens a DB connection that never gets closed
+#         # ... database operations ...

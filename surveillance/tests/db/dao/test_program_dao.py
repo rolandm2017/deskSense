@@ -39,6 +39,7 @@ class TestProgramDao:
         dao_instance = ProgramDao(asm)
         yield dao_instance
         # Explicit cleanup if needed
+        await dao_instance.cleanup()
         await truncate_table(asm)
 
     @pytest.mark.asyncio
