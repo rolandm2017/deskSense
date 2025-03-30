@@ -5,6 +5,14 @@ import traceback
 
 
 class BaseQueueingDao:
+    """
+    DAO exists to provide a queue for writes.
+
+    Events are expected to happen quite quickly for keyboard, mouse. 
+    Hence writes are batched up to be written in a group.
+
+    The point is to (a) prevent bottlenecks and (b) avoid wasted overhead resources.
+    """
     def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=5):
         self.session_maker = session_maker
         self.batch_size = batch_size
@@ -26,13 +34,13 @@ class BaseQueueingDao:
 
     async def process_queue(self):
         """Generic queue processing logic"""
-        while True:
+        while self.processing:
             batch = []
             try:
                 while len(batch) < self.batch_size:
                     if self.queue.empty():
                         if batch:
-                            await self._save_batch(batch)
+                            await self._save_batch_to_db(batch)
                             batch = []  # Clear the batch after saving
                         await asyncio.sleep(self.flush_interval)
                         continue
@@ -41,13 +49,13 @@ class BaseQueueingDao:
                     batch.append(item)
 
                 if batch:
-                    await self._save_batch(batch)
+                    await self._save_batch_to_db(batch)
 
             except asyncio.CancelledError:
                 # Handle cancellation gracefully
                 if batch:  # Save any remaining items before exiting
                     try:
-                        await self._save_batch(batch)
+                        await self._save_batch_to_db(batch)
                     except Exception as e:
                         print(f"Error saving final batch during cleanup: {e}")
                 self.processing = False
@@ -56,7 +64,7 @@ class BaseQueueingDao:
                 traceback.print_exc()
                 print(f"Error processing batch: {e}")
 
-    async def _save_batch(self, batch):
+    async def _save_batch_to_db(self, batch):
         """Save a batch of items to the database"""
         async with self.session_maker() as session:  # Create new session for batch
             async with session.begin():
@@ -65,6 +73,14 @@ class BaseQueueingDao:
 
     async def cleanup(self):
         """Clean up resources and cancel any background tasks."""
+        # if hasattr(self, "_queued_tasks") and len(self._queued_tasks) > 0:
+        #     for task in self._queued_tasks:
+        #         task.cancel()
+        #         try:
+        #             # Wait for cancellation to complete with a timeout
+        #             await asyncio.wait_for(asyncio.shield(task), timeout=0.5)
+        #         except (asyncio.CancelledError, asyncio.TimeoutError):
+        #             pass  # Expected exceptions during cancellation
         if hasattr(self, '_queue_task') and self._queue_task and not self._queue_task.done():
             # Cancel the background task
             self._queue_task.cancel()
@@ -86,7 +102,7 @@ class BaseQueueingDao:
         # Save any remaining items if there are any
         if remaining_items:
             try:
-                await self._save_batch(remaining_items)
+                await self._save_batch_to_db(remaining_items)
             except Exception as e:
                 print(f"Error saving remaining items during cleanup: {e}")
 
