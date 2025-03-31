@@ -92,7 +92,7 @@ class TestMouseDao:
         # Arrange
         await dao.create_from_window(test_window)
         await dao.create_from_window(test_win_2)
-        await dao._force_process_queue_for_test()
+        await dao._force_process_queue()
 
         all = await dao.read_all()
         # test setup conditions
@@ -120,7 +120,7 @@ class TestMouseDao:
         print("test here 122ru")
         await dao.create_from_window(test_1)
         await dao.create_from_window(test_2)
-        await dao._force_process_queue_for_test()
+        await dao._force_process_queue()
 
         print("test here 125ru")
         
@@ -160,7 +160,7 @@ class TestMouseDao:
         # assert 1 == 2
         for e in [test_1, test_2, ancient_test, ancient_test_2]:
             await dao.create_from_window(e)
-        await dao._force_process_queue_for_test()
+        await dao._force_process_queue()
 
         # assert 1 == 1
         # # ### Act
@@ -187,7 +187,7 @@ class TestMouseDao:
         
         # Arrange
         await dao.create_from_window(test_window)
-        await dao._force_process_queue_for_test()
+        await dao._force_process_queue()
 
         # Act
         result = await dao.delete(1)
