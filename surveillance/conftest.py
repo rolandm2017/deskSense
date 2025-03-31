@@ -1,9 +1,11 @@
+import pytest
 import pytest_asyncio
+import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy import text
 
+
 import warnings
-import pytest
 
 import sys
 from pathlib import Path
@@ -14,6 +16,9 @@ import os
 
 from surveillance.src.db.models import Base
 
+asyncio.get_event_loop().set_debug(True)  # Enable asyncio debug mode
+
+pytest_plugins = ["pytest_asyncio"]
 
 # @pytest.fixture(autouse=True)
 # def ignore_resource_warnings():
