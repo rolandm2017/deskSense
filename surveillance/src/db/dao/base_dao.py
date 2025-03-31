@@ -5,6 +5,14 @@ import traceback
 
 from ...util.errors import WayTooLongWaitError
 
+def handle_exception(loop, context):
+    # context['message'] contains the error message
+    # context['exception'] (if available) contains the exception object
+    msg = context.get('exception', context['message'])
+    print(f"\n⚠️ Caught asyncio exception: {msg}\n")
+    traceback.print_stack()
+    print("Context:", context)
+
 class BaseQueueingDao:
     """
     DAO exists to provide a queue for writes.
@@ -23,6 +31,8 @@ class BaseQueueingDao:
         self.queue = Queue()
         self.processing = False
         self._queue_task = None  # Store reference to the background task
+        # FIXME:  RuntimeError: There is no current event loop in thread 'MainThread'.
+       
 
     async def queue_item(self, item, expected_type=None):
         """Common method to queue items and start processing if needed"""
@@ -34,17 +44,33 @@ class BaseQueueingDao:
 
         no_task_running = not self._queue_task or self._queue_task.done()
         if no_task_running:
+            print("47ru")
             self.processing = True
-            self._queue_task = asyncio.create_task(self.process_queue())  # Store the task reference
+            # loop = asyncio.get_running_loop()
+            # loop.set_exception_handler(handle_exception)
+            self._queue_task = asyncio.create_task(self._wrapped_process_queue())  # Store the task reference
+            # self._queue_task = asyncio.create_task(self.process_queue())  # Store the task reference
+
+    async def _wrapped_process_queue(self):
+        """Wrapper for process_queue() to log unhandled exceptions."""
+        try:
+            await self.process_queue()
+        except Exception as e:
+            loop = asyncio.get_running_loop()
+            loop.call_exception_handler({"message": "Unhandled exception in process_queue", "exception": e})
+
 
     async def process_queue(self):
         """Generic queue processing logic"""
         idle_count = 0  # Count idle iterations
 
         while idle_count < 3 and self.processing:  # Exit if idle too many times
+            print("ffffffffffffffffffffffffffffffffffff 68ru")
             batch = []
             try:
-                while len(batch) < self.batch_size:
+                room_in_batch = len(batch) < self.batch_size
+                while room_in_batch:
+                    print("72ru")
                     if self.queue.empty():
                         if batch:
                             await self._save_batch_to_db(batch)
@@ -57,11 +83,15 @@ class BaseQueueingDao:
 
                     item = await self.queue.get()
                     batch.append(item)
+                    room_in_batch = len(batch) < self.batch_size
 
                 if batch:
                     await self._save_batch_to_db(batch)
 
             except asyncio.CancelledError:
+                # print("Task was cancelled! Stack trace:")
+                # traceback.print_stack()
+                # raise  # Re-raise to ensure proper cancellation handling
                 # Handle cancellation gracefully
                 if batch:  # Save any remaining items before exiting
                     try:
@@ -81,11 +111,26 @@ class BaseQueueingDao:
             async with session.begin():
                 session.add_all(batch)
                 await session.commit()
+                
+    async def _force_process_queue_for_test(self):
+        """Force immediate processing of queued items for testing purposes"""
+        # Get all items from the queue
+        items = []
+        while not self.queue.empty():
+            try:
+                item = self.queue.get_nowait()
+                items.append(item)
+            except asyncio.QueueEmpty:
+                break
+                
+        # Save items if there are any
+        if items:
+            await self._save_batch_to_db(items)
 
     async def cleanup(self):
         """Clean up resources and cancel any background tasks."""
         self.processing = False  # break the loop
-        print(self._queue_task, "87ru")
+        print(self._queue_task, "fff87ru")
         if hasattr(self, '_queue_task') and self._queue_task and not self._queue_task.done():
             # Cancel the background task
             self._queue_task.cancel()
@@ -99,6 +144,7 @@ class BaseQueueingDao:
         # Process any remaining items in the queue
         remaining_items = []
         while not self.queue.empty():
+            print("1300ru")
             try:
                 item = self.queue.get_nowait()
                 remaining_items.append(item)

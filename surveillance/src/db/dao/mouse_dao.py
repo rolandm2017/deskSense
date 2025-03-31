@@ -7,7 +7,7 @@ from .base_dao import BaseQueueingDao
 
 from ..models import MouseMove
 from ...object.dto import MouseMoveDto
-from ...trackers.mouse_tracker import MouseMoveWindow
+from ...object.classes import MouseMoveWindow
 from ...util.console_logger import ConsoleLogger
 
 
@@ -34,6 +34,7 @@ class MouseDao(BaseQueueingDao):
         # self.logger.log_green("[LOG] Mouse move")
         mouse_move = MouseMove(
             start_time=window.start_time, end_time=window.end_time)
+        print(mouse_move, "g oes into the queue 37ru")
         await self.queue_item(mouse_move, MouseMove)
 
     async def create_without_queue(self, start_time: datetime, end_time: datetime):

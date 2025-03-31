@@ -4,11 +4,9 @@ from typing import List, TypedDict
 
 from ..util.keyboard_aggregator import EventAggregator, InProgressAggregation
 
-from ..util.clock import SystemClock
-from ..util.detect_os import OperatingSystemInfo
-from ..util.threaded_tracker import ThreadedTracker
+
 # from ..object.enums import MouseEvent
-from ..object.classes import KeyboardAggregate, MouseAggregate, MouseCoords, MouseMoveWindow, MouseEvent
+from ..object.classes import  MouseAggregate, MouseEvent
 from ..util.console_logger import ConsoleLogger
 from ..facade.mouse_facade import MouseFacadeCore
 

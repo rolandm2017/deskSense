@@ -1,3 +1,5 @@
+
+
 class SuspiciousDurationError(ValueError):
     """Raised when session duration is unexpectedly large."""
 
