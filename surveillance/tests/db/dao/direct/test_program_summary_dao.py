@@ -10,15 +10,15 @@ from sqlalchemy import text
 from dotenv import load_dotenv
 import os
 
-from src.db.dao.program_summary_dao import ProgramSummaryDao
+from src.db.dao.direct.program_summary_dao import ProgramSummaryDao
 
-from src.db.dao.program_logs_dao import ProgramLoggingDao
-from src.db.dao.chrome_logs_dao import ChromeLoggingDao
+from src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from src.db.models import DailyProgramSummary, Base
 from src.object.classes import ProgramSessionData
 from src.util.clock import SystemClock
 
-from ...mocks.mock_clock import MockClock
+from ....mocks.mock_clock import MockClock
 
 load_dotenv()
 

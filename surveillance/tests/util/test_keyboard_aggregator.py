@@ -1,14 +1,12 @@
 # test_aggregator.py
-from unittest import BaseTestSuite
 import pytest
 from typing import List
 from dataclasses import dataclass
 from datetime import timedelta
 
-from src.util.keyboard_aggregator import EventAggregator, InProgressAggregation
+from src.util.keyboard_aggregator import EventAggregator
 
 from src.util.clock import SystemClock
-from surveillance.tests.mocks.mock_clock import MockClock
 
 ####
 # Happy path tests

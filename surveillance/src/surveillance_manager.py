@@ -16,19 +16,19 @@ from .arbiter.activity_arbiter import ActivityArbiter
 
 from .facade.receive_messages import MessageReceiver
 
-from .db.dao.system_status_dao import SystemStatusDao
-from .db.dao.session_integrity_dao import SessionIntegrityDao
+from .db.dao.direct.system_status_dao import SystemStatusDao
+from .db.dao.direct.session_integrity_dao import SessionIntegrityDao
 
 
-from .db.dao.mouse_dao import MouseDao
-from .db.dao.keyboard_dao import KeyboardDao
-from .db.dao.chrome_dao import ChromeDao
-from .db.dao.program_dao import ProgramDao
-from .db.dao.timeline_entry_dao import TimelineEntryDao
-from .db.dao.program_summary_dao import ProgramSummaryDao
-from .db.dao.chrome_summary_dao import ChromeSummaryDao
-from .db.dao.program_logs_dao import ProgramLoggingDao
-from .db.dao.chrome_logs_dao import ChromeLoggingDao
+from .db.dao.queuing.mouse_dao import MouseDao
+from .db.dao.queuing.keyboard_dao import KeyboardDao
+from .db.dao.queuing.chrome_dao import ChromeDao
+from .db.dao.queuing.program_dao import ProgramDao
+from .db.dao.queuing.timeline_entry_dao import TimelineEntryDao
+from .db.dao.direct.program_summary_dao import ProgramSummaryDao
+from .db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from .db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from .db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
 from .object.classes import ProgramSessionData
 from .services.chrome_service import ChromeService

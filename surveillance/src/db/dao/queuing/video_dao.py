@@ -5,11 +5,11 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from datetime import datetime, timedelta
 
-from .base_dao import BaseQueueingDao
-from ..models import Video
+from ..base_dao import BaseQueueingDao
+from ...models import Video
 # from ...object.dto import VideoDto
-from ...object.pydantic_dto import VideoCreateEvent
-from ...util.console_logger import ConsoleLogger
+from ....object.pydantic_dto import VideoCreateEvent
+from ....util.console_logger import ConsoleLogger
 
 
 class VideoDao(BaseQueueingDao):

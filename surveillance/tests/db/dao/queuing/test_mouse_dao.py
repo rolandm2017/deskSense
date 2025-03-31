@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 from typing import cast
 
-from src.db.dao.mouse_dao import MouseDao
+from src.db.dao.queuing.mouse_dao import MouseDao
 from src.db.models import MouseMove
 from src.object.classes import MouseMoveWindow
 from src.util.clock import SystemClock

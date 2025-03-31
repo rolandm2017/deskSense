@@ -4,21 +4,21 @@ from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from surveillance.src.services.dashboard_service import DashboardService
-from surveillance.server import (
+from src.services.dashboard_service import DashboardService
+from server import (
     app,
     surveillance_state,
     get_dashboard_service, get_keyboard_service, get_mouse_service, get_program_service,
 
 )
-from surveillance.server import app, KeyboardService, MouseService, ProgramService
+from server import app, KeyboardService, MouseService, ProgramService
 
-from surveillance.src.db.models import TimelineEntryObj, ChartEventType, DailyProgramSummary
-from surveillance.src.db.dao.keyboard_dao import TypingSessionDto
-from surveillance.src.db.dao.mouse_dao import MouseMoveDto
-from surveillance.src.db.dao.program_dao import ProgramDao
+from src.db.models import TimelineEntryObj, ChartEventType, DailyProgramSummary
+from src.db.dao.queuing.keyboard_dao import TypingSessionDto
+from src.db.dao.queuing.mouse_dao import MouseMoveDto
+from src.db.dao.queuing.program_dao import ProgramDao
 
-from surveillance.src.object.dto import ProgramDto
+from src.object.dto import ProgramDto
 
 
 @pytest.fixture

@@ -1,10 +1,10 @@
 from ..object.classes import ChromeSessionData, ProgramSessionData
 from ..object.arbiter_classes import InternalState
 
-from ..db.dao.chrome_summary_dao import ChromeSummaryDao
-from ..db.dao.program_summary_dao import ProgramSummaryDao
-from ..db.dao.program_logs_dao import ProgramLoggingDao
-from ..db.dao.chrome_logs_dao import ChromeLoggingDao
+from ..db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from ..db.dao.direct.program_summary_dao import ProgramSummaryDao
+from ..db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from ..db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
 # Persistence component
 

@@ -3,11 +3,11 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from datetime import datetime, timedelta
 
-from .base_dao import BaseQueueingDao
-from ..models import ChromeTab
-from ...util.console_logger import ConsoleLogger
-from ...object.classes import ChromeSessionData
-from ...config.definitions import max_content_len
+from ..base_dao import BaseQueueingDao
+from ...models import ChromeTab
+from ....util.console_logger import ConsoleLogger
+from ....object.classes import ChromeSessionData
+from ....config.definitions import max_content_len
 
 
 class ChromeDao(BaseQueueingDao):
