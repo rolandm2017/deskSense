@@ -24,15 +24,13 @@ from src.db.database import async_session_maker
 from src.object.dashboard_dto import WeeklyProgramContent
 from src.object.enums import ChartEventType
 from src.services.dashboard_service import DashboardService
-from src.db.dao.timeline_entry_dao import TimelineEntryDao
-from src.db.dao.program_summary_dao import ProgramSummaryDao
-from src.db.dao.chrome_summary_dao import ChromeSummaryDao
+from src.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
+from src.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 
-from src.db.dao.program_logs_dao import ProgramLoggingDao
-from src.db.dao.chrome_logs_dao import ChromeLoggingDao
+from src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
-from src.db.dao.program_logs_dao import ProgramLoggingDao
-from src.db.dao.chrome_logs_dao import ChromeLoggingDao
 
 from src.util.console_logger import ConsoleLogger
 

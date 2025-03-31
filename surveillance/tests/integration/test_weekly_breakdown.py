@@ -22,11 +22,11 @@ from dotenv import load_dotenv
 
 from src.services.dashboard_service import DashboardService
 
-from src.db.dao.timeline_entry_dao import TimelineEntryDao
-from src.db.dao.program_summary_dao import ProgramSummaryDao
-from src.db.dao.chrome_summary_dao import ChromeSummaryDao
-from src.db.dao.program_logs_dao import ProgramLoggingDao
-from src.db.dao.chrome_logs_dao import ChromeLoggingDao
+from src.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
+from src.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
 from src.db.models import Base, DailyDomainSummary, DailyProgramSummary
 from src.object.classes import ChromeSessionData, ProgramSessionData

@@ -3,12 +3,12 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from datetime import timedelta, datetime
 
-from .base_dao import BaseQueueingDao
+from ..base_dao import BaseQueueingDao
 
-from ..models import MouseMove
-from ...object.dto import MouseMoveDto
-from ...object.classes import MouseMoveWindow
-from ...util.console_logger import ConsoleLogger
+from ...models import MouseMove
+from ....object.dto import MouseMoveDto
+from ....object.classes import MouseMoveWindow
+from ....util.console_logger import ConsoleLogger
 
 
 def get_rid_of_ms(time):

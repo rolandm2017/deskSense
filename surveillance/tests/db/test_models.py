@@ -5,8 +5,8 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from typing import cast
 
-from surveillance.src.db.models import TimelineEntryObj, Base
-from surveillance.src.object.enums import ChartEventType
+from src.db.models import TimelineEntryObj, Base
+from src.object.enums import ChartEventType
 from dotenv import load_dotenv
 import os
 load_dotenv()

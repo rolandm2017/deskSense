@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from typing import cast
 
-from src.db.dao.timeline_entry_dao import TimelineEntryDao
+from src.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
 from src.db.models import TimelineEntryObj
 from src.object.classes import KeyboardAggregate, MouseMoveWindow
 from src.object.enums import ChartEventType

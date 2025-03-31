@@ -11,8 +11,8 @@ from operator import attrgetter
 
 from ..config.definitions import power_on_off_debug_file
 
-from ..db.dao.chrome_dao import ChromeDao
-from ..db.dao.chrome_summary_dao import ChromeSummaryDao
+from ..db.dao.queuing.chrome_dao import ChromeDao
+from ..db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from ..object.classes import ChromeSessionData
 from ..object.pydantic_dto import TabChangeEvent
 from ..config.definitions import productive_sites

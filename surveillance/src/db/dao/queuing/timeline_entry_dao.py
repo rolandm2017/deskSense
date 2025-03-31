@@ -6,12 +6,12 @@ from datetime import datetime, timedelta, time
 
 from typing import List
 
-from .base_dao import BaseQueueingDao
-from ..models import TimelineEntryObj, PrecomputedTimelineEntry
-from ...object.classes import KeyboardAggregate, MouseMoveWindow
-from ...object.enums import ChartEventType
-from ...util.console_logger import ConsoleLogger
-from ...util.timeline_event_aggregator import aggregate_timeline_events
+from ..base_dao import BaseQueueingDao
+from ...models import TimelineEntryObj, PrecomputedTimelineEntry
+from ....object.classes import KeyboardAggregate, MouseMoveWindow
+from ....object.enums import ChartEventType
+from ....util.console_logger import ConsoleLogger
+from ....util.timeline_event_aggregator import aggregate_timeline_events
 
 
 class TimelineEntryDao(BaseQueueingDao):

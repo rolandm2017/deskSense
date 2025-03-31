@@ -11,8 +11,8 @@ from src.services.chrome_service import TabQueue
 from src.arbiter.activity_arbiter import ActivityArbiter
 from src.util.clock import SystemClock
 from src.debug.debug_overlay import Overlay
-from surveillance.src.arbiter.activity_recorder import ActivityRecorder
-from surveillance.src.debug.ui_notifier import UINotifier
+from src.arbiter.activity_recorder import ActivityRecorder
+from src.debug.ui_notifier import UINotifier
 
 # Fixture to read and reconstruct events from the CSV file
 

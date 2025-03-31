@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy import text
 
 from src.object.dto import TypingSessionDto
-from src.db.dao.keyboard_dao import KeyboardDao
+from src.db.dao.queuing.keyboard_dao import KeyboardDao
 from src.db.models import TypingSession
 from src.object.classes import KeyboardAggregate
 from src.util.clock import SystemClock

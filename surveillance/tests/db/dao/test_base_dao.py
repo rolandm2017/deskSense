@@ -20,8 +20,8 @@ num_open_files = len(open_files)
 
 
 from src.db.dao.base_dao import BaseQueueingDao
-from src.db.dao.program_logs_dao import ProgramLoggingDao
-from src.db.dao.program_dao import ProgramDao
+from src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from src.db.dao.queuing.program_dao import ProgramDao
 
 
 load_dotenv()

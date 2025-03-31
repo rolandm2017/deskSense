@@ -2,13 +2,13 @@
 from datetime import datetime, timedelta, timezone, date
 from typing import List, TypedDict, Dict, Tuple
 
-from ..db.dao.program_logs_dao import ProgramLoggingDao
-from ..db.dao.chrome_logs_dao import ChromeLoggingDao
+from ..db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from ..db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
 
-from ..db.dao.timeline_entry_dao import TimelineEntryDao
-from ..db.dao.program_summary_dao import ProgramSummaryDao
-from ..db.dao.chrome_summary_dao import ChromeSummaryDao
+from ..db.dao.queuing.timeline_entry_dao import TimelineEntryDao
+from ..db.dao.direct.program_summary_dao import ProgramSummaryDao
+from ..db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from ..db.models import DailyDomainSummary, DailyProgramSummary, ProgramSummaryLog, TimelineEntryObj
 from ..config.definitions import productive_sites, productive_apps
 from ..util.console_logger import ConsoleLogger

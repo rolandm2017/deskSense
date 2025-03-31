@@ -10,11 +10,11 @@ from ..facade.keyboard_facade import KeyboardFacadeCore
 from ..object.pydantic_dto import TabChangeEvent
 from ..util.time_formatting import convert_to_timezone
 
-from ..db.dao.mouse_dao import MouseDao
-from ..db.dao.keyboard_dao import KeyboardDao
-from ..db.dao.program_dao import ProgramDao
-from ..db.dao.video_dao import VideoDao
-from ..db.dao.frame_dao import FrameDao
+from ..db.dao.queuing.mouse_dao import MouseDao
+from ..db.dao.queuing.keyboard_dao import KeyboardDao
+from ..db.dao.queuing.program_dao import ProgramDao
+from ..db.dao.queuing.video_dao import VideoDao
+from ..db.dao.direct.frame_dao import FrameDao
 from ..db.models import TypingSession, Program, MouseMove
 from ..object.dto import TypingSessionDto
 

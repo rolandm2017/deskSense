@@ -12,19 +12,19 @@ from .services.services import KeyboardService, MouseService, ProgramService, Ti
 from .facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
 
 from .db.database import async_session_maker
-from .db.dao.mouse_dao import MouseDao
-from .db.dao.keyboard_dao import KeyboardDao
-from .db.dao.program_dao import ProgramDao
-from .db.dao.timeline_entry_dao import TimelineEntryDao
-from .db.dao.program_summary_dao import ProgramSummaryDao
-from .db.dao.chrome_dao import ChromeDao
-from .db.dao.chrome_summary_dao import ChromeSummaryDao
-from .db.dao.program_logs_dao import ProgramLoggingDao
-from .db.dao.chrome_logs_dao import ChromeLoggingDao
+from .db.dao.queuing.mouse_dao import MouseDao
+from .db.dao.queuing.keyboard_dao import KeyboardDao
+from .db.dao.queuing.program_dao import ProgramDao
+from .db.dao.queuing.timeline_entry_dao import TimelineEntryDao
+from .db.dao.direct.program_summary_dao import ProgramSummaryDao
+from .db.dao.queuing.chrome_dao import ChromeDao
+from .db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from .db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from .db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
 
-from .db.dao.video_dao import VideoDao
-from .db.dao.frame_dao import FrameDao
+from .db.dao.queuing.video_dao import VideoDao
+from .db.dao.direct.frame_dao import FrameDao
 
 from .arbiter.activity_arbiter import ActivityArbiter
 from .arbiter.activity_recorder import ActivityRecorder
@@ -133,8 +133,8 @@ _chrome_service_instance = None
 async def get_activity_arbiter():
     from .debug.debug_overlay import Overlay
     from .arbiter.activity_arbiter import ActivityArbiter
-    from .db.dao.program_summary_dao import ProgramSummaryDao
-    from .db.dao.chrome_summary_dao import ChromeSummaryDao
+    from .db.dao.direct.program_summary_dao import ProgramSummaryDao
+    from .db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 
     loop = asyncio.get_event_loop()
     system_clock = SystemClock()

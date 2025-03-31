@@ -12,11 +12,11 @@ import os
 from src.arbiter.activity_arbiter import ActivityArbiter
 from src.arbiter.activity_recorder import ActivityRecorder
 from src.db.models import DailyProgramSummary, Base
-from src.db.dao.program_summary_dao import ProgramSummaryDao
-from src.db.dao.chrome_summary_dao import ChromeSummaryDao
+from src.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 
-from src.db.dao.program_logs_dao import ProgramLoggingDao
-from src.db.dao.chrome_logs_dao import ChromeLoggingDao
+from src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from src.facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
 
 from src.services.chrome_service import ChromeService
@@ -24,8 +24,8 @@ from src.service_dependencies import get_dashboard_service
 
 
 from src.surveillance_manager import FacadeInjector, SurveillanceManager
-from surveillance.src.object.classes import ChromeSessionData, ProgramSessionData
-from surveillance.src.util.program_tools import separate_window_name_and_detail
+from src.object.classes import ChromeSessionData, ProgramSessionData
+from src.util.program_tools import separate_window_name_and_detail
 
 from ..mocks.mock_clock import MockClock
 from ..data.captures_for_test_data_Chrome import chrome_data

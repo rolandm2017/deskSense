@@ -6,8 +6,8 @@ from ..config.definitions import power_on_off_debug_file
 
 
 from ..object.classes import ChromeSessionData, ProgramSessionData
-from ..db.dao.chrome_summary_dao import ChromeSummaryDao
-from ..db.dao.program_summary_dao import ProgramSummaryDao
+from ..db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from ..db.dao.direct.program_summary_dao import ProgramSummaryDao
 
 from .activity_state_machine import ActivityStateMachine
 from ..object.arbiter_classes import ChromeInternalState, ApplicationInternalState, InternalState

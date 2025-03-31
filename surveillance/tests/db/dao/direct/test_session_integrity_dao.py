@@ -11,9 +11,9 @@ import os
 
 # Import models and DAOs
 from src.db.models import Base, SystemStatus, ProgramSummaryLog, DomainSummaryLog
-from src.db.dao.session_integrity_dao import SessionIntegrityDao
-from src.db.dao.program_logs_dao import ProgramLoggingDao
-from src.db.dao.chrome_logs_dao import ChromeLoggingDao
+from src.db.dao.direct.session_integrity_dao import SessionIntegrityDao
+from src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
 # Load environment variables from .env file
 load_dotenv()
