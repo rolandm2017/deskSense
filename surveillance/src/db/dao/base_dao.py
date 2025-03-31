@@ -50,6 +50,7 @@ class BaseQueueingDao:
             # loop.set_exception_handler(handle_exception)
             self._queue_task = asyncio.create_task(self._wrapped_process_queue())  # Store the task reference
             # self._queue_task = asyncio.create_task(self.process_queue())  # Store the task reference
+            self._queue_task.add_done_callback(self._task_done_callback)
 
     async def _wrapped_process_queue(self):
         """Wrapper for process_queue() to log unhandled exceptions."""
@@ -70,7 +71,7 @@ class BaseQueueingDao:
             try:
                 room_in_batch = len(batch) < self.batch_size
                 while room_in_batch:
-                    print("72ru")
+                    print("room in batch loop 72ru")
                     if self.queue.empty():
                         if batch:
                             await self._save_batch_to_db(batch)
@@ -102,36 +103,58 @@ class BaseQueueingDao:
             except Exception as e:
                 traceback.print_exc()
                 print(f"Error processing batch: {e}")
-        self._queue_task = None  # Reset task reference when exiting
+        # self._queue_task = None  # Reset task reference when exiting
         self.processing = False
+
+    def _task_done_callback(self, task):
+        """Handles task completion, including unexpected completion."""
+        try:
+            # Check if task raised an exception
+            exc = task.exception()
+            if exc:
+                print(f"Task raised exception: {exc}")
+        except asyncio.CancelledError:
+            pass  # Task was cancelled, which is normal
+        
+        # Ensure we reset processing state
+        self.processing = False
+        # Only set _queue_task to None if it's this task
+        if self._queue_task == task:
+            self._queue_task = None
 
     async def _save_batch_to_db(self, batch):
         """Save a batch of items to the database"""
-        async with self.session_maker() as session:  # Create new session for batch
+        print("Opening session for batch save")
+        async with self.session_maker() as session:
+            # Start transaction
             async with session.begin():
                 session.add_all(batch)
-                await session.commit()
+            print("Session context exited")
+        print("Session fully closed")
+                # No need to call commit explicitly as session.begin() handles it
+            # Ensure connection is returned to the pool properly
+        # Session is closed here
                 
-    async def _force_process_queue_for_test(self):
-        """Force immediate processing of queued items for testing purposes"""
+    async def _force_process_queue(self):
+        """Force immediate processing of queued items. Can be useful for tests or shutdown"""
         # Get all items from the queue
-        items = []
+        remaining_items = []
         while not self.queue.empty():
             try:
                 item = self.queue.get_nowait()
-                items.append(item)
+                remaining_items.append(item)
             except asyncio.QueueEmpty:
                 break
                 
         # Save items if there are any
-        if items:
-            await self._save_batch_to_db(items)
+        if remaining_items:
+            await self._save_batch_to_db(remaining_items)
 
     async def cleanup(self):
         """Clean up resources and cancel any background tasks."""
         self.processing = False  # break the loop
         print(self._queue_task, "fff87ru")
-        if hasattr(self, '_queue_task') and self._queue_task and not self._queue_task.done():
+        if self._queue_task and not self._queue_task.done():
             # Cancel the background task
             self._queue_task.cancel()
             try:
@@ -139,25 +162,18 @@ class BaseQueueingDao:
                 await asyncio.wait_for(asyncio.shield(self._queue_task), timeout=2.0)
             except (asyncio.CancelledError, asyncio.TimeoutError):
                 pass  # Expected exceptions during cancellation
-            self._queue_task = None
+
+        # Force drain the connection pool for this session maker
+        # An aggressive approach that should clear any lingering connections
+        try:
+            # Create a test session and immediately close it to drain the pool
+            async with self.session_maker() as session:
+                pass  # Session is automatically closed when exiting context
+        except Exception as e:
+            print(f"Error draining connection pool: {e}")
 
         # Process any remaining items in the queue
-        remaining_items = []
-        while not self.queue.empty():
-            print("1300ru")
-            try:
-                item = self.queue.get_nowait()
-                remaining_items.append(item)
-            except asyncio.QueueEmpty:
-                break
-
-        # Save any remaining items if there are any
-        if remaining_items:
-            try:
-                await self._save_batch_to_db(remaining_items)
-            except Exception as e:
-                print(f"Error saving remaining items during cleanup: {e}")
-
+        await self._force_process_queue()
         
     async def __aenter__(self):
         """Support for async context manager protocol"""
