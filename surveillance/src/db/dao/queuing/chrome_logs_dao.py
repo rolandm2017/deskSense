@@ -35,7 +35,7 @@ class ChromeLoggingDao(BaseQueueingDao):
         """ Exists mostly for debugging. """
 
         super().__init__(session_maker=session_maker,
-                         batch_size=batch_size, flush_interval=flush_interval)
+                         batch_size=batch_size, flush_interval=flush_interval,dao_name="ChromeLogging")
         self.session_maker = session_maker
 
     @validate_session
@@ -54,7 +54,7 @@ class ChromeLoggingDao(BaseQueueingDao):
             gathering_date=right_now.date(),
             created_at=right_now
         )
-        await self.queue_item(log_entry, DomainSummaryLog)
+        await self.queue_item(log_entry, DomainSummaryLog, "create_log")
 
     @guarantee_start_time
     async def start_session(self, session: ChromeSessionData):
@@ -72,7 +72,7 @@ class ChromeLoggingDao(BaseQueueingDao):
             gathering_date=start_of_day_as_utc,
             created_at=session.start_time
         )
-        await self.queue_item(log_entry, DomainSummaryLog)
+        await self.queue_item(log_entry, DomainSummaryLog, "start_session")
 
     async def find_session(self, session: ChromeSessionData):
         start_time_as_utc = convert_to_utc(session.start_time)

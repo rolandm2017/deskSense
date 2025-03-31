@@ -10,7 +10,9 @@ def handle_exception(loop, context):
     # context['message'] contains the error message
     # context['exception'] (if available) contains the exception object
     msg = context.get('exception', context['message'])
-    print(f"\n⚠️ Caught asyncio exception: {msg}\n")
+    task = context.get("task")
+    task_name = task.get_name() if task else "Unknown-Task"
+    print(f"\n⚠️ Caught asyncio exception: {msg}\nIn: {task_name}\n")
     traceback.print_stack()
     print("Context:", context)
 
@@ -23,12 +25,13 @@ class BaseQueueingDao:
 
     The point is to (a) prevent bottlenecks and (b) avoid wasted overhead resources.
     """
-    def __init__(self, session_maker: async_sessionmaker, batch_size=30, flush_interval=1):
+    def __init__(self, session_maker: async_sessionmaker, batch_size=30, flush_interval=1, dao_name="BaseQueueingDao"):
         self.session_maker = session_maker
         self.batch_size = batch_size
         if flush_interval > 1:
             raise WayTooLongWaitError(flush_interval)
         self.flush_interval = flush_interval
+        self.dao_name = dao_name
         self.queue = Queue()
         self.processing = False
         self._queue_task = None  # Store reference to the background task
@@ -40,7 +43,7 @@ class BaseQueueingDao:
             # No event loop, which is fine - will be set when needed
             pass
 
-    async def queue_item(self, item, expected_type=None):
+    async def queue_item(self, item, expected_type=None, source=None):
         """Common method to queue items and start processing if needed"""
         if isinstance(item, dict):
             raise ValueError("Dict found")
@@ -50,12 +53,16 @@ class BaseQueueingDao:
         await self.queue.put(item)
 
         # Only start a new task if no task is running or the previous one is done
-        no_task_running = self._queue_task is None or self._queue_task.done()
-        if no_task_running:
+        no_queue_running = self._queue_task is None or self._queue_task.done()
+        if no_queue_running:
             print("Starting new queue processing task")
             self.processing = True
             # Create a new task and store a strong reference to it
-            self._queue_task = asyncio.create_task(self._wrapped_process_queue())
+            # self._queue_task = asyncio.create_task(self._wrapped_process_queue())
+            self._queue_task = asyncio.create_task(
+                self._wrapped_process_queue(), 
+                name=f"{self.dao_name}-{source}-Task"
+            )
             self._queue_task.add_done_callback(self._task_done_callback)
 
     async def _wrapped_process_queue(self):

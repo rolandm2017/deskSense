@@ -23,8 +23,6 @@ from src.arbiter.activity_recorder import ActivityRecorder
 from src.db.models import DomainSummaryLog, ProgramSummaryLog, Base
 
 
-from src.db.dao.direct.program_summary_dao import ProgramSummaryDao
-from src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
@@ -93,13 +91,24 @@ def mock_session_data():
     test_chrome_session.productive = True
 
     return test_program_session, test_chrome_session
+
+@pytest_asyncio.fixture
+async def prepare_daos(plain_asm):
+    program_dao = ProgramLoggingDao(plain_asm)
+    chrome_dao = ChromeLoggingDao(plain_asm)
+
+    yield program_dao, chrome_dao
+
+    await program_dao.cleanup()
+    await chrome_dao.cleanup()
+
+    
 @pytest.mark.asyncio
-async def test_start_session(plain_asm, mock_session_data):
+async def test_start_session(prepare_daos, mock_session_data):
     """Test that start_session calls queue_item correctly"""
     # Arrange
     program_session, chrome_session = mock_session_data
-    program_dao = ProgramLoggingDao(plain_asm)
-    chrome_dao = ChromeLoggingDao(plain_asm)
+    program_dao, chrome_dao = prepare_daos
     
     # Save original methods
     original_program_queue = program_dao.queue_item
@@ -131,10 +140,12 @@ async def test_start_session(plain_asm, mock_session_data):
         chrome_dao.process_queue = original_chrome_process
 
 @pytest.mark.asyncio
-async def test_find_session(plain_asm, mock_session_data):
+async def test_find_session(prepare_daos, plain_asm, mock_session_data):
     """Test find_session with direct database inserts"""
     # Arrange
     program_session, chrome_session = mock_session_data
+    program_dao, chrome_dao = prepare_daos
+
     
     # Insert test data directly using SQLAlchemy without DAO queuing
     async with plain_asm() as session:
@@ -159,57 +170,60 @@ async def test_find_session(plain_asm, mock_session_data):
             await session.rollback()
             pytest.fail(f"Failed to insert test data: {e}")
     
-    # Create DAOs for testing find_session
-    program_dao = ProgramLoggingDao(plain_asm)
-    chrome_dao = ChromeLoggingDao(plain_asm)
-    
-    # Mock process_queue to prevent hanging
-    program_dao.process_queue = AsyncMock()
-    chrome_dao.process_queue = AsyncMock()
-    
-    # Read data to verify insertion worked
-    programs = await program_dao.read_all()
-    domains = await chrome_dao.read_all()
-    
-    assert len(programs) == 1, "Expected one program record"
-    assert len(domains) == 1, "Expected one domain record"
-    
-    # Test finding existing sessions
-    program_found = await program_dao.find_session(program_session)
-    chrome_found = await chrome_dao.find_session(chrome_session)
-    
-    # Test finding non-existent sessions
-    whenever = datetime(2025, 3, 2, 12, 59, 0, tzinfo=timezone_for_test_data)
-    nonexistent_program = ProgramSessionData()
-    nonexistent_program.start_time = whenever
-    nonexistent_chrome = ChromeSessionData()
-    nonexistent_chrome.start_time = whenever
-    
-    dne_program = await program_dao.find_session(nonexistent_program)
-    dne_chrome = await chrome_dao.find_session(nonexistent_chrome)
-    
-    # Assertions
-    assert program_found is not None, "Program session should be found"
-    assert chrome_found is not None, "Chrome session should be found"
-    assert isinstance(program_found, ProgramSummaryLog)
-    assert isinstance(chrome_found, DomainSummaryLog)
-    assert dne_program is None, "Non-existent program should return None"
-    assert dne_chrome is None, "Non-existent chrome session should return None"
-    
-    # Additional assertions if found
-    assert isinstance(program_found, ProgramSummaryLog)
-    assert isinstance(chrome_found, DomainSummaryLog)
-    assert program_found.id is not None
-    assert chrome_found.id is not None
-    assert program_found.start_time == program_session.start_time.astimezone(timezone.utc)
-    assert chrome_found.start_time == chrome_session.start_time.astimezone(timezone.utc)
+    program_dao_queue = program_dao.process_queue
+    chrome_dao_queue = chrome_dao.process_queue
+    try:
+        # Mock process_queue to prevent hanging
+        program_dao.process_queue = AsyncMock()
+        chrome_dao.process_queue = AsyncMock()
+        
+        # Read data to verify insertion worked
+        programs = await program_dao.read_all()
+        domains = await chrome_dao.read_all()
+        
+        assert len(programs) == 1, "Expected one program record"
+        assert len(domains) == 1, "Expected one domain record"
+        
+        # Test finding existing sessions
+        program_found = await program_dao.find_session(program_session)
+        chrome_found = await chrome_dao.find_session(chrome_session)
+        
+        # Test finding non-existent sessions
+        whenever = datetime(2025, 3, 2, 12, 59, 0, tzinfo=timezone_for_test_data)
+        nonexistent_program = ProgramSessionData()
+        nonexistent_program.start_time = whenever
+        nonexistent_chrome = ChromeSessionData()
+        nonexistent_chrome.start_time = whenever
+        
+        dne_program = await program_dao.find_session(nonexistent_program)
+        dne_chrome = await chrome_dao.find_session(nonexistent_chrome)
+        
+        # Assertions
+        assert program_found is not None, "Program session should be found"
+        assert chrome_found is not None, "Chrome session should be found"
+        assert isinstance(program_found, ProgramSummaryLog)
+        assert isinstance(chrome_found, DomainSummaryLog)
+        assert dne_program is None, "Non-existent program should return None"
+        assert dne_chrome is None, "Non-existent chrome session should return None"
+        
+        # Additional assertions if found
+        assert isinstance(program_found, ProgramSummaryLog)
+        assert isinstance(chrome_found, DomainSummaryLog)
+        assert program_found.id is not None
+        assert chrome_found.id is not None
+        assert program_found.start_time == program_session.start_time.astimezone(timezone.utc)
+        assert chrome_found.start_time == chrome_session.start_time.astimezone(timezone.utc)
+    finally:
+        # Restore original methods without calling them    
+        program_dao.queue_item = program_dao_queue
+        chrome_dao.queue_item = chrome_dao_queue
 
 @pytest.mark.asyncio
-async def test_push_window_ahead(plain_asm, mock_session_data):
+async def test_push_window_ahead(prepare_daos, plain_asm, mock_session_data):
     """Test assumes there is an existing session, which the test can 'push the window forward' for."""
     program_session, chrome_session = mock_session_data
-    program_dao = ProgramLoggingDao(plain_asm)
-    chrome_dao = ChromeLoggingDao(plain_asm)
+    program_dao, chrome_dao = prepare_daos
+    # chrome_dao = ChromeLoggingDao(plain_asm)
     
     program_log = None
     chrome_log = None
@@ -273,28 +287,29 @@ def nonexistent_session():
 
 
 @pytest.mark.asyncio
-async def test_push_window_error(plain_asm, nonexistent_session):
-    try:
-        program_dao = ProgramLoggingDao(plain_asm)
-        chrome_dao = ChromeLoggingDao(plain_asm)
+async def test_push_window_error(prepare_daos, plain_asm, nonexistent_session):
+    # try:
+    program_dao, chrome_dao = prepare_daos
 
-        with pytest.raises(ImpossibleToGetHereError):
-            await program_dao.push_window_ahead_ten_sec(nonexistent_session)
-        with pytest.raises(ImpossibleToGetHereError):
-            await chrome_dao.push_window_ahead_ten_sec(nonexistent_session)
-    finally:
-        await truncate_test_tables(plain_asm)
+    with pytest.raises(ImpossibleToGetHereError):
+        await program_dao.push_window_ahead_ten_sec(nonexistent_session)
+    with pytest.raises(ImpossibleToGetHereError):
+        await chrome_dao.push_window_ahead_ten_sec(nonexistent_session)
+    # finally:
+        # await truncate_test_tables(plain_asm)
 
 
 @pytest.mark.asyncio
-async def test_finalize_log_error(plain_asm, nonexistent_session):
-    try:
-        program_dao = ProgramLoggingDao(plain_asm)
-        chrome_dao = ChromeLoggingDao(plain_asm)
+async def test_finalize_log_error(prepare_daos, plain_asm, nonexistent_session):
+    program_dao, chrome_dao = prepare_daos
+    
+    # try:
+    program_dao = ProgramLoggingDao(plain_asm)
+    chrome_dao = ChromeLoggingDao(plain_asm)
 
-        with pytest.raises(ImpossibleToGetHereError):
-            await program_dao.finalize_log(nonexistent_session)
-        with pytest.raises(ImpossibleToGetHereError):
-            await chrome_dao.finalize_log(nonexistent_session)
-    finally:
-        await truncate_test_tables(plain_asm)
+    with pytest.raises(ImpossibleToGetHereError):
+        await program_dao.finalize_log(nonexistent_session)
+    with pytest.raises(ImpossibleToGetHereError):
+        await chrome_dao.finalize_log(nonexistent_session)
+    # finally:
+    #     await truncate_test_tables(plain_asm)

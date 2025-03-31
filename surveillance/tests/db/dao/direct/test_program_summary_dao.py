@@ -105,7 +105,7 @@ class TestProgramSummaryDao:
         session_cm.__aenter__.return_value = mock_session
         session_cm.__aexit__.return_value = None
 
-        maker = MagicMock(spec=async_sessionmaker)
+        maker = AsyncMock(spec=async_sessionmaker)
         maker.return_value = session_cm
         return maker
 

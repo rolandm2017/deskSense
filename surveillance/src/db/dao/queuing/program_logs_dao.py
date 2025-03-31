@@ -30,10 +30,10 @@ class ProgramLoggingDao(BaseQueueingDao):
     - Methods return UTC timestamps regardless of input timezone
     - Input datetimes should be timezone-aware
     - Date comparisons are performed in UTC"""
-    def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=1):
+    def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=1, dao_name="ProgramLogging"):
         """ Exists mostly for debugging. """
         super().__init__(session_maker=session_maker,
-                         batch_size=batch_size, flush_interval=flush_interval)
+                         batch_size=batch_size, flush_interval=flush_interval, dao_name=dao_name)
         self.session_maker = session_maker
 
     @validate_session
@@ -54,7 +54,7 @@ class ProgramLoggingDao(BaseQueueingDao):
             created_at=right_now
         )
         # print("[pr] Creating ", log_entry)
-        await self.queue_item(log_entry, ProgramSummaryLog)
+        await self.queue_item(log_entry, ProgramSummaryLog, "create_log")
 
 
     @guarantee_start_time
@@ -73,7 +73,7 @@ class ProgramLoggingDao(BaseQueueingDao):
             gathering_date=start_of_day_as_utc,
             created_at=base_start_time
         )
-        await self.queue_item(log_entry, ProgramSummaryLog)
+        await self.queue_item(log_entry, ProgramSummaryLog, "start_session")
 
     async def find_session(self, session: ProgramSessionData):
         # the database is storing and returning times in UTC
