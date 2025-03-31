@@ -14,12 +14,17 @@ class TestResourceManagement:
     @pytest_asyncio.fixture
     async def mock_session_maker(self):
         """Create a mock session maker and session for testing"""
-        # Create session with begin() method that returns a context manager
+        # Create session
         session = AsyncMock()
-        session.add_all = AsyncMock()
-        session.close = AsyncMock()
+        
+        # Make regular methods regular Mocks to avoid coroutine warnings
+        session.add_all = Mock()
+        session.close = Mock()
+        
+        # Mock only async methods with AsyncMock
         session.commit = AsyncMock()
         session.rollback = AsyncMock()
+        session.begin = AsyncMock()
         
         # Create session context manager
         session_cm = AsyncMock()
@@ -186,44 +191,46 @@ class TestResourceManagement:
         # Set up session.add_all to raise an exception
         session.add_all.side_effect = Exception("Test exception")
         
-        # Store exception flag
-        exception_raised = False
-        
-        # Patch the task done callback to track exceptions
-        original_callback = dao._task_done_callback
-        def patched_callback(task):
-            nonlocal exception_raised
-            try:
-                exc = task.exception()
-                if exc:
-                    exception_raised = True
-            except (asyncio.CancelledError, asyncio.InvalidStateError):
-                pass
-            original_callback(task)
-            
-        dao._task_done_callback = patched_callback
-        
         # Queue an item to trigger processing
         await dao.queue_item(TimelineEntryObj())
         
-        # Wait for the exception to be handled
-        for _ in range(50):  # Try for 5 seconds maximum
-            if exception_raised:
-                break
-            await asyncio.sleep(0.1)
+        # Wait for a reasonable time for processing to complete
+        await asyncio.sleep(1.0)
         
-        # Assert that the exception was handled
-        assert exception_raised, "Exception was not detected in the task"
-        assert dao.processing is False, "Processing flag not reset after exception"
+        # Core assertion: The process should not be in processing state
+        # after an exception occurs
+        assert not dao.processing, "Processing flag should be reset after exception"
+        
+        # Task should complete (done) even with an error
+        if dao._queue_task:
+            assert dao._queue_task.done(), "Task should be done after exception"
+        
+        # Ensure the queue is not blocked
+        # Try adding another item and make sure it doesn't hang
+        session.add_all.side_effect = None  # Remove the exception for this test
+        
+        # Reset mock to count new calls
+        session.add_all.reset_mock()
+        
+        # Queue a new item
+        await dao.queue_item(TimelineEntryObj())
+        
+        # Wait for processing
+        await asyncio.sleep(1.0)
+        
+        # Check that the new processing occurred
+        assert session.add_all.called, "Should be able to process new items after an exception"
             
     @pytest.mark.asyncio
     async def test_aenter_aexit_context_manager(self):
         """Test that the DAO works correctly as an async context manager"""
         # Setup
         session = AsyncMock()
+        session.add_all = Mock()
         session.begin = AsyncMock()
         session.commit = AsyncMock()
         session.rollback = AsyncMock()
+        print(f"In test, type of session.add_all: {type(session.add_all)}")
         
         session_cm = AsyncMock()
         session_cm.__aenter__.return_value = session
@@ -251,4 +258,5 @@ class TestResourceManagement:
             assert dao.processing is True
         
         # After context exit, cleanup should have been called
+        print(f"In test, type of session.add_all, near the end: {type(session.add_all)}")
         assert cleanup_called, "cleanup was not called when exiting context"

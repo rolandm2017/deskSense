@@ -16,7 +16,12 @@ import os
 
 from surveillance.src.db.models import Base
 
-asyncio.get_event_loop().set_debug(True)  # Enable asyncio debug mode
+try:
+    loop = asyncio.get_running_loop()
+except RuntimeError:
+    # No event loop running yet, create a new one
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
 
 pytest_plugins = ["pytest_asyncio"]
 

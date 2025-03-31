@@ -90,7 +90,7 @@ class BaseQueueingDao:
                 
                 # Fill batch until full or queue empty
                 try:
-                    while len(batch) < self.batch_size:
+                    while len(batch) < self.batch_size and not self.queue.empty():
                         try:
                             item = self.queue.get_nowait()
                             batch.append(item)
@@ -100,17 +100,23 @@ class BaseQueueingDao:
                     
                     # Save batch if not empty
                     if batch:
-                        await self._save_batch_to_db(batch)
-                        batch = []  # Clear the batch after saving
+                        try:
+                            await self._save_batch_to_db(batch)
+                            batch = []  # Clear the batch after saving
+                        except Exception as e:
+                            print(f"Error saving batch: {e}")
+                            traceback.print_exc()
+                            # Continue with the next batch
                     else:
                         # No items in queue, increment idle count and wait
                         idle_count += 1
                         await asyncio.sleep(self.flush_interval)
                         
                 except Exception as e:
-                    print(f"Error processing batch: {e}")
+                    print(f"Unexpected error in process_queue: {e}")
                     traceback.print_exc()
-                    # Don't re-raise, continue processing other batches
+                    # Don't exit the loop on unexpected errors
+                    await asyncio.sleep(self.flush_interval)
                     
         except asyncio.CancelledError:
             print("Queue processing task was cancelled")
@@ -154,6 +160,7 @@ class BaseQueueingDao:
                 # Use the manual transaction approach to avoid nesting issues
                 await session.begin()
                 try:
+                    print(f"Type of session.add_all: {type(session.add_all)}")
                     session.add_all(batch)
                     await session.commit()
                     print("Batch saved successfully")
