@@ -13,7 +13,7 @@ from ....config.definitions import max_content_len
 class ChromeDao(BaseQueueingDao):
     def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=1):
         super().__init__(session_maker=session_maker,
-                         batch_size=batch_size, flush_interval=flush_interval)
+                         batch_size=batch_size, flush_interval=flush_interval, dao_name="ChromeDao")
         self.logger = ConsoleLogger()
 
     async def create(self, session: ChromeSessionData):
@@ -32,7 +32,7 @@ class ChromeDao(BaseQueueingDao):
             end_time=session.end_time,
             productive=session.productive
         )
-        await self.queue_item(chrome_deliverable)
+        await self.queue_item(chrome_deliverable, "create")
 
     async def read_all(self):
         async with self.session_maker() as session:

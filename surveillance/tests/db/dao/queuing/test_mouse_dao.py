@@ -28,7 +28,10 @@ class TestMouseDao:
     async def dao(self, async_engine_and_asm):
         engine, asm = async_engine_and_asm
         print("Here, 40ruy")
-        yield MouseDao(asm)
+        dao = MouseDao(asm)
+        yield dao
+        await dao.cleanup()
+        
         await truncate_test_tables(engine)
         # await truncate_table(asm)
 

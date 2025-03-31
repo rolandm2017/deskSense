@@ -18,7 +18,7 @@ def get_rid_of_ms(time):
 class MouseDao(BaseQueueingDao):
     def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=1):
         super().__init__(session_maker=session_maker,
-                         batch_size=batch_size, flush_interval=flush_interval)
+                         batch_size=batch_size, flush_interval=flush_interval, dao_name="Mouse")
 
         self.logger = ConsoleLogger()
 
@@ -26,7 +26,7 @@ class MouseDao(BaseQueueingDao):
         mouse_move = MouseMove(start_time=start_time, end_time=end_time)
         if isinstance(mouse_move, MouseMoveWindow):
             raise ValueError("mouse move window found!")
-        await self.queue_item(mouse_move, MouseMove)
+        await self.queue_item(mouse_move, MouseMove, "create_from_start_end_times")
 
     async def create_from_window(self, window: MouseMoveWindow):
         # Create dict first, to avoid MouseMoveWindow "infesting" a MouseMove object.
@@ -35,7 +35,7 @@ class MouseDao(BaseQueueingDao):
         mouse_move = MouseMove(
             start_time=window.start_time, end_time=window.end_time)
         print(mouse_move, "g oes into the queue 37ru")
-        await self.queue_item(mouse_move, MouseMove)
+        await self.queue_item(mouse_move, MouseMove, "create_from_window")
 
     async def create_without_queue(self, start_time: datetime, end_time: datetime):
         new_mouse_move = MouseMove(
