@@ -86,298 +86,235 @@ async def cleanup_database(async_engine_and_asm):
 
 
 class TestProgramSummaryDao:
-    @pytest.fixture
-    def mock_session(self):
-        """Create a mock session with necessary async methods"""
-        session = AsyncMock(spec=AsyncSession)
-        session.commit = AsyncMock()
-        session.refresh = AsyncMock()
-        session.execute = AsyncMock()
-        session.delete = AsyncMock()
-        session.get = AsyncMock()
-        session.add = AsyncMock()
-        return session
-
-    @pytest.fixture
-    def mock_session_maker(self, mock_session):
-        """Create session maker that handles async context management"""
-        session_cm = AsyncMock()
-        session_cm.__aenter__.return_value = mock_session
-        session_cm.__aexit__.return_value = None
-
-        maker = AsyncMock(spec=async_sessionmaker)
-        maker.return_value = session_cm
-        return maker
-
-    @pytest.fixture
-    def class_mock_dao(self, mock_session_maker):
+    @pytest_asyncio.fixture
+    async def program_summary_dao(self, plain_asm):
         clock = SystemClock()
 
-        logging_dao = ProgramLoggingDao(mock_session_maker)
-        return ProgramSummaryDao(logging_dao, mock_session_maker)
+        logging_dao = ProgramLoggingDao(plain_asm)
+        program_summary_dao = ProgramSummaryDao(logging_dao, plain_asm)
+        yield program_summary_dao
+        await logging_dao.cleanup()
 
     @pytest.mark.asyncio
-    async def test_create_if_new_else_update_new_entry(self, class_mock_dao, mock_session):
+    async def test_create_if_new_else_update_new_entry(self, program_summary_dao):
+    # async def test_create_if_new_else_update_new_entry(self, class_mock_dao, mock_session):
         # Arrange
 
-        right_now = datetime.now()
+        time_for_test = datetime(2025, 3, 23, 9, 25, 25)
+
+        # FIXME: No longer rely on now(); instead, set a fixed time, so your test doesn't depend
+        # on what time it is
 
         session_data = ProgramSessionData()
         session_data.window_title = "TestProgramFromTest"
-        session_data.start_time = right_now
+        session_data.start_time = time_for_test
 
         # awful in-test math to produce a good start/end time for a session
-        minutes = right_now.minute + 15
-        if minutes >= 60:
-            updated_minutes = minutes % 60
-            later = right_now
-            later.replace(hour=later.hour + 1, minute=updated_minutes)
-        else:
-            later = right_now
-            later.replace(minute=minutes)
+        later = time_for_test + timedelta(minutes=3)
 
         session_data.end_time = later
-        session_data.duration = later - right_now
-
-        # Mock existing entry
-        existing_entry = Mock(spec=DailyProgramSummary)
-        existing_entry.hours_spent = 0.25
-        existing_entry.configure_mock(**{
-            "__str__": lambda: f"DailyProgramSummary(hours_spent={existing_entry.hours_spent})"
-        })
-
-        # Mock that no existing entry is found
-        mock_result = Mock()
-        # Return the actual mock object
-        mock_result.scalar_one_or_none.return_value = existing_entry
-        mock_session.execute.return_value = mock_result
+        session_data.duration = later - time_for_test
 
         # Act
-        await class_mock_dao.create_if_new_else_update(session_data, right_now)
+        await program_summary_dao.create_if_new_else_update(session_data, time_for_test)
 
-        # Assert
-        assert mock_session.execute.called
+        # ### Assert
+        # Check if it's really in there
+        all = await program_summary_dao.read_all()
+        assert len(all) == 1, "Expected exactly one row"
+        percent_of_hour = all[0].hours_spent
+
+        assert session_data.duration.seconds / (60 * 60) == percent_of_hour
 
     @pytest.mark.asyncio
-    async def test_create_if_new_else_update_existing_entry(self, class_mock_dao, mock_session):
+    async def test_create_if_new_else_update_existing_entry(self, program_summary_dao):
         # Arrange
-        right_now = datetime.now()
+        t0 = datetime(2025, 3, 23, 9, 25, 31)
+
+        t0 = t0 - timedelta(hours=1)
+        t1 = t0 + timedelta(minutes=1)
+        t2 = t0 + timedelta(minutes=5)
+        t3 = t0 + timedelta(minutes=6)
         # session_data = {
         #     'window': 'TestProgram',
         #     'start_time': datetime.now(),
         #     'end_time': datetime.now().replace(hour=datetime.now().hour + 1)
         # }
         session_data = ProgramSessionData()
-        session_data.window_title = "TestProgram"
-        session_data.start_time = right_now
-        later = right_now.replace(hour=datetime.now().hour + 1)
-        session_data.end_time = later
-        session_data.duration = later - right_now
+        session_data.window_title = "ExistingEntryTestSession"
+        session_data.start_time = t0
+        session_data.end_time = t1
+        session_data.duration = t1 - t0
 
-        # Mock existing entry
-        existing_entry = Mock(spec=DailyProgramSummary)
-        existing_entry.hours_spent = 1.0
+        second_usage_by_user = ProgramSessionData()
+        second_usage_by_user.window_title = "ExistingEntryTestSession"
+        second_usage_by_user.start_time = t2
+        second_usage_by_user.end_time = t3
+        second_usage_by_user.duration = t3 - t2
 
-        mock_result = Mock()
-        mock_result.scalar_one_or_none.return_value = existing_entry
-        mock_session.execute.return_value = mock_result
+        # Arranging still: This session is already in there
+        await program_summary_dao.create_if_new_else_update(session_data, t0)
+
+        # Create a spy for the create method
+        original_create = program_summary_dao._create
+        create_spy = AsyncMock()
+        program_summary_dao._create = create_spy
+        
+        # Also spy on update_hours
+        original_update_hours = program_summary_dao.update_hours
+        update_spy = AsyncMock()
+        program_summary_dao.update_hours = update_spy
 
         # Act
-        await class_mock_dao.create_if_new_else_update(session_data, right_now)
+        await program_summary_dao.create_if_new_else_update(second_usage_by_user, t2)
 
         # Assert
-        assert mock_session.execute.called
-        assert mock_session.commit.called
+        create_spy.assert_not_called()
+        update_spy.assert_called_once()
+        # assert mock_session.execute.called
+        # assert mock_session.commit.called
 
     @pytest.mark.asyncio
-    async def test_read_day(self, class_mock_dao, mock_session):
+    async def test_read_day(self, program_summary_dao):
         # Arrange
-        test_day = datetime.now()
-        mock_entries = [
-            Mock(spec=DailyProgramSummary),
-            Mock(spec=DailyProgramSummary)
-        ]
+        t0 = datetime(2025, 3, 23, 9, 25, 31)
 
-        # Setup the mock result chain
-        mock_result = AsyncMock()
-        mock_scalar_result = Mock()
-        mock_scalar_result.all = Mock(return_value=mock_entries)
-        mock_result.scalars = Mock(return_value=mock_scalar_result)
-        mock_session.execute.return_value = mock_result
+        t0 = t0 - timedelta(hours=1)
+        t1 = t0 + timedelta(minutes=1)
+        t2 = t0 + timedelta(minutes=5)
+        t3 = t0 + timedelta(minutes=6)
+        session_data = ProgramSessionData("readDayTest", "", t0, t1)
+
+        second_usage_by_user = ProgramSessionData("readDayTestMaterial", "", t2, t3)
+
+        await program_summary_dao.create_if_new_else_update(session_data, t0)
+        await program_summary_dao.create_if_new_else_update(second_usage_by_user, t2)
+        
 
         # Act
-        result = await class_mock_dao.read_day(test_day)
+        result = await program_summary_dao.read_day(t0)
 
         # Assert
-        assert result == mock_entries
-        assert len(result) == len(mock_entries)
-        assert mock_session.execute.called
+        assert len(result) == len([session_data, second_usage_by_user])
+        assert result[0].gathering_date.day == t0.day
+        assert result[1].gathering_date.day == t0.day
 
     @pytest.mark.asyncio
-    async def test_read_all(self, class_mock_dao, mock_session):
+    async def test_read_all(self, program_summary_dao):
         # Arrange
-        mock_entries = [
-            Mock(spec=DailyProgramSummary),
-            Mock(spec=DailyProgramSummary)
-        ]
+        t0 = datetime(2025, 3, 23, 9, 25, 39)
 
-        # Setup the mock result chain
-        mock_result = AsyncMock()
-        mock_scalar_result = Mock()
-        mock_scalar_result.all = Mock(return_value=mock_entries)
-        mock_result.scalars = Mock(return_value=mock_scalar_result)
-        mock_session.execute.return_value = mock_result
+        t0 = t0 - timedelta(hours=1)
+        t1 = t0 + timedelta(minutes=1)
+        t2 = t0 + timedelta(minutes=5)
+        t3 = t0 + timedelta(minutes=6)
+        t4 = t0 + timedelta(minutes=8)
+        session_data = ProgramSessionData("readAllTest", "", t0, t1)
+
+        second_session = ProgramSessionData("readAllTestMaterial", "", t2, t3)
+        third = ProgramSessionData("readAllTestMaterialAgain", "", t3, t4)
+
+        await program_summary_dao.create_if_new_else_update(session_data, t0)
+        await program_summary_dao.create_if_new_else_update(second_session, t2)
+        await program_summary_dao.create_if_new_else_update(third, t3)
 
         # Act
-        result = await class_mock_dao.read_all()
+        result = await program_summary_dao.read_all()
 
         # Assert
-        assert result == mock_entries
-        assert mock_session.execute.called
+        assert len(result) == 3
+
 
     @pytest.mark.asyncio
-    async def test_read_row_for_program(self, class_mock_dao, mock_session):
+    async def test_read_row_for_program(self, program_summary_dao):
         # Arrange
         program_name = "TestProgram"
-        mock_entry = Mock(spec=DailyProgramSummary)
-
-        mock_result = Mock()
-        mock_result.scalar_one_or_none.return_value = mock_entry
-        mock_session.execute.return_value = mock_result
+        
+        t0 = datetime(2025, 3, 23, 8, 25, 41)
+        t0 = t0 - timedelta(hours=1)
+        t1 = t0 + timedelta(minutes=1)
+        session = ProgramSessionData(program_name, "", t0, t1)
+        await program_summary_dao.create_if_new_else_update(session, t0)
 
         # Act
-        result = await class_mock_dao.read_row_for_program(program_name, datetime.now())
+        result = await program_summary_dao.read_row_for_program(program_name, t0)
 
         # Assert
+        duration_as_percent_of_hour = (t1 - t0).seconds / (60 * 60)
         assert result is not None
-        assert result == mock_entry
-        assert mock_session.execute.called
+        assert result.program_name == session.window_title
+        assert result.hours_spent == duration_as_percent_of_hour
+
+    # YAGNI:
+    # @pytest.mark.asyncio
+    # async def test_delete(self, class_mock_dao, mock_session):
+        # pass
+    # YAGNI:
+    # @pytest.mark.asyncio
+    # async def test_delete_nonexistent(self, class_mock_dao, mock_session):
+        # pass
 
     @pytest.mark.asyncio
-    async def test_delete(self, class_mock_dao, mock_session):
-        # Arrange
-        entry_id = 1
-        mock_entry = Mock(spec=DailyProgramSummary)
-        mock_session.get.return_value = mock_entry
+    async def test_several_consecutive_writes(self, program_summary_dao):
 
-        # Act
-        result = await class_mock_dao.delete(entry_id)
-
-        # Assert
-        assert result == mock_entry
-        mock_session.delete.assert_called_once_with(mock_entry)
-        assert mock_session.commit.called
-
-    @pytest.mark.asyncio
-    async def test_delete_nonexistent(self, class_mock_dao, mock_session):
-        # Arrange
-        entry_id = 1
-        mock_session.get.return_value = None
-
-        # Act
-        result = await class_mock_dao.delete(entry_id)
-
-        # Assert
-        assert result is None
-        mock_session.delete.assert_not_called()
-        assert not mock_session.commit.called
-
-
-
-
-    @pytest.mark.asyncio
-    async def test_several_consecutive_writes(self, class_mock_dao, mock_session):
-
-        # class ProgramSessionData:
-        #     window_title: str
-        #     detail: str
-        #     start_time: datetime
-        #     end_time: datetime
-        #     duration: timedelta
-        #     productive: bool
         dt = datetime(2025, 1, 25, 15, 5)
         # 1
-        session_data_1: ProgramSessionData = ProgramSessionData()
-        session_data_1.window_title = "Chrome"
-        session_data_1.detail = "Facebook.com"
-        session_data_1.start_time = dt
-        dt2 = dt + timedelta(seconds=13)
-        session_data_1.end_time = dt2
-        session_data_1.productive = False
-        session_data_1.duration = dt2 - dt
 
+        chrome = "Chrome"
+        pycharm = "PyCharm"
+        ventrilo = "Venrilo"
+        
+        dt2 = dt + timedelta(seconds=13)
+        session_data_1 = ProgramSessionData(chrome, "Facebook.com", dt, dt2)
+        session_data_1.productive = False
+    
         # 2
-        session_data_2: ProgramSessionData = ProgramSessionData()
-        session_data_2.window_title = "PyCharm"
-        session_data_2.detail = "some_code.py"
-        session_data_2.start_time = dt2
         dt3 = dt2 + timedelta(seconds=12)
-        session_data_2.end_time = dt3
+        session_data_2 = ProgramSessionData(pycharm, "some_code.py", dt2, dt3)
         session_data_2.productive = True
-        session_data_2.duration = dt3 - dt2
 
         # 3
-        session_data_3: ProgramSessionData = ProgramSessionData()
-        session_data_3.window_title = "Chrome"
-        session_data_3.detail = "Facebook.com"
-        session_data_3.start_time = dt3
         dt4 = dt3 + timedelta(seconds=28)
-        session_data_3.end_time = dt4
+        session_data_3 = ProgramSessionData(chrome, "Facebook.com", dt3, dt4)
         session_data_3.productive = False
-        session_data_3.duration = dt4 - dt3
 
         # 4
-        session_data_4: ProgramSessionData = ProgramSessionData()
-        session_data_4.window_title = "PyCharm"
-        session_data_4.detail = "MyFile.tsx"
-        session_data_4.start_time = dt4
         dt5 = dt4 + timedelta(seconds=22)
-        session_data_4.end_time = dt5
+        session_data_4 = ProgramSessionData(pycharm, "MyFile.tsx", dt4, dt5)
         session_data_4.productive = True
-        session_data_4.duration = dt5 - dt4
 
         # 5
-        session_data_5: ProgramSessionData = ProgramSessionData()
-        session_data_5.window_title = "Ventrilo"
-        session_data_5.detail = "Pyre - Exercises in Futility"
-        session_data_5.start_time = dt5
         dt6 = dt5 + timedelta(seconds=25)
-        session_data_5.end_time = dt6
+        session_data_5 = ProgramSessionData(ventrilo, "Pyre - Exercises in Futility", dt5, dt6)
         session_data_5.productive = False
-        session_data_5.duration = dt6 - dt5
+        
 
         # 6
-        session_data_6: ProgramSessionData = ProgramSessionData()
-        session_data_6.window_title = "Chrome"
-        session_data_6.detail = "Claude.ai"
-        session_data_6.start_time = dt6
         dt7 = dt6 + timedelta(seconds=25)
-        session_data_6.end_time = dt7
+        session_data_6 = ProgramSessionData(chrome, "Claude.ai", dt6, dt7)
         session_data_6.productive = True
-        session_data_6.duration = dt7 - dt6
 
-        existing_entry = Mock(spec=DailyProgramSummary)
-        existing_entry.hours_spent = 1.0
+        chrome_count = 3
+        pycharm_count = 2
+        ventrilo_count = 1
 
-        mock_result = Mock()
-        mock_result.scalar_one_or_none.return_value = existing_entry
-        mock_session.execute.return_value = mock_result
+        total_time = (13 + 12 + 28 + 22 + 25 + 25) / (60 * 60)
 
         # Act
-        await class_mock_dao.create_if_new_else_update(session_data_1, dt)
-        await class_mock_dao.create_if_new_else_update(session_data_2, dt2)
-        await class_mock_dao.create_if_new_else_update(session_data_3, dt3)
-        await class_mock_dao.create_if_new_else_update(session_data_4, dt4)
-        await class_mock_dao.create_if_new_else_update(session_data_5, dt5)
-        await class_mock_dao.create_if_new_else_update(session_data_6, dt6)
+        await program_summary_dao.create_if_new_else_update(session_data_1, dt)
+        await program_summary_dao.create_if_new_else_update(session_data_2, dt2)
+        await program_summary_dao.create_if_new_else_update(session_data_3, dt3)
+        await program_summary_dao.create_if_new_else_update(session_data_4, dt4)
+        await program_summary_dao.create_if_new_else_update(session_data_5, dt5)
+        await program_summary_dao.create_if_new_else_update(session_data_6, dt6)
 
         # TODO: Assert that the total time elapsed is what you expect
 
         # Assert
-        assert mock_session.execute.call_count == 6
-        assert mock_session.commit.call_count == 6
-        # Clean up
-        await class_mock_dao.delete_all_rows(safety_switch=True)
+        all = await program_summary_dao.read_all()
+        total = sum(x.hours_spent for x in all)
+        assert len(all) == 3 
+        assert total == total_time
 
     @pytest.mark.asyncio
     async def test_series_of_database_operations(self, test_db_dao):
@@ -454,67 +391,43 @@ class TestProgramSummaryDao:
         assert entry.hours_spent > 0
 
         # 1
-        session_data_1: ProgramSessionData = ProgramSessionData()
-        session_data_1.window_title = chrome
-        session_data_1.detail = "Facebook.com"
-        session_data_1.start_time = dt
-        session_data_1.end_time = dt2
+        session_data_1 = ProgramSessionData(chrome, "Facebook.com", dt, dt2)
         session_data_1.productive = False
-        session_data_1.duration = dt2 - dt
         chrome_time += change_1
         # 2
-        session_data_2: ProgramSessionData = ProgramSessionData()
-        session_data_2.window_title = pycharm
-        session_data_2.detail = "some_code.py"
-        session_data_2.start_time = dt2
-        session_data_2.end_time = dt3
+        dt3 = dt2 + timedelta(seconds=12)
+        session_data_2 = ProgramSessionData(pycharm, "some_code.py", dt2, dt3)
         session_data_2.productive = True
-        session_data_2.duration = dt3 - dt2
         pycharm_time += change_2
+
         # 3
-        session_data_3: ProgramSessionData = ProgramSessionData()
-        session_data_3.window_title = chrome
-        session_data_3.detail = "Facebook.com"
-        session_data_3.start_time = dt3
-        session_data_3.end_time = dt4
+        dt4 = dt3 + timedelta(seconds=28)
+        session_data_3 = ProgramSessionData(chrome, "Facebook.com", dt3, dt4)
         session_data_3.productive = False
-        session_data_3.duration = dt4 - dt3
         chrome_time += change_3
+
         # 4
-        session_data_4: ProgramSessionData = ProgramSessionData()
-        session_data_4.window_title = pycharm
-        session_data_4.detail = "MyFile.tsx"
-        session_data_4.start_time = dt4
-        session_data_4.end_time = dt5
+        dt5 = dt4 + timedelta(seconds=22)
+        session_data_4 = ProgramSessionData(pycharm, "MyFile.tsx", dt4, dt5)
         session_data_4.productive = True
-        session_data_4.duration = dt5 - dt4
         pycharm_time += change_4
+
         # 5
-        session_data_5: ProgramSessionData = ProgramSessionData()
-        session_data_5.window_title = ventrilo
-        session_data_5.detail = "Pyre - Exercises in Futility"
-        session_data_5.start_time = dt5
-        session_data_5.end_time = dt6
+        dt6 = dt5 + timedelta(seconds=25)
+        session_data_5 = ProgramSessionData(ventrilo, "Pyre - Exercises in Futility", dt5, dt6)
         session_data_5.productive = False
-        session_data_5.duration = dt6 - dt5
         ventrilo_time += change_5
+
         # 6
-        session_data_6: ProgramSessionData = ProgramSessionData()
-        session_data_6.window_title = chrome
-        session_data_6.detail = "Claude.ai"
-        session_data_6.start_time = dt6
-        session_data_6.end_time = dt7
+        dt7 = dt6 + timedelta(seconds=25)
+        session_data_6 = ProgramSessionData(chrome, "Claude.ai", dt6, dt7)
         session_data_6.productive = True
-        session_data_6.duration = dt7 - dt6
         chrome_time += change_6
+
         # 7
-        session_data_7: ProgramSessionData = ProgramSessionData()
-        session_data_7.window_title = pycharm
-        session_data_7.detail = "some_file.py"
-        session_data_7.start_time = dt7
-        session_data_7.end_time = dt8
+        dt8 = dt7 + timedelta(seconds=30)
+        session_data_7 = ProgramSessionData(pycharm, "some_file.py", dt7, dt8)
         session_data_7.productive = True
-        session_data_7.duration = dt8 - dt7
         pycharm_time += change_7
 
         sessions = [session_data_1, session_data_2, session_data_3,
@@ -530,20 +443,19 @@ class TestProgramSummaryDao:
         assert len(all_entries) == len(unique_program_mentions)
 
         # Verify specific program times
-        # chrome_expected = 13 + 28 + 25
-        # pycharm_expected = 12 + 22 + 120
-        # Ventrilo_expected = 25
-        TestPyCharm_expected = 5 * 60
+        chrome_expected = (13 + 28 + 25) / (60 * 60)
+        ventrilo_expected = 25 / (60 * 60)
+        pyCharm_expected = (12 + 22 + 30) / (60 * 60)
         # expected_hours_spent = [
         #     chrome_expected, pycharm_expected, Ventrilo_expected, TestPyCharm_expected]
         expected_hours_spent = [
-            chrome_time, pycharm_time, ventrilo_time, TestPyCharm_expected]
+            chrome_expected, ventrilo_expected, pyCharm_expected]
         for program in sessions:
             entry = await test_db_dao.read_row_for_program(program.window_title, program.start_time)
             assert entry is not None
             assert entry.program_name == program.window_title
             # FIXME - more specific claim pls, and passing
-            assert entry.hours_spent * 3600 in expected_hours_spent
+            assert entry.hours_spent in expected_hours_spent
             # assert entry.hours_spent > 0.01  # FIXME - more specific claim pls, and passing
 
         # Test updating existing entry
@@ -614,12 +526,8 @@ class TestProgramSummaryDao:
         assert pycharm_entry is not None
         assert ventrilo_entry is not None
         assert chrome_entry is not None
-        assert pycharm_entry.hours_spent == pycharm_time / 3600
-        assert ventrilo_entry.hours_spent == ventrilo_time / 3600
+        assert pycharm_entry.hours_spent == pyCharm_expected
+        assert ventrilo_entry.hours_spent == ventrilo_expected
         assert chrome_entry.hours_spent == (
             chrome_time / 3600) + (time_from_chrome_update / 3600)
 
-process = psutil.Process()
-open_files = process.open_files()
-num_open_files = len(open_files)
-print(f"END: Num of open files: {num_open_files}")

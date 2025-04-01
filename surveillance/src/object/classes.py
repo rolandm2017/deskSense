@@ -33,12 +33,15 @@ class ProgramSessionData:
     duration: Optional[timedelta]
     productive: bool
 
-    def __init__(self):
-        self.window_title = ""
-        self.detail = ""
-        self.start_time = None
-        self.end_time = None
-        self.duration = None
+    def __init__(self, title="", detail="", start_time=None, end_time=None):
+        self.window_title = title
+        self.detail = detail
+        self.start_time = start_time
+        self.end_time = end_time
+        if start_time and end_time:
+            self.duration = end_time - start_time
+        else:
+            self.duration = None
         self.productive = False
 
     def __str__(self):

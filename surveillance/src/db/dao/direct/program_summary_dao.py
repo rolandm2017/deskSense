@@ -59,34 +59,22 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         # FIXME: Need to define "gathered today" as "between midnight and 11:59 pm on mm-dd"
 
         # ### Check if entry exists for today
-        today = right_now.replace(hour=0, minute=0, second=0,
-                                  microsecond=0)  # Still has tz attached
+        existing_entry = await self.read_row_for_program(target_program_name, right_now)
 
-        query = select(DailyProgramSummary).where(
-            DailyProgramSummary.program_name == target_program_name,
-            DailyProgramSummary.gathering_date >= today,
-            DailyProgramSummary.gathering_date < today + timedelta(days=1)
-        )
+        if existing_entry:
+            if self.debug:
+                notice_suspicious_durations(existing_entry, program_session)
+                # log_if_needed()  
+            # existing_entry.hours_spent += usage_duration_in_hours
 
+            await self.update_hours(existing_entry, usage_duration_in_hours)
+        else:
+            # print("creating entry for day ", today)
+            today_start = right_now.replace(
+            hour=0, minute=0, second=0, microsecond=0)
+            await self._create(target_program_name, usage_duration_in_hours, today_start)
 
-        async with self.session_maker() as db_session:
-            result = await db_session.execute(query)
-            # existing_entry = await result.scalar_one_or_none()  # Adding await here makes the program fail
-            # This is how it is properly done, this unawaited version works
-            existing_entry = result.scalar_one_or_none()
-
-            if existing_entry:
-                if self.debug:
-                    notice_suspicious_durations(existing_entry, program_session)
-                    # log_if_needed()  
-                existing_entry.hours_spent += usage_duration_in_hours
-
-                await db_session.commit()
-            else:
-                # print("creating entry for day ", today)
-                await self.create(target_program_name, usage_duration_in_hours, today)
-
-    async def create(self, target_program_name, duration_in_hours, when_it_was_gathered):
+    async def _create(self, target_program_name, duration_in_hours, when_it_was_gathered):
         async with self.session_maker() as session:
             new_entry = DailyProgramSummary(
                 program_name=target_program_name,
@@ -141,14 +129,14 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             result = await session.execute(select(DailyProgramSummary))
             return result.scalars().all()
 
-    async def read_row_for_program(self, target_program: str, right_now: datetime):
+    async def read_row_for_program(self, target_program_name: str, right_now: datetime):
         """Reads the row for the target program for today."""
         today_start = right_now.replace(
             hour=0, minute=0, second=0, microsecond=0)
         tomorrow_start = today_start + timedelta(days=1)
 
         query = select(DailyProgramSummary).where(
-            DailyProgramSummary.program_name == target_program,
+            DailyProgramSummary.program_name == target_program_name,
             DailyProgramSummary.gathering_date >= today_start,
             DailyProgramSummary.gathering_date < tomorrow_start
         )
@@ -156,10 +144,25 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         async with self.session_maker() as session:
             result = await session.execute(query)
             return result.scalar_one_or_none()
+    
+    # Updates section
+
+    async def update_hours(self, existing_entry: DailyProgramSummary, usage_duration_in_hours: float):
+        """Update hours spent for an existing program entry."""
+        async with self.session_maker() as session:
+            # Reattach the entity to the current session if it's detached
+            if existing_entry not in session:
+                existing_entry = await session.merge(existing_entry)
+
+            # Update the hours
+            existing_entry.hours_spent += usage_duration_in_hours
+            
+            # Commit the changes
+            await session.commit()
         
-    async def push_window_ahead_ten_sec(self, session: ProgramSessionData, right_now):
+    async def push_window_ahead_ten_sec(self, program_session: ProgramSessionData, right_now):
         """Finds the given session and adds ten sec to its end_time"""
-        target_program_name = session.window_title
+        target_program_name = program_session.window_title
         today_start = right_now.replace(
             hour=0, minute=0, second=0, microsecond=0)
         tomorrow_start = today_start + timedelta(days=1)
@@ -169,17 +172,17 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.gathering_date >= today_start,
             DailyProgramSummary.gathering_date < tomorrow_start
         )        
-        async with self.session_maker() as session:
-            program: DailyProgramSummary = session.scalars(query).first()
+        async with self.session_maker() as db_session:
+            program: DailyProgramSummary = db_session.scalars(query).first()
             # Update it if found
             if program:
                 program.hours_spent = program.hours_spent + timedelta(seconds=10)
-                session.commit()
+                db_session.commit()
             else:
                 # If the code got here, the summary wasn't even created yet,
                 # which is likely! for the first time a program enters the program
                 self.logger.log_white_multiple("INFO:", f"first time {target_program_name} appears today")
-                self.create_if_new_else_update(session, right_now)
+                self.create_if_new_else_update(program_session, right_now)
 
     async def deduct_remaining_duration(self, session: ProgramSessionData, duration_in_sec: int, today_start):
         """
