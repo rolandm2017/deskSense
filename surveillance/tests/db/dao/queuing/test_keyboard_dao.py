@@ -24,7 +24,9 @@ async def truncate_table(async_session_maker):
 @pytest_asyncio.fixture
 async def dao( async_engine_and_asm):
     _, asm = async_engine_and_asm
-    yield KeyboardDao(asm)
+    dao = KeyboardDao(asm)
+    yield dao
+    await dao.cleanup()
     await truncate_table(asm)
 
 @pytest.mark.asyncio

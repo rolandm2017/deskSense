@@ -18,7 +18,7 @@ process = psutil.Process()
 open_files = process.open_files()
 num_open_files = len(open_files)
 
-
+from src.object.classes import ProgramSessionData
 from src.db.dao.base_dao import BaseQueueingDao
 from src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from src.db.dao.queuing.program_dao import ProgramDao
@@ -217,7 +217,6 @@ async def test_cleanup_with_pending_items(test_db):
         assert len(items) == 20, f"Expected 20 items saved, found {len(items)}"
 
 
-from src.object.classes import ProgramSessionData
 
 @pytest.mark.asyncio
 async def test_program_dao_conns(test_db):
@@ -250,6 +249,9 @@ async def test_logging_dao_conns(test_db):
 
     logging_dao = ProgramLoggingDao(async_session)
 
+    # FIXME: 
+    # test_program_dao_conns - sqlalchemy.exc.ProgrammingError: <class 'asyncpg.exceptions.UndefinedTableError'>: relation "program_changes" does not exist
+    # test_logging_dao_conns - sqlalchemy.exc.ProgrammingError: <class 'asyncpg.exceptions.UndefinedTableError'>: relation "program_summary_logs" does not exist
     t1 = datetime.now()
     t1 = t1 - timedelta(seconds=90)
     t2 = t1 + timedelta(seconds=15)
