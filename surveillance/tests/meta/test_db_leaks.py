@@ -103,16 +103,3 @@ async def test_db_leaks_sqlite(async_db_session_in_mem):
 
 
 
-# @pytest.mark.asyncio
-# async def test_db_leak_debug(async_engine_and_asm):
-#     engine, _ = async_engine_and_asm
-
-#     before_conns = await get_checkedout_conns(engine)
-#     logger.debug(f"Checked-out connections before test: {before_conns}")
-
-#     result = subprocess.run(["pytest", "tests/db/dao/test_program_summary_dao.py"], capture_output=True, text=True)
-
-#     after_conns = await get_checkedout_conns(engine)
-#     logger.debug(f"Checked-out connections after test: {after_conns}")
-
-#     assert after_conns == 0, f"Leaked {after_conns} DB connections detected!"

@@ -13,7 +13,7 @@ def handle_exception(loop, context):
     task = context.get("task")
     task_name = task.get_name() if task else "Unknown-Task"
     print(f"\n⚠️ Caught asyncio exception: {msg}\nIn: {task_name}\n")
-    traceback.print_stack()
+    # traceback.print_stack()
     print("Context:", context)
 
 class BaseQueueingDao:
@@ -55,7 +55,7 @@ class BaseQueueingDao:
         # Only start a new task if no task is running or the previous one is done
         no_queue_running = self._queue_task is None or self._queue_task.done()
         if no_queue_running:
-            print("Starting new queue processing task")
+            # print("Starting new queue processing task")
             self.processing = True
             # Create a new task and store a strong reference to it
             # self._queue_task = asyncio.create_task(self._wrapped_process_queue())
@@ -75,7 +75,7 @@ class BaseQueueingDao:
             raise
         except Exception as e:
             print(f"Exception in _wrapped_process_queue: {e}")
-            traceback.print_exc()
+            # traceback.print_exc()
             # Report the exception to the event loop
             loop = asyncio.get_running_loop()
             loop.call_exception_handler({
@@ -92,7 +92,7 @@ class BaseQueueingDao:
 
         try:
             while idle_count < 3 and self.processing:  # Exit if idle too many times
-                print(f"Processing queue (idle count: {idle_count})")
+                # print(f"Processing queue (idle count: {idle_count})")
                 batch = []
                 
                 # Fill batch until full or queue empty
@@ -112,7 +112,7 @@ class BaseQueueingDao:
                             batch = []  # Clear the batch after saving
                         except Exception as e:
                             print(f"Error saving batch: {e}")
-                            traceback.print_exc()
+                            # traceback.print_exc()
                             # Continue with the next batch
                     else:
                         # No items in queue, increment idle count and wait
@@ -121,7 +121,7 @@ class BaseQueueingDao:
                         
                 except Exception as e:
                     print(f"Unexpected error in process_queue: {e}")
-                    traceback.print_exc()
+                    # traceback.print_exc()
                     # Don't exit the loop on unexpected errors
                     await asyncio.sleep(self.flush_interval)
                     
@@ -136,7 +136,7 @@ class BaseQueueingDao:
             raise  # Re-raise to ensure proper cancellation handling
             
         finally:
-            print("Queue processing completed or cancelled")
+            # print("Queue processing completed or cancelled")
             self.processing = False
 
     def _task_done_callback(self, task):
@@ -161,28 +161,28 @@ class BaseQueueingDao:
 
     async def _save_batch_to_db(self, batch):
         """Save a batch of items to the database"""
-        print(f"Saving batch of {len(batch)} items to database")
+        # print(f"Saving batch of {len(batch)} items to database")
         try:
             async with self.session_maker() as session:
                 # Use the manual transaction approach to avoid nesting issues
                 await session.begin()
                 try:
-                    print(f"Type of session.add_all: {type(session.add_all)}")
+                    # print(f"Type of session.add_all: {type(session.add_all)}")
                     session.add_all(batch)
                     await session.commit()
-                    print("Batch saved successfully")
+                    # print("Batch saved successfully")
                 except Exception as e:
                     await session.rollback()
                     print(f"Error during transaction, rolling back: {e}")
                     raise
         except Exception as e:
             print(f"Error in _save_batch_to_db: {e}")
-            traceback.print_exc()
+            # traceback.print_exc()
             raise  # Re-raise to allow proper error handling
         
     async def _force_process_queue(self):
         """Force immediate processing of queued items. Useful for tests or shutdown."""
-        print("Force processing remaining queue items")
+        # print("Force processing remaining queue items")
         remaining_items = []
         
         # Empty the queue

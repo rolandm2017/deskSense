@@ -4,24 +4,198 @@ import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy import text
 
+from collections import defaultdict
+
 
 import warnings
-
 import sys
 from pathlib import Path
-
+import psutil
 
 from dotenv import load_dotenv
 import os
 
 from surveillance.src.db.models import Base
 
-try:
-    loop = asyncio.get_running_loop()
-except RuntimeError:
-    # No event loop running yet, create a new one
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+# ###
+# ### OPTION (1)
+# ###
+
+# def trace_calls(frame, event, arg):
+#     # GPT and DeepSeek told you to do this:
+#     # https://chatgpt.com/c/67eb5ddb-d810-8010-9adb-4fa84684d0a0
+#     # https://chat.deepseek.com/a/chat/s/ce21ebb9-8ac7-4f27-97e4-0bf3fc0cd075
+#     if event == "call" and frame.f_code.co_name == "close":
+#         print(f"!!! Closing FD {frame.f_locals.get('fd', 'UNKNOWN')} !!!")
+#     return trace_calls
+
+# def pytest_sessionstart(session):
+#     """Hook that runs once before any tests start."""
+#     sys.setprofile(trace_calls)
+
+# ###
+# ### OPTION (2)
+# ###
+
+# def print_open_files():
+#     proc = psutil.Process(os.getpid())
+#     print("\n=== Open files/sockets ===")
+#     for fd in proc.open_files():
+#         print(f"FD {fd.fd}: {fd.path}")
+#     for conn in proc.net_connections():
+#         print(f"Socket {conn.fd}: {conn.laddr} -> {conn.raddr}")
+#     print("==========================")
+
+# @pytest.fixture(autouse=True)
+# def check_file_leaks():
+#     print_open_files()  # Check before the test
+#     yield
+#     print_open_files()  # Check after the test
+
+# ###
+# ###  OPTION (3)
+# ###
+
+
+
+# @pytest.fixture(autouse=True)
+# def monitor_file_descriptors():
+#     process = psutil.Process()
+#     before = process.num_fds() if hasattr(process, 'num_fds') else 0
+#     yield
+#     after = process.num_fds() if hasattr(process, 'num_fds') else 0
+#     if after > before:
+#         print(f"WARNING: File descriptor leak detected: {after-before} new FDs")
+# Global tracker for leaks
+# fd_leak_data = {
+#     'total_leaks': 0,
+#     'leak_details': defaultdict(int)  # test_name -> leak count
+# }
+
+# @pytest.fixture(autouse=True)
+# def monitor_file_descriptors():
+#     process = psutil.Process()
+#     before = process.num_fds() if hasattr(process, 'num_fds') else 0
+    
+#     # Store initial FDs for debugging if available
+#     initial_fds = {}
+#     if hasattr(process, 'open_files'):
+#         initial_fds = {f.fd: f.path for f in process.open_files()}
+    
+#     yield
+    
+#     after = process.num_fds() if hasattr(process, 'num_fds') else 0
+#     if after > before:
+#         # Get current FDs
+#         current_fds = {}
+#         if hasattr(process, 'open_files'):
+#             current_fds = {f.fd: f.path for f in process.open_files()}
+        
+#         # Find new FDs
+#         new_fds = {fd: path for fd, path in current_fds.items() if fd not in initial_fds}
+        
+#         # Format detailed message
+#         message = f"\n\nFILE DESCRIPTOR LEAK DETECTED: {after-before} new FDs\n"
+#         message += "New file descriptors:\n"
+#         for fd, path in new_fds.items():
+#             message += f"  FD {fd}: {path}\n"
+        
+#         # This will fail the test and show your detailed message
+#         pytest.fail(message)
+
+# @pytest.fixture(scope="session", autouse=True)
+# def report_total_leaks():
+#     # This runs before all tests
+#     yield
+#     # This runs after all tests
+    
+#     print("\n\n" + "="*70 + "\n" + "=" * 70+ "\n" + "=" * 70+ "\n" + "=" * 70+ "\n" + "=" * 70)
+#     print("FILE DESCRIPTOR LEAK SUMMARY")
+#     print("="*70)
+#     print(f"Total file descriptor leaks detected: {fd_leak_data['total_leaks']}")
+    
+#     if fd_leak_data['leak_details']:
+#         print("\nLeaks by test:")
+#         for test_name, count in sorted(fd_leak_data['leak_details'].items(), 
+#                                       key=lambda x: x[1], reverse=True):
+#             print(f"  {test_name}: {count} leaks")
+#     print("="*70)
+#     print("="*70)
+#     print("="*70)
+#     print("="*70)
+#     print("="*70)
+
+# ###
+# ###
+# ###
+# ###  OPTION (4)
+# ###
+# ###
+# ###
+
+
+# import gc
+# import io
+
+# def find_zombie_file_objects():
+#     zombies = []
+#     for obj in gc.get_objects():
+#         if isinstance(obj, io.IOBase):  # Files, sockets, pipes
+#             try:
+#                 # Try to access FD (will fail if closed)
+#                 os.fstat(obj.fileno())
+#             except OSError as e:
+#                 if e.errno == 9:  # EBADF
+#                     zombies.append(obj)
+#     return zombies
+
+# @pytest.fixture(autouse=True)
+# def monitor_zombies():
+#     # Run before each test
+#     zombies_before = find_zombie_file_objects()
+    
+#     # Yield to the test function
+#     yield
+    
+#     # Run after each test
+#     zombies_after = find_zombie_file_objects()
+
+#     # If any zombies were found after the test, print them
+#     if zombies_after:
+#         print(f"🔥 ZOMBIE FILE OBJECTS ({len(zombies_after)}):")
+#         for obj in zombies_after:
+#             print(f"  - {obj!r} (FD {obj.fileno()})")
+    
+#     # If zombies were found, raise a failure
+#     if zombies_after:
+#         pytest.fail(f"Zombie file objects detected after the test!")
+
+
+####
+#### end of voodoo hacky magic section
+#### end of voodoo hacky magic section
+####
+####
+
+
+# try:
+#     loop = asyncio.get_running_loop()
+# except RuntimeError:
+#     # No event loop running yet, create a new one
+#     loop = asyncio.new_event_loop()
+#     asyncio.set_event_loop(loop)
+
+
+
+@pytest.fixture(scope="session")
+def event_loop():
+    """Create an instance of the default event loop for each test session."""
+    policy = asyncio.get_event_loop_policy()
+    loop = policy.new_event_loop()
+    yield loop
+    loop.close()
+
+####
 
 pytest_plugins = ["pytest_asyncio"]
 
@@ -72,11 +246,10 @@ ASYNC_TEST_DB_URL = ASYNC_TEST_DB_URL = os.getenv(
 if ASYNC_TEST_DB_URL is None:
     raise ValueError("TEST_DB_STRING environment variable is not set")
 
-
-
-@pytest_asyncio.fixture(scope="function")
-async def async_engine_and_asm():
-    """Create a fresh engine and session maker for each test"""    
+        
+@pytest_asyncio.fixture(scope="session")
+async def global_test_engine():
+    """Create a single engine shared across all tests"""
     # Connect to default postgres db for setup
     default_url = ASYNC_TEST_DB_URL.rsplit('/', 1)[0] + '/postgres'
     admin_engine = create_async_engine(
@@ -99,36 +272,47 @@ async def async_engine_and_asm():
     
     await admin_engine.dispose()
     
-    # Create engine for test database with better connection handling
+    # Create a single engine for all tests
     test_engine = create_async_engine(
         ASYNC_TEST_DB_URL,
         echo=False,
-        pool_pre_ping=True,  # Verify connection before use
-        pool_recycle=3600,   # Recycle connections after 1 hour
-        pool_timeout=30,     # Wait 30 seconds for connection
-        max_overflow=10,     # Allow 10 connections beyond pool_size
-        pool_size=5,         # Maintain 5 connections in the pool
+        pool_pre_ping=True,
+        pool_recycle=3600,
+        pool_timeout=30,
+        max_overflow=10,
+        pool_size=5,
     )
     
-    # Create all tables
-    async with test_engine.begin() as conn:
+    try:
+        yield test_engine
+    finally:
+        # Proper cleanup at the end of all tests
+        await test_engine.dispose()
+        # Force garbage collection
+        import gc
+        gc.collect()
+
+@pytest_asyncio.fixture(scope="function")
+async def async_engine_and_asm(global_test_engine):
+    """Set up database for each test with isolation"""
+    # Create fresh tables for this test
+    async with global_test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
-    # Create session factory with explicit close behavior
+    # Create a fresh session maker for each test
     async_session_maker = async_sessionmaker(
-        test_engine,
+        global_test_engine,
         class_=AsyncSession,
         expire_on_commit=False,
         autoflush=True,
         autocommit=False
     )
     
-    # Return both engine and session maker
-    try:
-        yield test_engine, async_session_maker
-    finally:
-        # Ensure proper cleanup
-        await test_engine.dispose()
+    yield global_test_engine, async_session_maker
+    
+    # Clean up tables but not the engine
+    async with global_test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
 @pytest_asyncio.fixture(scope="function")
 async def plain_asm(async_engine_and_asm):

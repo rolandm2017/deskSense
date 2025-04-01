@@ -16,7 +16,7 @@ from server import app, KeyboardService, MouseService, ProgramService
 from src.db.models import TimelineEntryObj, ChartEventType, DailyProgramSummary
 from src.db.dao.queuing.keyboard_dao import TypingSessionDto
 from src.db.dao.queuing.mouse_dao import MouseMoveDto
-from src.db.dao.queuing.program_dao import ProgramDao
+
 
 from src.object.dto import ProgramDto
 
