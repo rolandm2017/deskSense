@@ -97,3 +97,8 @@ class ConsoleLogger:
             green_part = f"\033[92m{green}\033[0m"
             total = green_part + white
             print(total)
+
+    def get_log_time_for_debug(self):
+        formatted = datetime.now().strftime("%I:%M:%S %p")
+        self.log_green(formatted)
+        return f"[\033[92m{formatted} ++ ++ \033[0m "

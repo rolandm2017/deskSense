@@ -59,6 +59,7 @@ class ProgramLoggingDao(BaseQueueingDao):
 
     @guarantee_start_time
     async def start_session(self, session: ProgramSessionData):
+        print("[debug] starting session for ", session.window_title)
         unknown = None
         base_start_time = convert_to_utc(session.start_time)
         start_of_day = get_start_of_day(session.start_time)

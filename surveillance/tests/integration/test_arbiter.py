@@ -35,7 +35,7 @@ async def activity_arbiter_and_setup():
 
     # Create a new arbiter instance for this test
     arbiter = ActivityArbiter(
-        user_facing_clock=clock,
+        user_facing_clock=clock, pulse_interval=0.1
     )
 
     # Add UI listener
@@ -48,11 +48,13 @@ async def activity_arbiter_and_setup():
         events.append(session)
 
     # Create mock listeners with side effects to record calls
-    mock_activity_recorder = AsyncMock()
-    mock_activity_recorder.on_state_changed = AsyncMock(
+    mock_activity_recorder = Mock()
+    mock_activity_recorder.on_state_changed = Mock(
         side_effect=event_handler)
 
     arbiter.add_summary_dao_listener(mock_activity_recorder)
+    
+    assert arbiter.summary_listener == mock_activity_recorder, "Test setup conditions failed"
 
     # Optionally mock the chrome service integration
     # mock_chrome_service = MagicMock()
@@ -67,7 +69,6 @@ async def test_activity_arbiter(activity_arbiter_and_setup):
 
     # Setup: How much time should pass?
     expected_sum_of_time = 45 * 60  # 45 minutes, as per the arbiter_events.py file
-
     program_sessions_in_test = [
         item for item in test_sessions if isinstance(item, ProgramSessionData)]
 
@@ -81,7 +82,7 @@ async def test_activity_arbiter(activity_arbiter_and_setup):
 
     # ### Act
     for session in test_sessions:
-        await arbiter.transition_state(session)
+        arbiter.transition_state(session)
 
     # ### ### Assert
     remaining_open_session_offset = 1

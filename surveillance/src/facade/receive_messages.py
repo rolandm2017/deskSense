@@ -5,7 +5,6 @@ from datetime import datetime
 
 import traceback
 
-
 class MessageReceiver:
     def __init__(self, zmq_url="tcp://127.0.0.1:5555"):
         """Initialize the message receiver with a ZMQ URL."""
@@ -76,6 +75,8 @@ class MessageReceiver:
                 break
             except Exception as e:
                 print(f"Error in event processor: {e}")
+                self.stop()  # temporary to silence complaints during tests
+                raise
 
     def start(self):
         """Start the message receiver in a way that doesn't require async/await."""
@@ -127,6 +128,34 @@ class MessageReceiver:
 
     async def async_stop(self):
         """Stop the message receiver asynchronously."""
-        self.stop()
-        # Give time for tasks to be cancelled
-        await asyncio.sleep(0.5)
+        # self.stop()
+        # # Give time for tasks to be cancelled
+        # await asyncio.sleep(0.5)
+        # Cancel all tasks and await their cancellation
+        tasks_to_cancel = []
+        for task in self.tasks:
+            if not task.done():
+                task.cancel()
+                tasks_to_cancel.append(task)
+        
+        if tasks_to_cancel:
+            try:
+                # Wait for all tasks to complete with a timeout
+                # Shield is used to prevent the wait itself from being cancelled
+                await asyncio.wait_for(
+                    asyncio.shield(asyncio.gather(*tasks_to_cancel, return_exceptions=True)), 
+                    timeout=1.0
+                )
+            except asyncio.TimeoutError:
+                print("Some tasks did not complete in time during MessageReceiver shutdown")
+            except Exception as e:
+                print(f"Error awaiting tasks during MessageReceiver shutdown: {e}")
+        
+        # Close ZMQ socket and context if not already closed
+        try:
+            if hasattr(self, 'socket') and self.socket:
+                self.socket.close()
+            if hasattr(self, 'context') and self.context:
+                self.context.term()
+        except Exception as e:
+            print(f"Error closing ZMQ resources: {e}")

@@ -61,11 +61,8 @@ class ProgramTrackerCore:
 
     def run_tracking_loop(self):
         for window_change in self.program_facade.listen_for_window_changes():
-
+            # print(window_change, '64ru')
             # is_expected_shape_else_throw(window_change)
-            # TODO: If Chrome is the new Active window, mark chrome active
-            # TODO: If chrome is the CURRENT active window, and chrome is not active now, mark inactive
-
             on_a_different_window_now = self.current_session and window_change[
                 "window_title"] != self.current_session.window_title
             if on_a_different_window_now and self.is_initialized():

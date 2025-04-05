@@ -17,7 +17,7 @@ class MockClock(ClockProtocol):
             if self._current_time.tzinfo is None:
                 self._current_time = self._current_time.replace(
                     tzinfo=timezone.utc)
-            print("[debug] Returning ", self._current_time)
+            # print("[debug] Returning ", self._current_time, datetime.now().strftime("%I:%M:%S %p"))
             return self._current_time
         except StopIteration:
             raise RuntimeError("MockClock ran out of times")

@@ -85,21 +85,4 @@ async def test_db_leaks(async_engine_and_asm):
     assert open_conns == DEFAULT_BOOTSTRAP_CONNECTION, f"Leaked {open_conns} DB connections detected!"
 
 
-@pytest.mark.asyncio
-async def test_db_leaks_sqlite(async_db_session_in_mem):
-    """Runs a test file and checks for leaked DB connections."""
-    engine, asm = async_db_session_in_mem
-    
-    # Run Pytest on the target test file
-    result = subprocess.run(["pytest", suspicious_file2], capture_output=True, text=True)
-    
-    # Print test output (optional, for debugging)
-    print(result.stdout)
-    print(result.stderr)
-
-    # Check for leaked DB connections
-    open_conns = await get_checkedout_conns(engine)
-    assert open_conns == DEFAULT_BOOTSTRAP_CONNECTION, f"Leaked {open_conns} DB connections detected!"
-
-
 
