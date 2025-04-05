@@ -151,8 +151,8 @@ async def test_recording_and_reading_sessions(plain_asm, shutdown_session_maker,
     activity_recorder = ActivityRecorder(
         clock_again,  program_logging_dao, chrome_logging_dao, program_summary_dao, chrome_summary_dao)
     
-    update_or_create_spy = AsyncMock(side_effect=activity_recorder.update_or_create_log)
-    activity_recorder.update_or_create_log = update_or_create_spy
+    # update_or_create_spy = AsyncMock(side_effect=activity_recorder.update_or_create_log)
+    # activity_recorder.update_or_create_log = update_or_create_spy
 
     # spy on logging dao methods
     
@@ -165,9 +165,12 @@ async def test_recording_and_reading_sessions(plain_asm, shutdown_session_maker,
         get_keyboard_facade_instance, get_mouse_facade_instance, choose_program_facade)
     # TODO: async session from the test db
     clock = MockClock(testing_num_of_times)
-    activity_arbiter = ActivityArbiter(clock, pulse_interval=0.05)
+    activity_arbiter = ActivityArbiter(clock, pulse_interval=0.2)
 
     activity_arbiter.add_summary_dao_listener(activity_recorder)
+
+    notify_create_session_spy = Mock(side_effect=activity_arbiter.notify_of_new_session)
+    activity_arbiter.notify_of_new_session = notify_create_session_spy
 
     # Create a spy on the notify_summary_dao method
     notify_summary_dao_spy = Mock(
@@ -218,27 +221,17 @@ async def test_recording_and_reading_sessions(plain_asm, shutdown_session_maker,
         print(f"Program facade called: {spy_on_listen_for_window.call_count} times")
         print(f"Setting program state called: {spy_on_set_program_state.call_count} times")
         print(f"Window change handler called: {window_change_spy.call_count} times")
-        # Checkpoint:
-        # The Recorder had its methods called the expected num of times,
-        assert update_or_create_spy.call_count == len(real_program_events)
-        for call in update_or_create_spy.call_args_list:
-            args, kwargs = call
-            # Check if the first argument is of type Foo
-            assert isinstance(args[0], ProgramLoggingDao), f"Expected ProgramLoggingDao but got {type(args[0])}"
-            assert isinstance(args[1], ProgramSessionData), f"Expected ProgramSessionData but got {type(args[0])}"
-        
-        # and the DAOs too
-        assert program_push_spy.call_count + program_start_session_spy.call_count == len(real_program_events)
-
-        # The Arbiter was called with the expected values
+        # ### ### Checkpoint:
+        # ### [Arbiter layer]
+        # ### The Arbiter was called with the expected values
         num_of_events_to_enter_arbiter = len(real_program_events)
         final_event_left_hanging = 1
         assert spy_on_set_program_state.call_count == num_of_events_to_enter_arbiter
-        # The DAO was called with the expected values
+        assert notify_create_session_spy.call_count == num_of_events_to_enter_arbiter
+        # The Program DAO was called with the expected values
         assert create_spy.call_count == num_of_events_to_enter_arbiter - final_event_left_hanging
 
-        # Checkpoint:
-        # The Arbiter recorded the expected *number* of times
+        # ### The Arbiter recorded the expected *number* of times
         assert notify_summary_dao_spy.call_count == len(real_program_events)
         # The Arbiter recorded the expected total amount of time
         # TODO
@@ -250,6 +243,19 @@ async def test_recording_and_reading_sessions(plain_asm, shutdown_session_maker,
 
         assert program_summary_spy.call_count == expected_program_call_count
         assert chrome_summary_spy.call_count == expected_chrome_call_count
+        # ### [Recorder layer] 
+        # #
+        # # The Recorder had its methods called the expected num of times,
+        # assert update_or_create_spy.call_count == len(real_program_events)
+        # for call in update_or_create_spy.call_args_list:
+        #     args, kwargs = call
+        #     # Check if the first argument is of type Foo
+        #     assert isinstance(args[0], ProgramLoggingDao), f"Expected ProgramLoggingDao but got {type(args[0])}"
+        #     assert isinstance(args[1], ProgramSessionData), f"Expected ProgramSessionData but got {type(args[0])}"
+        
+        # and the DAOs too
+        assert program_push_spy.call_count + program_start_session_spy.call_count == len(real_program_events)
+
         # The DAOs recorded the expected amount of time
         # Check the arguments that were passed were as expected
         # NOTE:

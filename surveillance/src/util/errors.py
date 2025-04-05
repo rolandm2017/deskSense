@@ -1,12 +1,5 @@
 import traceback
 
-def handle_exception(loop, context):
-    # context['message'] contains the error message
-    # context['exception'] (if available) contains the exception object
-    msg = context.get('exception', context['message'])
-    print(f"\n⚠️ Caught asyncio exception: {msg}\n")
-    traceback.print_stack()
-    print("Context:", context)
 
 
 class SuspiciousDurationError(ValueError):

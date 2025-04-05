@@ -101,7 +101,6 @@ class ActivityArbiter:
      
             engine_loop = self.current_heartbeat.engine.save_loop_for_reuse()
             self.current_heartbeat.stop()  # stop the old one from prev loop
-            print("in repeat loop")
             new_keep_alive_engine = KeepAliveEngine(new_session, self.activity_recorder, engine_loop)
             self.current_heartbeat = ThreadedEngineContainer(new_keep_alive_engine, self.pulse_interval)
             self.current_heartbeat.start()

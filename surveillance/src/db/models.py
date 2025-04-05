@@ -36,17 +36,22 @@ class MouseMove(Base):
 
 
 class Program(Base):
+    """
+    FIXME: Looks duplicated form of ProgramLoggingDao stuff
+    """
     __tablename__ = "program_changes"
 
     id = Column(Integer, primary_key=True, index=True)
     window = Column(String(max_content_len), unique=False, index=True)
     # As of Jan 19, I am unsure that I need this column. Could take it out.
     detail = Column(String(max_content_len))
+    # time stfuf
     start_time = Column(DateTime(timezone=True))
     end_time = Column(DateTime(timezone=True))
     duration = Column(Interval)
-    productive = Column(Boolean)
     created_at = Column(DateTime, default=datetime.now)
+    #
+    productive = Column(Boolean)
 
     def __eq__(self, other):
         if not isinstance(other, Program):
@@ -97,6 +102,9 @@ class ChromeTab(Base):
 
 
 class DailyProgramSummary(Base):
+    """
+    A summation of every instance of time spent on a program
+    """
     __tablename__ = "daily_program_summaries"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -112,6 +120,9 @@ class DailyProgramSummary(Base):
 
 
 class DailyDomainSummary(Base):
+    """
+    A summation of every instance of time spent on a domain
+    """
     __tablename__ = "daily_chrome_summaries"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -127,17 +138,21 @@ class DailyDomainSummary(Base):
 
 
 class ProgramSummaryLog(Base):
+    """
+    Logs a singular addition to the ProgramSummary table
+    """
     __tablename__ = "program_summary_logs"
 
     id = Column(Integer, primary_key=True, index=True)
     program_name = Column(String)
     hours_spent = Column(Float)
+    # time stuff
     start_time = Column(DateTime(timezone=True))
     end_time = Column(DateTime(timezone=True))
     duration = Column(Float, nullable=True)
+    created_at = Column(DateTime(timezone=True))
     # The date on which the program data was gathered
     gathering_date = Column(DateTime(timezone=True))
-    created_at = Column(DateTime(timezone=True))
 
     def __str__(self):
         return f"ProgramSummaryLog(program_name={self.program_name}, hours_spent={self.hours_spent}, " \

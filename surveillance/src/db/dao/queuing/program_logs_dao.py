@@ -44,6 +44,8 @@ class ProgramLoggingDao(BaseQueueingDao):
 
         duration_property_as_hours = convert_duration_to_hours(session)
 
+        # FIXME: do not need hours_spent AND duration?
+
         log_entry = ProgramSummaryLog(
             program_name=session.window_title,
             hours_spent=start_end_time_duration_as_hours,

@@ -38,7 +38,7 @@ class BaseQueueingDao:
         # Register an exception handler for the current event loop
         try:
             loop = asyncio.get_running_loop()
-            loop.set_exception_handler(handle_exception)
+            # loop.set_exception_handler(handle_exception)
         except RuntimeError:
             # No event loop, which is fine - will be set when needed
             pass

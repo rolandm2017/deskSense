@@ -31,8 +31,14 @@ class ActivityRecorder:
         In hindsight "add_ten_sec_to_end_time" doesn't really scream "creates the log file".
         """
         if isinstance(session, ProgramSessionData):
+            session_exists = await self.program_logging_dao.find_session(session)
+            if session_exists:
+                return
             await self.program_logging_dao.start_session(session)
         elif isinstance(session, ChromeSessionData):
+            session_exists = await self.chrome_logging_dao.find_session(session)
+            if session_exists:
+                return
             await self.chrome_logging_dao.start_session(session)
         else:
             raise TypeError("Session was not the right type")
