@@ -25,8 +25,8 @@ class BaseQueueingDao:
 
     The point is to (a) prevent bottlenecks and (b) avoid wasted overhead resources.
     """
-    def __init__(self, session_maker: async_sessionmaker, batch_size=30, flush_interval=1, dao_name="BaseQueueingDao"):
-        self.session_maker = session_maker
+    def __init__(self, async_session_maker: async_sessionmaker, batch_size=30, flush_interval=1, dao_name="BaseQueueingDao"):
+        self.async_session_maker = async_session_maker
         self.batch_size = batch_size
         if flush_interval > 1:
             raise WayTooLongWaitError(flush_interval)
@@ -163,7 +163,7 @@ class BaseQueueingDao:
         """Save a batch of items to the database"""
         # print(f"Saving batch of {len(batch)} items to database")
         try:
-            async with self.session_maker() as session:
+            async with self.async_session_maker() as session:
                 # Use the manual transaction approach to avoid nesting issues
                 await session.begin()
                 try:

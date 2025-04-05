@@ -1,10 +1,11 @@
 from sqlalchemy import select, or_
+from sqlalchemy.orm import sessionmaker
+
 from sqlalchemy.ext.asyncio import async_sessionmaker
 import asyncio
 from datetime import timedelta, datetime, date, timezone
 from typing import List
 
-# from ..object.classes import ChromeSessionData, ProgramSessionData
 from ....object.classes import ChromeSessionData, ProgramSessionData
 
 
@@ -31,16 +32,21 @@ class ChromeLoggingDao(BaseQueueingDao):
     - Methods return UTC timestamps regardless of input timezone
     - Input datetimes should be timezone-aware
     - Date comparisons are performed in UTC"""
-    def __init__(self,  session_maker: async_sessionmaker, batch_size=100, flush_interval=1):
+    def __init__(self, session_maker: sessionmaker, async_session_maker: async_sessionmaker, batch_size=100, flush_interval=1):
         """ Exists mostly for debugging. """
 
-        super().__init__(session_maker=session_maker,
+        super().__init__(async_session_maker=async_session_maker,
                          batch_size=batch_size, flush_interval=flush_interval,dao_name="ChromeLogging")
+        self.async_session_maker = async_session_maker
         self.session_maker = session_maker
 
     @validate_session
-    async def create_log(self, session: ChromeSessionData, right_now: datetime):
-        """Log an update to a summary table"""
+    def create_log(self, session: ChromeSessionData, right_now: datetime):
+        """
+        Log an update to a summary table.
+        
+        So the end_time here is like, "when was that addition to the summary ended?"
+        """
         start_end_time_duration_as_hours = convert_start_end_times_to_hours(session)
 
         duration_property_as_hours = convert_duration_to_hours(session)
@@ -54,10 +60,15 @@ class ChromeLoggingDao(BaseQueueingDao):
             gathering_date=right_now.date(),
             created_at=right_now
         )
-        await self.queue_item(log_entry, DomainSummaryLog, "create_log")
+        with self.session_maker() as db_session:
+            db_session.add(log_entry)
+            db_session.commit()
 
     @guarantee_start_time
-    async def start_session(self, session: ChromeSessionData):
+    def start_session(self, session: ChromeSessionData):
+        """
+        A session of using a domain. End_time here is like, "when did the user tab away from the program?"
+        """
         unknown = None
         base_start_time = convert_to_utc(session.start_time)
         start_of_day = get_start_of_day(session.start_time)
@@ -72,14 +83,17 @@ class ChromeLoggingDao(BaseQueueingDao):
             gathering_date=start_of_day_as_utc,
             created_at=session.start_time
         )
-        await self.queue_item(log_entry, DomainSummaryLog, "start_session")
+        with self.session_maker() as db_session:
+            db_session.add(log_entry)
+            db_session.commit()
+
 
     async def find_session(self, session: ChromeSessionData):
         start_time_as_utc = convert_to_utc(session.start_time)
         query = select(DomainSummaryLog).where(
             DomainSummaryLog.start_time == start_time_as_utc
         )
-        async with self.session_maker() as db_session:
+        async with self.async_session_maker() as db_session:
             result = await db_session.execute(query)
             return result.scalar_one_or_none()
 
@@ -149,7 +163,7 @@ class ChromeLoggingDao(BaseQueueingDao):
         if not log:
             raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")
         log.end_time = session.end_time + timedelta(seconds=10)
-        async with self.session_maker() as db_session:
+        async with self.async_session_maker() as db_session:
             db_session.add(log)
             await db_session.commit()
 
@@ -160,11 +174,11 @@ class ChromeLoggingDao(BaseQueueingDao):
         if not log:
             raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")
         log.end_time = session.end_time
-        async with self.session_maker() as db_session:
+        async with self.async_session_maker() as db_session:
             db_session.add(log)
             await db_session.commit()
 
     async def execute_query(self, query):
-        async with self.session_maker() as session:
+        async with self.async_session_maker() as session:
             result = await session.execute(query)
             return result.scalars().all()

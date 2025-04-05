@@ -23,7 +23,7 @@ class ActivityRecorder:
         if session.duration is None:
             raise ValueError("Session duration was not set")
         
-    async def on_new_session(self, session: ProgramSessionData | ChromeSessionData):
+    def on_new_session(self, session: ProgramSessionData | ChromeSessionData):
         """
         This exists because some code I expected to start a log
         before any other code asked to update the log, did not create
@@ -31,32 +31,34 @@ class ActivityRecorder:
         In hindsight "add_ten_sec_to_end_time" doesn't really scream "creates the log file".
         """
         if isinstance(session, ProgramSessionData):
-            session_exists = await self.program_logging_dao.find_session(session)
-            if session_exists:
-                return
-            await self.program_logging_dao.start_session(session)
+            # TODO: Store actibve sessions IDs in a cache so don't have to .find_session() over & over
+            # session_exists = self.program_logging_dao.find_session(session)
+            # if session_exists:
+            #     return
+            self.program_logging_dao.start_session(session)
         elif isinstance(session, ChromeSessionData):
-            session_exists = await self.chrome_logging_dao.find_session(session)
-            if session_exists:
-                return
-            await self.chrome_logging_dao.start_session(session)
+            # TODO: Store actibve sessions IDs in a cache so don't have to .find_session() over & over
+            # session_exists = self.chrome_logging_dao.find_session(session)
+            # if session_exists:
+            #     return
+            self.chrome_logging_dao.start_session(session)
         else:
             raise TypeError("Session was not the right type")
 
-    async def on_state_changed(self, session):
+    def on_state_changed(self, session):
         if isinstance(session, ProgramSessionData):
             self.validate_session(session)
-            await self.program_logging_dao.finalize_log(session)
+            self.program_logging_dao.finalize_log(session)
         elif isinstance(session, ChromeSessionData):
             self.validate_session(session)
-            await self.chrome_logging_dao.finalize_log(session)
+            self.chrome_logging_dao.finalize_log(session)
         else:
             if isinstance(session, InternalState):
                 raise TypeError(
                     "Argument was an InternalState when it should be a Session")
             raise TypeError("Session was not the right type")
 
-    async def add_ten_sec_to_end_time(self, session):
+    def add_ten_sec_to_end_time(self, session):
         """
         Pushes the end of the window forward ten sec so that, 
         when the computer shuts down, the end time was "about right" anyways.
@@ -64,11 +66,11 @@ class ActivityRecorder:
         print("Add ten sec was reached")
         print("Update or create log! 49ru")
         if isinstance(session, ProgramSessionData):
-            await self.program_logging_dao.push_window_ahead_ten_sec(session)
-            await self.program_summary_dao.push_window_ahead_ten_sec(session)
+            self.program_logging_dao.push_window_ahead_ten_sec(session)
+            self.program_summary_dao.push_window_ahead_ten_sec(session)
         elif isinstance(session, ChromeSessionData):
-            await self.chrome_logging_dao.push_window_ahead_ten_sec(session)
-            await self.chrome_summary_dao.push_window_ahead_ten_sec(session)
+            self.chrome_logging_dao.push_window_ahead_ten_sec(session)
+            self.chrome_summary_dao.push_window_ahead_ten_sec(session)
         else:
             raise TypeError("Session was not the right type")
         
@@ -84,17 +86,15 @@ class ActivityRecorder:
     #         print("starting session!")
     #         await logging_dao.start_session(session)
 
-    async def deduct_duration(self, duration_in_sec: int, session):
+    def deduct_duration(self, duration_in_sec: int, session):
         """
         Deducts t seconds from the duration of a session. 
         Here, the session's current window was cut short by a new session taking it's place.
         """
         today_start = self.user_facing_clock.today_start()
         if isinstance(session, ProgramSessionData):
-            # await self.program_summary_dao.do_the_remaining_work(session, right_now)
-            await self.program_summary_dao.deduct_remaining_duration(session, duration_in_sec, today_start)
+            self.program_summary_dao.deduct_remaining_duration(session, duration_in_sec, today_start)
         elif isinstance(session, ChromeSessionData):
-            # await self.chrome_summary_dao.do_the_remaining_work(session, right_now)
-            await self.chrome_summary_dao.deduct_remaining_duration(session, duration_in_sec, today_start)
+            self.chrome_summary_dao.deduct_remaining_duration(session, duration_in_sec, today_start)
         else:
             raise TypeError("Session was not the right type")

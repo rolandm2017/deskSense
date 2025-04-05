@@ -165,7 +165,7 @@ async def test_recording_and_reading_sessions(plain_asm, shutdown_session_maker,
         get_keyboard_facade_instance, get_mouse_facade_instance, choose_program_facade)
     # TODO: async session from the test db
     clock = MockClock(testing_num_of_times)
-    activity_arbiter = ActivityArbiter(clock, pulse_interval=0.2)
+    activity_arbiter = ActivityArbiter(clock, pulse_interval=0.5)
 
     activity_arbiter.add_summary_dao_listener(activity_recorder)
 

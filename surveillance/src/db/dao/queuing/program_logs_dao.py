@@ -1,5 +1,6 @@
 
 from sqlalchemy import select, or_
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import async_sessionmaker
 import asyncio
 from datetime import timedelta, datetime, date, timezone
@@ -30,15 +31,20 @@ class ProgramLoggingDao(BaseQueueingDao):
     - Methods return UTC timestamps regardless of input timezone
     - Input datetimes should be timezone-aware
     - Date comparisons are performed in UTC"""
-    def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=1, dao_name="ProgramLogging"):
+    def __init__(self, session_maker: sessionmaker, async_session_maker: async_sessionmaker, batch_size=100, flush_interval=1, dao_name="ProgramLogging"):
         """ Exists mostly for debugging. """
-        super().__init__(session_maker=session_maker,
+        super().__init__(async_session_maker=async_session_maker,
                          batch_size=batch_size, flush_interval=flush_interval, dao_name=dao_name)
+        self.async_session_maker = async_session_maker
         self.session_maker = session_maker
 
     @validate_session
-    async def create_log(self, session: ProgramSessionData, right_now: datetime):
-        """Log an update to a summary table"""
+    def create_log(self, session: ProgramSessionData, right_now: datetime):
+        """
+        Log an update to a summary table.
+        
+        So the end_time here is like, "when was that addition to the summary ended?"
+        """
         # ### Calculate time difference
         start_end_time_duration_as_hours = convert_start_end_times_to_hours(session)
 
@@ -56,11 +62,16 @@ class ProgramLoggingDao(BaseQueueingDao):
             created_at=right_now
         )
         # print("[pr] Creating ", log_entry)
-        await self.queue_item(log_entry, ProgramSummaryLog, "create_log")
+        with self.session_maker() as db_session:
+            db_session.add(log_entry)
+            db_session.commit()
 
 
     @guarantee_start_time
-    async def start_session(self, session: ProgramSessionData):
+    def start_session(self, session: ProgramSessionData):
+        """
+        A session of using a domain. End_time here is like, "when did the user tab away from the program?"
+        """
         print("[debug] starting session for ", session.window_title)
         unknown = None
         base_start_time = convert_to_utc(session.start_time)
@@ -76,7 +87,10 @@ class ProgramLoggingDao(BaseQueueingDao):
             gathering_date=start_of_day_as_utc,
             created_at=base_start_time
         )
-        await self.queue_item(log_entry, ProgramSummaryLog, "start_session")
+        with self.session_maker() as db_session:
+            db_session.add(log_entry)
+            db_session.commit()
+
 
     async def find_session(self, session: ProgramSessionData):
         # the database is storing and returning times in UTC
@@ -84,7 +98,7 @@ class ProgramLoggingDao(BaseQueueingDao):
         query = select(ProgramSummaryLog).where(
             ProgramSummaryLog.start_time == start_time_as_utc
         )
-        async with self.session_maker() as db_session:
+        async with self.async_session_maker() as db_session:
             result = await db_session.execute(query)
             return result.scalar_one_or_none()
 
@@ -100,7 +114,7 @@ class ProgramLoggingDao(BaseQueueingDao):
             ProgramSummaryLog.end_time < end_of_day
         ).order_by(ProgramSummaryLog.program_name)
 
-        async with self.session_maker() as session:
+        async with self.async_session_maker() as session:
             result = await session.execute(query)
             logs = result.scalars().all()
 
@@ -133,7 +147,7 @@ class ProgramLoggingDao(BaseQueueingDao):
             )
         ).order_by(ProgramSummaryLog.start_time)
         return await self.execute_query(query)  # the database is storing and returning times in UTC
-        # async with self.session_maker() as session:
+        # async with self.async_session_maker() as session:
             # result = await session.execute(query)
             # return result.scalars().all()
 
@@ -191,7 +205,7 @@ class ProgramLoggingDao(BaseQueueingDao):
         if not log:
             raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")
         log.end_time = session.end_time + timedelta(seconds=10)
-        async with self.session_maker() as db_session:
+        async with self.async_session_maker() as db_session:
             db_session.add(log)
             await db_session.commit()
 
@@ -201,11 +215,11 @@ class ProgramLoggingDao(BaseQueueingDao):
         if not log:
             raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")
         log.end_time = session.end_time
-        async with self.session_maker() as db_session:
+        async with self.async_session_maker() as db_session:
             db_session.add(log)
             await db_session.commit()
 
     async def execute_query(self, query):
-        async with self.session_maker() as session:
+        async with self.async_session_maker() as session:
             result = await session.execute(query)
             return result.scalars().all()
