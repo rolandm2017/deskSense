@@ -171,7 +171,8 @@ async def get_activity_arbiter():
             # Create and schedule the task
             if _arbiter_instance is None:
                 raise ValueError("Arbiter instance should be set by now")
-            loop.create_task(_arbiter_instance.set_tab_state(tab))
+            # loop.create_task(_arbiter_instance.set_tab_state(tab))
+            _arbiter_instance.set_tab_state(tab)
 
         print("ActivityArbiter created successfully")
     # else:

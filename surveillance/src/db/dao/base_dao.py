@@ -180,26 +180,6 @@ class BaseQueueingDao:
             # traceback.print_exc()
             raise  # Re-raise to allow proper error handling
         
-    async def _force_process_queue(self):
-        """Force immediate processing of queued items. Useful for tests or shutdown."""
-        # print("Force processing remaining queue items")
-        remaining_items = []
-        
-        # Empty the queue
-        while not self.queue.empty():
-            try:
-                item = self.queue.get_nowait()
-                remaining_items.append(item)
-            except asyncio.QueueEmpty:
-                break
-        
-        # Save items if there are any
-        if remaining_items:
-            print(f"Force saving {len(remaining_items)} remaining items")
-            await self._save_batch_to_db(remaining_items)
-        else:
-            print("No remaining items to process")
-
     async def cleanup(self):
         """Clean up resources and cancel any background tasks."""
         print("Starting cleanup...")
@@ -229,6 +209,28 @@ class BaseQueueingDao:
         await self._force_process_queue()
         
         print("Cleanup completed")
+
+    async def _force_process_queue(self):
+        """Force immediate processing of queued items. Useful for tests or shutdown."""
+        # print("Force processing remaining queue items")
+        remaining_items = []
+        
+        # Empty the queue
+        while not self.queue.empty():
+            try:
+                item = self.queue.get_nowait()
+                remaining_items.append(item)
+            except asyncio.QueueEmpty:
+                break
+        
+        # Save items if there are any
+        if remaining_items:
+            print(f"Force saving {len(remaining_items)} remaining items")
+            await self._save_batch_to_db(remaining_items)
+        else:
+            print("No remaining items to process")
+
+   
         
     async def __aenter__(self):
         """Support for async context manager protocol"""

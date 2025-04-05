@@ -1,16 +1,16 @@
 from __future__ import annotations
-from ast import Attribute
 from datetime import datetime, timedelta, timezone
+
+import asyncio
 
 from ..config.definitions import power_on_off_debug_file
 
 
 from ..object.classes import ChromeSessionData, ProgramSessionData
-from ..db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from ..db.dao.direct.program_summary_dao import ProgramSummaryDao
 
 from .activity_state_machine import ActivityStateMachine
-from ..object.arbiter_classes import ChromeInternalState, ApplicationInternalState, InternalState
+from ..object.arbiter_classes import ChromeInternalState, ApplicationInternalState
+from ..util.console_logger import ConsoleLogger
 
 from .session_heartbeat import KeepAliveEngine, ThreadedEngineContainer
 
@@ -21,7 +21,7 @@ class RecordKeeperCore:
 
 
 class ActivityArbiter:
-    def __init__(self, user_facing_clock):
+    def __init__(self, user_facing_clock, pulse_interval=1, loop=None):
         """
         This class exists to prevent the Chrome Service from doing ANYTHING but reporting which tab is active.
 
@@ -35,16 +35,19 @@ class ActivityArbiter:
         i.e. "chrome_event_update" and "self.current_is_chrome" before e22d5badb15
         """
         self.state_machine = ActivityStateMachine(user_facing_clock)
+        self.pulse_interval = pulse_interval
+        self.loop = loop or asyncio.get_event_loop()
 
         self.ui_update_listener = None
-        self.summary_listener = None
+        self.activity_recorder = None
+        self.logger = ConsoleLogger()
 
     def add_ui_listener(self, listener):
         self.ui_update_listener = listener
 
     def add_summary_dao_listener(self, listener):
         if hasattr(listener, "on_state_changed"):
-            self.summary_listener = listener
+            self.activity_recorder = listener
         else:
             raise AttributeError("Listener method was missing")
 
@@ -52,17 +55,25 @@ class ActivityArbiter:
         if self.ui_update_listener:
             self.ui_update_listener(state)
 
-    async def notify_summary_dao(self, session, is_shutdown=False):
-        if self.summary_listener:
-            await self.summary_listener.on_state_changed(session, is_shutdown)
+    def notify_summary_dao(self, session):
+        if self.activity_recorder:
+            result = self.activity_recorder.on_state_changed(session)
+            if asyncio.iscoroutine(result):
+                self.loop.create_task(result)
 
-    async def set_tab_state(self, tab: ChromeSessionData):
-        await self.transition_state(tab)
+    def notify_of_new_session(self, session):
+        if self.activity_recorder:
+            result = self.activity_recorder.on_new_session(session)
+            if asyncio.iscoroutine(result):
+                self.loop.create_task(result)
 
-    async def set_program_state(self, event: ProgramSessionData):
-        await self.transition_state(event)
+    def set_tab_state(self, tab: ChromeSessionData):
+        self.transition_state(tab)
 
-    async def transition_state(self, new_session: ChromeSessionData | ProgramSessionData):
+    def set_program_state(self, event: ProgramSessionData):
+        self.transition_state(event)
+
+    def transition_state(self, new_session: ChromeSessionData | ProgramSessionData):
         """
         If newly_active = Chrome, start a session for the current tab.
         When Chrome is closed, end the session for the current tab.
@@ -84,18 +95,22 @@ class ActivityArbiter:
 
             # ### Create the replacement state
             self.state_machine.set_new_session(new_session)
-     
-            self.current_heartbeat.stop()  # stop the old one from prev loop
 
-            new_keep_alive_engine = KeepAliveEngine(new_session, self.summary_listener)
-            self.current_heartbeat = ThreadedEngineContainer(new_keep_alive_engine)
+            # ### Start the first window
+            self.notify_of_new_session(new_session)
+     
+            engine_loop = self.current_heartbeat.engine.save_loop_for_reuse()
+            self.current_heartbeat.stop()  # stop the old one from prev loop
+            print("in repeat loop")
+            new_keep_alive_engine = KeepAliveEngine(new_session, self.activity_recorder, engine_loop)
+            self.current_heartbeat = ThreadedEngineContainer(new_keep_alive_engine, self.pulse_interval)
             self.current_heartbeat.start()
 
 
             if self.state_machine.is_initialization_session(concluded_session):
                 return
             # ### Put outgoing state into the DAO
-            await self.notify_summary_dao(concluded_session)
+            self.notify_summary_dao(concluded_session)
         else:
             if isinstance(new_session, ProgramSessionData):
                 updated_state = ApplicationInternalState(
@@ -107,9 +122,10 @@ class ActivityArbiter:
                     current_tab=new_session.detail,
                     session=new_session
                 )
-
-            new_keep_alive_engine = KeepAliveEngine(new_session, self.summary_listener)
-            self.current_heartbeat = ThreadedEngineContainer(new_keep_alive_engine)
+            start_of_loop = asyncio.new_event_loop()
+            print("in arbiter init")
+            new_keep_alive_engine = KeepAliveEngine(new_session, self.activity_recorder, start_of_loop)
+            self.current_heartbeat = ThreadedEngineContainer(new_keep_alive_engine, self.pulse_interval)
             self.current_heartbeat.start()
             self.state_machine.current_state = updated_state
 

@@ -77,6 +77,7 @@ class SurveillanceManager:
 
         self.session_integrity_dao = SessionIntegrityDao(
             program_summary_logger, chrome_summary_logger, self.session_maker)
+        # FIXME: 04/04/2025: why isn't the sys status dao used anywhere?
         system_status_dao = SystemStatusDao(
             self.session_maker, shutdown_session_maker)
 
@@ -115,6 +116,7 @@ class SurveillanceManager:
 
     def start_trackers(self):
         self.is_running = True
+        print("Running trackers")
         self.keyboard_thread.start()
         self.mouse_thread.start()
         self.program_thread.start()
@@ -145,7 +147,8 @@ class SurveillanceManager:
 
     def handle_window_change(self, event):
         # assert isinstance(event, ProgramSessionData)
-        self.loop.create_task(self.arbiter.set_program_state(event))
+        self.arbiter.set_program_state(event)
+        # self.loop.create_task(self.arbiter.set_program_state(event))
 
     # FIXME: Am double counting for sure
     def handle_program_ready_for_db(self, event):
@@ -172,7 +175,36 @@ class SurveillanceManager:
         self.mouse_thread.stop()
         self.program_thread.stop()
 
-        await self.message_receiver.async_stop()
+        # await self.message_receiver.async_stop()
+        self.message_receiver.stop()
+
+        if hasattr(self, 'message_receiver') and self.message_receiver:
+            try:
+                # Stop the MessageReceiver properly
+                # Get references to the tasks before stopping
+                if hasattr(self.message_receiver, 'tasks'):
+                    receiver_tasks = list(self.message_receiver.tasks)
+                else:
+                    receiver_tasks = []
+                    
+                # Stop the receiver (this should cancel tasks internally)
+                await self.message_receiver.async_stop()
+                
+                # For any tasks that are still running, explicitly await them with timeout
+                for task in receiver_tasks:
+                    if not task.done() and not task.cancelled():
+                        try:
+                            # Try to cancel the task
+                            task.cancel()
+                            # Wait for it to complete with a timeout
+                            await asyncio.wait_for(asyncio.shield(task), timeout=0.5)
+                        except (asyncio.CancelledError, asyncio.TimeoutError):
+                            print(f"Task {task.get_name()} cancelled or timed out during cleanup")
+                        except Exception as e:
+                            print(f"Error cleaning up task {task.get_name()}: {e}")
+            except Exception as e:
+                print(f"Error during MessageReceiver cleanup: {e}")
+                traceback.print_exc()
 
         self.is_running = False
         # Add any async cleanup operations here
