@@ -26,7 +26,7 @@ print(f"Num of open files: {num_open_files}")
 # FIXME: Tests are wayyyyyy too slow here 
 
 @pytest_asyncio.fixture(scope="function")
-async def test_db_dao(async_engine_and_asm, shutdown_session_maker):
+async def test_db_dao(async_engine_and_asm, regular_session):
     """Create a DAO instance with the async session maker"""
     _, asm = async_engine_and_asm
 
@@ -38,7 +38,7 @@ async def test_db_dao(async_engine_and_asm, shutdown_session_maker):
     times = [dt1, dt2, dt3, dt4, dt5]
     clock = MockClock(times)
 
-    dao = SystemStatusDao(asm, shutdown_session_maker)
+    dao = SystemStatusDao(asm, regular_session)
 
     current_loop = asyncio.get_event_loop()
     dao.accept_power_tracker_loop(current_loop)

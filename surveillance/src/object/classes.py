@@ -33,16 +33,40 @@ class ProgramSessionData:
     duration: Optional[timedelta]
     productive: bool
 
-    def __init__(self, title="", detail="", start_time=None, end_time=None):
+    def __init__(self, title="", detail="", start_time=None, end_time=None, productive=False, duration_for_tests=None):
+        """Only use duration in testing. Don't use it otherwise. 'duration_for_tests' exists only for e2e tests thresholds"""
         self.window_title = title
         self.detail = detail
         self.start_time = start_time
         self.end_time = end_time
         if start_time and end_time:
+            # if isinstance(start_time, str) and isinstance(end_time, str):
+            #     start = datetime.fromisoformat(start_time)
+            #     end = datetime.fromisoformat(end_time)
+            #     self.duration = end - start
+            # else:
             self.duration = end_time - start_time
         else:
-            self.duration = None
-        self.productive = False
+            if duration_for_tests:
+                self.duration = self.parse_time_string(duration_for_tests)
+            else:
+                self.duration = None
+        self.productive = productive
+
+    def parse_time_string(time_str):
+        parts = time_str.split(':')
+        hours = int(parts[0])
+        minutes = int(parts[1])
+        seconds_parts = parts[2].split('.')
+        seconds = int(seconds_parts[0])
+        microseconds = int(seconds_parts[1]) if len(seconds_parts) > 1 else 0
+        
+        return timedelta(
+            hours=hours,
+            minutes=minutes,
+            seconds=seconds,
+            microseconds=microseconds
+        )
 
     def __str__(self):
         end_time = self.end_time if self.end_time else "tbd"

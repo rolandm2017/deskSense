@@ -32,7 +32,7 @@ class TabQueue:
 
     async def add_to_arrival_queue(self, tab_change_event: TabChangeEvent):
         self.message_queue.append(tab_change_event)
-
+        print("addign event, 35ru")
         MAX_QUEUE_LEN = 40
 
         if len(self.message_queue) >= MAX_QUEUE_LEN:
@@ -101,7 +101,7 @@ class ChromeService:
         # FIXME: It can't be a user facing clock b/c it's ... global, server wide.
         self.user_facing_clock = user_facing_clock
         self.arbiter = arbiter
-        self.dao = dao
+        self.chrome_dao = dao
         self.last_entry = None
         self.elapsed_alt_tab = None
         # self.summary_dao = summary_dao
@@ -131,17 +131,13 @@ class ChromeService:
 
         Then, before Bar replaces Foo, Foo has its duration added. Foo is then logged. Cycle repeats.
         """
+        print("log tab event 125ru")
         # TODO: Write tests for this function
 
         initialized: ChromeSessionData = ChromeSessionData()
         initialized.domain = url_deliverable.url
         initialized.detail = url_deliverable.tabTitle
         initialized.productive = url_deliverable.url in productive_sites
-
-        # temp = url_deliverable.startTime
-        # print("DEBUG: ",  temp)
-        # print(
-        #     f"[DEBUG] tzinfo: {temp.tzinfo}")
 
         # NOTE: In the past, the intent was to keep everything in UTC.
         # Now, the intent is to do everything in the user's LTZ, local time zone.
@@ -157,8 +153,6 @@ class ChromeService:
 
             next_session_start_time = initialized.start_time
 
-            # FIXME: duration is impossibly long, like hours. it might be a TZ problem
-
             # duration_of_alt_tab   # used to be a thing
             duration = next_session_start_time - concluding_start_time
             if duration > timedelta(hours=1):
@@ -168,11 +162,11 @@ class ChromeService:
                 raise SuspiciousDurationError("duration")
             concluding_session.duration = duration
             concluding_session.end_time = next_session_start_time
+            self.write_completed_session_to_chrome_dao(concluding_session)
         self.last_entry = initialized
-        self.write_completed_session_to_chrome_dao(concluding_session)
 
     def write_completed_session_to_chrome_dao(self, session):
-        dao_task = self.loop.create_task(self.dao.create(session))
+        dao_task = self.loop.create_task(self.chrome_dao.create(session))
 
         # Add error callbacks to catch any task failures
         def on_task_done(task):
@@ -197,8 +191,8 @@ class ChromeService:
             f.write("Shutdown Chrome Service\n")
 
     async def handle_chrome_ready_for_db(self, event):
-        await self.dao.create(event)
+        await self.chrome_dao.create(event)
 
     async def read_last_24_hrs(self):
         right_now = self.user_facing_clock.now()
-        return await self.dao.read_past_24h_events(right_now)
+        return await self.chrome_dao.read_past_24h_events(right_now)

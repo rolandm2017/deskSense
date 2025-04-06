@@ -2,6 +2,9 @@
 from datetime import datetime, timedelta, timezone
 from typing import Iterator
 
+from zoneinfo import ZoneInfo
+
+from src.config.definitions import local_time_zone
 
 from src.util.clock import ClockProtocol
 
@@ -38,3 +41,7 @@ class MockClock(ClockProtocol):
 
         for position in range(n):
             self._current_time = next(self.times)
+
+    def today_start(self):
+        return datetime.now(ZoneInfo(local_time_zone)).replace(
+            hour=0, minute=0, second=0, microsecond=0)

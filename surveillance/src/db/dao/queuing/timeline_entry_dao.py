@@ -15,8 +15,8 @@ from ....util.timeline_event_aggregator import aggregate_timeline_events
 
 
 class TimelineEntryDao(BaseQueueingDao):
-    def __init__(self, session_maker: async_sessionmaker, batch_size=100, flush_interval=1):
-        super().__init__(session_maker=session_maker, batch_size=batch_size, flush_interval=flush_interval, dao_name="TimelineEntry")
+    def __init__(self, async_session_maker: async_sessionmaker, batch_size=100, flush_interval=1):
+        super().__init__(async_session_maker=async_session_maker, batch_size=batch_size, flush_interval=flush_interval, dao_name="TimelineEntry")
 
         self.logger = ConsoleLogger()
 

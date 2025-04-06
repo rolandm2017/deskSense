@@ -64,8 +64,6 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         if existing_entry:
             if self.debug:
                 notice_suspicious_durations(existing_entry, program_session)
-                # log_if_needed()  
-            # existing_entry.hours_spent += usage_duration_in_hours
 
             await self.update_hours(existing_entry, usage_duration_in_hours)
         else:
@@ -161,7 +159,11 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             await session.commit()
         
     async def push_window_ahead_ten_sec(self, program_session: ProgramSessionData, right_now):
-        """Finds the given session and adds ten sec to its end_time"""
+        """
+        Finds the given session and adds ten sec to its end_time
+        
+        NOTE: This only ever happens after start_session
+        """
         target_program_name = program_session.window_title
         today_start = right_now.replace(
             hour=0, minute=0, second=0, microsecond=0)
@@ -182,7 +184,15 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
                 # If the code got here, the summary wasn't even created yet,
                 # which is likely! for the first time a program enters the program
                 self.logger.log_white_multiple("INFO:", f"first time {target_program_name} appears today")
-                self.create_if_new_else_update(program_session, right_now)
+                # TODO: Change into just "create new"
+                
+                # TODO: Let the SessionHeartbeat update times
+                # ### Calculate time difference
+                usage_duration_in_hours = (
+                        program_session.end_time - program_session.start_time).total_seconds() / 3600
+
+                self._create(target_program_name, usage_duration_in_hours, today_start)
+                # self.create_if_new_else_update(program_session, right_now)
 
     async def deduct_remaining_duration(self, session: ProgramSessionData, duration_in_sec: int, today_start):
         """
@@ -201,17 +211,18 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.gathering_date < tomorrow_start
         )        
         # Update it if found
-        async with self.session_maker() as session:
-            program: DailyProgramSummary = session.scalars(query).first()
+        async with self.session_maker() as db_session:
+            program: DailyProgramSummary = db_session.scalars(query).first()
             # Update it if found
             if program:
                 program.hours_spent = program.hours_spent - timedelta(seconds=duration_in_sec)
-                session.commit()
+                db_session.commit()
             else:
                 # If the code got here, the summary wasn't even created yet,
                 # which is likely! for the first time a program enters the program,
                 # if it is cut off before the first 10 sec window elapses.
                 self.logger.log_white_multiple("INFO:", f"first time {target_program_name} appears today")
+     
                 self.create_if_new_else_update(session, session.start_time)
 
                 

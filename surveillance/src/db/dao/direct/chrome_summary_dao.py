@@ -139,9 +139,12 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             result = await session.execute(query)
             return await result.scalar_one_or_none()
         
-    async def push_window_ahead_ten_sec(self, session: ChromeSessionData, right_now):
-        """Finds the given session and adds ten sec to its end_time"""
-        target_domain = session.domain
+    async def push_window_ahead_ten_sec(self, chrome_session: ChromeSessionData, right_now):
+        """Finds the given session and adds ten sec to its end_time
+        
+        NOTE: This only ever happens after start_session
+        """
+        target_domain = chrome_session.domain
         today_start = right_now.replace(
             hour=0, minute=0, second=0, microsecond=0)
         tomorrow_start = today_start + timedelta(days=1)
@@ -151,17 +154,24 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyDomainSummary.gathering_date >= today_start,
             DailyDomainSummary.gathering_date < tomorrow_start
         )        
-        async with self.session_maker() as session:
-            domain: DailyDomainSummary = session.scalars(query).first()
+        async with self.session_maker() as db_session:
+            domain: DailyDomainSummary = db_session.scalars(query).first()
             # Update it if found
             if domain:
                 domain.hours_spent = domain.hours_spent + timedelta(seconds=10)
-                session.commit()
+                db_session.commit()
             else:
-                # FIXME: If the code got here, the summary wasn't even created yet,
-                # which is likely! for the first time a program enters the program
+                # If the code got here, the summary wasn't even created yet,
+                # which is likely! for the first time a program enters the program on a given day
                 self.logger.log_white_multiple("INFO:", f"first time {target_domain} appears today")
-                self.create_if_new_else_update(session, right_now)
+                target_domain_name = chrome_session.domain
+        
+                # ### Calculate time difference
+                usage_duration_in_hours = chrome_session.duration.total_seconds() / 3600
+                today = right_now.replace(hour=0, minute=0, second=0,
+                                  microsecond=0)  # Still has tz attached
+                await self.create(target_domain_name, usage_duration_in_hours, today)
+                # self.create_if_new_else_update(session, right_now)
 
     async def deduct_remaining_duration(self, session: ChromeSessionData, duration, today_start):
         """

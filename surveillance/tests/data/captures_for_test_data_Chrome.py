@@ -6,14 +6,12 @@ chrome_data = [
     TabChangeEvent(tabTitle='Google Docs', url='docs.google.com',
                    startTime=datetime.strptime('2025-03-22 23:15:02', '%Y-%m-%d %H:%M:%S')),
     TabChangeEvent(tabTitle='ChatGPT', url='chatgpt.com', 
-                   startTime=datetime.strptime(
-        '2025-03-22 23:15:10', '%Y-%m-%d %H:%M:%S')),
+                   startTime=datetime.strptime('2025-03-22 23:15:10', '%Y-%m-%d %H:%M:%S')),
     TabChangeEvent(tabTitle='Claude', url='claude.ai', 
-                   startTime=datetime.strptime(
-        '2025-03-22 23:15:21', '%Y-%m-%d %H:%M:%S'))
+                   startTime=datetime.strptime('2025-03-22 23:15:21', '%Y-%m-%d %H:%M:%S')),
+    TabChangeEvent(tabTitle='ChatGPT', url='chatgpt.com', 
+                   startTime=datetime.strptime('2025-03-22 23:15:30', '%Y-%m-%d %H:%M:%S'))
     # Commented out below entries because, because the tests were too long
-    # TabChangeEvent(tabTitle='ChatGPT', url='chatgpt.com', 
-    #                startTime=datetime.strptime('2025-03-22 23:15:30', '%Y-%m-%d %H:%M:%S')),
     # TabChangeEvent(tabTitle='Google', url='www.google.com', 
     #                startTime=datetime.strptime('2025-03-22 23:15:39', '%Y-%m-%d %H:%M:%S')),
     # TabChangeEvent(tabTitle='YouTube', url='www.youtube.com',

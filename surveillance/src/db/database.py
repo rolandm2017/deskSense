@@ -33,7 +33,7 @@ async_session_maker = async_sessionmaker(
     expire_on_commit=False
 )
 
-shutdown_session_maker = sessionmaker(
+regular_session_maker = sessionmaker(
     sync_engine,
     class_=Session,
     expire_on_commit=False

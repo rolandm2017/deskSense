@@ -11,7 +11,7 @@ from .services.chrome_service import ChromeService
 from .services.services import KeyboardService, MouseService, ProgramService, TimezoneService
 from .facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
 
-from .db.database import async_session_maker
+from .db.database import async_session_maker, regular_session_maker
 from .db.dao.queuing.mouse_dao import MouseDao
 from .db.dao.queuing.keyboard_dao import KeyboardDao
 from .db.dao.queuing.program_dao import ProgramDao
@@ -34,8 +34,8 @@ from .arbiter.activity_recorder import ActivityRecorder
 system_clock = SystemClock()
 user_facing_clock = UserFacingClock()
 
-_program_logging_dao = ProgramLoggingDao(async_session_maker)
-_chrome_logging_dao = ChromeLoggingDao(async_session_maker)
+_program_logging_dao = ProgramLoggingDao(regular_session_maker, async_session_maker)
+_chrome_logging_dao = ChromeLoggingDao(regular_session_maker, async_session_maker)
 
 
 async def get_keyboard_dao() -> KeyboardDao:

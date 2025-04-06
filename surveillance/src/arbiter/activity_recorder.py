@@ -31,16 +31,8 @@ class ActivityRecorder:
         In hindsight "add_ten_sec_to_end_time" doesn't really scream "creates the log file".
         """
         if isinstance(session, ProgramSessionData):
-            # TODO: Store actibve sessions IDs in a cache so don't have to .find_session() over & over
-            # session_exists = self.program_logging_dao.find_session(session)
-            # if session_exists:
-            #     return
             self.program_logging_dao.start_session(session)
         elif isinstance(session, ChromeSessionData):
-            # TODO: Store actibve sessions IDs in a cache so don't have to .find_session() over & over
-            # session_exists = self.chrome_logging_dao.find_session(session)
-            # if session_exists:
-            #     return
             self.chrome_logging_dao.start_session(session)
         else:
             raise TypeError("Session was not the right type")
@@ -65,27 +57,16 @@ class ActivityRecorder:
         """
         print("Add ten sec was reached")
         print("Update or create log! 49ru")
+        now = self.user_facing_clock.now()
         if isinstance(session, ProgramSessionData):
             self.program_logging_dao.push_window_ahead_ten_sec(session)
-            self.program_summary_dao.push_window_ahead_ten_sec(session)
+            self.program_summary_dao.push_window_ahead_ten_sec(session, now)
         elif isinstance(session, ChromeSessionData):
             self.chrome_logging_dao.push_window_ahead_ten_sec(session)
-            self.chrome_summary_dao.push_window_ahead_ten_sec(session)
+            self.chrome_summary_dao.push_window_ahead_ten_sec(session, now)
         else:
             raise TypeError("Session was not the right type")
         
-    # async def update_or_create_log(self, logging_dao: ProgramLoggingDao | ChromeLoggingDao, session):
-    #     # Note that the cost of the read in find_session occurs 
-    #     # once per 8 ish sec, which is a very low cost
-    #     session_exists = await logging_dao.find_session(session)
-
-    #     if session_exists:
-    #         print("Session exists!")
-            
-    #     else:
-    #         print("starting session!")
-    #         await logging_dao.start_session(session)
-
     def deduct_duration(self, duration_in_sec: int, session):
         """
         Deducts t seconds from the duration of a session. 

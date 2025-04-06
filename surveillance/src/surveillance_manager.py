@@ -48,11 +48,12 @@ class FacadeInjector:
 
 
 class SurveillanceManager:
-    def __init__(self, session_maker: async_sessionmaker, shutdown_session_maker: sessionmaker, chrome_service, arbiter: ActivityArbiter, facades, shutdown_signal=None):
+    def __init__(self, clock: UserFacingClock, async_session_maker: async_sessionmaker, regular_session_maker: sessionmaker, chrome_service, arbiter: ActivityArbiter, facades, shutdown_signal=None):
         """
         Facades argument is DI for testability.
         """
-        self.session_maker = session_maker
+        self.async_session_maker = async_session_maker
+        self.regular_session = regular_session_maker
         self.chrome_service = chrome_service
 
         self.arbiter = arbiter
@@ -70,28 +71,27 @@ class SurveillanceManager:
         program_facade = facades.program_facade(current_os)
 
         self.loop = asyncio.get_event_loop()
-        clock = UserFacingClock()
-
-        program_summary_logger = ProgramLoggingDao(self.session_maker)
-        chrome_summary_logger = ChromeLoggingDao(self.session_maker)
+        
+        program_summary_logger = ProgramLoggingDao(self.regular_session, self.async_session_maker)
+        chrome_summary_logger = ChromeLoggingDao(self.regular_session, self.async_session_maker)
 
         self.session_integrity_dao = SessionIntegrityDao(
-            program_summary_logger, chrome_summary_logger, self.session_maker)
+            program_summary_logger, chrome_summary_logger, self.async_session_maker)
         # FIXME: 04/04/2025: why isn't the sys status dao used anywhere?
         system_status_dao = SystemStatusDao(
-            self.session_maker, shutdown_session_maker)
+            self.async_session_maker, self.regular_session)
 
-        self.mouse_dao = MouseDao(self.session_maker)
-        self.keyboard_dao = KeyboardDao(self.session_maker)
-        self.program_dao = ProgramDao(self.session_maker)
-        self.chrome_dao = ChromeDao(self.session_maker)
+        self.mouse_dao = MouseDao(self.async_session_maker)
+        self.keyboard_dao = KeyboardDao(self.async_session_maker)
+        self.program_dao = ProgramDao(self.async_session_maker)
+        self.chrome_dao = ChromeDao(self.async_session_maker)
 
         self.program_summary_dao = ProgramSummaryDao(
-            program_summary_logger, self.session_maker)
+            program_summary_logger, self.async_session_maker)
         self.chrome_summary_dao = ChromeSummaryDao(
-            chrome_summary_logger, self.session_maker)
+            chrome_summary_logger, self.async_session_maker)
 
-        self.timeline_dao = TimelineEntryDao(self.session_maker)
+        self.timeline_dao = TimelineEntryDao(self.async_session_maker)
 
         # Register handlers for different event types
         self.message_receiver.register_handler(
@@ -146,6 +146,7 @@ class SurveillanceManager:
         self.loop.create_task(self.mouse_dao.create_from_window(event))
 
     def handle_window_change(self, event):
+        print(event.window_title, "150ru")
         # assert isinstance(event, ProgramSessionData)
         self.arbiter.set_program_state(event)
         # self.loop.create_task(self.arbiter.set_program_state(event))

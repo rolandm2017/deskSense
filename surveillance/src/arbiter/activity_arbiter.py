@@ -57,15 +57,17 @@ class ActivityArbiter:
 
     def notify_summary_dao(self, session):
         if self.activity_recorder:
-            result = self.activity_recorder.on_state_changed(session)
-            if asyncio.iscoroutine(result):
-                self.loop.create_task(result)
+            self.activity_recorder.on_state_changed(session)
+            # result = self.activity_recorder.on_state_changed(session)
+            # if asyncio.iscoroutine(result):
+            #     self.loop.create_task(result)
 
     def notify_of_new_session(self, session):
         if self.activity_recorder:
-            result = self.activity_recorder.on_new_session(session)
-            if asyncio.iscoroutine(result):
-                self.loop.create_task(result)
+            self.activity_recorder.on_new_session(session)
+            # result = self.activity_recorder.on_new_session(session)
+            # if asyncio.iscoroutine(result):
+            #     self.loop.create_task(result)
 
     def set_tab_state(self, tab: ChromeSessionData):
         self.transition_state(tab)
@@ -123,6 +125,7 @@ class ActivityArbiter:
                 )
             start_of_loop = asyncio.new_event_loop()
             print("in arbiter init")
+            self.notify_of_new_session(new_session)
             new_keep_alive_engine = KeepAliveEngine(new_session, self.activity_recorder, start_of_loop)
             self.current_heartbeat = ThreadedEngineContainer(new_keep_alive_engine, self.pulse_interval)
             self.current_heartbeat.start()

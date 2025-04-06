@@ -14,7 +14,7 @@ from datetime import date, datetime
 from time import time
 
 
-from src.db.database import init_db, async_session_maker, shutdown_session_maker
+from src.db.database import init_db, async_session_maker, regular_session_maker
 from src.db.models import DailyDomainSummary, DailyProgramSummary, ProgramSummaryLog
 
 # from src.services import MouseService, KeyboardService, ProgramService, DashboardService, ChromeService
@@ -110,7 +110,7 @@ async def lifespan(app: FastAPI):
     facades = FacadeInjector(get_keyboard_facade_instance,
                              get_mouse_facade_instance, choose_program_facade)
     surveillance_state.manager = SurveillanceManager(
-        async_session_maker, shutdown_session_maker, chrome_service, arbiter, facades)
+        async_session_maker, regular_session_maker, chrome_service, arbiter, facades)
     surveillance_state.manager.start_trackers()
 
     yield

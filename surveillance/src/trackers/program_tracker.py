@@ -78,6 +78,7 @@ class ProgramTrackerCore:
                     window_change, current_time)
                 self.current_session = new_session
                 # report window change immediately via "window_change_handler()"
+                print("on a diff window 81ru")
                 self.window_change_handler(new_session)
 
             # initialize
@@ -87,6 +88,7 @@ class ProgramTrackerCore:
                 new_session = self.start_new_session(
                     window_change, current_time)
                 self.current_session = new_session
+                print("is Uninit 90ru")
                 self.window_change_handler(new_session)
 
     def is_uninitialized(self):

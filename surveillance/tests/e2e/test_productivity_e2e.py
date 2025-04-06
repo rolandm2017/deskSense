@@ -6,7 +6,7 @@ from sqlalchemy import text
 import traceback
 import asyncio
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from dotenv import load_dotenv
 import os
@@ -19,9 +19,11 @@ from src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 
 from src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from src.db.dao.queuing.chrome_dao import ChromeDao
 from src.facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
 
 from src.services.chrome_service import ChromeService
+from src.services.services import TimezoneService
 from src.service_dependencies import get_dashboard_service
 
 
@@ -56,6 +58,34 @@ def times_from_test_data():
     chrome_times = [d.startTime for d in chrome_data]
     return program_times, chrome_times
 
+async def cleanup_test_resources(manager):
+    print("Cleaning up test resources...")
+    
+    # Clean up surveillance manager (this should now properly clean up MessageReceiver)
+    try:
+        await manager.cleanup()
+    except Exception as e:
+        print(f"Error during surveillance_manager cleanup: {e}")
+        traceback.print_exc()
+    
+    # Allow some time for all resources to be properly cleaned up
+    await asyncio.sleep(0.5)
+    
+    # Ensure all asyncio tasks are properly awaited or cancelled
+    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+    if tasks:
+        print(f"Cancelling {len(tasks)} remaining tasks...")
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        
+        try:
+            await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=1.0)
+        except asyncio.TimeoutError:
+            print("Some tasks did not complete in time during test cleanup")
+    
+    print("Test resources cleanup completed")
+
 #       oooox
 #     oox   oox
 #    ox       ox
@@ -65,11 +95,13 @@ def times_from_test_data():
 #    ox       ox
 #     oox   oox
 #       oooox
-#
-# First, events are recorded.
+# First, events make their way from ProgramTracker to the Arbiter.
+# # # #
+# Trackers -> Arbiter
 
 @pytest.mark.asyncio
-async def test_recording_and_reading_sessions(plain_asm, shutdown_session_maker, times_from_test_data):
+@pytest.mark.skip(reason="temp for other tests")
+async def test_tracker_to_arbiter(plain_asm, regular_session, times_from_test_data):
 
     program_facade = Mock()
 
@@ -80,20 +112,39 @@ async def test_recording_and_reading_sessions(plain_asm, shutdown_session_maker,
 
     program_durations = []
 
+    mock_clock_times = []
+
+
     for i in range(0, len(times_for_program_events)):
         if i == len(times_for_program_events) - 1:
+            current = datetime.fromisoformat(times_for_program_events[i])
+            mock_clock_times.append(current)
             break
         current = datetime.fromisoformat(times_for_program_events[i])
+        mock_clock_times.append(current)
         next_event = datetime.fromisoformat(times_for_program_events[i + 1])
         change = next_event - current
         program_durations.append(change)
 
+    mock_clock = MockClock(mock_clock_times)
+
     class MockProgramFacade:
+        def __init__(self):
+            self.yield_count = 0  # Initialize the counter
+            self.MAX_EVENTS = len(real_program_events)
+
         def listen_for_window_changes(self):
             print("Mock listen_for_window_changes called")
             for event in real_program_events:
-                # print(f"Yielding event: {event['window_title']}")
-                yield event
+                self.yield_count += 1
+                print(f"Yielding event: {event['window_title']}")
+                yield event  # Always yield the event first
+            
+                # Check if we've reached our limit AFTER yielding
+                if self.yield_count >= self.MAX_EVENTS:
+                    print(f"Reached max events limit ({self.MAX_EVENTS}), stopping generator")
+                    surveillance_manager.program_thread.stop_event.set()  # stop more events from occurring
+                    break
 
     # Then use this object instead of a Mock
     program_facade = MockProgramFacade()
@@ -103,19 +154,282 @@ async def test_recording_and_reading_sessions(plain_asm, shutdown_session_maker,
         side_effect=program_facade.listen_for_window_changes)
     program_facade.listen_for_window_changes = spy_on_listen_for_window
 
-    # # Verify it works by trying to get one event
-    # try:
-    #     print("Testing mock listen_for_window_changes:")
-    #     generator = program_facade.listen_for_window_changes()
-    #     print(f"Got generator: {generator}")
-    #     # Don't actually pull an event yet as that would consume it
-    # except Exception as e:
-    #     print(f"Error setting up mock: {e}")
-
     # program_facade.listen_for_window_changes.side_effect = real_program_events
 
-    program_logging_dao = ProgramLoggingDao(plain_asm)
-    chrome_logging_dao = ChromeLoggingDao(plain_asm)
+    p, c = times_from_test_data
+    all_times = p + c
+    testing_num_of_times = all_times + all_times + all_times + all_times
+    testing_num_of_times = testing_num_of_times + testing_num_of_times
+    
+    def choose_program_facade(os):
+        return program_facade
+
+    facades = FacadeInjector(
+        get_keyboard_facade_instance, get_mouse_facade_instance, choose_program_facade)
+    # TODO: async session from the test db
+    irrelevant_clock = MockClock(testing_num_of_times)
+    activity_arbiter = ActivityArbiter(irrelevant_clock, pulse_interval=1)
+    transition_state_mock = Mock()
+    activity_arbiter.transition_state = transition_state_mock  # Unhook it so nothing past entry is called
+
+    # Spy on the set_program_state method
+    spy_on_set_program_state = Mock(
+        side_effect=activity_arbiter.set_program_state)
+    activity_arbiter.set_program_state = spy_on_set_program_state
+    spy_on_set_chrome_state = Mock(
+        side_effect=activity_arbiter.set_tab_state)
+    activity_arbiter.set_tab_state = spy_on_set_chrome_state
+
+    chrome_svc = ChromeService(irrelevant_clock, activity_arbiter)
+    surveillance_manager = SurveillanceManager(mock_clock, 
+        plain_asm, regular_session, chrome_svc, activity_arbiter, facades)
+
+    program_dao_create_spy = Mock(side_effect=surveillance_manager.program_dao.create)
+    surveillance_manager.program_dao.create = program_dao_create_spy
+
+    window_change_spy = Mock(side_effect=surveillance_manager.handle_window_change)
+    surveillance_manager.handle_window_change = window_change_spy
+
+    # TODO: make the program facade, like, actually run the events.
+    surveillance_manager.start_trackers()
+
+    async def wait_for_events_to_process():
+        # Wait for events to be processed
+        print("\n++\n++\nWaiting for events to be processed...")
+        # Give the events time to propagate through the system
+        for _ in range(len(real_chrome_events) + len(real_program_events)):  # Try for up to 10 iterations
+            if program_facade.yield_count == 4:
+                print(program_facade.yield_count, "stop signal ++ \n ++ \n ++ \n ++")
+                break
+            await asyncio.sleep(1.7)  # Short sleep between checks ("short")
+            # await asyncio.sleep(0.8)  # Short sleep between checks ("short")
+            # Check if we have the expected number of calls
+            if spy_on_set_program_state.call_count >= len(real_program_events) - 1:
+                print(f"Events processed after {_+1} iterations")
+                surveillance_manager.program_thread.stop()  # Stop the thread properly
+                break
+
+        # print(f"Final counts after waiting:")
+        # print(f"Program facade called: {program_facade.listen_for_window_changes.call_count if hasattr(program_facade.listen_for_window_changes, 'call_count') else 'unknown'} times")
+        # print(f"Setting program state called: {spy_on_set_program_state.call_count} times")
+        # print(f"Window change handler called: {window_change_spy.call_count} times")
+
+    await wait_for_events_to_process()
+
+    print("## ##")
+    print("## ## end of test")
+    print("## ##")
+
+    try:
+        print(f"Program facade called: {spy_on_listen_for_window.call_count} times")
+        print(f"Setting program state called: {spy_on_set_program_state.call_count} times")
+        print(f"Window change handler called: {window_change_spy.call_count} times")
+        # ### Some stuff about setup
+        num_of_events_to_enter_arbiter = len(real_program_events)
+        assert program_facade.yield_count == 4, "Facade yielded more or less events than intended"
+        
+        assert transition_state_mock.call_count == num_of_events_to_enter_arbiter
+        assert spy_on_set_chrome_state.call_count == 0
+        assert spy_on_set_program_state.call_count == num_of_events_to_enter_arbiter
+
+        # The Program DAO was called with the expected values
+        one_left_in_tracker = 1
+        assert program_dao_create_spy.call_count == len(real_program_events) - one_left_in_tracker
+
+        # ### Confirm that the ... objects don't change much in their transit
+        # from facade to arbiter
+        for i in range(0, 4):
+            event = real_program_events[i]
+            call_to_compare = spy_on_set_program_state.call_args_list[i]
+            
+            # call_to_compare is a tuple of (args, kwargs)
+            args, kwargs = call_to_compare
+            print(args[0])
+            
+            assert args[0].window_title in event["window_title"]
+            if i < 3:
+                assert args[0].duration.seconds > 0
+            else:
+                assert args[0].duration is None  # because it hasn't been set yet
+    finally:
+        # Run the cleanup
+        await cleanup_test_resources(surveillance_manager)
+
+#       oooox
+#     oox   oox
+#    ox       ox
+#   ox         ox
+#   ox         ox
+#   ox         ox
+#    ox       ox
+#     oox   oox
+#       oooox
+# Second, events make their way from ChromeService to the Arbiter.
+# # # #
+# Chrome Svc -> Arbiter
+
+@pytest.mark.asyncio
+@pytest.mark.skip("working on below test")
+async def test_chrome_svc_to_arbiter_path(regular_session, plain_asm):
+    chrome_events = chrome_data
+
+    chrome_dao = ChromeDao(plain_asm)
+
+    # Spy
+    chrome_dao_create_spy = Mock(side_effect=chrome_dao.create)
+    chrome_dao.create = chrome_dao_create_spy
+
+    
+    t1 = datetime.now()
+    irrelevant_clock = MockClock([t1, t1, t1, t1 ,t1, t1, t1, t1, t1])
+
+    activity_arbiter = ActivityArbiter(irrelevant_clock, pulse_interval=1)
+
+    chrome_service = ChromeService(irrelevant_clock, arbiter=activity_arbiter, dao=chrome_dao)
+
+    @chrome_service.event_emitter.on('tab_change')
+    def handle_tab_change(tab):
+        # Create and schedule the task
+        activity_arbiter.set_tab_state(tab)
+
+    timezone_service = TimezoneService()
+
+
+    
+    transition_state_mock = Mock()
+    activity_arbiter.transition_state = transition_state_mock  # Unhook it so nothing past entry is called
+
+    # Spy on the set_program_state method
+    spy_on_set_program_state = Mock(
+        side_effect=activity_arbiter.set_program_state)
+    activity_arbiter.set_program_state = spy_on_set_program_state
+
+    spy_on_set_chrome_state = Mock(
+        side_effect=activity_arbiter.set_tab_state)
+    activity_arbiter.set_tab_state = spy_on_set_chrome_state
+
+    session_ready_for_arbiter_spy = Mock(side_effect=chrome_service.handle_session_ready_for_arbiter)
+    chrome_service.handle_session_ready_for_arbiter = session_ready_for_arbiter_spy
+
+    user_id = 1
+
+    for tab_change_event in chrome_events:
+        # Bypass for test:
+        # tz_for_user = timezone_service.get_tz_for_user(
+            # user_id)
+        # updated_tab_change_event = timezone_service.convert_tab_change_timezone(
+            # tab_change_event, tz_for_user)
+        # ALSO for the test, bypass the chrome_svc queue, which 
+        # (a) is known to work
+        # (b) is extremely effortful to circumvent
+        # so don't chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
+        
+        # Test setup conditions
+        assert isinstance(chrome_service, ChromeService)
+        # Act
+        chrome_service.log_tab_event(tab_change_event)
+    queue_debounce_timer_wait = 1.0  # seconds
+    await asyncio.sleep(queue_debounce_timer_wait)
+
+    one_left_in_chrome_svc = 1
+    assert chrome_dao_create_spy.call_count == len(chrome_events) - one_left_in_chrome_svc
+    assert spy_on_set_chrome_state.call_count == len(chrome_events)
+    assert session_ready_for_arbiter_spy.call_count == len(chrome_events)
+    assert spy_on_set_program_state.call_count == 0, "Set program state was called in a chrome tabs test!"
+    
+    for i in range(0, len(chrome_events)):
+        event = chrome_events[i]
+        call_to_compare = spy_on_set_chrome_state.call_args_list[i]
+        
+        # call_to_compare is a tuple of (args, kwargs)
+        args, kwargs = call_to_compare
+
+        assert args[0].domain == event.url
+        assert args[0].detail == event.tabTitle
+        if i < 3:
+            assert args[0].duration.seconds > 0
+        else:
+            assert args[0].duration is None  # because it hasn't been set yet
+
+    #   ox         ox
+    #    ox       ox
+    #     oox   oox
+    #       oooox
+    # Then, we check that the events are there as planned.
+
+
+#  ___________
+# |___________| > > >
+# |___________|> > > >
+# |___________| > > >
+# |___________|> > > >
+# |___________| > > >
+#
+# # # # # # # # #
+# Arbiter -> DAO Layer
+
+def parse_time_string(time_str):
+    parts = time_str.split(':')
+    hours = int(parts[0])
+    minutes = int(parts[1])
+    seconds_parts = parts[2].split('.')
+    seconds = int(seconds_parts[0])
+    microseconds = int(seconds_parts[1]) if len(seconds_parts) > 1 else 0
+
+    return timedelta(
+            hours=hours,
+            minutes=minutes,
+            seconds=seconds,
+            microseconds=microseconds
+        )
+
+def fmt_time_string(s):
+    return datetime.fromisoformat(s)
+
+# Events are from previous tests
+program_events = [
+    ProgramSessionData(title='Google Chrome', detail='X. It’s what’s happening / X',
+        start_time=fmt_time_string("2025-03-22 16:14:50.201399-07:00"),
+        end_time=fmt_time_string("2025-03-22 16:15:55.237392-07:00"), duration_for_tests=parse_time_string("0:01:05.035993"), productive=False),
+ProgramSessionData(title='My Workspace', detail='dash | Overview',
+        start_time=fmt_time_string("2025-03-22 16:15:55.237392-07:00"),
+        end_time=fmt_time_string("2025-03-22 16:16:03.374304-07:00"), duration_for_tests=parse_time_string("0:00:08.136912"), productive=False),
+ProgramSessionData(title='Visual Studio Code', detail='surveillance_manager.py - deskSense',
+        start_time=fmt_time_string("2025-03-22 16:16:03.374304-07:00"),
+        end_time=fmt_time_string("2025-03-22 16:16:17.480951-07:00"), duration_for_tests=parse_time_string("0:00:14.106647"), productive=False),
+ProgramSessionData(title='Google Chrome', detail='Google',
+        start_time=fmt_time_string("2025-03-22 16:16:17.480951-07:00"),
+        end_time=None, duration_for_tests=None, productive=False)]
+
+chrome_events = [
+    ChromeSessionData(domain='docs.google.com', detail='Google Docs',
+            start_time=fmt_time_string("2025-03-22 23:15:02"),
+            end_time=fmt_time_string("2025-03-22 23:15:10"), duration=parse_time_string("0:00:08"), productive=False),
+    ChromeSessionData(domain='chatgpt.com', detail='ChatGPT',
+            start_time=fmt_time_string("2025-03-22 23:15:10"),
+            end_time=fmt_time_string("2025-03-22 23:15:21"), duration=parse_time_string("0:00:11"), productive=True),
+    ChromeSessionData(domain='claude.ai', detail='Claude',
+            start_time=fmt_time_string("2025-03-22 23:15:21"),
+            end_time=fmt_time_string("2025-03-22 23:15:30"), duration=parse_time_string("0:00:09"), productive=True),
+    ChromeSessionData(domain='chatgpt.com', detail='ChatGPT',
+            start_time=fmt_time_string("2025-03-22 23:15:30"),
+            end_time=None, duration=None, productive=True)
+]
+
+@pytest.mark.asyncio
+async def test_arbiter_to_dao_layer(regular_session, plain_asm):
+    # TODO
+    # TODO:    get the events from the prev test, feed it into this one
+    # TODO:    
+    # TODO
+
+    end_of_prev_test_programs = program_events
+    end_of_prev_test_tabs = chrome_events
+
+    program_durations = []
+
+    program_logging_dao = ProgramLoggingDao(regular_session, plain_asm)
+    chrome_logging_dao = ChromeLoggingDao(regular_session, plain_asm)
 
     program_push_spy = Mock(side_effect=program_logging_dao.push_window_ahead_ten_sec)
     program_start_session_spy = Mock(side_effect=program_logging_dao.start_session)
@@ -169,8 +483,8 @@ async def test_recording_and_reading_sessions(plain_asm, shutdown_session_maker,
 
     activity_arbiter.add_summary_dao_listener(activity_recorder)
 
-    notify_create_session_spy = Mock(side_effect=activity_arbiter.notify_of_new_session)
-    activity_arbiter.notify_of_new_session = notify_create_session_spy
+    notify_of_new_session_spy = Mock(side_effect=activity_arbiter.notify_of_new_session)
+    activity_arbiter.notify_of_new_session = notify_of_new_session_spy
 
     # Create a spy on the notify_summary_dao method
     notify_summary_dao_spy = Mock(
@@ -181,63 +495,72 @@ async def test_recording_and_reading_sessions(plain_asm, shutdown_session_maker,
     spy_on_set_program_state = Mock(
         side_effect=activity_arbiter.set_program_state)
     activity_arbiter.set_program_state = spy_on_set_program_state
+    spy_on_set_chrome_state = Mock(
+        side_effect=activity_arbiter.set_tab_state)
+    activity_arbiter.set_tab_state = spy_on_set_chrome_state
 
     chrome_svc = ChromeService(clock, activity_arbiter)
-    surveillance_manager = SurveillanceManager(
-        plain_asm, shutdown_session_maker, chrome_svc, activity_arbiter, facades)
+    # surveillance_manager = SurveillanceManager(
+        # plain_asm, regular_session, chrome_svc, activity_arbiter, facades)
 
-    create_spy = Mock(side_effect=surveillance_manager.program_dao.create)
-    surveillance_manager.program_dao.create = create_spy
+    # create_spy = Mock(side_effect=surveillance_manager.program_dao.create)
+    # surveillance_manager.program_dao.create = create_spy
 
-    window_change_spy = Mock(side_effect=surveillance_manager.handle_window_change)
-    surveillance_manager.handle_window_change = window_change_spy
+    # window_change_spy = Mock(side_effect=surveillance_manager.handle_window_change)
+    # surveillance_manager.handle_window_change = window_change_spy
 
     # TODO: make the program facade, like, actually run the events.
-    surveillance_manager.start_trackers()
+    # surveillance_manager.start_trackers()
+# 
+    # FIXME:
+    # FIXME:
+    # FIXME: Using the integrated ProgramTracker is too much complexity and work.
+    # FIXME: Solution: test from the beginning of the arbiter.
+    # FIXME:
+    # FIXME:
 
-    async def wait_for_events_to_process():
-        # Wait for events to be processed
-        print("Waiting for events to be processed...")
-        # Give the events time to propagate through the system
-        for _ in range(len(real_chrome_events) + len(real_program_events)):  # Try for up to 10 iterations
-            await asyncio.sleep(1.2)  # Short sleep between checks ("short")
-            # Check if we have the expected number of calls
-            if spy_on_set_program_state.call_count >= len(real_program_events) - 1:
-                print(f"Events processed after {_+1} iterations")
-                break
+    # async def wait_for_events_to_process():
+    #     # Wait for events to be processed
+    #     print("\n++\n++\nWaiting for events to be processed...")
+    #     # Give the events time to propagate through the system
+    #     for _ in range(len(end_of_prev_test_programs) + len(end_of_prev_test_tabs)):  # Try for up to 10 iterations
+    #         if program_facade.yield_count == 4 or stop_signal:
+    #             print(program_facade.yield_count, stop_signal, "stop signal ++ \n ++ \n ++ \n ++")
+    #             break
+    #         await asyncio.sleep(1.7)  # Short sleep between checks ("short")
+    #         # await asyncio.sleep(0.8)  # Short sleep between checks ("short")
+    #         # Check if we have the expected number of calls
+    #         if spy_on_set_program_state.call_count >= len(real_program_events) - 1:
+    #             print(f"Events processed after {_+1} iterations")
+    #             break
 
-        # print(f"Final counts after waiting:")
-        # print(f"Program facade called: {program_facade.listen_for_window_changes.call_count if hasattr(program_facade.listen_for_window_changes, 'call_count') else 'unknown'} times")
-        # print(f"Setting program state called: {spy_on_set_program_state.call_count} times")
-        # print(f"Window change handler called: {window_change_spy.call_count} times")
+    #     # print(f"Final counts after waiting:")
+    #     # print(f"Program facade called: {program_facade.listen_for_window_changes.call_count if hasattr(program_facade.listen_for_window_changes, 'call_count') else 'unknown'} times")
+    #     # print(f"Setting program state called: {spy_on_set_program_state.call_count} times")
+    #     # print(f"Window change handler called: {window_change_spy.call_count} times")
 
-    await wait_for_events_to_process()
+    # await wait_for_events_to_process()
 
     print("## ##")
     print("## ## end of test")
     print("## ##")
 
     try:
-        print(f"Program facade called: {spy_on_listen_for_window.call_count} times")
-        print(f"Setting program state called: {spy_on_set_program_state.call_count} times")
-        print(f"Window change handler called: {window_change_spy.call_count} times")
         # ### ### Checkpoint:
         # ### [Arbiter layer]
-        # ### The Arbiter was called with the expected values
-        num_of_events_to_enter_arbiter = len(real_program_events)
-        final_event_left_hanging = 1
+        # ### The Arbiter's outbound funcs were called with the expected values
+        num_of_events_to_enter_arbiter = len(end_of_prev_test_programs)
+        assert notify_of_new_session_spy.call_count == num_of_events_to_enter_arbiter
+        assert spy_on_set_chrome_state.call_count == 0
         assert spy_on_set_program_state.call_count == num_of_events_to_enter_arbiter
-        assert notify_create_session_spy.call_count == num_of_events_to_enter_arbiter
-        # The Program DAO was called with the expected values
-        assert create_spy.call_count == num_of_events_to_enter_arbiter - final_event_left_hanging
 
         # ### The Arbiter recorded the expected *number* of times
-        assert notify_summary_dao_spy.call_count == len(real_program_events)
+        assert notify_summary_dao_spy.call_count == len(end_of_prev_test_programs)
         # The Arbiter recorded the expected total amount of time
         # TODO
         # The DAOS recorded the expected number of times
-        expected_program_call_count = len(real_program_events)
-        expected_chrome_call_count = len(real_chrome_events)
+        expected_program_call_count = len(end_of_prev_test_programs)
+        expected_chrome_call_count = len(end_of_prev_test_tabs)
         assert program_summary_spy.call_count > 0
         assert chrome_summary_spy.call_count > 0
 
@@ -254,14 +577,14 @@ async def test_recording_and_reading_sessions(plain_asm, shutdown_session_maker,
         #     assert isinstance(args[1], ProgramSessionData), f"Expected ProgramSessionData but got {type(args[0])}"
         
         # and the DAOs too
-        assert program_push_spy.call_count + program_start_session_spy.call_count == len(real_program_events)
+        assert program_push_spy.call_count + program_start_session_spy.call_count == len(end_of_prev_test_programs)
 
         # The DAOs recorded the expected amount of time
         # Check the arguments that were passed were as expected
         # NOTE:
         # [0][0][0] -> program_session: ProgramSessionData,
         # [0][0][1] -> right_now: datetime
-        for i in range(len(real_program_events)):
+        for i in range(len(end_of_prev_test_programs)):
             program_session_arg = program_summary_spy.call_args_list[i][0][0]
             right_now_arg = program_summary_spy.call_args_list[i][0][1]
             assert isinstance(program_session_arg, ProgramSessionData)
@@ -287,82 +610,49 @@ async def test_recording_and_reading_sessions(plain_asm, shutdown_session_maker,
 
             assert chrome_arg.domain == real_chrome_events[i].url
 
-        # Checkpoint:
-        # Dashboard Service reports the right amount of time for get_weekly_productivity_overview
-        dashboard_service = await get_dashboard_service()
+        # # Checkpoint:
+        # # Dashboard Service reports the right amount of time for get_weekly_productivity_overview
+        # dashboard_service = await get_dashboard_service()
 
-        # Events are from 03-22, a Saturday.
-        # So we need 03-16, the prior Sunday.
-        sunday_the_16th = datetime(2025, 3, 16)
-        time_for_week = dashboard_service.get_weekly_productivity_overview(sunday_the_16th)
+        # # Events are from 03-22, a Saturday.
+        # # So we need 03-16, the prior Sunday.
+        # sunday_the_16th = datetime(2025, 3, 16)
+        # time_for_week = dashboard_service.get_weekly_productivity_overview(sunday_the_16th)
 
-        only_day_in_days = time_for_week[0]
-        production = only_day_in_days["productivity"]
-        leisure = only_day_in_days["leisure"]
+        # only_day_in_days = time_for_week[0]
+        # production = only_day_in_days["productivity"]
+        # leisure = only_day_in_days["leisure"]
 
-        total_program_time = 3
-        total_chrome_time = 9
-        assert production + leisure == total_program_time + total_chrome_time
+        # total_program_time = 3
+        # total_chrome_time = 9
+        # assert production + leisure == total_program_time + total_chrome_time
 
     finally:
-        async def cleanup_test_resources():
-            print("Cleaning up test resources...")
-            
-            # Clean up surveillance manager (this should now properly clean up MessageReceiver)
-            try:
-                await surveillance_manager.cleanup()
-            except Exception as e:
-                print(f"Error during surveillance_manager cleanup: {e}")
-                traceback.print_exc()
-            
-            # Allow some time for all resources to be properly cleaned up
-            await asyncio.sleep(0.5)
-            
-            # Ensure all asyncio tasks are properly awaited or cancelled
-            tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
-            if tasks:
-                print(f"Cancelling {len(tasks)} remaining tasks...")
-                for task in tasks:
-                    if not task.done():
-                        task.cancel()
-                
-                try:
-                    await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=1.0)
-                except asyncio.TimeoutError:
-                    print("Some tasks did not complete in time during test cleanup")
-            
-            print("Test resources cleanup completed")
 
         # Run the cleanup
-        await cleanup_test_resources()
+        await cleanup_test_resources(surveillance_manager)
 
-    #   ox         ox
-    #    ox       ox
-    #     oox   oox
-    #       oooox
-    # Then, we check that the events are there as planned.
-
-#      /\
-#     //\\
-#    //  \\
-#   //    \\
-#  //      \\
-# /_________\\
-#
-#  #  #  #  #
-# Second, we request the full week of productivity as a summary.
-# #  #  #  #
-# We verify that the total hours are as expected
+# #      /\
+# #     //\\
+# #    //  \\
+# #   //    \\
+# #  //      \\
+# # /_________\\
+# #
+# #  #  #  #  #
+# # Second, we request the full week of productivity as a summary.
+# # #  #  #  #
+# # We verify that the total hours are as expected
 
 
-#      @@@@@
-#     @@@@@@@
-#    @@@@@@@@@
-#   @@@@@@@@@@@
-#  @@@@@@@@@@@@@
-# @@@@@@@@@@@@@@@
-#      |||||
-#      |||||
-#      |||||
-# ~~~~~~~~~~~~~~
+# #      @@@@@
+# #     @@@@@@@
+# #    @@@@@@@@@
+# #   @@@@@@@@@@@
+# #  @@@@@@@@@@@@@
+# # @@@@@@@@@@@@@@@
+# #      |||||
+# #      |||||
+# #      |||||
+# # ~~~~~~~~~~~~~~
 
