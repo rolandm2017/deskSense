@@ -1,5 +1,6 @@
 
 import pytest
+import pytest_asyncio
 from unittest.mock import Mock, patch, AsyncMock, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy import text
@@ -86,6 +87,16 @@ async def cleanup_test_resources(manager):
     
     print("Test resources cleanup completed")
 
+@pytest_asyncio.fixture
+async def test_setup_conditions(regular_session):
+    # TODO: Test that the DB starts EMPTY!
+    logging = ProgramLoggingDao(regular_session)
+    logging2 = ChromeLoggingDao(regular_session)
+    pro_sum_dao = ProgramSummaryDao(regular_session)
+    chro_sum_dao = ChromeSummaryDao(regular_session)
+    vvvv = ChromeSummaryDao
+    
+
 #       oooox
 #     oox   oox
 #    ox       ox
@@ -107,6 +118,9 @@ async def test_tracker_to_arbiter(plain_asm, regular_session, times_from_test_da
 
     real_program_events = [x["event"] for x in program_data]
     real_chrome_events = chrome_data
+
+    # Test setup
+    assert all
 
     times_for_program_events = [x["time"] for x in program_data]
 
@@ -245,6 +259,7 @@ async def test_tracker_to_arbiter(plain_asm, regular_session, times_from_test_da
             # call_to_compare is a tuple of (args, kwargs)
             args, kwargs = call_to_compare
             print(args[0])
+            # TODO: Assert all events have timezones
             
             assert args[0].window_title in event["window_title"]
             if i < 3:
@@ -336,6 +351,8 @@ async def test_chrome_svc_to_arbiter_path(regular_session, plain_asm):
     assert spy_on_set_chrome_state.call_count == len(chrome_events)
     assert session_ready_for_arbiter_spy.call_count == len(chrome_events)
     assert spy_on_set_program_state.call_count == 0, "Set program state was called in a chrome tabs test!"
+
+    # TODO: Assert all events have timezones
     
     for i in range(0, len(chrome_events)):
         event = chrome_events[i]
@@ -386,6 +403,26 @@ def parse_time_string(time_str):
 def fmt_time_string(s):
     return datetime.fromisoformat(s)
 
+def fmt_time_string_2(s, offset="-07:00"):
+    """
+    Formats a time string with an optional timezone offset.
+    
+    Args:
+        s (str): A timestamp string
+        offset (str, optional): Timezone offset in format like "-07:00" for PST. 
+                               Defaults to "-07:00".
+    
+    Returns:
+        datetime: A datetime object with timezone information
+    """
+    # Check if the string already has timezone info
+    if '+' in s or '-' in s and len(s) > 10 and s[-6] in ['+', '-']:
+        # String already has timezone info, just parse it directly
+        return datetime.fromisoformat(s)
+    else:
+        # String doesn't have timezone info, append the offset
+        return datetime.fromisoformat(f"{s}{offset}")
+
 # Events are from previous tests
 program_events = [
     ProgramSessionData(title='Google Chrome', detail='X. It’s what’s happening / X',
@@ -403,21 +440,21 @@ ProgramSessionData(title='Google Chrome', detail='Google',
 
 chrome_events = [
     ChromeSessionData(domain='docs.google.com', detail='Google Docs',
-            start_time=fmt_time_string("2025-03-22 23:15:02"),
-            end_time=fmt_time_string("2025-03-22 23:15:10"), duration=parse_time_string("0:00:08"), productive=False),
+            start_time=fmt_time_string("2025-03-22 16:15:02-07:00"),
+            end_time=fmt_time_string("2025-03-22 16:15:10-07:00"), duration_for_tests=parse_time_string("0:00:08"), productive=False),
     ChromeSessionData(domain='chatgpt.com', detail='ChatGPT',
-            start_time=fmt_time_string("2025-03-22 23:15:10"),
-            end_time=fmt_time_string("2025-03-22 23:15:21"), duration=parse_time_string("0:00:11"), productive=True),
+            start_time=fmt_time_string("2025-03-22 16:15:10-07:00"),
+            end_time=fmt_time_string("2025-03-22 16:15:21-07:00"), duration_for_tests=parse_time_string("0:00:11"), productive=True),
     ChromeSessionData(domain='claude.ai', detail='Claude',
-            start_time=fmt_time_string("2025-03-22 23:15:21"),
-            end_time=fmt_time_string("2025-03-22 23:15:30"), duration=parse_time_string("0:00:09"), productive=True),
+            start_time=fmt_time_string("2025-03-22 16:15:21-07:00"),
+            end_time=fmt_time_string("2025-03-22 16:15:30-07:00"), duration_for_tests=parse_time_string("0:00:09"), productive=True),
     ChromeSessionData(domain='chatgpt.com', detail='ChatGPT',
-            start_time=fmt_time_string("2025-03-22 23:15:30"),
-            end_time=None, duration=None, productive=True)
+            start_time=fmt_time_string("2025-03-22 16:15:30-07:00"),
+            end_time=None, duration_for_tests=None, productive=True)
 ]
 
 @pytest.mark.asyncio
-async def test_arbiter_to_dao_layer(regular_session, plain_asm):
+async def test_arbiter_to_dao_layer(regular_session, plain_asm, times_from_test_data):
     # TODO
     # TODO:    get the events from the prev test, feed it into this one
     # TODO:    
@@ -442,9 +479,9 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     chrome_logging_dao.start_session = chrome_start_session_spy
 
     program_summary_dao = ProgramSummaryDao(
-        program_logging_dao, plain_asm)
+        program_logging_dao, regular_session, plain_asm)
     chrome_summary_dao = ChromeSummaryDao(
-        chrome_logging_dao, plain_asm)
+        chrome_logging_dao, regular_session, plain_asm)
     
     
     # Create spies on the DAOs' create_if_new_else_update methods
@@ -465,20 +502,8 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     activity_recorder = ActivityRecorder(
         clock_again,  program_logging_dao, chrome_logging_dao, program_summary_dao, chrome_summary_dao)
     
-    # update_or_create_spy = AsyncMock(side_effect=activity_recorder.update_or_create_log)
-    # activity_recorder.update_or_create_log = update_or_create_spy
-
-    # spy on logging dao methods
-    
-    # assert total_of_calls == len(real_program_events)  # something like that
-    
-    def choose_program_facade(os):
-        return program_facade
-
-    facades = FacadeInjector(
-        get_keyboard_facade_instance, get_mouse_facade_instance, choose_program_facade)
-    # TODO: async session from the test db
     clock = MockClock(testing_num_of_times)
+
     activity_arbiter = ActivityArbiter(clock, pulse_interval=0.5)
 
     activity_arbiter.add_summary_dao_listener(activity_recorder)
@@ -495,142 +520,109 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     spy_on_set_program_state = Mock(
         side_effect=activity_arbiter.set_program_state)
     activity_arbiter.set_program_state = spy_on_set_program_state
-    spy_on_set_chrome_state = Mock(
+    spy_on_set_tab_state = Mock(
         side_effect=activity_arbiter.set_tab_state)
-    activity_arbiter.set_tab_state = spy_on_set_chrome_state
+    activity_arbiter.set_tab_state = spy_on_set_tab_state
 
-    chrome_svc = ChromeService(clock, activity_arbiter)
-    # surveillance_manager = SurveillanceManager(
-        # plain_asm, regular_session, chrome_svc, activity_arbiter, facades)
-
-    # create_spy = Mock(side_effect=surveillance_manager.program_dao.create)
-    # surveillance_manager.program_dao.create = create_spy
-
-    # window_change_spy = Mock(side_effect=surveillance_manager.handle_window_change)
-    # surveillance_manager.handle_window_change = window_change_spy
-
-    # TODO: make the program facade, like, actually run the events.
-    # surveillance_manager.start_trackers()
-# 
-    # FIXME:
-    # FIXME:
     # FIXME: Using the integrated ProgramTracker is too much complexity and work.
     # FIXME: Solution: test from the beginning of the arbiter.
-    # FIXME:
-    # FIXME:
-
-    # async def wait_for_events_to_process():
-    #     # Wait for events to be processed
-    #     print("\n++\n++\nWaiting for events to be processed...")
-    #     # Give the events time to propagate through the system
-    #     for _ in range(len(end_of_prev_test_programs) + len(end_of_prev_test_tabs)):  # Try for up to 10 iterations
-    #         if program_facade.yield_count == 4 or stop_signal:
-    #             print(program_facade.yield_count, stop_signal, "stop signal ++ \n ++ \n ++ \n ++")
-    #             break
-    #         await asyncio.sleep(1.7)  # Short sleep between checks ("short")
-    #         # await asyncio.sleep(0.8)  # Short sleep between checks ("short")
-    #         # Check if we have the expected number of calls
-    #         if spy_on_set_program_state.call_count >= len(real_program_events) - 1:
-    #             print(f"Events processed after {_+1} iterations")
-    #             break
-
-    #     # print(f"Final counts after waiting:")
-    #     # print(f"Program facade called: {program_facade.listen_for_window_changes.call_count if hasattr(program_facade.listen_for_window_changes, 'call_count') else 'unknown'} times")
-    #     # print(f"Setting program state called: {spy_on_set_program_state.call_count} times")
-    #     # print(f"Window change handler called: {window_change_spy.call_count} times")
-
-    # await wait_for_events_to_process()
 
     print("## ##")
     print("## ## end of test")
     print("## ##")
 
-    try:
-        # ### ### Checkpoint:
-        # ### [Arbiter layer]
-        # ### The Arbiter's outbound funcs were called with the expected values
-        num_of_events_to_enter_arbiter = len(end_of_prev_test_programs)
-        assert notify_of_new_session_spy.call_count == num_of_events_to_enter_arbiter
-        assert spy_on_set_chrome_state.call_count == 0
-        assert spy_on_set_program_state.call_count == num_of_events_to_enter_arbiter
+    # ###
+    # ### ### Act
+    # ### ##
 
-        # ### The Arbiter recorded the expected *number* of times
-        assert notify_summary_dao_spy.call_count == len(end_of_prev_test_programs)
-        # The Arbiter recorded the expected total amount of time
-        # TODO
-        # The DAOS recorded the expected number of times
-        expected_program_call_count = len(end_of_prev_test_programs)
-        expected_chrome_call_count = len(end_of_prev_test_tabs)
-        assert program_summary_spy.call_count > 0
-        assert chrome_summary_spy.call_count > 0
+    # It just so happens that all tab states are after program states
+    for event in end_of_prev_test_programs:
+        activity_arbiter.set_program_state(event)
+    for event in end_of_prev_test_tabs:
+        activity_arbiter.set_tab_state(event)
 
-        assert program_summary_spy.call_count == expected_program_call_count
-        assert chrome_summary_spy.call_count == expected_chrome_call_count
-        # ### [Recorder layer] 
-        # #
-        # # The Recorder had its methods called the expected num of times,
-        # assert update_or_create_spy.call_count == len(real_program_events)
-        # for call in update_or_create_spy.call_args_list:
-        #     args, kwargs = call
-        #     # Check if the first argument is of type Foo
-        #     assert isinstance(args[0], ProgramLoggingDao), f"Expected ProgramLoggingDao but got {type(args[0])}"
-        #     assert isinstance(args[1], ProgramSessionData), f"Expected ProgramSessionData but got {type(args[0])}"
-        
-        # and the DAOs too
-        assert program_push_spy.call_count + program_start_session_spy.call_count == len(end_of_prev_test_programs)
+    # ### ### Checkpoint:
+    # ### [Arbiter layer]
+    # ### The Arbiter's outbound funcs were called with the expected values
+    assert spy_on_set_tab_state.call_count == len(end_of_prev_test_tabs)
+    num_of_events_to_enter_arbiter = len(end_of_prev_test_programs) + len(end_of_prev_test_tabs)
+    assert notify_of_new_session_spy.call_count == num_of_events_to_enter_arbiter
+    
+    assert spy_on_set_program_state.call_count == len(end_of_prev_test_programs)
 
-        # The DAOs recorded the expected amount of time
-        # Check the arguments that were passed were as expected
-        # NOTE:
-        # [0][0][0] -> program_session: ProgramSessionData,
-        # [0][0][1] -> right_now: datetime
-        for i in range(len(end_of_prev_test_programs)):
-            program_session_arg = program_summary_spy.call_args_list[i][0][0]
-            right_now_arg = program_summary_spy.call_args_list[i][0][1]
-            assert isinstance(program_session_arg, ProgramSessionData)
-            assert isinstance(right_now_arg, datetime)
+    # ### The Arbiter recorded the expected *number* of times
+    assert notify_summary_dao_spy.call_count == len(end_of_prev_test_programs)
+    # The Arbiter recorded the expected total amount of time
+    # TODO
+    # The DAOS recorded the expected number of times
+    expected_program_call_count = len(end_of_prev_test_programs)
+    expected_chrome_call_count = len(end_of_prev_test_tabs)
+    assert program_summary_spy.call_count > 0
+    assert chrome_summary_spy.call_count > 0
 
-            # Transformation happens in the ProgramTracker:
-            # detail, window = separate_window_name_and_detail(
-            #     window_change_dict["window_title"])
-            # new_session.window_title = window
-            # new_session.detail = detail
+    assert program_summary_spy.call_count == expected_program_call_count
+    assert chrome_summary_spy.call_count == expected_chrome_call_count
+    # ### [Recorder layer] 
+    # #
+    # # The Recorder had its methods called the expected num of times,
+    # assert update_or_create_spy.call_count == len(real_program_events)
+    # for call in update_or_create_spy.call_args_list:
+    #     args, kwargs = call
+    #     # Check if the first argument is of type Foo
+    #     assert isinstance(args[0], ProgramLoggingDao), f"Expected ProgramLoggingDao but got {type(args[0])}"
+    #     assert isinstance(args[1], ProgramSessionData), f"Expected ProgramSessionData but got {type(args[0])}"
+    
+    # and the DAOs too
+    assert program_push_spy.call_count + program_start_session_spy.call_count == len(end_of_prev_test_programs)
 
-            detail, window = separate_window_name_and_detail(
-                real_program_events[i]["window_title"])
+    # The DAOs recorded the expected amount of time
+    # Check the arguments that were passed were as expected
+    # NOTE:
+    # [0][0][0] -> program_session: ProgramSessionData,
+    # [0][0][1] -> right_now: datetime
+    for i in range(len(end_of_prev_test_programs)):
+        program_session_arg = program_summary_spy.call_args_list[i][0][0]
+        right_now_arg = program_summary_spy.call_args_list[i][0][1]
+        assert isinstance(program_session_arg, ProgramSessionData)
+        assert isinstance(right_now_arg, datetime)
 
-            assert program_session_arg.window_title == window
-            assert program_session_arg.duration == program_durations[i]
+        # Transformation happens in the ProgramTracker:
+        # detail, window = separate_window_name_and_detail(
+        #     window_change_dict["window_title"])
+        # new_session.window_title = window
+        # new_session.detail = detail
 
-        for i in range(len(real_chrome_events)):
-            chrome_arg = chrome_summary_spy.call_args_list[i][0][0]
-            right_now_arg = chrome_summary_spy.call_args_list[i][0][1]
-            assert isinstance(chrome_arg, ChromeSessionData)
-            assert isinstance(right_now_arg, datetime)
+        detail, window = separate_window_name_and_detail(
+            end_of_prev_test_programs[i]["window_title"])
 
-            assert chrome_arg.domain == real_chrome_events[i].url
+        assert program_session_arg.window_title == window
+        assert program_session_arg.duration == program_durations[i]
 
-        # # Checkpoint:
-        # # Dashboard Service reports the right amount of time for get_weekly_productivity_overview
-        # dashboard_service = await get_dashboard_service()
+    for i in range(len(real_chrome_events)):
+        chrome_arg = chrome_summary_spy.call_args_list[i][0][0]
+        right_now_arg = chrome_summary_spy.call_args_list[i][0][1]
+        assert isinstance(chrome_arg, ChromeSessionData)
+        assert isinstance(right_now_arg, datetime)
 
-        # # Events are from 03-22, a Saturday.
-        # # So we need 03-16, the prior Sunday.
-        # sunday_the_16th = datetime(2025, 3, 16)
-        # time_for_week = dashboard_service.get_weekly_productivity_overview(sunday_the_16th)
+        assert chrome_arg.domain == real_chrome_events[i].url
 
-        # only_day_in_days = time_for_week[0]
-        # production = only_day_in_days["productivity"]
-        # leisure = only_day_in_days["leisure"]
+    # # Checkpoint:
+    # # Dashboard Service reports the right amount of time for get_weekly_productivity_overview
+    # dashboard_service = await get_dashboard_service()
 
-        # total_program_time = 3
-        # total_chrome_time = 9
-        # assert production + leisure == total_program_time + total_chrome_time
+    # # Events are from 03-22, a Saturday.
+    # # So we need 03-16, the prior Sunday.
+    # sunday_the_16th = datetime(2025, 3, 16)
+    # time_for_week = dashboard_service.get_weekly_productivity_overview(sunday_the_16th)
 
-    finally:
+    # only_day_in_days = time_for_week[0]
+    # production = only_day_in_days["productivity"]
+    # leisure = only_day_in_days["leisure"]
 
-        # Run the cleanup
-        await cleanup_test_resources(surveillance_manager)
+    # total_program_time = 3
+    # total_chrome_time = 9
+    # assert production + leisure == total_program_time + total_chrome_time
+
 
 # #      /\
 # #     //\\

@@ -38,7 +38,7 @@ class ChromeLoggingDao(BaseQueueingDao):
         super().__init__(async_session_maker=async_session_maker,
                          batch_size=batch_size, flush_interval=flush_interval,dao_name="ChromeLogging")
         self.async_session_maker = async_session_maker
-        self.session_maker = session_maker
+        self.regular_session = session_maker
 
     @validate_session
     def create_log(self, session: ChromeSessionData, right_now: datetime):
@@ -83,18 +83,18 @@ class ChromeLoggingDao(BaseQueueingDao):
             gathering_date=start_of_day_as_utc,
             created_at=session.start_time
         )
-        with self.session_maker() as db_session:
+        with self.regular_session() as db_session:
             db_session.add(log_entry)
             db_session.commit()
 
 
-    async def find_session(self, session: ChromeSessionData):
+    def find_session(self, session: ChromeSessionData):
         start_time_as_utc = convert_to_utc(session.start_time)
         query = select(DomainSummaryLog).where(
             DomainSummaryLog.start_time == start_time_as_utc
         )
-        async with self.async_session_maker() as db_session:
-            result = await db_session.execute(query)
+        with self.regular_session() as db_session:
+            result = db_session.execute(query)
             return result.scalar_one_or_none()
 
     async def read_day_as_sorted(self, day):
@@ -168,15 +168,15 @@ class ChromeLoggingDao(BaseQueueingDao):
             await db_session.commit()
 
 
-    async def finalize_log(self, session: ChromeSessionData):
+    def finalize_log(self, session: ChromeSessionData):
         """Overwrite value from the heartbeat. Expect something to ALWAYS be in the db already at this point."""
-        log: DomainSummaryLog = await self.find_session(session)
+        log: DomainSummaryLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")
         log.end_time = session.end_time
-        async with self.async_session_maker() as db_session:
+        with self.session_maker() as db_session:
             db_session.add(log)
-            await db_session.commit()
+            db_session.commit()
 
     async def execute_query(self, query):
         async with self.async_session_maker() as session:

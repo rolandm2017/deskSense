@@ -1,6 +1,7 @@
 # daily_summary_dao.py
 from sqlalchemy import select, func, text
 from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timedelta, timezone
 from typing import List
 
@@ -8,7 +9,7 @@ from ....config.definitions import power_on_off_debug_file
 
 from ...models import DailyProgramSummary
 
-
+from ....util.dao_wrapper import validate_start_end_and_duration
 from ....object.classes import ProgramSessionData
 from ....util.console_logger import ConsoleLogger
  
@@ -26,28 +27,24 @@ class DatabaseProtectionError(RuntimeError):
 
 
 class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
-    def __init__(self, program_logging_dao, session_maker: async_sessionmaker):
+    def __init__(self, program_logging_dao, reg_session: sessionmaker, async_session_maker: async_sessionmaker):
         # if not callable(session_maker):
         # raise TypeError("session_maker must be callable")
         self.program_logging_dao = program_logging_dao
         self.debug = False  
-        self.session_maker = session_maker 
+        self.regular_session = reg_session
+        self.async_session_maker = async_session_maker 
         self.logger = ConsoleLogger()
 
-    async def create_if_new_else_update(self, program_session: ProgramSessionData, right_now: datetime):
+    @validate_start_end_and_duration
+    def create_if_new_else_update(self, program_session: ProgramSessionData, right_now: datetime):
         """
         This method doesn't use queuing since it needs to check the DB state.
 
         Note that this method ONLY creates gathering dates that are *today*.
-
         """
-        if program_session.start_time is None or program_session.end_time is None:
-            raise ValueError("Start or end time was None")
-        if program_session.duration is None:
-            raise ValueError("Session duration was None")
-        
         # No need to await this part
-        await self.program_logging_dao.create_log(program_session, right_now)
+        self.program_logging_dao.create_log(program_session, right_now)
 
         target_program_name = program_session.window_title
         # TODO: Let the SessionHeartbeat update times
@@ -59,18 +56,17 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         # FIXME: Need to define "gathered today" as "between midnight and 11:59 pm on mm-dd"
 
         # ### Check if entry exists for today
-        existing_entry = await self.read_row_for_program(target_program_name, right_now)
+        existing_entry = self.read_row_for_program(target_program_name, right_now)
 
         if existing_entry:
             if self.debug:
                 notice_suspicious_durations(existing_entry, program_session)
 
-            await self.update_hours(existing_entry, usage_duration_in_hours)
+            self.update_hours(existing_entry, usage_duration_in_hours)
         else:
-            # print("creating entry for day ", today)
             today_start = right_now.replace(
             hour=0, minute=0, second=0, microsecond=0)
-            await self._create(target_program_name, usage_duration_in_hours, today_start)
+            self._create(target_program_name, usage_duration_in_hours, today_start)
 
     async def _create(self, target_program_name, duration_in_hours, when_it_was_gathered):
         async with self.session_maker() as session:
@@ -127,7 +123,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             result = await session.execute(select(DailyProgramSummary))
             return result.scalars().all()
 
-    async def read_row_for_program(self, target_program_name: str, right_now: datetime):
+    def read_row_for_program(self, target_program_name: str, right_now: datetime):
         """Reads the row for the target program for today."""
         today_start = right_now.replace(
             hour=0, minute=0, second=0, microsecond=0)
@@ -139,24 +135,24 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.gathering_date < tomorrow_start
         )
 
-        async with self.session_maker() as session:
-            result = await session.execute(query)
+        with self.regular_session() as session:
+            result = session.execute(query)
             return result.scalar_one_or_none()
     
     # Updates section
 
-    async def update_hours(self, existing_entry: DailyProgramSummary, usage_duration_in_hours: float):
+    def update_hours(self, existing_entry: DailyProgramSummary, usage_duration_in_hours: float):
         """Update hours spent for an existing program entry."""
-        async with self.session_maker() as session:
+        with self.regular_session() as session:
             # Reattach the entity to the current session if it's detached
             if existing_entry not in session:
-                existing_entry = await session.merge(existing_entry)
+                existing_entry = session.merge(existing_entry)
 
             # Update the hours
             existing_entry.hours_spent += usage_duration_in_hours
             
             # Commit the changes
-            await session.commit()
+            session.commit()
         
     async def push_window_ahead_ten_sec(self, program_session: ProgramSessionData, right_now):
         """
@@ -194,7 +190,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
                 self._create(target_program_name, usage_duration_in_hours, today_start)
                 # self.create_if_new_else_update(program_session, right_now)
 
-    async def deduct_remaining_duration(self, session: ProgramSessionData, duration_in_sec: int, today_start):
+    def deduct_remaining_duration(self, session: ProgramSessionData, duration_in_sec: int, today_start):
         """
         When a session is concluded, it was concluded partway thru the 10 sec window
         
@@ -211,7 +207,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.gathering_date < tomorrow_start
         )        
         # Update it if found
-        async with self.session_maker() as db_session:
+        with self.regular_session() as db_session:
             program: DailyProgramSummary = db_session.scalars(query).first()
             # Update it if found
             if program:

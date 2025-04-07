@@ -12,13 +12,31 @@ class ChromeSessionData:
     duration: Optional[timedelta]
     productive: bool
 
-    def __init__(self):
-        self.domain = ""
-        self.detail = ""
-        self.start_time = None
-        self.end_time = None
-        self.duration = None
-        self.productive = False
+    def __init__(self, domain, detail, start_time, end_time, productive=False, duration_for_tests=None):
+        self.domain = domain
+        self.detail = detail
+        self.start_time = start_time
+        self.end_time = end_time
+        if duration_for_tests:
+            self.duration = duration_for_tests
+        else:
+            self.duration = None
+        self.productive = productive
+
+    def parse_time_string(self, time_str):
+        parts = time_str.split(':')
+        hours = int(parts[0])
+        minutes = int(parts[1])
+        seconds_parts = parts[2].split('.')
+        seconds = int(seconds_parts[0])
+        microseconds = int(seconds_parts[1]) if len(seconds_parts) > 1 else 0
+        
+        return timedelta(
+            hours=hours,
+            minutes=minutes,
+            seconds=seconds,
+            microseconds=microseconds
+        )
 
     def __str__(self):
         end_time = self.end_time if self.end_time else "tbd"
@@ -48,12 +66,12 @@ class ProgramSessionData:
             self.duration = end_time - start_time
         else:
             if duration_for_tests:
-                self.duration = self.parse_time_string(duration_for_tests)
+                self.duration = duration_for_tests
             else:
                 self.duration = None
         self.productive = productive
 
-    def parse_time_string(time_str):
+    def parse_time_string(self, time_str):
         parts = time_str.split(':')
         hours = int(parts[0])
         minutes = int(parts[1])

@@ -35,8 +35,8 @@ class ProgramLoggingDao(BaseQueueingDao):
         """ Exists mostly for debugging. """
         super().__init__(async_session_maker=async_session_maker,
                          batch_size=batch_size, flush_interval=flush_interval, dao_name=dao_name)
+        self.regular_session = session_maker
         self.async_session_maker = async_session_maker
-        self.session_maker = session_maker
 
     @validate_session
     def create_log(self, session: ProgramSessionData, right_now: datetime):
@@ -62,7 +62,7 @@ class ProgramLoggingDao(BaseQueueingDao):
             created_at=right_now
         )
         # print("[pr] Creating ", log_entry)
-        with self.session_maker() as db_session:
+        with self.regular_session() as db_session:
             db_session.add(log_entry)
             db_session.commit()
 
@@ -87,19 +87,19 @@ class ProgramLoggingDao(BaseQueueingDao):
             gathering_date=start_of_day_as_utc,
             created_at=base_start_time
         )
-        with self.session_maker() as db_session:
+        with self.regular_session() as db_session:
             db_session.add(log_entry)
             db_session.commit()
 
 
-    async def find_session(self, session: ProgramSessionData):
+    def find_session(self, session: ProgramSessionData):
         # the database is storing and returning times in UTC
         start_time_as_utc = convert_to_utc(session.start_time)
         query = select(ProgramSummaryLog).where(
             ProgramSummaryLog.start_time == start_time_as_utc
         )
-        async with self.async_session_maker() as db_session:
-            result = await db_session.execute(query)
+        with self.regular_session() as db_session:
+            result = db_session.execute(query)
             return result.scalar_one_or_none()
 
 
@@ -209,15 +209,15 @@ class ProgramLoggingDao(BaseQueueingDao):
             db_session.add(log)
             await db_session.commit()
 
-    async def finalize_log(self, session: ProgramSessionData):
+    def finalize_log(self, session: ProgramSessionData):
         """Overwrite value from the heartbeat. Expect something to ALWAYS be in the db already at this point."""
-        log: ProgramSummaryLog = await self.find_session(session)
+        log: ProgramSummaryLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")
         log.end_time = session.end_time
-        async with self.async_session_maker() as db_session:
+        with self.regular_session() as db_session:
             db_session.add(log)
-            await db_session.commit()
+            db_session.commit()
 
     async def execute_query(self, query):
         async with self.async_session_maker() as session:

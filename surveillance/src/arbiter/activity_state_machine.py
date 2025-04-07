@@ -69,7 +69,6 @@ class ActivityStateMachine:
         # Now - UTC
         # state.session.start_time - no tzinfo
         session_start = state.session.start_time
-
         duration = now - session_start
 
         state.session.duration = duration
