@@ -1,11 +1,11 @@
 from datetime import timedelta
 
 
-from ..object.classes import ChromeSessionData, ProgramSessionData
-from ..object.arbiter_classes import ChromeInternalState, ApplicationInternalState, InternalState
-from ..util.program_tools import window_is_chrome
-from ..util.errors import MismatchedTimezonesError, SuspiciousDurationError, TimezoneUnawareError
-from ..util.console_logger import ConsoleLogger
+from surveillance.src.object.classes import ChromeSessionData, ProgramSessionData
+from surveillance.src.object.arbiter_classes import ChromeInternalState, ApplicationInternalState, InternalState
+from surveillance.src.util.program_tools import window_is_chrome
+from surveillance.src.util.errors import MismatchedTimezonesError, SuspiciousDurationError, TimezoneUnawareError
+from surveillance.src.util.console_logger import ConsoleLogger
 
 
 # class OverallState:

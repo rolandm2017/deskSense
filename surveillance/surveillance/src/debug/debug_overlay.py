@@ -3,7 +3,7 @@ from queue import Queue, Empty
 import threading
 import re
 
-from ..util.console_logger import ConsoleLogger
+from surveillance.src.util.console_logger import ConsoleLogger
 
 
 class Overlay:

@@ -3,9 +3,9 @@ import pytz
 
 from typing import List, cast
 
-from ..db.models import TimelineEntryObj
+from surveillance.src.db.models import TimelineEntryObj
 
-from ..config.definitions import local_time_zone, daylight_savings_tz_offset
+from surveillance.src.config.definitions import local_time_zone, daylight_savings_tz_offset
 
 def convert_to_utc(dt: datetime):
     return dt.astimezone(timezone.utc)

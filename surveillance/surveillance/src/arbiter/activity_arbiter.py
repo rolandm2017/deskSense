@@ -3,14 +3,14 @@ from datetime import datetime, timedelta, timezone
 
 import asyncio
 
-from ..config.definitions import power_on_off_debug_file
+from surveillance.src.config.definitions import power_on_off_debug_file
 
 
-from ..object.classes import ChromeSessionData, ProgramSessionData
+from surveillance.src.object.classes import ChromeSessionData, ProgramSessionData
 
 from .activity_state_machine import ActivityStateMachine
-from ..object.arbiter_classes import ChromeInternalState, ApplicationInternalState
-from ..util.console_logger import ConsoleLogger
+from surveillance.src.object.arbiter_classes import ChromeInternalState, ApplicationInternalState
+from surveillance.src.util.console_logger import ConsoleLogger
 
 from .session_heartbeat import KeepAliveEngine, ThreadedEngineContainer
 

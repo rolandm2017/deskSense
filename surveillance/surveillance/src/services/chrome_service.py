@@ -9,16 +9,16 @@ from datetime import datetime, timedelta, timezone, date
 from operator import attrgetter
 
 
-from ..config.definitions import power_on_off_debug_file
+from surveillance.src.config.definitions import power_on_off_debug_file
 
-from ..db.dao.queuing.chrome_dao import ChromeDao
-from ..db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from ..object.classes import ChromeSessionData
-from ..object.pydantic_dto import TabChangeEvent
-from ..config.definitions import productive_sites
-from ..arbiter.activity_arbiter import ActivityArbiter
-from ..util.console_logger import ConsoleLogger
-from ..util.errors import SuspiciousDurationError
+from surveillance.src.db.dao.queuing.chrome_dao import ChromeDao
+from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from surveillance.src.object.classes import ChromeSessionData
+from surveillance.src.object.pydantic_dto import TabChangeEvent
+from surveillance.src.config.definitions import productive_sites
+from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
+from surveillance.src.util.console_logger import ConsoleLogger
+from surveillance.src.util.errors import SuspiciousDurationError
 
 
 class TabQueue:

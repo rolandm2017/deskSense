@@ -5,7 +5,7 @@ from typing import List, Callable, Optional, Type
 
 # Import the base and derived classes
 
-from ..object.classes import PeripheralAggregate, KeyboardAggregate, MouseAggregate
+from surveillance.src.object.classes import PeripheralAggregate, KeyboardAggregate, MouseAggregate
 
 
 @dataclass

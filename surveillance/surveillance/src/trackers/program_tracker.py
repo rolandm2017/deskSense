@@ -2,21 +2,21 @@ from datetime import datetime
 
 import time
 
-from ..util.console_logger import ConsoleLogger
-from ..config.definitions import productive_apps, productive_categories, productive_sites, unproductive_apps
+from surveillance.src.util.console_logger import ConsoleLogger
+from surveillance.src.config.definitions import productive_apps, productive_categories, productive_sites, unproductive_apps
 
-from ..facade.program_facade_base import ProgramFacadeInterface
+from surveillance.src.facade.program_facade_base import ProgramFacadeInterface
 
 
-from ..object.classes import ProgramSessionData
+from surveillance.src.object.classes import ProgramSessionData
 
-from ..util.detect_os import OperatingSystemInfo
-from ..util.end_program_routine import end_program_readout, pretend_report_event
-from ..util.clock import SystemClock
-from ..util.threaded_tracker import ThreadedTracker
-from ..util.program_tools import separate_window_name_and_detail, is_expected_shape_else_throw, tab_is_a_productive_tab, contains_space_dash_space, window_is_chrome
-from ..util.strings import no_space_dash_space
-from ..util.debug_logger import capture_program_data_for_tests
+from surveillance.src.util.detect_os import OperatingSystemInfo
+from surveillance.src.util.end_program_routine import end_program_readout, pretend_report_event
+from surveillance.src.util.clock import SystemClock
+from surveillance.src.util.threaded_tracker import ThreadedTracker
+from surveillance.src.util.program_tools import separate_window_name_and_detail, is_expected_shape_else_throw, tab_is_a_productive_tab, contains_space_dash_space, window_is_chrome
+from surveillance.src.util.strings import no_space_dash_space
+from surveillance.src.util.debug_logger import capture_program_data_for_tests
 
 
 # TODO: report programs that aren't in the apps list.
@@ -154,10 +154,10 @@ if __name__ == "__main__":
 
     def choose_program_facade(os):
         if os.is_windows:
-            from ..facade.program_facade_windows import WindowsProgramFacadeCore
+            from surveillance.src.facade.program_facade_windows import WindowsProgramFacadeCore
             return WindowsProgramFacadeCore()
         else:
-            from ..facade.program_facade_ubuntu import UbuntuProgramFacadeCore
+            from surveillance.src.facade.program_facade_ubuntu import UbuntuProgramFacadeCore
             return UbuntuProgramFacadeCore()
 
     program_api_facade = choose_program_facade(os_type)

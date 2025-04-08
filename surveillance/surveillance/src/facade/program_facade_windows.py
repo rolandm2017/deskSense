@@ -12,7 +12,7 @@ from typing import Dict, Generator
 
 from .program_facade_base import ProgramFacadeInterface
 
-from ..util.console_logger import ConsoleLogger
+from surveillance.src.util.console_logger import ConsoleLogger
 
 class WindowsProgramFacadeCore(ProgramFacadeInterface):
     def __init__(self):

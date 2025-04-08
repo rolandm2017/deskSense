@@ -3,7 +3,7 @@ from typing import List, TypedDict
 
 from datetime import datetime
 
-from ..db.models import DailyDomainSummary
+from surveillance.src.db.models import DailyDomainSummary
 
 
 class DaySummary(TypedDict):

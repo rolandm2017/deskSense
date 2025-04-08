@@ -21,12 +21,12 @@ from datetime import datetime
 import os
 from dotenv import load_dotenv
 
-from ..message_dispatch import publish_keyboard_event, publish_mouse_events
+from surveillance.src.message_dispatch import publish_keyboard_event, publish_mouse_events
 
-from ..util.mouse_event_aggregator import MouseEventAggregator
-from ..util.mouse_event_dispatch import MouseEventDispatch
+from surveillance.src.util.mouse_event_aggregator import MouseEventAggregator
+from surveillance.src.util.mouse_event_dispatch import MouseEventDispatch
 
-from ...object.classes import MouseAggregate
+from surveillance.src.object.classes import MouseAggregate
 
 load_dotenv()
 

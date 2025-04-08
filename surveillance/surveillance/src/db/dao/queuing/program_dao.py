@@ -3,10 +3,10 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from datetime import datetime, timedelta
 
-from ..base_dao import BaseQueueingDao
-from ...models import Program
-from ....object.classes import ProgramSessionData
-from ....util.console_logger import ConsoleLogger
+from surveillance.src.base_dao import BaseQueueingDao
+from surveillance.src.models import Program
+from surveillance.src.object.classes import ProgramSessionData
+from surveillance.src.util.console_logger import ConsoleLogger
 
 
 class ProgramDao(BaseQueueingDao):

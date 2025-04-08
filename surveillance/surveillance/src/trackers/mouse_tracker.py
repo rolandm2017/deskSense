@@ -2,13 +2,13 @@
 
 from typing import List, TypedDict
 
-from ..util.keyboard_aggregator import EventAggregator, InProgressAggregation
+from surveillance.src.util.keyboard_aggregator import EventAggregator, InProgressAggregation
 
 
-# from ..object.enums import MouseEvent
-from ..object.classes import  MouseAggregate, MouseEvent
-from ..util.console_logger import ConsoleLogger
-from ..facade.mouse_facade import MouseFacadeCore
+# from surveillance.src.object.enums import MouseEvent
+from surveillance.src.object.classes import  MouseAggregate, MouseEvent
+from surveillance.src.util.console_logger import ConsoleLogger
+from surveillance.src.facade.mouse_facade import MouseFacadeCore
 
 
 class MouseTrackerCore:

@@ -1,5 +1,5 @@
-from ..object.classes import ChromeSessionData, ProgramSessionData
-from ..util.program_tools import window_is_chrome
+from surveillance.src.object.classes import ChromeSessionData, ProgramSessionData
+from surveillance.src.util.program_tools import window_is_chrome
 
 
 class InternalState:

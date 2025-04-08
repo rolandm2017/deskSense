@@ -4,7 +4,7 @@ import asyncio
 import traceback
 import weakref
 
-from ...util.errors import WayTooLongWaitError
+from surveillance.src.util.errors import WayTooLongWaitError
 
 def handle_exception(loop, context):
     # context['message'] contains the error message

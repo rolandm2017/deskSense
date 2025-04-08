@@ -3,9 +3,9 @@ from sqlite3 import TimestampFromTicks
 from typing import List
 import json
 
-from ..db.models import DailyDomainSummary, DailyProgramSummary, DomainSummaryLog, ProgramSummaryLog
-from ..object.classes import ProgramSessionData
-from ..object.pydantic_dto import TabChangeEvent
+from surveillance.src.db.models import DailyDomainSummary, DailyProgramSummary, DomainSummaryLog, ProgramSummaryLog
+from surveillance.src.object.classes import ProgramSessionData
+from surveillance.src.object.pydantic_dto import TabChangeEvent
 
 
 def write_to_debug_log(name, hours_spent, time):

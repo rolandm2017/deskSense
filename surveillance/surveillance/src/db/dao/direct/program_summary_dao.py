@@ -5,16 +5,16 @@ from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timedelta, timezone
 from typing import List
 
-from ....config.definitions import power_on_off_debug_file
+from surveillance.src.config.definitions import power_on_off_debug_file
 
-from ...models import DailyProgramSummary
+from surveillance.src.models import DailyProgramSummary
 
-from ....util.dao_wrapper import validate_start_end_and_duration
-from ....object.classes import ProgramSessionData
-from ....util.console_logger import ConsoleLogger
+from surveillance.src.util.dao_wrapper import validate_start_end_and_duration
+from surveillance.src.object.classes import ProgramSessionData
+from surveillance.src.util.console_logger import ConsoleLogger
  
-from ....util.clock import SystemClock
-from ....util.debug_util import notice_suspicious_durations, log_if_needed
+from surveillance.src.util.clock import SystemClock
+from surveillance.src.util.debug_util import notice_suspicious_durations, log_if_needed
 
 class DatabaseProtectionError(RuntimeError):
     """Custom exception for database protection violations."""

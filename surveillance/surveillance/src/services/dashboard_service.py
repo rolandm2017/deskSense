@@ -2,19 +2,19 @@
 from datetime import datetime, timedelta, timezone, date
 from typing import List, TypedDict, Dict, Tuple
 
-from ..db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from ..db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
 
-from ..db.dao.queuing.timeline_entry_dao import TimelineEntryDao
-from ..db.dao.direct.program_summary_dao import ProgramSummaryDao
-from ..db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from ..db.models import DailyDomainSummary, DailyProgramSummary, ProgramSummaryLog, TimelineEntryObj
-from ..config.definitions import productive_sites, productive_apps
-from ..util.console_logger import ConsoleLogger
-from ..object.return_types import DaySummary
-from ..util.clock import UserFacingClock
-from ..util.time_formatting import format_for_local_time
+from surveillance.src.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
+from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from surveillance.src.db.models import DailyDomainSummary, DailyProgramSummary, ProgramSummaryLog, TimelineEntryObj
+from surveillance.src.config.definitions import productive_sites, productive_apps
+from surveillance.src.util.console_logger import ConsoleLogger
+from surveillance.src.object.return_types import DaySummary
+from surveillance.src.util.clock import UserFacingClock
+from surveillance.src.util.time_formatting import format_for_local_time
 
 
 class DashboardService:

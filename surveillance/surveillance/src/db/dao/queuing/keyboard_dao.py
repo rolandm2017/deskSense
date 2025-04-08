@@ -5,11 +5,11 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from datetime import timedelta, datetime
 
-from ..base_dao import BaseQueueingDao
-from ...models import TypingSession
-from ....object.classes import KeyboardAggregate
-from ....object.dto import TypingSessionDto
-from ....util.console_logger import ConsoleLogger
+from surveillance.src.base_dao import BaseQueueingDao
+from surveillance.src.models import TypingSession
+from surveillance.src.object.classes import KeyboardAggregate
+from surveillance.src.object.dto import TypingSessionDto
+from surveillance.src.util.console_logger import ConsoleLogger
 
 
 def get_rid_of_ms(time):

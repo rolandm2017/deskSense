@@ -3,7 +3,7 @@ from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta, timezone
 from typing import Iterator
 
-from ..config.definitions import local_time_zone
+from surveillance.src.config.definitions import local_time_zone
 
 
 class ClockProtocol:

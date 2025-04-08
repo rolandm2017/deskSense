@@ -2,25 +2,25 @@
 from fastapi import Depends
 from typing import List, cast
 
-from ..object.dashboard_dto import MouseEventsPayload
+from surveillance.src.object.dashboard_dto import MouseEventsPayload
 
 
-from ..facade.keyboard_facade import KeyboardFacadeCore
+from surveillance.src.facade.keyboard_facade import KeyboardFacadeCore
 
-from ..object.pydantic_dto import TabChangeEvent
-from ..util.time_formatting import convert_to_timezone
+from surveillance.src.object.pydantic_dto import TabChangeEvent
+from surveillance.src.util.time_formatting import convert_to_timezone
 
-from ..db.dao.queuing.mouse_dao import MouseDao
-from ..db.dao.queuing.keyboard_dao import KeyboardDao
-from ..db.dao.queuing.program_dao import ProgramDao
-from ..db.dao.queuing.video_dao import VideoDao
-from ..db.dao.direct.frame_dao import FrameDao
-from ..db.models import TypingSession, Program, MouseMove
-from ..object.dto import TypingSessionDto
+from surveillance.src.db.dao.queuing.mouse_dao import MouseDao
+from surveillance.src.db.dao.queuing.keyboard_dao import KeyboardDao
+from surveillance.src.db.dao.queuing.program_dao import ProgramDao
+from surveillance.src.db.dao.queuing.video_dao import VideoDao
+from surveillance.src.db.dao.direct.frame_dao import FrameDao
+from surveillance.src.db.models import TypingSession, Program, MouseMove
+from surveillance.src.object.dto import TypingSessionDto
 
 
-from ..config.definitions import local_time_zone, productive_sites
-from ..util.console_logger import ConsoleLogger
+from surveillance.src.config.definitions import local_time_zone, productive_sites
+from surveillance.src.util.console_logger import ConsoleLogger
 
 
 class TimezoneService:

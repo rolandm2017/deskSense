@@ -5,10 +5,10 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from datetime import datetime, timedelta
 
-from ..base_dao import BaseQueueingDao
-from ...models import Frame, Video
-from ....object.pydantic_dto import FrameCreateEvent
-from ....util.console_logger import ConsoleLogger
+from surveillance.src.base_dao import BaseQueueingDao
+from surveillance.src.models import Frame, Video
+from surveillance.src.object.pydantic_dto import FrameCreateEvent
+from surveillance.src.util.console_logger import ConsoleLogger
 
 
 class FrameDto:

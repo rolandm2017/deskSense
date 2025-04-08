@@ -1,5 +1,5 @@
-from ..object.arbiter_classes import ApplicationInternalState, ChromeInternalState, InternalState
-from ..object.classes import ProgramSessionData, ChromeSessionData
+from surveillance.src.object.arbiter_classes import ApplicationInternalState, ChromeInternalState, InternalState
+from surveillance.src.object.classes import ProgramSessionData, ChromeSessionData
 
 
 class UINotifier:

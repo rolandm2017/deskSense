@@ -9,8 +9,8 @@ from sqlalchemy import Column as SQLAlchemyColumn
 from typing import Union, Any, Optional
 from datetime import datetime
 from .database import Base
-from ..object.enums import ChartEventType, SystemStatusType
-from ..config.definitions import max_content_len
+from surveillance.src.object.enums import ChartEventType, SystemStatusType
+from surveillance.src.config.definitions import max_content_len
 
 
 class TypingSession(Base):

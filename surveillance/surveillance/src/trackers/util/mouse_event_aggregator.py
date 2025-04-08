@@ -2,7 +2,7 @@
 import threading
 from datetime import datetime
 
-from ...object.classes import MouseAggregate
+from surveillance.src.object.classes import MouseAggregate
 
 class MouseEventAggregator:
     """Really just a named array; the timer will take place outside of it, or else timers are duplicated"""

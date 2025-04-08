@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from typing import List
 
 
-from ..service_dependencies import (
+from surveillance.src.service_dependencies import (
     get_video_service
 )
 
@@ -11,12 +11,12 @@ from src.services.services import (
     VideoService
 )
 
-from ..object.pydantic_dto import (
+from surveillance.src.object.pydantic_dto import (
     VideoCreateEvent, FrameCreateEvent, VideoCreateConfirmation,
 
 )
 
-from ..util.console_logger import ConsoleLogger
+from surveillance.src.util.console_logger import ConsoleLogger
 
 # Create a logger
 logger = ConsoleLogger()
