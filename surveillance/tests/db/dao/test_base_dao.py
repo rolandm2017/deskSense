@@ -18,10 +18,10 @@ process = psutil.Process()
 open_files = process.open_files()
 num_open_files = len(open_files)
 
-from src.object.classes import ProgramSessionData
-from src.db.dao.base_dao import BaseQueueingDao
-from src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from src.db.dao.queuing.program_dao import ProgramDao
+from surveillance.src.object.classes import ProgramSessionData
+from surveillance.src.db.dao.base_dao import BaseQueueingDao
+from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.src.db.dao.queuing.program_dao import ProgramDao
 
 
 load_dotenv()

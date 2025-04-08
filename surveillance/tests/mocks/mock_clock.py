@@ -4,9 +4,9 @@ from typing import Iterator
 
 from zoneinfo import ZoneInfo
 
-from src.config.definitions import local_time_zone
+from surveillance.src.config.definitions import local_time_zone
 
-from src.util.clock import ClockProtocol
+from surveillance.src.util.clock import ClockProtocol
 
 
 class MockClock(ClockProtocol):

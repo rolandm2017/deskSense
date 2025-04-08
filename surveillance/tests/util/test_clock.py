@@ -5,11 +5,11 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 
-from src.services.services import TimezoneService
+from surveillance.src.services.services import TimezoneService
 
-from src.config.definitions import local_time_zone, regular_tz_offset, daylight_savings_tz_offset
-from src.object.pydantic_dto import TabChangeEvent
-from src.util.clock import UserFacingClock
+from surveillance.src.config.definitions import local_time_zone, regular_tz_offset, daylight_savings_tz_offset
+from surveillance.src.object.pydantic_dto import TabChangeEvent
+from surveillance.src.util.clock import UserFacingClock
 
 user_facing_clock = UserFacingClock()
 

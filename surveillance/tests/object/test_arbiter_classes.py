@@ -1,6 +1,6 @@
 import pytest
 
-from src.object.arbiter_classes import InternalState, ChromeInternalState, ApplicationInternalState
+from surveillance.src.object.arbiter_classes import InternalState, ChromeInternalState, ApplicationInternalState
 
 
 class TestInternalState:

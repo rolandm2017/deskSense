@@ -1,7 +1,7 @@
 # test_overlay.py
 import pytest
 
-from src.debug.debug_overlay import Overlay
+from surveillance.src.debug.debug_overlay import Overlay
 
 
 def test_get_color_for_window():

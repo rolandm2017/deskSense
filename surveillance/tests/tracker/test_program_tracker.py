@@ -5,10 +5,10 @@ from datetime import datetime, timedelta, timezone
 
 from ..mocks.mock_clock import MockClock
 
-from src.config.definitions import productive_apps, productive_sites
-from src.object.classes import ProgramSessionData
-from src.trackers.program_tracker import ProgramTrackerCore
-from src.util.strings import no_space_dash_space
+from surveillance.src.config.definitions import productive_apps, productive_sites
+from surveillance.src.object.classes import ProgramSessionData
+from surveillance.src.trackers.program_tracker import ProgramTrackerCore
+from surveillance.src.util.strings import no_space_dash_space
 
 
 @pytest.fixture

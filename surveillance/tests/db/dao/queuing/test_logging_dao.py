@@ -18,17 +18,17 @@ import os
 # FIXME: Task was destroyed but it is pending! 
 # FIXME:
 
-from src.arbiter.activity_recorder import ActivityRecorder
+from surveillance.src.arbiter.activity_recorder import ActivityRecorder
 
-from src.db.models import DomainSummaryLog, ProgramSummaryLog, Base
+from surveillance.src.db.models import DomainSummaryLog, ProgramSummaryLog, Base
 
 
-from src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
-from src.object.classes import ProgramSessionData, ChromeSessionData
+from surveillance.src.object.classes import ProgramSessionData, ChromeSessionData
 
-from src.util.errors import ImpossibleToGetHereError
+from surveillance.src.util.errors import ImpossibleToGetHereError
 
 
 timezone_for_test_data = ZoneInfo('America/New_York')

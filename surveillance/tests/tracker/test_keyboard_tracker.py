@@ -3,9 +3,9 @@ import pytest
 from unittest.mock import Mock, patch
 from datetime import datetime, timedelta
 
-from src.trackers.keyboard_tracker import KeyboardTrackerCore
-from src.util.threaded_tracker import ThreadedTracker
-from src.object.classes import KeyboardAggregate
+from surveillance.src.trackers.keyboard_tracker import KeyboardTrackerCore
+from surveillance.src.util.threaded_tracker import ThreadedTracker
+from surveillance.src.object.classes import KeyboardAggregate
 from ..mocks.mock_clock import MockClock
 
 

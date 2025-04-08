@@ -2,9 +2,9 @@ import pytest
 from unittest.mock import Mock, MagicMock
 import asyncio
 
-from src.debug.ui_notifier import UINotifier
-from src.object.arbiter_classes import ApplicationInternalState, ChromeInternalState
-from src.object.classes import ProgramSessionData, ChromeSessionData
+from surveillance.src.debug.ui_notifier import UINotifier
+from surveillance.src.object.arbiter_classes import ApplicationInternalState, ChromeInternalState
+from surveillance.src.object.classes import ProgramSessionData, ChromeSessionData
 
 
 # Import or recreate your classes here

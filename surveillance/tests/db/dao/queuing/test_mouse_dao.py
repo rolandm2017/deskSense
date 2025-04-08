@@ -9,10 +9,10 @@ from sqlalchemy import text
 
 from typing import cast
 
-from src.db.dao.queuing.mouse_dao import MouseDao
-from src.db.models import MouseMove
-from src.object.classes import MouseMoveWindow
-from src.util.clock import SystemClock
+from surveillance.src.db.dao.queuing.mouse_dao import MouseDao
+from surveillance.src.db.models import MouseMove
+from surveillance.src.object.classes import MouseMoveWindow
+from surveillance.src.util.clock import SystemClock
 
 async def truncate_test_tables(async_engine):
     """Truncate all test tables directly"""

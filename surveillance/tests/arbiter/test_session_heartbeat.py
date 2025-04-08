@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch, Mock
 import threading
 import time
 
-from src.arbiter.session_heartbeat import KeepAliveEngine
+from surveillance.src.arbiter.session_heartbeat import KeepAliveEngine
 
 class MockDaoConn:
     def __init__(self):

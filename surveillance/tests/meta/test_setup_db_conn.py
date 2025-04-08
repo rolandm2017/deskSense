@@ -7,9 +7,9 @@ from unittest.mock import AsyncMock, Mock, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, AsyncEngine
 from sqlalchemy import text
 
-from src.db.models import Base
-from src.db.dao.direct.program_summary_dao import ProgramSummaryDao
-from src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.src.db.models import Base
+from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 
 """
 File exists to end the problem with "cannot await coroutine!"

@@ -1,8 +1,8 @@
-from src.object.classes import ChromeSessionData
+from surveillance.src.object.classes import ChromeSessionData
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
-from src.object.classes import ChromeSessionData, ProgramSessionData
+from surveillance.src.object.classes import ChromeSessionData, ProgramSessionData
 from .weekly_breakdown_programs import march_2_2025, march_3_2025
 
 # Sample ChromeSessionData objects

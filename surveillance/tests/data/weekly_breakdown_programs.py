@@ -1,9 +1,9 @@
-from src.object.classes import ProgramSessionData
+from surveillance.src.object.classes import ProgramSessionData
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 
-from src.object.classes import ChromeSessionData, ProgramSessionData
+from surveillance.src.object.classes import ChromeSessionData, ProgramSessionData
 
 # Sample ProgramSessionData objects
 # 🖥️ Programs File 🖥️ Programs File 🖥️ Programs File 🖥️ Programs File 🖥️

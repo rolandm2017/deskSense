@@ -4,11 +4,11 @@ import pytest_asyncio
 from unittest.mock import AsyncMock, Mock, MagicMock
 from datetime import datetime, date, timedelta, timezone
 
-from src.arbiter.activity_arbiter import ActivityArbiter
-from src.arbiter.activity_recorder import ActivityRecorder
-from src.arbiter.activity_state_machine import ActivityStateMachine
-from src.debug.ui_notifier import UINotifier
-from src.object.classes import ProgramSessionData, ChromeSessionData
+from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
+from surveillance.src.arbiter.activity_recorder import ActivityRecorder
+from surveillance.src.arbiter.activity_state_machine import ActivityStateMachine
+from surveillance.src.debug.ui_notifier import UINotifier
+from surveillance.src.object.classes import ProgramSessionData, ChromeSessionData
 
 from ..data.arbiter_events import test_sessions, times_for_system_clock
 from ..mocks.mock_clock import MockClock

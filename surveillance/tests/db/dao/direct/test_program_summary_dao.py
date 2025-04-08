@@ -10,13 +10,13 @@ from sqlalchemy import text
 from dotenv import load_dotenv
 import os
 
-from src.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
 
-from src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-from src.db.models import DailyProgramSummary, Base
-from src.object.classes import ProgramSessionData
-from src.util.clock import SystemClock
+from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.src.db.models import DailyProgramSummary, Base
+from surveillance.src.object.classes import ProgramSessionData
+from surveillance.src.util.clock import SystemClock
 
 from ....mocks.mock_clock import MockClock
 

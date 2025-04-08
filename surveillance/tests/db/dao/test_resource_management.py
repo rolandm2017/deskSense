@@ -8,8 +8,8 @@ import psutil
 import gc
 import weakref
 
-from src.db.dao.base_dao import BaseQueueingDao
-from src.db.models import TimelineEntryObj  # Assuming this is a valid model to use for testing
+from surveillance.src.db.dao.base_dao import BaseQueueingDao
+from surveillance.src.db.models import TimelineEntryObj  # Assuming this is a valid model to use for testing
 
 
 class TestResourceManagement:

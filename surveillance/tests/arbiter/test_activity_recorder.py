@@ -2,15 +2,15 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime, timedelta
 
-from src.arbiter.activity_recorder import ActivityRecorder
+from surveillance.src.arbiter.activity_recorder import ActivityRecorder
 
-from src.db.dao.direct.program_summary_dao import ProgramSummaryDao
-from src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 
-from src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
-from src.object.classes import ProgramSessionData, ChromeSessionData
+from surveillance.src.object.classes import ProgramSessionData, ChromeSessionData
 
 # Test implementations with proper session object instantiation
 

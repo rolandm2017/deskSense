@@ -10,10 +10,10 @@ from dotenv import load_dotenv
 import os
 
 # Import models and DAOs
-from src.db.models import Base, SystemStatus, ProgramSummaryLog, DomainSummaryLog
-from src.db.dao.direct.session_integrity_dao import SessionIntegrityDao
-from src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.src.db.models import Base, SystemStatus, ProgramSummaryLog, DomainSummaryLog
+from surveillance.src.db.dao.direct.session_integrity_dao import SessionIntegrityDao
+from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
 # Load environment variables from .env file
 load_dotenv()

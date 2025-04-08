@@ -2,10 +2,10 @@ import pytest
 
 from datetime import datetime
 
-from src.services.services import TimezoneService
+from surveillance.src.services.services import TimezoneService
 
-from src.config.definitions import local_time_zone, regular_tz_offset, daylight_savings_tz_offset
-from src.object.pydantic_dto import TabChangeEvent
+from surveillance.src.config.definitions import local_time_zone, regular_tz_offset, daylight_savings_tz_offset
+from surveillance.src.object.pydantic_dto import TabChangeEvent
 
 timezone_service = TimezoneService()
 

@@ -4,11 +4,11 @@ from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from typing import cast
 
-from src.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
-from src.db.models import TimelineEntryObj
-from src.object.classes import KeyboardAggregate, MouseMoveWindow
-from src.object.enums import ChartEventType
-from src.util.clock import SystemClock
+from surveillance.src.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
+from surveillance.src.db.models import TimelineEntryObj
+from surveillance.src.object.classes import KeyboardAggregate, MouseMoveWindow
+from surveillance.src.object.enums import ChartEventType
+from surveillance.src.util.clock import SystemClock
 
 
 import psutil

@@ -7,9 +7,9 @@ from datetime import datetime, date, timedelta, timezone
 from sqlalchemy import text
 import asyncio
 
-from src.db.dao.direct.system_status_dao import SystemStatusDao
-from src.db.models import SystemStatus, Base
-from src.object.enums import SystemStatusType
+from surveillance.src.db.dao.direct.system_status_dao import SystemStatusDao
+from surveillance.src.db.models import SystemStatus, Base
+from surveillance.src.object.enums import SystemStatusType
 
 
 from ....mocks.mock_clock import MockClock

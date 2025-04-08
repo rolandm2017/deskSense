@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 from pynput.keyboard import Key, KeyCode
 import signal
 import os
-from src.facade.keyboard_facade import KeyboardFacadeCore
+from surveillance.src.facade.keyboard_facade import KeyboardFacadeCore
 
 # TODO: test mouse/keyboard facade
 

@@ -20,16 +20,16 @@ import os
 from dotenv import load_dotenv
 
 
-from src.services.dashboard_service import DashboardService
+from surveillance.src.services.dashboard_service import DashboardService
 
-from src.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
-from src.db.dao.direct.program_summary_dao import ProgramSummaryDao
-from src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.src.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
+from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
-from src.db.models import Base, DailyDomainSummary, DailyProgramSummary
-from src.object.classes import ChromeSessionData, ProgramSessionData
+from surveillance.src.db.models import Base, DailyDomainSummary, DailyProgramSummary
+from surveillance.src.object.classes import ChromeSessionData, ProgramSessionData
 from ..data.weekly_breakdown_programs import (
     duplicate_programs_march_2, duplicate_programs_march_3rd,
     programs_march_2nd, programs_march_3rd,

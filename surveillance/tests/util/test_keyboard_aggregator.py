@@ -4,9 +4,9 @@ from typing import List
 from dataclasses import dataclass
 from datetime import timedelta
 
-from src.util.keyboard_aggregator import EventAggregator
+from surveillance.src.util.keyboard_aggregator import EventAggregator
 
-from src.util.clock import SystemClock
+from surveillance.src.util.clock import SystemClock
 
 ####
 # Happy path tests

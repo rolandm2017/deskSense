@@ -6,10 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy import text
 
 
-from src.db.dao.queuing.program_dao import ProgramDao
-from src.db.models import Program
-from src.object.classes import ProgramSessionData
-from src.util.clock import SystemClock
+from surveillance.src.db.dao.queuing.program_dao import ProgramDao
+from surveillance.src.db.models import Program
+from surveillance.src.object.classes import ProgramSessionData
+from surveillance.src.util.clock import SystemClock
 
 import psutil
 

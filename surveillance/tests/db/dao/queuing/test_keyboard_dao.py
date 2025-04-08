@@ -6,11 +6,11 @@ from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy import text
 
-from src.object.dto import TypingSessionDto
-from src.db.dao.queuing.keyboard_dao import KeyboardDao
-from src.db.models import TypingSession
-from src.object.classes import KeyboardAggregate
-from src.util.clock import SystemClock
+from surveillance.src.object.dto import TypingSessionDto
+from surveillance.src.db.dao.queuing.keyboard_dao import KeyboardDao
+from surveillance.src.db.models import TypingSession
+from surveillance.src.object.classes import KeyboardAggregate
+from surveillance.src.util.clock import SystemClock
 
 
 async def truncate_table(async_session_maker):

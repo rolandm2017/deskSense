@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from src.object.pydantic_dto import TabChangeEvent
+from surveillance.src.object.pydantic_dto import TabChangeEvent
 
 # NOTE: Originally, the TabChangeEvents were recorded *without* a timestamp.
 # NOTE: BUT, they SHOULD have a timestamp!

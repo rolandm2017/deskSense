@@ -4,7 +4,7 @@ from time import time
 from typing import List
 from dataclasses import dataclass
 
-from src.util.timeline_event_aggregator import aggregate_timeline_events
+from surveillance.src.util.timeline_event_aggregator import aggregate_timeline_events
 
 # given these -- directly from the real db
 from .timeline_data import all_mouse_events, all_keyboard_events

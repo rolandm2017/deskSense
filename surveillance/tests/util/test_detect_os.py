@@ -1,6 +1,6 @@
 import pytest
 
-from src.util.detect_os import OperatingSystemInfo
+from surveillance.src.util.detect_os import OperatingSystemInfo
 
 
 @pytest.mark.skipif(

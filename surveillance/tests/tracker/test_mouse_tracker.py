@@ -5,10 +5,10 @@ from unittest.mock import Mock, patch
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from src.util.detect_os import OperatingSystemInfo
-from src.util.threaded_tracker import ThreadedTracker
-from src.trackers.mouse_tracker import MouseTrackerCore, MouseEvent
-# from src.facade.mouse_facade import MouseCoords
+from surveillance.src.util.detect_os import OperatingSystemInfo
+from surveillance.src.util.threaded_tracker import ThreadedTracker
+from surveillance.src.trackers.mouse_tracker import MouseTrackerCore, MouseEvent
+# from surveillance.src.facade.mouse_facade import MouseCoords
 
 
 class MockMouseFacade():

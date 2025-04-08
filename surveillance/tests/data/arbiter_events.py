@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 
-from src.object.classes import ProgramSessionData, ChromeSessionData
+from surveillance.src.object.classes import ProgramSessionData, ChromeSessionData
 
-from src.util.clock import SystemClock
+from surveillance.src.util.clock import SystemClock
 
 # ## Order:
 # Chrome - Claude
