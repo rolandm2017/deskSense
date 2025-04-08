@@ -5,8 +5,8 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from datetime import datetime, timedelta
 
-from surveillance.src.base_dao import BaseQueueingDao
-from surveillance.src.models import Video
+from surveillance.src.db.dao.base_dao import BaseQueueingDao
+from surveillance.src.db.models import Video
 # from surveillance.src.object.dto import VideoDto
 from surveillance.src.object.pydantic_dto import VideoCreateEvent
 from surveillance.src.util.console_logger import ConsoleLogger

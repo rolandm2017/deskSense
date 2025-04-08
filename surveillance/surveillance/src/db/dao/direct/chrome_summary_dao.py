@@ -9,7 +9,7 @@ from typing import List
 
 from surveillance.src.config.definitions import power_on_off_debug_file
 
-from surveillance.src.models import DailyDomainSummary
+from surveillance.src.db.models import DailyDomainSummary
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.object.classes import ChromeSessionData
 

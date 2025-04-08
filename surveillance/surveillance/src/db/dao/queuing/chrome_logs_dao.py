@@ -9,8 +9,8 @@ from typing import List
 from surveillance.src.object.classes import ChromeSessionData, ProgramSessionData
 
 
-from surveillance.src.models import DomainSummaryLog, ProgramSummaryLog
-from surveillance.src.base_dao import BaseQueueingDao
+from surveillance.src.db.models import DomainSummaryLog, ProgramSummaryLog
+from surveillance.src.db.dao.base_dao import BaseQueueingDao
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.errors import ImpossibleToGetHereError
 from surveillance.src.util.dao_wrapper import validate_session, guarantee_start_time

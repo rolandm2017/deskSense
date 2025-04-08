@@ -7,7 +7,7 @@ from typing import List
 
 from surveillance.src.config.definitions import power_on_off_debug_file
 
-from surveillance.src.models import DailyProgramSummary
+from surveillance.src.db.models import DailyProgramSummary
 
 from surveillance.src.util.dao_wrapper import validate_start_end_and_duration
 from surveillance.src.object.classes import ProgramSessionData

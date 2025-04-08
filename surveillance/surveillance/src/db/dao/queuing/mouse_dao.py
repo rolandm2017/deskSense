@@ -3,9 +3,9 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from datetime import timedelta, datetime
 
-from surveillance.src.base_dao import BaseQueueingDao
+from surveillance.src.db.dao.base_dao import BaseQueueingDao
 
-from surveillance.src.models import MouseMove
+from surveillance.src.db.models import MouseMove
 from surveillance.src.object.dto import MouseMoveDto
 from surveillance.src.object.classes import MouseMoveWindow
 from surveillance.src.util.console_logger import ConsoleLogger

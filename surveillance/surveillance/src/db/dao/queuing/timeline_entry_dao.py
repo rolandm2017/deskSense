@@ -6,8 +6,8 @@ from datetime import datetime, timedelta, time
 
 from typing import List
 
-from surveillance.src.base_dao import BaseQueueingDao
-from surveillance.src.models import TimelineEntryObj, PrecomputedTimelineEntry
+from surveillance.src.db.dao.base_dao import BaseQueueingDao
+from surveillance.src.db.models import TimelineEntryObj, PrecomputedTimelineEntry
 from surveillance.src.object.classes import KeyboardAggregate, MouseMoveWindow
 from surveillance.src.object.enums import ChartEventType
 from surveillance.src.util.console_logger import ConsoleLogger

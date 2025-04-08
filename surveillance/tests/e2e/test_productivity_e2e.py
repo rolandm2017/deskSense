@@ -94,7 +94,7 @@ async def test_setup_conditions(regular_session):
     logging2 = ChromeLoggingDao(regular_session)
     pro_sum_dao = ProgramSummaryDao(regular_session)
     chro_sum_dao = ChromeSummaryDao(regular_session)
-    vvvv = 
+    # vvvv = ChromeSummaryDao()
     
 
 #       oooox

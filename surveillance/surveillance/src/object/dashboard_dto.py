@@ -2,7 +2,7 @@ from pydantic import BaseModel, ConfigDict
 from typing import List
 from datetime import datetime
 
-from src.db.models import PrecomputedTimelineEntry
+from surveillance.src.db.models import PrecomputedTimelineEntry
 
 
 class ProductivityBreakdown(BaseModel):

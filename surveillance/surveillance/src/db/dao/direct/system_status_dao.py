@@ -4,12 +4,12 @@ from sqlalchemy import select, desc, func
 from datetime import datetime
 import asyncpg
 
-from surveillance.src.database import SQLALCHEMY_DATABASE_URL, SYNCHRONOUS_DB_URL
+from surveillance.src.db.database import SQLALCHEMY_DATABASE_URL, SYNCHRONOUS_DB_URL
 
 # from surveillance.src.object.enums import SystemStatusType
 from surveillance.src.object.enums import SystemStatusType
 from surveillance.src.util.console_logger import ConsoleLogger
-from surveillance.src.models import SystemStatus
+from surveillance.src.db.models import SystemStatus
 
 
 class SystemStatusDao:

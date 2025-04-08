@@ -3,8 +3,8 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from datetime import datetime, timedelta
 
-from surveillance.src.base_dao import BaseQueueingDao
-from surveillance.src.models import ChromeTab
+from surveillance.src.db.dao.base_dao import BaseQueueingDao
+from surveillance.src.db.models import ChromeTab
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.object.classes import ChromeSessionData
 from surveillance.src.config.definitions import max_content_len

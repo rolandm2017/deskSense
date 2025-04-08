@@ -5,8 +5,8 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from datetime import timedelta, datetime
 
-from surveillance.src.base_dao import BaseQueueingDao
-from surveillance.src.models import TypingSession
+from surveillance.src.db.dao.base_dao import BaseQueueingDao
+from surveillance.src.db.models import TypingSession
 from surveillance.src.object.classes import KeyboardAggregate
 from surveillance.src.object.dto import TypingSessionDto
 from surveillance.src.util.console_logger import ConsoleLogger
