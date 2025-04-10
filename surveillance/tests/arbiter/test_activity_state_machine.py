@@ -32,15 +32,9 @@ class TestActivityStateMachine:
         assert asm.current_state is None
         assert asm.prior_state is None
 
-        first_session = ProgramSessionData()
-        first_session.window_title = "Visual Studio Code"
-        first_session.detail = "myfile.py"
-        first_session.start_time = now
+        first_session = ProgramSessionData("Visual Studio Code", "myfile.py", now)
 
-        second = ChromeSessionData()
-        second.domain = "Claude.ai"
-        second.detail = "How to Cook Chicken Well in Thirty Minutes"
-        second.start_time = slightly_later
+        second = ChromeSessionData("Claude.ai","How to Cook Chicken Well in Thirty Minutes", slightly_later)
 
         # Act
         asm.set_new_session(first_session)
@@ -76,30 +70,15 @@ class TestActivityStateMachine:
 
         asm = ActivityStateMachine(clock)
 
-        session1 = ProgramSessionData()
-        session1.window_title = "Visual Studio Code"
-        session1.detail = "myfile.py"
-        session1.start_time = t1
+        session1 = ProgramSessionData("Visual Studio Code", "myfile.py", t1)
 
-        second = ChromeSessionData()
-        second.domain = "Claude.ai"
-        second.detail = "How to Cook Chicken Well in Thirty Minutes"
-        second.start_time = t2
+        second = ChromeSessionData("Claude.ai", "How to Cook Chicken Well in Thirty Minutes", t2)
 
-        third = ChromeSessionData()
-        third.domain = "ChatGPT.com"
-        third.detail = "Asian Stir Fry Tutorial"
-        third.start_time = t3
+        third = ChromeSessionData("ChatGPT.com", "Asian Stir Fry Tutorial", t3)
 
-        fourth = ProgramSessionData()
-        fourth.window_title = "Postmman"
-        fourth.detail = "POST requests folder"
-        fourth.start_time = t4
+        fourth = ProgramSessionData("Postmman", "POST requests folder", t4)
 
-        fifth = ProgramSessionData()
-        fifth.window_title = "Terminal"
-        fifth.detail = "~/Documents"
-        fifth.start_time = t5
+        fifth = ProgramSessionData("Terminal", "~/Documents", t5)
 
         asm.set_new_session(session1)
         response1 = asm.get_finished_state()
@@ -230,10 +209,7 @@ class TestTransitionFromProgram:
             "Postman", False, start_session)
         tfpm = TransitionFromProgramMachine(current_state)
 
-        next_session = ChromeSessionData()
-        next_session.domain = "Google.com"
-        next_session.detail = "Search here"
-        next_session.start_time = now + timedelta(seconds=2)
+        next_session = ChromeSessionData("Google.com", "Search here", now + timedelta(seconds=2))
 
         # Act
         output = tfpm.compute_next_state(next_session)
@@ -252,10 +228,7 @@ class TestTransitionFromProgram:
         system_clock = SystemClock()
         now = system_clock.now()
 
-        chrome_tab = ChromeSessionData()
-        chrome_tab.domain = "Claude.ai"
-        chrome_tab.detail = "Baking tips"
-        chrome_tab.start_time = now
+        chrome_tab = ChromeSessionData("Claude.ai", "Baking tips", now)
         current_state = ChromeInternalState(
             "Chrome", True, "Claude.ai", chrome_tab)
 
@@ -273,10 +246,7 @@ class TestTransitionFromChrome:
         """A sad path. Machine cannot start with ApplicationInternalState, by design."""
         system_clock = SystemClock()
 
-        session = ProgramSessionData()
-        session.window_title = "PyCharm"
-        session.detail = "test_my_wonerful_code.py"
-        session.start_time = system_clock.now()
+        session = ProgramSessionData("PyCharm", "test_my_wonerful_code.py", system_clock.now())
         current_state = ApplicationInternalState("PyCharm", False, session)
 
         with pytest.raises(TypeError, match="requires a ChromeInternalState"):
@@ -291,19 +261,12 @@ class TestTransitionFromChrome:
 
         now = system_clock.now()
 
-        start_session = ChromeSessionData()
-        start_session.domain = "ChatGPT.com"
-        start_session.detail = "American stir fry"
-        start_session.start_time = now
-        current_state = ChromeInternalState(
-            "Chrome", True, "ChatGPT.com", start_session)
+        start_session = ChromeSessionData("ChatGPT.com", "American stir fry", now)
+        current_state = ChromeInternalState("Chrome", True, "ChatGPT.com", start_session)
 
         tfcm = TransitionFromChromeMachine(current_state)
 
-        next_session = ProgramSessionData()
-        next_session.window_title = "Postman"
-        next_session.detail = "GET requests folder"
-        next_session.start_time = now + timedelta(seconds=4)
+        next_session = ProgramSessionData("Postman", "GET requests folder", now + timedelta(seconds=4))
 
         output = tfcm.compute_next_state(next_session)
 
@@ -317,19 +280,13 @@ class TestTransitionFromChrome:
         now = system_clock.now()
 
         domain = "ChatGPT.com"
-        start_session = ChromeSessionData()
-        start_session.domain = domain
-        start_session.detail = "American stir fry"
-        start_session.start_time = now
+        start_session = ChromeSessionData(domain, "American stir fry", now)
         current_state = ChromeInternalState(
             "Chrome", True, domain, start_session)
 
         tfcm = TransitionFromChromeMachine(current_state)
 
-        next_session = ChromeSessionData()
-        next_session.domain = "Twitter.com"
-        next_session.detail = "Home"
-        next_session.start_time = now + timedelta(seconds=10)
+        next_session = ChromeSessionData("Twitter.com", "Home", now + timedelta(seconds=10))
 
         output = tfcm.compute_next_state(next_session)
 
@@ -344,19 +301,13 @@ class TestTransitionFromChrome:
         later = now + timedelta(seconds=10)
 
         domain = "Facebook.com"
-        start_session = ChromeSessionData()
-        start_session.domain = domain
-        start_session.detail = "Home"
-        start_session.start_time = now
+        start_session = ChromeSessionData(domain, "Home", now)
         current_state = ChromeInternalState(
             "Chrome", True, domain, start_session)
 
         tfcm = TransitionFromChromeMachine(current_state)
 
-        next_session = ChromeSessionData()
-        next_session.domain = domain
-        next_session.detail = "Marketplace"
-        next_session.start_time = later
+        next_session = ChromeSessionData(domain, "Marketplace", later)
 
         output = tfcm.compute_next_state(next_session)
 

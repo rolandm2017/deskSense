@@ -12,7 +12,7 @@ class ChromeSessionData:
     duration: Optional[timedelta]
     productive: bool
 
-    def __init__(self, domain, detail, start_time, end_time, productive=False, duration_for_tests=None):
+    def __init__(self, domain, detail, start_time, end_time=None, productive=False, duration_for_tests=None):
         self.domain = domain
         self.detail = detail
         self.start_time = start_time
@@ -23,7 +23,8 @@ class ChromeSessionData:
             self.duration = None
         self.productive = productive
 
-    def parse_time_string(self, time_str):
+    @staticmethod
+    def parse_time_string(time_str):
         parts = time_str.split(':')
         hours = int(parts[0])
         minutes = int(parts[1])

@@ -575,8 +575,10 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm, times_from_test_
 
     # It just so happens that all tab states are after program states
     for event in end_of_prev_test_programs:
+        print(event.start_time == event.end_time, "578ru")
         activity_arbiter.set_program_state(event)
     for event in end_of_prev_test_tabs:
+        print(event.start_time == event.end_time, "578ru")
         activity_arbiter.set_tab_state(event)
 
 
@@ -593,7 +595,7 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm, times_from_test_
 
     for call in notify_of_new_session_spy.call_args_list:
         session = call.args[0]  # Get the first positional argument from each call
-
+        assert session.end_time != session.start_time, "There should be a gap and there wasn't"
         assert session.end_time > session.start_time, "End time should always be after start time, and it was in setup"
     
     assert spy_on_set_program_state.call_count == count_of_programs
