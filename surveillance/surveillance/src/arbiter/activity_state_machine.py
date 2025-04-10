@@ -44,7 +44,7 @@ class ActivityStateMachine:
             else:
                 updated_state = self.transition_from_chrome.compute_next_state(
                     next_state)
-            self._conclude_session(self.current_state)
+            self._conclude_session(self.current_state, next_state.start_time)
             self.prior_state = self.current_state
             self.current_state = updated_state
         else:
@@ -58,21 +58,20 @@ class ActivityStateMachine:
                     "Chrome", True, next_state.domain, next_state)
             self.current_state = updated_state
 
-    def is_initialization_session(self, some_dict):
+    @staticmethod
+    def is_initialization_session(some_dict):
         """Asks 'is it an empty dict?'"""
         return isinstance(some_dict, dict) and not some_dict
 
-    def _conclude_session(self, state: InternalState):
+    def _conclude_session(self, state: InternalState, incoming_session_start):
         if self.is_initialization_session(state.session):
             return
-        now = self.user_facing_clock.now()
         # Now - UTC
         # state.session.start_time - no tzinfo
-        duration = now - state.session.start_time
-        print(duration, "72ru")
+        duration = incoming_session_start - state.session.start_time
 
         state.session.duration = duration
-        state.session.end_time = now
+        state.session.end_time = incoming_session_start
 
     @staticmethod
     def _initialize(first_session):
@@ -105,7 +104,7 @@ class ActivityStateMachine:
         """For wrap up when the computer is powering off to avoid sessions left open"""
         if self.current_state is None:
             return  # Nothing to wrap up
-        self._conclude_session(self.current_state)
+        self._conclude_session(self.current_state, self.user_facing_clock.now())
         session_for_daos = self.current_state.session
         self.current_state = None  # Reset for power back on
         return session_for_daos

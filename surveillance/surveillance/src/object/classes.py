@@ -40,7 +40,7 @@ class ChromeSessionData:
         )
 
     def __str__(self):
-        end_time = self.end_time if self.end_time else "tbd"
+        end_time = self.end_time
         return f"ChromeSessionData(domain='{self.domain}', detail='{self.detail}', \n\tstart_time={self.start_time}, \n\tend_time={end_time}, duration={self.duration}, productive={self.productive})"
 
 
@@ -88,7 +88,7 @@ class ProgramSessionData:
         )
 
     def __str__(self):
-        end_time = self.end_time if self.end_time else "tbd"
+        end_time = self.end_time  # Was "TBD" (to be determined)
         return f"ProgramSessionData(window_title='{self.window_title}', detail='{self.detail}', \n\tstart_time={self.start_time}, \n\tend_time={end_time}, duration={self.duration}, productive={self.productive})"
 
 

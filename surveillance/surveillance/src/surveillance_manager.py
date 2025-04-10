@@ -2,9 +2,8 @@
 from pathlib import Path
 
 import asyncio
-import zmq
 import traceback
-import zmq.asyncio
+import copy
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import sessionmaker
@@ -52,6 +51,7 @@ class SurveillanceManager:
         """
         Facades argument is DI for testability.
         """
+        self.is_running = False
         self.async_session_maker = async_session_maker
         self.regular_session = regular_session_maker
         self.chrome_service = chrome_service
@@ -87,9 +87,9 @@ class SurveillanceManager:
         self.chrome_dao = ChromeDao(self.async_session_maker)
 
         self.program_summary_dao = ProgramSummaryDao(
-            program_summary_logger, self.async_session_maker)
+            program_summary_logger, self.regular_session, self.async_session_maker)
         self.chrome_summary_dao = ChromeSummaryDao(
-            chrome_summary_logger, self.async_session_maker)
+            chrome_summary_logger, self.regular_session, self.async_session_maker)
 
         self.timeline_dao = TimelineEntryDao(self.async_session_maker)
 
@@ -146,13 +146,12 @@ class SurveillanceManager:
         self.loop.create_task(self.mouse_dao.create_from_window(event))
 
     def handle_window_change(self, event):
-        print(event.window_title, "150ru")
-        # assert isinstance(event, ProgramSessionData)
-        self.arbiter.set_program_state(event)
-        # self.loop.create_task(self.arbiter.set_program_state(event))
+        copy_of_event = copy.deepcopy(event)  # Deep copy to enable testing of object state before/after this line
+        self.arbiter.set_program_state(copy_of_event)
 
     # FIXME: Am double counting for sure
     def handle_program_ready_for_db(self, event):
+        # TODO: Delete this whole thing, programDao, ChromeDao, don't need em. Summary and Logs DAO do it
         self.loop.create_task(self.program_dao.create(event))
 
     def handle_chrome_ready_for_db(self, event):

@@ -38,6 +38,7 @@ class ActivityArbiter:
         self.pulse_interval = pulse_interval
         self.loop = loop or asyncio.get_event_loop()
 
+        self.current_heartbeat = None
         self.ui_update_listener = None
         self.activity_recorder = None
         self.logger = ConsoleLogger()

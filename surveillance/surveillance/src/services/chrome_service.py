@@ -1,12 +1,13 @@
 # chrome_service.py
+import asyncio
 from tracemalloc import start
 from urllib.parse import urldefrag
 from fastapi import Depends
 from typing import List
 from pyee import EventEmitter
-import asyncio
 from datetime import datetime, timedelta, timezone, date
 from operator import attrgetter
+import copy
 
 
 from surveillance.src.config.definitions import power_on_off_debug_file
@@ -131,13 +132,14 @@ class ChromeService:
 
         Then, before Bar replaces Foo, Foo has its duration added. Foo is then logged. Cycle repeats.
         """
-        print("log tab event 125ru")
         # TODO: Write tests for this function
 
-        initialized: ChromeSessionData = ChromeSessionData()
-        initialized.domain = url_deliverable.url
-        initialized.detail = url_deliverable.tabTitle
-        initialized.productive = url_deliverable.url in productive_sites
+        url = url_deliverable.url
+        title = url_deliverable.tabTitle
+        is_productive = url_deliverable.url in productive_sites
+        start_time = url_deliverable.startTime
+        end_time = None
+        initialized: ChromeSessionData = ChromeSessionData(url, title, start_time, end_time, is_productive)
 
         # NOTE: In the past, the intent was to keep everything in UTC.
         # Now, the intent is to do everything in the user's LTZ, local time zone.
@@ -178,7 +180,8 @@ class ChromeService:
         dao_task.add_done_callback(on_task_done)
 
     def handle_session_ready_for_arbiter(self, session):
-        self.event_emitter.emit('tab_change', session)
+        session_copy = copy.deepcopy(session)
+        self.event_emitter.emit('tab_change', session_copy)
 
     # FIXME: When Chrome is active, recording time should take place.
     # FIXME: When Chrome goes inactive, recording active time should cease.
@@ -191,6 +194,7 @@ class ChromeService:
             f.write("Shutdown Chrome Service\n")
 
     async def handle_chrome_ready_for_db(self, event):
+        # TODO: Delete this whole thing, programDao, ChromeDao, don't need em. Summary and Logs DAO do it
         await self.chrome_dao.create(event)
 
     async def read_last_24_hrs(self):

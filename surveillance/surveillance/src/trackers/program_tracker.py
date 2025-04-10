@@ -1,4 +1,5 @@
 from datetime import datetime
+import copy
 
 import time
 
@@ -78,7 +79,6 @@ class ProgramTrackerCore:
                     window_change, current_time)
                 self.current_session = new_session
                 # report window change immediately via "window_change_handler()"
-                print("on a diff window 81ru")
                 self.window_change_handler(new_session)
 
             # initialize
@@ -88,7 +88,6 @@ class ProgramTrackerCore:
                 new_session = self.start_new_session(
                     window_change, current_time)
                 self.current_session = new_session
-                print("is Uninit 90ru")
                 self.window_change_handler(new_session)
 
     def is_uninitialized(self):
@@ -96,12 +95,6 @@ class ProgramTrackerCore:
 
     def is_initialized(self):
         return not self.current_session is None
-    # def is_initialization_session(self, session):
-    #     if (session.window_title == "" and
-    #         session.detail == "" and
-    #             session.start_time is None):
-    #         return True
-    #     return False
 
     def start_new_session(self, window_change_dict, start_time):
         new_session = ProgramSessionData()
@@ -121,13 +114,15 @@ class ProgramTrackerCore:
         if self.current_session is None:
             raise ValueError("Current session was None")
         # end_time = self.user_facing_clock.now()
-        start_time: datetime | None = self.current_session.start_time
+        session_to_conclude = copy.deepcopy(self.current_session)  # Deep copy to prevent object mutation from ruining tests
+        start_time: datetime | None = session_to_conclude.start_time
         initializing = start_time is None
         if initializing:
             start_time = end_time  # whatever
         duration = end_time - start_time
-        self.current_session.end_time = end_time
-        self.current_session.duration = duration
+        session_to_conclude.end_time = end_time
+        session_to_conclude.duration = duration
+        self.current_session = session_to_conclude
 
     def report_missing_program(self, title):
         """For when the program isn't found in the productive apps list"""
