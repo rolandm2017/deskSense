@@ -116,7 +116,7 @@ class DailyProgramSummary(Base):
     def __str__(self):
         formatted_date = self.gathering_date.strftime(
             "%Y-%m-%d") if self.gathering_date is not None else "No date"
-        return f"Program: {self.program_name}, Hours: {self.hours_spent:.2f}, Date: {formatted_date}"
+        return f"Program: {self.program_name}, \tHours: {self.hours_spent:.2f}, \tDate: {formatted_date}"
 
 
 class DailyDomainSummary(Base):
@@ -134,7 +134,7 @@ class DailyDomainSummary(Base):
     def __str__(self):
         formatted_date = self.gathering_date.strftime(
             "%Y-%m-%d") if self.gathering_date is not None else "No date"
-        return f"Domain: {self.domain_name}, Hours: {self.hours_spent:.2f}, Date: {formatted_date}"
+        return f"Domain: {self.domain_name}, \tHours: {self.hours_spent:.2f}, \tDate: {formatted_date}"
 
 
 class ProgramSummaryLog(Base):

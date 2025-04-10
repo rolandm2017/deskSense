@@ -17,7 +17,8 @@ class ActivityRecorder:
         self.program_summary_dao = program_summary_dao
         self.chrome_summary_dao = chrome_summary_dao 
 
-    def validate_session(self, session):
+    @staticmethod
+    def validate_session(session):
         if session.end_time is None:
             raise ValueError("Session end time was not set")
         if session.duration is None:
@@ -31,10 +32,8 @@ class ActivityRecorder:
         In hindsight "add_ten_sec_to_end_time" doesn't really scream "creates the log file".
         """
         if isinstance(session, ProgramSessionData):
-            # TODO: Make this run synchronously
             self.program_logging_dao.start_session(session)
         elif isinstance(session, ChromeSessionData):
-            # TODO: Make this run synchronously
             self.chrome_logging_dao.start_session(session)
         else:
             raise TypeError("Session was not the right type")
@@ -42,11 +41,9 @@ class ActivityRecorder:
     def on_state_changed(self, session):
         if isinstance(session, ProgramSessionData):
             self.validate_session(session)
-            # TODO: Make this run synchronously
             self.program_logging_dao.finalize_log(session)
         elif isinstance(session, ChromeSessionData):
             self.validate_session(session)
-            # TODO: Make this run synchronously
             self.chrome_logging_dao.finalize_log(session)
         else:
             if isinstance(session, InternalState):
@@ -63,11 +60,9 @@ class ActivityRecorder:
         print("Update or create log! 49ru")
         now = self.user_facing_clock.now()
         if isinstance(session, ProgramSessionData):
-            # TODO: Make this run synchronously
             self.program_logging_dao.push_window_ahead_ten_sec(session)
             self.program_summary_dao.push_window_ahead_ten_sec(session, now)
         elif isinstance(session, ChromeSessionData):
-            # TODO: Make this run synchronously
             self.chrome_logging_dao.push_window_ahead_ten_sec(session)
             self.chrome_summary_dao.push_window_ahead_ten_sec(session, now)
         else:

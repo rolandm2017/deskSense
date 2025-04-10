@@ -45,8 +45,8 @@ class DashboardService:
             current_day = starting_sunday + timedelta(days=i)
             date_as_datetime = datetime.combine(
                 current_day, datetime.min.time())
-            daily_chrome_summaries: List[DailyDomainSummary] = await self.chrome_summary_dao.read_day(date_as_datetime)
-            daily_program_summaries: List[DailyProgramSummary] = await self.program_summary_dao.read_day(date_as_datetime)
+            daily_chrome_summaries: List[DailyDomainSummary] = self.chrome_summary_dao.read_day(date_as_datetime)
+            daily_program_summaries: List[DailyProgramSummary] = self.program_summary_dao.read_day(date_as_datetime)
             # FIXME: If the program is Chrome, exclude from totals, as the Chrome summaries will handle it
             productivity = 0
             leisure = 0

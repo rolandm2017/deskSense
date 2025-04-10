@@ -51,7 +51,7 @@ class ProgramLoggingDao(BaseQueueingDao):
         duration_property_as_hours = convert_duration_to_hours(session)
 
         # FIXME: do not need hours_spent AND duration?
-
+        print("creating ", session.start_time)
         log_entry = ProgramSummaryLog(
             program_name=session.window_title,
             hours_spent=start_end_time_duration_as_hours,
@@ -96,7 +96,7 @@ class ProgramLoggingDao(BaseQueueingDao):
         # the database is storing and returning times in UTC
         start_time_as_utc = convert_to_utc(session.start_time)
         query = select(ProgramSummaryLog).where(
-            ProgramSummaryLog.start_time == start_time_as_utc
+            ProgramSummaryLog.start_time.op('=')(start_time_as_utc)
         )
         with self.regular_session() as db_session:
             result = db_session.execute(query)
@@ -167,10 +167,10 @@ class ProgramLoggingDao(BaseQueueingDao):
         ).order_by(ProgramSummaryLog.start_time)
         return await self.execute_query(query)  # the database is storing and returning times in UTC
 
-    async def read_all(self):
+    def read_all(self):
         """Fetch all program log entries"""
         query = select(ProgramSummaryLog)
-        return await self.execute_query(query)
+        return self.execute_query(query)
 
     async def read_last_24_hrs(self, right_now: datetime):
         """Fetch all program log entries from the last 24 hours
@@ -201,6 +201,7 @@ class ProgramLoggingDao(BaseQueueingDao):
         return await self.execute_query(query)
         
     async def push_window_ahead_ten_sec(self, session: ProgramSessionData):
+        # TEMP for debugging
         log: ProgramSummaryLog = await self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")
@@ -219,7 +220,7 @@ class ProgramLoggingDao(BaseQueueingDao):
             db_session.add(log)
             db_session.commit()
 
-    async def execute_query(self, query):
-        async with self.async_session_maker() as session:
-            result = await session.execute(query)
+    def execute_query(self, query):
+        with self.regular_session() as session:
+            result = session.execute(query)
             return result.scalars().all()

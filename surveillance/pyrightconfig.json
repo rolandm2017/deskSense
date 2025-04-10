@@ -1,8 +1,17 @@
 {
-    "include": ["src"],
+    "include": ["surveillance", "tests"],
+    "exclude": [
+        ".venv",
+        ".pytest_cache",
+        "**/__pycache__",
+        "deskSense.egg-info"
+    ],
     "executionEnvironments": [
-      {
-        "root": "."
-      }
-    ]
-  }
+        {
+            "root": ".",
+            "extraPaths": ["."]
+        }
+    ],
+    "typeCheckingMode": "basic",
+    "useLibraryCodeForTypes": false
+}

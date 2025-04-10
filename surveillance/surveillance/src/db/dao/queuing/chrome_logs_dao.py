@@ -60,7 +60,7 @@ class ChromeLoggingDao(BaseQueueingDao):
             gathering_date=right_now.date(),
             created_at=right_now
         )
-        with self.session_maker() as db_session:
+        with self.regular_session() as db_session:
             db_session.add(log_entry)
             db_session.commit()
 
@@ -91,7 +91,7 @@ class ChromeLoggingDao(BaseQueueingDao):
     def find_session(self, session: ChromeSessionData):
         start_time_as_utc = convert_to_utc(session.start_time)
         query = select(DomainSummaryLog).where(
-            DomainSummaryLog.start_time == start_time_as_utc
+            DomainSummaryLog.start_time.op('=')(start_time_as_utc)
         )
         with self.regular_session() as db_session:
             result = db_session.execute(query)
@@ -145,10 +145,10 @@ class ChromeLoggingDao(BaseQueueingDao):
         ).order_by(DomainSummaryLog.start_time)
         return await self.execute_query(query)
 
-    async def read_all(self):
+    def read_all(self):
         """Fetch all domain log entries"""
         query = select(DomainSummaryLog)
-        return await self.execute_query(query)
+        return self.execute_query(query)
 
     async def read_last_24_hrs(self, right_now: datetime):
         """Fetch all domain log entries from the last 24 hours"""
@@ -174,11 +174,11 @@ class ChromeLoggingDao(BaseQueueingDao):
         if not log:
             raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")
         log.end_time = session.end_time
-        with self.session_maker() as db_session:
+        with self.regular_session() as db_session:
             db_session.add(log)
             db_session.commit()
 
-    async def execute_query(self, query):
-        async with self.async_session_maker() as session:
-            result = await session.execute(query)
+    def execute_query(self, query):
+        with self.regular_session() as session:
+            result = session.execute(query)
             return result.scalars().all()

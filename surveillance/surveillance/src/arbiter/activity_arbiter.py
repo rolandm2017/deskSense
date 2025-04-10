@@ -99,7 +99,7 @@ class ActivityArbiter:
             self.state_machine.set_new_session(new_session)
 
             # ### Start the first window
-            print("going into notify new session", new_session)
+            # print("going into notify new session", new_session)
             self.notify_of_new_session(new_session)
      
             engine_loop = self.current_heartbeat.engine.save_loop_for_reuse()

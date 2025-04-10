@@ -44,14 +44,18 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         Note that this method ONLY creates gathering dates that are *today*.
         """
         # No need to await this part
-        self.program_logging_dao.create_log(program_session, right_now)
+        # TODO: Replace .create_log with a debug table, that records every integer added to a particular log
+        # TODO: ...the table could just be, "here's an id for a certain summary; here's the floats added to make the sum
+        # self.program_logging_dao.create_log(program_session, right_now)
 
         target_program_name = program_session.window_title
-        # TODO: Let the SessionHeartbeat update times
+        print(target_program_name, "HEY LOOK HERE 52ru")
+        print(program_session.start_time)
+        print(program_session.end_time)
         # ### Calculate time difference
         usage_duration_in_hours = (
             program_session.end_time - program_session.start_time).total_seconds() / 3600
-
+        print(usage_duration_in_hours, "56ru")
         # FIXME: maybe the program_session is hanging open while I have the computer sleeping? or something
         # FIXME: Need to define "gathered today" as "between midnight and 11:59 pm on mm-dd"
 
@@ -68,15 +72,15 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             hour=0, minute=0, second=0, microsecond=0)
             self._create(target_program_name, usage_duration_in_hours, today_start)
 
-    async def _create(self, target_program_name, duration_in_hours, when_it_was_gathered):
-        async with self.session_maker() as session:
+    def _create(self, target_program_name, duration_in_hours, when_it_was_gathered):
+        with self.regular_session() as session:
             new_entry = DailyProgramSummary(
                 program_name=target_program_name,
                 hours_spent=duration_in_hours,
                 gathering_date=when_it_was_gathered
             )
             session.add(new_entry)
-            await session.commit()
+            session.commit()
 
     async def read_past_week(self, right_now: datetime):
         # +1 because weekday() counts from Monday=0
@@ -103,7 +107,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             result = await session.execute(query)
             return result.scalars().all()
 
-    async def read_day(self, day: datetime) -> List[DailyProgramSummary]:
+    def read_day(self, day: datetime) -> List[DailyProgramSummary]:
         """Read all entries for the given day."""
         today_start = day.replace(
             hour=0, minute=0, second=0, microsecond=0)
@@ -112,15 +116,15 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.gathering_date >= today_start,
             DailyProgramSummary.gathering_date < tomorrow_start
         )
-        async with self.session_maker() as session:
-            result = await session.execute(query)
-            thing = result.scalars().all()
-            return thing
+        with self.regular_session() as session:
+            result = session.execute(query)
+            result = result.scalars().all()
+            return list(result)
 
-    async def read_all(self):
+    def read_all(self):
         """Read all entries."""
-        async with self.session_maker() as session:
-            result = await session.execute(select(DailyProgramSummary))
+        with self.regular_session() as session:
+            result = session.execute(select(DailyProgramSummary))
             return result.scalars().all()
 
     def read_row_for_program(self, target_program_name: str, right_now: datetime):
