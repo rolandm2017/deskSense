@@ -84,7 +84,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             func.date(DailyProgramSummary.gathering_date) >= last_sunday.date()
         )
 
-        async with self.session_maker() as session:
+        async with self.async_session_maker() as session:
             result = await session.execute(query)
             return result.scalars().all()
 
@@ -96,7 +96,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             func.date(DailyProgramSummary.gathering_date) >= start_of_month.date()
         )
 
-        async with self.session_maker() as session:
+        async with self.regular_session() as session:
             result = await session.execute(query)
             return result.scalars().all()
 
@@ -226,13 +226,13 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
 
         pass
 
-    async def delete(self, id: int):
+    def delete(self, id: int):
         """Delete an entry by ID"""
-        async with self.session_maker() as session:
-            entry = await session.get(DailyProgramSummary, id)
+        with self.regular_session() as session:
+            entry = session.get(DailyProgramSummary, id)
             if entry:
-                await session.delete(entry)
-                await session.commit()
+                session.delete(entry)
+                session.commit()
             return entry
 
     async def delete_all_rows(self, safety_switch=None) -> int:

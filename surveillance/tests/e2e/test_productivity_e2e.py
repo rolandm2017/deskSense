@@ -710,6 +710,8 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
 
     expected_date = datetime(2025, 3, 22, 0, 0, 0)
     expected_date = convert_to_utc(expected_date)
+    
+    # FIXME: "Hours: 0.00" for all summaries
 
     assert len(program_summaries) != 0, "read all was 0 for program summary"
     assert len(chrome_summaries) != 0, "read all was 0 chrome summary"

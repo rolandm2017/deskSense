@@ -31,9 +31,6 @@ print(f"Num of open files: {num_open_files}")
 
 # FIXME: OSerror
 # FIXME: OSerror
-# FIXME: OSerror
-# FIXME: OSerror
-# FIXME: OSerror
 
 # # Get the test database connection string
 
@@ -52,12 +49,12 @@ async def truncate_table(async_session_maker):
 
 
 @pytest_asyncio.fixture(scope="function")
-async def test_db_dao( async_engine_and_asm):
+async def test_db_dao(regular_session, async_engine_and_asm):
     """Create a DAO instance with the async session maker"""
     _, asm = async_engine_and_asm
 
-    logging_dao = ProgramLoggingDao(asm)
-    dao = ProgramSummaryDao(logging_dao, session_maker=asm)
+    logging_dao = ProgramLoggingDao(regular_session, asm)
+    dao = ProgramSummaryDao(logging_dao, regular_session, asm)
     yield dao
     # Add explicit cleanup
     await logging_dao.cleanup()
@@ -87,11 +84,11 @@ async def cleanup_database(async_engine_and_asm):
 
 class TestProgramSummaryDao:
     @pytest_asyncio.fixture
-    async def program_summary_dao(self, plain_asm):
+    async def program_summary_dao(self, regular_session, plain_asm):
         clock = SystemClock()
 
-        logging_dao = ProgramLoggingDao(plain_asm)
-        program_summary_dao = ProgramSummaryDao(logging_dao, plain_asm)
+        logging_dao = ProgramLoggingDao(regular_session, plain_asm)
+        program_summary_dao = ProgramSummaryDao(logging_dao, regular_session, plain_asm)
         yield program_summary_dao
         await logging_dao.cleanup()
 
@@ -116,11 +113,11 @@ class TestProgramSummaryDao:
         session_data.duration = later - time_for_test
 
         # Act
-        await program_summary_dao.create_if_new_else_update(session_data, time_for_test)
+        program_summary_dao.create_if_new_else_update(session_data, time_for_test)
 
         # ### Assert
         # Check if it's really in there
-        all = await program_summary_dao.read_all()
+        all = program_summary_dao.read_all()
         assert len(all) == 1, "Expected exactly one row"
         percent_of_hour = all[0].hours_spent
 
@@ -153,7 +150,7 @@ class TestProgramSummaryDao:
         second_usage_by_user.duration = t3 - t2
 
         # Arranging still: This session is already in there
-        await program_summary_dao.create_if_new_else_update(session_data, t0)
+        program_summary_dao.create_if_new_else_update(session_data, t0)
 
         # Create a spy for the create method
         original_create = program_summary_dao._create
@@ -166,7 +163,7 @@ class TestProgramSummaryDao:
         program_summary_dao.update_hours = update_spy
 
         # Act
-        await program_summary_dao.create_if_new_else_update(second_usage_by_user, t2)
+        program_summary_dao.create_if_new_else_update(second_usage_by_user, t2)
 
         # Assert
         create_spy.assert_not_called()
@@ -187,12 +184,12 @@ class TestProgramSummaryDao:
 
         second_usage_by_user = ProgramSessionData("readDayTestMaterial", "", t2, t3)
 
-        await program_summary_dao.create_if_new_else_update(session_data, t0)
-        await program_summary_dao.create_if_new_else_update(second_usage_by_user, t2)
+        program_summary_dao.create_if_new_else_update(session_data, t0)
+        program_summary_dao.create_if_new_else_update(second_usage_by_user, t2)
         
 
         # Act
-        result = await program_summary_dao.read_day(t0)
+        result = program_summary_dao.read_day(t0)
 
         # Assert
         assert len(result) == len([session_data, second_usage_by_user])
@@ -214,12 +211,12 @@ class TestProgramSummaryDao:
         second_session = ProgramSessionData("readAllTestMaterial", "", t2, t3)
         third = ProgramSessionData("readAllTestMaterialAgain", "", t3, t4)
 
-        await program_summary_dao.create_if_new_else_update(session_data, t0)
-        await program_summary_dao.create_if_new_else_update(second_session, t2)
-        await program_summary_dao.create_if_new_else_update(third, t3)
+        program_summary_dao.create_if_new_else_update(session_data, t0)
+        program_summary_dao.create_if_new_else_update(second_session, t2)
+        program_summary_dao.create_if_new_else_update(third, t3)
 
         # Act
-        result = await program_summary_dao.read_all()
+        result = program_summary_dao.read_all()
 
         # Assert
         assert len(result) == 3
@@ -234,10 +231,10 @@ class TestProgramSummaryDao:
         t0 = t0 - timedelta(hours=1)
         t1 = t0 + timedelta(minutes=1)
         session = ProgramSessionData(program_name, "", t0, t1)
-        await program_summary_dao.create_if_new_else_update(session, t0)
+        program_summary_dao.create_if_new_else_update(session, t0)
 
         # Act
-        result = await program_summary_dao.read_row_for_program(program_name, t0)
+        result = program_summary_dao.read_row_for_program(program_name, t0)
 
         # Assert
         duration_as_percent_of_hour = (t1 - t0).seconds / (60 * 60)
@@ -301,17 +298,17 @@ class TestProgramSummaryDao:
         total_time = (13 + 12 + 28 + 22 + 25 + 25) / (60 * 60)
 
         # Act
-        await program_summary_dao.create_if_new_else_update(session_data_1, dt)
-        await program_summary_dao.create_if_new_else_update(session_data_2, dt2)
-        await program_summary_dao.create_if_new_else_update(session_data_3, dt3)
-        await program_summary_dao.create_if_new_else_update(session_data_4, dt4)
-        await program_summary_dao.create_if_new_else_update(session_data_5, dt5)
-        await program_summary_dao.create_if_new_else_update(session_data_6, dt6)
+        program_summary_dao.create_if_new_else_update(session_data_1, dt)
+        program_summary_dao.create_if_new_else_update(session_data_2, dt2)
+        program_summary_dao.create_if_new_else_update(session_data_3, dt3)
+        program_summary_dao.create_if_new_else_update(session_data_4, dt4)
+        program_summary_dao.create_if_new_else_update(session_data_5, dt5)
+        program_summary_dao.create_if_new_else_update(session_data_6, dt6)
 
         # TODO: Assert that the total time elapsed is what you expect
 
         # Assert
-        all = await program_summary_dao.read_all()
+        all = program_summary_dao.read_all()
         total = sum(x.hours_spent for x in all)
         assert len(all) == 3 
         assert total == total_time
@@ -322,7 +319,7 @@ class TestProgramSummaryDao:
         # Get today's date
         today = datetime.now(timezone.utc).date()
 
-        v = await test_db_dao.read_all()
+        # v = test_db_dao.read_all()
 
         change_1 = 13
         change_2 = 12
@@ -350,16 +347,16 @@ class TestProgramSummaryDao:
         test_db_dao.clock = mock_clock
 
         # First verify the database is empty
-        initial_entries = await test_db_dao.read_all()
+        initial_entries = test_db_dao.read_all()
         print("\nInitial entries:", [
             (e.program_name, e.hours_spent) for e in initial_entries])
 
         # Add explicit cleanup at start of test
-        async with test_db_dao.session_maker() as session:
-            await session.execute(text("DELETE FROM daily_program_summaries"))
-            await session.commit()
+        with test_db_dao.regular_session() as session:
+            session.execute(text("DELETE FROM daily_program_summaries"))
+            session.commit()
 
-        initial_entries = await test_db_dao.read_all()
+        initial_entries = test_db_dao.read_all()
         assert len(
             initial_entries) == 0, "Database should be empty at start of test"
 
@@ -379,11 +376,11 @@ class TestProgramSummaryDao:
         test_session.end_time = dt_modified
         test_session.duration = dt_modified - dt
 
-        await test_db_dao.create_if_new_else_update(test_session, dt)
+        test_db_dao.create_if_new_else_update(test_session, dt)
 
         # Verify it was created
-        entry = await test_db_dao.read_row_for_program(test_vs_code, dt)
-        all = await test_db_dao.read_all()
+        entry = test_db_dao.read_row_for_program(test_vs_code, dt)
+        all = test_db_dao.read_all()
         assert len(
             all) == 1, "Either the test entry didn't get made, or more than one was made"
         assert entry is not None
@@ -436,10 +433,10 @@ class TestProgramSummaryDao:
         unique_program_mentions = [test_vs_code, chrome, pycharm, ventrilo]
 
         for session in sessions:
-            await test_db_dao.create_if_new_else_update(session, session.start_time)
+            test_db_dao.create_if_new_else_update(session, session.start_time)
 
         # ### Verify all programs were created
-        all_entries = await test_db_dao.read_all()
+        all_entries = test_db_dao.read_all()
         assert len(all_entries) == len(unique_program_mentions)
 
         # Verify specific program times
@@ -451,7 +448,7 @@ class TestProgramSummaryDao:
         expected_hours_spent = [
             chrome_expected, ventrilo_expected, pyCharm_expected]
         for program in sessions:
-            entry = await test_db_dao.read_row_for_program(program.window_title, program.start_time)
+            entry = test_db_dao.read_row_for_program(program.window_title, program.start_time)
             assert entry is not None
             assert entry.program_name == program.window_title
             # FIXME - more specific claim pls, and passing
@@ -469,13 +466,13 @@ class TestProgramSummaryDao:
 
         # FIXME: duration = 2 hours
 
-        await test_db_dao.create_if_new_else_update(update_session, test_update_start_time)
+        test_db_dao.create_if_new_else_update(update_session, test_update_start_time)
 
         time_from_chrome_update = test_update_end_time - test_update_start_time
         time_from_chrome_update = time_from_chrome_update.total_seconds()
 
         # Verify the update
-        chrome_entry = await test_db_dao.read_row_for_program(chrome, test_update_start_time)
+        chrome_entry = test_db_dao.read_row_for_program(chrome, test_update_start_time)
         assert chrome_entry is not None
         # Original time plus update time
         assert chrome_entry.hours_spent > 2.0  # 5 - 3
@@ -483,10 +480,10 @@ class TestProgramSummaryDao:
         # ### Test reading by day
 
         right_now = dt
-        day_entries = await test_db_dao.read_day(right_now)
+        day_entries = test_db_dao.read_day(right_now)
 
-        async with test_db_dao.session_maker() as session:
-            result = await session.execute(text("SELECT program_name, gathering_date FROM daily_program_summaries"))
+        with test_db_dao.regular_session() as session:
+            result = session.execute(text("SELECT program_name, gathering_date FROM daily_program_summaries"))
             rows = result.fetchall()
             for row in rows:
                 print(f"Program: {row[0]}, Gathering Date: {row[1]}")
@@ -496,11 +493,11 @@ class TestProgramSummaryDao:
         # Test deletion
         if len(day_entries) > 0:
             first_entry = day_entries[0]
-            deleted_entry = await test_db_dao.delete(first_entry.id)
+            deleted_entry = test_db_dao.delete(first_entry.id)
             assert deleted_entry is not None
 
             # Verify deletion
-            all_entries = await test_db_dao.read_all()
+            all_entries = test_db_dao.read_all()
             assert len(all_entries) == len(unique_program_mentions) - 1
 
         # TEST that the total number of entries

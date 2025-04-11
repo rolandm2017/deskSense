@@ -5,13 +5,13 @@ from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from surveillance.src.services.dashboard_service import DashboardService
-from server import (
+from surveillance.server import (
     app,
     surveillance_state,
     get_dashboard_service, get_keyboard_service, get_mouse_service, get_program_service,
 
 )
-from server import app, KeyboardService, MouseService, ProgramService
+from surveillance.src.services.services import KeyboardService, MouseService, ProgramService
 
 from surveillance.src.db.models import TimelineEntryObj, ChartEventType, DailyProgramSummary
 from surveillance.src.db.dao.queuing.keyboard_dao import TypingSessionDto

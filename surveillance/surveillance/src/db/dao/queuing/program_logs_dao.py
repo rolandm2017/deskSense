@@ -87,6 +87,7 @@ class ProgramLoggingDao(BaseQueueingDao):
             gathering_date=start_of_day_as_utc,
             created_at=base_start_time
         )
+        # self.do_add_entry(log_entry)
         with self.regular_session() as db_session:
             db_session.add(log_entry)
             db_session.commit()
@@ -201,7 +202,6 @@ class ProgramLoggingDao(BaseQueueingDao):
         return await self.execute_query(query)
         
     async def push_window_ahead_ten_sec(self, session: ProgramSessionData):
-        # TEMP for debugging
         log: ProgramSummaryLog = await self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")
