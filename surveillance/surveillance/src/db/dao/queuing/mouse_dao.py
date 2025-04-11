@@ -22,6 +22,8 @@ class MouseDao(BaseQueueingDao):
 
         self.logger = ConsoleLogger()
 
+    # NOTE: this whole DAO is a candidate for asyncio.create_task()'ing the writes
+
     async def create_from_start_end_times(self, start_time: datetime, end_time: datetime):
         mouse_move = MouseMove(start_time=start_time, end_time=end_time)
         if isinstance(mouse_move, MouseMoveWindow):
@@ -42,7 +44,7 @@ class MouseDao(BaseQueueingDao):
             end_time=end_time
         )
 
-        async with self.session_maker() as db_session:
+        async with self.async_session_maker() as db_session:
             async with db_session.begin():
                 db_session.add(new_mouse_move)
 
@@ -52,14 +54,14 @@ class MouseDao(BaseQueueingDao):
 
     async def read_all(self):
         """Read MouseMove entries."""
-        async with self.session_maker() as session:
+        async with self.async_session_maker() as session:
             result = await session.execute(select(MouseMove))
             # return await result.scalars().all()
             # Some tests think this needs to be 'awaited' but it doens't
             return result.scalars().all()
 
     async def read_by_id(self, mouse_move_id: int):
-        async with self.session_maker() as session:
+        async with self.async_session_maker() as session:
             return await session.get(MouseMove, mouse_move_id)
 
     async def read_past_24h_events(self, right_now: datetime):
@@ -71,7 +73,7 @@ class MouseDao(BaseQueueingDao):
             MouseMove.end_time >= right_now - timedelta(days=1)
         ).order_by(MouseMove.end_time.desc())
 
-        async with self.session_maker() as session:
+        async with self.async_session_maker() as session:
             result = await session.execute(query)
             # Some tests think this needs to be 'awaited' but it doens't
             # return await result.scalars().all()
@@ -79,7 +81,7 @@ class MouseDao(BaseQueueingDao):
 
     async def delete(self, id: int):
         """Delete an entry by ID"""
-        async with self.session_maker() as session:
+        async with self.async_session_maker() as session:
             entry = await session.get(MouseMove, id)
             if entry:
                 await session.delete(entry)

@@ -71,7 +71,7 @@ class TimelineEntryDao(BaseQueueingDao):
         Args:
             rows: List of PrecomputedTimelineEntry instances to insert
         """
-        async with self.session_maker() as session:
+        async with self.async_session_maker() as session:
             async with session.begin():
 
                 session.add_all(rows)
@@ -79,7 +79,7 @@ class TimelineEntryDao(BaseQueueingDao):
 
     async def read_highest_id(self):
         """Read the highest ID currently in the table"""
-        async with self.session_maker() as session:
+        async with self.async_session_maker() as session:
             query = select(func.max(TimelineEntryObj.id))
             result = await session.execute(query)
             max_id = result.scalar()
@@ -96,7 +96,7 @@ class TimelineEntryDao(BaseQueueingDao):
             PrecomputedTimelineEntry.start >= start_of_day,
             PrecomputedTimelineEntry.end <= end_of_day
         )
-        async with self.session_maker() as session:
+        async with self.async_session_maker() as session:
             result = await session.execute(query)
             return result.scalars().all()
 
@@ -114,7 +114,7 @@ class TimelineEntryDao(BaseQueueingDao):
             TimelineEntryObj.group == event_type
         ).order_by(TimelineEntryObj.start)
 
-        async with self.session_maker() as session:
+        async with self.async_session_maker() as session:
             result = await session.execute(query)
             return result.scalars().all()
             # scalars_result = result.scalars()
@@ -160,13 +160,13 @@ class TimelineEntryDao(BaseQueueingDao):
 
     async def read_all(self):
         """Read all timeline entries"""
-        async with self.session_maker() as session:
+        async with self.async_session_maker() as session:
             result = await session.execute(select(TimelineEntryObj))
             return result.scalars().all()
 
     async def delete(self, id: int):
         """Delete an entry by ID"""
-        async with self.session_maker() as session:
+        async with self.async_session_maker() as session:
             entry = await session.get(TimelineEntryObj, id)
             if entry:
                 await session.delete(entry)

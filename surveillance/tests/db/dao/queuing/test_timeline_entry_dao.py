@@ -20,9 +20,6 @@ print(f"Num of open files: {num_open_files}")
 
 # FIXME: OSerror
 # FIXME: OSerror
-# FIXME: OSerror
-# FIXME: OSerror
-# FIXME: OSerror
 class TestTimelineEntryDao:
     @pytest.fixture
     def mock_session(self):

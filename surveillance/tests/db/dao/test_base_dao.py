@@ -10,18 +10,13 @@ from dotenv import load_dotenv
 import os
 
 
-import logging
-
 import psutil
 
 process = psutil.Process()
 open_files = process.open_files()
 num_open_files = len(open_files)
 
-from surveillance.src.object.classes import ProgramSessionData
 from surveillance.src.db.dao.base_dao import BaseQueueingDao
-from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from surveillance.src.db.dao.queuing.program_dao import ProgramDao
 
 
 load_dotenv()
@@ -70,8 +65,8 @@ class JustForTestsModel(Base):
 # Create a test DAO that inherits from BaseQueueingDao
 class JustForTestsDao(BaseQueueingDao):
     """Simple DAO implementation for testing the BaseQueueingDao cleanup functionality"""
-    def __init__(self, session_maker, batch_size=10, flush_interval=1):
-        super().__init__(session_maker=session_maker, batch_size=batch_size, flush_interval=flush_interval)
+    def __init__(self, async_session_maker, batch_size=10, flush_interval=1):
+        super().__init__(async_session_maker=async_session_maker, batch_size=batch_size, flush_interval=flush_interval)
     
     async def create_test_item(self, name, description=""):
         """Create a test item and queue it"""
