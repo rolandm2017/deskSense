@@ -3,7 +3,6 @@ from pathlib import Path
 
 import asyncio
 import traceback
-import copy
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import sessionmaker
@@ -37,6 +36,8 @@ from .trackers.program_tracker import ProgramTrackerCore
 from .util.detect_os import OperatingSystemInfo
 from .util.clock import SystemClock, UserFacingClock
 from .util.threaded_tracker import ThreadedTracker
+from surveillance.src.util.copy_util import snapshot_obj_for_tests
+
 
 
 class FacadeInjector:
@@ -146,7 +147,7 @@ class SurveillanceManager:
         self.loop.create_task(self.mouse_dao.create_from_window(event))
 
     def handle_window_change(self, event):
-        copy_of_event = copy.deepcopy(event)  # Deep copy to enable testing of object state before/after this line
+        copy_of_event = snapshot_obj_for_tests(event)  # Deep copy to enable testing of object state before/after this line
         self.arbiter.set_program_state(copy_of_event)
 
     # FIXME: Am double counting for sure

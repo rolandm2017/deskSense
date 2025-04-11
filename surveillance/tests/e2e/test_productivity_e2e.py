@@ -443,18 +443,18 @@ def fmt_time_string_2(s, offset="-07:00"):
 
 # Events are from previous tests
 program_events_from_prev_test = [
-    ProgramSessionData(window_title='Google Chrome', detail='X. It’s what’s happening / X',
+    ProgramSessionData(title='Google Chrome', detail='X. It’s what’s happening / X',
         start_time=fmt_time_string("2025-03-22 16:14:50.201399-07:00"),
-        end_time=None, duration=None, productive=False),
-    ProgramSessionData(window_title='My Workspace', detail='dash | Overview',
+        end_time=None, duration_for_tests=None, productive=False),
+    ProgramSessionData(title='My Workspace', detail='dash | Overview',
         start_time=fmt_time_string("2025-03-22 16:15:55.237392-07:00"),
-        end_time=None, duration=None, productive=False),
-    ProgramSessionData(window_title='Visual Studio Code', detail='surveillance_manager.py - deskSense',
+        end_time=None, duration_for_tests=None, productive=False),
+    ProgramSessionData(title='Visual Studio Code', detail='surveillance_manager.py - deskSense',
         start_time=fmt_time_string("2025-03-22 16:16:03.374304-07:00"),
-        end_time=None, duration=None, productive=False),
-    ProgramSessionData(window_title='Google Chrome', detail='Google',
+        end_time=None, duration_for_tests=None, productive=False),
+    ProgramSessionData(title='Google Chrome', detail='Google',
         start_time=fmt_time_string("2025-03-22 16:16:17.480951-07:00"),
-        end_time=None, duration=None, productive=False)
+        end_time=None, duration_for_tests=None, productive=False)
 ]
 
 chrome_events_from_prev_test = [
@@ -589,16 +589,15 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm, times_from_test_
 
     # It just so happens that all tab states are after program states
     for event in end_of_prev_test_programs:
-        print(event.start_time == event.end_time, "578ru")
         activity_arbiter.set_program_state(event)
     for event in end_of_prev_test_tabs:
-        print(event.start_time == event.end_time, "578ru")
         activity_arbiter.set_tab_state(event)
 
 
     count_of_programs = len(end_of_prev_test_programs)
     count_of_tabs = len(end_of_prev_test_tabs)
     one_left_in_arbiter = 1
+    initialization_entry = 1
 
     # ### ### Checkpoint:
     # ### [Arbiter layer]
@@ -607,27 +606,36 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm, times_from_test_
     assert spy_on_set_tab_state.call_count == count_of_tabs
 
     num_of_events_to_enter_arbiter = count_of_programs + count_of_tabs
+
+    assert asm_spy.call_count == num_of_events_to_enter_arbiter - initialization_entry
     assert notify_of_new_session_spy.call_count == num_of_events_to_enter_arbiter
 
     for call in asm_spy.call_args_list:
         session = call.args[0]  # Get the first positional argument from each call
-        print(type(session))
-        
-        assert session.end_time != session.start_time, "There should be a gap and there wasn't"
-        assert session.end_time > session.start_time, "End time should always be after start time"
+        assert session.duration is None
+        assert session.end_time is None
 
-    for call in notify_of_new_session_spy.call_args_list:
-        session = call.args[0]  # Get the first positional argument from each call
-        print(type(session))
-        if session.end_time:
-            assert session.end_time != session.start_time, "There should be a gap and there wasn't"
-            assert session.end_time > session.start_time, "End time should always be after start time"
+    for i in range(0, num_of_events_to_enter_arbiter):
+        arg, _ =  notify_of_new_session_spy.call_args_list[i]
+        session = arg[0]  # Get the first positional argument from each call
+        if i in [0,1,2,3]:
+            assert isinstance(session, ProgramSessionData)
+        else:
+            assert isinstance(session, ChromeSessionData)
+        assert session.duration is None
+        assert session.end_time is None
     
     assert spy_on_set_program_state.call_count == count_of_programs
 
     # ### The Arbiter recorded the expected *number* of times
     assert notify_summary_dao_spy.call_count == count_of_programs + count_of_tabs - one_left_in_arbiter
     #  # TODO: The Arbiter recorded the expected total amount of time
+
+
+    # #
+    # ### [Recorder layer]
+    # #
+    assert program_push_spy.call_count + program_start_session_spy.call_count == len(end_of_prev_test_programs)
 
     # The DAOs recorded the expected number of times
     expected_program_call_count = count_of_programs
@@ -640,10 +648,6 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm, times_from_test_
     # If a Program event was put in last, then the Program Summary Spy would have one less, and
     # the Chrome spy would have all of its events.
     assert chrome_summary_spy.call_count == expected_chrome_call_count - one_left_in_arbiter
-    # #
-    # ### [Recorder layer]
-    # #
-    assert program_push_spy.call_count + program_start_session_spy.call_count == len(end_of_prev_test_programs)
 
     # The DAOs recorded the expected amount of time
     # Check the arguments that were passed were as expected
@@ -664,7 +668,6 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm, times_from_test_
 
         result = separate_window_name_and_detail(
             end_of_prev_test_programs[i].window_title)
-        print( program_session_arg, '613ru')
         assert program_session_arg.window_title == result[0]
         assert program_session_arg.start_time == end_of_prev_test_programs[i].start_time
         # FIXME: Why is the DURATION Zero?

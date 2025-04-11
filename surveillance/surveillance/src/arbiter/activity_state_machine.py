@@ -6,6 +6,8 @@ from surveillance.src.object.arbiter_classes import ChromeInternalState, Applica
 from surveillance.src.util.program_tools import window_is_chrome
 from surveillance.src.util.errors import MismatchedTimezonesError, SuspiciousDurationError, TimezoneUnawareError
 from surveillance.src.util.console_logger import ConsoleLogger
+from surveillance.src.util.copy_util import snapshot_obj_for_tests
+
 
 
 # class OverallState:
@@ -34,6 +36,8 @@ class ActivityStateMachine:
 
         if self.is_initialization_session(next_state):
             raise ValueError("next_state cannot be an empty dictionary")
+        next_state = snapshot_obj_for_tests(next_state)
+        
         if self.current_state:
             prior_update_was_program = isinstance(
                 self.current_state, ApplicationInternalState)
@@ -66,12 +70,13 @@ class ActivityStateMachine:
     def _conclude_session(self, state: InternalState, incoming_session_start):
         if self.is_initialization_session(state.session):
             return
-        # Now - UTC
-        # state.session.start_time - no tzinfo
         duration = incoming_session_start - state.session.start_time
 
-        state.session.duration = duration
-        state.session.end_time = incoming_session_start
+        session_copy = snapshot_obj_for_tests(state.session)
+        session_copy.duration = duration
+        session_copy.end_time = incoming_session_start
+
+        state.session = session_copy
 
     @staticmethod
     def _initialize(first_session):
@@ -97,8 +102,9 @@ class ActivityStateMachine:
         return TransitionFromChromeMachine(
             start_state)
 
-    def get_finished_state(self) -> InternalState | None:
-        return self.prior_state
+    def get_concluded_session(self) -> InternalState | None:
+        """Assumes the prior state is the updated transformation from set_new_session"""
+        return self.prior_state.session
 
     def conclude_without_replacement(self):
         """For wrap up when the computer is powering off to avoid sessions left open"""

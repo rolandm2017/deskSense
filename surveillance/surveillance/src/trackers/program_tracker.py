@@ -1,5 +1,4 @@
 from datetime import datetime
-import copy
 
 import time
 
@@ -12,12 +11,13 @@ from surveillance.src.facade.program_facade_base import ProgramFacadeInterface
 from surveillance.src.object.classes import ProgramSessionData
 
 from surveillance.src.util.detect_os import OperatingSystemInfo
-from surveillance.src.util.end_program_routine import end_program_readout, pretend_report_event
 from surveillance.src.util.clock import SystemClock
 from surveillance.src.util.threaded_tracker import ThreadedTracker
 from surveillance.src.util.program_tools import separate_window_name_and_detail, is_expected_shape_else_throw, tab_is_a_productive_tab, contains_space_dash_space, window_is_chrome
-from surveillance.src.util.strings import no_space_dash_space
 from surveillance.src.util.debug_logger import capture_program_data_for_tests
+from surveillance.src.util.strings import no_space_dash_space
+from surveillance.src.util.copy_util import snapshot_obj_for_tests
+
 
 
 # TODO: report programs that aren't in the apps list.
@@ -114,7 +114,7 @@ class ProgramTrackerCore:
         if self.current_session is None:
             raise ValueError("Current session was None")
         # end_time = self.user_facing_clock.now()
-        session_to_conclude = copy.deepcopy(self.current_session)  # Deep copy to prevent object mutation from ruining tests
+        session_to_conclude = snapshot_obj_for_tests(self.current_session)  # Deep copy to prevent object mutation from ruining tests
         start_time: datetime | None = session_to_conclude.start_time
         initializing = start_time is None
         if initializing:

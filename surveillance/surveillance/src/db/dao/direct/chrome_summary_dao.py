@@ -16,6 +16,8 @@ from surveillance.src.object.classes import ChromeSessionData
 from surveillance.src.util.dao_wrapper import validate_start_end_and_duration
 from surveillance.src.util.errors import SuspiciousDurationError
 from surveillance.src.util.debug_util import notice_suspicious_durations, log_if_needed
+from surveillance.src.util.const import SECONDS_PER_HOUR
+
 
 # @@@@ @@@@ @@@@ @@@@ @@@@
 # NOTE: Does not use BaseQueueDao - Because ... <insert reason here when recalled>
@@ -172,7 +174,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
                 self._create(target_domain_name, usage_duration_in_hours, today)
                 # self.create_if_new_else_update(session, right_now)
 
-    def deduct_remaining_duration(self, session: ChromeSessionData, duration, today_start):
+    def deduct_remaining_duration(self, session: ChromeSessionData, duration_in_sec: int, today_start):
         """
         When a session is concluded, it was concluded partway thru the 10 sec window
         
@@ -193,14 +195,15 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             domain: DailyDomainSummary = db_session.scalars(query).first()
             # Update it if found
             if domain:
-                domain.hours_spent = domain.hours_spent - timedelta(seconds=duration)
+                domain.hours_spent = domain.hours_spent - timedelta(seconds=duration_in_sec)
                 db_session.commit()
             else:
                 # If the code got here, the summary wasn't even created yet,
                 # which is likely! for the first time a program enters the program,
                 # if it is cut off before the first 10 sec window elapses.
                 self.logger.log_white_multiple("INFO:", f"first time {target_domain} appears today")
-                self.create_if_new_else_update(session, session.start_time)
+                self._create(target_domain, duration_in_sec / SECONDS_PER_HOUR, today_start)
+                # self.create_if_new_else_update(session, session.start_time)
 
     async def shutdown(self):
         """Closes the open session without opening a new one"""

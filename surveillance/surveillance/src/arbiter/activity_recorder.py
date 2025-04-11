@@ -56,8 +56,6 @@ class ActivityRecorder:
         Pushes the end of the window forward ten sec so that, 
         when the computer shuts down, the end time was "about right" anyways.
         """
-        print("Add ten sec was reached")
-        print("Update or create log! 49ru")
         now = self.user_facing_clock.now()
         if isinstance(session, ProgramSessionData):
             self.program_logging_dao.push_window_ahead_ten_sec(session)

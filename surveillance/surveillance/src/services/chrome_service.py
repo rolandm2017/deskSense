@@ -33,7 +33,6 @@ class TabQueue:
 
     async def add_to_arrival_queue(self, tab_change_event: TabChangeEvent):
         self.message_queue.append(tab_change_event)
-        print("addign event, 35ru")
         MAX_QUEUE_LEN = 40
 
         if len(self.message_queue) >= MAX_QUEUE_LEN:

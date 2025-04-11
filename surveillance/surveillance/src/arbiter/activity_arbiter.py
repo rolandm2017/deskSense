@@ -1,23 +1,19 @@
 from __future__ import annotations
 from datetime import datetime, timedelta, timezone
+import copy
 
 import asyncio
 
 from surveillance.src.config.definitions import power_on_off_debug_file
 
-
 from surveillance.src.object.classes import ChromeSessionData, ProgramSessionData
 
 from .activity_state_machine import ActivityStateMachine
+from .session_heartbeat import KeepAliveEngine, ThreadedEngineContainer
 from surveillance.src.object.arbiter_classes import ChromeInternalState, ApplicationInternalState
 from surveillance.src.util.console_logger import ConsoleLogger
+from surveillance.src.util.copy_util import snapshot_obj_for_tests
 
-from .session_heartbeat import KeepAliveEngine, ThreadedEngineContainer
-
-
-class RecordKeeperCore:
-    def __init__(self):
-        pass  # A name I might use
 
 
 class ActivityArbiter:
@@ -65,7 +61,9 @@ class ActivityArbiter:
 
     def notify_of_new_session(self, session):
         if self.activity_recorder:
-            self.activity_recorder.on_new_session(session)
+            # Prevent mutations from ruining test data
+            session_copy = snapshot_obj_for_tests(session)
+            self.activity_recorder.on_new_session(session_copy)
             # result = self.activity_recorder.on_new_session(session)
             # if asyncio.iscoroutine(result):
             #     self.loop.create_task(result)
@@ -93,11 +91,12 @@ class ActivityArbiter:
 
         if self.state_machine.current_state:
             # ### Calculate the duration that the current state has existed
-            # end_time & duration is set inside the ASM
-            concluded_session = self.state_machine.current_state.session
+            # ### & create the replacement state
 
-            # ### Create the replacement state
+            # end_time & duration is set inside the ASM
             self.state_machine.set_new_session(new_session)
+
+            concluded_session = self.state_machine.get_concluded_session()
 
             # ### Start the first window
             # print("going into notify new session", new_session)

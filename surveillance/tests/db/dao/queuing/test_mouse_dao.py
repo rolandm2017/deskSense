@@ -112,7 +112,6 @@ class TestMouseDao:
     async def test_read_all(self, dao):
         # Test reading all moves
         t0 = datetime.now(timezone.utc)
-        print("test here 114ru")
         t1 = t0 - timedelta(seconds=10)
         t2 = t0 - timedelta(seconds=8)
         t3 = t0 - timedelta(seconds=6)
@@ -120,21 +119,17 @@ class TestMouseDao:
         test_2: MouseMoveWindow = MouseMoveWindow(start_of_window=t2, end_of_window=t3)
 
         # Arrange
-        print("test here 122ru")
         await dao.create_from_window(test_1)
         await dao.create_from_window(test_2)
         await dao._force_process_queue()
 
-        print("test here 125ru")
         
         # Act
         result = await dao.read_all()
-        print("test here 129ru")
 
         # Assert
         assert len(result) == len([test_1, test_2])
         times = [result[0].start_time, result[1].start_time]
-        print("test here 134ru")
         assert t1 in times, "Window didn't come out of the db as expected"
         assert t2 in times, "Window didn't come out of the db as expected"
 

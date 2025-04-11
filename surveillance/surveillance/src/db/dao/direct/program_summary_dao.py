@@ -13,7 +13,7 @@ from surveillance.src.util.dao_wrapper import validate_start_end_and_duration
 from surveillance.src.object.classes import ProgramSessionData
 from surveillance.src.util.console_logger import ConsoleLogger
  
-from surveillance.src.util.clock import SystemClock
+from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.debug_util import notice_suspicious_durations, log_if_needed
 
 class DatabaseProtectionError(RuntimeError):
@@ -43,21 +43,14 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
 
         Note that this method ONLY creates gathering dates that are *today*.
         """
-        # No need to await this part
         # TODO: Replace .create_log with a debug table, that records every integer added to a particular log
         # TODO: ...the table could just be, "here's an id for a certain summary; here's the floats added to make the sum
         # self.program_logging_dao.create_log(program_session, right_now)
 
         target_program_name = program_session.window_title
-        print(target_program_name, "HEY LOOK HERE 52ru")
-        print(program_session.start_time)
-        print(program_session.end_time)
         # ### Calculate time difference
         usage_duration_in_hours = (
-            program_session.end_time - program_session.start_time).total_seconds() / 3600
-        print(usage_duration_in_hours, "56ru")
-        # FIXME: maybe the program_session is hanging open while I have the computer sleeping? or something
-        # FIXME: Need to define "gathered today" as "between midnight and 11:59 pm on mm-dd"
+            program_session.end_time - program_session.start_time).total_seconds() / SECONDS_PER_HOUR
 
         # ### Check if entry exists for today
         existing_entry = self.read_row_for_program(target_program_name, right_now)
@@ -189,7 +182,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
                 # TODO: Let the SessionHeartbeat update times
                 # ### Calculate time difference
                 usage_duration_in_hours = (
-                        program_session.end_time - program_session.start_time).total_seconds() / 3600
+                        program_session.end_time - program_session.start_time).total_seconds() / SECONDS_PER_HOUR
 
                 self._create(target_program_name, usage_duration_in_hours, today_start)
                 # self.create_if_new_else_update(program_session, right_now)
@@ -215,15 +208,16 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             program: DailyProgramSummary = db_session.scalars(query).first()
             # Update it if found
             if program:
-                program.hours_spent = program.hours_spent - timedelta(seconds=duration_in_sec)
+                program.hours_spent = program.hours_spent - duration_in_sec / SECONDS_PER_HOUR
                 db_session.commit()
             else:
                 # If the code got here, the summary wasn't even created yet,
                 # which is likely! for the first time a program enters the program,
                 # if it is cut off before the first 10 sec window elapses.
                 self.logger.log_white_multiple("INFO:", f"first time {target_program_name} appears today")
-     
-                self.create_if_new_else_update(session, session.start_time)
+                self._create(target_program_name, duration_in_sec / SECONDS_PER_HOUR, today_start)
+                # self.create_with_duration(session, duration_in_sec)
+                # self.create_if_new_else_update(session, session.start_time)
 
                 
 

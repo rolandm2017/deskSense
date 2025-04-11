@@ -1,0 +1,1 @@
+SECONDS_PER_HOUR = 3600  # 60 * 60

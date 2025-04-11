@@ -15,8 +15,6 @@ class TimeKeeper:
     Solution statement:
 
     Pass around a TimeKeeper that obscures a lot of info, leaving only a useful interface.
-    
-
     """
     def __init__(self, local_time, local_tz):
         self.local_time = local_time

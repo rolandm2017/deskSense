@@ -4,7 +4,6 @@ import time
 
 from datetime import datetime
 
-from surveillance.src.util.end_program_routine import end_program_readout, pretend_report_event
 from surveillance.src.object.classes import KeyboardAggregate
 from surveillance.src.util.clock import SystemClock
 from surveillance.src.util.threaded_tracker import ThreadedTracker

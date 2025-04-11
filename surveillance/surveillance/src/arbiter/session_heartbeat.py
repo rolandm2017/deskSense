@@ -51,7 +51,6 @@ class KeepAliveEngine:
         """
         # current_end_time = self.dao.get_end_for_session(session)
         # updated_end_time = current_end_time + timedelta(seconds=10)
-        print("Pulse add ten, 54ru")
         self.dao.add_ten_sec_to_end_time(self.session)
         # async_task = self.dao.add_ten_sec_to_end_time(self.session)
         # # FIXME: this isn't reached
