@@ -476,11 +476,11 @@ chrome_events_from_prev_test = [
 
 @pytest.mark.asyncio
 # @pytest.mark.skip
-async def test_arbiter_to_dao_layer(regular_session, plain_asm, times_from_test_data):
+async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     end_of_prev_test_programs = program_events_from_prev_test
     end_of_prev_test_tabs = chrome_events_from_prev_test
 
-    final_time = chrome_events_from_prev_test[-1].start_time + timedelta(seconds=8)
+    final_time = end_of_prev_test_tabs[-1].start_time + timedelta(seconds=8)
 
     clock_again = MockClock([final_time])
 
@@ -544,30 +544,26 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm, times_from_test_
     
     
     # Create spies on the DAOs' create_if_new_else_update methods
-    program_summary_spy = Mock(
-        side_effect=program_summary_dao.create_if_new_else_update)
-    program_summary_dao.create_if_new_else_update = program_summary_spy
+    program_summary_push_spy = Mock(
+        side_effect=program_summary_dao.push_window_ahead_ten_sec)
+    program_summary_dao.push_window_ahead_ten_sec = program_summary_push_spy
 
-    chrome_summary_spy = Mock(
-        side_effect=chrome_summary_dao.create_if_new_else_update)
-    chrome_summary_dao.create_if_new_else_update = chrome_summary_spy
-
-
+    chrome_summary_push_spy = Mock(
+        side_effect=chrome_summary_dao.push_window_ahead_ten_sec)
+    chrome_summary_dao.push_window_ahead_ten_sec = chrome_summary_push_spy
 
     activity_recorder = ActivityRecorder(
         clock_again, program_logging_dao, chrome_logging_dao, program_summary_dao, chrome_summary_dao)
     
+    activity_recorder_add_ten_spy = Mock(side_effect=activity_recorder.add_ten_sec_to_end_time)
+    activity_recorder.add_ten_sec_to_end_time = activity_recorder_add_ten_spy
 
 
     activity_arbiter = ActivityArbiter(clock_again, pulse_interval=0.5)
 
-    asm_spy = Mock(side_effect=activity_arbiter.state_machine.set_new_session)
-    activity_arbiter.state_machine.set_new_session = asm_spy
-
-    activity_arbiter.add_summary_dao_listener(activity_recorder)
-
-    notify_of_new_session_spy = Mock(side_effect=activity_arbiter.notify_of_new_session)
-    activity_arbiter.notify_of_new_session = notify_of_new_session_spy
+    #
+    # # Mocks in order of appearance:
+    #
 
     # Create a spy on the notify_summary_dao method
     notify_summary_dao_spy = Mock(
@@ -581,6 +577,36 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm, times_from_test_
     spy_on_set_tab_state = Mock(
         side_effect=activity_arbiter.set_tab_state)
     activity_arbiter.set_tab_state = spy_on_set_tab_state
+
+    asm_spy = Mock(side_effect=activity_arbiter.state_machine.set_new_session)
+    activity_arbiter.state_machine.set_new_session = asm_spy
+
+
+    notify_of_new_session_spy = Mock(side_effect=activity_arbiter.notify_of_new_session)
+    activity_arbiter.notify_of_new_session = notify_of_new_session_spy
+
+   
+
+    pr_start_session_spy = Mock(side_effect=activity_recorder.program_logging_dao.start_session)
+    activity_recorder.program_logging_dao.start_session = pr_start_session_spy
+
+    ch_start_session_spy = Mock(side_effect=activity_recorder.chrome_logging_dao.start_session) 
+    activity_recorder.chrome_logging_dao.start_session = ch_start_session_spy
+
+    pr_push_window_spy = Mock(side_effect=activity_recorder.program_logging_dao.push_window_ahead_ten_sec)
+    activity_recorder.program_logging_dao.push_window_ahead_ten_sec = pr_push_window_spy
+    
+    ch_push_window_spy = Mock(side_effect=activity_recorder.chrome_logging_dao.push_window_ahead_ten_sec)
+    activity_recorder.chrome_logging_dao.push_window_ahead_ten_sec = ch_push_window_spy
+
+    pr_finalize_spy = Mock(side_effect=activity_recorder.program_logging_dao.finalize_log)
+    activity_recorder.program_logging_dao.finalize_log = pr_finalize_spy
+
+    ch_finalize_spy = Mock(side_effect=activity_recorder.chrome_logging_dao.finalize_log)
+    activity_recorder.chrome_logging_dao.finalize_log = ch_finalize_spy
+
+    # This line MUST be last before Act. Otherwise, the mocks aren't setup properly.
+    activity_arbiter.add_summary_dao_listener(activity_recorder)
 
 
     # ###
@@ -640,25 +666,29 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm, times_from_test_
     # The DAOs recorded the expected number of times
     expected_program_call_count = count_of_programs
     expected_chrome_call_count = count_of_tabs
-    assert program_summary_spy.call_count > 0
-    assert chrome_summary_spy.call_count > 0
 
-    assert program_summary_spy.call_count == expected_program_call_count
-    # NOTE that the Chrome Summary Spy is called one less times because it is last.
-    # If a Program event was put in last, then the Program Summary Spy would have one less, and
-    # the Chrome spy would have all of its events.
-    assert chrome_summary_spy.call_count == expected_chrome_call_count - one_left_in_arbiter
+    assert activity_recorder_add_ten_spy.call_count == 0  # because the sessions change too fast for the pulse
+
+    assert pr_start_session_spy.call_count == count_of_programs
+    assert ch_start_session_spy.call_count == count_of_tabs
+
+    assert pr_push_window_spy.call_count == 0  # because the sessions change too fast for the pulse
+    assert ch_push_window_spy.call_count == 0  # because the sessions change too fast for the pulse
+    
+    assert pr_finalize_spy.call_count == count_of_programs
+    assert ch_finalize_spy.call_count == count_of_tabs - one_left_in_arbiter
 
     # The DAOs recorded the expected amount of time
     # Check the arguments that were passed were as expected
     # NOTE:
     # [0][0][0] -> program_session: ProgramSessionData,
     # [0][0][1] -> right_now: datetime
+    print(program_summary_push_spy.call_args_list)
     for i in range(len(end_of_prev_test_programs)):
-        program_session_arg = program_summary_spy.call_args_list[i][0][0]
-        right_now_arg = program_summary_spy.call_args_list[i][0][1]
+        program_session_arg = pr_finalize_spy.call_args_list[i][0][0]
+        # right_now_arg = program_summary_push_spy.call_args_list[i][0][1]
         assert isinstance(program_session_arg, ProgramSessionData)
-        assert isinstance(right_now_arg, datetime)
+        # assert isinstance(right_now_arg, datetime)
 
         # Transformation happens in the ProgramTracker:
         # detail, window = separate_window_name_and_detail(
@@ -670,8 +700,6 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm, times_from_test_
             end_of_prev_test_programs[i].window_title)
         assert program_session_arg.window_title == result[0]
         assert program_session_arg.start_time == end_of_prev_test_programs[i].start_time
-        # FIXME: Why is the DURATION Zero?
-        # assert program_session_arg.duration == program_durations[i]
         
     # Prove that all the values are there in the database
     program_summaries = program_summary_dao.read_all()
