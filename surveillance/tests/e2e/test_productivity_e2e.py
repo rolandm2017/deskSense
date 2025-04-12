@@ -457,18 +457,21 @@ program_events_from_prev_test = [
         end_time=None, duration_for_tests=None, productive=False)
 ]
 
+# NOTE I COOKED these numbers manually, they DO NOT reflect the times from the prev tests.
+# TODO: Cook the above test's inputs so that they come out with LINEAR sessions program -> chrome & 1-10 sec durations
+
 chrome_events_from_prev_test = [
     ChromeSessionData(domain='docs.google.com', detail='Google Docs',
-            start_time=fmt_time_string("2025-03-22 16:15:02-07:00"),
+            start_time=fmt_time_string("2025-03-22 16:19:02-07:00"),
             end_time=None, duration_for_tests=None, productive=False),
     ChromeSessionData(domain='chatgpt.com', detail='ChatGPT',
-            start_time=fmt_time_string("2025-03-22 16:15:10-07:00"),
+            start_time=fmt_time_string("2025-03-22 16:26:10-07:00"),
             end_time=None, duration_for_tests=None, productive=True),
     ChromeSessionData(domain='claude.ai', detail='Claude',
-            start_time=fmt_time_string("2025-03-22 16:15:21-07:00"),
+            start_time=fmt_time_string("2025-03-22 16:33:21-07:00"),
             end_time=None, duration_for_tests=None, productive=True),
     ChromeSessionData(domain='chatgpt.com', detail='ChatGPT',
-            start_time=fmt_time_string("2025-03-22 16:15:30-07:00"),
+            start_time=fmt_time_string("2025-03-22 16:41:30-07:00"),
             end_time=None, duration_for_tests=None, productive=True)
 ]
 
@@ -480,9 +483,17 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     end_of_prev_test_programs = program_events_from_prev_test
     end_of_prev_test_tabs = chrome_events_from_prev_test
 
+    times_for_window_push = [x.start_time for x in program_events_from_prev_test] + [x.start_time for x in chrome_events_from_prev_test] 
+    
+    durations_between_events = [5, 8, 4, 2, 7, 7, 8]  # see t2 - t1 in above events
+
     final_time = end_of_prev_test_tabs[-1].start_time + timedelta(seconds=8)
 
+    times_for_window_push.append(final_time)  # used for what?
+
     clock_again = MockClock([final_time])
+
+    # FIXME: NEed to have sessions be written with THE TIME in THE EVENT, not 04-11 (today)
 
     # Test setup conditions
     for entry in end_of_prev_test_programs:
@@ -543,7 +554,7 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     assert len(chrome_summaries) == 0, "An important table was not empty"
     
     
-    # Create spies on the DAOs' create_if_new_else_update methods
+    # Create spies on the DAOs' push window methods
     program_summary_push_spy = Mock(
         side_effect=program_summary_dao.push_window_ahead_ten_sec)
     program_summary_dao.push_window_ahead_ten_sec = program_summary_push_spy
@@ -552,8 +563,36 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
         side_effect=chrome_summary_dao.push_window_ahead_ten_sec)
     chrome_summary_dao.push_window_ahead_ten_sec = chrome_summary_push_spy
 
-    activity_recorder = ActivityRecorder(
-        clock_again, program_logging_dao, chrome_logging_dao, program_summary_dao, chrome_summary_dao)
+    # Create spies on DAOs' _create methods
+    program_create_spy = Mock(side_effect=program_summary_dao._create)
+    program_summary_dao._create = program_create_spy
+
+    chrome_create_spy = Mock(side_effect=chrome_summary_dao._create)
+    chrome_summary_dao._create = chrome_create_spy
+
+    # activity_recorder = ActivityRecorder(
+    #     clock_again, program_logging_dao, chrome_logging_dao, program_summary_dao, chrome_summary_dao)
+    
+    class TestActivityRecorder(ActivityRecorder):
+        def __init__(self, *args, durations_to_override=None, **kwargs):
+            super().__init__(*args, **kwargs)
+            self._override_durations = durations_to_override or []
+            self._override_index = 0
+
+        def deduct_duration(self, duration_in_sec, session):
+            if self._override_index < len(self._override_durations):
+                duration_in_sec = self._override_durations[self._override_index]
+                self._override_index += 1
+            super().deduct_duration(duration_in_sec, session)
+        
+    activity_recorder = TestActivityRecorder(
+            clock_again,
+            program_logging_dao,
+            chrome_logging_dao,
+            program_summary_dao,
+            chrome_summary_dao,
+            durations_to_override=durations_between_events
+        )
     
     activity_recorder_add_ten_spy = Mock(side_effect=activity_recorder.add_ten_sec_to_end_time)
     activity_recorder.add_ten_sec_to_end_time = activity_recorder_add_ten_spy
@@ -661,7 +700,7 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     # #
     # ### [Recorder layer]
     # #
-    assert program_push_spy.call_count + program_start_session_spy.call_count == len(end_of_prev_test_programs)
+    assert program_start_session_spy.call_count == len(end_of_prev_test_programs), "Expected each session to make it through one time"
 
     # The DAOs recorded the expected number of times
     expected_program_call_count = count_of_programs
@@ -700,7 +739,56 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
             end_of_prev_test_programs[i].window_title)
         assert program_session_arg.window_title == result[0]
         assert program_session_arg.start_time == end_of_prev_test_programs[i].start_time
+
+    # #
+    # # Summary DAO tests
+    # #
+
+    for j in program_summary_push_spy.call_args_list:
+        print(j, "716ru")
+
+    assert program_start_session_spy.call_count == count_of_programs
+    assert chrome_start_session_spy.call_count == count_of_tabs
+
+    for i in range(len(program_events_from_prev_test)):
+        program_arg = program_start_session_spy.call_args_list[i][0][0]
+
+        assert isinstance(program_arg, ProgramSessionData)
+        assert program_arg.window_title == program_events_from_prev_test[i].window_title
+
+    for i in range(len(chrome_events_from_prev_test) - one_left_in_arbiter):
+        chrome_arg = chrome_start_session_spy.call_args_list[i][0][0]
+        # right_now_arg = chrome_summary_push_spy.call_args_list[i][0][1]
+
+        assert isinstance(chrome_arg, ChromeSessionData)
+        # assert isinstance(right_now_arg, datetime)
+        assert chrome_arg.domain == chrome_events_from_prev_test[i].domain
+
+    # Assert that _create was called with SOME DURATION greater than zero for duration
+    # for i in range(len(program_events_from_prev_test)):
+    #     name_arg = program_create_spy.call_args_list[i][0][0]
+    #     duration_arg = program_create_spy.call_args_list[i][0][1]
         
+    #     assert isinstance(name_arg, str)
+    #     assert duration_arg > 0, "The duration of the usage should be greater than zero"
+
+ 
+
+    # TODO: Assert that _create was called with SOME DURATION greater than zero for duration
+    for i in range(len(chrome_events_from_prev_test) - one_left_in_arbiter):
+        name_arg = chrome_create_spy.call_args_list[i][0][0]
+        duration_arg = chrome_create_spy.call_args_list[i][0][1]
+        
+        assert isinstance(name_arg, str)
+        assert duration_arg > 0, "The duration of the usage should be greater than zero"
+
+
+    # ###
+    # #
+    # # The beginning of the end
+    # #
+    # ###
+
     # Prove that all the values are there in the database
     program_summaries = program_summary_dao.read_all()
     chrome_summaries = chrome_summary_dao.read_all()
@@ -736,13 +824,6 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     assert all(
         item.gathering_date == expected_date for item in chrome_logs), "Chrome logs have incorrect gathering date"
 
-    for i in range(len(chrome_events_from_prev_test) - one_left_in_arbiter):
-        chrome_arg = chrome_summary_spy.call_args_list[i][0][0]
-        right_now_arg = chrome_summary_spy.call_args_list[i][0][1]
-        assert isinstance(chrome_arg, ChromeSessionData)
-        assert isinstance(right_now_arg, datetime)
-
-        assert chrome_arg.domain == chrome_events_from_prev_test[i].domain
 
     # ### ### Checkpoint:
     # # Dashboard Service reports the right amount of time for get_weekly_productivity_overview

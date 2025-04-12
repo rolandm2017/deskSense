@@ -25,3 +25,5 @@ events.csv
 
 *.txt
 !requirements.txt
+
+fix_commits.py
