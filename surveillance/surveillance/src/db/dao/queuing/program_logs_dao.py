@@ -128,7 +128,7 @@ class ProgramLoggingDao(BaseQueueingDao):
 
             return grouped_logs
 
-    async def find_orphans(self,  latest_shutdown_time, startup_time):
+    def find_orphans(self,  latest_shutdown_time, startup_time):
         """
         Finds orphaned sessions that:
         1. Started before shutdown but never ended (end_time is None)
@@ -147,12 +147,12 @@ class ProgramLoggingDao(BaseQueueingDao):
                 ProgramSummaryLog.end_time >= startup_time  # End time after startup
             )
         ).order_by(ProgramSummaryLog.start_time)
-        return await self.execute_query(query)  # the database is storing and returning times in UTC
+        return self.execute_query(query)  # the database is storing and returning times in UTC
         # async with self.async_session_maker() as session:
             # result = await session.execute(query)
             # return result.scalars().all()
 
-    async def find_phantoms(self, latest_shutdown_time, startup_time):
+    def find_phantoms(self, latest_shutdown_time, startup_time):
         """
         Finds phantom sessions that impossibly started while the system was off.
 
@@ -166,14 +166,14 @@ class ProgramLoggingDao(BaseQueueingDao):
             # But before startup
             ProgramSummaryLog.start_time < startup_time
         ).order_by(ProgramSummaryLog.start_time)
-        return await self.execute_query(query)  # the database is storing and returning times in UTC
+        return self.execute_query(query)  # the database is storing and returning times in UTC
 
     def read_all(self):
         """Fetch all program log entries"""
         query = select(ProgramSummaryLog)
         return self.execute_query(query)
 
-    async def read_last_24_hrs(self, right_now: datetime):
+    def read_last_24_hrs(self, right_now: datetime):
         """Fetch all program log entries from the last 24 hours
         
         NOTE: the database is storing and returning times in UTC
@@ -182,33 +182,33 @@ class ProgramLoggingDao(BaseQueueingDao):
         query = select(ProgramSummaryLog).where(
             ProgramSummaryLog.created_at >= cutoff_time
         ).order_by(ProgramSummaryLog.created_at.desc())
-        return await self.execute_query(query)
+        return self.execute_query(query)
 
-    async def read_suspicious_entries(self):
+    def read_suspicious_entries(self):
         """Get entries with durations longer than 20 minutes"""
         suspicious_duration = 0.33333333  # 20 minutes in hours
         query = select(ProgramSummaryLog).where(
                 ProgramSummaryLog.hours_spent > suspicious_duration
             ).order_by(ProgramSummaryLog.hours_spent.desc())
-        return await self.execute_query(query)
+        return self.execute_query(query)
         
-    async def read_suspicious_alt_tab_windows(self):
+    def read_suspicious_alt_tab_windows(self):
         """Get alt-tab windows with durations longer than 10 seconds"""
         alt_tab_threshold = 0.0027777  # 10 seconds in hours, or 10/3600
         query = select(ProgramSummaryLog).where(
                 ProgramSummaryLog.program_name == "Alt-tab window",
                 ProgramSummaryLog.hours_spent > alt_tab_threshold
             ).order_by(ProgramSummaryLog.hours_spent.desc())
-        return await self.execute_query(query)
+        return self.execute_query(query)
         
-    async def push_window_ahead_ten_sec(self, session: ProgramSessionData):
-        log: ProgramSummaryLog = await self.find_session(session)
+    def push_window_ahead_ten_sec(self, session: ProgramSessionData):
+        log: ProgramSummaryLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")
-        log.end_time = session.end_time + timedelta(seconds=10)
-        async with self.async_session_maker() as db_session:
-            db_session.add(log)
-            await db_session.commit()
+        log.end_time = log.end_time + timedelta(seconds=10)
+        with self.regular_session() as db_session:
+            db_session.merge(log)
+            db_session.commit()
 
     def finalize_log(self, session: ProgramSessionData):
         """Overwrite value from the heartbeat. Expect something to ALWAYS be in the db already at this point."""

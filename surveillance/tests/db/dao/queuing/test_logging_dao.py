@@ -127,33 +127,19 @@ async def test_start_session(prepare_daos, mock_session_data):
 @pytest.mark.asyncio
 async def test_find_session(prepare_daos, plain_asm, mock_session_data):
     """Test find_session with direct database inserts"""
-    # Arrange
+    # ### Arrange
     program_session, chrome_session = mock_session_data
     program_dao, chrome_dao = prepare_daos
 
-    
-    # Insert test data directly using SQLAlchemy without DAO queuing
-    # async with plain_asm() as session:
-    #     try:
-    #         # Create program record
-    #         program_log = ProgramSummaryLog()
-    #         program_log.program_name = program_session.window_title
-    #         program_log.start_time = program_session.start_time.astimezone(timezone.utc)
-    #         program_log.gathering_date = program_session.start_time.date()
-    #         session.add(program_log)
-            
-    #         # Create domain record
-    #         chrome_log = DomainSummaryLog()
-    #         chrome_log.domain = chrome_session.domain
-    #         chrome_log.start_time = chrome_session.start_time.astimezone(timezone.utc)
-    #         chrome_log.gathering_date = chrome_session.start_time.date()
-    #         session.add(chrome_log)
-            
-    #         # Commit the changes
-    #         await session.commit()
-    #     except Exception as e:
-    #         await session.rollback()
-    #         pytest.fail(f"Failed to insert test data: {e}")
+    # Test Setup conditions
+    programs = program_dao.read_all()
+    domains = chrome_dao.read_all()
+    assert len(programs) == 0
+    assert len(domains) == 0
+
+    # 
+    program_dao.start_session(program_session)
+    chrome_dao.start_session(chrome_session)
     
     program_dao_queue = program_dao.process_queue
     chrome_dao_queue = chrome_dao.process_queue
@@ -166,9 +152,11 @@ async def test_find_session(prepare_daos, plain_asm, mock_session_data):
         programs = program_dao.read_all()
         domains = chrome_dao.read_all()
         
-        assert len(programs) == 1, "Expected one program record"
-        assert len(domains) == 1, "Expected one domain record"
+        assert len(programs) == 1, "Expected one program record; setup conditions not met"
+        assert len(domains) == 1, "Expected one domain record; setup conditions not met"
         
+        # ### Act 
+
         # Test finding existing sessions
         program_found = program_dao.find_session(program_session)
         chrome_found = chrome_dao.find_session(chrome_session)
@@ -204,55 +192,59 @@ async def test_find_session(prepare_daos, plain_asm, mock_session_data):
 # TODO: Manually drop the tables
 
 @pytest.mark.asyncio
-async def test_push_window_ahead(prepare_daos, regular_session, plain_asm, mock_session_data):
+async def test_push_window_ahead(prepare_daos, mock_session_data):
     """Test assumes there is an existing session, which the test can 'push the window forward' for."""
     program_session, chrome_session = mock_session_data
     program_dao, chrome_dao = prepare_daos
     # chrome_dao = ChromeLoggingDao(plain_asm)
     
-    program_log = None
-    chrome_log = None
-    with regular_session() as db_session:
-        try:
-            # Create program record
-            program_log = ProgramSummaryLog()
-            program_log.program_name = program_session.window_title
-            program_log.start_time = program_session.start_time.astimezone(timezone.utc)
-            program_log.gathering_date = program_session.start_time.date()
-            db_session.add(program_log)
-            
-            # Create domain record
-            chrome_log = DomainSummaryLog()
-            chrome_log.domain = chrome_session.domain
-            chrome_log.start_time = chrome_session.start_time.astimezone(timezone.utc)
-            chrome_log.gathering_date = chrome_session.start_time.date()
-            db_session.add(chrome_log)
-            
-            # Commit the changes
-            db_session.commit()
-        except Exception as e:
-            db_session.rollback()
-            pytest.fail(f"Failed to insert test data: {e}")
-
+    print("WRITING\t\t", program_session.start_time)
     program_dao.start_session(program_session)
     chrome_dao.start_session(chrome_session)
+    print("pro session\t\t", program_session.start_time)
+
+    # FIXME: A timezone issue
 
     initial_write_of_program = program_dao.find_session(program_session)
     initial_write_of_chrome = chrome_dao.find_session(chrome_session)
+
+    def convert_back_to_local_tz(session: ProgramSummaryLog | DomainSummaryLog, tz):
+        utc_start_time_from_db = session.start_time
+        converted_start_time = utc_start_time_from_db.astimezone(tz)
+        session.start_time = converted_start_time
+        return session
+
+    initial_write_of_program = convert_back_to_local_tz(initial_write_of_program, timezone_for_test_data)
+    initial_write_of_chrome = convert_back_to_local_tz(initial_write_of_chrome, timezone_for_test_data)
 
     # Test setup conditions to make sure the test works
     assert isinstance(initial_write_of_program, ProgramSummaryLog)
     assert isinstance(initial_write_of_chrome, DomainSummaryLog)
 
-    # Act
+    # Still testing setup, confirm that it received an end time
+    init_pro_log_end_time = initial_write_of_program.end_time
+    init_chro_log_end_time = initial_write_of_chrome.end_time
+
+    assert isinstance(init_pro_log_end_time, datetime)
+    assert isinstance(init_chro_log_end_time, datetime)
+
+    # ### Act
+    print("init write of program \t", initial_write_of_program.start_time)
+    print("end time \t\t", initial_write_of_program.end_time)
     program_dao.push_window_ahead_ten_sec(initial_write_of_program)
     chrome_dao.push_window_ahead_ten_sec(initial_write_of_chrome)
 
     # get it back out now & see if it changed
     pro_log = program_dao.find_session(program_session)
     chro_log = chrome_dao.find_session(chrome_session)
+    assert pro_log is not None
+    assert chro_log is not None
+    print("end time \t\t", pro_log.end_time)
 
     # Assert
+    assert pro_log.end_time != init_pro_log_end_time
+    assert chro_log.end_time != init_chro_log_end_time
+    
     assert pro_log.end_time == initial_write_of_program.end_time + timedelta(seconds=10), "Window push failed"
     assert chro_log.end_time == initial_write_of_chrome.end_time + timedelta(seconds=10), "Window push failed!"
 

@@ -179,7 +179,7 @@ class BaseQueueingDao:
             print(f"Error in _save_batch_to_db: {e}")
             # traceback.print_exc()
             raise  # Re-raise to allow proper error handling
-        
+
     async def cleanup(self):
         """Clean up resources and cancel any background tasks."""
         print("Starting cleanup...")

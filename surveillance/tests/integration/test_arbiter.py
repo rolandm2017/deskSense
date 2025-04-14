@@ -44,7 +44,7 @@ async def activity_arbiter_and_setup():
     # Create an event log
     events = []
 
-    def event_handler(session, shutdown):
+    def event_handler(session):
         events.append(session)
 
     # Create mock listeners with side effects to record calls
@@ -54,7 +54,7 @@ async def activity_arbiter_and_setup():
 
     arbiter.add_summary_dao_listener(mock_activity_recorder)
     
-    assert arbiter.summary_listener == mock_activity_recorder, "Test setup conditions failed"
+    assert arbiter.activity_recorder == mock_activity_recorder, "Test setup conditions failed"
 
     # Optionally mock the chrome service integration
     # mock_chrome_service = MagicMock()

@@ -111,7 +111,8 @@ class DailyProgramSummary(Base):
     program_name = Column(String)
     hours_spent = Column(Float)
     # The date on which the program data was gathered, without hh:mm:ss
-    gathering_date = Column(DateTime(timezone=True))
+    # MUST be the date FOR THE USER. Otherwise, the program doesn't make sense
+    gathering_date = Column(DateTime(timezone=True))  
 
     def __str__(self):
         formatted_date = self.gathering_date.strftime(
@@ -129,6 +130,7 @@ class DailyDomainSummary(Base):
     domain_name = Column(String)
     hours_spent = Column(Float)
     # The date on which the program data was gathered
+    # MUST be the date FOR THE USER. Otherwise, the program doesn't make sense
     gathering_date = Column(DateTime(timezone=True))
 
     def __str__(self):

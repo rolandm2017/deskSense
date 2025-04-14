@@ -7,7 +7,7 @@ from surveillance.src.service_dependencies import (
 )
 
 
-from src.services.services import (
+from surveillance.src.services.services import (
     VideoService
 )
 

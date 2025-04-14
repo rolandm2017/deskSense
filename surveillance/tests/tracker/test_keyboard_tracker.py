@@ -231,6 +231,8 @@ def test_key_press_tracking(tracker_and_events, mock_keyboard_facade):
 #     t13 = move_time_fwd_one_ms(t12)
 #     times = [t1, t2, t3, t4, t5, t6, t7, t8,
 #              t9, t10, t11, t12, t13, t13]
+    
+#     timestamps = []
 
 #     sys_clock = MockClock(times)
 #     handler_events = []
@@ -284,31 +286,4 @@ def test_key_press_tracking(tracker_and_events, mock_keyboard_facade):
 #     assert handler1_calls[0] == handler2_calls[0]
 
 
-# def test_threading_cleanup(mock_clock, mock_keyboard_facade, event_collector):
-#     """Test that ThreadedKeyboardTracker cleans up properly on stop."""
-#     events, handler = event_collector
-#     tracker_core = KeyboardTrackerCore(
-#         mock_keyboard_facade, handler)
-#     threaded_tracker = ThreadedTracker(tracker_core)
 
-#     threaded_tracker.start()
-
-#     assert threaded_tracker.hook_thread is not None
-
-#     assert threaded_tracker.is_running
-#     assert threaded_tracker.hook_thread.is_alive()
-
-#     threaded_tracker.stop()
-#     assert not threaded_tracker.is_running
-#     assert not threaded_tracker.hook_thread.is_alive()
-
-
-# def test_no_event_handling(tracker_and_events, mock_keyboard_facade):
-#     """Test that no events are processed when keyboard returns None."""
-#     tracker = tracker_and_events[0]
-#     events = tracker_and_events[1]
-
-#     mock_keyboard_facade.set_event(None)
-#     tracker.run_tracking_loop()
-
-#     assert len(events) == 0

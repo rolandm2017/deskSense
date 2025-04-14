@@ -224,11 +224,11 @@ async def test_domain_logs(plain_asm, test_power_events):
 
 
 @pytest_asyncio.fixture(scope="function")
-async def test_dao_instances(plain_asm):
+def test_dao_instances(regular_session, plain_asm):
     """Create the necessary DAO instances for session integrity testing"""
     # Create the DAOs
-    program_logging_dao = ProgramLoggingDao(plain_asm)
-    chrome_logging_dao = ChromeLoggingDao(plain_asm)
+    program_logging_dao = ProgramLoggingDao(regular_session, plain_asm)
+    chrome_logging_dao = ChromeLoggingDao(regular_session, plain_asm)
 
     # Create the session integrity dao
     session_integrity_dao = SessionIntegrityDao(
@@ -243,14 +243,14 @@ async def test_dao_instances(plain_asm):
         "session_integrity_dao": session_integrity_dao
     }
 
-    await program_logging_dao.cleanup()
-    await chrome_logging_dao.cleanup()
+    program_logging_dao.cleanup()
+    chrome_logging_dao.cleanup()
     # session_integrity_dao.cleanup()
 
 
 @pytest_asyncio.fixture(scope="function")
 async def full_test_environment(
-    async_engine_and_asm,
+    sync_engine,
     test_power_events,
     test_program_logs,
     test_domain_logs,
@@ -259,12 +259,10 @@ async def full_test_environment(
     """
     Combines all fixtures to provide a complete test environment
     """
-    engine, asm = async_engine_and_asm
     # Store the awaited engine, not the coroutine
 
     return {
-        "engine": engine,
-        "session_maker": asm,
+        "engine": sync_engine,
         "power_events": test_power_events,
         "program_logs": test_program_logs,
         "domain_logs": test_domain_logs,
@@ -273,17 +271,17 @@ async def full_test_environment(
 # Create a function that directly cleans up tables - this is simpler and more reliable
 
 
-async def truncate_test_tables(engine):
+def truncate_test_tables(engine):
     """Truncate all test tables directly"""
     # NOTE: IF you run the tests in a broken manner,
     # ####  the first run AFTER fixing the break
     # ####  MAY still look broken.
     # ####  Because the truncation happens *at the end of* a test.
 
-    async with engine.begin() as conn:
-        await conn.execute(text("TRUNCATE program_summary_logs RESTART IDENTITY CASCADE"))
-        await conn.execute(text("TRUNCATE domain_summary_logs RESTART IDENTITY CASCADE"))
-        await conn.execute(text("TRUNCATE system_change_log RESTART IDENTITY CASCADE"))
+    with engine.begin() as conn:
+        conn.execute(text("TRUNCATE program_summary_logs RESTART IDENTITY CASCADE"))
+        conn.execute(text("TRUNCATE domain_summary_logs RESTART IDENTITY CASCADE"))
+        conn.execute(text("TRUNCATE system_change_log RESTART IDENTITY CASCADE"))
         print("Tables truncated")
 
 
@@ -301,11 +299,13 @@ async def test_find_orphans(full_test_environment):
 
     try:
         # Find orphans
-        program_orphans, domain_orphans = await session_integrity_dao.find_orphans(
+        program_orphans, domain_orphans = session_integrity_dao.find_orphans(
             shutdown_time, startup_time
         )
 
         # Assertions
+        assert isinstance(program_orphans, list)
+        assert isinstance(domain_orphans, list)
         assert len(program_orphans) == 2
         assert len(domain_orphans) == 2
         assert any(log.program_name == "Notepad" for log in program_orphans)
@@ -316,7 +316,7 @@ async def test_find_orphans(full_test_environment):
 
     finally:
         # Clean up after test, regardless of whether it passed or failed
-        await truncate_test_tables(engine)
+        truncate_test_tables(engine)
 
 
 # @pytest.mark.asyncio

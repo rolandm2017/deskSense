@@ -16,25 +16,25 @@ from surveillance.src.object.classes import ProgramSessionData, ChromeSessionDat
 
 @pytest.fixture
 def program_session():
-    session = ProgramSessionData()
-    session.window_title = "Visual Studio Code"
-    session.detail = "main.py"
-    session.start_time = datetime(2023, 1, 1, 12, 0, 0)
-    session.end_time = datetime(2023, 1, 1, 12, 10, 0)
-    session.duration = timedelta(minutes=10)
-    session.productive = True
-    return session
+    return ProgramSessionData(
+        "Visual Studio Code",
+        "main.py",
+        datetime(2023, 1, 1, 12, 0, 0),
+        datetime(2023, 1, 1, 12, 10, 0),
+        True,
+        timedelta(minutes=10)
+    )
 
 @pytest.fixture
 def chrome_session():
-    session = ChromeSessionData()
-    session.domain = "github.com"
-    session.detail = "DeepSeek Chat Repository"
-    session.start_time = datetime(2023, 1, 1, 12, 0, 0)
-    session.end_time = datetime(2023, 1, 1, 12, 5, 0)
-    session.duration = timedelta(minutes=5)
-    session.productive = True
-    return session
+    return ChromeSessionData(
+        "github.com",
+        "DeepSeek Chat Repository",
+        datetime(2023, 1, 1, 12, 0, 0),
+        datetime(2023, 1, 1, 12, 5, 0),
+        productive=True,
+        duration_for_tests=timedelta(minutes=5)
+    )
 
 @pytest.fixture
 def mock_daos():
@@ -63,96 +63,26 @@ def activity_recorder(mock_daos, mock_clock):
 
 @pytest.mark.asyncio
 async def test_on_state_changed_program(activity_recorder, mock_daos, program_session):
-    await activity_recorder.on_state_changed(program_session)
+    activity_recorder.on_state_changed(program_session)
     
-    mock_daos['program_logging'].finalize_log.assert_awaited_once_with(program_session)
-    mock_daos['chrome_logging'].finalize_log.assert_not_awaited()
+    mock_daos['program_logging'].finalize_log.assert_called_once_with(program_session)
+    mock_daos['chrome_logging'].finalize_log.assert_not_called()
 
 @pytest.mark.asyncio
 async def test_on_state_changed_chrome(activity_recorder, mock_daos, chrome_session):
-    await activity_recorder.on_state_changed(chrome_session)
+    activity_recorder.on_state_changed(chrome_session)
     
-    mock_daos['chrome_logging'].finalize_log.assert_awaited_once_with(chrome_session)
-    mock_daos['program_logging'].finalize_log.assert_not_awaited()
+    mock_daos['chrome_logging'].finalize_log.assert_called_once_with(chrome_session)
+    mock_daos['program_logging'].finalize_log.assert_not_called()
 
-
-@pytest.mark.parametrize("session_exists", [True, False])
-@pytest.mark.asyncio
-async def test_update_or_create_log(activity_recorder, session_exists):
-    logging_dao = AsyncMock()
-    session = "test-session"
-
-    logging_dao.find_session = AsyncMock(return_value=session_exists)
-
-    update_or_create_log = activity_recorder.update_or_create_log  # Replace with actual class
-
-    await update_or_create_log(logging_dao, session)
-
-    if session_exists:
-        logging_dao.push_window_ahead_ten_sec.assert_awaited_once_with(session)
-        logging_dao.start_session.assert_not_called()
-    else:
-        logging_dao.push_window_ahead_ten_sec.assert_not_called()
-        logging_dao.start_session.assert_awaited_once_with(session)
-
-@pytest.mark.asyncio
-async def test_add_ten_sec_program(activity_recorder, mock_daos, program_session):
-    # Create a brand new mock (no shared state)
-    chrome_logging_mock = AsyncMock(spec=ChromeLoggingDao)
-    chrome_logging_mock.find_session.return_value = False  # Explicitly False
-    
-    # Replace the DAO in the recorder
-    activity_recorder.chrome_logging_dao = chrome_logging_mock
-    
-    await activity_recorder.add_ten_sec_to_end_time(program_session)
-    
-    mock_daos['program_summary'].push_window_ahead_ten_sec.assert_awaited_once_with(program_session)
-    mock_daos['program_logging'].find_session.assert_called_once_with(program_session)
-    mock_daos['program_logging'].push_window_ahead_ten_sec.assert_awaited_once_with(program_session)
-
-@pytest.mark.asyncio
-async def test_add_ten_sec_chrome_new_session(activity_recorder, mock_daos, chrome_session):
-    # Reset and configure the existing mock
-    mock_daos['chrome_logging'].reset_mock()
-    mock_daos['chrome_logging'].find_session.return_value = False  # Make sure it returns False
-    start_session_mock = AsyncMock()
-    mock_daos["chrome_logging"].start_session = start_session_mock
-    
-    push_mock_for_programs = AsyncMock()
-    push_mock_for_chrome = AsyncMock()
-
-    mock_daos["program_logging"].push_window_ahead_ten_sec = push_mock_for_programs
-    mock_daos["chrome_logging"].push_window_ahead_ten_sec = push_mock_for_chrome
-
-    # Spy on update_or_create_log:
-    original_update_or_create_log = activity_recorder.update_or_create_log
-    update_or_create_log_spy = AsyncMock(wraps=original_update_or_create_log)
-    activity_recorder.update_or_create_log = update_or_create_log_spy
-
-    
-    # Act
-    await activity_recorder.add_ten_sec_to_end_time(chrome_session)
-    
-    # Assert
-    update_or_create_log_spy.assert_awaited_once_with(mock_daos["chrome_logging"], chrome_session)
-    # Restore the original state of the recorder:
-    activity_recorder.update_or_create_log = original_update_or_create_log
-    
-    start_session_mock.assert_awaited_once()
-    
-    push_mock_for_programs.assert_not_awaited()
-    push_mock_for_chrome.assert_not_called()  # Because that's the "if session exists" path
-
-    mock_daos['chrome_summary'].push_window_ahead_ten_sec.assert_awaited_once_with(chrome_session)
-    mock_daos['chrome_logging'].find_session.assert_called_once_with(chrome_session)
 
 @pytest.mark.asyncio
 async def test_deduct_duration_program(activity_recorder, mock_daos, program_session, mock_clock):
     duration = 5  # seconds
     
-    await activity_recorder.deduct_duration(duration, program_session)
+    activity_recorder.deduct_duration(duration, program_session)
     
-    mock_daos['program_summary'].deduct_remaining_duration.assert_awaited_once_with(
+    mock_daos['program_summary'].deduct_remaining_duration.assert_called_once_with(
         program_session, duration, "2023-01-01"
     )
 

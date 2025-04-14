@@ -46,24 +46,24 @@ class SessionIntegrityDao:
             print_and_log(program_phantoms, latest_shutdown_time, startup_time)
             print_and_log(domain_phantoms, latest_shutdown_time, startup_time)
 
-    async def find_orphans(self, latest_shutdown: datetime, startup_time: datetime):
+    def find_orphans(self, latest_shutdown: datetime, startup_time: datetime):
         """Find sessions that were never properly closed -- still open after shutdown."""
         # Implementation that uses system_status_dao to get power events
         # and checks against program/chrome logs
-        programs: List[ProgramSummaryLog] = await self.program_logging_dao.find_orphans(
+        programs: List[ProgramSummaryLog] = self.program_logging_dao.find_orphans(
             latest_shutdown, startup_time)
-        domains: List[DomainSummaryLog] = await self.chrome_logging_dao.find_orphans(latest_shutdown, startup_time)
+        domains: List[DomainSummaryLog] = self.chrome_logging_dao.find_orphans(latest_shutdown, startup_time)
         return programs, domains
 
-    async def find_phantoms(self, latest_shutdown: datetime, startup_time: datetime):
+    def find_phantoms(self, latest_shutdown: datetime, startup_time: datetime):
         """
         Find sessions that started during system power-off periods
         A phantom is a session that has its start time as "when the computer was surely off."
         """
         # Implementation that checks for session start times during power-off periods
-        programs: List[ProgramSummaryLog] = await self.program_logging_dao.find_phantoms(
+        programs: List[ProgramSummaryLog] = self.program_logging_dao.find_phantoms(
             latest_shutdown, startup_time)
-        domains: List[DomainSummaryLog] = await self.chrome_logging_dao.find_phantoms(latest_shutdown, startup_time)
+        domains: List[DomainSummaryLog] = self.chrome_logging_dao.find_phantoms(latest_shutdown, startup_time)
         return programs, domains
 
     async def audit_first_startup(self, startup_time: datetime):

@@ -16,8 +16,6 @@ class MouseTrackerCore:
         self.mouse_facade: MouseFacadeCore = mouse_api_facade
         self.event_handlers = event_handlers
 
-        self.event_handlers = event_handlers
-
         self.aggregator = EventAggregator(
             timeout_ms=1000, aggregate_class=MouseAggregate)
         self.logger = ConsoleLogger()
@@ -25,6 +23,7 @@ class MouseTrackerCore:
     def run_tracking_loop(self):
         # latest_result: MouseEvent | None = self.mouse_facade.read_event()
         available: List[MouseEvent] = self.mouse_facade.get_all_events()
+
         # TODO: Handle the fact that the MouseEvents are, are start_time, end_time whereas
         # keyboard events are just, timestamp.
         for event in available:
@@ -36,10 +35,19 @@ class MouseTrackerCore:
                 # and a third one starts.
                 # The aggregator is responding to when the now() runs, NOT when the event actually happened
                 finalized_aggregate = self.aggregator.add_event(event["start"])
+                print("added starT")
                 if finalized_aggregate:
+
                     self.conclude_aggregation(finalized_aggregate)
-                # it also belongs in the arr
-                self.aggregator.add_event(event["end"])
+                else:
+                    # Otherwise, the end of the mouse move might be so great, 
+                    # that the end of the event starts a new aggregate
+                    self.aggregator.extend_until(event["end"])
+                # print("added END")
+                # self.aggregator.add_event(event["end"])
+                # if finalized_aggregate:
+
+                #     self.conclude_aggregation(finalized_aggregate)
 
     def conclude_aggregation(self, finalized_agg):
         session = self.aggregator.package_mouse_events_for_db(

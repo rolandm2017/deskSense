@@ -27,29 +27,9 @@ class MockMouseFacade():
         temp = self.available
         self.available = []
         return temp
-
-
-# @pytest.fixture
-# def mock_clock():
-#     times = [
-#         datetime(2025, 1, 1, 12, 0, 0),
-#         datetime(2025, 1, 1, 12, 0, 1),
-#         datetime(2025, 1, 1, 12, 0, 2),
-#         datetime(2025, 1, 1, 12, 0, 3),
-#         datetime(2025, 1, 1, 12, 0, 4),
-#         datetime(2025, 1, 1, 12, 0, 5),
-#         datetime(2025, 1, 1, 12, 0, 6),
-#         datetime(2025, 1, 1, 12, 0, 7),
-#         datetime(2025, 1, 1, 12, 0, 8),
-#         datetime(2025, 1, 1, 12, 0, 9),
-#         datetime(2025, 1, 1, 12, 0, 10),
-#         datetime(2025, 1, 1, 12, 0, 11),
-#         datetime(2025, 1, 1, 12, 0, 12),
-#         datetime(2025, 1, 1, 12, 0, 13),
-#         datetime(2025, 1, 1, 12, 0, 14)
-#     ]
-#     return MockClock(times)
-
+    
+    def populate_event(self, event):
+        self.available.append(event)
 
 
 @pytest.fixture
@@ -93,10 +73,11 @@ def test_make_sure_handler_actually_handles(tracker_and_events, mock_mouse_facad
     t1 = now + timedelta(milliseconds=5)
     t2 = t1 + timedelta(milliseconds=5)
     t3 = t2 + timedelta(milliseconds=5)
-    t4 = t3 + timedelta(milliseconds=5)
-    t5 = t4 + timedelta(milliseconds=5)
-    t6 = t5 + timedelta(milliseconds=1005)
-    t7 = t6 + timedelta(milliseconds=5)
+    t4 = t3 + timedelta(milliseconds=35)
+    t5 = t4 + timedelta(milliseconds=1105)
+    t6 = t5 + timedelta(milliseconds=135)
+    t7 = t6 + timedelta(milliseconds=1205)
+    t8 = t7 + timedelta(milliseconds=500)
 
     t1_a = t1.timestamp()
     t2_a = t2.timestamp()
@@ -105,32 +86,25 @@ def test_make_sure_handler_actually_handles(tracker_and_events, mock_mouse_facad
     t5_a = t5.timestamp()
     t6_a = t6.timestamp()
     t7_a = t7.timestamp()
+    t8_a = t8.timestamp()
 
     x1 = {"start": t1_a, "end": t2_a}
-    x2 = {"start": t2_a, "end": t3_a}
-    x3 = {"start": t3_a, "end": t4_a}
-    x4 = {"start": t4_a, "end": t5_a}
-    x5 = {"start": t5_a, "end": t6_a}
-    x6 = {"start": t6_a, "end": t7_a}
+    x2_concludes = {"start": t3_a, "end": t4_a}
+    x3_concludes = {"start": t5_a, "end": t6_a}
+    x4 = {"start": t7_a, "end": t8_a}
 
-    mock_mouse_facade.set_cursor_pos(x1)
+    mock_mouse_facade.populate_event(x1)
+    mock_mouse_facade.populate_event(x2_concludes)
     tracker.run_tracking_loop()
-    mock_mouse_facade.set_cursor_pos(x2)
+    mock_mouse_facade.populate_event(x3_concludes)
     tracker.run_tracking_loop()
-    mock_mouse_facade.set_cursor_pos(x3)
-    tracker.run_tracking_loop()
-    mock_mouse_facade.set_cursor_pos(x4)
-    tracker.run_tracking_loop()
-    mock_mouse_facade.set_cursor_pos(x5)
-    tracker.run_tracking_loop()
-    mock_mouse_facade.set_cursor_pos(x6)
+    mock_mouse_facade.populate_event(x4)
     tracker.run_tracking_loop()
     # mock_mouse_facade.set_cursor_pos(x7)
     # tracker.run_tracking_loop()
 
     # Only check that the stops were logged, because they signal a closed window
-    assert len(events) == len(
-        [x3, x5]), "Some mouse events were not recorded"
+    assert len(events) == len([x2_concludes,x3_concludes]), "Some mouse events were not recorded"
 
 
 def test_multiple_handlers_are_called(tracker_and_events, mock_mouse_facade):
@@ -141,18 +115,27 @@ def test_multiple_handlers_are_called(tracker_and_events, mock_mouse_facade):
 
     now = datetime.now() - timedelta(hours=1)
     t1 = now + timedelta(milliseconds=5)
-    t2 = now + timedelta(milliseconds=5)
-    t3 = now + timedelta(milliseconds=5)
-    t4 = now + timedelta(milliseconds=5)
+    t2 = now + timedelta(milliseconds=35)
+    t2i = now + timedelta(milliseconds=45)
+    t2ii = now + timedelta(milliseconds=55)
+    t3 = now + timedelta(milliseconds=1090)
+    t4 = now + timedelta(milliseconds=1100)
+    t5 = now + timedelta(milliseconds=2300)
+    t6 = now + timedelta(milliseconds=2310)
 
     t1_a = t1.timestamp()
     t2_a = t2.timestamp()
+    t2i_a = t2i.timestamp()
+    t2ii_a = t2ii.timestamp()
     t3_a = t3.timestamp()
     t4_a = t4.timestamp()
+    t5_a = t5.timestamp()
+    t6_a = t6.timestamp()
 
     x1 = {"start": t1_a, "end": t2_a}
-    x2 = {"start": t2_a, "end": t3_a}
-    x3 = {"start": t3_a, "end": t4_a}
+    x1i = {"start": t2i_a, "end": t2ii_a}
+    x2 = {"start": t3_a, "end": t4_a}
+    x3 = {"start": t5_a, "end": t6_a}
 
     def handler1(event):
         handler1_calls.append(event)
@@ -164,14 +147,17 @@ def test_multiple_handlers_are_called(tracker_and_events, mock_mouse_facade):
     tracker.event_handlers = [handler1, handler2]
 
     # Simulate mouse movement and stop
-    mock_mouse_facade.set_cursor_pos(x1)
+    mock_mouse_facade.populate_event(x1)
+    mock_mouse_facade.populate_event(x1i)
     tracker.run_tracking_loop()
-    mock_mouse_facade.set_cursor_pos(x2)
+    mock_mouse_facade.populate_event(x2)
     tracker.run_tracking_loop()
-    mock_mouse_facade.set_cursor_pos(x3)
+    mock_mouse_facade.populate_event(x3)
     tracker.run_tracking_loop()
 
-    assert len(handler1_calls) == len(handler2_calls) == 1
+    num_of_gaps_greater_than_1000ms = 2
+
+    assert len(handler1_calls) == len(handler2_calls) == num_of_gaps_greater_than_1000ms
     assert handler1_calls[0] == handler2_calls[0]
 
 

@@ -108,7 +108,7 @@ class ChromeLoggingDao(BaseQueueingDao):
         ).order_by(DomainSummaryLog.domain_name)
         return await self.execute_query(query)
 
-    async def find_orphans(self,  latest_shutdown_time, startup_time):
+    def find_orphans(self,  latest_shutdown_time, startup_time):
         """
         Finds orphaned sessions that:
         1. Started before shutdown but never ended (end_time is None)
@@ -127,9 +127,9 @@ class ChromeLoggingDao(BaseQueueingDao):
                 DomainSummaryLog.end_time >= startup_time  # End time after startup
             )
         ).order_by(DomainSummaryLog.start_time)
-        return await self.execute_query(query)
+        return self.execute_query(query)
 
-    async def find_phantoms(self, latest_shutdown_time, startup_time):
+    def find_phantoms(self, latest_shutdown_time, startup_time):
         """
         Finds phantom sessions that impossibly started while the system was off.
 
@@ -143,7 +143,7 @@ class ChromeLoggingDao(BaseQueueingDao):
             # But before startup
             DomainSummaryLog.start_time < startup_time
         ).order_by(DomainSummaryLog.start_time)
-        return await self.execute_query(query)
+        return self.execute_query(query)
 
     def read_all(self):
         """Fetch all domain log entries"""
@@ -158,18 +158,21 @@ class ChromeLoggingDao(BaseQueueingDao):
             ).order_by(DomainSummaryLog.created_at.desc())
         return await self.execute_query(query)
 
-    async def push_window_ahead_ten_sec(self, session: ChromeSessionData):
-        log: DomainSummaryLog = await self.find_session(session)
+    def push_window_ahead_ten_sec(self, session: ChromeSessionData):
+        log: DomainSummaryLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")
-        log.end_time = session.end_time + timedelta(seconds=10)
-        async with self.async_session_maker() as db_session:
-            db_session.add(log)
-            await db_session.commit()
+        log.end_time = log.end_time + timedelta(seconds=10)
+        with self.regular_session() as db_session:
+            db_session.merge(log)
+            db_session.commit()
 
 
     def finalize_log(self, session: ChromeSessionData):
-        """Overwrite value from the heartbeat. Expect something to ALWAYS be in the db already at this point."""
+        """
+        Overwrite value from the heartbeat. Expect something to ALWAYS be in the db already at this point.
+        Note that if the computer was shutdown, this method is never called, and the rough estimate is kept.
+        """
         log: DomainSummaryLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")

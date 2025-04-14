@@ -43,5 +43,14 @@ class MockClock(ClockProtocol):
             self._current_time = next(self.times)
 
     def today_start(self):
-        return datetime.now(ZoneInfo(local_time_zone)).replace(
+        # Use self._current_time instead of datetime.now()
+        if self._current_time is None:
+            # If no time has been returned yet, get the next time
+            try:
+                self._current_time = next(self.times)
+            except StopIteration:
+                raise RuntimeError("MockClock ran out of times")
+        
+        # Return the start of the day for the current mocked time
+        return self._current_time.replace(
             hour=0, minute=0, second=0, microsecond=0)

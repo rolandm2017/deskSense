@@ -137,8 +137,8 @@ async def global_test_engine():
         # Proper cleanup at the end of all tests
         await test_engine.dispose()
         # Force garbage collection
-        import gc
-        gc.collect()
+        # import gc
+        # gc.collect()
 
 @pytest_asyncio.fixture(scope="function")
 async def async_engine_and_asm(global_test_engine):

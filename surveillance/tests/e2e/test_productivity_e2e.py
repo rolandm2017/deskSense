@@ -30,6 +30,8 @@ from surveillance.src.surveillance_manager import FacadeInjector, SurveillanceMa
 from surveillance.src.object.classes import ChromeSessionData, ProgramSessionData
 from surveillance.src.util.program_tools import separate_window_name_and_detail
 from surveillance.src.util.clock import UserFacingClock
+from surveillance.src.util.const import SECONDS_PER_HOUR
+
 from surveillance.src.util.time_formatting import convert_to_utc
 
 from ..mocks.mock_clock import MockClock
@@ -120,7 +122,7 @@ async def test_setup_conditions(regular_session, plain_asm):
 # # # #
 # Trackers -> Arbiter
 
-@pytest.mark.skip(reason="temp for other tests")
+# @pytest.mark.skip(reason="temp for other tests")
 @pytest.mark.asyncio
 async def test_tracker_to_arbiter(plain_asm, regular_session, times_from_test_data):
 
@@ -303,7 +305,7 @@ async def test_tracker_to_arbiter(plain_asm, regular_session, times_from_test_da
 # Chrome Svc -> Arbiter
 
 @pytest.mark.asyncio
-@pytest.mark.skip("working on below test")
+# @pytest.mark.skip("working on below test")
 async def test_chrome_svc_to_arbiter_path(regular_session, plain_asm):
     chrome_events_for_test = chrome_data
 
@@ -491,7 +493,13 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
 
     times_for_window_push.append(final_time)  # used for what?
 
-    clock_again = MockClock([final_time])
+    for g in times_for_window_push:
+        print(g, '495ru')
+
+    # Test setup conditions!
+    assert all(t.day == 22 for t in times_for_window_push), "All days should be 22 like in the above test data"
+
+    clock_again = MockClock(times_for_window_push)
 
     # FIXME: NEed to have sessions be written with THE TIME in THE EVENT, not 04-11 (today)
 
@@ -553,7 +561,6 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     assert len(pro_sum) == 0, "An important table was not empty"
     assert len(chrome_summaries) == 0, "An important table was not empty"
     
-    
     # Create spies on the DAOs' push window methods
     program_summary_push_spy = Mock(
         side_effect=program_summary_dao.push_window_ahead_ten_sec)
@@ -569,6 +576,16 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
 
     chrome_create_spy = Mock(side_effect=chrome_summary_dao._create)
     chrome_summary_dao._create = chrome_create_spy
+
+    # Create spies on the DAOs' deduct_remaining_duration methods
+    program_summary_deduct_spy = Mock(
+        side_effect=program_summary_dao.deduct_remaining_duration)
+    program_summary_dao.deduct_remaining_duration = program_summary_deduct_spy
+
+    chrome_summary_deduct_spy = Mock(
+        side_effect=chrome_summary_dao.deduct_remaining_duration)
+    chrome_summary_dao.deduct_remaining_duration = chrome_summary_deduct_spy
+
 
     # activity_recorder = ActivityRecorder(
     #     clock_again, program_logging_dao, chrome_logging_dao, program_summary_dao, chrome_summary_dao)
@@ -701,10 +718,10 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     # ### [Recorder layer]
     # #
     assert program_start_session_spy.call_count == len(end_of_prev_test_programs), "Expected each session to make it through one time"
-
+    
+    #
     # The DAOs recorded the expected number of times
-    expected_program_call_count = count_of_programs
-    expected_chrome_call_count = count_of_tabs
+    #
 
     assert activity_recorder_add_ten_spy.call_count == 0  # because the sessions change too fast for the pulse
 
@@ -716,6 +733,20 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     
     assert pr_finalize_spy.call_count == count_of_programs
     assert ch_finalize_spy.call_count == count_of_tabs - one_left_in_arbiter
+
+    #
+    # The DAOs were called in the expected order with the expected args
+    #
+
+    # This next section is obtusely plain on purpose.
+    assert isinstance(pr_start_session_spy.call_args_list[0][0][0], ProgramSessionData)
+    assert isinstance(pr_start_session_spy.call_args_list[1][0][0], ProgramSessionData)
+    assert isinstance(pr_start_session_spy.call_args_list[2][0][0], ProgramSessionData)
+    assert isinstance(pr_start_session_spy.call_args_list[3][0][0], ProgramSessionData)
+    assert isinstance(ch_start_session_spy.call_args_list[0][0][0], ChromeSessionData)
+    assert isinstance(ch_start_session_spy.call_args_list[1][0][0], ChromeSessionData)
+    assert isinstance(ch_start_session_spy.call_args_list[2][0][0], ChromeSessionData)
+    assert isinstance(ch_start_session_spy.call_args_list[3][0][0], ChromeSessionData)
 
     # The DAOs recorded the expected amount of time
     # Check the arguments that were passed were as expected
@@ -744,11 +775,10 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     # # Summary DAO tests
     # #
 
-    for j in program_summary_push_spy.call_args_list:
-        print(j, "716ru")
-
     assert program_start_session_spy.call_count == count_of_programs
     assert chrome_start_session_spy.call_count == count_of_tabs
+
+    # Start session
 
     for i in range(len(program_events_from_prev_test)):
         program_arg = program_start_session_spy.call_args_list[i][0][0]
@@ -764,23 +794,48 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
         # assert isinstance(right_now_arg, datetime)
         assert chrome_arg.domain == chrome_events_from_prev_test[i].domain
 
-    # Assert that _create was called with SOME DURATION greater than zero for duration
-    # for i in range(len(program_events_from_prev_test)):
-    #     name_arg = program_create_spy.call_args_list[i][0][0]
-    #     duration_arg = program_create_spy.call_args_list[i][0][1]
-        
-    #     assert isinstance(name_arg, str)
-    #     assert duration_arg > 0, "The duration of the usage should be greater than zero"
 
- 
+    # Deduct remaining duration
+    assert program_summary_deduct_spy.call_count == count_of_programs
+    assert chrome_summary_deduct_spy.call_count == count_of_tabs - one_left_in_arbiter
+
+    for i in range(len(program_events_from_prev_test)):
+        date_of_deduction = program_summary_deduct_spy.call_args_list[i][0][2]
+
+        assert isinstance(date_of_deduction, datetime)
+        assert date_of_deduction.day == program_events_from_prev_test[0].start_time.day
+
+    for i in range(len(chrome_events_from_prev_test) - one_left_in_arbiter):
+        date_of_deduction = chrome_summary_deduct_spy.call_args_list[i][0][2]
+
+        assert isinstance(date_of_deduction, datetime)
+        assert date_of_deduction.day == chrome_events_from_prev_test[0].start_time.day
+
+    num_of_unique_programs = 3
+    num_of_unique_domains = 3
+    assert program_create_spy.call_count == num_of_unique_programs  # there are 3 unique programs; Chrome is twice.
+    assert chrome_create_spy.call_count == num_of_unique_domains  # There are 3 unique tabs; ChatGPT is in twice.
+
+    # Assert that _create was called with SOME DURATION greater than zero for duration
+    for i in range(num_of_unique_programs):
+        name_arg = program_create_spy.call_args_list[i][0][0]
+        duration_arg = program_create_spy.call_args_list[i][0][1]
+        
+        assert isinstance(name_arg, str)
+        assert duration_arg > 0, "The duration of the usage should be greater than zero"
+
+    # _create
 
     # TODO: Assert that _create was called with SOME DURATION greater than zero for duration
-    for i in range(len(chrome_events_from_prev_test) - one_left_in_arbiter):
+    for i in range(num_of_unique_domains):
         name_arg = chrome_create_spy.call_args_list[i][0][0]
         duration_arg = chrome_create_spy.call_args_list[i][0][1]
         
         assert isinstance(name_arg, str)
         assert duration_arg > 0, "The duration of the usage should be greater than zero"
+
+
+    
 
 
     # ###
@@ -834,6 +889,17 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
                                          chrome_summary_dao,
                                          chrome_logging_dao)
 
+    # #      /\
+    # #     //\\
+    # #    //  \\
+    # #   //    \\
+    # #  //      \\
+    # # /_________\\
+    # #
+    # #  #  #  #  #
+    # # Second, we request the full week of productivity as a summary.
+    # # #  #  #  #
+    # # We verify that the total hours are as expected
 
     # # Events are from 03-22, a Saturday.
     # # So we need 03-16, the prior Sunday.
@@ -849,21 +915,11 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
 
     # total_program_time = 3  # FIXME: what were these? 3, 9?
     # total_chrome_time = 9
-    assert production + leisure == (sum_of_program_times.seconds + sum_of_tab_times.seconds) / 3600
+    assert production + leisure == (sum_of_program_times.seconds + sum_of_tab_times.seconds) / SECONDS_PER_HOUR
     # 3600 is 60 * 60
 
 
-# #      /\
-# #     //\\
-# #    //  \\
-# #   //    \\
-# #  //      \\
-# # /_________\\
-# #
-# #  #  #  #  #
-# # Second, we request the full week of productivity as a summary.
-# # #  #  #  #
-# # We verify that the total hours are as expected
+
 
 
 # #      @@@@@

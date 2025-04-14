@@ -104,6 +104,10 @@ class ActivityStateMachine:
 
     def get_concluded_session(self) -> InternalState | None:
         """Assumes the prior state is the updated transformation from set_new_session"""
+        print(self.prior_state, '107ru')
+        on_initialization = self.prior_state is None
+        if on_initialization:  
+            return None
         return self.prior_state.session
 
     def conclude_without_replacement(self):

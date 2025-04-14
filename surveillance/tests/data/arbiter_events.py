@@ -67,102 +67,46 @@ times_for_system_clock = [t2, t3, t4, t5,
 
 
 # 1. Chrome - Claude
-session1 = ChromeSessionData()
-session1.domain = claude_ai
-session1.detail = "Python code refactoring"
-session1.start_time = t1
-session1.productive = True
+session1 = ChromeSessionData(claude_ai, "Python code refactoring", t1, productive=True)
 
 # 2. Pycharm
-session2 = ProgramSessionData()
-session2.window_title = pycharm
-session2.detail = "main.py - project_tracker"
-session2.start_time = t2
-session2.productive = True
+session2 = ProgramSessionData(pycharm, "main.py - project_tracker", t2, productive=True)
 
 # 3. Chrome - Claude
-session3 = ChromeSessionData()
-session3.domain = claude_ai
-session3.detail = "Data structure optimization"
-session3.start_time = t3
-session3.productive = True
+session3 = ChromeSessionData(claude_ai, "Data structure optimization", t3, productive=True)
 
 # 4. Chrome - StackOverflow
-session4 = ChromeSessionData()
-session4.domain = stackoverflow
-session4.detail = "Python datetime questions"
-session4.start_time = t4
-session4.productive = True
+session4 = ChromeSessionData(stackoverflow, "Python datetime questions", t4, productive=True)
 
 # 5. Pycharm
-session5 = ProgramSessionData()
-session5.window_title = pycharm
-session5.detail = "utils.py - time formatting functions"
-session5.start_time = t5
-session5.productive = True
+session5 = ProgramSessionData(pycharm, "utils.py - time formatting functions", t5, productive=True)
 
 # 6. Ventrilo
-session6 = ProgramSessionData()
-session6.window_title = ventrilo
-session6.detail = "Python Developers - #help-requests"
-session6.start_time = t6
-session6.productive = True
+session6 = ProgramSessionData(ventrilo, "Python Developers - #help-requests", t6, productive=True)
 
 # 7. Chrome - StackOverflow
-session7 = ChromeSessionData()
-session7.domain = stackoverflow
-session7.detail = "Python class inheritance"
-session7.start_time = t7
-session7.productive = True
+session7 = ChromeSessionData(stackoverflow, "Python class inheritance", t7, productive=True)
 
 # 8. Chrome - Twitter.com
-session8 = ChromeSessionData()
-session8.domain = twitter
-session8.detail = "Tech news feed"
-session8.start_time = t8
-session8.productive = False
+session8 = ChromeSessionData(twitter, "Tech news feed", t8, productive=False)
 
 # 9. Ventrilo
-session9 = ProgramSessionData()
-session9.window_title = ventrilo
-session9.detail = "Python Developers - #off-topic"
-session9.start_time = t9
-session9.productive = False
+session9 = ProgramSessionData(ventrilo, "Python Developers - #off-topic", t9, productive=False)
 
 # 10. Pycharm
-session10 = ProgramSessionData()
-session10.window_title = pycharm
-session10.detail = "session_tracker.py - debugging"
-session10.start_time = t10
-session10.productive = True
+session10 = ProgramSessionData(pycharm, "session_tracker.py - debugging", t10, productive=True)
 
 # 11. Postman
-session11 = ProgramSessionData()
-session11.window_title = "Postman"
-session11.detail = "API testing - session endpoints"
-session11.start_time = t11
-session11.productive = True
+session11 = ProgramSessionData(postman, "API testing - session endpoints", t11, productive=True)
 
 # 12. Ventrilo
-session12 = ProgramSessionData()
-session12.window_title = ventrilo
-session12.detail = "API Development - #general"
-session12.start_time = t12
-session12.productive = True
+session12 = ProgramSessionData(ventrilo, "API Development - #general", t12, productive=True)
 
 # 13. Chrome - Twitter.com
-session13 = ChromeSessionData()
-session13.domain = twitter
-session13.detail = "Developer threads"
-session13.start_time = t13
-session13.productive = False
+session13 = ChromeSessionData(twitter, "Developer threads", t13, productive=False)
 
 # 14. Chrome - Claude
-session14 = ChromeSessionData()
-session14.domain = claude_ai
-session14.detail = "Code review assistance"
-session14.start_time = t14
-session14.productive = True
+session14 = ChromeSessionData(claude_ai, "Code review assistance", t14, productive=True)
 
 test_sessions = [session1,
                  session2,

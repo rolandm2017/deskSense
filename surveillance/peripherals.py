@@ -3,8 +3,8 @@
 Wrapper to run the linux_peripheral_detector from the project root.
 """
 # File is surveillance/peripherals.py
-from src.trackers.linux.linux_peripheral_detector import monitor_keyboard, monitor_mouse
-from src.trackers.message_dispatch import publish_keyboard_event, publish_mouse_events
+from surveillance.src.trackers.linux.linux_peripheral_detector import monitor_keyboard, monitor_mouse
+from surveillance.src.trackers.message_dispatch import publish_keyboard_event, publish_mouse_events
 import src.trackers.linux.linux_peripheral_detector as detector
 import threading
 import os

@@ -59,11 +59,6 @@ class ProgramSessionData:
         self.start_time = start_time
         self.end_time = end_time
         if start_time and end_time:
-            # if isinstance(start_time, str) and isinstance(end_time, str):
-            #     start = datetime.fromisoformat(start_time)
-            #     end = datetime.fromisoformat(end_time)
-            #     self.duration = end - start
-            # else:
             self.duration = end_time - start_time
         else:
             if duration_for_tests:

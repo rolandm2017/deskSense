@@ -38,24 +38,24 @@ class TestActivityStateMachine:
 
         # Act
         asm.set_new_session(first_session)
-        response = asm.get_finished_state()
+        response = asm.get_concluded_session()
 
         # None because there IS no prior state to conclude by startign a new session
         assert response is None
 
         # Act
         asm.set_new_session(second)
-        response = asm.get_finished_state()
+        response = asm.get_concluded_session()
 
         assert response is not None
-        assert response.active_application == first_session.window_title
-        assert response.session.window_title == first_session.window_title
-        assert response.session.start_time == first_session.start_time
-        assert response.session.end_time is not None
+        assert response.window_title == first_session.window_title
+        assert response.window_title == first_session.window_title
+        assert response.start_time == first_session.start_time
+        assert response.end_time is not None
         # Might not always work out so neatly:
-        assert response.session.end_time == second.start_time
+        assert response.end_time == second.start_time
 
-        assert response.session.end_time == slightly_later
+        assert response.end_time == slightly_later
 
     def test_handle_series(self):
 
@@ -81,52 +81,52 @@ class TestActivityStateMachine:
         fifth = ProgramSessionData("Terminal", "~/Documents", t5)
 
         asm.set_new_session(session1)
-        response1 = asm.get_finished_state()
+        response1 = asm.get_concluded_session()
 
         assert response1 is None
 
         asm.set_new_session(second)
-        response2 = asm.get_finished_state()
+        response2 = asm.get_concluded_session()
 
         assert response2 is not None
-        assert isinstance(response2, ApplicationInternalState)
-        assert response2.active_application == session1.window_title
+        assert isinstance(response2, ProgramSessionData)
+        assert response2.window_title == session1.window_title
         print(t1.strftime('%M:%S'), "\n", t2.strftime('%M:%S'))
-        assert response2.session.start_time == t1
-        assert response2.session.end_time is not None
-        assert response2.session.end_time != t1
-        assert response2.session.end_time == t2
+        assert response2.start_time == t1
+        assert response2.end_time is not None
+        assert response2.end_time != t1
+        assert response2.end_time == t2
 
         asm.set_new_session(third)
-        response3 = asm.get_finished_state()
+        response3 = asm.get_concluded_session()
 
         assert response3 is not None
-        assert isinstance(response3, ChromeInternalState)
-        assert response3.session.domain == second.domain
-        assert response3.session.start_time == t2
-        assert response3.session.end_time is not None
-        assert response3.session.end_time != t2
-        assert response3.session.end_time == t3
+        assert isinstance(response3, ChromeSessionData)
+        assert response3.domain == second.domain
+        assert response3.start_time == t2
+        assert response3.end_time is not None
+        assert response3.end_time != t2
+        assert response3.end_time == t3
 
         asm.set_new_session(fourth)
-        response4 = asm.get_finished_state()
+        response4 = asm.get_concluded_session()
 
         assert response4 is not None
-        assert isinstance(response4, ChromeInternalState)
-        assert response4.session.domain == third.domain
-        assert response4.session.start_time == t3
-        assert response4.session.end_time is not None
-        assert response4.session.end_time == t4
+        assert isinstance(response4, ChromeSessionData)
+        assert response4.domain == third.domain
+        assert response4.start_time == t3
+        assert response4.end_time is not None
+        assert response4.end_time == t4
 
         asm.set_new_session(fifth)
-        response5 = asm.get_finished_state()
+        response5 = asm.get_concluded_session()
 
         assert response5 is not None
-        assert isinstance(response5, ApplicationInternalState)
-        assert response5.active_application == fourth.window_title
-        assert response5.session.start_time == t4
-        assert response5.session.end_time is not None
-        assert response5.session.end_time == t5
+        assert isinstance(response5, ProgramSessionData)
+        assert response5.window_title == fourth.window_title
+        assert response5.start_time == t4
+        assert response5.end_time is not None
+        assert response5.end_time == t5
 
         # Verify that the internal stuff is as expected for the unfinished section
         assert asm.current_state is not None

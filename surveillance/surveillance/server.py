@@ -14,14 +14,14 @@ from datetime import date, datetime
 from time import time
 
 
-from src.db.database import init_db, async_session_maker, regular_session_maker
-from src.db.models import DailyDomainSummary, DailyProgramSummary, ProgramSummaryLog
+from surveillance.src.db.database import init_db, async_session_maker, regular_session_maker
+from surveillance.src.db.models import DailyDomainSummary, DailyProgramSummary, ProgramSummaryLog
 
-# from src.services import MouseService, KeyboardService, ProgramService, DashboardService, ChromeService
-# from src.services import get_mouse_service, get_chrome_service, get_program_service, get_keyboard_service, get_dashboard_service
-from src.object.pydantic_dto import TabChangeEvent
+# from surveillance.src.services import MouseService, KeyboardService, ProgramService, DashboardService, ChromeService
+# from surveillance.src.services import get_mouse_service, get_chrome_service, get_program_service, get_keyboard_service, get_dashboard_service
+from surveillance.src.object.pydantic_dto import TabChangeEvent
 
-from src.object.dashboard_dto import (
+from surveillance.src.object.dashboard_dto import (
     MouseEventsPayload,
     PartiallyPrecomputedWeeklyTimeline,
     ProductivityBreakdownByWeek,
@@ -34,36 +34,36 @@ from src.object.dashboard_dto import (
     WeeklyProgramUsageTimeline, WeeklyTimeline, DayOfTimelineRows
 )
 
-from src.util.pydantic_factory import (
+from surveillance.src.util.pydantic_factory import (
     make_keyboard_log, make_mouse_log, make_program_log,
     manufacture_chrome_bar_chart, manufacture_programs_bar_chart,
     DtoMapper
 )
-from src.surveillance_manager import FacadeInjector, SurveillanceManager
+from surveillance.src.surveillance_manager import FacadeInjector, SurveillanceManager
 
-from src.services.dashboard_service import DashboardService
-from src.services.chrome_service import ChromeService
+from surveillance.src.services.dashboard_service import DashboardService
+from surveillance.src.services.chrome_service import ChromeService
 
 
-from src.services.services import (
+from surveillance.src.services.services import (
     KeyboardService, MouseService, ProgramService, TimezoneService,  VideoService
 )
-from src.service_dependencies import (
+from surveillance.src.service_dependencies import (
     get_keyboard_service, get_mouse_service, get_program_service,
     get_dashboard_service, get_chrome_service, get_activity_arbiter, get_timezone_service,
     get_video_service
 )
-from src.object.return_types import DaySummary
+from surveillance.src.object.return_types import DaySummary
 
-from src.util.debug_logger import capture_chrome_data_for_tests
-from src.util.console_logger import ConsoleLogger
+from surveillance.src.util.debug_logger import capture_chrome_data_for_tests
+from surveillance.src.util.console_logger import ConsoleLogger
 
 
-from src.routes.report_routes import router as report_router
-from src.routes.video_routes import router as video_routes
-from src.util.clock import UserFacingClock
-from src.facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
-# from src.facade.program_facade import ProgramApiFacadeCore
+from surveillance.src.routes.report_routes import router as report_router
+from surveillance.src.routes.video_routes import router as video_routes
+from surveillance.src.util.clock import UserFacingClock
+from surveillance.src.facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
+# from surveillance.src.facade.program_facade import ProgramApiFacadeCore
 
 import sys
 import os
@@ -101,10 +101,10 @@ async def lifespan(app: FastAPI):
 
     def choose_program_facade(os):
         if os.is_windows:
-            from src.facade.program_facade_windows import WindowsProgramFacadeCore
+            from surveillance.src.facade.program_facade_windows import WindowsProgramFacadeCore
             return WindowsProgramFacadeCore()
         else:
-            from src.facade.program_facade_ubuntu import UbuntuProgramFacadeCore
+            from surveillance.src.facade.program_facade_ubuntu import UbuntuProgramFacadeCore
             return UbuntuProgramFacadeCore()
 
     facades = FacadeInjector(get_keyboard_facade_instance,

@@ -8,7 +8,7 @@ class TimeKeeper:
 
     Problem statement: 
     
-    The user is in EST, the database in UTC, some machine off in China in CST.
+    The user is in EST, the database in UTC, some machine off in China in CST when User goes on vacation.
     You have to convert timezones every which way and a plain "datetime" typing
     could mean PST, EST, UTC, CST, JST. How is the developer to know which to use?
 
@@ -28,3 +28,6 @@ class TimeKeeper:
         
     def get_db_storage_format(self):
         return self.time_as_utc()
+
+    def convert_utc_to_local_time(self, time_as_utc):
+        pass

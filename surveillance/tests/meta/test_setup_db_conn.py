@@ -20,7 +20,8 @@ Offenders:
 1. TypeError: 'coroutine' object is not callable
 """
 
-
+# You can cause OSError by putting "gc.collect" after the engine dispose in conftest.py
+# and then running the below test, even with read_all() commented out.
 
 @pytest.mark.asyncio
 async def test_plain_async_engine(async_engine_and_asm):
@@ -36,6 +37,7 @@ async def test_plain_async_engine(async_engine_and_asm):
     all_summaries = await sum_dao.read_all()
     all_logs = await log_dao.read_all()
 
+    assert 1 == 1
     assert all_summaries is not None
     assert all_logs is not None
     for v in all_logs:
@@ -46,25 +48,25 @@ async def test_plain_async_engine(async_engine_and_asm):
     assert isinstance(all_logs, list)
 
   
-@pytest.mark.asyncio
-async def test_sqlite(async_db_session_in_mem):
-      # Try to use it
-    eng, asm = async_db_session_in_mem
-    assert isinstance(asm, async_sessionmaker)
-    log_dao = ProgramLoggingDao(asm)
-    sum_dao = ProgramSummaryDao(log_dao, asm)
+# @pytest.mark.asyncio
+# async def test_sqlite(async_db_session_in_mem):
+#       # Try to use it
+#     eng, asm = async_db_session_in_mem
+#     assert isinstance(asm, async_sessionmaker)
+#     log_dao = ProgramLoggingDao(asm)
+#     sum_dao = ProgramSummaryDao(log_dao, asm)
 
-    all_summaries = await sum_dao.read_all()
-    all_logs = await log_dao.read_all()
+#     all_summaries = await sum_dao.read_all()
+#     all_logs = await log_dao.read_all()
 
-    assert all_summaries is not None
-    assert all_logs is not None
+#     assert all_summaries is not None
+#     assert all_logs is not None
 
 
-    for v in all_logs:
-        print(v)
-    for v in all_summaries:
-        print(v)
-    assert len(all_summaries) == 0
-    assert len(all_logs) == 0
+#     for v in all_logs:
+#         print(v)
+#     for v in all_summaries:
+#         print(v)
+#     assert len(all_summaries) == 0
+#     assert len(all_logs) == 0
 

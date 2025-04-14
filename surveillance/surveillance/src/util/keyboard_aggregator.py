@@ -72,6 +72,9 @@ class EventAggregator:
     def start_new_aggregate(self, timestamp):
         self.current_aggregation = InProgressAggregation(
             timestamp, timestamp, [timestamp])
+        
+    def extend_until(self, time_for_extension):
+        self.current_aggregation.end_time = time_for_extension
 
     def force_complete(self) -> Optional[InProgressAggregation]:
         """Used only in stop() and when shutting down"""
