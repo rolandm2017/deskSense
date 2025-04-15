@@ -37,6 +37,7 @@ class ProgramLoggingDao(BaseQueueingDao):
                          batch_size=batch_size, flush_interval=flush_interval, dao_name=dao_name)
         self.regular_session = session_maker
         self.async_session_maker = async_session_maker
+        self.logger = ConsoleLogger()
 
     @validate_session
     def create_log(self, session: ProgramSessionData, right_now: datetime):
@@ -72,7 +73,7 @@ class ProgramLoggingDao(BaseQueueingDao):
         """
         A session of using a domain. End_time here is like, "when did the user tab away from the program?"
         """
-        print("[debug] starting session for ", session.window_title)
+        self.logger.log_white_multiple("INFO: starting session for ", session.window_title)
         unknown = None
         base_start_time = convert_to_utc(session.start_time)
         start_of_day = get_start_of_day(session.start_time)

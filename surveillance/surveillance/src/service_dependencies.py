@@ -139,13 +139,13 @@ async def get_activity_arbiter():
     loop = asyncio.get_event_loop()
     system_clock = SystemClock()
     user_facing_clock = UserFacingClock()
-    chrome_logging_dao = ChromeLoggingDao(async_session_maker)
-    program_logging_dao = ProgramLoggingDao(async_session_maker)
+    chrome_logging_dao = ChromeLoggingDao(regular_session_maker, async_session_maker)
+    program_logging_dao = ProgramLoggingDao(regular_session_maker, async_session_maker)
 
     program_summary_dao = ProgramSummaryDao(
-        program_logging_dao, async_session_maker)
+        program_logging_dao, regular_session_maker, async_session_maker)
     chrome_summary_dao = ChromeSummaryDao(
-        chrome_logging_dao, async_session_maker)
+        chrome_logging_dao, regular_session_maker, async_session_maker)
 
     global _arbiter_instance
     if not _arbiter_instance:

@@ -151,7 +151,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             # Commit the changes
             session.commit()
         
-    async def push_window_ahead_ten_sec(self, program_session: ProgramSessionData, right_now):
+    def push_window_ahead_ten_sec(self, program_session: ProgramSessionData, right_now):
         """
         Finds the given session and adds ten sec to its end_time
         
@@ -167,11 +167,11 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.gathering_date >= today_start,
             DailyProgramSummary.gathering_date < tomorrow_start
         )        
-        async with self.session_maker() as db_session:
+        with self.regular_session() as db_session:
             program: DailyProgramSummary = db_session.scalars(query).first()
             # Update it if found
             if program:
-                program.hours_spent = program.hours_spent + timedelta(seconds=10)
+                program.hours_spent = program.hours_spent + 10 / SECONDS_PER_HOUR
                 db_session.commit()
             else:
                 # If the code got here, the summary wasn't even created yet,

@@ -140,7 +140,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             # Commit the changes
             session.commit()
         
-    async def push_window_ahead_ten_sec(self, chrome_session: ChromeSessionData, right_now):
+    def push_window_ahead_ten_sec(self, chrome_session: ChromeSessionData, right_now):
         """Finds the given session and adds ten sec to its end_time
         
         NOTE: This only ever happens after start_session
@@ -155,11 +155,11 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyDomainSummary.gathering_date >= today_start,
             DailyDomainSummary.gathering_date < tomorrow_start
         )        
-        async with self.session_maker() as db_session:
+        with self.regular_session() as db_session:
             domain: DailyDomainSummary = db_session.scalars(query).first()
             # Update it if found
             if domain:
-                domain.hours_spent = domain.hours_spent + timedelta(seconds=10)
+                domain.hours_spent = domain.hours_spent + 10 / SECONDS_PER_HOUR
                 db_session.commit()
             else:
                 # If the code got here, the summary wasn't even created yet,
@@ -195,7 +195,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             domain: DailyDomainSummary = db_session.scalars(query).first()
             # Update it if found
             if domain:
-                domain.hours_spent = domain.hours_spent - timedelta(seconds=duration_in_sec)
+                domain.hours_spent = domain.hours_spent - duration_in_sec / SECONDS_PER_HOUR
                 db_session.commit()
             else:
                 # If the code got here, the summary wasn't even created yet,

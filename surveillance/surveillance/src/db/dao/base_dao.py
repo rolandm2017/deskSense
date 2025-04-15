@@ -157,7 +157,6 @@ class BaseQueueingDao:
         # Only clear the queue task reference if it's this task
         if self._queue_task is task:
             self._queue_task = None
-            print("Queue task reference cleared")
 
     async def _save_batch_to_db(self, batch):
         """Save a batch of items to the database"""

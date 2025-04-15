@@ -99,6 +99,8 @@ async def lifespan(app: FastAPI):
     chrome_service = await get_chrome_service()
     arbiter = await get_activity_arbiter()
 
+    user_facing_clock = UserFacingClock()
+
     def choose_program_facade(os):
         if os.is_windows:
             from surveillance.src.facade.program_facade_windows import WindowsProgramFacadeCore
@@ -109,7 +111,7 @@ async def lifespan(app: FastAPI):
 
     facades = FacadeInjector(get_keyboard_facade_instance,
                              get_mouse_facade_instance, choose_program_facade)
-    surveillance_state.manager = SurveillanceManager(
+    surveillance_state.manager = SurveillanceManager(user_facing_clock,
         async_session_maker, regular_session_maker, chrome_service, arbiter, facades)
     surveillance_state.manager.start_trackers()
 

@@ -57,6 +57,10 @@ class ConsoleLogger:
         if self.active:
             print(f"\033[94m{message}\033[0m")
 
+    def log_white(self, *args):
+        if self.active:
+            print(*args)
+
     def log_white_multiple(self, *args):
         if self.active:
             print(*args)

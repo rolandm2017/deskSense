@@ -41,6 +41,7 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
         pid = self.win32process.GetWindowThreadProcessId(window)[1]
         
         try:
+            # FIXME: ValueError: pid must be a positive integer (got -516382288)
             process = psutil.Process(pid)
             process_name = process.name()
         except (psutil.NoSuchProcess, psutil.AccessDenied):
