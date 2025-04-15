@@ -149,7 +149,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         
         starting_window_amt = 10  # sec
         usage_duration_in_hours =  starting_window_amt/ SECONDS_PER_HOUR
-        
+
         today = right_now.replace(hour=0, minute=0, second=0,
                             microsecond=0)  # Still has tz attached
         self._create(target_domain_name, usage_duration_in_hours, today)
@@ -214,6 +214,8 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
                 domain.hours_spent = domain.hours_spent - duration_in_sec / SECONDS_PER_HOUR
                 db_session.commit()
             else:
+                # FIXME: Remove this else, it should never happen now that start_session exists here too
+
                 # If the code got here, the summary wasn't even created yet,
                 # which is likely! for the first time a program enters the program,
                 # if it is cut off before the first 10 sec window elapses.

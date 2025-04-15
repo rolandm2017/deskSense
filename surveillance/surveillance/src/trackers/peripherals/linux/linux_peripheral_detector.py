@@ -21,10 +21,10 @@ from datetime import datetime
 import os
 from dotenv import load_dotenv
 
-from surveillance.src.message_dispatch import publish_keyboard_event, publish_mouse_events
+from surveillance.src.trackers.message_dispatch import publish_keyboard_event, publish_mouse_events
 
-from surveillance.src.util.mouse_event_aggregator import MouseEventAggregator
-from surveillance.src.util.mouse_event_dispatch import MouseEventDispatch
+from surveillance.src.trackers.peripherals.util.mouse_event_aggregator import MouseEventAggregator
+from surveillance.src.trackers.peripherals.util.mouse_event_dispatch import MouseEventDispatch
 
 from surveillance.src.object.classes import MouseAggregate
 
@@ -35,7 +35,7 @@ load_dotenv()
 
 
 
-def monitor_keyboard(device_path, send_keyboard_event):
+def linux_monitor_keyboard(device_path, send_keyboard_event):
     """
     Monitor keyboard events in a separate thread using the efficient read_loop()
 
@@ -75,7 +75,7 @@ mouse_event_dispatch = MouseEventDispatch(
     mouse_aggregator, publish_mouse_events)
 
 
-def monitor_mouse(device_path):
+def linux_monitor_mouse(device_path):
     """
     Monitor mouse events in a separate thread using the efficient read_loop()
 
@@ -139,13 +139,13 @@ if __name__ == "__main__":
 
     # Create and start threads
     keyboard_thread = threading.Thread(
-        target=monitor_keyboard,
+        target=linux_monitor_keyboard,
         args=(keyboard_path, debug_logger_simple),
         daemon=True
     )
 
     mouse_thread = threading.Thread(
-        target=monitor_mouse,
+        target=linux_monitor_mouse,
         args=(mouse_path, mouse_event_dispatch),
         daemon=True
     )

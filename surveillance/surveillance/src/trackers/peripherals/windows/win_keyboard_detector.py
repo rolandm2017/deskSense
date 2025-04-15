@@ -6,7 +6,7 @@ import os
 import time
 from datetime import datetime
 
-from surveillance.src.message_dispatch import publish_keyboard_event, publish_mouse_events
+from surveillance.src.trackers.message_dispatch import publish_keyboard_event, publish_mouse_events
 
 # Set up logging
 logging.basicConfig(

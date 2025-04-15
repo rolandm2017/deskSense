@@ -162,8 +162,6 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             # Commit the changes
             session.commit()
 
-
-        
     def push_window_ahead_ten_sec(self, program_session: ProgramSessionData, right_now):
         """
         Finds the given session and adds ten sec to its end_time
@@ -188,7 +186,6 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             program.hours_spent = program.hours_spent + 10 / SECONDS_PER_HOUR
             db_session.commit()
                 
-
     def deduct_remaining_duration(self, session: ProgramSessionData, duration_in_sec: int, today_start):
         """
         When a session is concluded, it was concluded partway thru the 10 sec window
@@ -213,6 +210,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
                 program.hours_spent = program.hours_spent - duration_in_sec / SECONDS_PER_HOUR
                 db_session.commit()
             else:
+                # FIXME: Remove this else, it should never happen now that start_session exists here too
                 # If the code got here, the summary wasn't even created yet,
                 # which is likely! for the first time a program enters the program,
                 # if it is cut off before the first 10 sec window elapses.
