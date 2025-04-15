@@ -10,6 +10,14 @@ def validate_start_end_and_duration(func):
         return func(self, session, *args, **kwargs)
     return wrapper
 
+def validate_start_and_end_times(func):
+    @wraps(func)
+    def wrapper(self, session, *args, **kwargs):
+        if session.start_time is None or session.end_time is None:
+            raise ValueError("Start or end time was None")
+        return func(self, session, *args, **kwargs)
+    return wrapper
+
 def validate_session(func):
     @wraps(func)
     def wrapper(self, session, *args, **kwargs):

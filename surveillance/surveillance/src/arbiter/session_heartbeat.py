@@ -28,6 +28,8 @@ class KeepAliveEngine:
         while every other program will be bang on.
         """
         self.session = session
+        if session is None:
+            raise ValueError("Session should not be None in KeepAliveEngine")
         self.dao = dao_connection
         self.max_interval = 10  # seconds
         self.elapsed = 0

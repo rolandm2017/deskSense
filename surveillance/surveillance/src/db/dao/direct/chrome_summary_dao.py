@@ -13,7 +13,7 @@ from surveillance.src.db.models import DailyDomainSummary
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.object.classes import ChromeSessionData
 
-from surveillance.src.util.dao_wrapper import validate_start_end_and_duration
+from surveillance.src.util.dao_wrapper import validate_start_end_and_duration, validate_start_and_end_times
 from surveillance.src.util.errors import SuspiciousDurationError
 from surveillance.src.util.debug_util import notice_suspicious_durations, log_if_needed
 from surveillance.src.util.const import SECONDS_PER_HOUR
@@ -139,6 +139,20 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             
             # Commit the changes
             session.commit()
+
+    
+    def start_session(self, chrome_session: ChromeSessionData, right_now):
+        target_domain_name = chrome_session.domain
+        # ### Calculate time difference
+        if chrome_session.duration is None:
+            raise ValueError("Session duration was None")
+        
+        starting_window_amt = 10  # sec
+        usage_duration_in_hours =  starting_window_amt/ SECONDS_PER_HOUR
+        
+        today = right_now.replace(hour=0, minute=0, second=0,
+                            microsecond=0)  # Still has tz attached
+        self._create(target_domain_name, usage_duration_in_hours, today)
         
     def push_window_ahead_ten_sec(self, chrome_session: ChromeSessionData, right_now):
         """Finds the given session and adds ten sec to its end_time
@@ -168,6 +182,8 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
                 target_domain_name = chrome_session.domain
         
                 # ### Calculate time difference
+                if chrome_session.duration is None:
+                    raise ValueError("Session duration was None")
                 usage_duration_in_hours = chrome_session.duration.total_seconds() / 3600
                 today = right_now.replace(hour=0, minute=0, second=0,
                                   microsecond=0)  # Still has tz attached

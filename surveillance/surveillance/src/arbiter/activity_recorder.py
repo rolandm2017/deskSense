@@ -31,10 +31,13 @@ class ActivityRecorder:
         the log as expected. And so I am doing it manually.
         In hindsight "add_ten_sec_to_end_time" doesn't really scream "creates the log file".
         """
+        now = self.user_facing_clock.now()
         if isinstance(session, ProgramSessionData):
             self.program_logging_dao.start_session(session)
+            self.program_summary_dao.start_session(session, now)
         elif isinstance(session, ChromeSessionData):
             self.chrome_logging_dao.start_session(session)
+            self.chrome_summary_dao.start_session(session, now)
         else:
             raise TypeError("Session was not the right type")
 
@@ -56,6 +59,8 @@ class ActivityRecorder:
         Pushes the end of the window forward ten sec so that, 
         when the computer shuts down, the end time was "about right" anyways.
         """
+        if session is None:
+            raise ValueError("Session was None in add_ten_sec")
         now = self.user_facing_clock.now()
         if isinstance(session, ProgramSessionData):
             self.program_logging_dao.push_window_ahead_ten_sec(session)

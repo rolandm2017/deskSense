@@ -9,7 +9,7 @@ from surveillance.src.config.definitions import power_on_off_debug_file
 
 from surveillance.src.db.models import DailyProgramSummary
 
-from surveillance.src.util.dao_wrapper import validate_start_end_and_duration
+from surveillance.src.util.dao_wrapper import validate_start_end_and_duration, validate_start_and_end_times
 from surveillance.src.object.classes import ProgramSessionData
 from surveillance.src.util.console_logger import ConsoleLogger
  
@@ -64,6 +64,17 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             today_start = right_now.replace(
             hour=0, minute=0, second=0, microsecond=0)
             self._create(target_program_name, usage_duration_in_hours, today_start)
+
+    def start_session(self, program_session: ProgramSessionData, right_now):
+        target_program_name = program_session.window_title
+        
+        starting_window_amt = 10  # sec
+        usage_duration_in_hours =  starting_window_amt/ SECONDS_PER_HOUR
+
+        today_start = right_now.replace(
+            hour=0, minute=0, second=0, microsecond=0)
+
+        self._create(target_program_name, usage_duration_in_hours, today_start)
 
     def _create(self, target_program_name, duration_in_hours, when_it_was_gathered):
         with self.regular_session() as session:
@@ -150,6 +161,8 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             
             # Commit the changes
             session.commit()
+
+
         
     def push_window_ahead_ten_sec(self, program_session: ProgramSessionData, right_now):
         """
@@ -157,6 +170,9 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         
         NOTE: This only ever happens after start_session
         """
+        if program_session is None:
+            raise ValueError("Session should not be None")
+        
         target_program_name = program_session.window_title
         today_start = right_now.replace(
             hour=0, minute=0, second=0, microsecond=0)
@@ -169,23 +185,9 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         )        
         with self.regular_session() as db_session:
             program: DailyProgramSummary = db_session.scalars(query).first()
-            # Update it if found
-            if program:
-                program.hours_spent = program.hours_spent + 10 / SECONDS_PER_HOUR
-                db_session.commit()
-            else:
-                # If the code got here, the summary wasn't even created yet,
-                # which is likely! for the first time a program enters the program
-                self.logger.log_white_multiple("INFO:", f"first time {target_program_name} appears today")
-                # TODO: Change into just "create new"
+            program.hours_spent = program.hours_spent + 10 / SECONDS_PER_HOUR
+            db_session.commit()
                 
-                # TODO: Let the SessionHeartbeat update times
-                # ### Calculate time difference
-                usage_duration_in_hours = (
-                        program_session.end_time - program_session.start_time).total_seconds() / SECONDS_PER_HOUR
-
-                self._create(target_program_name, usage_duration_in_hours, today_start)
-                # self.create_if_new_else_update(program_session, right_now)
 
     def deduct_remaining_duration(self, session: ProgramSessionData, duration_in_sec: int, today_start):
         """

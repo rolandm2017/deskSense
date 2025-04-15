@@ -117,6 +117,7 @@ class DashboardService:
                 timedelta(days=days_after_sunday)
             mouse_events = await self.timeline_dao.read_day_mice(current_day, self.user_clock)
             keyboard_events = await self.timeline_dao.read_day_keyboard(current_day, self.user_clock)
+            print(mouse_events, keyboard_events, '120ru')
 
             self.logger.log_days_retrieval("[get_current_week_timeline]", current_day, len(
                 mouse_events) + len(keyboard_events))
@@ -266,12 +267,12 @@ class DashboardService:
 
     async def get_program_summary(self):
         today = self.user_clock.now()
-        all = await self.program_summary_dao.read_day(today)
+        all = self.program_summary_dao.read_day(today)
         return all
 
     async def get_chrome_summary(self):
         today = self.user_clock.now()
-        all = await self.chrome_summary_dao.read_day(today)
+        all = self.chrome_summary_dao.read_day(today)
         return all
 
     async def get_program_summary_weekly(self):

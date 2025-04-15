@@ -123,7 +123,9 @@ class TimelineEntryDao(BaseQueueingDao):
     async def read_day_mice(self, users_systems_day: datetime, user_facing_clock) -> List[TimelineEntryObj]:
         today = user_facing_clock.now().date()
         is_today = today == users_systems_day.date()
+
         if is_today:
+            print("is today", users_systems_day, "128ru")
             # Precomputed day can't exist yet
             return await self.read_day(users_systems_day, ChartEventType.MOUSE)
         else:
@@ -143,6 +145,7 @@ class TimelineEntryDao(BaseQueueingDao):
         is_today = today == users_systems_day.date()
         if is_today:
             # Precomputed day can't exist yet
+            print("is today", users_systems_day, "148ru")
             return await self.read_day(users_systems_day, ChartEventType.KEYBOARD)
         else:
             # print(users_systems_day, " is not today keyboard")

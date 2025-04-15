@@ -117,27 +117,12 @@ function Home() {
             days.push(...convertedIntoAggregations);
             days.push(row);
 
-            // days.forEach((obj, index) => {
-            //     console.log(`Object ${index} keys:`, Object.keys(obj));
-            // });
-
-            // const temp = days[6];
-
-            // console.log(temp, "temp temp 117ru");
-
             // setAggregatedDays([temp]);
             setAggregatedDays(days);
         }
     }, [presentWeekRawTimeline, aggregatedDays]);
 
-    // useEffect(() => {
-    //     if (timeline == null) {
-    //         getTodaysTimelineData().then((timeline) => {
-    //             // TODO: change endpoint to serve it up by day
-    //             setTimeline(timeline);
-    //         });
-    //     }
-    // }, [timeline]);
+
 
     // const primaryBg = "#FAFAF9";
     const primaryBlack = "#171717";
