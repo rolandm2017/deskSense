@@ -68,8 +68,6 @@ def debug_logger_simple():
     print("keyboard event")
 
 
-mouse_event_handler = publish_mouse_events
-
 
 mouse_event_dispatch = MouseEventDispatch(
     mouse_aggregator, publish_mouse_events)
@@ -134,13 +132,13 @@ if __name__ == "__main__":
 
     # Create event dispatch with conditional handler based on debug mode
     mouse_event_dispatch = MouseEventDispatch(
-        mouse_aggregator, debug_logger
+        mouse_aggregator, publish_mouse_events
     )
 
     # Create and start threads
     keyboard_thread = threading.Thread(
         target=linux_monitor_keyboard,
-        args=(keyboard_path, debug_logger_simple),
+        args=(keyboard_path, publish_keyboard_event),
         daemon=True
     )
 

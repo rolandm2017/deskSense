@@ -20,7 +20,7 @@ class MouseEventDispatch:
         # fifty_ms = 0.1  # NOTE: 100 ms is a LONG time in mouse move events
         debug_timeout_ms = 100  # NOTE: 100 ms is a LONG time in mouse move events
         self.max_delay = debug_timeout_ms / 1000  # ms / 1000 ms/sec
-        self.MAX_AGGREGATIONS = 100  # in a single package
+        self.MAX_AGGREGATIONS = 300  # in a single package
         self.event_aggregator = event_aggregator
         self.debounce_timer = None
         self.event_ready_handler = event_ready_handler
@@ -34,7 +34,7 @@ class MouseEventDispatch:
 
         # If we've reached the maximum number of events, handle it immediately
         if len(self.event_aggregator.current_aggregation) >= self.MAX_AGGREGATIONS:
-            print("beyond max count of aggregates")
+            print("--> beyond max count of aggregates")
             with self._timer_lock:
                 if self.debounce_timer:
                     self.debounce_timer.cancel()
