@@ -72,11 +72,11 @@ if __name__ == "__main__":
     print("Press Ctrl+C to exit")
     
     # Set up basic logging for standalone mode
-    logging.basicConfig(
-        filename='mouselog.txt',
-        level=logging.INFO,
-        format='%(asctime)s - %(message)s'
-    )
+    # logging.basicConfig(
+    #     filename='mouselog.txt',
+    #     level=logging.INFO,
+    #     format='%(asctime)s - %(message)s'
+    # )
     
     try:
         # Start the mouse monitoring with a dummy device path

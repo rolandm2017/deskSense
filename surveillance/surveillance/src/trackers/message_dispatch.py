@@ -35,7 +35,7 @@ def publish_keyboard_event():
 
 
 def publish_mouse_events(aggregate):
-    print("Publishing", aggregate["start"])
+    # print("Publishing", aggregate["start"])
     event = {
         "type": "mouse",
         "start": aggregate["start"],  # MUST be timestamp format, a float

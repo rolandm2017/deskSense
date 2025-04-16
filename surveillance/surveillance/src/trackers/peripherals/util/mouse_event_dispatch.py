@@ -18,9 +18,11 @@ class MouseEventDispatch:
 
     def __init__(self, event_aggregator, event_ready_handler):
         # fifty_ms = 0.1  # NOTE: 100 ms is a LONG time in mouse move events
-        debug_timeout_ms = 100  # NOTE: 100 ms is a LONG time in mouse move events
-        self.max_delay = debug_timeout_ms / 1000  # ms / 1000 ms/sec
-        self.MAX_AGGREGATIONS = 300  # in a single package
+        debug_timeout_ms = 200  # NOTE: 100 ms is a LONG time in mouse move events
+        ms_per_sec = 1000
+        self.max_delay_for_end_bundle = debug_timeout_ms / ms_per_sec  # ms / 1000 ms/sec
+        # NOTE about max_agg: 300 is for programming, but 1200 is for FPS
+        self.MAX_AGGREGATIONS = 1000  # in a single package
         self.event_aggregator = event_aggregator
         self.debounce_timer = None
         self.event_ready_handler = event_ready_handler
@@ -50,7 +52,7 @@ class MouseEventDispatch:
 
             # Create a new timer
             self.debounce_timer = threading.Timer(
-                self.max_delay, self.handle_finished)
+                self.max_delay_for_end_bundle, self.handle_finished)
             self.debounce_timer.daemon = True
             self.debounce_timer.start()
 
@@ -61,11 +63,11 @@ class MouseEventDispatch:
 
         # Process the events
         if len(self.event_aggregator.current_aggregation) > 0:
-            print("Event ready handler")
+            # print("Event ready handler")
             print("[start]", self.start_time)
             end_time = datetime.now()
-            print("[end]", end_time)
-            print("[duration]", end_time - self.start_time)
+            # print("[end]", end_time)
+            # print("[duration]", end_time - self.start_time)
             end_time = end_time.timestamp()
             deliverable = {"type": "mouse",
                            "start": self.start_time.timestamp(), "end": end_time}

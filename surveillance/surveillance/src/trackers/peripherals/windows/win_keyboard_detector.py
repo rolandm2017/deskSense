@@ -6,6 +6,8 @@ from datetime import datetime
 
 from surveillance.src.trackers.message_dispatch import publish_keyboard_event
 
+DEBUG = False
+
 def win_monitor_keyboard(device_path=None, get_running_state=None):
     """
     Windows keyboard monitoring function.
@@ -15,11 +17,11 @@ def win_monitor_keyboard(device_path=None, get_running_state=None):
         get_running_state: Function that returns True if monitoring should continue, False to stop
     """
     # Set up logging
-    logging.basicConfig(
-        filename='keylog.txt',
-        level=logging.INFO,
-        format='%(asctime)s - %(message)s'
-    )
+    # logging.basicConfig(
+    #     filename='keylog.txt',
+    #     level=logging.INFO,
+    #     format='%(asctime)s - %(message)s'
+    # )
 
     # Print welcome message
     print("Starting Windows keyboard logger...")
@@ -31,12 +33,13 @@ def win_monitor_keyboard(device_path=None, get_running_state=None):
             # Log to console
             key_name = event.name
             publish_keyboard_event()
-            if len(key_name) == 1:
-                # For regular characters, show the character
-                print(f"Key pressed: {key_name}, ASCII: {ord(key_name)}, Time: {datetime.now().strftime('%H:%M:%S')}")
-            else:
-                # For special keys
-                print(f"Key pressed: {key_name}, Time: {datetime.now().strftime('%H:%M:%S')}")
+            if DEBUG:
+                if len(key_name) == 1:
+                    # For regular characters, show the character
+                    print(f"Key pressed: {key_name}, ASCII: {ord(key_name)}, Time: {datetime.now().strftime('%H:%M:%S')}")
+                else:
+                    # For special keys
+                    print(f"Key pressed: {key_name}, Time: {datetime.now().strftime('%H:%M:%S')}")
             
             # Log to file
             logging.info(f"Key: {key_name}")
