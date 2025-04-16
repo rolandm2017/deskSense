@@ -6,31 +6,22 @@ import logging
 from datetime import datetime
 from pynput import mouse
 
-from surveillance.src.trackers.message_dispatch import publish_keyboard_event, publish_mouse_events
-
+from surveillance.src.trackers.message_dispatch import publish_mouse_events
 from surveillance.src.trackers.peripherals.util.mouse_event_aggregator import MouseEventAggregator
 from surveillance.src.trackers.peripherals.util.mouse_event_dispatch import MouseEventDispatch
-
-# Set up logging
-logging.basicConfig(
-    filename='mouselog.txt',
-    level=logging.INFO,
-    format='%(asctime)s - %(message)s'
-)
 
 # Debug flag
 DEBUG = False
 
-
-def exit_program():
-    """Exit the program cleanly"""
-    global running
-    print("Exit hotkey pressed. Exiting...")
-    running = False
-
-def monitor_mouse():
-    """Monitor mouse movements and actions"""
-    print("Monitoring mouse")
+def win_monitor_mouse(device_path, get_running_state=None):
+    """
+    Windows implementation of mouse monitoring, designed to be called from peripherals.py
+    
+    Args:
+        device_path: Path to the device (may not be used in Windows implementation)
+        get_running_state: Function that returns True if monitoring should continue, False to stop
+    """
+    print(f"Monitoring mouse: {device_path}")
     
     # Create shared resources
     mouse_aggregator = MouseEventAggregator()
@@ -60,34 +51,37 @@ def monitor_mouse():
         on_click=on_click,
         on_scroll=on_scroll
     )
-    print("Starting mouse logger...")
+    print("Starting Windows mouse logger...")
     listener.start()
     
     try:
-        # Main dispatch loop
-        while running:
-            time.sleep(0.2)  # Check every 200ms - adjust as needed
+        # Main monitoring loop
+        while get_running_state is None or get_running_state():
+            time.sleep(0.2)  # Sleep to prevent high CPU usage
     except KeyboardInterrupt:
-        print("Interrupted by user")
+        print("Mouse monitoring interrupted by user")
     finally:
         # Clean up before exiting
         listener.stop()
         listener.join()
         print("Mouse logging stopped.")
-        print(f"Log file is located at: {os.path.abspath('mouselog.txt')}")
 
-# Define global running flag at module level
-running = True
-
+# For standalone testing only
 if __name__ == "__main__":
-    print("Starting mouse monitoring...")
+    print("Starting Windows mouse monitoring...")
     print("Press Ctrl+C to exit")
     
+    # Set up basic logging for standalone mode
+    logging.basicConfig(
+        filename='mouselog.txt',
+        level=logging.INFO,
+        format='%(asctime)s - %(message)s'
+    )
+    
     try:
-        # Start the mouse monitoring
-        monitor_mouse()
+        # Start the mouse monitoring with a dummy device path
+        win_monitor_mouse("DUMMY_PATH")
     except Exception as e:
         print(f"Error in mouse monitoring: {e}")
     finally:
-        running = False
         print("Mouse monitoring stopped.")
