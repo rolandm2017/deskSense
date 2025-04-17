@@ -4,13 +4,16 @@
     "version": "1.0",
     "manifest_version": 3,
     "action": {
-        "default_popup": "hello.html",
         "default_icon": "hello_extensions.png"
     },
-    "permissions": ["tabs", "activeTab", "scripting"],
+    "permissions": ["tabs", "activeTab", "scripting", "storage"],
     "background": {
         "service_worker": "background.js",
         "type": "module"
     },
-    "host_permissions": ["http://localhost:8000/*"]
+    "host_permissions": ["http://localhost:8000/*"],
+    "options_ui": {
+        "page": "options.html",
+        "open_in_tab": true
+    }
 }

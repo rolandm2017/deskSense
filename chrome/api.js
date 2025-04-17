@@ -20,7 +20,7 @@ export function reportTabSwitch(domain, title) {
         body: JSON.stringify(payload),
     })
         .then((response) => {
-            // Note there is no JSON, it's a 204!
+            // Note there is no JSON in a 204
             
             console.log("Status Code:", response.status); // Log the status code
             if (response.status === 204) {

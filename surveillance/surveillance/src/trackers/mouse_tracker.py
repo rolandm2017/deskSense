@@ -35,7 +35,6 @@ class MouseTrackerCore:
                 # and a third one starts.
                 # The aggregator is responding to when the now() runs, NOT when the event actually happened
                 finalized_aggregate = self.aggregator.add_event(event["start"])
-                print("added starT")
                 if finalized_aggregate:
 
                     self.conclude_aggregation(finalized_aggregate)
@@ -43,7 +42,6 @@ class MouseTrackerCore:
                     # Otherwise, the end of the mouse move might be so great, 
                     # that the end of the event starts a new aggregate
                     self.aggregator.extend_until(event["end"])
-                # print("added END")
                 # self.aggregator.add_event(event["end"])
                 # if finalized_aggregate:
 

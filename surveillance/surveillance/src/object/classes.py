@@ -106,7 +106,10 @@ class PeripheralAggregate:
         self.count = count_of_events
 
     def __str__(self):
-        return f"Peripheral aggregate from {self.start_time} to {self.end_time} with {self.count} events"
+        start_formatted = self.start_time.strftime("%m-%d %H:%M:%S")
+        end_formatted = self.end_time.strftime("%m-%d %H:%M:%S")
+        return f"Peripheral aggregate from {start_formatted} to {end_formatted} with {self.count} events"
+
 
 
 class KeyboardAggregate(PeripheralAggregate):
@@ -115,7 +118,10 @@ class KeyboardAggregate(PeripheralAggregate):
     """
 
     def __str__(self):
-        return f"Keyboard aggregate from {self.start_time} to {self.end_time} with {self.count} events"
+        start_formatted = self.start_time.strftime("%m-%d %H:%M:%S")
+        end_formatted = self.end_time.strftime("%m-%d %H:%M:%S")
+        return f"Keyboard aggregate from {start_formatted} to {end_formatted} with {self.count} events"
+
 
 
 class MouseAggregate(PeripheralAggregate):
@@ -124,7 +130,9 @@ class MouseAggregate(PeripheralAggregate):
     """
 
     def __str__(self):
-        return f"Mouse aggregate from {self.start_time} to {self.end_time} with {self.count} events"
+        start_formatted = self.start_time.strftime("%m-%d %H:%M:%S")
+        end_formatted = self.end_time.strftime("%m-%d %H:%M:%S")
+        return f"Mouse aggregate from {start_formatted} to {end_formatted} with {self.count} events"
 
 
 class MouseCoords:

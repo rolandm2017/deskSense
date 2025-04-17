@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosResponse } from "axios";
+import axios, { AxiosError, AxiosResponse } from "axios"
 import {
     TypingSessionsReport,
     MouseReport,
@@ -6,7 +6,7 @@ import {
     DailyChromeSummaries,
     DailyProgramSummaries,
     TimelineRows,
-} from "../interface/api.interface";
+} from "../interface/api.interface"
 import {
     DayOfChromeUsage,
     WeeklyBreakdown,
@@ -16,11 +16,11 @@ import {
     WeeklyTimeline,
     PartiallyAggregatedWeeklyTimeline,
     WeeklyProgramTimelines,
-} from "../interface/weekly.interface";
-import { formatDateForApi, getTimezone } from "../util/timeTools";
-import { ensureSunday } from "../util/apiUtil";
+} from "../interface/weekly.interface"
+import { formatDateForApi, getTimezone } from "../util/timeTools"
+import { ensureSunday } from "../util/apiUtil"
 
-const baseRoute = import.meta.env.VITE_API_URL + "/api";
+const baseRoute = import.meta.env.VITE_API_URL + "/api"
 
 const api = axios.create({
     baseURL: baseRoute,
@@ -28,24 +28,24 @@ const api = axios.create({
     headers: {
         "Content-Type": "application/json",
     },
-});
+})
 
 // Add type-safe request interceptor
 api.interceptors.request.use(
     (config) => {
         // Add auth token if available
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("token")
         if (token) {
             if (config.headers) {
-                config.headers.Authorization = `Bearer ${token}`;
+                config.headers.Authorization = `Bearer ${token}`
             }
         }
-        return config;
+        return config
     },
     (error: AxiosError) => {
-        return Promise.reject(error);
+        return Promise.reject(error)
     }
-);
+)
 
 const withErrorHandling = <T>(fn: () => Promise<AxiosResponse<T>>) => {
     return (): Promise<T> => {
@@ -55,43 +55,43 @@ const withErrorHandling = <T>(fn: () => Promise<AxiosResponse<T>>) => {
         // );
         return fn()
             .then((response) => {
-                return response.data;
+                return response.data
             })
             .catch((error) => {
                 if (axios.isAxiosError(error)) {
-                    console.error("Error:", error.response?.data);
-                    throw new Error(`Failed to execute: ${error.message}`);
+                    console.error("Error:", error.response?.data)
+                    throw new Error(`Failed to execute: ${error.message}`)
                 }
-                throw error;
-            });
-    };
-};
+                throw error
+            })
+    }
+}
 
 const getKeyboardReport = withErrorHandling<TypingSessionsReport>(() =>
     api.get("/report/keyboard")
-);
+)
 
 const getMouseReport = withErrorHandling<MouseReport>(() =>
     api.get("/report/mouse")
-);
+)
 
 const getProgramReport = withErrorHandling<ProgramActivityReport>(() =>
     api.get("/report/program")
-);
+)
 
 const getTodaysTimelineData = withErrorHandling<TimelineRows>(() =>
     api.get("/dashboard/timeline")
-);
+)
 
 // TODO: Make home screen execute a "get week of" where incomplete weeks are OK.
 
 const getProgramSummaries = withErrorHandling<DailyProgramSummaries>(() =>
     api.get("/dashboard/program/summaries")
-);
+)
 
 const getChromeSummaries = withErrorHandling<DailyChromeSummaries>(() =>
     api.get("/dashboard/chrome/summaries")
-);
+)
 
 // const getWeeklyTyping = withErrorHandling<WeeklyTyping>(() =>
 //     api.get("/dashboard/typing/summaries/week")
@@ -103,20 +103,20 @@ const getChromeSummaries = withErrorHandling<DailyChromeSummaries>(() =>
 
 const getPresentWeekProgramUsage = withErrorHandling<WeeklyProgramUsage>(() =>
     api.get("/dashboard/program/summaries/week")
-);
+)
 
 const getPresentWeekChromeUsage = withErrorHandling<WeeklyChromeUsage>(() =>
     api.get("/dashboard/chrome/summaries/week")
-);
+)
 
 const getTimelineForPresentWeek =
     withErrorHandling<PartiallyAggregatedWeeklyTimeline>(() =>
         api.get("/dashboard/timeline/week")
-    );
+    )
 
 const getPresentWeekProgramTimeline = withErrorHandling<WeeklyProgramTimelines>(
     () => api.get("/dashboard/programs/usage/timeline")
-);
+)
 
 const withErrorHandlingAndArgument = <T, P extends any[]>(
     fn: (...args: P) => Promise<AxiosResponse<T>>
@@ -124,17 +124,24 @@ const withErrorHandlingAndArgument = <T, P extends any[]>(
     return (...args: P): Promise<T> => {
         return fn(...args)
             .then((response) => {
-                return response.data;
+                return response.data
             })
             .catch((error) => {
                 if (axios.isAxiosError(error)) {
-                    console.error("Error:", error.response?.data);
-                    throw new Error(`Failed to execute: ${error.message}`);
+                    console.error("Error:", error.response?.data)
+                    throw new Error(`Failed to execute: ${error.message}`)
                 }
-                throw error;
-            });
-    };
-};
+                throw error
+            })
+    }
+}
+
+function temp() {
+    const foo = 5
+    if (foo) {
+        console.log(foo)
+    }
+}
 
 /*
  *
@@ -146,45 +153,45 @@ const getWeeklyBreakdown = withErrorHandlingAndArgument<
     WeeklyBreakdown,
     [Date]
 >((date: Date) => {
-    ensureSunday(date);
-    const formattedDate = formatDateForApi(date);
-    const timezone = getTimezone(date);
+    ensureSunday(date)
+    const formattedDate = formatDateForApi(date)
+    const timezone = getTimezone(date)
     // TODO: send timezone
-    return api.get(`/dashboard/breakdown/week/${formattedDate}`);
-});
+    return api.get(`/dashboard/breakdown/week/${formattedDate}`)
+})
 
 const getTimelineForPastWeek = withErrorHandlingAndArgument<
     WeeklyTimeline,
     [Date]
 >((date: Date) => {
-    ensureSunday(date);
-    const formattedDate = formatDateForApi(date);
-    const timezone = getTimezone(date);
+    ensureSunday(date)
+    const formattedDate = formatDateForApi(date)
+    const timezone = getTimezone(date)
     // TODO: send timezone
-    return api.get(`/dashboard/timeline/week/${formattedDate}`);
-});
+    return api.get(`/dashboard/timeline/week/${formattedDate}`)
+})
 
 const getChromeUsageForPastWeek = withErrorHandlingAndArgument<
     WeeklyChromeUsage,
     [Date]
 >((date: Date) => {
-    ensureSunday(date);
-    const formattedDate = formatDateForApi(date);
-    const timezone = getTimezone(date);
+    ensureSunday(date)
+    const formattedDate = formatDateForApi(date)
+    const timezone = getTimezone(date)
     // TODO: send timezone
-    return api.get(`/dashboard/chrome/summaries/week/${formattedDate}`);
-});
+    return api.get(`/dashboard/chrome/summaries/week/${formattedDate}`)
+})
 
 const getProgramTimelineForPastWeek = withErrorHandlingAndArgument<
     WeeklyChromeUsage,
     [Date]
 >((date: Date) => {
-    ensureSunday(date);
-    const formattedDate = formatDateForApi(date);
-    const timezone = getTimezone(date);
+    ensureSunday(date)
+    const formattedDate = formatDateForApi(date)
+    const timezone = getTimezone(date)
     // TODO: send timezone
-    return api.get(`/dashboard/programs/usage/timeline/${formattedDate}`);
-});
+    return api.get(`/dashboard/programs/usage/timeline/${formattedDate}`)
+})
 
 // Typescript wizardry
 //
@@ -193,13 +200,13 @@ const getProgramTimelineForPastWeek = withErrorHandlingAndArgument<
 
 // Base interface for objects that have a date field that needs conversion
 interface DateConvertible {
-    date?: string | Date; // Optional because some types might use 'day' instead
-    day?: string | Date; // Some of your interfaces use 'day' instead of 'date'
+    date?: string | Date // Optional because some types might use 'day' instead
+    day?: string | Date // Some of your interfaces use 'day' instead of 'date'
 }
 
 // Base interface for weekly data structures
 interface WeeklyDataStructure<T extends DateConvertible> {
-    days: T[];
+    days: T[]
 }
 
 // Generic conversion function that works with your existing types
@@ -217,34 +224,34 @@ const withDateConversion = <
     originalFunction: FuncType
 ) => {
     return async (date: Date): Promise<WeekType> => {
-        const response = await originalFunction(date);
+        const response = await originalFunction(date)
 
         const withConvertedDateObjs = response.days.map((day) => ({
             ...day,
             // Convert either 'date' or 'day' property to Date object
             ...(day.date !== undefined ? { date: new Date(day.date) } : {}),
             ...(day.day !== undefined ? { day: new Date(day.day) } : {}),
-        }));
+        }))
 
         return {
             ...response,
             days: withConvertedDateObjs,
-        } as WeekType;
-    };
-};
+        } as WeekType
+    }
+}
 
 // Example usage:
 const getEnhancedChromeUsageForPastWeek = withDateConversion<
     DayOfChromeUsage,
     WeeklyChromeUsage,
     typeof getChromeUsageForPastWeek
->(getChromeUsageForPastWeek);
+>(getChromeUsageForPastWeek)
 
 const getEnhancedWeeklyBreakdown = withDateConversion<
     BreakdownByDay,
     WeeklyBreakdown,
     typeof getWeeklyBreakdown
->(getWeeklyBreakdown);
+>(getWeeklyBreakdown)
 
 export {
     getKeyboardReport,
@@ -262,4 +269,4 @@ export {
     getEnhancedChromeUsageForPastWeek,
     getEnhancedWeeklyBreakdown,
     getPresentWeekProgramTimeline,
-};
+}
