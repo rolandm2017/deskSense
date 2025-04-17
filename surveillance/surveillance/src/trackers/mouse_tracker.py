@@ -56,7 +56,7 @@ class MouseTrackerCore:
         self.movement_start_time = None
 
     def apply_handlers(self, content: MouseAggregate | InProgressAggregation):
-        self.logger.log_green("[info] " + str(content))
+        # self.logger.log_green("[info] " + str(content))
         if isinstance(self.event_handlers, list):
             for handler in self.event_handlers:
                 handler(content)  # emit an event

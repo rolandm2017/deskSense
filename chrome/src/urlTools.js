@@ -1,3 +1,5 @@
+import psl from "psl"
+
 /*
  * Case 1:
  *  youtube.com
@@ -35,6 +37,10 @@ export function stripProtocol(rawUrl) {
     console.error("Unheard of protocol found", rawUrl)
 }
 
+export function urlHasProtocol(rawUrl) {
+    return rawUrl.startsWith("http://") || rawUrl.startsWith("https://")
+}
+
 export function normalizeUrl(rawUrl) {
     try {
         if (!rawUrl.startsWith("http://") && !rawUrl.startsWith("https://")) {
@@ -59,3 +65,24 @@ export function normalizeUrl(rawUrl) {
  *
  *
  */
+
+export function shouldBeIgnored(url, ignoreList) {
+    // remove protocol from everything
+    // because it's simpler
+    if (!urlHasProtocol(url)) {
+        url = "https://" + url
+    }
+    const inputDomain = psl.get(new URL(url).hostname)
+    return ignoreList.some((ignoredDomain) => {
+        const domainWithProtocol = urlHasProtocol(ignoredDomain)
+            ? ignoredDomain
+            : "https://" + ignoredDomain
+        try {
+            const ignoreDomain = psl.get(new URL(domainWithProtocol).hostname)
+            return inputDomain === ignoreDomain
+        } catch {
+            // If it's not a full URL, treat it as a plain domain
+            return inputDomain === domainWithProtocol
+        }
+    })
+}

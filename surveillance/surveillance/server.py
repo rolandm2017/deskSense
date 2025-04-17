@@ -340,7 +340,6 @@ async def get_program_usage_timeline_for_present_week(
 
         programs_content = []
         for key, value_list in programs.items():
-            print(key, ": \n")
 
             timeline_events = []
             for program_log in value_list:

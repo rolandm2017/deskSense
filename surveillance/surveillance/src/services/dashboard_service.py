@@ -117,7 +117,6 @@ class DashboardService:
                 timedelta(days=days_after_sunday)
             mouse_events = await self.timeline_dao.read_day_mice(current_day, self.user_clock)
             keyboard_events = await self.timeline_dao.read_day_keyboard(current_day, self.user_clock)
-            print(mouse_events, keyboard_events, '120ru')
 
             self.logger.log_days_retrieval("[get_current_week_timeline]", current_day, len(
                 mouse_events) + len(keyboard_events))

@@ -42,6 +42,8 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
         
         try:
             # FIXME: ValueError: pid must be a positive integer (got -516382288)
+            # FIXME: ValueError: pid must be a positive integer (got -1313135248)
+            # FIXME: Think the above errors happeneed while starting up pc
             process = psutil.Process(pid)
             process_name = process.name()
         except (psutil.NoSuchProcess, psutil.AccessDenied):
