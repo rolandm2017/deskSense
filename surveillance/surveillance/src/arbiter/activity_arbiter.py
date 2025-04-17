@@ -68,11 +68,11 @@ class ActivityArbiter:
             # if asyncio.iscoroutine(result):
             #     self.loop.create_task(result)
 
-    def set_tab_state(self, tab: ChromeSessionData):
-        self.transition_state(tab)
-
     def set_program_state(self, event: ProgramSessionData):
         self.transition_state(event)
+
+    def set_tab_state(self, tab: ChromeSessionData):
+        self.transition_state(tab)
 
     def transition_state(self, new_session: ChromeSessionData | ProgramSessionData):
         """
@@ -108,9 +108,8 @@ class ActivityArbiter:
             self.current_heartbeat = ThreadedEngineContainer(new_keep_alive_engine, self.pulse_interval)
             self.current_heartbeat.start()
 
-
             if self.state_machine.is_initialization_session(concluded_session):
-                return
+                return  # It's just null state
             # ### Put outgoing state into the DAO
             self.notify_summary_dao(concluded_session)
         else:

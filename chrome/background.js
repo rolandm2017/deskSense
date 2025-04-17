@@ -1,5 +1,5 @@
 // background.js
-import { reportTabSwitch } from "./api.js"
+import { reportTabSwitch, reportIgnoredUrl } from "./api.js"
 
 chrome.action.onClicked.addListener(() => {
     chrome.runtime.openOptionsPage()
@@ -16,6 +16,16 @@ function getDomainFromUrl(urlString) {
     }
 }
 
+function submitDomain(tab, domain) {
+    const ignored = isDomainIgnored(domain)
+    if (ignored) {
+        reportIgnoredUrl()
+        return
+    }
+    console.log("New tab created:", domain, "Title:", tab.title)
+    reportTabSwitch(domain, tab.title)
+}
+
 // New tab created
 chrome.tabs.onCreated.addListener((tab) => {
     if (tab.url) {
@@ -23,7 +33,7 @@ chrome.tabs.onCreated.addListener((tab) => {
         if (domain) {
             const ignored = isDomainIgnored(domain)
             if (ignored) {
-                reportTabSwitch("Ignored", "Ignored")
+                reportIgnoredUrl()
                 return
             }
             console.log("New tab created:", domain, "Title:", tab.title)
@@ -37,6 +47,11 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (changeInfo.status === "complete" && tab.url) {
         const domain = getDomainFromUrl(tab.url)
         if (domain) {
+            const ignored = isDomainIgnored(domain)
+            if (ignored) {
+                reportIgnoredUrl()
+                return
+            }
             console.log(tab, "31ru")
             console.log("Tab updated:", domain, "Title:", tab.title)
             reportTabSwitch(domain, tab.title)
@@ -50,8 +65,13 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
         if (tab.url) {
             const domain = getDomainFromUrl(tab.url)
             if (domain) {
-                console.log("Switched to tab:", domain)
-                console.log("Title:", tab)
+                const ignored = isDomainIgnored(domain)
+                if (ignored) {
+                    reportIgnoredUrl()
+                    return
+                }
+                // console.log("Switched to tab:", domain)
+                // console.log("Title:", tab)
                 reportTabSwitch(domain, tab.title)
             }
         }
@@ -99,7 +119,10 @@ function loadDomains() {
 
 // Example: Check if a domain is in the ignored list
 function isDomainIgnored(url) {
+    console.log(url, "102ru")
     const domain = new URL(url).hostname
+    console.log(domain, "104ru")
+    console.log(ignoredDomains, "105ru")
     return ignoredDomains.some(
         (ignoredDomain) =>
             domain === ignoredDomain || domain.endsWith("." + ignoredDomain)

@@ -396,7 +396,7 @@ async def receive_chrome_tab(
 ):
     logger.log_purple("[LOG] Chrome Tab Received")
     try:
-        user_id = 1  # temp
+        user_id = 1  # temp until i have more than 1 user
 
         # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
         # capture_chrome_data_for_tests(tab_change_event)
@@ -408,12 +408,38 @@ async def receive_chrome_tab(
         await chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
         return  # Returns 204 No Content
     except Exception as e:
-        print(e)
-        raise
-
+        # print(e)
+        # raise
         raise HTTPException(
             status_code=500,
-            detail="A problem occurred in Chrome Service"
+            detail="A problem occurred in Chrome Service's tab endpoint"
+        )
+    
+@app.post("/chrome/ignored", status_code=status.HTTP_204_NO_CONTENT)
+async def receive_chrome_tab(
+    tab_change_event: TabChangeEvent,
+    chrome_service: ChromeService = Depends(get_chrome_service),
+    timezone_service: TimezoneService = Depends(get_timezone_service)
+):
+    # Note that this is nigh identical to the other endpoint.
+    # I diverge them early assuming they will have to diverge.
+    logger.log_purple("[LOG] Ignored Chrome Tab Received")
+    try:
+        user_id = 1  # temp until i have more than 1 user
+
+        # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
+        # capture_chrome_data_for_tests(tab_change_event)
+        tz_for_user = timezone_service.get_tz_for_user(
+            user_id)
+        updated_tab_change_event = timezone_service.convert_tab_change_timezone(
+            tab_change_event, tz_for_user)
+
+        await chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
+        return  # Returns 204 No Content
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail="A problem occurred in Chrome Service's Ignored Route"
         )
 
 # TODO: Endpoint for the Camera stuff

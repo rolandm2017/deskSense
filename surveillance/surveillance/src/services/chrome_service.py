@@ -142,7 +142,7 @@ class ChromeService:
 
         # NOTE: In the past, the intent was to keep everything in UTC.
         # Now, the intent is to do everything in the user's LTZ, local time zone.
-        initialized.start_time = url_deliverable.startTime
+        # initialized.start_time = url_deliverable.startTime
 
         self.handle_session_ready_for_arbiter(initialized)
 
