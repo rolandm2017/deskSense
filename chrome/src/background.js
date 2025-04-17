@@ -6,8 +6,9 @@ chrome.action.onClicked.addListener(() => {
 })
 
 // Helper function to get domain from URL
-function getDomainFromUrl(urlString) {
+export function getDomainFromUrl(urlString) {
     try {
+        console.log(urlString)
         const url = new URL(urlString)
         return url.hostname
     } catch (e) {
@@ -16,46 +17,34 @@ function getDomainFromUrl(urlString) {
     }
 }
 
-function submitDomain(tab, domain) {
-    const ignored = isDomainIgnored(domain)
-    if (ignored) {
-        reportIgnoredUrl()
-        return
+export function getDomainFromUrlAndSubmit(tab) {
+    const domain = getDomainFromUrl(tab.url)
+    if (domain) {
+        console.log(domain, "22ru")
+        const ignored = isDomainIgnored(domain, ignoredDomains)
+        console.log(ignored, ignored === undefined, "24ru")
+        if (ignored) {
+            reportIgnoredUrl()
+            return
+        }
+        console.log("New tab created:", domain, "Title:", tab.title)
+        reportTabSwitch(domain, tab.title)
+    } else {
+        console.log("No domain found for ", tab.url)
     }
-    console.log("New tab created:", domain, "Title:", tab.title)
-    reportTabSwitch(domain, tab.title)
 }
 
 // New tab created
 chrome.tabs.onCreated.addListener((tab) => {
     if (tab.url) {
-        const domain = getDomainFromUrl(tab.url)
-        if (domain) {
-            const ignored = isDomainIgnored(domain)
-            if (ignored) {
-                reportIgnoredUrl()
-                return
-            }
-            console.log("New tab created:", domain, "Title:", tab.title)
-            reportTabSwitch(domain, tab.title)
-        }
+        getDomainFromUrlAndSubmit(tab)
     }
 })
 
 // Listen for any tab updates
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (changeInfo.status === "complete" && tab.url) {
-        const domain = getDomainFromUrl(tab.url)
-        if (domain) {
-            const ignored = isDomainIgnored(domain)
-            if (ignored) {
-                reportIgnoredUrl()
-                return
-            }
-            console.log(tab, "31ru")
-            console.log("Tab updated:", domain, "Title:", tab.title)
-            reportTabSwitch(domain, tab.title)
-        }
+        getDomainFromUrlAndSubmit(tab)
     }
 })
 
@@ -63,17 +52,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 chrome.tabs.onActivated.addListener((activeInfo) => {
     chrome.tabs.get(activeInfo.tabId, (tab) => {
         if (tab.url) {
-            const domain = getDomainFromUrl(tab.url)
-            if (domain) {
-                const ignored = isDomainIgnored(domain)
-                if (ignored) {
-                    reportIgnoredUrl()
-                    return
-                }
-                // console.log("Switched to tab:", domain)
-                // console.log("Title:", tab)
-                reportTabSwitch(domain, tab.title)
-            }
+            getDomainFromUrlAndSubmit(tab)
         }
     })
 })
@@ -118,14 +97,17 @@ function loadDomains() {
 }
 
 // Example: Check if a domain is in the ignored list
-function isDomainIgnored(url) {
-    console.log(url, "102ru")
-    const domain = new URL(url).hostname
-    console.log(domain, "104ru")
-    console.log(ignoredDomains, "105ru")
-    return ignoredDomains.some(
+export function isDomainIgnored(domain, ignoreList) {
+    console.log(domain, "102ru")
+    // const domain = new URL(url).hostname
+    // console.log(domain, "104ru")
+    console.log(ignoreList, "105ru")
+    // TODO: Make it use binary search
+    return ignoreList.some(
         (ignoredDomain) =>
-            domain === ignoredDomain || domain.endsWith("." + ignoredDomain)
+            domain === ignoredDomain ||
+            ignoredDomain.includes(domain) ||
+            domain.includes(ignoredDomain)
     )
 }
 

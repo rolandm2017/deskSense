@@ -1,5 +1,7 @@
 /* Pairs with options.html */
 
+import { stripProtocol } from "./urlTools"
+
 // Initialize variables
 let ignoredDomains = []
 
@@ -91,7 +93,8 @@ function uploadDomains() {
 // Add a single domain
 function addSingleDomain() {
     const input = document.getElementById("newDomain")
-    const domain = input.value.trim()
+    let domain = input.value.trim()
+    domain = stripProtocol(domain)
 
     if (domain && !ignoredDomains.includes(domain)) {
         ignoredDomains.push(domain)

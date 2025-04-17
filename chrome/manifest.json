@@ -4,16 +4,16 @@
     "version": "1.0",
     "manifest_version": 3,
     "action": {
-        "default_icon": "hello_extensions.png"
+        "default_icon": "src/hello_extensions.png"
     },
     "permissions": ["tabs", "activeTab", "scripting", "storage"],
     "background": {
-        "service_worker": "background.js",
+        "service_worker": "src/background.js",
         "type": "module"
     },
     "host_permissions": ["http://localhost:8000/*"],
     "options_ui": {
-        "page": "options.html",
+        "page": "src/options.html",
         "open_in_tab": true
     }
 }
