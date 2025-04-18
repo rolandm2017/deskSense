@@ -6,13 +6,27 @@ const chromeTabUrl = "/api/chrome/tab"
 const youTubeUrl = "/api/chrome/youtube"
 const ignoredDomainUrl = "/api/chrome/ignored"
 
-export function reportYouTube(tabTitle, channel) {
+export function reportTabSwitch(domain: string, tabTitle: string) {
     const payload = {
+        url: domain, // Must match the pydantic definition
+        tabTitle: tabTitle,
+        startTime: new Date(),
+    }
+    // console.log("Sending payload:", payload)
+    sendPayload(chromeTabUrl, payload)
+}
+
+export function reportYouTube(tabTitle: string | undefined, channel: string) {
+    /* Tab title must be undefined sometimes, says TS */
+    console.log("[info] Channel " + channel)
+    const payload = {
+        // Uses the YouTubeEvent pydantic definition
         url: "www.youtube.com",
         tabTitle,
         channel,
         startTime: new Date(),
     }
+    console.log("Sending YouTube payload:", payload)
     sendPayload(youTubeUrl, payload)
 }
 
@@ -23,22 +37,10 @@ export function reportIgnoredUrl() {
         startTime: new Date(),
     }
     console.log("Sending payload:", payload)
-
     sendPayload(ignoredDomainUrl, payload)
 }
 
-export function reportTabSwitch(domain, tabTitle) {
-    const payload = {
-        url: domain, // Must match the pydantic definition
-        tabTitle: tabTitle,
-        startTime: new Date(),
-    }
-    // console.log("Sending payload:", payload)
-
-    sendPayload(chromeTabUrl, payload)
-}
-
-function sendPayload(targetUrl, payload) {
+function sendPayload(targetUrl: string, payload: object) {
     fetch(DESKSENSE_BACKEND_URL + targetUrl, {
         method: "POST",
         headers: {
@@ -51,7 +53,6 @@ function sendPayload(targetUrl, payload) {
 
             // console.log("Status Code:", response.status) // Log the status code
             if (response.status === 204) {
-                console.log("")
                 // console.log("200 good to go")
             } else {
                 throw new Error(`Request failed with status ${response.status}`)

@@ -1,3 +1,4 @@
+// errors.js
 class ImpossibleToGetHereError extends Error {
     constructor(message = "This code path should be impossible to reach.") {
         super(message)
@@ -13,3 +14,5 @@ class ChannelPageOnlyError extends Error {
         this.name = "ChannelPageOnlyError"
     }
 }
+
+export { ImpossibleToGetHereError, ChannelPageOnlyError }

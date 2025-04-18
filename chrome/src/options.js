@@ -1,6 +1,6 @@
 /* Pairs with options.html */
 
-import { stripProtocol } from "./urlTools.js"
+import { stripProtocol } from "./urlTools.ts"
 
 // Initialize variables
 let ignoredDomains = []

@@ -23,7 +23,7 @@ from surveillance.src.routes.video_routes import router as video_routes
 
 # from surveillance.src.services import MouseService, KeyboardService, ProgramService, DashboardService, ChromeService
 # from surveillance.src.services import get_mouse_service, get_chrome_service, get_program_service, get_keyboard_service, get_dashboard_service
-from surveillance.src.object.pydantic_dto import TabChangeEvent
+from surveillance.src.object.pydantic_dto import TabChangeEvent, YouTubeEvent
 
 from surveillance.src.object.dashboard_dto import (
     MouseEventsPayload,
@@ -414,6 +414,34 @@ async def receive_chrome_tab(
         raise HTTPException(
             status_code=500,
             detail="A problem occurred in Chrome Service's tab endpoint"
+        )
+    
+
+@app.post("/api/chrome/youtube", status_code=status.HTTP_204_NO_CONTENT)
+async def receive_youtube_event(
+    tab_change_event: YouTubeEvent,
+    chrome_service: ChromeService = Depends(get_chrome_service),
+    timezone_service: TimezoneService = Depends(get_timezone_service)
+):
+    logger.log_purple("[LOG] Chrome Tab Received")
+    try:
+        user_id = 1  # temp until i have more than 1 user
+
+        # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
+        # capture_chrome_data_for_tests(tab_change_event)
+        tz_for_user = timezone_service.get_tz_for_user(
+            user_id)
+        updated_tab_change_event = timezone_service.convert_tab_change_timezone(
+            tab_change_event, tz_for_user)
+
+        await chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
+        return  # Returns 204 No Content
+    except Exception as e:
+        # print(e)
+        # raise
+        raise HTTPException(
+            status_code=500,
+            detail="A problem occurred in Chrome Service's YouTube endpoint"
         )
     
 @app.post("/api/chrome/ignored", status_code=status.HTTP_204_NO_CONTENT)

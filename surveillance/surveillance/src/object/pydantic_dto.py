@@ -54,6 +54,18 @@ class TabChangeEvent(BaseModel):
         formatted_time = self.startTime.strftime("%Y-%m-%d %H:%M:%S")
         return f"TabChangeEvent(tabTitle='{self.tabTitle}', url='{self.url}', startTime='{formatted_time}')"
 
+class YouTubeEvent(BaseModel):
+    tabTitle: str
+    url: str
+    channel: str
+    startTime: datetime
+
+    def __str__(self) -> str:
+        """Custom string representation of the YouTubeEvent."""
+        formatted_time = self.startTime.strftime("%Y-%m-%d %H:%M:%S")
+        return f"YouTubeEvent(tabTitle='{self.tabTitle}', url='{self.url}', chan='{self.channel}', startTime='{formatted_time}')"
+
+
 # Video recording stuff
 
 
