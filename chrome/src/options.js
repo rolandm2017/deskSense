@@ -1,6 +1,6 @@
 /* Pairs with options.html */
 
-import { stripProtocol } from "./urlTools"
+import { stripProtocol } from "./urlTools.js"
 
 // Initialize variables
 let ignoredDomains = []
@@ -25,13 +25,13 @@ document.getElementById("exportButton").addEventListener("click", exportDomains)
 function loadDomains() {
     chrome.storage.local.get("ignoredDomains", function (data) {
         ignoredDomains = data.ignoredDomains || []
-        displayDomains()
+        displayDomainsInMainSection()
         updateManualEditArea()
     })
 }
 
 // Display domains in the list
-function displayDomains() {
+function displayDomainsInMainSection() {
     const list = document.getElementById("domainsList")
     list.innerHTML = ""
 
@@ -60,6 +60,8 @@ function displayDomains() {
 
 // Update the manual edit textarea
 function updateManualEditArea() {
+    console.log("in update mahnual edit area")
+    console.log(ignoredDomains, "64ru")
     document.getElementById("manualEdit").value = ignoredDomains.join("\n")
 }
 
@@ -148,7 +150,7 @@ function saveDomains() {
         chrome.storage.local.set(
             { ignoredDomains: ignoredDomains },
             function () {
-                displayDomains()
+                displayDomainsInMainSection()
                 updateManualEditArea()
             }
         )

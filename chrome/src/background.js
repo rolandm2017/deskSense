@@ -22,7 +22,7 @@ export function getDomainFromUrlAndSubmit(tab) {
     if (domain) {
         console.log(domain, "22ru")
         const ignored = isDomainIgnored(domain, ignoredDomains)
-        console.log(ignored, ignored === undefined, "24ru")
+        console.log(ignored, ignored === undefined, "224ru")
         if (ignored) {
             reportIgnoredUrl()
             return
@@ -92,6 +92,7 @@ chrome.runtime.onInstalled.addListener(() => {
 
 function loadDomains() {
     chrome.storage.local.get("ignoredDomains", (data) => {
+        console.log(data, "95ru")
         ignoredDomains = data.ignoredDomains || []
     })
 }
@@ -101,7 +102,7 @@ export function isDomainIgnored(domain, ignoreList) {
     console.log(domain, "102ru")
     // const domain = new URL(url).hostname
     // console.log(domain, "104ru")
-    console.log(ignoreList, "105ru")
+    console.log("ignore list: ", ignoreList)
     // TODO: Make it use binary search
     return ignoreList.some(
         (ignoredDomain) =>
