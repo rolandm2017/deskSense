@@ -17,6 +17,10 @@ from time import time
 from surveillance.src.db.database import init_db, async_session_maker, regular_session_maker
 from surveillance.src.db.models import DailyDomainSummary, DailyProgramSummary, ProgramSummaryLog
 
+
+from surveillance.src.routes.report_routes import router as report_router
+from surveillance.src.routes.video_routes import router as video_routes
+
 # from surveillance.src.services import MouseService, KeyboardService, ProgramService, DashboardService, ChromeService
 # from surveillance.src.services import get_mouse_service, get_chrome_service, get_program_service, get_keyboard_service, get_dashboard_service
 from surveillance.src.object.pydantic_dto import TabChangeEvent
@@ -59,8 +63,6 @@ from surveillance.src.util.debug_logger import capture_chrome_data_for_tests
 from surveillance.src.util.console_logger import ConsoleLogger
 
 
-from surveillance.src.routes.report_routes import router as report_router
-from surveillance.src.routes.video_routes import router as video_routes
 from surveillance.src.util.clock import UserFacingClock
 from surveillance.src.facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
 # from surveillance.src.facade.program_facade import ProgramApiFacadeCore
@@ -127,7 +129,7 @@ async def lifespan(app: FastAPI):
         # time.sleep(2)
 
 
-app = FastAPI(lifespan=lifespan, root_path="/api")
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -146,7 +148,7 @@ class HealthResponse(BaseModel):
     detail: str | None = None
 
 
-@app.get("/health", response_model=HealthResponse)
+@app.get("/api/health", response_model=HealthResponse)
 async def health_check():
     logger.log_purple("[LOG] health check")
     try:
@@ -158,7 +160,7 @@ async def health_check():
             status_code=500, detail=f"Health check failed: {str(e)}")
 
 
-@app.get("/dashboard/timeline", response_model=TimelineRows)
+@app.get("/api/dashboard/timeline", response_model=TimelineRows)
 async def get_timeline_for_dashboard(dashboard_service: DashboardService = Depends(get_dashboard_service)):
     mouse_rows, keyboard_rows = await dashboard_service.get_timeline_for_today()
     # // TODO: make this be given by day
@@ -175,7 +177,7 @@ async def get_timeline_for_dashboard(dashboard_service: DashboardService = Depen
     return TimelineRows(mouseRows=pydantic_mouse_rows, keyboardRows=pydantic_keyboard_rows)
 
 
-@app.get("/dashboard/program/summaries", response_model=ProgramBarChartContent)
+@app.get("/api/dashboard/program/summaries", response_model=ProgramBarChartContent)
 async def get_program_time_for_dashboard(dashboard_service: DashboardService = Depends(get_dashboard_service)):
     program_data = await dashboard_service.get_program_summary()
     if not isinstance(program_data, list):
@@ -184,7 +186,7 @@ async def get_program_time_for_dashboard(dashboard_service: DashboardService = D
     return ProgramBarChartContent(columns=manufacture_programs_bar_chart(program_data))
 
 
-@app.get("/dashboard/chrome/summaries", response_model=ChromeBarChartContent)
+@app.get("/api/dashboard/chrome/summaries", response_model=ChromeBarChartContent)
 async def get_chrome_time_for_dashboard(dashboard_service: DashboardService = Depends(get_dashboard_service)):
     chrome_data = await dashboard_service.get_chrome_summary()
     if not isinstance(chrome_data, list):
@@ -199,7 +201,7 @@ async def get_chrome_time_for_dashboard(dashboard_service: DashboardService = De
 # By Week # By Week
 #
 
-@app.get("/dashboard/breakdown/week/{week_of}", response_model=ProductivityBreakdownByWeek)
+@app.get("/api/dashboard/breakdown/week/{week_of}", response_model=ProductivityBreakdownByWeek)
 async def get_productivity_breakdown(week_of: date = Path(..., description="Week starting date"),
                                      dashboard_service: DashboardService = Depends(get_dashboard_service)):
     weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(week_of)
@@ -214,7 +216,7 @@ async def get_productivity_breakdown(week_of: date = Path(..., description="Week
     return ProductivityBreakdownByWeek(days=DtoMapper.map_overview(weeks_overview))
 
 
-@app.get("/dashboard/program/summaries/week", response_model=WeeklyProgramContent)
+@app.get("/api/dashboard/program/summaries/week", response_model=WeeklyProgramContent)
 async def get_program_week_history(dashboard_service: DashboardService = Depends(get_dashboard_service)):
     week_of_data: List[DailyProgramSummary] = await dashboard_service.get_program_summary_weekly()
     # TODO: Test on Tuesday, Wednesday to see that they each get their own day
@@ -224,7 +226,7 @@ async def get_program_week_history(dashboard_service: DashboardService = Depends
     return WeeklyProgramContent(days=DtoMapper.map_programs(week_of_data))
 
 
-@app.get("/dashboard/chrome/summaries/week", response_model=WeeklyChromeContent)
+@app.get("/api/dashboard/chrome/summaries/week", response_model=WeeklyChromeContent)
 async def get_chrome_week_history(dashboard_service: DashboardService = Depends(get_dashboard_service)):
     week_of_unsorted_domain_summaries: List[DailyDomainSummary] = await dashboard_service.get_chrome_summary_weekly()
     # TODO: Test on Tuesday, Wednesday to see that they each get their own day
@@ -239,7 +241,7 @@ async def get_chrome_week_history(dashboard_service: DashboardService = Depends(
     return WeeklyChromeContent(days=DtoMapper.map_chrome(week_of_unsorted_domain_summaries))
 
 
-@app.get("/dashboard/chrome/summaries/week/{week_of}", response_model=WeeklyChromeContent)
+@app.get("/api/dashboard/chrome/summaries/week/{week_of}", response_model=WeeklyChromeContent)
 async def get_previous_week_chrome_history(week_of: date = Path(..., description="Week starting date"),
                                            dashboard_service: DashboardService = Depends(get_dashboard_service)):
     week_of_unsorted_domain_summaries: List[DailyDomainSummary] = await dashboard_service.get_previous_week_chrome_summary(week_of)
@@ -260,7 +262,7 @@ async def get_previous_week_chrome_history(week_of: date = Path(..., description
     return WeeklyChromeContent(days=days)
 
 
-@app.get("/dashboard/timeline/week", response_model=PartiallyPrecomputedWeeklyTimeline)
+@app.get("/api/dashboard/timeline/week", response_model=PartiallyPrecomputedWeeklyTimeline)
 async def get_timeline_weekly(dashboard_service: DashboardService = Depends(get_dashboard_service)):
     days_before_today, todays_payload, latest_sunday = await dashboard_service.get_current_week_timeline()
     rows: List[DayOfTimelineRows] = []
@@ -300,7 +302,7 @@ async def get_timeline_weekly(dashboard_service: DashboardService = Depends(get_
     return PartiallyPrecomputedWeeklyTimeline(beforeToday=rows, today=todays_payload, startDate=latest_sunday)
 
 
-@app.get("/dashboard/timeline/week/{week_of}", response_model=WeeklyTimeline)
+@app.get("/api/dashboard/timeline/week/{week_of}", response_model=WeeklyTimeline)
 async def get_previous_week_of_timeline(week_of: date = Path(..., description="Week starting date"),
                                         dashboard_service: DashboardService = Depends(get_dashboard_service)):
     days, start_of_week = await dashboard_service.get_specific_week_timeline(week_of)
@@ -327,7 +329,7 @@ async def get_previous_week_of_timeline(week_of: date = Path(..., description="W
     return response
 
 
-@app.get("/dashboard/programs/usage/timeline", response_model=WeeklyProgramUsageTimeline)
+@app.get("/api/dashboard/programs/usage/timeline", response_model=WeeklyProgramUsageTimeline)
 async def get_program_usage_timeline_for_present_week(
         dashboard_service: DashboardService = Depends(get_dashboard_service)):
     all_days, start_of_week = await dashboard_service.get_current_week_program_usage_timeline()
@@ -362,7 +364,7 @@ async def get_program_usage_timeline_for_present_week(
     return WeeklyProgramUsageTimeline(days=days)
 
 
-@app.get("/dashboard/programs/usage/timeline/{week_of}", response_model=WeeklyProgramUsageTimeline)
+@app.get("/api/dashboard/programs/usage/timeline/{week_of}", response_model=WeeklyProgramUsageTimeline)
 async def get_program_usage_timeline_by_week(week_of: date = Path(..., description="Week starting date"),
                                              dashboard_service: DashboardService = Depends(get_dashboard_service)):
     all_days, start_of_week = await dashboard_service.get_program_usage_timeline_for_week(week_of)
@@ -380,14 +382,14 @@ async def get_program_usage_timeline_by_week(week_of: date = Path(..., descripti
     return WeeklyProgramUsageTimeline(days=days)
 
 
-@app.get("/report/chrome")
+@app.get("/api/report/chrome")
 async def get_chrome_report(chrome_service: ChromeService = Depends(get_chrome_service)):
     logger.log_purple("[LOG] Get chrome tabs")
     reports = await chrome_service.read_last_24_hrs()
     return reports
 
 
-@app.post("/chrome/tab", status_code=status.HTTP_204_NO_CONTENT)
+@app.post("/api/chrome/tab", status_code=status.HTTP_204_NO_CONTENT)
 async def receive_chrome_tab(
     tab_change_event: TabChangeEvent,
     chrome_service: ChromeService = Depends(get_chrome_service),
@@ -414,7 +416,7 @@ async def receive_chrome_tab(
             detail="A problem occurred in Chrome Service's tab endpoint"
         )
     
-@app.post("/chrome/ignored", status_code=status.HTTP_204_NO_CONTENT)
+@app.post("/api/chrome/ignored", status_code=status.HTTP_204_NO_CONTENT)
 async def receive_chrome_tab(
     tab_change_event: TabChangeEvent,
     chrome_service: ChromeService = Depends(get_chrome_service),

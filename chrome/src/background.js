@@ -1,5 +1,7 @@
 // background.js
-import { reportTabSwitch, reportIgnoredUrl } from "./api.js"
+import { reportTabSwitch, reportIgnoredUrl, reportYouTube } from "./api.js"
+
+import { getYouTubeChannel } from "./youtube.js"
 
 chrome.action.onClicked.addListener(() => {
     chrome.runtime.openOptionsPage()
@@ -18,6 +20,7 @@ export function getDomainFromUrl(urlString) {
 }
 
 export function getDomainFromUrlAndSubmit(tab) {
+    console.log("Tab.url", tab.url)
     const domain = getDomainFromUrl(tab.url)
     if (domain) {
         console.log(domain, "22ru")
@@ -25,6 +28,12 @@ export function getDomainFromUrlAndSubmit(tab) {
         console.log(ignored, ignored === undefined, "224ru")
         if (ignored) {
             reportIgnoredUrl()
+            return
+        }
+        const isYouTube = domain.includes("youtube.com")
+        if (isYouTube) {
+            const channel = getYouTubeChannel(tab.url)
+            reportYouTube(tab.title, channel)
             return
         }
         console.log("New tab created:", domain, "Title:", tab.title)
