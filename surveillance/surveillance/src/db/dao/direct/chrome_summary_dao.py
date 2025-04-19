@@ -32,34 +32,47 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         self.async_session_maker = async_session_maker
         self.logger = ConsoleLogger()
 
-    @validate_start_end_and_duration
-    def create_if_new_else_update(self, chrome_session: ChromeSessionData, right_now: datetime):
-        """This method doesn't use queuing since it needs to check the DB state"""
+    # @validate_start_end_and_duration
+    # def create_if_new_else_update(self, chrome_session: ChromeSessionData, right_now: datetime):
+    #     """This method doesn't use queuing since it needs to check the DB state"""
+    #     target_domain_name = chrome_session.domain
+        
+    #     # No need to await this part
+    #     # TODO: Replace .create_log with a debug table, that records every integer added to a particular log
+    #     # TODO: ...the table could just be, "here's an id for a certain summary; here's the floats added to make the sum
+    #     # self.chrome_logging_dao.create_log(chrome_session, right_now)
+
+    #     # ### Calculate time difference
+    #     usage_duration_in_hours = chrome_session.duration.total_seconds() / 3600
+
+    #     existing_entry = self.read_row_for_domain(target_domain_name, right_now)
+    #     print(existing_entry, "49ru")
+
+    #     if existing_entry:                
+    #         print("updating hours for " + existing_entry.domain_name)
+    #         if self.debug:
+    #             notice_suspicious_durations(existing_entry, chrome_session)
+    #         self.logger.log_white_multiple("[chrome summary dao] adding time ",
+    #                                         chrome_session.duration, " to ", target_domain_name)
+    #         self.update_hours(existing_entry, usage_duration_in_hours)
+    #     else:
+    #         today_start = right_now.replace(
+    #             hour=0, minute=0, second=0, microsecond=0)
+    #         self._create(target_domain_name, usage_duration_in_hours, today_start)
+    
+    def start_session(self, chrome_session: ChromeSessionData, right_now):
+        print("HERE 151ru")
         target_domain_name = chrome_session.domain
         
-        # No need to await this part
-        # TODO: Replace .create_log with a debug table, that records every integer added to a particular log
-        # TODO: ...the table could just be, "here's an id for a certain summary; here's the floats added to make the sum
-        # self.chrome_logging_dao.create_log(chrome_session, right_now)
+        starting_window_amt = 10  # sec
+        usage_duration_in_hours =  starting_window_amt/ SECONDS_PER_HOUR
 
-        # ### Calculate time difference
-        usage_duration_in_hours = chrome_session.duration.total_seconds() / 3600
-
-        existing_entry = self.read_row_for_domain(target_domain_name, right_now)
-
-        if existing_entry:                
-            if self.debug:
-                notice_suspicious_durations(existing_entry, chrome_session)
-            self.logger.log_white_multiple("[chrome summary dao] adding time ",
-                                            chrome_session.duration, " to ", target_domain_name)
-            self.update_hours(existing_entry, usage_duration_in_hours)
-        else:
-            today_start = right_now.replace(
-                hour=0, minute=0, second=0, microsecond=0)
-            self._create(target_domain_name, usage_duration_in_hours, today_start)
-      
+        today = right_now.replace(hour=0, minute=0, second=0,
+                            microsecond=0)  # Still has tz attached
+        self._create(target_domain_name, usage_duration_in_hours, today)
 
     def _create(self, target_domain_name, duration_in_hours, when_it_was_gathered):
+        print(f"creating for {target_domain_name} with duration {duration_in_hours}, 63ru")
         with self.regular_session() as session:
             new_entry = DailyDomainSummary(
                 domain_name=target_domain_name,
@@ -110,6 +123,9 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         """Read all entries for the given day."""
         today_start = day.replace(hour=0, minute=0, second=0, microsecond=0)
         tomorrow_start = today_start + timedelta(days=1)
+        print("read_day 113ru")
+        print(today_start)
+        print(tomorrow_start)
 
         query = select(DailyDomainSummary).where(
             DailyDomainSummary.gathering_date >= today_start,
@@ -140,19 +156,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             # Commit the changes
             session.commit()
 
-    
-    def start_session(self, chrome_session: ChromeSessionData, right_now):
-        target_domain_name = chrome_session.domain
-        # ### Calculate time difference
-        if chrome_session.duration is None:
-            raise ValueError("Session duration was None")
-        
-        starting_window_amt = 10  # sec
-        usage_duration_in_hours =  starting_window_amt/ SECONDS_PER_HOUR
 
-        today = right_now.replace(hour=0, minute=0, second=0,
-                            microsecond=0)  # Still has tz attached
-        self._create(target_domain_name, usage_duration_in_hours, today)
         
     def push_window_ahead_ten_sec(self, chrome_session: ChromeSessionData, right_now):
         """Finds the given session and adds ten sec to its end_time

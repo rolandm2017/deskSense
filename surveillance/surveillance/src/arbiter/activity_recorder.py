@@ -36,6 +36,7 @@ class ActivityRecorder:
             self.program_logging_dao.start_session(session)
             self.program_summary_dao.start_session(session, now)
         elif isinstance(session, ChromeSessionData):
+            print(session, "in on new session, 39ru")
             self.chrome_logging_dao.start_session(session)
             self.chrome_summary_dao.start_session(session, now)
         else:
@@ -66,6 +67,7 @@ class ActivityRecorder:
             self.program_logging_dao.push_window_ahead_ten_sec(session)
             self.program_summary_dao.push_window_ahead_ten_sec(session, now)
         elif isinstance(session, ChromeSessionData):
+            print("add ten sec to end time, for chrome, 70ru")
             self.chrome_logging_dao.push_window_ahead_ten_sec(session)
             self.chrome_summary_dao.push_window_ahead_ten_sec(session, now)
         else:
@@ -80,6 +82,7 @@ class ActivityRecorder:
         if isinstance(session, ProgramSessionData):
             self.program_summary_dao.deduct_remaining_duration(session, duration_in_sec, today_start)
         elif isinstance(session, ChromeSessionData):
+            print(f"deducting {duration_in_sec} from {session.domain}, 85ru")
             self.chrome_summary_dao.deduct_remaining_duration(session, duration_in_sec, today_start)
         else:
             raise TypeError("Session was not the right type")

@@ -15,7 +15,7 @@ import {
     getTimelineForPresentWeek,
 } from "../api/getData.api";
 
-// import ChromeUsageChart from "../components/charts/ChromeUsageChart";
+import ChromeUsageChart from "../components/charts/ChromeUsageChart";
 import PeripheralsTimeline from "../components/charts/PeripheralsTimeline";
 import { aggregateEvents } from "../util/aggregateEvents";
 import { DayOfAggregatedRows } from "../interface/misc.interface";
@@ -163,9 +163,9 @@ function Home() {
                 <div>
                     <h2 style={{ margin: "0px" }}>Chrome</h2>
                     {chromeSummaries ? (
-                        // <ChromeUsageChart barsInput={chromeSummaries} />
-                        <p>foo</p>
+                        <ChromeUsageChart barsInput={chromeSummaries} />
                     ) : (
+                        // <p>foo</p>
                         <p>Loading...</p>
                     )}
                 </div>

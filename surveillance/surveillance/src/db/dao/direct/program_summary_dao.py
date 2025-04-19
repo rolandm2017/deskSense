@@ -36,34 +36,34 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         self.async_session_maker = async_session_maker 
         self.logger = ConsoleLogger()
 
-    @validate_start_end_and_duration
-    def create_if_new_else_update(self, program_session: ProgramSessionData, right_now: datetime):
-        """
-        This method doesn't use queuing since it needs to check the DB state.
+    # @validate_start_end_and_duration
+    # def create_if_new_else_update(self, program_session: ProgramSessionData, right_now: datetime):
+    #     """
+    #     This method doesn't use queuing since it needs to check the DB state.
 
-        Note that this method ONLY creates gathering dates that are *today*.
-        """
-        # TODO: Replace .create_log with a debug table, that records every integer added to a particular log
-        # TODO: ...the table could just be, "here's an id for a certain summary; here's the floats added to make the sum
-        # self.program_logging_dao.create_log(program_session, right_now)
+    #     Note that this method ONLY creates gathering dates that are *today*.
+    #     """
+    #     # TODO: Replace .create_log with a debug table, that records every integer added to a particular log
+    #     # TODO: ...the table could just be, "here's an id for a certain summary; here's the floats added to make the sum
+    #     # self.program_logging_dao.create_log(program_session, right_now)
 
-        target_program_name = program_session.window_title
-        # ### Calculate time difference
-        usage_duration_in_hours = (
-            program_session.end_time - program_session.start_time).total_seconds() / SECONDS_PER_HOUR
+    #     target_program_name = program_session.window_title
+    #     # ### Calculate time difference
+    #     usage_duration_in_hours = (
+    #         program_session.end_time - program_session.start_time).total_seconds() / SECONDS_PER_HOUR
 
-        # ### Check if entry exists for today
-        existing_entry = self.read_row_for_program(target_program_name, right_now)
+    #     # ### Check if entry exists for today
+    #     existing_entry = self.read_row_for_program(target_program_name, right_now)
 
-        if existing_entry:
-            if self.debug:
-                notice_suspicious_durations(existing_entry, program_session)
+    #     if existing_entry:
+    #         if self.debug:
+    #             notice_suspicious_durations(existing_entry, program_session)
 
-            self.update_hours(existing_entry, usage_duration_in_hours)
-        else:
-            today_start = right_now.replace(
-            hour=0, minute=0, second=0, microsecond=0)
-            self._create(target_program_name, usage_duration_in_hours, today_start)
+    #         self.update_hours(existing_entry, usage_duration_in_hours)
+    #     else:
+    #         today_start = right_now.replace(
+    #         hour=0, minute=0, second=0, microsecond=0)
+    #         self._create(target_program_name, usage_duration_in_hours, today_start)
 
     def start_session(self, program_session: ProgramSessionData, right_now):
         target_program_name = program_session.window_title
