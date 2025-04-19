@@ -12,7 +12,6 @@ import copy
 
 from surveillance.src.config.definitions import power_on_off_debug_file
 
-from surveillance.src.db.dao.queuing.chrome_dao import ChromeDao
 from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from surveillance.src.object.classes import ChromeSessionData
 from surveillance.src.object.pydantic_dto import TabChangeEvent
@@ -101,7 +100,6 @@ class ChromeService:
         # FIXME: It can't be a user facing clock b/c it's ... global, server wide.
         self.user_facing_clock = user_facing_clock
         self.arbiter = arbiter
-        self.chrome_dao = dao
         self.last_entry = None
         self.elapsed_alt_tab = None
         # self.summary_dao = summary_dao

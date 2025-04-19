@@ -10,11 +10,11 @@ from typing import List
 from surveillance.src.config.definitions import power_on_off_debug_file
 
 from surveillance.src.db.models import DailyDomainSummary
-from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.object.classes import ChromeSessionData
 
+from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.dao_wrapper import validate_start_end_and_duration, validate_start_and_end_times
-from surveillance.src.util.errors import SuspiciousDurationError
+from surveillance.src.util.errors import SuspiciousDurationError, NegativeTimeError
 from surveillance.src.util.debug_util import notice_suspicious_durations, log_if_needed
 from surveillance.src.util.const import SECONDS_PER_HOUR
 
@@ -31,34 +31,6 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         self.regular_session = regular_session
         self.async_session_maker = async_session_maker
         self.logger = ConsoleLogger()
-
-    # @validate_start_end_and_duration
-    # def create_if_new_else_update(self, chrome_session: ChromeSessionData, right_now: datetime):
-    #     """This method doesn't use queuing since it needs to check the DB state"""
-    #     target_domain_name = chrome_session.domain
-        
-    #     # No need to await this part
-    #     # TODO: Replace .create_log with a debug table, that records every integer added to a particular log
-    #     # TODO: ...the table could just be, "here's an id for a certain summary; here's the floats added to make the sum
-    #     # self.chrome_logging_dao.create_log(chrome_session, right_now)
-
-    #     # ### Calculate time difference
-    #     usage_duration_in_hours = chrome_session.duration.total_seconds() / 3600
-
-    #     existing_entry = self.read_row_for_domain(target_domain_name, right_now)
-    #     print(existing_entry, "49ru")
-
-    #     if existing_entry:                
-    #         print("updating hours for " + existing_entry.domain_name)
-    #         if self.debug:
-    #             notice_suspicious_durations(existing_entry, chrome_session)
-    #         self.logger.log_white_multiple("[chrome summary dao] adding time ",
-    #                                         chrome_session.duration, " to ", target_domain_name)
-    #         self.update_hours(existing_entry, usage_duration_in_hours)
-    #     else:
-    #         today_start = right_now.replace(
-    #             hour=0, minute=0, second=0, microsecond=0)
-    #         self._create(target_domain_name, usage_duration_in_hours, today_start)
     
     def start_session(self, chrome_session: ChromeSessionData, right_now):
         print("HERE 151ru")
@@ -73,6 +45,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     def _create(self, target_domain_name, duration_in_hours, when_it_was_gathered):
         print(f"creating for {target_domain_name} with duration {duration_in_hours}, 63ru")
+        self.throw_if_negative(target_domain_name, duration_in_hours)
         with self.regular_session() as session:
             new_entry = DailyDomainSummary(
                 domain_name=target_domain_name,
@@ -151,7 +124,9 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
                 existing_entry = session.merge(existing_entry)
 
             # Update the hours
-            existing_entry.hours_spent += usage_duration_in_hours
+            new_duration = existing_entry.hours_spent + usage_duration_in_hours
+            self.throw_if_negative(existing_entry.domain_name, new_duration)
+            existing_entry.hours_spent = new_duration
             
             # Commit the changes
             session.commit()
@@ -215,7 +190,9 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             domain: DailyDomainSummary = db_session.scalars(query).first()
             # Update it if found
             if domain:
-                domain.hours_spent = domain.hours_spent - duration_in_sec / SECONDS_PER_HOUR
+                new_duration = domain.hours_spent - duration_in_sec / SECONDS_PER_HOUR
+                self.throw_if_negative(domain.program_name, new_duration)
+                domain.hours_spent = new_duration
                 db_session.commit()
             else:
                 # FIXME: Remove this else, it should never happen now that start_session exists here too
@@ -226,6 +203,11 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
                 self.logger.log_white_multiple("INFO:", f"first time {target_domain} appears today")
                 self._create(target_domain, duration_in_sec / SECONDS_PER_HOUR, today_start)
                 # self.create_if_new_else_update(session, session.start_time)
+
+    def throw_if_negative(self, activity, value):
+        if value < 0:
+            raise NegativeTimeError(activity, value)
+
 
     async def shutdown(self):
         """Closes the open session without opening a new one"""

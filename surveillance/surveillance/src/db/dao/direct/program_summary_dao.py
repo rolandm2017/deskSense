@@ -9,11 +9,12 @@ from surveillance.src.config.definitions import power_on_off_debug_file
 
 from surveillance.src.db.models import DailyProgramSummary
 
-from surveillance.src.util.dao_wrapper import validate_start_end_and_duration, validate_start_and_end_times
 from surveillance.src.object.classes import ProgramSessionData
-from surveillance.src.util.console_logger import ConsoleLogger
- 
+
+from surveillance.src.util.dao_wrapper import validate_start_end_and_duration, validate_start_and_end_times
+from surveillance.src.util.console_logger import ConsoleLogger 
 from surveillance.src.util.const import SECONDS_PER_HOUR
+from surveillance.src.util.errors import NegativeTimeError
 from surveillance.src.util.debug_util import notice_suspicious_durations, log_if_needed
 
 class DatabaseProtectionError(RuntimeError):
@@ -36,35 +37,6 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         self.async_session_maker = async_session_maker 
         self.logger = ConsoleLogger()
 
-    # @validate_start_end_and_duration
-    # def create_if_new_else_update(self, program_session: ProgramSessionData, right_now: datetime):
-    #     """
-    #     This method doesn't use queuing since it needs to check the DB state.
-
-    #     Note that this method ONLY creates gathering dates that are *today*.
-    #     """
-    #     # TODO: Replace .create_log with a debug table, that records every integer added to a particular log
-    #     # TODO: ...the table could just be, "here's an id for a certain summary; here's the floats added to make the sum
-    #     # self.program_logging_dao.create_log(program_session, right_now)
-
-    #     target_program_name = program_session.window_title
-    #     # ### Calculate time difference
-    #     usage_duration_in_hours = (
-    #         program_session.end_time - program_session.start_time).total_seconds() / SECONDS_PER_HOUR
-
-    #     # ### Check if entry exists for today
-    #     existing_entry = self.read_row_for_program(target_program_name, right_now)
-
-    #     if existing_entry:
-    #         if self.debug:
-    #             notice_suspicious_durations(existing_entry, program_session)
-
-    #         self.update_hours(existing_entry, usage_duration_in_hours)
-    #     else:
-    #         today_start = right_now.replace(
-    #         hour=0, minute=0, second=0, microsecond=0)
-    #         self._create(target_program_name, usage_duration_in_hours, today_start)
-
     def start_session(self, program_session: ProgramSessionData, right_now):
         target_program_name = program_session.window_title
         
@@ -77,6 +49,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         self._create(target_program_name, usage_duration_in_hours, today_start)
 
     def _create(self, target_program_name, duration_in_hours, when_it_was_gathered):
+        self.throw_if_negative(target_program_name, duration_in_hours)
         with self.regular_session() as session:
             new_entry = DailyProgramSummary(
                 program_name=target_program_name,
@@ -157,7 +130,9 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
                 existing_entry = session.merge(existing_entry)
 
             # Update the hours
-            existing_entry.hours_spent += usage_duration_in_hours
+            new_duration = existing_entry.hours_spent + usage_duration_in_hours
+            self.throw_if_negative(existing_entry.program_name, new_duration)
+            existing_entry.hours_spent = new_duration
             
             # Commit the changes
             session.commit()
@@ -207,7 +182,9 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             program: DailyProgramSummary = db_session.scalars(query).first()
             # Update it if found
             if program:
-                program.hours_spent = program.hours_spent - duration_in_sec / SECONDS_PER_HOUR
+                new_duration = program.hours_spent - duration_in_sec / SECONDS_PER_HOUR
+                self.throw_if_negative(program.program_name, new_duration)
+                program.hours_spent = new_duration
                 db_session.commit()
             else:
                 # FIXME: Remove this else, it should never happen now that start_session exists here too
@@ -219,7 +196,9 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
                 # self.create_with_duration(session, duration_in_sec)
                 # self.create_if_new_else_update(session, session.start_time)
 
-                
+    def throw_if_negative(self, activity, value):
+        if value < 0:
+            raise NegativeTimeError(activity, value)
 
     async def shutdown(self):
         """Closes the open session without opening a new one"""

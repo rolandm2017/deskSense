@@ -4,7 +4,6 @@ from typing import List, cast
 
 from surveillance.src.object.dashboard_dto import MouseEventsPayload
 
-
 from surveillance.src.facade.keyboard_facade import KeyboardFacadeCore
 
 from surveillance.src.object.pydantic_dto import TabChangeEvent
@@ -12,7 +11,6 @@ from surveillance.src.util.time_formatting import convert_to_timezone
 
 from surveillance.src.db.dao.queuing.mouse_dao import MouseDao
 from surveillance.src.db.dao.queuing.keyboard_dao import KeyboardDao
-from surveillance.src.db.dao.queuing.program_dao import ProgramDao
 from surveillance.src.db.dao.queuing.video_dao import VideoDao
 from surveillance.src.db.dao.direct.frame_dao import FrameDao
 from surveillance.src.db.models import TypingSession, Program, MouseMove
