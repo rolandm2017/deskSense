@@ -6,11 +6,14 @@ from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
+from surveillance.src.util.clock import UserFacingClock
+from surveillance.src.util.time_layer import UserLocalTime
+
 # Persistence component
 
 
 class ActivityRecorder:
-    def __init__(self, user_facing_clock, program_logging_dao: ProgramLoggingDao, chrome_logging_dao: ChromeLoggingDao, program_summary_dao: ProgramSummaryDao, chrome_summary_dao: ChromeSummaryDao):
+    def __init__(self, user_facing_clock: UserFacingClock, program_logging_dao: ProgramLoggingDao, chrome_logging_dao: ChromeLoggingDao, program_summary_dao: ProgramSummaryDao, chrome_summary_dao: ChromeSummaryDao):
         self.user_facing_clock = user_facing_clock
         self.program_logging_dao = program_logging_dao
         self.chrome_logging_dao = chrome_logging_dao
@@ -61,7 +64,7 @@ class ActivityRecorder:
         """
         if session is None:
             raise ValueError("Session was None in add_ten_sec")
-        now = self.user_facing_clock.now()
+        now: UserLocalTime = self.user_facing_clock.now()
         if isinstance(session, ProgramSessionData):
             self.program_logging_dao.push_window_ahead_ten_sec(session)
             self.program_summary_dao.push_window_ahead_ten_sec(session, now)

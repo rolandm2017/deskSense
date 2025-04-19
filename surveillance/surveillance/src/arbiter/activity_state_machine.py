@@ -109,6 +109,7 @@ class ActivityStateMachine:
         on_initialization = self.prior_state is None
         if on_initialization:
             return None
+        assert self.prior_state is not None
         return self.prior_state.session
 
     def conclude_without_replacement(self):

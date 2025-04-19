@@ -5,6 +5,7 @@ from typing import Iterator
 
 from surveillance.src.config.definitions import local_time_zone
 from surveillance.src.util.time_formatting import get_start_of_day
+from surveillance.src.util.time_layer import UserLocalTime
 
 
 class ClockProtocol:
@@ -36,14 +37,14 @@ class UserFacingClock(ClockProtocol):
     def __init__(self):
         self.today = get_start_of_day(self.now())
 
-    def now(self) -> datetime:
+    def now(self) -> UserLocalTime:
         # utc_now = datetime.now(timezone.utc)
 
         # # Convert it to the local timezone explicitly
         # local_now = utc_now.astimezone(ZoneInfo(local_time_zone))
 
         # return local_now
-        return datetime.now(ZoneInfo(local_time_zone))
+        return UserLocalTime(datetime.now(ZoneInfo(local_time_zone)))
 
     def today(self):
         """

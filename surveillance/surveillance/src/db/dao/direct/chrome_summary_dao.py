@@ -18,6 +18,7 @@ from surveillance.src.util.errors import NegativeTimeError, ImpossibleToGetHereE
 from surveillance.src.util.debug_util import notice_suspicious_durations, log_if_needed
 from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.time_formatting import get_start_of_day
+from surveillance.src.util.time_layer import UserLocalTime
 
 
 # @@@@ @@@@ @@@@ @@@@ @@@@
@@ -68,10 +69,10 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             result = session.execute(query)
             return result.scalar_one_or_none()
 
-    def read_past_week(self, right_now: datetime):
+    def read_past_week(self, right_now: UserLocalTime):
 
         # +1 because weekday() counts from Monday=0
-        days_since_sunday = right_now.weekday() + 1
+        days_since_sunday = right_now.dt.weekday() + 1
         last_sunday = right_now - timedelta(days=days_since_sunday)
         query = select(DailyDomainSummary).where(
             func.date(DailyDomainSummary.gathering_date) >= last_sunday.date()
@@ -81,9 +82,10 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             result = session.execute(query)
             return result.scalars().all()
 
-    def read_past_month(self, right_now: datetime):
+    def read_past_month(self, right_now: UserLocalTime):
         """Read all entries from the 1st of the current month through today."""
-        start_of_month = right_now.replace(day=1)  # First day of current month
+        start_of_month = right_now.dt.replace(
+            day=1)  # First day of current month
 
         query = select(DailyDomainSummary).where(
             func.date(DailyDomainSummary.gathering_date) >= start_of_month.date()
@@ -93,9 +95,9 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             result = session.execute(query)
             return result.scalars().all()
 
-    def read_day(self, day: datetime) -> List[DailyDomainSummary]:
+    def read_day(self, day: UserLocalTime) -> List[DailyDomainSummary]:
         """Read all entries for the given day."""
-        today_start = get_start_of_day(day)
+        today_start = get_start_of_day(day.dt)
         tomorrow_start = today_start + timedelta(days=1)
 
         query = select(DailyDomainSummary).where(

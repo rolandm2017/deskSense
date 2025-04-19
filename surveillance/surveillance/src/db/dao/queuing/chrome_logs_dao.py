@@ -16,6 +16,7 @@ from surveillance.src.util.errors import ImpossibleToGetHereError
 from surveillance.src.util.dao_wrapper import validate_session, guarantee_start_time
 from surveillance.src.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
 from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day
+from surveillance.src.util.time_layer import UserLocalTime
 
 
 #
@@ -41,13 +42,16 @@ class ChromeLoggingDao(BaseQueueingDao):
         self.async_session_maker = async_session_maker
         self.regular_session = session_maker
 
-    @validate_session
-    def create_log(self, session: ChromeSessionData, right_now: datetime):
+    def create_log(self, session: ChromeSessionData, right_now: UserLocalTime):
         """
         Log an update to a summary table.
 
         So the end_time here is like, "when was that addition to the summary ended?"
         """
+        if session.duration is None:
+            raise ValueError("Session duration was None")
+        if session.start_time is None or session.end_time is None:
+            raise ValueError("Start or end time was None")
         start_end_time_duration_as_hours = convert_start_end_times_to_hours(
             session)
 
@@ -66,11 +70,12 @@ class ChromeLoggingDao(BaseQueueingDao):
             db_session.add(log_entry)
             db_session.commit()
 
-    @guarantee_start_time
     def start_session(self, session: ChromeSessionData):
         """
         A session of using a domain. End_time here is like, "when did the user tab away from the program?"
         """
+        if session.start_time is None:
+            raise ValueError("Start time was None")
         unknown = None
         base_start_time = convert_to_utc(session.start_time.get_dt_for_db())
         start_of_day = get_start_of_day(session.start_time.get_dt_for_db())
@@ -90,6 +95,8 @@ class ChromeLoggingDao(BaseQueueingDao):
             db_session.commit()
 
     def find_session(self, session: ChromeSessionData):
+        if session.start_time is None:
+            raise ValueError("Start time was None")
         start_time_as_utc = convert_to_utc(session.start_time.get_dt_for_db())
         query = select(DomainSummaryLog).where(
             DomainSummaryLog.start_time.op('=')(start_time_as_utc)
@@ -151,9 +158,9 @@ class ChromeLoggingDao(BaseQueueingDao):
         query = select(DomainSummaryLog)
         return self.execute_query(query)
 
-    async def read_last_24_hrs(self, right_now: datetime):
+    async def read_last_24_hrs(self, right_now: UserLocalTime):
         """Fetch all domain log entries from the last 24 hours"""
-        cutoff_time = right_now - timedelta(hours=24)
+        cutoff_time = right_now.dt - timedelta(hours=24)
         query = select(DomainSummaryLog).where(
             DomainSummaryLog.created_at >= cutoff_time
         ).order_by(DomainSummaryLog.created_at.desc())
@@ -174,6 +181,8 @@ class ChromeLoggingDao(BaseQueueingDao):
         Overwrite value from the heartbeat. Expect something to ALWAYS be in the db already at this point.
         Note that if the computer was shutdown, this method is never called, and the rough estimate is kept.
         """
+        if session.end_time is None:
+            raise ValueError("End time was None")
         log: DomainSummaryLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError(

@@ -10,6 +10,7 @@ from surveillance.src.db.models import TypingSession
 from surveillance.src.object.classes import KeyboardAggregate
 from surveillance.src.object.dto import TypingSessionDto
 from surveillance.src.util.console_logger import ConsoleLogger
+from surveillance.src.util.time_layer import UserLocalTime
 
 
 def get_rid_of_ms(time):
@@ -71,13 +72,13 @@ class KeyboardDao(BaseQueueingDao):
 
             return dtos
 
-    async def read_past_24h_events(self, right_now: datetime):
+    async def read_past_24h_events(self, right_now: UserLocalTime):
         """
         Read typing sessions from the past 24 hours, grouped into 5-minute intervals.
         Returns the count of sessions per interval.
         """
         try:
-            twenty_four_hours_ago = right_now - timedelta(hours=24)
+            twenty_four_hours_ago = right_now.dt - timedelta(hours=24)
 
             query = select(TypingSession).where(
                 TypingSession.start_time >= twenty_four_hours_ago

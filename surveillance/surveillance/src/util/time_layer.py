@@ -44,6 +44,10 @@ class UserLocalTime:
 
     This class behaves like a datetime while clearly indicating
     that it represents a user's local time.
+
+    The utility happens mostly in the parameter type.
+    Now the developer can at a glance see if s/he is dealing with
+    the user's timezone or the system's.
     """
 
     def __init__(self, dt):

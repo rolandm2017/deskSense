@@ -9,6 +9,7 @@ from surveillance.src.db.models import MouseMove
 from surveillance.src.object.dto import MouseMoveDto
 from surveillance.src.object.classes import MouseMoveWindow
 from surveillance.src.util.console_logger import ConsoleLogger
+from surveillance.src.util.time_layer import UserLocalTime
 
 
 def get_rid_of_ms(time):
@@ -24,8 +25,8 @@ class MouseDao(BaseQueueingDao):
 
     # NOTE: this whole DAO is a candidate for asyncio.create_task()'ing the writes
 
-    async def create_from_start_end_times(self, start_time: datetime, end_time: datetime):
-        mouse_move = MouseMove(start_time=start_time, end_time=end_time)
+    async def create_from_start_end_times(self, start_time: UserLocalTime, end_time: UserLocalTime):
+        mouse_move = MouseMove(start_time=start_time.dt, end_time=end_time.dt)
         if isinstance(mouse_move, MouseMoveWindow):
             raise ValueError("mouse move window found!")
         await self.queue_item(mouse_move, MouseMove, "create_from_start_end_times")
@@ -38,10 +39,10 @@ class MouseDao(BaseQueueingDao):
             start_time=window.start_time.get_dt_for_db(), end_time=window.end_time.get_dt_for_db())
         await self.queue_item(mouse_move, MouseMove, "create_from_window")
 
-    async def create_without_queue(self, start_time: datetime, end_time: datetime):
+    async def create_without_queue(self, start_time: UserLocalTime, end_time: UserLocalTime):
         new_mouse_move = MouseMove(
-            start_time=start_time,
-            end_time=end_time
+            start_time=start_time.dt,
+            end_time=end_time.dt
         )
 
         async with self.async_session_maker() as db_session:
@@ -64,13 +65,13 @@ class MouseDao(BaseQueueingDao):
         async with self.async_session_maker() as session:
             return await session.get(MouseMove, mouse_move_id)
 
-    async def read_past_24h_events(self, right_now: datetime):
+    async def read_past_24h_events(self, right_now: UserLocalTime):
         """
         Read mouse movement events that ended within the past 24 hours.
         Returns all movements ordered by their end time.
         """
         query = select(MouseMove).where(
-            MouseMove.end_time >= right_now - timedelta(days=1)
+            MouseMove.end_time >= right_now.dt - timedelta(days=1)
         ).order_by(MouseMove.end_time.desc())
 
         async with self.async_session_maker() as session:

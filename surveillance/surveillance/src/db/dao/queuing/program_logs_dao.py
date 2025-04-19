@@ -40,13 +40,16 @@ class ProgramLoggingDao(BaseQueueingDao):
         self.async_session_maker = async_session_maker
         self.logger = ConsoleLogger()
 
-    @validate_session
     def create_log(self, session: ProgramSessionData, right_now: datetime):
         """
         Log an update to a summary table.
 
         So the end_time here is like, "when was that addition to the summary ended?"
         """
+        if session.start_time is None:
+            raise ValueError("Start time was None")
+        if session.end_time is None:
+            raise ValueError("End time was None")
         # ### Calculate time difference
         start_end_time_duration_as_hours = convert_start_end_times_to_hours(
             session)
@@ -69,13 +72,14 @@ class ProgramLoggingDao(BaseQueueingDao):
             db_session.add(log_entry)
             db_session.commit()
 
-    @guarantee_start_time
     def start_session(self, session: ProgramSessionData):
         """
         A session of using a domain. End_time here is like, "when did the user tab away from the program?"
         """
         self.logger.log_white_multiple(
             "INFO: starting session for ", session.window_title)
+        if session.start_time is None:
+            raise ValueError("Start time was None")
         unknown = None
         base_start_time = convert_to_utc(session.start_time.get_dt_for_db())
         start_of_day = get_start_of_day(session.start_time.get_dt_for_db())
@@ -97,6 +101,8 @@ class ProgramLoggingDao(BaseQueueingDao):
 
     def find_session(self, session: ProgramSessionData):
         # the database is storing and returning times in UTC
+        if session.start_time is None:
+            raise ValueError("Start time was None")
         start_time_as_utc = convert_to_utc(session.start_time.get_dt_for_db())
         query = select(ProgramSummaryLog).where(
             ProgramSummaryLog.start_time.op('=')(start_time_as_utc)
@@ -216,6 +222,8 @@ class ProgramLoggingDao(BaseQueueingDao):
 
     def finalize_log(self, session: ProgramSessionData):
         """Overwrite value from the heartbeat. Expect something to ALWAYS be in the db already at this point."""
+        if session.end_time is None:
+            raise ValueError("End time was None")
         log: ProgramSummaryLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError(

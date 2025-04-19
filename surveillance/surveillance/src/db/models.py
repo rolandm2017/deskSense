@@ -2,7 +2,7 @@
 from sqlalchemy import Enum as SQLAlchemyEnum
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float, Interval, Computed, ForeignKey
 from sqlalchemy.sql import func
-from sqlalchemy.orm import mapped_column, relationship
+from sqlalchemy.orm import mapped_column, relationship, Mapped
 
 from sqlalchemy import Column as SQLAlchemyColumn
 
@@ -109,10 +109,10 @@ class DailyProgramSummary(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     program_name = Column(String)
-    hours_spent = Column(Float)
+    hours_spent: Mapped[float] = mapped_column(Float)
     # The date on which the program data was gathered, without hh:mm:ss
     # MUST be the date FOR THE USER. Otherwise, the program doesn't make sense
-    gathering_date = Column(DateTime(timezone=True))  
+    gathering_date = Column(DateTime(timezone=True))
 
     def __str__(self):
         formatted_date = self.gathering_date.strftime(
@@ -128,7 +128,7 @@ class DailyDomainSummary(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     domain_name = Column(String)
-    hours_spent = Column(Float)
+    hours_spent: Mapped[float] = mapped_column(Float)
     # The date on which the program data was gathered
     # MUST be the date FOR THE USER. Otherwise, the program doesn't make sense
     gathering_date = Column(DateTime(timezone=True))
@@ -150,7 +150,7 @@ class ProgramSummaryLog(Base):
     hours_spent = Column(Float)
     # time stuff
     start_time = Column(DateTime(timezone=True))
-    end_time = Column(DateTime(timezone=True))
+    end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     duration = Column(Float, nullable=True)
     created_at = Column(DateTime(timezone=True))
     # The date on which the program data was gathered
@@ -169,7 +169,7 @@ class DomainSummaryLog(Base):
     domain_name = Column(String)
     hours_spent = Column(Float)
     start_time = Column(DateTime(timezone=True))
-    end_time = Column(DateTime(timezone=True))
+    end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     duration = Column(Float, nullable=True)
     # The date on which the program data was gathered
     gathering_date = Column(DateTime(timezone=True))
@@ -197,8 +197,9 @@ class TimelineEntryObj(Base):
     clientFacingId = Column(
         String,
         # "Sqlalchemy db-agnostic language" - Claude
-        Computed("CASE WHEN \"group\" = 'MOUSE' THEN 'mouse-' || id ELSE 'keyboard-' || id END", persisted=True)
-        
+        Computed(
+            "CASE WHEN \"group\" = 'MOUSE' THEN 'mouse-' || id ELSE 'keyboard-' || id END", persisted=True)
+
         # Computed(
         #     "CASE WHEN \"group\" = 'MOUSE' THEN 'mouse-' || id::TEXT ELSE 'keyboard-' || id::TEXT END",
         #     # postgresql_persisted=True  # Add this back
@@ -211,7 +212,8 @@ class TimelineEntryObj(Base):
     content = Column(
         String,
         # "Sqlalchemy db-agnostic language" - Claude
-        Computed("CASE WHEN \"group\" = 'MOUSE' THEN 'Mouse Event ' || id ELSE 'Typing Session ' || id END", persisted=True)
+        Computed(
+            "CASE WHEN \"group\" = 'MOUSE' THEN 'Mouse Event ' || id ELSE 'Typing Session ' || id END", persisted=True)
         # Computed(
         #     "CASE WHEN \"group\" = 'MOUSE' THEN 'Mouse Event ' || id::TEXT ELSE 'Typing Session ' || id::TEXT END",
         #     # postgresql_persisted=True,  # Add this back

@@ -10,6 +10,7 @@ from surveillance.src.db.database import SQLALCHEMY_DATABASE_URL, SYNCHRONOUS_DB
 from surveillance.src.object.enums import SystemStatusType
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.db.models import SystemStatus
+from surveillance.src.util.time_layer import UserLocalTime
 
 
 class SystemStatusDao:
@@ -33,7 +34,7 @@ class SystemStatusDao:
         print(f"DAO accepting new event loop for power tracking")
         self.power_tracker_loop = loop
 
-    async def create_status(self, status: SystemStatusType, now: datetime):
+    async def create_status(self, status: SystemStatusType, now: UserLocalTime):
         """Create a status entry with awareness of which event loop to use"""
         # Select the appropriate session maker based on status type
         status_to_write = status
@@ -68,11 +69,11 @@ class SystemStatusDao:
             traceback.print_exc()
             # Don't re-raise - this is critical shutdown code
 
-    def write_sync(self, status: SystemStatusType, now: datetime):
+    def write_sync(self, status: SystemStatusType, now: UserLocalTime):
         with self.shutdown_session_maker() as session:
             new_status = SystemStatus(
                 status=status,
-                created_at=now
+                created_at=now.dt
             )
             session.add(new_status)
             session.commit()
@@ -81,11 +82,11 @@ class SystemStatusDao:
                 "[system status dao] recorded status change: ", status)
             return True
 
-    async def async_write(self, status: SystemStatusType, now: datetime):
+    async def async_write(self, status: SystemStatusType, now: UserLocalTime):
         async with self.async_session_maker() as session:
             new_status = SystemStatus(
                 status=status,
-                created_at=now
+                created_at=now.dt
             )
             session.add(new_status)
             await session.commit()
@@ -94,7 +95,7 @@ class SystemStatusDao:
                 "[system status dao] recorded status change: ", status)
             return True
 
-    async def emergency_write(self, status: SystemStatusType, now: datetime):
+    async def emergency_write(self, status: SystemStatusType, now: UserLocalTime):
         """
         Emergency write method that creates its own connection for shutdown scenarios.
         Uses raw asyncpg to avoid event loop issues.
@@ -119,7 +120,7 @@ class SystemStatusDao:
             # Direct SQL insert without SQLAlchemy
             await conn.execute(
                 "INSERT INTO system_change_log (status, created_at) VALUES ($1, $2)",
-                db_status, now
+                db_status, now.dt
             )
 
             # Close connection

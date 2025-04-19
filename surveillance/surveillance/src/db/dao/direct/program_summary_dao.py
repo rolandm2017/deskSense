@@ -17,6 +17,7 @@ from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.errors import NegativeTimeError, ImpossibleToGetHereError
 from surveillance.src.util.debug_util import notice_suspicious_durations, log_if_needed
 from surveillance.src.util.time_formatting import get_start_of_day
+from surveillance.src.util.time_layer import UserLocalTime
 
 
 class DatabaseProtectionError(RuntimeError):
@@ -60,7 +61,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             session.add(new_entry)
             session.commit()
 
-    def read_past_week(self, right_now: datetime):
+    def read_past_week(self, right_now: UserLocalTime):
         # +1 because weekday() counts from Monday=0
         days_since_sunday = right_now.weekday() + 1
         last_sunday = right_now - timedelta(days=days_since_sunday)
@@ -73,7 +74,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             result = session.execute(query)
             return result.scalars().all()
 
-    async def read_past_month(self, right_now: datetime):
+    async def read_past_month(self, right_now: UserLocalTime):
         """Read all entries from the 1st of the current month through today."""
         start_of_month = right_now.replace(day=1)  # First day of current month
 
@@ -85,9 +86,9 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             result = await session.execute(query)
             return result.scalars().all()
 
-    def read_day(self, day: datetime) -> List[DailyProgramSummary]:
+    def read_day(self, day: UserLocalTime) -> List[DailyProgramSummary]:
         """Read all entries for the given day."""
-        today_start = get_start_of_day(day)
+        today_start = get_start_of_day(day.dt)
         tomorrow_start = today_start + timedelta(days=1)
         query = select(DailyProgramSummary).where(
             DailyProgramSummary.gathering_date >= today_start,
@@ -104,9 +105,9 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             result = session.execute(select(DailyProgramSummary))
             return result.scalars().all()
 
-    def read_row_for_program(self, target_program_name: str, right_now: datetime):
+    def read_row_for_program(self, target_program_name: str, right_now: UserLocalTime):
         """Reads the row for the target program for today."""
-        today_start = get_start_of_day(right_now)
+        today_start = get_start_of_day(right_now.dt)
         tomorrow_start = today_start + timedelta(days=1)
 
         query = select(DailyProgramSummary).where(
@@ -136,7 +137,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             # Commit the changes
             session.commit()
 
-    def push_window_ahead_ten_sec(self, program_session: ProgramSessionData, right_now):
+    def push_window_ahead_ten_sec(self, program_session: ProgramSessionData, right_now: UserLocalTime):
         """
         Finds the given session and adds ten sec to its end_time
 
@@ -146,7 +147,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             raise ValueError("Session should not be None")
 
         target_program_name = program_session.window_title
-        today_start = get_start_of_day(right_now)
+        today_start = get_start_of_day(right_now.dt)
         tomorrow_start = today_start + timedelta(days=1)
 
         query = select(DailyProgramSummary).where(
@@ -193,7 +194,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             # comes in here to deduct 5 seconds, there's only 0 seconds existing
             new_duration = program.hours_spent - time_to_remove
 
-            program.hours_spent = new_duration
+            program.hours_spent = new_duration  # Error is here GPT
             db_session.commit()
 
     def throw_if_negative(self, activity, value):
@@ -227,7 +228,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
                 "Set safety_switch=True to confirm this action."
             )
 
-        async with self.session_maker() as session:
+        async with self.async_session_maker() as session:
             result = await session.execute(
                 text("DELETE FROM daily_program_summary")
             )
