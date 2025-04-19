@@ -114,16 +114,16 @@ const ProgramUsageChart: React.FC<ProgramUsageChartProps> = ({ barsInput }) => {
     }, [bars]);
 
     return (
-        <svg
-            ref={svgRef}
-            style={{
-                padding: "100px 100px 200px 100px",
-                border: "3px solid red",
-                overflow: "visible",
-            }}
-            width={width + margin.left + margin.right}
-            height={height + margin.top + margin.bottom}
-        ></svg>
+        <div className="mb-16">
+            <svg
+                ref={svgRef}
+                viewBox={`0 0 ${width + margin.left + margin.right} ${
+                    height + margin.top + margin.bottom
+                }`}
+                preserveAspectRatio="xMidYMid meet"
+                className="w-100% h-auto"
+            ></svg>
+        </div>
     );
 };
 

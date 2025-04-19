@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import "../App.css";
 
-// import ProgramUsageChart from "../components/charts/ProgramUsageChart";
+import ProgramUsageChart from "../components/charts/ProgramUsageChart";
 
 import {
     DailyChromeSummaries,
@@ -50,7 +50,7 @@ function Home() {
         if (programSummaries == null) {
             //
             getProgramSummaries().then((sums) => {
-                // console.log(sums, "44ru");
+                console.log(sums, "44ru");
                 setProgramSummaries(sums);
             });
         }
@@ -59,7 +59,7 @@ function Home() {
     useEffect(() => {
         if (chromeSummaries == null) {
             getChromeSummaries().then((sums) => {
-                // console.log(sums, "58ru");
+                console.log(sums, "58ru");
                 setChromeSummaries(sums);
             });
         }
@@ -122,8 +122,6 @@ function Home() {
         }
     }, [presentWeekRawTimeline, aggregatedDays]);
 
-
-
     // const primaryBg = "#FAFAF9";
     const primaryBlack = "#171717";
     // const accentIndigo = "#6366F1";
@@ -171,14 +169,14 @@ function Home() {
                         <p>Loading...</p>
                     )}
                 </div>
-                <div style={{ border: "5px solid black", margin: "0px" }}>
+                <div className="border-black border-2 mb-24">
                     <h2 style={{ margin: "0px" }}>
                         Programs {programSummaries?.columns.length}
                     </h2>
                     {programSummaries ? (
-                        // <ProgramUsageChart barsInput={programSummaries} />
-                        <p>bar</p>
+                        <ProgramUsageChart barsInput={programSummaries} />
                     ) : (
+                        // <p>bar</p>
                         <p>Loading...</p>
                     )}
                 </div>

@@ -50,7 +50,6 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
      * the threshold for, for aggregation.
      *
      */
-    console.log(days.length, "35ru");
 
     const svgRef = useRef<SVGSVGElement | null>(null);
 
@@ -228,12 +227,6 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
             // Add program events and labels
             topFive.forEach(
                 (program: ProgramTimelineContent, programIndex: number) => {
-                    console.log(
-                        program.programName,
-                        program.events.length,
-                        "188ru"
-                    );
-
                     // Draw program events
                     program.events.forEach((event: TimelineEvent) => {
                         addEventLinesForPrograms(
