@@ -12,7 +12,6 @@ from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from surveillance.src.db.models import DailyDomainSummary, DailyProgramSummary, ProgramSummaryLog, TimelineEntryObj
 from surveillance.src.config.definitions import productive_sites, productive_apps
 from surveillance.src.util.console_logger import ConsoleLogger
-from surveillance.src.object.return_types import DaySummary
 from surveillance.src.util.clock import UserFacingClock
 from surveillance.src.util.time_formatting import format_for_local_time
 
@@ -45,8 +44,10 @@ class DashboardService:
             current_day = starting_sunday + timedelta(days=i)
             date_as_datetime = datetime.combine(
                 current_day, datetime.min.time())
-            daily_chrome_summaries: List[DailyDomainSummary] = self.chrome_summary_dao.read_day(date_as_datetime)
-            daily_program_summaries: List[DailyProgramSummary] = self.program_summary_dao.read_day(date_as_datetime)
+            daily_chrome_summaries: List[DailyDomainSummary] = self.chrome_summary_dao.read_day(
+                date_as_datetime)
+            daily_program_summaries: List[DailyProgramSummary] = self.program_summary_dao.read_day(
+                date_as_datetime)
             productivity = 0
             leisure = 0
             for domain in daily_chrome_summaries:

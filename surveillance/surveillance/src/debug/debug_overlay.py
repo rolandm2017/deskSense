@@ -9,7 +9,7 @@ from surveillance.src.util.console_logger import ConsoleLogger
 class Overlay:
     # TODO: If it is alt tab window, color it
     def __init__(self):
-        self.debug = True
+        self.debug = False
         self.logger = ConsoleLogger()
 
         # Color mapping for different applications

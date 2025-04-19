@@ -2,19 +2,17 @@
 from fastapi import Depends
 from typing import List, cast
 
-from surveillance.src.object.dashboard_dto import MouseEventsPayload
 
-from surveillance.src.facade.keyboard_facade import KeyboardFacadeCore
-
-from surveillance.src.object.pydantic_dto import TabChangeEvent
+from surveillance.src.object.pydantic_dto import TabChangeEventWithUtcDt
 from surveillance.src.util.time_formatting import convert_to_timezone
 
 from surveillance.src.db.dao.queuing.mouse_dao import MouseDao
 from surveillance.src.db.dao.queuing.keyboard_dao import KeyboardDao
 from surveillance.src.db.dao.queuing.video_dao import VideoDao
 from surveillance.src.db.dao.direct.frame_dao import FrameDao
-from surveillance.src.db.models import TypingSession, Program, MouseMove
+from surveillance.src.db.models import Program, MouseMove
 from surveillance.src.object.dto import TypingSessionDto
+from surveillance.src.object.classes import TabChangeEventWithLtz
 
 
 from surveillance.src.config.definitions import local_time_zone, productive_sites
@@ -30,24 +28,12 @@ class TimezoneService:
         # TODO: If not in cache, read from the db.
         return local_time_zone
 
-    def convert_tab_change_timezone(self, tab_change_event: TabChangeEvent, new_tz: str):
+    def convert_tab_change_timezone(self, tab_change_event: TabChangeEventWithUtcDt, new_tz: str) -> TabChangeEventWithLtz:
         new_datetime_with_tz = convert_to_timezone(
             tab_change_event.startTime, new_tz)
-        tab_change_event.startTime = new_datetime_with_tz
-        return tab_change_event
-
-
-# class TrackerService:
-#     def __init__(self, keyboard_facade, mouse_facade) -> None:
-#         # TODO: Make this singleton or at least all from the same place
-#         self.keyboard_facade = keyboard_facade
-#         self.mouse_facade = mouse_facade
-
-#     def receive_keyboard_event(self, time):
-#         self.keyboard_facade.receive_key(time)
-
-#     def receive_mouse_events(self, payload: MouseEventsPayload):
-#         self.mouse_facade.receive_payload(payload)
+        tab_change_with_time_zone = TabChangeEventWithLtz(
+            tab_change_event.tabTitle, tab_change_event.url, new_datetime_with_tz)
+        return tab_change_with_time_zone
 
 
 class KeyboardService:
@@ -77,7 +63,7 @@ class MouseService:
 
 
 class ProgramService:
-    def __init__(self, clock, dao = None):
+    def __init__(self, clock, dao=None):
         self.clock = clock
         self.dao = dao
 

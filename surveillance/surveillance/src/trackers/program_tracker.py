@@ -16,6 +16,7 @@ from surveillance.src.util.threaded_tracker import ThreadedTracker
 from surveillance.src.util.program_tools import separate_window_name_and_detail,   contains_space_dash_space
 from surveillance.src.util.strings import no_space_dash_space
 from surveillance.src.util.copy_util import snapshot_obj_for_tests
+from surveillance.src.util.time_layer import UserLocalTime
 
 
 # TODO: report programs that aren't in the apps list.
@@ -105,7 +106,7 @@ class ProgramTrackerCore:
         else:
             new_session.window_title = window_change_dict["window_title"]
             new_session.detail = no_space_dash_space
-        new_session.start_time = start_time
+        new_session.start_time = UserLocalTime(start_time)
         # end_time, duration, productive not set yet
         return new_session
 
@@ -115,11 +116,12 @@ class ProgramTrackerCore:
         # end_time = self.user_facing_clock.now()
         # Deep copy to prevent object mutation from ruining tests
         session_to_conclude = snapshot_obj_for_tests(self.current_session)
-        start_time: datetime | None = session_to_conclude.start_time
+        start_time: datetime = UserLocalTime(session_to_conclude.start_time)
         initializing = start_time is None
         if initializing:
             start_time = end_time  # whatever
-        duration = end_time - start_time
+        end_time = UserLocalTime(end_time)
+        duration = end_time - UserLocalTime(start_time)
         session_to_conclude.end_time = end_time
         session_to_conclude.duration = duration
         self.current_session = session_to_conclude
@@ -167,7 +169,7 @@ if __name__ == "__main__":
     try:
 
         tracker = ProgramTrackerCore(clock, program_api_facade, [
-                                     end_program_readout, pretend_report_event], placeholder_handler)
+                                     "", ""], placeholder_handler)
         thread_handler = ThreadedTracker(tracker)
         thread_handler.start()
         # Add a way to keep the main thread alive

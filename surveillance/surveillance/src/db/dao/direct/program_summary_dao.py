@@ -170,6 +170,8 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
 
         9 times out of 10. So we deduct the unfinished duration from its hours_spent.
         """
+        print(session, "173ru")
+        print(duration_in_sec, "174ru")
         target_program_name = session.window_title
 
         tomorrow_start = today_start + timedelta(days=1)

@@ -1,3 +1,8 @@
+from datetime import datetime
+
+from surveillance.src.util.time_formatting import get_start_of_day
+
+
 class TimeKeeper:
     """
     Exists to resolve painful problems dealing with converting
@@ -31,22 +36,195 @@ class TimeKeeper:
         pass
 
 
+# FIXME: sqlalchemy.exc.ProgrammingError: (psycopg2.ProgrammingError) can't adapt type 'UserLocalTime'
+# File "C:\Users\User\Code\deskSense\surveillance\surveillance\src\arbiter\activity_arbiter.py", line 56, in notify_summary_dao
+#     self.activity_recorder.on_state_changed(session)
+#   File "C:\Users\User\Code\deskSense\surveillance\surveillance\src\arbiter\activity_recorder.py", line 47, in on_state_changed
+#     self.program_logging_dao.finalize_log(session)
+#   File "C:\Users\User\Code\deskSense\surveillance\surveillance\src\db\dao\queuing\program_logs_dao.py", line 222, in finalize_log
+#     db_session.commit()
+#   File "C:\Users\User\Code\deskSense\surveillance\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2032, in commit
+#     trans.commit(_to_root=True)
+#   File "<string>", line 2, in commit
+#   File "C:\Users\User\Code\deskSense\surveillance\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 139, in _go
+#     ret_value = fn(self, *arg, **kw)
+#                 ^^^^^^^^^^^^^^^^^^^^
 class UserLocalTime:
     """
     No longer will datetimes be passed around, leaving
     the developer to wonder if they contain a local time
     or a system-oriented UTC time.
+
+    This class behaves like a datetime while clearly indicating
+    that it represents a user's local time.
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, dt):
+        if isinstance(dt, UserLocalTime):
+            # Handle case where we wrap a UserLocalTime with another UserLocalTime
+            self.dt = dt.dt
+        else:
+            self.dt = dt
+        self.timezone = getattr(self.dt, 'tzinfo', None)
+
+    def get_dt_for_db(self):
+        return self.dt
+
+    def __getattr__(self, name):
+        """Forward attribute access to the underlying datetime object"""
+        # This prevents infinite recursion during copying
+        if name.startswith('__') and name.endswith('__'):
+            raise AttributeError(
+                f"{self.__class__.__name__} has no attribute {name}")
+        return getattr(self.dt, name)
+
+    def __str__(self):
+        return f"UserLocalTime({self.dt})"
+
+    def __repr__(self):
+        return f"UserLocalTime({self.dt!r})"
+
+    def get_time(self):
+        """Legacy method for backward compatibility"""
+        return self.dt
+
+    def get_start_of_day(self):
+        """Get the start of the day for this time"""
+        return get_start_of_day(self.dt)
+
+    # Optional: Implement other datetime methods directly
+    # This allows for direct calling like my_time.strftime()
+    def strftime(self, format_string):
+        return self.dt.strftime(format_string)
+
+    # To support datetime-like comparison operations
+    def __eq__(self, other):
+        if isinstance(other, (UserLocalTime, SystemTime)):
+            return self.dt == other.dt
+        elif isinstance(other, datetime):
+            return self.dt == other
+        return NotImplemented
+
+    def __lt__(self, other):
+        if isinstance(other, (UserLocalTime, SystemTime)):
+            return self.dt < other.dt
+        elif isinstance(other, datetime):
+            return self.dt < other
+        return NotImplemented
+
+    # Support datetime arithmetic
+    def __sub__(self, other):
+        """Support subtraction between time objects"""
+        if isinstance(other, (UserLocalTime, SystemTime)):
+            return self.dt - other.dt
+        elif isinstance(other, datetime):
+            return self.dt - other
+        return NotImplemented
+
+    def __rsub__(self, other):
+        """Support subtraction when UserLocalTime is on the right side"""
+        if isinstance(other, datetime):
+            return other - self.dt
+        return NotImplemented
+
+    def __add__(self, timedelta_obj):
+        """Add a timedelta to this time, returning a new UserLocalTime"""
+        return UserLocalTime(self.dt + timedelta_obj)
+
+    def __radd__(self, timedelta_obj):
+        """Support timedelta + UserLocalTime"""
+        return self.__add__(timedelta_obj)
+
+    # Support for copying
+    def __copy__(self):
+        """Support for copy.copy()"""
+        return UserLocalTime(self.dt)
+
+    def __deepcopy__(self, memo):
+        """Support for copy.deepcopy()"""
+        from copy import deepcopy
+        return UserLocalTime(deepcopy(self.dt, memo))
+
+# TODO: Implement a .to_system_time() method
+# Converted into system time, it should keep track of what it previously was
 
 
 class SystemTime:
     """
-    Represents a time that is timezone-agnostic,
-    i.e. has a UTC time.
+    Represents a datetime in the system's time (typically UTC).
+    Behaves like a datetime while clearly indicating its system-time nature.
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, dt):
+        if isinstance(dt, SystemTime):
+            # Handle case where we wrap a SystemTime with another SystemTime
+            self.dt = dt.dt
+        else:
+            self.dt = dt
+        self.timezone = getattr(self.dt, 'tzinfo', None)
+
+    def __getattr__(self, name):
+        """Forward attribute access to the underlying datetime object"""
+        # This prevents infinite recursion during copying
+        if name.startswith('__') and name.endswith('__'):
+            raise AttributeError(
+                f"{self.__class__.__name__} has no attribute {name}")
+        return getattr(self.dt, name)
+
+    def __str__(self):
+        return f"SystemTime({self.dt})"
+
+    def __repr__(self):
+        return f"SystemTime({self.dt!r})"
+
+    def get_time(self):
+        """Legacy method for backward compatibility"""
+        return self.dt
+
+    # Support for copying
+    def __copy__(self):
+        """Support for copy.copy()"""
+        return SystemTime(self.dt)
+
+    def __deepcopy__(self, memo):
+        """Support for copy.deepcopy()"""
+        from copy import deepcopy
+        return SystemTime(deepcopy(self.dt, memo))
+
+    # To support datetime-like comparison operations
+    def __eq__(self, other):
+        if isinstance(other, (UserLocalTime, SystemTime)):
+            return self.dt == other.dt
+        elif isinstance(other, datetime):
+            return self.dt == other
+        return NotImplemented
+
+    def __lt__(self, other):
+        if isinstance(other, (UserLocalTime, SystemTime)):
+            return self.dt < other.dt
+        elif isinstance(other, datetime):
+            return self.dt < other
+        return NotImplemented
+
+    # Support datetime arithmetic - same as UserLocalTime
+    def __sub__(self, other):
+        """Support subtraction between time objects"""
+        if isinstance(other, (UserLocalTime, SystemTime)):
+            return self.dt - other.dt
+        elif isinstance(other, datetime):
+            return self.dt - other
+        return NotImplemented
+
+    def __rsub__(self, other):
+        """Support subtraction when SystemTime is on the right side"""
+        if isinstance(other, datetime):
+            return other - self.dt
+        return NotImplemented
+
+    def __add__(self, timedelta_obj):
+        """Add a timedelta to this time, returning a new SystemTime"""
+        return SystemTime(self.dt + timedelta_obj)
+
+    def __radd__(self, timedelta_obj):
+        """Support timedelta + SystemTime"""
+        return self.__add__(timedelta_obj)

@@ -9,7 +9,6 @@ from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.copy_util import snapshot_obj_for_tests
 
 
-
 # class OverallState:
 #     def __init__(self):
 #         self.program_state = None
@@ -32,34 +31,35 @@ class ActivityStateMachine:
         self.state_listeners = []
         self.logger = ConsoleLogger()
 
-    def set_new_session(self, next_state: ProgramSessionData | ChromeSessionData):
+    def set_new_session(self, next_session: ProgramSessionData | ChromeSessionData):
 
-        if self.is_initialization_session(next_state):
-            raise ValueError("next_state cannot be an empty dictionary")
-        next_state = snapshot_obj_for_tests(next_state)
-        
+        if self.is_initialization_session(next_session):
+            raise ValueError("next_session cannot be an empty dictionary")
+        next_session = snapshot_obj_for_tests(next_session)
+
         if self.current_state:
             prior_update_was_program = isinstance(
                 self.current_state, ApplicationInternalState)
             if prior_update_was_program:
                 updated_state = self.transition_from_program.compute_next_state(
-                    next_state)
+                    next_session)
                 # updated_overall_state = OverallState()
             else:
                 updated_state = self.transition_from_chrome.compute_next_state(
-                    next_state)
-            self._conclude_session(self.current_state, next_state.start_time)
+                    next_session)
+            self._conclude_session(
+                self.current_state, next_session.start_time)
             self.prior_state = self.current_state
             self.current_state = updated_state
         else:
             # No current state yet, this is initialization:
-            if isinstance(next_state, ProgramSessionData):
-                is_chrome = window_is_chrome(next_state.window_title)
+            if isinstance(next_session, ProgramSessionData):
+                is_chrome = window_is_chrome(next_session.window_title)
                 updated_state = ApplicationInternalState(
-                    next_state.window_title, is_chrome, next_state)
+                    next_session.window_title, is_chrome, next_session)
             else:
                 updated_state = ChromeInternalState(
-                    "Chrome", True, next_state.domain, next_state)
+                    "Chrome", True, next_session.domain, next_session)
             self.current_state = updated_state
 
     @staticmethod
@@ -105,7 +105,7 @@ class ActivityStateMachine:
     def get_concluded_session(self) -> InternalState | None:
         """Assumes the prior state is the updated transformation from set_new_session"""
         on_initialization = self.prior_state is None
-        if on_initialization:  
+        if on_initialization:
             return None
         return self.prior_state.session
 
@@ -113,7 +113,8 @@ class ActivityStateMachine:
         """For wrap up when the computer is powering off to avoid sessions left open"""
         if self.current_state is None:
             return  # Nothing to wrap up
-        self._conclude_session(self.current_state, self.user_facing_clock.now())
+        self._conclude_session(
+            self.current_state, self.user_facing_clock.now())
         session_for_daos = self.current_state.session
         self.current_state = None  # Reset for power back on
         return session_for_daos
@@ -206,7 +207,7 @@ class TransitionFromChromeMachine:
         return self.current_state  # Explicitly stay the same
 
     @staticmethod
-    def _change_to_new_tab( next_session: ChromeSessionData) -> ChromeInternalState:
+    def _change_to_new_tab(next_session: ChromeSessionData) -> ChromeInternalState:
         next_state = ChromeInternalState(active_application="Chrome",
                                          is_chrome=True,
                                          current_tab=next_session.domain,

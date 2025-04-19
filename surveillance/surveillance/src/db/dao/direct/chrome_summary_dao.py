@@ -157,6 +157,8 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
 
         9 times out of 10. So we deduct the unfinished duration from its hours_spent.
         """
+        print(session, "160ru")
+        print(duration_in_sec, "161ru")
         target_domain = session.domain
 
         tomorrow_start = today_start + timedelta(days=1)

@@ -10,7 +10,7 @@ from pydantic import BaseModel
 import asyncio
 # import time
 from typing import Optional, List, Dict, Tuple
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from time import time
 
 
@@ -23,7 +23,8 @@ from surveillance.src.routes.video_routes import router as video_routes
 
 # from surveillance.src.services import MouseService, KeyboardService, ProgramService, DashboardService, ChromeService
 # from surveillance.src.services import get_mouse_service, get_chrome_service, get_program_service, get_keyboard_service, get_dashboard_service
-from surveillance.src.object.pydantic_dto import TabChangeEvent, YouTubeEvent
+from surveillance.src.object.pydantic_dto import TabChangeEventWithUtcDt, YouTubeEvent
+from surveillance.src.object.classes import TabChangeEventWithLtz
 
 from surveillance.src.object.dashboard_dto import (
     MouseEventsPayload,
@@ -39,7 +40,6 @@ from surveillance.src.object.dashboard_dto import (
 )
 
 from surveillance.src.util.pydantic_factory import (
-    make_keyboard_log, make_mouse_log, make_program_log,
     manufacture_chrome_bar_chart, manufacture_programs_bar_chart,
     DtoMapper
 )
@@ -49,17 +49,14 @@ from surveillance.src.services.dashboard_service import DashboardService
 from surveillance.src.services.chrome_service import ChromeService
 
 
-from surveillance.src.services.services import (
-    KeyboardService, MouseService, ProgramService, TimezoneService,  VideoService
-)
+from surveillance.src.services.services import TimezoneService
+
 from surveillance.src.service_dependencies import (
     get_keyboard_service, get_mouse_service, get_program_service,
     get_dashboard_service, get_chrome_service, get_activity_arbiter, get_timezone_service,
     get_video_service
 )
-from surveillance.src.object.return_types import DaySummary
 
-from surveillance.src.util.debug_logger import capture_chrome_data_for_tests
 from surveillance.src.util.console_logger import ConsoleLogger
 
 
@@ -130,7 +127,8 @@ async def lifespan(app: FastAPI):
                 await asyncio.wait_for(surveillance_state.manager.cleanup(), timeout=5.0)
 
                 # Also ensure the shutdown handler runs
-                await asyncio.wait_for(surveillance_state.manager.shutdown_handler(), timeout=5.0)
+                surveillance_state.manager.shutdown_handler()
+                # await asyncio.wait_for(surveillance_state.manager.shutdown_handler(), timeout=5.0)
             except asyncio.TimeoutError:
                 print("Cleanup timed out, forcing shutdown")
             except Exception as e:
@@ -401,12 +399,15 @@ async def get_chrome_report(chrome_service: ChromeService = Depends(get_chrome_s
 
 @app.post("/api/chrome/tab", status_code=status.HTTP_204_NO_CONTENT)
 async def receive_chrome_tab(
-    tab_change_event: TabChangeEvent,
+    tab_change_event: TabChangeEventWithUtcDt,
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service)
 ):
     logger.log_purple("[LOG] Chrome Tab Received")
     try:
+        utc_dt = tab_change_event.startTime.tzinfo == timezone.utc
+        assert utc_dt, "Expected UTC datetime"
+
         user_id = 1  # temp until i have more than 1 user
 
         # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
@@ -418,6 +419,13 @@ async def receive_chrome_tab(
 
         await chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
         return  # Returns 204 No Content
+    except AssertionError as e:
+        print(f"Raw tzinfo: {tab_change_event.startTime.tzinfo}")
+        print(e)  #
+        raise HTTPException(
+            status_code=400,
+            detail="Expected a UTC-timezoned datetime"
+        )
     except Exception as e:
         # print(e)
         # raise
@@ -435,6 +443,8 @@ async def receive_youtube_event(
 ):
     logger.log_purple("[LOG] Chrome Tab Received")
     try:
+        utc_dt = tab_change_event.startTime.tzinfo == timezone.utc
+        assert utc_dt, "Expected UTC datetime"
         user_id = 1  # temp until i have more than 1 user
 
         # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
@@ -446,6 +456,13 @@ async def receive_youtube_event(
 
         await chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
         return  # Returns 204 No Content
+    except AssertionError as e:
+        print(f"Raw tzinfo: {tab_change_event.startTime.tzinfo}")
+        print(e)  #
+        raise HTTPException(
+            status_code=400,
+            detail="Expected a UTC-timezoned datetime"
+        )
     except Exception as e:
         # print(e)
         # raise
@@ -457,7 +474,7 @@ async def receive_youtube_event(
 
 @app.post("/api/chrome/ignored", status_code=status.HTTP_204_NO_CONTENT)
 async def receive_chrome_tab(
-    tab_change_event: TabChangeEvent,
+    tab_change_event: TabChangeEventWithUtcDt,
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service)
 ):
@@ -465,17 +482,26 @@ async def receive_chrome_tab(
     # I diverge them early assuming they will have to diverge.
     logger.log_purple("[LOG] Ignored Chrome Tab Received")
     try:
+        utc_dt = tab_change_event.startTime.tzinfo == timezone.utc
+        assert utc_dt, "Expected UTC datetime"
         user_id = 1  # temp until i have more than 1 user
 
         # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
         # capture_chrome_data_for_tests(tab_change_event)
         tz_for_user = timezone_service.get_tz_for_user(
             user_id)
-        updated_tab_change_event = timezone_service.convert_tab_change_timezone(
+        updated_tab_change_event: TabChangeEventWithLtz = timezone_service.convert_tab_change_timezone(
             tab_change_event, tz_for_user)
 
         await chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
         return  # Returns 204 No Content
+    except AssertionError as e:
+        print(f"Raw tzinfo: {tab_change_event.startTime.tzinfo}")
+        print(e)  #
+        raise HTTPException(
+            status_code=400,
+            detail="Expected a UTC-timezoned datetime"
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500,

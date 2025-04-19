@@ -152,9 +152,9 @@ class SurveillanceManager:
         pass
         # self.loop.create_task(self.program_dao.create(event))
 
-    async def shutdown_handler(self):
+    def shutdown_handler(self):
         try:
-            await self.chrome_service.shutdown()  # works despite the lack of highlighting
+            self.chrome_service.shutdown()  # works despite the lack of highlighting
             self.arbiter.shutdown()
         except Exception as e:
             print(self.chrome_service,  " none?")

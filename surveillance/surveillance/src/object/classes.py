@@ -3,12 +3,14 @@
 from datetime import datetime, timedelta
 from typing import TypedDict, Optional
 
+from surveillance.src.util.time_layer import UserLocalTime
+
 
 class ChromeSessionData:
     domain: str
     detail: str
-    start_time: Optional[datetime]  # UTC timestamps
-    end_time: Optional[datetime]  # UTC timestamps
+    start_time: Optional[UserLocalTime]
+    end_time: Optional[UserLocalTime]
     duration: Optional[timedelta]
     productive: bool
 
@@ -31,7 +33,7 @@ class ChromeSessionData:
         seconds_parts = parts[2].split('.')
         seconds = int(seconds_parts[0])
         microseconds = int(seconds_parts[1]) if len(seconds_parts) > 1 else 0
-        
+
         return timedelta(
             hours=hours,
             minutes=minutes,
@@ -47,8 +49,8 @@ class ChromeSessionData:
 class ProgramSessionData:
     window_title: str
     detail: str
-    start_time: Optional[datetime]  # UTC timestamps
-    end_time: Optional[datetime]  # UTC timestamps
+    start_time: Optional[UserLocalTime]  # UTC timestamps
+    end_time: Optional[UserLocalTime]  # UTC timestamps
     duration: Optional[timedelta]
     productive: bool
 
@@ -74,7 +76,7 @@ class ProgramSessionData:
         seconds_parts = parts[2].split('.')
         seconds = int(seconds_parts[0])
         microseconds = int(seconds_parts[1]) if len(seconds_parts) > 1 else 0
-        
+
         return timedelta(
             hours=hours,
             minutes=minutes,
@@ -85,6 +87,22 @@ class ProgramSessionData:
     def __str__(self):
         end_time = self.end_time  # Was "TBD" (to be determined)
         return f"ProgramSessionData(window_title='{self.window_title}', detail='{self.detail}', \n\tstart_time={self.start_time}, \n\tend_time={end_time}, duration={self.duration}, productive={self.productive})"
+
+
+class TabChangeEventWithLtz:
+    tab_title: str
+    url: str
+    start_time_with_tz: datetime
+
+    def __init__(self, tab_title, url, start_time_with_tz):
+        self.tab_title = tab_title
+        self.url = url
+        self.start_time_with_tz = start_time_with_tz
+
+    def __str__(self) -> str:
+        """Custom string representation of the TabChangeEvent."""
+        formatted_time = self.startTime.strftime("%Y-%m-%d %H:%M:%S")
+        return f"TabChangeEvent(tabTitle='{self.tabTitle}', url='{self.url}', startTime='{formatted_time}')"
 
 
 class MouseEvent(TypedDict):
@@ -111,7 +129,6 @@ class PeripheralAggregate:
         return f"Peripheral aggregate from {start_formatted} to {end_formatted} with {self.count} events"
 
 
-
 class KeyboardAggregate(PeripheralAggregate):
     """
     Keyboard-specific implementation of PeripheralAggregate.
@@ -123,7 +140,6 @@ class KeyboardAggregate(PeripheralAggregate):
         return f"Keyboard aggregate from {start_formatted} to {end_formatted} with {self.count} events"
 
 
-
 class MouseAggregate(PeripheralAggregate):
     """
     Mouse-specific implementation of PeripheralAggregate.
@@ -133,20 +149,6 @@ class MouseAggregate(PeripheralAggregate):
         start_formatted = self.start_time.strftime("%m-%d %H:%M:%S")
         end_formatted = self.end_time.strftime("%m-%d %H:%M:%S")
         return f"Mouse aggregate from {start_formatted} to {end_formatted} with {self.count} events"
-
-
-class MouseCoords:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.timestamp = None
-
-
-class MouseMovementEvent:
-    def __init__(self, event_type, position, timestamp):
-        self.event_type = event_type
-        self.position = position
-        self.timestamp = timestamp
 
 
 class MouseMoveWindow:

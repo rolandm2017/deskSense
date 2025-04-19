@@ -13,8 +13,8 @@ import copy
 from surveillance.src.config.definitions import power_on_off_debug_file
 
 from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from surveillance.src.object.classes import ChromeSessionData
-from surveillance.src.object.pydantic_dto import TabChangeEvent
+from surveillance.src.object.classes import ChromeSessionData, TabChangeEventWithLtz
+from surveillance.src.object.pydantic_dto import TabChangeEventWithUtcDt
 from surveillance.src.config.definitions import productive_sites
 from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
 from surveillance.src.util.console_logger import ConsoleLogger
@@ -30,7 +30,7 @@ class TabQueue:
         self.debounce_timer = None
         self.log_tab_event = log_tab_event
 
-    async def add_to_arrival_queue(self, tab_change_event: TabChangeEvent):
+    async def add_to_arrival_queue(self, tab_change_event: TabChangeEventWithLtz):
         self.message_queue.append(tab_change_event)
         MAX_QUEUE_LEN = 40
 
@@ -49,14 +49,14 @@ class TabQueue:
         half_sec = 0.5  # One full sec was too long.
         await asyncio.sleep(half_sec)
         # print("[debug] Starting processing")
-        await self.start_processing_msgs()
+        self.start_processing_msgs()
 
-    async def start_processing_msgs(self):
-        await self.order_message_queue()
-        await self.remove_transient_tabs()
-        await self.empty_queue_as_sessions()
+    def start_processing_msgs(self):
+        self.order_message_queue()
+        self.remove_transient_tabs()
+        self.empty_queue_as_sessions()
 
-    async def order_message_queue(self):
+    def order_message_queue(self):
         current = self.message_queue
         sorted_events = sorted(current, key=attrgetter('startTime'))
         self.ordered_messages = sorted_events
@@ -67,7 +67,7 @@ class TabQueue:
         tab_duration = next.startTime - current.startTime
         return tab_duration < timedelta(milliseconds=transience_time_in_ms)
 
-    async def remove_transient_tabs(self):
+    def remove_transient_tabs(self):
         current_queue = self.ordered_messages
         if len(current_queue) == 0:
             return
@@ -86,9 +86,9 @@ class TabQueue:
         self.ready_queue = remaining
         self.ordered_messages = []
 
-    async def empty_queue_as_sessions(self):
+    def empty_queue_as_sessions(self):
         for event in self.ready_queue:
-            await self.log_tab_event(event)
+            self.log_tab_event(event)
         self.ready_queue = []
 
 
@@ -119,7 +119,7 @@ class ChromeService:
 
     # TODO: Log a bunch of real chrome tab submissions, use them in a test
 
-    def log_tab_event(self, url_deliverable: TabChangeEvent):
+    def log_tab_event(self, url_deliverable: TabChangeEventWithLtz):
         """Occurs whenever the user tabs through Chrome tabs.
 
         A tab comes in and becomes the last entry. Call this the Foo tab.
@@ -132,9 +132,9 @@ class ChromeService:
         # TODO: Write tests for this function
 
         url = url_deliverable.url
-        title = url_deliverable.tabTitle
+        title = url_deliverable.tab_title
         is_productive = url_deliverable.url in productive_sites
-        start_time = url_deliverable.startTime
+        start_time = url_deliverable.start_time_with_tz
         end_time = None
         initialized: ChromeSessionData = ChromeSessionData(
             url, title, start_time, end_time, is_productive)
@@ -149,33 +149,19 @@ class ChromeService:
             concluding_session = self.last_entry
             # ### Ensure both datetimes are timezone-naive
             # Must be utc already since it is set up there
-            concluding_start_time: datetime = self.last_entry.start_time  # type: ignore
+            concluding_start_time: datetime = self.last_entry.start_time
 
             next_session_start_time = initialized.start_time
 
             # duration_of_alt_tab   # used to be a thing
             duration = next_session_start_time - concluding_start_time
             if duration > timedelta(hours=1):
-                self.logger.log_red("## ## ##")
                 self.logger.log_red("## ## ## problem in chrome service")
-                self.logger.log_red("## ## ##")
                 raise SuspiciousDurationError("duration")
             concluding_session.duration = duration
             concluding_session.end_time = next_session_start_time
             # self.write_completed_session_to_chrome_dao(concluding_session)
         self.last_entry = initialized
-
-    # def write_completed_session_to_chrome_dao(self, session):
-    #     # dao_task = self.loop.create_task(self.chrome_dao.create(session))
-
-    #     # Add error callbacks to catch any task failures
-    #     def on_task_done(task):
-    #         try:
-    #             task.result()
-    #         except Exception as e:
-    #             print(f"Task failed with error: {e}")
-
-    #     dao_task.add_done_callback(on_task_done)
 
     def handle_session_ready_for_arbiter(self, session):
         session_copy = copy.deepcopy(session)
@@ -184,17 +170,9 @@ class ChromeService:
     # FIXME: When Chrome is active, recording time should take place.
     # FIXME: When Chrome goes inactive, recording active time should cease.
 
-    async def shutdown(self):
+    def shutdown(self):
         """Mostly just logs the final chrome session to the db"""
         # Also do stuff like, trigger the Arbiter to shutdown the current state w/o replacement, in other funcs
-        await self.tab_queue.empty_queue_as_sessions()
+        self.tab_queue.empty_queue_as_sessions()
         with open(power_on_off_debug_file, "a") as f:
             f.write("Shutdown Chrome Service\n")
-
-    # async def handle_chrome_ready_for_db(self, event):
-    #     # TODO: Delete this whole thing, programDao, ChromeDao, don't need em. Summary and Logs DAO do it
-    #     await self.chrome_dao.create(event)
-
-    async def read_last_24_hrs(self):
-        right_now = self.user_facing_clock.now()
-        return await self.chrome_dao.read_past_24h_events(right_now)

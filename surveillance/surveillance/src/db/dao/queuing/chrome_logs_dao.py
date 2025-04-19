@@ -19,9 +19,9 @@ from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_d
 
 
 #
-# #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #  
+# #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #
 #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #
-# #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #  
+# #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #
 #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #
 #
 
@@ -32,11 +32,12 @@ class ChromeLoggingDao(BaseQueueingDao):
     - Methods return UTC timestamps regardless of input timezone
     - Input datetimes should be timezone-aware
     - Date comparisons are performed in UTC"""
+
     def __init__(self, session_maker: sessionmaker, async_session_maker: async_sessionmaker, batch_size=100, flush_interval=1):
         """ Exists mostly for debugging. """
 
         super().__init__(async_session_maker=async_session_maker,
-                         batch_size=batch_size, flush_interval=flush_interval,dao_name="ChromeLogging")
+                         batch_size=batch_size, flush_interval=flush_interval, dao_name="ChromeLogging")
         self.async_session_maker = async_session_maker
         self.regular_session = session_maker
 
@@ -44,18 +45,19 @@ class ChromeLoggingDao(BaseQueueingDao):
     def create_log(self, session: ChromeSessionData, right_now: datetime):
         """
         Log an update to a summary table.
-        
+
         So the end_time here is like, "when was that addition to the summary ended?"
         """
-        start_end_time_duration_as_hours = convert_start_end_times_to_hours(session)
+        start_end_time_duration_as_hours = convert_start_end_times_to_hours(
+            session)
 
         duration_property_as_hours = convert_duration_to_hours(session)
 
         log_entry = DomainSummaryLog(
             domain_name=session.domain,
             hours_spent=start_end_time_duration_as_hours,
-            start_time=session.start_time,
-            end_time=session.end_time,
+            start_time=session.start_time.get_dt_for_db(),
+            end_time=session.end_time.get_dt_for_db(),
             duration=duration_property_as_hours,
             gathering_date=right_now.date(),
             created_at=right_now
@@ -70,8 +72,8 @@ class ChromeLoggingDao(BaseQueueingDao):
         A session of using a domain. End_time here is like, "when did the user tab away from the program?"
         """
         unknown = None
-        base_start_time = convert_to_utc(session.start_time)
-        start_of_day = get_start_of_day(session.start_time)
+        base_start_time = convert_to_utc(session.start_time.get_dt_for_db())
+        start_of_day = get_start_of_day(session.start_time.get_dt_for_db())
         start_of_day_as_utc = convert_to_utc(start_of_day)
         start_window_end = base_start_time + timedelta(seconds=10)
         log_entry = DomainSummaryLog(
@@ -81,15 +83,14 @@ class ChromeLoggingDao(BaseQueueingDao):
             end_time=start_window_end,
             duration=unknown,
             gathering_date=start_of_day_as_utc,
-            created_at=session.start_time
+            created_at=session.start_time.get_dt_for_db()
         )
         with self.regular_session() as db_session:
             db_session.add(log_entry)
             db_session.commit()
 
-
     def find_session(self, session: ChromeSessionData):
-        start_time_as_utc = convert_to_utc(session.start_time)
+        start_time_as_utc = convert_to_utc(session.start_time.get_dt_for_db())
         query = select(DomainSummaryLog).where(
             DomainSummaryLog.start_time.op('=')(start_time_as_utc)
         )
@@ -154,19 +155,19 @@ class ChromeLoggingDao(BaseQueueingDao):
         """Fetch all domain log entries from the last 24 hours"""
         cutoff_time = right_now - timedelta(hours=24)
         query = select(DomainSummaryLog).where(
-                DomainSummaryLog.created_at >= cutoff_time
-            ).order_by(DomainSummaryLog.created_at.desc())
+            DomainSummaryLog.created_at >= cutoff_time
+        ).order_by(DomainSummaryLog.created_at.desc())
         return await self.execute_query(query)
 
     def push_window_ahead_ten_sec(self, session: ChromeSessionData):
         log: DomainSummaryLog = self.find_session(session)
         if not log:
-            raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")
+            raise ImpossibleToGetHereError(
+                "Start of heartbeat didn't reach the db")
         log.end_time = log.end_time + timedelta(seconds=10)
         with self.regular_session() as db_session:
             db_session.merge(log)
             db_session.commit()
-
 
     def finalize_log(self, session: ChromeSessionData):
         """
@@ -175,8 +176,9 @@ class ChromeLoggingDao(BaseQueueingDao):
         """
         log: DomainSummaryLog = self.find_session(session)
         if not log:
-            raise ImpossibleToGetHereError("Start of heartbeat didn't reach the db")
-        log.end_time = session.end_time
+            raise ImpossibleToGetHereError(
+                "Start of heartbeat didn't reach the db")
+        log.end_time = session.end_time.get_dt_for_db()
         with self.regular_session() as db_session:
             db_session.add(log)
             db_session.commit()
