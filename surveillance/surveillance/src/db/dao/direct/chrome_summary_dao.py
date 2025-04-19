@@ -17,6 +17,7 @@ from surveillance.src.util.dao_wrapper import validate_start_end_and_duration, v
 from surveillance.src.util.errors import SuspiciousDurationError, NegativeTimeError
 from surveillance.src.util.debug_util import notice_suspicious_durations, log_if_needed
 from surveillance.src.util.const import SECONDS_PER_HOUR
+from surveillance.src.util.time_formatting import get_start_of_day
 
 
 # @@@@ @@@@ @@@@ @@@@ @@@@
@@ -95,7 +96,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     def read_day(self, day: datetime) -> List[DailyDomainSummary]:
         """Read all entries for the given day."""
-        today_start = day.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = get_start_of_day(day)
         tomorrow_start = today_start + timedelta(days=1)
         print("read_day 113ru")
         print(today_start)
@@ -136,8 +137,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         NOTE: This only ever happens after start_session
         """
         target_domain = chrome_session.domain
-        today_start = right_now.replace(
-            hour=0, minute=0, second=0, microsecond=0)
+        today_start = get_start_of_day(right_now)
         tomorrow_start = today_start + timedelta(days=1)
 
         query = select(DailyDomainSummary).where(
@@ -157,8 +157,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         9 times out of 10. So we deduct the unfinished duration from its hours_spent.
         """
         target_domain = session.domain
-        # today_start = right_now.replace(
-        #     hour=0, minute=0, second=0, microsecond=0)
+
         tomorrow_start = today_start + timedelta(days=1)
 
         query = select(DailyDomainSummary).where(

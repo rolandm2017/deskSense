@@ -7,8 +7,10 @@ from surveillance.src.db.models import TimelineEntryObj
 
 from surveillance.src.config.definitions import local_time_zone, daylight_savings_tz_offset
 
+
 def convert_to_utc(dt: datetime):
     return dt.astimezone(timezone.utc)
+
 
 def get_start_of_day(dt: datetime):
     """If you put in March 3 3:00 PM PST, you will get out march 3 12:00 AM *PST*! """

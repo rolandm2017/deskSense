@@ -16,6 +16,7 @@ from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.errors import NegativeTimeError
 from surveillance.src.util.debug_util import notice_suspicious_durations, log_if_needed
+from surveillance.src.util.time_formatting import get_start_of_day
 
 
 class DatabaseProtectionError(RuntimeError):
@@ -44,8 +45,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         starting_window_amt = 10  # sec
         usage_duration_in_hours = starting_window_amt / SECONDS_PER_HOUR
 
-        today_start = right_now.replace(
-            hour=0, minute=0, second=0, microsecond=0)
+        today_start = get_start_of_day(right_now)
 
         self._create(target_program_name, usage_duration_in_hours, today_start)
 
@@ -87,8 +87,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     def read_day(self, day: datetime) -> List[DailyProgramSummary]:
         """Read all entries for the given day."""
-        today_start = day.replace(
-            hour=0, minute=0, second=0, microsecond=0)
+        today_start = get_start_of_day(day)
         tomorrow_start = today_start + timedelta(days=1)
         query = select(DailyProgramSummary).where(
             DailyProgramSummary.gathering_date >= today_start,
@@ -107,8 +106,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     def read_row_for_program(self, target_program_name: str, right_now: datetime):
         """Reads the row for the target program for today."""
-        today_start = right_now.replace(
-            hour=0, minute=0, second=0, microsecond=0)
+        today_start = get_start_of_day(right_now)
         tomorrow_start = today_start + timedelta(days=1)
 
         query = select(DailyProgramSummary).where(
@@ -148,8 +146,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             raise ValueError("Session should not be None")
 
         target_program_name = program_session.window_title
-        today_start = right_now.replace(
-            hour=0, minute=0, second=0, microsecond=0)
+        today_start = get_start_of_day(right_now)
         tomorrow_start = today_start + timedelta(days=1)
 
         query = select(DailyProgramSummary).where(

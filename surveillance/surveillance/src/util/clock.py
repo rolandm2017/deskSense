@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Iterator
 
 from surveillance.src.config.definitions import local_time_zone
+from surveillance.src.util.time_formatting import get_start_of_day
 
 
 class ClockProtocol:
@@ -12,10 +13,10 @@ class ClockProtocol:
 
     def seconds_have_elapsed(self, current_time: datetime, previous_time: datetime, seconds: int) -> bool:
         raise NotImplementedError
-    
+
     def today(self) -> datetime:
         raise NotImplementedError
-    
+
     def today_start(self) -> datetime:
         raise NotImplementedError
 
@@ -33,8 +34,8 @@ class SystemClock(ClockProtocol):
 
 class UserFacingClock(ClockProtocol):
     def __init__(self):
-        self.today = self.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        
+        self.today = get_start_of_day(self.now())
+
     def now(self) -> datetime:
         # utc_now = datetime.now(timezone.utc)
 
@@ -43,19 +44,18 @@ class UserFacingClock(ClockProtocol):
 
         # return local_now
         return datetime.now(ZoneInfo(local_time_zone))
-    
+
     def today(self):
         """
         If today hasn't changed, just return today.
-        
+
         But if the program has run to long that .today now is yesterday, update it first.
         """
         # TODO: Make the code match the comment
         return self.today
-    
+
     def today_start(self):
-        return datetime.now(ZoneInfo(local_time_zone)).replace(
-            hour=0, minute=0, second=0, microsecond=0)
+        return get_start_of_day(datetime.now(ZoneInfo(local_time_zone)))
 
     def seconds_have_elapsed(self, current_time: datetime, previous_time: datetime, seconds: int) -> bool:
         """
