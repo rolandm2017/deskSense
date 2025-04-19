@@ -170,7 +170,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             domain: DailyDomainSummary = db_session.scalars(query).first()
 
             new_duration = domain.hours_spent - duration_in_sec / SECONDS_PER_HOUR
-            self.throw_if_negative(domain.program_name, new_duration)
+            self.throw_if_negative(domain.domain_name, new_duration)
             domain.hours_spent = new_duration
             db_session.commit()
 

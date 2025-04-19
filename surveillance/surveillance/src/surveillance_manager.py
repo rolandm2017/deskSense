@@ -37,7 +37,6 @@ from .util.threaded_tracker import ThreadedTracker
 from surveillance.src.util.copy_util import snapshot_obj_for_tests
 
 
-
 class FacadeInjector:
     def __init__(self, keyboard, mouse, program) -> None:
         self.get_keyboard_facade_instance = keyboard
@@ -70,9 +69,11 @@ class SurveillanceManager:
         program_facade = facades.program_facade(current_os)
 
         self.loop = asyncio.get_event_loop()
-        
-        program_summary_logger = ProgramLoggingDao(self.regular_session, self.async_session_maker)
-        chrome_summary_logger = ChromeLoggingDao(self.regular_session, self.async_session_maker)
+
+        program_summary_logger = ProgramLoggingDao(
+            self.regular_session, self.async_session_maker)
+        chrome_summary_logger = ChromeLoggingDao(
+            self.regular_session, self.async_session_maker)
 
         self.session_integrity_dao = SessionIntegrityDao(
             program_summary_logger, chrome_summary_logger, self.async_session_maker)
@@ -105,9 +106,7 @@ class SurveillanceManager:
         self.operate_facades()
         # Program tracker
         self.program_tracker = ProgramTrackerCore(
-            clock, program_facade, self.handle_window_change)
-        
-
+            clock, program_facade, self.handle_window_change, self.handle_program_ready_for_db)
 
         self.keyboard_thread = ThreadedTracker(self.keyboard_tracker)
         self.mouse_thread = ThreadedTracker(self.mouse_tracker)
@@ -145,7 +144,9 @@ class SurveillanceManager:
         self.loop.create_task(self.mouse_dao.create_from_window(event))
 
     def handle_window_change(self, event):
-        copy_of_event = snapshot_obj_for_tests(event)  # Deep copy to enable testing of object state before/after this line
+        print(event, "148ru")
+        # Deep copy to enable testing of object state before/after this line
+        copy_of_event = snapshot_obj_for_tests(event)
         self.arbiter.set_program_state(copy_of_event)
 
     # FIXME: Am double counting for sure
@@ -186,10 +187,10 @@ class SurveillanceManager:
                     receiver_tasks = list(self.message_receiver.tasks)
                 else:
                     receiver_tasks = []
-                    
+
                 # Stop the receiver (this should cancel tasks internally)
                 await self.message_receiver.async_stop()
-                
+
                 # For any tasks that are still running, explicitly await them with timeout
                 for task in receiver_tasks:
                     if not task.done() and not task.cancelled():
@@ -199,9 +200,11 @@ class SurveillanceManager:
                             # Wait for it to complete with a timeout
                             await asyncio.wait_for(asyncio.shield(task), timeout=0.5)
                         except (asyncio.CancelledError, asyncio.TimeoutError):
-                            print(f"Task {task.get_name()} cancelled or timed out during cleanup")
+                            print(
+                                f"Task {task.get_name()} cancelled or timed out during cleanup")
                         except Exception as e:
-                            print(f"Error cleaning up task {task.get_name()}: {e}")
+                            print(
+                                f"Error cleaning up task {task.get_name()}: {e}")
             except Exception as e:
                 print(f"Error during MessageReceiver cleanup: {e}")
                 traceback.print_exc()

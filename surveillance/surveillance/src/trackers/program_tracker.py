@@ -13,17 +13,15 @@ from surveillance.src.object.classes import ProgramSessionData
 from surveillance.src.util.detect_os import OperatingSystemInfo
 from surveillance.src.util.clock import SystemClock
 from surveillance.src.util.threaded_tracker import ThreadedTracker
-from surveillance.src.util.program_tools import separate_window_name_and_detail, is_expected_shape_else_throw, tab_is_a_productive_tab, contains_space_dash_space, window_is_chrome
-from surveillance.src.util.debug_logger import capture_program_data_for_tests
+from surveillance.src.util.program_tools import separate_window_name_and_detail,   contains_space_dash_space
 from surveillance.src.util.strings import no_space_dash_space
 from surveillance.src.util.copy_util import snapshot_obj_for_tests
-
 
 
 # TODO: report programs that aren't in the apps list.
 
 class ProgramTrackerCore:
-    def __init__(self, user_facing_clock, program_api_facade, window_change_handler):
+    def __init__(self, user_facing_clock, program_api_facade, window_change_handler, conclude_session_handler):
         """
         !!!!! IMPORTANT - READ THIS FIRST !!!!!
 
@@ -45,7 +43,7 @@ class ProgramTrackerCore:
         self.user_facing_clock = user_facing_clock
         self.program_facade: ProgramFacadeInterface = program_api_facade
         self.window_change_handler = window_change_handler
-        # self.conclude_session_handler = conclude_session_handler
+        self.conclude_session_handler = conclude_session_handler
         # self.chrome_event_update = chrome_event_update
 
         # FIXME: why is there three "productive categories" fields?
@@ -74,7 +72,7 @@ class ProgramTrackerCore:
                 # capture_program_data_for_tests(window_change, current_time)
                 self.conclude_session(current_time)
                 # when a window closes, call that with "conclude_session_handler()" to maintain other flows
-                # self.apply_handlers(self.current_session)
+                self.apply_handlers(self.current_session)
                 new_session = self.start_new_session(
                     window_change, current_time)
                 self.current_session = new_session
@@ -114,7 +112,8 @@ class ProgramTrackerCore:
         if self.current_session is None:
             raise ValueError("Current session was None")
         # end_time = self.user_facing_clock.now()
-        session_to_conclude = snapshot_obj_for_tests(self.current_session)  # Deep copy to prevent object mutation from ruining tests
+        # Deep copy to prevent object mutation from ruining tests
+        session_to_conclude = snapshot_obj_for_tests(self.current_session)
         start_time: datetime | None = session_to_conclude.start_time
         initializing = start_time is None
         if initializing:
@@ -128,17 +127,17 @@ class ProgramTrackerCore:
         """For when the program isn't found in the productive apps list"""
         self.console_logger.log_yellow(title)  # temp
 
-    # def apply_handlers(self, session: ProgramSessionData):
-    #     if not isinstance(session, ProgramSessionData):
-    #         self.console_logger.log_yellow_multiple("[DEBUG]", session)
-    #         raise ValueError("Was not a dict")
-    #     #  {'os': 'Ubuntu', 'pid': 70442, 'process_name': 'pgadmin4', 'window_title': 'Alt-tab window'}
-    #     # start_time, end_time, duration, window, productive
-    #     if isinstance(self.conclude_session_handler, list):
-    #         for handler in self.conclude_session_handler:
-    #             handler(session)  # emit an event
-    #     else:
-    #         self.conclude_session_handler(session)  # is a single func
+    def apply_handlers(self, session: ProgramSessionData):
+        if not isinstance(session, ProgramSessionData):
+            self.console_logger.log_yellow_multiple("[DEBUG]", session)
+            raise ValueError("Was not a dict")
+        #  {'os': 'Ubuntu', 'pid': 70442, 'process_name': 'pgadmin4', 'window_title': 'Alt-tab window'}
+        # start_time, end_time, duration, window, productive
+        if isinstance(self.conclude_session_handler, list):
+            for handler in self.conclude_session_handler:
+                handler(session)  # emit an event
+        else:
+            self.conclude_session_handler(session)  # is a single func
 
     def stop(self):
         pass  # might need later

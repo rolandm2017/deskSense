@@ -170,6 +170,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         tomorrow_start = today_start + timedelta(days=1)
 
         time_to_remove = duration_in_sec / SECONDS_PER_HOUR
+        self.throw_if_negative(session.window_title, time_to_remove)
 
         query = select(DailyProgramSummary).where(
             DailyProgramSummary.program_name == target_program_name,
@@ -184,7 +185,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             # new session is created, i think. so when the program
             # comes in here to deduct 5 seconds, there's only 0 seconds existing
             new_duration = program.hours_spent - time_to_remove
-            self.throw_if_negative(program.program_name, new_duration)
+
             program.hours_spent = new_duration
             db_session.commit()
 

@@ -10,12 +10,12 @@ from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
 
 class ActivityRecorder:
-    def __init__(self, user_facing_clock,program_logging_dao: ProgramLoggingDao, chrome_logging_dao:ChromeLoggingDao, program_summary_dao: ProgramSummaryDao, chrome_summary_dao: ChromeSummaryDao):
+    def __init__(self, user_facing_clock, program_logging_dao: ProgramLoggingDao, chrome_logging_dao: ChromeLoggingDao, program_summary_dao: ProgramSummaryDao, chrome_summary_dao: ChromeSummaryDao):
         self.user_facing_clock = user_facing_clock
         self.program_logging_dao = program_logging_dao
         self.chrome_logging_dao = chrome_logging_dao
         self.program_summary_dao = program_summary_dao
-        self.chrome_summary_dao = chrome_summary_dao 
+        self.chrome_summary_dao = chrome_summary_dao
 
     @staticmethod
     def validate_session(session):
@@ -23,7 +23,7 @@ class ActivityRecorder:
             raise ValueError("Session end time was not set")
         if session.duration is None:
             raise ValueError("Session duration was not set")
-        
+
     def on_new_session(self, session: ProgramSessionData | ChromeSessionData):
         """
         This exists because some code I expected to start a log
@@ -72,7 +72,7 @@ class ActivityRecorder:
             self.chrome_summary_dao.push_window_ahead_ten_sec(session, now)
         else:
             raise TypeError("Session was not the right type")
-        
+
     def deduct_duration(self, duration_in_sec: int, session):
         """
         Deducts t seconds from the duration of a session. 
@@ -80,9 +80,13 @@ class ActivityRecorder:
         """
         today_start = self.user_facing_clock.today_start()
         if isinstance(session, ProgramSessionData):
-            self.program_summary_dao.deduct_remaining_duration(session, duration_in_sec, today_start)
+            print(
+                f"deducting {duration_in_sec} from {session.window_title}, 83ru")
+            self.program_summary_dao.deduct_remaining_duration(
+                session, duration_in_sec, today_start)
         elif isinstance(session, ChromeSessionData):
             print(f"deducting {duration_in_sec} from {session.domain}, 85ru")
-            self.chrome_summary_dao.deduct_remaining_duration(session, duration_in_sec, today_start)
+            self.chrome_summary_dao.deduct_remaining_duration(
+                session, duration_in_sec, today_start)
         else:
             raise TypeError("Session was not the right type")
