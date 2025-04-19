@@ -60,8 +60,9 @@ class ProgramTrackerCore:
 
     def run_tracking_loop(self):
         for window_change in self.program_facade.listen_for_window_changes():
-            # print(window_change, '64ru')
+            print(window_change, 'windoe change')
             # is_expected_shape_else_throw(window_change)
+            # FIXME: "Running Server (WindowsTerminal.exe)" -> Terminal (Terminal)
             on_a_different_window_now = self.current_session and window_change[
                 "window_title"] != self.current_session.window_title
             if on_a_different_window_now and self.is_initialized():

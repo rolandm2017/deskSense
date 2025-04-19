@@ -155,9 +155,7 @@ class SurveillanceManager:
     async def shutdown_handler(self):
         try:
             await self.chrome_service.shutdown()  # works despite the lack of highlighting
-            await self.arbiter.shutdown()
-            await self.program_summary_dao.shutdown()
-            await self.chrome_summary_dao.shutdown()
+            self.arbiter.shutdown()
         except Exception as e:
             print(self.chrome_service,  " none?")
             traceback.print_exc()
