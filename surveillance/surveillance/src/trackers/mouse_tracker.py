@@ -2,11 +2,11 @@
 
 from typing import List, TypedDict
 
-from surveillance.src.util.keyboard_aggregator import EventAggregator, InProgressAggregation
+from surveillance.src.util.event_aggregator import EventAggregator, InProgressAggregation
 
 
 # from surveillance.src.object.enums import MouseEvent
-from surveillance.src.object.classes import  MouseAggregate, MouseEvent
+from surveillance.src.object.classes import MouseAggregate, MouseEvent
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.facade.mouse_facade import MouseFacadeCore
 
@@ -39,7 +39,7 @@ class MouseTrackerCore:
 
                     self.conclude_aggregation(finalized_aggregate)
                 else:
-                    # Otherwise, the end of the mouse move might be so great, 
+                    # Otherwise, the end of the mouse move might be so great,
                     # that the end of the event starts a new aggregate
                     self.aggregator.extend_until(event["end"])
                 # self.aggregator.add_event(event["end"])

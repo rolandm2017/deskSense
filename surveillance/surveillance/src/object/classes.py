@@ -152,10 +152,10 @@ class MouseAggregate(PeripheralAggregate):
 
 
 class MouseMoveWindow:
-    def __init__(self, start_of_window, end_of_window, source=None):
+    def __init__(self, start_of_window: UserLocalTime, end_of_window: UserLocalTime, source=None):
         """Where the mouse was is irrelevant. From when to when it was moving is the important part."""
-        self.start_time = start_of_window
-        self.end_time = end_of_window
+        self.start_time: UserLocalTime = start_of_window
+        self.end_time: UserLocalTime = end_of_window
         self.source = source
 
     def __str__(self):

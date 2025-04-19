@@ -7,7 +7,7 @@ from datetime import datetime
 from surveillance.src.object.classes import KeyboardAggregate
 from surveillance.src.util.clock import SystemClock
 from surveillance.src.util.threaded_tracker import ThreadedTracker
-from surveillance.src.util.keyboard_aggregator import EventAggregator, InProgressAggregation
+from surveillance.src.util.event_aggregator import EventAggregator, InProgressAggregation
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.facade.keyboard_facade import KeyboardFacadeCore
 

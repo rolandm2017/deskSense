@@ -35,7 +35,7 @@ class MouseDao(BaseQueueingDao):
         # See SHA 52d3c13c3150c5859243b909d47d609f5b2b8600 to experience the issue.
         # self.logger.log_green("[LOG] Mouse move")
         mouse_move = MouseMove(
-            start_time=window.start_time, end_time=window.end_time)
+            start_time=window.start_time.get_dt_for_db(), end_time=window.end_time.get_dt_for_db())
         await self.queue_item(mouse_move, MouseMove, "create_from_window")
 
     async def create_without_queue(self, start_time: datetime, end_time: datetime):

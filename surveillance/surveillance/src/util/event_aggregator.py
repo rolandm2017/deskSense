@@ -6,6 +6,7 @@ from typing import List, Callable, Optional, Type
 # Import the base and derived classes
 
 from surveillance.src.object.classes import PeripheralAggregate, KeyboardAggregate, MouseAggregate
+from surveillance.src.util.time_layer import UserLocalTime
 
 
 @dataclass
@@ -27,7 +28,7 @@ class EventAggregator:
     def set_callback(self, callback: Callable):
         self._on_aggregation_complete = callback
 
-    def add_event(self, timestamp: float) -> Optional[List[datetime]]:
+    def add_event(self, timestamp: float) -> Optional[List[UserLocalTime]]:
         """A timestamp must be a datetime.timestamp() result."""
         if timestamp is None:
             raise TypeError("Timestamp cannot be None")
@@ -66,13 +67,13 @@ class EventAggregator:
         self.current_aggregation.events.append(timestamp)
         return None
 
-    def convert_events_to_timestamps(self, current_agg_events):
-        return [datetime.fromtimestamp(t, tz=timezone.utc) for t in current_agg_events]
+    def convert_events_to_timestamps(self, current_agg_events) -> List[UserLocalTime]:
+        return [UserLocalTime(datetime.fromtimestamp(t, tz=timezone.utc)) for t in current_agg_events]
 
     def start_new_aggregate(self, timestamp):
         self.current_aggregation = InProgressAggregation(
             timestamp, timestamp, [timestamp])
-        
+
     def extend_until(self, time_for_extension):
         self.current_aggregation.end_time = time_for_extension
 
@@ -93,7 +94,7 @@ class EventAggregator:
 
     def package_keyboard_events_for_db(self, aggregate: list) -> KeyboardAggregate:
         """
-        Aggregate comes out as an array of datetimes. 
+        Aggregate comes out as an array of datetimes.
         The DB must get an obj with start_time, end_time.
         Uses the configured aggregate_class to determine which type to create.
         """
@@ -103,7 +104,7 @@ class EventAggregator:
 
     def package_mouse_events_for_db(self, aggregate: list) -> MouseAggregate:
         """
-        Aggregate comes out as an array of datetimes. 
+        Aggregate comes out as an array of datetimes.
         The DB must get an obj with start_time, end_time.
         Uses the configured aggregate_class to determine which type to create.
         """

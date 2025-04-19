@@ -28,19 +28,19 @@ class KeyboardDao(BaseQueueingDao):
         # self.logger.log_green("[LOG] Keyboard session")
         # event time should be just month :: date :: HH:MM:SS
         new_typing_session_entry = TypingSession(
-            start_time=session.start_time, end_time=session.end_time)
+            start_time=session.start_time.get_dt_for_db(), end_time=session.end_time.get_dt_for_db())
         # self.logger.log_blue("[LOG] Keyboard event: " + str(session))
         await self.queue_item(new_typing_session_entry)
 
     async def create_without_queue(self, session: KeyboardAggregate):
-        print("adding keystroke ", str(session))
+        print("adding keystrokes to db ", str(session))
         new_session = TypingSession(
-            start_time=session.start_time,
-            end_time=session.end_time
+            start_time=session.start_time.get_dt_for_db(),
+            end_time=session.end_time.get_dt_for_db()
         )
 
         # Create a new session from the session_maker
-        async with self.async_session_maker()  as db_session:
+        async with self.async_session_maker() as db_session:
             # Begin a transaction
             async with db_session.begin():
                 # Add the new session to the database
@@ -56,14 +56,14 @@ class KeyboardDao(BaseQueueingDao):
         """
         Read Keystroke entries. 
         """
-        async with self.async_session_maker()  as db_session:
+        async with self.async_session_maker() as db_session:
             result = await db_session.get(TypingSession, keystroke_id)
             return result
 
     async def read_all(self):
         """Return all keystrokes."""
 
-        async with self.async_session_maker()  as session:
+        async with self.async_session_maker() as session:
             result = await session.execute(select(TypingSession))
             result = result.all()
             dtos = [TypingSessionDto(
@@ -83,7 +83,7 @@ class KeyboardDao(BaseQueueingDao):
                 TypingSession.start_time >= twenty_four_hours_ago
             ).order_by(TypingSession.start_time.desc())
 
-            async with self.async_session_maker()  as session:
+            async with self.async_session_maker() as session:
                 result = await session.execute(query)
                 rows = result.all()
 
@@ -100,7 +100,7 @@ class KeyboardDao(BaseQueueingDao):
 
     async def delete(self, id: int):
         """Delete an entry by ID"""
-        async with self.async_session_maker()  as session:
+        async with self.async_session_maker() as session:
             entry = await session.get(TypingSession, id)
             if entry:
                 await session.delete(entry)

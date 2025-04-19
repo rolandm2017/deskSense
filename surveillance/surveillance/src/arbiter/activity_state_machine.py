@@ -7,6 +7,7 @@ from surveillance.src.util.program_tools import window_is_chrome
 from surveillance.src.util.errors import MismatchedTimezonesError, SuspiciousDurationError, TimezoneUnawareError
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.copy_util import snapshot_obj_for_tests
+from surveillance.src.util.time_layer import UserLocalTime
 
 
 # class OverallState:
@@ -74,6 +75,7 @@ class ActivityStateMachine:
 
         session_copy = snapshot_obj_for_tests(state.session)
         session_copy.duration = duration
+        assert isinstance(incoming_session_start, UserLocalTime)
         session_copy.end_time = incoming_session_start
 
         state.session = session_copy
@@ -113,8 +115,9 @@ class ActivityStateMachine:
         """For wrap up when the computer is powering off to avoid sessions left open"""
         if self.current_state is None:
             return  # Nothing to wrap up
-        self._conclude_session(
-            self.current_state, self.user_facing_clock.now())
+        end_time = UserLocalTime(self.user_facing_clock.now())
+        assert isinstance(end_time, UserLocalTime)
+        self._conclude_session(self.current_state, end_time)
         session_for_daos = self.current_state.session
         self.current_state = None  # Reset for power back on
         return session_for_daos

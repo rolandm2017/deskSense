@@ -2,14 +2,12 @@
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Depends, status, Request
 from fastapi import Path
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from fastapi.encoders import jsonable_encoder
 
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
 import asyncio
 # import time
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List
 from datetime import date, datetime, timezone
 from time import time
 
@@ -21,13 +19,10 @@ from surveillance.src.db.models import DailyDomainSummary, DailyProgramSummary, 
 from surveillance.src.routes.report_routes import router as report_router
 from surveillance.src.routes.video_routes import router as video_routes
 
-# from surveillance.src.services import MouseService, KeyboardService, ProgramService, DashboardService, ChromeService
-# from surveillance.src.services import get_mouse_service, get_chrome_service, get_program_service, get_keyboard_service, get_dashboard_service
 from surveillance.src.object.pydantic_dto import TabChangeEventWithUtcDt, YouTubeEvent
 from surveillance.src.object.classes import TabChangeEventWithLtz
 
 from surveillance.src.object.dashboard_dto import (
-    MouseEventsPayload,
     PartiallyPrecomputedWeeklyTimeline,
     ProductivityBreakdownByWeek,
     ProgramBarChartContent,

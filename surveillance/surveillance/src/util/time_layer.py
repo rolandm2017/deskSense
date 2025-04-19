@@ -36,19 +36,6 @@ class TimeKeeper:
         pass
 
 
-# FIXME: sqlalchemy.exc.ProgrammingError: (psycopg2.ProgrammingError) can't adapt type 'UserLocalTime'
-# File "C:\Users\User\Code\deskSense\surveillance\surveillance\src\arbiter\activity_arbiter.py", line 56, in notify_summary_dao
-#     self.activity_recorder.on_state_changed(session)
-#   File "C:\Users\User\Code\deskSense\surveillance\surveillance\src\arbiter\activity_recorder.py", line 47, in on_state_changed
-#     self.program_logging_dao.finalize_log(session)
-#   File "C:\Users\User\Code\deskSense\surveillance\surveillance\src\db\dao\queuing\program_logs_dao.py", line 222, in finalize_log
-#     db_session.commit()
-#   File "C:\Users\User\Code\deskSense\surveillance\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2032, in commit
-#     trans.commit(_to_root=True)
-#   File "<string>", line 2, in commit
-#   File "C:\Users\User\Code\deskSense\surveillance\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 139, in _go
-#     ret_value = fn(self, *arg, **kw)
-#                 ^^^^^^^^^^^^^^^^^^^^
 class UserLocalTime:
     """
     No longer will datetimes be passed around, leaving
