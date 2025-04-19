@@ -32,3 +32,11 @@ export function extractChannelInfoFromWatchPage() {
 
     return channelName
 }
+
+// Function to extract channel name from YouTube Shorts
+export function extractChannelInfoFromShortsPage() {
+    /*
+     * Here be dragons
+     */
+    return false
+}

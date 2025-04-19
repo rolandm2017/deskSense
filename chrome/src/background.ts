@@ -1,11 +1,15 @@
 // background.js
 import { reportTabSwitch, reportIgnoredUrl, reportYouTube } from "./api"
 import { getDomainFromUrl } from "./urlTools"
-import { extractChannelInfoFromWatchPage } from "./channelExtractor"
+import {
+    extractChannelInfoFromWatchPage,
+    extractChannelInfoFromShortsPage,
+} from "./channelExtractor"
 import {
     isWatchingVideo,
     isOnSomeChannel,
     extractChannelNameFromUrl,
+    watchingShorts,
 } from "./youtube"
 
 import { isDomainIgnored, loadDomains, ignoredDomains } from "./ignoreList"
@@ -34,7 +38,7 @@ function handleYouTubeUrl(tab: chrome.tabs.Tab) {
             chrome.scripting.executeScript(
                 {
                     target: { tabId: tabId },
-                    func: extractChannelInfoFromWatchPage, // Note: changed from 'function' to 'func'
+                    func: extractChannelInfoFromWatchPage,
                 },
                 (results) => {
                     if (results && results[0] && results[0].result) {
@@ -44,12 +48,16 @@ function handleYouTubeUrl(tab: chrome.tabs.Tab) {
                     }
                 }
             )
-        }, 1500) // 1.0 second delay - adjust as needed
+        }, 1500) // 1.5 second delay - adjust as needed
         // 1.0 sec delay still had the "prior channel reported as current" problem
     } else if (isOnSomeChannel(tab.url)) {
         // For channel pages, we can extract from the URL
         const channelName = extractChannelNameFromUrl(tab.url)
         reportYouTube(tab.title, channelName)
+    } else if (watchingShorts(tab.url)) {
+        // Avoids trying to extract the channel name from
+        // the YouTube Shorts page. The page's HTML changes often.
+        reportYouTube(tab.title, "Watching Shorts")
     } else {
         reportYouTube(tab.title, "YouTube Home")
     }
