@@ -30,7 +30,9 @@ interface ProgramTimelineProps {
 const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
     days,
     width = 640,
-    height = 384, // Reduced to 0.6 * 640
+    // height = 384, // Reduced to 0.6 * 640
+    // height = 460, // Reduced to (0.6 * 640) * 1.2 = 460
+    height = 479, // Reduced to (0.6 * 640) * 1.3 = 499.2
     margins = {
         top: 20,
         right: 80, // Increased right margin to accommodate program names
@@ -38,7 +40,7 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
         left: 60, // Increased left margin to accommodate day names
     },
 }) => {
-        /*
+    /*
      *
      * To make this graph tolerate 1,000 data points,
      * The answer is to make zooming in on the map
@@ -52,6 +54,61 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
 
     const svgRef = useRef<SVGSVGElement | null>(null);
 
+    function addXAxis(
+        svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+        x: d3.ScaleTime<number, number, never>,
+        customTicks: Date[]
+    ) {
+        svg.append("g")
+            .attr("transform", `translate(0,${height - margins.bottom})`)
+            .call(
+                d3
+                    .axisBottom(x)
+                    .tickValues(customTicks)
+                    .tickFormat((d: Date | d3.NumberValue) => {
+                        if (!(d instanceof Date)) return "";
+                        // For 5 AM, return empty string
+                        if (d.getHours() === 5) return "";
+                        return d3.timeFormat("%I:%M %p")(d);
+                    })
+            )
+            .call((g) => g.select(".domain").remove())
+            .call((g) =>
+                g
+                    .selectAll(".tick line")
+                    .clone()
+                    .attr("y2", -(height - margins.top - margins.bottom))
+                    // .attr("y2", -(height - margins.top - margins.bottom))
+                    .attr("stroke-opacity", 0.1)
+            )
+            .call((g) =>
+                g
+                    .append("text")
+                    .attr("x", width - margins.right)
+                    .attr("y", -3)
+                    .attr("fill", "currentColor")
+                    .attr("font-weight", "bold")
+                    .text("Time of Day")
+            );
+    }
+
+    function addYAxis(
+        svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+        y: d3.ScaleBand<string>
+    ) {
+        svg.append("g")
+            .attr("transform", `translate(${margins.left},0)`)
+            .call(d3.axisLeft(y))
+            .call((g) => g.select(".domain").remove())
+            .call((g) =>
+                g
+                    .selectAll(".tick line")
+                    .clone()
+                    .attr("x2", width - margins.left - margins.right)
+                    .attr("stroke-opacity", 0.1)
+            );
+    }
+
     useEffect(() => {
         if (!svgRef.current) return;
 
@@ -61,7 +118,7 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
         const endHour = 23; // outside of debugging, use 23 (11:59 pm)
         const endMinute = 59;
 
-        const x = d3
+        const x: d3.ScaleTime<number, number, never> = d3
             .scaleTime()
             .domain([
                 new Date(2024, 0, 1, startHour, 0), // 5 AM
@@ -83,13 +140,19 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
         ];
 
         // Create y scale using band scale for categorical data
-        const y = d3
+        const reducedIrrelevantSpaceForSunday = 30;
+        const offsetForTopOfGrid =
+            margins.top - reducedIrrelevantSpaceForSunday;
+        const additionalSpaceForSaturday = 20;
+        const offsetForBottomOfGrid =
+            height - margins.bottom - additionalSpaceForSaturday;
+        const y: d3.ScaleBand<string> = d3
             .scaleBand()
             .domain(daysOfWeek)
-            .range([margins.top, height - margins.bottom])
+            .range([offsetForTopOfGrid, offsetForBottomOfGrid])
             .padding(0.1);
 
-        const svg = d3
+        const svg: d3.Selection<SVGSVGElement, unknown, null, undefined> = d3
             .select(svgRef.current)
             .attr("viewBox", [0, 0, width, height])
             .attr("width", width)
@@ -98,7 +161,7 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
             .style("height", "auto");
 
         // Create custom ticks: 5 AM, 6 AM, then every 3 hours until midnight
-        const customTicks = [
+        const customTicks: Date[] = [
             new Date(2024, 0, 1, 5, 0), // 5 AM
             new Date(2024, 0, 1, 6, 0), // 6 AM
             new Date(2024, 0, 1, 9, 0), // 9 AM
@@ -109,57 +172,23 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
             new Date(2024, 0, 1, 23, 59), // 11:59 PM
         ];
 
-        svg.append("g")
-            .attr("transform", `translate(0,${height - margins.bottom})`)
-            .call(
-                d3
-                    .axisBottom(x)
-                    .tickValues(customTicks)
-                    .tickFormat((d: Date | d3.NumberValue) => {
-                        if (!(d instanceof Date)) return "";
-                        // For 5 AM, return empty string
-                        if (d.getHours() === 5) return "";
-                        return d3.timeFormat("%I:%M %p")(d);
-                    })
-            )
-            .call((g) => g.select(".domain").remove())
-            .call((g) =>
-                g
-                    .selectAll(".tick line")
-                    .clone()
-                    .attr("y2", -(height - margins.top - margins.bottom))
-                    .attr("stroke-opacity", 0.1)
-            )
-            .call((g) =>
-                g
-                    .append("text")
-                    .attr("x", width - margins.right)
-                    .attr("y", -3)
-                    .attr("fill", "currentColor")
-                    .attr("font-weight", "bold")
-                    .text("Time of Day")
-            );
+        addXAxis(svg, x, customTicks);
+
+        addYAxis(svg, y);
 
         // Add y-axis
-        svg.append("g")
-            .attr("transform", `translate(${margins.left},0)`)
-            .call(d3.axisLeft(y))
-            .call((g) => g.select(".domain").remove())
-            .call((g) =>
-                g
-                    .selectAll(".tick line")
-                    .clone()
-                    .attr("x2", width - margins.left - margins.right)
-                    .attr("stroke-opacity", 0.1)
-            );
 
         // Add timeline events as lines
         const eventLines: d3.Selection<SVGGElement, unknown, null, undefined> =
             svg.append("g").attr("class", "event-lines");
 
         // Add a group for program labels
-        const programLabels: d3.Selection<SVGGElement, unknown, null, undefined> =
-            svg.append("g").attr("class", "program-labels");
+        const programLabels: d3.Selection<
+            SVGGElement,
+            unknown,
+            null,
+            undefined
+        > = svg.append("g").attr("class", "program-labels");
 
         const baseRowSpacing = 60;
 
@@ -180,8 +209,8 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
          */
 
         // Process days and draw lines and labels
-        
-      // TODO: Group days.events by ProgramName, and then for each program, ... draw the line
+
+        // TODO: Group days.events by ProgramName, and then for each program, ... draw the line
         // TODO: Draw a highlight for lines that show double counting.
 
         days.forEach((day: ProgamUsageTimeline) => {
@@ -204,7 +233,7 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
                         program.events.length,
                         "188ru"
                     );
-                    
+
                     // Draw program events
                     program.events.forEach((event: TimelineEvent) => {
                         addEventLinesForPrograms(
@@ -216,7 +245,7 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
                             y
                         );
                     });
-                    
+
                     // Add program name label at the right edge
                     programLabels
                         .append("text")
