@@ -60,9 +60,6 @@ load_dotenv()
 #     raise ValueError("SYNC_TEST_DB_URL environment variable is not set")
 
 
-
-
-
 @pytest_asyncio.fixture
 async def setup_parts(regular_session, async_engine_and_asm):
     """
@@ -75,7 +72,8 @@ async def setup_parts(regular_session, async_engine_and_asm):
 
     # Get all required DAOs
     timeline_dao = TimelineEntryDao(session_maker_async)
-    program_logging_dao = ProgramLoggingDao(regular_session, session_maker_async)
+    program_logging_dao = ProgramLoggingDao(
+        regular_session, session_maker_async)
     chrome_logging_dao = ChromeLoggingDao(regular_session, session_maker_async)
     program_summary_dao = ProgramSummaryDao(
         program_logging_dao, regular_session, session_maker_async)
@@ -191,7 +189,6 @@ async def test_read_all(setup_with_populated_db):
 
     for v in all_programs_for_verification:
         # print("v:", v)
-        # print(v.gathering_date, "221ru")
 
         if v.gathering_date.month == 2:
             feb_vals.append(v)
@@ -201,7 +198,6 @@ async def test_read_all(setup_with_populated_db):
             march_3rd_vals.append(v)
         else:
             print(v, 'unexpected date for gathering_date')
-            print(v.gathering_date, "221ru")
 
     # So they're actually, like, there.
     assert len(feb_vals) == feb_program_count
@@ -220,7 +216,6 @@ async def test_read_all(setup_with_populated_db):
     print(len(all_domains_for_verify), "vvv")
     for v in all_domains_for_verify:
         print("v:", v)
-        print(v.gathering_date, "221ru")
         if v.gathering_date.month == 2:
             feb_vals_chrome.append(v)
         elif v.gathering_date.day == 2:
@@ -250,8 +245,10 @@ async def test_reading_individual_days(setup_with_populated_db):
 
     # NOTE that this date is in the test data for sure! it's circular.
 
-    daily_program_summaries: List[DailyProgramSummary] = program_summary_dao.read_day(march_2_2025)
-    daily_chrome_summaries: List[DailyDomainSummary] = chrome_summary_dao.read_day(march_2_2025)
+    daily_program_summaries: List[DailyProgramSummary] = program_summary_dao.read_day(
+        march_2_2025)
+    daily_chrome_summaries: List[DailyDomainSummary] = chrome_summary_dao.read_day(
+        march_2_2025)
 
     print(len(daily_program_summaries), march_2_program_count)
     assert len(daily_program_summaries) == march_2_program_count
@@ -263,8 +260,10 @@ async def test_reading_individual_days(setup_with_populated_db):
 
     march_3_modified = march_3_2025 + timedelta(hours=1, minutes=9, seconds=33)
 
-    daily_program_summaries_2: List[DailyProgramSummary] = program_summary_dao.read_day(march_3_modified)
-    daily_chrome_summaries_2: List[DailyDomainSummary] = chrome_summary_dao.read_day(march_3_modified)
+    daily_program_summaries_2: List[DailyProgramSummary] = program_summary_dao.read_day(
+        march_3_modified)
+    daily_chrome_summaries_2: List[DailyDomainSummary] = chrome_summary_dao.read_day(
+        march_3_modified)
 
     assert len(
         daily_program_summaries_2) == march_3_program_count, "A program session didn't load"
@@ -279,8 +278,10 @@ async def test_reading_individual_days(setup_with_populated_db):
     assert len(daily_program_summaries_2) + \
         len(daily_chrome_summaries_2) == count_of_march_3
 
-    zero_pop_day_programs: List[DailyProgramSummary] = program_summary_dao.read_day(test_day_3)
-    zero_pop_day_chrome: List[DailyDomainSummary] = chrome_summary_dao.read_day(test_day_3)
+    zero_pop_day_programs: List[DailyProgramSummary] = program_summary_dao.read_day(
+        test_day_3)
+    zero_pop_day_chrome: List[DailyDomainSummary] = chrome_summary_dao.read_day(
+        test_day_3)
 
     assert len(zero_pop_day_programs) + len(zero_pop_day_chrome) == 0
 
@@ -323,4 +324,3 @@ async def test_week_of_march_2(setup_with_populated_db):
     sums = [d["productivity"] + d["leisure"] for d in weeks_overview]
     assert all(
         x < 16 for x in sums), "Some day had 16 hours or more of time recorded"
-    

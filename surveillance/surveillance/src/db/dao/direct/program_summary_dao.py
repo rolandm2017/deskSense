@@ -14,7 +14,7 @@ from surveillance.src.object.classes import ProgramSessionData
 from surveillance.src.util.dao_wrapper import validate_start_end_and_duration, validate_start_and_end_times
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.const import SECONDS_PER_HOUR
-from surveillance.src.util.errors import NegativeTimeError
+from surveillance.src.util.errors import NegativeTimeError, ImpossibleToGetHereError
 from surveillance.src.util.debug_util import notice_suspicious_durations, log_if_needed
 from surveillance.src.util.time_formatting import get_start_of_day
 
@@ -156,8 +156,13 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         )
         with self.regular_session() as db_session:
             program: DailyProgramSummary = db_session.scalars(query).first()
-            program.hours_spent = program.hours_spent + 10 / SECONDS_PER_HOUR
-            db_session.commit()
+            # FIXME: Sometimes program is None
+            if program:
+                program.hours_spent = program.hours_spent + 10 / SECONDS_PER_HOUR
+                db_session.commit()
+            else:
+                raise ImpossibleToGetHereError(
+                    "A program should already exist here, but was not found")
 
     def deduct_remaining_duration(self, session: ProgramSessionData, duration_in_sec: int, today_start):
         """

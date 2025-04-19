@@ -14,7 +14,7 @@ from surveillance.src.object.classes import ChromeSessionData
 
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.dao_wrapper import validate_start_end_and_duration, validate_start_and_end_times
-from surveillance.src.util.errors import SuspiciousDurationError, NegativeTimeError
+from surveillance.src.util.errors import NegativeTimeError, ImpossibleToGetHereError
 from surveillance.src.util.debug_util import notice_suspicious_durations, log_if_needed
 from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.time_formatting import get_start_of_day
@@ -34,7 +34,6 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         self.logger = ConsoleLogger()
 
     def start_session(self, chrome_session: ChromeSessionData, right_now):
-        print("HERE 151ru")
         target_domain_name = chrome_session.domain
 
         starting_window_amt = 10  # sec
@@ -46,7 +45,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     def _create(self, target_domain_name, duration_in_hours, when_it_was_gathered):
         print(
-            f"creating for {target_domain_name} with duration {duration_in_hours}, 63ru")
+            f"creating for {target_domain_name} with duration {duration_in_hours}")
         self.throw_if_negative(target_domain_name, duration_in_hours)
         with self.regular_session() as session:
             new_entry = DailyDomainSummary(
@@ -98,9 +97,6 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         """Read all entries for the given day."""
         today_start = get_start_of_day(day)
         tomorrow_start = today_start + timedelta(days=1)
-        print("read_day 113ru")
-        print(today_start)
-        print(tomorrow_start)
 
         query = select(DailyDomainSummary).where(
             DailyDomainSummary.gathering_date >= today_start,
@@ -147,8 +143,13 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         )
         with self.regular_session() as db_session:
             domain: DailyDomainSummary = db_session.scalars(query).first()
-            domain.hours_spent = domain.hours_spent + 10 / SECONDS_PER_HOUR
-            db_session.commit()
+            # FIXME: Sometimes domain is none
+            if domain:
+                domain.hours_spent = domain.hours_spent + 10 / SECONDS_PER_HOUR
+                db_session.commit()
+            else:
+                raise ImpossibleToGetHereError(
+                    "A domain should already exist here, but was not found")
 
     def deduct_remaining_duration(self, session: ChromeSessionData, duration_in_sec: int, today_start):
         """
@@ -168,7 +169,6 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         # Update it if found
         with self.regular_session() as db_session:
             domain: DailyDomainSummary = db_session.scalars(query).first()
-
             new_duration = domain.hours_spent - duration_in_sec / SECONDS_PER_HOUR
             self.throw_if_negative(domain.domain_name, new_duration)
             domain.hours_spent = new_duration

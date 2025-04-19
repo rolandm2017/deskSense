@@ -144,7 +144,6 @@ class SurveillanceManager:
         self.loop.create_task(self.mouse_dao.create_from_window(event))
 
     def handle_window_change(self, event):
-        print(event, "148ru")
         # Deep copy to enable testing of object state before/after this line
         copy_of_event = snapshot_obj_for_tests(event)
         self.arbiter.set_program_state(copy_of_event)

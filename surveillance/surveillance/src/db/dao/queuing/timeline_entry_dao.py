@@ -16,7 +16,8 @@ from surveillance.src.util.timeline_event_aggregator import aggregate_timeline_e
 
 class TimelineEntryDao(BaseQueueingDao):
     def __init__(self, async_session_maker: async_sessionmaker, batch_size=100, flush_interval=1):
-        super().__init__(async_session_maker=async_session_maker, batch_size=batch_size, flush_interval=flush_interval, dao_name="TimelineEntry")
+        super().__init__(async_session_maker=async_session_maker, batch_size=batch_size,
+                         flush_interval=flush_interval, dao_name="TimelineEntry")
 
         self.logger = ConsoleLogger()
 
@@ -125,7 +126,6 @@ class TimelineEntryDao(BaseQueueingDao):
         is_today = today == users_systems_day.date()
 
         if is_today:
-            print("is today", users_systems_day, "128ru")
             # Precomputed day can't exist yet
             return await self.read_day(users_systems_day, ChartEventType.MOUSE)
         else:
@@ -145,7 +145,6 @@ class TimelineEntryDao(BaseQueueingDao):
         is_today = today == users_systems_day.date()
         if is_today:
             # Precomputed day can't exist yet
-            print("is today", users_systems_day, "148ru")
             return await self.read_day(users_systems_day, ChartEventType.KEYBOARD)
         else:
             # print(users_systems_day, " is not today keyboard")

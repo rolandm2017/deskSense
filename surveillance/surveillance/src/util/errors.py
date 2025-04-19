@@ -1,7 +1,6 @@
 import traceback
 
 
-
 class SuspiciousDurationError(ValueError):
     """Raised when session duration is unexpectedly large."""
 
@@ -25,24 +24,28 @@ class MismatchedTimezonesError(ValueError):
     def __init__(self):
         super().__init__("Mismatched timezones detected.")
 
+
 class ImpossibleToGetHereError(ValueError):
     """For DAO paths that ought to be unreachable if other code worked"""
-    
-    def __init__(self, *args):
-        super().__init__(*args)
+
+    def __init__(self, message, *args):
+        super().__init__(message, *args)
 
 
 class WayTooLongWaitError(ValueError):
     """For a DAO queue flush value that would make the tasks hang open for ages"""
+
     def __init__(self, time, *args):
         message = f"Sleeping the code for {time} seconds is way too long"
         super().__init__(message, *args)
+
 
 class NegativeTimeError(ValueError):
     """
     For when the summary DAO claims a negative amount of time 
     was spent using a program or website
     """
+
     def __init__(self, activity, time, *args):
         message = f"The DAO claims {activity} had {time} seconds spent on it"
         super().__init__(message, *args)
