@@ -31,20 +31,21 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         self.regular_session = regular_session
         self.async_session_maker = async_session_maker
         self.logger = ConsoleLogger()
-    
+
     def start_session(self, chrome_session: ChromeSessionData, right_now):
         print("HERE 151ru")
         target_domain_name = chrome_session.domain
-        
+
         starting_window_amt = 10  # sec
-        usage_duration_in_hours =  starting_window_amt/ SECONDS_PER_HOUR
+        usage_duration_in_hours = starting_window_amt / SECONDS_PER_HOUR
 
         today = right_now.replace(hour=0, minute=0, second=0,
-                            microsecond=0)  # Still has tz attached
+                                  microsecond=0)  # Still has tz attached
         self._create(target_domain_name, usage_duration_in_hours, today)
 
     def _create(self, target_domain_name, duration_in_hours, when_it_was_gathered):
-        print(f"creating for {target_domain_name} with duration {duration_in_hours}, 63ru")
+        print(
+            f"creating for {target_domain_name} with duration {duration_in_hours}, 63ru")
         self.throw_if_negative(target_domain_name, duration_in_hours)
         with self.regular_session() as session:
             new_entry = DailyDomainSummary(
@@ -115,8 +116,6 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             result = session.execute(select(DailyDomainSummary))
             return result.scalars().all()
 
-
-        
     def update_hours(self, existing_entry, usage_duration_in_hours):
         with self.regular_session() as session:
             # Reattach the entity to the current session if it's detached
@@ -127,15 +126,13 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             new_duration = existing_entry.hours_spent + usage_duration_in_hours
             self.throw_if_negative(existing_entry.domain_name, new_duration)
             existing_entry.hours_spent = new_duration
-            
+
             # Commit the changes
             session.commit()
 
-
-        
     def push_window_ahead_ten_sec(self, chrome_session: ChromeSessionData, right_now):
         """Finds the given session and adds ten sec to its end_time
-        
+
         NOTE: This only ever happens after start_session
         """
         target_domain = chrome_session.domain
@@ -147,32 +144,16 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyDomainSummary.domain_name == target_domain,
             DailyDomainSummary.gathering_date >= today_start,
             DailyDomainSummary.gathering_date < tomorrow_start
-        )        
+        )
         with self.regular_session() as db_session:
             domain: DailyDomainSummary = db_session.scalars(query).first()
-            # Update it if found
-            if domain:
-                domain.hours_spent = domain.hours_spent + 10 / SECONDS_PER_HOUR
-                db_session.commit()
-            else:
-                # If the code got here, the summary wasn't even created yet,
-                # which is likely! for the first time a program enters the program on a given day
-                self.logger.log_white_multiple("INFO:", f"first time {target_domain} appears today")
-                target_domain_name = chrome_session.domain
-        
-                # ### Calculate time difference
-                if chrome_session.duration is None:
-                    raise ValueError("Session duration was None")
-                usage_duration_in_hours = chrome_session.duration.total_seconds() / 3600
-                today = right_now.replace(hour=0, minute=0, second=0,
-                                  microsecond=0)  # Still has tz attached
-                self._create(target_domain_name, usage_duration_in_hours, today)
-                # self.create_if_new_else_update(session, right_now)
+            domain.hours_spent = domain.hours_spent + 10 / SECONDS_PER_HOUR
+            db_session.commit()
 
     def deduct_remaining_duration(self, session: ChromeSessionData, duration_in_sec: int, today_start):
         """
         When a session is concluded, it was concluded partway thru the 10 sec window
-        
+
         9 times out of 10. So we deduct the unfinished duration from its hours_spent.
         """
         target_domain = session.domain
@@ -184,30 +165,19 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyDomainSummary.domain_name == target_domain,
             DailyDomainSummary.gathering_date >= today_start,
             DailyDomainSummary.gathering_date < tomorrow_start
-        )        
+        )
         # Update it if found
         with self.regular_session() as db_session:
             domain: DailyDomainSummary = db_session.scalars(query).first()
-            # Update it if found
-            if domain:
-                new_duration = domain.hours_spent - duration_in_sec / SECONDS_PER_HOUR
-                self.throw_if_negative(domain.program_name, new_duration)
-                domain.hours_spent = new_duration
-                db_session.commit()
-            else:
-                # FIXME: Remove this else, it should never happen now that start_session exists here too
 
-                # If the code got here, the summary wasn't even created yet,
-                # which is likely! for the first time a program enters the program,
-                # if it is cut off before the first 10 sec window elapses.
-                self.logger.log_white_multiple("INFO:", f"first time {target_domain} appears today")
-                self._create(target_domain, duration_in_sec / SECONDS_PER_HOUR, today_start)
-                # self.create_if_new_else_update(session, session.start_time)
+            new_duration = domain.hours_spent - duration_in_sec / SECONDS_PER_HOUR
+            self.throw_if_negative(domain.program_name, new_duration)
+            domain.hours_spent = new_duration
+            db_session.commit()
 
     def throw_if_negative(self, activity, value):
         if value < 0:
             raise NegativeTimeError(activity, value)
-
 
     async def shutdown(self):
         """Closes the open session without opening a new one"""

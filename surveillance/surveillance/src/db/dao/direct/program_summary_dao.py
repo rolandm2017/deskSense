@@ -12,10 +12,11 @@ from surveillance.src.db.models import DailyProgramSummary
 from surveillance.src.object.classes import ProgramSessionData
 
 from surveillance.src.util.dao_wrapper import validate_start_end_and_duration, validate_start_and_end_times
-from surveillance.src.util.console_logger import ConsoleLogger 
+from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.errors import NegativeTimeError
 from surveillance.src.util.debug_util import notice_suspicious_durations, log_if_needed
+
 
 class DatabaseProtectionError(RuntimeError):
     """Custom exception for database protection violations."""
@@ -32,16 +33,16 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         # if not callable(session_maker):
         # raise TypeError("session_maker must be callable")
         self.program_logging_dao = program_logging_dao
-        self.debug = False  
+        self.debug = False
         self.regular_session = reg_session
-        self.async_session_maker = async_session_maker 
+        self.async_session_maker = async_session_maker
         self.logger = ConsoleLogger()
 
     def start_session(self, program_session: ProgramSessionData, right_now):
         target_program_name = program_session.window_title
-        
+
         starting_window_amt = 10  # sec
-        usage_duration_in_hours =  starting_window_amt / SECONDS_PER_HOUR
+        usage_duration_in_hours = starting_window_amt / SECONDS_PER_HOUR
 
         today_start = right_now.replace(
             hour=0, minute=0, second=0, microsecond=0)
@@ -119,7 +120,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         with self.regular_session() as session:
             result = session.execute(query)
             return result.scalar_one_or_none()
-    
+
     # Updates section
 
     def update_hours(self, existing_entry: DailyProgramSummary, usage_duration_in_hours: float):
@@ -133,19 +134,19 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             new_duration = existing_entry.hours_spent + usage_duration_in_hours
             self.throw_if_negative(existing_entry.program_name, new_duration)
             existing_entry.hours_spent = new_duration
-            
+
             # Commit the changes
             session.commit()
 
     def push_window_ahead_ten_sec(self, program_session: ProgramSessionData, right_now):
         """
         Finds the given session and adds ten sec to its end_time
-        
+
         NOTE: This only ever happens after start_session
         """
         if program_session is None:
             raise ValueError("Session should not be None")
-        
+
         target_program_name = program_session.window_title
         today_start = right_now.replace(
             hour=0, minute=0, second=0, microsecond=0)
@@ -155,46 +156,40 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.program_name == target_program_name,
             DailyProgramSummary.gathering_date >= today_start,
             DailyProgramSummary.gathering_date < tomorrow_start
-        )        
+        )
         with self.regular_session() as db_session:
             program: DailyProgramSummary = db_session.scalars(query).first()
             program.hours_spent = program.hours_spent + 10 / SECONDS_PER_HOUR
             db_session.commit()
-                
+
     def deduct_remaining_duration(self, session: ProgramSessionData, duration_in_sec: int, today_start):
         """
         When a session is concluded, it was concluded partway thru the 10 sec window
-        
+
         9 times out of 10. So we deduct the unfinished duration from its hours_spent.
         """
         target_program_name = session.window_title
-        # today_start = right_now.replace(
-        #     hour=0, minute=0, second=0, microsecond=0)
+
         tomorrow_start = today_start + timedelta(days=1)
+
+        time_to_remove = duration_in_sec / SECONDS_PER_HOUR
 
         query = select(DailyProgramSummary).where(
             DailyProgramSummary.program_name == target_program_name,
             DailyProgramSummary.gathering_date >= today_start,
             DailyProgramSummary.gathering_date < tomorrow_start
-        )        
+        )
         # Update it if found
         with self.regular_session() as db_session:
             program: DailyProgramSummary = db_session.scalars(query).first()
-            # Update it if found
-            if program:
-                new_duration = program.hours_spent - duration_in_sec / SECONDS_PER_HOUR
-                self.throw_if_negative(program.program_name, new_duration)
-                program.hours_spent = new_duration
-                db_session.commit()
-            else:
-                # FIXME: Remove this else, it should never happen now that start_session exists here too
-                # If the code got here, the summary wasn't even created yet,
-                # which is likely! for the first time a program enters the program,
-                # if it is cut off before the first 10 sec window elapses.
-                self.logger.log_white_multiple("INFO:", f"first time {target_program_name} appears today")
-                self._create(target_program_name, duration_in_sec / SECONDS_PER_HOUR, today_start)
-                # self.create_with_duration(session, duration_in_sec)
-                # self.create_if_new_else_update(session, session.start_time)
+
+            # FIXME: so, hours_spent is not set properly when the
+            # new session is created, i think. so when the program
+            # comes in here to deduct 5 seconds, there's only 0 seconds existing
+            new_duration = program.hours_spent - time_to_remove
+            self.throw_if_negative(program.program_name, new_duration)
+            program.hours_spent = new_duration
+            db_session.commit()
 
     def throw_if_negative(self, activity, value):
         if value < 0:
