@@ -33,12 +33,12 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
     height = 384, // Reduced to 0.6 * 640
     margins = {
         top: 20,
-        right: 40,
+        right: 80, // Increased right margin to accommodate program names
         bottom: 30,
         left: 60, // Increased left margin to accommodate day names
     },
 }) => {
-    /*
+        /*
      *
      * To make this graph tolerate 1,000 data points,
      * The answer is to make zooming in on the map
@@ -157,6 +157,10 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
         const eventLines: d3.Selection<SVGGElement, unknown, null, undefined> =
             svg.append("g").attr("class", "event-lines");
 
+        // Add a group for program labels
+        const programLabels: d3.Selection<SVGGElement, unknown, null, undefined> =
+            svg.append("g").attr("class", "program-labels");
+
         const baseRowSpacing = 60;
 
         function calculateMouseRowPosition(dayNumber: number) {
@@ -175,11 +179,12 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
          * Claude says it's because of SVG coordinate system being reversed
          */
 
-        // TODO: Group days.events by ProgramName, and then for each program, ... draw the line
+        // Process days and draw lines and labels
+        
+      // TODO: Group days.events by ProgramName, and then for each program, ... draw the line
         // TODO: Draw a highlight for lines that show double counting.
 
         days.forEach((day: ProgamUsageTimeline) => {
-            // console.log(day.date, "126ru");
             const dayName = daysOfWeek[new Date(day.date).getDay()];
 
             // Get the center of the band for the current day
@@ -191,7 +196,7 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
 
             const topFive = programsSortedByMostTabbedInto.slice(0, 5);
 
-            // Add mouse events
+            // Add program events and labels
             topFive.forEach(
                 (program: ProgramTimelineContent, programIndex: number) => {
                     console.log(
@@ -199,6 +204,8 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
                         program.events.length,
                         "188ru"
                     );
+                    
+                    // Draw program events
                     program.events.forEach((event: TimelineEvent) => {
                         addEventLinesForPrograms(
                             yPosition + programIndex * 10,
@@ -209,6 +216,17 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
                             y
                         );
                     });
+                    
+                    // Add program name label at the right edge
+                    programLabels
+                        .append("text")
+                        .attr("x", width - margins.right + 10) // Position text slightly right of the graph
+                        .attr("y", yPosition + programIndex * 10) // Align with the corresponding program line
+                        .attr("dy", "0.35em") // Vertical centering of text
+                        .attr("font-size", "10px") // Smaller font size
+                        .attr("text-anchor", "start") // Left-align text
+                        .attr("fill", "currentColor")
+                        .text(program.programName);
                 }
             );
         });

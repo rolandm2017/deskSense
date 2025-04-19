@@ -1,7 +1,7 @@
-import { Selection, ScaleTime } from "d3";
-import { ScaleBand } from "d3";
-import { AggregatedTimelineEntry } from "../interface/misc.interface";
-import { TimelineEvent } from "../interface/weekly.interface";
+import { Selection, ScaleTime } from "d3"
+import { ScaleBand } from "d3"
+import { AggregatedTimelineEntry } from "../interface/misc.interface"
+import { TimelineEvent } from "../interface/weekly.interface"
 
 export function addEventLinesForPeripherals(
     yPosition: number,
@@ -11,11 +11,11 @@ export function addEventLinesForPeripherals(
     y: ScaleBand<string>
 ) {
     // Convert the entry times to our reference date (Jan 1, 2024)
-    const startTime = normalizeToReferenceDate(entry.start);
-    const endTime = normalizeToReferenceDate(entry.end);
+    const startTime = normalizeToReferenceDate(entry.start)
+    const endTime = normalizeToReferenceDate(entry.end)
 
-    const startX = x(startTime);
-    const endX = x(endTime);
+    const startX = x(startTime)
+    const endX = x(endTime)
 
     // Add the line for the event
     eventLines
@@ -26,7 +26,7 @@ export function addEventLinesForPeripherals(
         .attr("y2", yPosition)
         .attr("stroke", entry.group === "mouse" ? "steelblue" : "#e41a1c")
         .attr("stroke-width", 2)
-        .attr("stroke-opacity", 0.7);
+        .attr("stroke-opacity", 0.7)
 
     // Add small circles at start and end points
     eventLines
@@ -34,14 +34,14 @@ export function addEventLinesForPeripherals(
         .attr("cx", startX)
         .attr("cy", yPosition)
         .attr("r", 2)
-        .attr("fill", entry.group === "mouse" ? "steelblue" : "#e41a1c");
+        .attr("fill", entry.group === "mouse" ? "steelblue" : "#e41a1c")
 
     eventLines
         .append("circle")
         .attr("cx", endX)
         .attr("cy", yPosition)
         .attr("r", 2)
-        .attr("fill", entry.group === "mouse" ? "steelblue" : "#e41a1c");
+        .attr("fill", entry.group === "mouse" ? "steelblue" : "#e41a1c")
 }
 
 const programColors = [
@@ -49,7 +49,7 @@ const programColors = [
     { colorName: "Muted Coral", hexCode: "#F2A88D" },
     { colorName: "Lavender", hexCode: "#AEA1EA" },
     { colorName: "Sage Green", hexCode: "#A0C1A0" },
-];
+]
 
 export function addEventLinesForPrograms(
     yPosition: number,
@@ -60,11 +60,11 @@ export function addEventLinesForPrograms(
     y: ScaleBand<string>
 ) {
     // Convert the entry times to our reference date (Jan 1, 2024)
-    const startTime = normalizeToReferenceDate(entry.startTime);
-    const endTime = normalizeToReferenceDate(entry.endTime);
+    const startTime = normalizeToReferenceDate(entry.startTime)
+    const endTime = normalizeToReferenceDate(entry.endTime)
 
-    const startX = x(startTime);
-    const endX = x(endTime);
+    const startX = x(startTime)
+    const endX = x(endTime)
 
     // Add the line for the event
     eventLines
@@ -75,7 +75,7 @@ export function addEventLinesForPrograms(
         .attr("y2", yPosition)
         .attr("stroke", programName === "mouse" ? "steelblue" : "#e41a1c")
         .attr("stroke-width", 2)
-        .attr("stroke-opacity", 0.7);
+        .attr("stroke-opacity", 0.7)
 
     // Add small circles at start and end points
     eventLines
@@ -83,14 +83,14 @@ export function addEventLinesForPrograms(
         .attr("cx", startX)
         .attr("cy", yPosition)
         .attr("r", 2)
-        .attr("fill", programName === "mouse" ? "steelblue" : "#e41a1c");
+        .attr("fill", programName === "mouse" ? "steelblue" : "#e41a1c")
 
     eventLines
         .append("circle")
         .attr("cx", endX)
         .attr("cy", yPosition)
         .attr("r", 2)
-        .attr("fill", programName === "mouse" ? "steelblue" : "#e41a1c");
+        .attr("fill", programName === "mouse" ? "steelblue" : "#e41a1c")
 }
 
 // Helper function to normalize any date to our reference date (Jan 1, 2024)
@@ -98,7 +98,7 @@ function normalizeToReferenceDate(
     date: Date | string | { toString: () => string }
 ): Date {
     // Ensure we're working with a proper Date object
-    const dateObj = date instanceof Date ? date : new Date(date.toString());
+    const dateObj = date instanceof Date ? date : new Date(date.toString())
 
     // Create a new date on our reference day (Jan 1, 2024)
     return new Date(
@@ -109,17 +109,17 @@ function normalizeToReferenceDate(
         dateObj.getMinutes(),
         dateObj.getSeconds(),
         dateObj.getMilliseconds()
-    );
+    )
 }
 
 // Helper function to map Date to x position (-3 to 3)
 function dateToX(date: Date | string | { toString: () => string }): number {
     // Ensure we're working with a proper Date object
-    const dateObj = date instanceof Date ? date : new Date(date.toString());
-    const midnight = new Date(dateObj);
-    midnight.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(dateObj);
-    endOfDay.setHours(23, 59, 59, 999);
+    const dateObj = date instanceof Date ? date : new Date(date.toString())
+    const midnight = new Date(dateObj)
+    midnight.setHours(0, 0, 0, 0)
+    const endOfDay = new Date(dateObj)
+    endOfDay.setHours(23, 59, 59, 999)
 
     // Calculate position between -3 and 3 based on time of day
     // console.log(
@@ -128,7 +128,7 @@ function dateToX(date: Date | string | { toString: () => string }): number {
     //     "46ru"
     // );
 
-    const totalMs = endOfDay.getTime() - midnight.getTime();
-    const currentMs = dateObj.getTime() - midnight.getTime();
-    return -3 + (currentMs / totalMs) * 6;
+    const totalMs = endOfDay.getTime() - midnight.getTime()
+    const currentMs = dateObj.getTime() - midnight.getTime()
+    return -3 + (currentMs / totalMs) * 6
 }
