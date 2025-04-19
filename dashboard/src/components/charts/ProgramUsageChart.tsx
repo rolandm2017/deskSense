@@ -32,7 +32,8 @@ const ProgramUsageChart: React.FC<ProgramUsageChartProps> = ({ barsInput }) => {
         }
     }, [barsInput]);
 
-    const margin = { top: 0, right: 100, bottom: 60, left: 100 };
+    // Increased margins to give more space for both axes
+    const margin = { top: 0, right: 100, bottom: 90, left: 120 };
     const width = 800 - margin.left - margin.right;
     const height = 300 - margin.top - margin.bottom;
     const svgRef = useRef<SVGSVGElement>(null);
@@ -49,7 +50,7 @@ const ProgramUsageChart: React.FC<ProgramUsageChartProps> = ({ barsInput }) => {
                 .range([0, width])
                 .padding(0.5);
 
-            // Get the maximum value and round up to the nearest quarter hour
+            // Get the maximum value [of what???] and round up to the nearest quarter hour
             const maxHoursSpentValue = d3.max(bars, (d) => d.hoursSpent) || 0;
             const roundedMax = Math.ceil(maxHoursSpentValue * 4) / 4; // Round up to nearest 0.25
 
@@ -68,20 +69,23 @@ const ProgramUsageChart: React.FC<ProgramUsageChartProps> = ({ barsInput }) => {
                 .attr("y", (d) => yScale(d.hoursSpent))
                 .attr("width", xScale.bandwidth())
                 .attr("height", (d) => height - yScale(d.hoursSpent))
-                .attr("transform", "translate(30, 10)")
+                .attr("transform", "translate(50, 10)")
                 .attr("fill", "steelblue");
 
+            // Adjusted rotation and positioning for x-axis labels
             const labelRotation = "-45";
             const xAxis = d3.axisBottom(xScale);
             svg.append("g")
                 .attr("class", "x-axis")
-                .attr("transform", `translate(30,${height + 10})`)
+                .attr("transform", `translate(50,${height + 10})`)
                 .call(xAxis)
                 .selectAll("text")
                 .style("text-anchor", "end")
                 .attr("dx", "-.8em")
                 .attr("dy", ".15em")
+                // Increased font size for x-axis labels
                 .attr("font-size", "1.3em")
+                // Adjusted rotation to prevent cutoff
                 .attr("transform", `rotate(${labelRotation})`);
 
             const yAxis = d3
@@ -106,10 +110,15 @@ const ProgramUsageChart: React.FC<ProgramUsageChartProps> = ({ barsInput }) => {
                         return `${minutes} min`;
                     }
                 });
+
+            // Add y-axis with larger font size
             svg.append("g")
                 .attr("class", "y-axis")
-                .attr("transform", "translate(30, 10)")
-                .call(yAxis);
+                .attr("transform", "translate(50, 10)")
+                .call(yAxis)
+                .selectAll("text")
+                // Increased font size for y-axis labels
+                .attr("font-size", "1.4em");
         }
     }, [bars]);
 
@@ -121,7 +130,7 @@ const ProgramUsageChart: React.FC<ProgramUsageChartProps> = ({ barsInput }) => {
                     height + margin.top + margin.bottom
                 }`}
                 preserveAspectRatio="xMidYMid meet"
-                className="w-100% h-auto"
+                className="w-100% h-auto pl-4"
             ></svg>
         </div>
     );
