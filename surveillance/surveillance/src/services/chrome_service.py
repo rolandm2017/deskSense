@@ -94,7 +94,7 @@ class TabQueue:
 
 
 class ChromeService:
-    def __init__(self, user_facing_clock, arbiter: ActivityArbiter, dao: ChromeDao = Depends()):
+    def __init__(self, user_facing_clock, arbiter: ActivityArbiter):
         print("╠════════╣")
         print("║ ****** ║ Starting Chrome Service")
         print("╚════════╝")
@@ -192,9 +192,9 @@ class ChromeService:
         with open(power_on_off_debug_file, "a") as f:
             f.write("Shutdown Chrome Service\n")
 
-    async def handle_chrome_ready_for_db(self, event):
-        # TODO: Delete this whole thing, programDao, ChromeDao, don't need em. Summary and Logs DAO do it
-        await self.chrome_dao.create(event)
+    # async def handle_chrome_ready_for_db(self, event):
+    #     # TODO: Delete this whole thing, programDao, ChromeDao, don't need em. Summary and Logs DAO do it
+    #     await self.chrome_dao.create(event)
 
     async def read_last_24_hrs(self):
         right_now = self.user_facing_clock.now()

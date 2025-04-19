@@ -69,7 +69,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         target_program_name = program_session.window_title
         
         starting_window_amt = 10  # sec
-        usage_duration_in_hours =  starting_window_amt/ SECONDS_PER_HOUR
+        usage_duration_in_hours =  starting_window_amt / SECONDS_PER_HOUR
 
         today_start = right_now.replace(
             hour=0, minute=0, second=0, microsecond=0)

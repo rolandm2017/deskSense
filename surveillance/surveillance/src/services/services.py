@@ -79,7 +79,7 @@ class MouseService:
 
 
 class ProgramService:
-    def __init__(self, clock, dao: ProgramDao = Depends()):
+    def __init__(self, clock, dao = None):
         self.clock = clock
         self.dao = dao
 

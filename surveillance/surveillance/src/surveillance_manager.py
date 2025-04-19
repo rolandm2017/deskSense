@@ -17,11 +17,9 @@ from .facade.receive_messages import MessageReceiver
 from .db.dao.direct.system_status_dao import SystemStatusDao
 from .db.dao.direct.session_integrity_dao import SessionIntegrityDao
 
-
 from .db.dao.queuing.mouse_dao import MouseDao
 from .db.dao.queuing.keyboard_dao import KeyboardDao
-from .db.dao.queuing.chrome_dao import ChromeDao
-from .db.dao.queuing.program_dao import ProgramDao
+
 from .db.dao.queuing.timeline_entry_dao import TimelineEntryDao
 from .db.dao.direct.program_summary_dao import ProgramSummaryDao
 from .db.dao.direct.chrome_summary_dao import ChromeSummaryDao
@@ -84,8 +82,8 @@ class SurveillanceManager:
 
         self.mouse_dao = MouseDao(self.async_session_maker)
         self.keyboard_dao = KeyboardDao(self.async_session_maker)
-        self.program_dao = ProgramDao(self.async_session_maker)
-        self.chrome_dao = ChromeDao(self.async_session_maker)
+        # self.program_dao = ProgramDao(self.async_session_maker)
+        # self.chrome_dao = ChromeDao(self.async_session_maker)
 
         self.program_summary_dao = ProgramSummaryDao(
             program_summary_logger, self.regular_session, self.async_session_maker)
@@ -107,7 +105,7 @@ class SurveillanceManager:
         self.operate_facades()
         # Program tracker
         self.program_tracker = ProgramTrackerCore(
-            clock, program_facade, self.handle_window_change, self.handle_program_ready_for_db)
+            clock, program_facade, self.handle_window_change)
         
 
 
@@ -152,8 +150,9 @@ class SurveillanceManager:
 
     # FIXME: Am double counting for sure
     def handle_program_ready_for_db(self, event):
+        pass
         # TODO: Delete this whole thing, programDao, ChromeDao, don't need em. Summary and Logs DAO do it
-        self.loop.create_task(self.program_dao.create(event))
+        # self.loop.create_task(self.program_dao.create(event))
 
     def handle_chrome_ready_for_db(self, event):
         pass  # lives in Chrome Service

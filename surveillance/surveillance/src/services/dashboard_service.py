@@ -47,7 +47,6 @@ class DashboardService:
                 current_day, datetime.min.time())
             daily_chrome_summaries: List[DailyDomainSummary] = self.chrome_summary_dao.read_day(date_as_datetime)
             daily_program_summaries: List[DailyProgramSummary] = self.program_summary_dao.read_day(date_as_datetime)
-            # FIXME: If the program is Chrome, exclude from totals, as the Chrome summaries will handle it
             productivity = 0
             leisure = 0
             for domain in daily_chrome_summaries:
@@ -57,6 +56,9 @@ class DashboardService:
                     leisure = leisure + domain.hours_spent
 
             for program in daily_program_summaries:
+                # Make sure Chrome is SKIPPED!
+                if program.program_name == "Google Chrome":
+                    continue  # Don't double count
                 hours_spent: float = float(program.hours_spent)  # type: ignore
                 # print(program.program_name, float(
                 # f"{program.hours_spent:.4f}"))

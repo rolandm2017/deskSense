@@ -14,10 +14,10 @@ from .facade.facade_singletons import get_keyboard_facade_instance, get_mouse_fa
 from .db.database import async_session_maker, regular_session_maker
 from .db.dao.queuing.mouse_dao import MouseDao
 from .db.dao.queuing.keyboard_dao import KeyboardDao
-from .db.dao.queuing.program_dao import ProgramDao
+
 from .db.dao.queuing.timeline_entry_dao import TimelineEntryDao
 from .db.dao.direct.program_summary_dao import ProgramSummaryDao
-from .db.dao.queuing.chrome_dao import ChromeDao
+
 from .db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from .db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from .db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
@@ -46,12 +46,7 @@ async def get_mouse_dao() -> MouseDao:
     return MouseDao(async_session_maker)
 
 
-async def get_program_dao() -> ProgramDao:
-    return ProgramDao(async_session_maker)
 
-
-async def get_chrome_dao() -> ChromeDao:
-    return ChromeDao(async_session_maker)
 
 
 async def get_timeline_dao() -> TimelineEntryDao:
@@ -106,10 +101,10 @@ async def get_mouse_service(dao: MouseDao = Depends(get_mouse_dao)) -> MouseServ
     return MouseService(dao)
 
 
-async def get_program_service(dao: ProgramDao = Depends(get_program_dao)) -> ProgramService:
+async def get_program_service() -> ProgramService:
     # Lazy import to avoid circular dependency
     from .services.services import ProgramService
-    return ProgramService(dao)
+    return ProgramService(None)  # Under construction
 
 
 async def get_dashboard_service(
@@ -181,19 +176,13 @@ async def get_activity_arbiter():
     return _arbiter_instance
 
 
-async def get_chrome_service(dao: ChromeDao = Depends(get_chrome_dao),
-                             arbiter: ActivityArbiter = Depends(get_activity_arbiter)) -> ChromeService:
+async def get_chrome_service(arbiter: ActivityArbiter = Depends(get_activity_arbiter)) -> ChromeService:
     # Lazy import to avoid circular dependency
     from .services.chrome_service import ChromeService
     global _chrome_service_instance  # Singleton because it must preserve internal state
     if _chrome_service_instance is None:
         clock = SystemClock()
-        _chrome_service_instance = ChromeService(clock,
-                                                 arbiter,
-                                                 dao=ChromeDao(
-                                                     async_session_maker)
-
-                                                 )
+        _chrome_service_instance = ChromeService(clock, arbiter)
     return _chrome_service_instance
 
 
