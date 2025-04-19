@@ -45,7 +45,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     def _create(self, target_domain_name, duration_in_hours, when_it_was_gathered):
         print(
-            f"creating for {target_domain_name} with duration {duration_in_hours}")
+            f"creating for {target_domain_name} with duration {duration_in_hours * SECONDS_PER_HOUR}")
         self.throw_if_negative(target_domain_name, duration_in_hours)
         with self.regular_session() as session:
             new_entry = DailyDomainSummary(

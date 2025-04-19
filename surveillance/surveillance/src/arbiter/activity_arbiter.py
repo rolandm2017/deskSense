@@ -15,7 +15,6 @@ from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.copy_util import snapshot_obj_for_tests
 
 
-
 class ActivityArbiter:
     def __init__(self, user_facing_clock, pulse_interval=1, loop=None):
         """
@@ -86,7 +85,8 @@ class ActivityArbiter:
             print("[Arb]", new_session.window_title)
         else:
             print("[Tab]", new_session.domain)
-        assert not isinstance(new_session, dict), "Found an empty dictionary as session"
+        assert not isinstance(
+            new_session, dict), "Found an empty dictionary as session"
         self.notify_display_update(new_session)
 
         if self.state_machine.current_state:
@@ -101,11 +101,13 @@ class ActivityArbiter:
             # ### Start the first window
             # print("going into notify new session", new_session)
             self.notify_of_new_session(new_session)
-     
+
             engine_loop = self.current_heartbeat.engine.save_loop_for_reuse()
             self.current_heartbeat.stop()  # stop the old one from prev loop
-            new_keep_alive_engine = KeepAliveEngine(new_session, self.activity_recorder, engine_loop)
-            self.current_heartbeat = ThreadedEngineContainer(new_keep_alive_engine, self.pulse_interval)
+            new_keep_alive_engine = KeepAliveEngine(
+                new_session, self.activity_recorder, engine_loop)
+            self.current_heartbeat = ThreadedEngineContainer(
+                new_keep_alive_engine, self.pulse_interval)
             self.current_heartbeat.start()
 
             if self.state_machine.is_initialization_session(concluded_session):
@@ -126,16 +128,17 @@ class ActivityArbiter:
             start_of_loop = asyncio.new_event_loop()
             print("in arbiter init")
             self.notify_of_new_session(new_session)
-            new_keep_alive_engine = KeepAliveEngine(new_session, self.activity_recorder, start_of_loop)
-            self.current_heartbeat = ThreadedEngineContainer(new_keep_alive_engine, self.pulse_interval)
+            new_keep_alive_engine = KeepAliveEngine(
+                new_session, self.activity_recorder, start_of_loop)
+            self.current_heartbeat = ThreadedEngineContainer(
+                new_keep_alive_engine, self.pulse_interval)
             self.current_heartbeat.start()
             self.state_machine.current_state = updated_state
 
-
-    async def shutdown(self):
+    def shutdown(self):
         """Concludes the current state/session without adding a new one"""
         if self.state_machine.current_state:
             concluded_session = self.state_machine.conclude_without_replacement()
-            await self.notify_summary_dao(concluded_session, True)
+            self.notify_summary_dao(concluded_session)
             with open(power_on_off_debug_file, "a") as f:
                 f.write("Shutdown Activity Arbiter\n")

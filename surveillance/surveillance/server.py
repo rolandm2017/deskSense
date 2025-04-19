@@ -114,19 +114,29 @@ async def lifespan(app: FastAPI):
     facades = FacadeInjector(get_keyboard_facade_instance,
                              get_mouse_facade_instance, choose_program_facade)
     surveillance_state.manager = SurveillanceManager(user_facing_clock,
-        async_session_maker, regular_session_maker, chrome_service, arbiter, facades)
+                                                     async_session_maker, regular_session_maker, chrome_service, arbiter, facades)
     surveillance_state.manager.start_trackers()
 
-    yield
+    try:
+        yield
+    finally:
+        # Shutdown
+        surveillance_state.is_running = False
 
-    # Shutdown
-    surveillance_state.is_running = False
+        print("Shutting down productivity tracking...")
+        if surveillance_state.manager:
+            try:
+                # Use a timeout to ensure cleanup doesn't hang
+                await asyncio.wait_for(surveillance_state.manager.cleanup(), timeout=5.0)
 
-    print("Shutting down productivity tracking...")
-    # surveillance_state.tracking_task.cancel()
-    if surveillance_state.manager:
-        await surveillance_state.manager.cleanup()
-        # time.sleep(2)
+                # Also ensure the shutdown handler runs
+                await asyncio.wait_for(surveillance_state.manager.shutdown_handler(), timeout=5.0)
+            except asyncio.TimeoutError:
+                print("Cleanup timed out, forcing shutdown")
+            except Exception as e:
+                print(f"Error during cleanup: {e}")
+                import traceback
+                traceback.print_exc()
 
 
 app = FastAPI(lifespan=lifespan)
@@ -415,7 +425,7 @@ async def receive_chrome_tab(
             status_code=500,
             detail="A problem occurred in Chrome Service's tab endpoint"
         )
-    
+
 
 @app.post("/api/chrome/youtube", status_code=status.HTTP_204_NO_CONTENT)
 async def receive_youtube_event(
@@ -443,7 +453,8 @@ async def receive_youtube_event(
             status_code=500,
             detail="A problem occurred in Chrome Service's YouTube endpoint"
         )
-    
+
+
 @app.post("/api/chrome/ignored", status_code=status.HTTP_204_NO_CONTENT)
 async def receive_chrome_tab(
     tab_change_event: TabChangeEvent,

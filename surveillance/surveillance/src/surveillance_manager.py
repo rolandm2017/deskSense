@@ -148,14 +148,9 @@ class SurveillanceManager:
         copy_of_event = snapshot_obj_for_tests(event)
         self.arbiter.set_program_state(copy_of_event)
 
-    # FIXME: Am double counting for sure
     def handle_program_ready_for_db(self, event):
         pass
-        # TODO: Delete this whole thing, programDao, ChromeDao, don't need em. Summary and Logs DAO do it
         # self.loop.create_task(self.program_dao.create(event))
-
-    def handle_chrome_ready_for_db(self, event):
-        pass  # lives in Chrome Service
 
     async def shutdown_handler(self):
         try:
@@ -168,6 +163,45 @@ class SurveillanceManager:
             traceback.print_exc()
             print(f"Error during shutdown cleanup: {e}")
 
+    async def cancel_pending_tasks(self):
+        """Safely cancel all pending tasks created by this manager."""
+        # # Get all tasks from the event loop
+        # tasks = [task for task in asyncio.all_tasks(self.loop)
+        #          if task is not asyncio.current_task(self.loop)]
+
+        # Create a set of tasks we know are created by this manager
+        manager_tasks = set()
+
+        # Track tasks from different components
+        for attr_name in ['keyboard_dao', 'mouse_dao', 'timeline_dao',
+                          'program_summary_dao', 'chrome_summary_dao',
+                          'session_integrity_dao']:
+            if hasattr(self, attr_name):
+                component = getattr(self, attr_name)
+                # Look for any attributes that might be tasks
+                for name in dir(component):
+                    if name.startswith('_task_') or name.endswith('_task'):
+                        task = getattr(component, name, None)
+                        if task and isinstance(task, asyncio.Task) and not task.done():
+                            manager_tasks.add(task)
+
+        # Cancel all identified tasks
+        if manager_tasks:
+            print(f"Cancelling {len(manager_tasks)} pending tasks...")
+            for task in manager_tasks:
+                task.cancel()
+
+            # Wait for all tasks to complete with a timeout
+            try:
+                await asyncio.wait_for(
+                    asyncio.gather(*manager_tasks, return_exceptions=True),
+                    timeout=2.0
+                )
+            except asyncio.TimeoutError:
+                print("Some tasks didn't complete within timeout")
+
+        return len(manager_tasks)
+
     async def cleanup(self):
         """Clean up resources before exit."""
         print("cleaning up")
@@ -175,35 +209,13 @@ class SurveillanceManager:
         self.mouse_thread.stop()
         self.program_thread.stop()
 
-        # await self.message_receiver.async_stop()
-        self.message_receiver.stop()
+        # Cancel any pending database tasks first
+        await self.cancel_pending_tasks()
 
+        # Then stop the message receiver
         if hasattr(self, 'message_receiver') and self.message_receiver:
             try:
-                # Stop the MessageReceiver properly
-                # Get references to the tasks before stopping
-                if hasattr(self.message_receiver, 'tasks'):
-                    receiver_tasks = list(self.message_receiver.tasks)
-                else:
-                    receiver_tasks = []
-
-                # Stop the receiver (this should cancel tasks internally)
                 await self.message_receiver.async_stop()
-
-                # For any tasks that are still running, explicitly await them with timeout
-                for task in receiver_tasks:
-                    if not task.done() and not task.cancelled():
-                        try:
-                            # Try to cancel the task
-                            task.cancel()
-                            # Wait for it to complete with a timeout
-                            await asyncio.wait_for(asyncio.shield(task), timeout=0.5)
-                        except (asyncio.CancelledError, asyncio.TimeoutError):
-                            print(
-                                f"Task {task.get_name()} cancelled or timed out during cleanup")
-                        except Exception as e:
-                            print(
-                                f"Error cleaning up task {task.get_name()}: {e}")
             except Exception as e:
                 print(f"Error during MessageReceiver cleanup: {e}")
                 traceback.print_exc()

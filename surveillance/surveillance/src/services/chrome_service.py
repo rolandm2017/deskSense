@@ -136,7 +136,8 @@ class ChromeService:
         is_productive = url_deliverable.url in productive_sites
         start_time = url_deliverable.startTime
         end_time = None
-        initialized: ChromeSessionData = ChromeSessionData(url, title, start_time, end_time, is_productive)
+        initialized: ChromeSessionData = ChromeSessionData(
+            url, title, start_time, end_time, is_productive)
 
         # NOTE: In the past, the intent was to keep everything in UTC.
         # Now, the intent is to do everything in the user's LTZ, local time zone.
@@ -161,20 +162,20 @@ class ChromeService:
                 raise SuspiciousDurationError("duration")
             concluding_session.duration = duration
             concluding_session.end_time = next_session_start_time
-            self.write_completed_session_to_chrome_dao(concluding_session)
+            # self.write_completed_session_to_chrome_dao(concluding_session)
         self.last_entry = initialized
 
-    def write_completed_session_to_chrome_dao(self, session):
-        dao_task = self.loop.create_task(self.chrome_dao.create(session))
+    # def write_completed_session_to_chrome_dao(self, session):
+    #     # dao_task = self.loop.create_task(self.chrome_dao.create(session))
 
-        # Add error callbacks to catch any task failures
-        def on_task_done(task):
-            try:
-                task.result()
-            except Exception as e:
-                print(f"Task failed with error: {e}")
+    #     # Add error callbacks to catch any task failures
+    #     def on_task_done(task):
+    #         try:
+    #             task.result()
+    #         except Exception as e:
+    #             print(f"Task failed with error: {e}")
 
-        dao_task.add_done_callback(on_task_done)
+    #     dao_task.add_done_callback(on_task_done)
 
     def handle_session_ready_for_arbiter(self, session):
         session_copy = copy.deepcopy(session)
