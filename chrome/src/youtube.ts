@@ -35,7 +35,6 @@ export function watchingShorts(youTubeUrl: string) {
     return youTubeUrl.includes("www.youtube.com/shorts/")
 }
 
-// TODO: Extract channel from shorts
 function detectTypeOfYouTubePage(youTubeUrl: string) {
     const onBaseUrl = youTubeUrl.endsWith("youtube.com")
     if (onBaseUrl) {

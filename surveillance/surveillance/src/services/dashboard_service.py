@@ -37,7 +37,7 @@ class DashboardService:
 
         usage_from_days = []
 
-        alt_tab_window = []
+        alt_tab_window_hours = []
 
         for i in range(7):
             significant_programs = {}  # New dictionary to track programs with >1hr usage
@@ -66,7 +66,7 @@ class DashboardService:
                         f"{program.hours_spent:.4f}")
 
                 if str(program.program_name) == 'Alt-tab window':
-                    alt_tab_window.append(program.hours_spent)
+                    alt_tab_window_hours.append(program.hours_spent)
                     continue  # temp - skipping bugged outputs
                 if program.program_name in productive_apps:
                     # print("< LOG > adding " + program.program_name)
@@ -78,7 +78,7 @@ class DashboardService:
 
             usage_from_days.append(day
                                    )
-        print("alt tab windows: ", alt_tab_window)
+        print("alt tab windows: ", alt_tab_window_hours)
 
         return usage_from_days
 
@@ -276,13 +276,13 @@ class DashboardService:
 
     async def get_program_summary_weekly(self):
         right_now = self.user_clock.now()
-        all = await self.program_summary_dao.read_past_week(right_now)
+        all = self.program_summary_dao.read_past_week(right_now)
         # FIXME: Ensure that it actually gets all days of week; can't test it on Monday
         return all
 
     async def get_chrome_summary_weekly(self) -> List[DailyDomainSummary]:
         right_now = self.user_clock.now()
-        all = await self.chrome_summary_dao.read_past_week(right_now)
+        all = self.chrome_summary_dao.read_past_week(right_now)
         # FIXME: Ensure that it actually gets all days of week; can't test it on Monday
         return all
 

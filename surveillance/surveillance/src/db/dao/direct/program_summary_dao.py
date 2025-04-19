@@ -86,7 +86,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             session.add(new_entry)
             session.commit()
 
-    async def read_past_week(self, right_now: datetime):
+    def read_past_week(self, right_now: datetime):
         # +1 because weekday() counts from Monday=0
         days_since_sunday = right_now.weekday() + 1
         last_sunday = right_now - timedelta(days=days_since_sunday)
@@ -95,8 +95,8 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             func.date(DailyProgramSummary.gathering_date) >= last_sunday.date()
         )
 
-        async with self.async_session_maker() as session:
-            result = await session.execute(query)
+        with self.regular_session() as session:
+            result = session.execute(query)
             return result.scalars().all()
 
     async def read_past_month(self, right_now: datetime):

@@ -42,7 +42,7 @@ class KeyboardTrackerCore:
 
     def apply_handlers(self, content: KeyboardAggregate | InProgressAggregation):
         # length_of_session = content.end_time - content.start_time
-        self.logger.log_green("[info] " + str(content))
+        # self.logger.log_green("[info] " + str(content))
         if isinstance(self.event_handlers, list):
             for handler in self.event_handlers:
                 handler(content)  # emit an event

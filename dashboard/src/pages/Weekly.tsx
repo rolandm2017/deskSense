@@ -15,7 +15,6 @@ import {
     DayOfChromeUsage,
     DayOfTimelineRows,
     PartiallyAggregatedWeeklyTimeline,
-    SocialMediaUsage,
     WeeklyBreakdown,
     WeeklyChromeUsage,
     WeeklyProgramUsage,
@@ -35,7 +34,6 @@ import {
     getPreviousSunday,
     getSaturdayThatEndsTheWeek,
     getSundayOfNextWeek,
-    formatDate,
     formatDateMmDdYyyy,
     dateIsThePresentWeekOrLater,
 } from "../util/timeTools";
@@ -58,8 +56,6 @@ import StartEndDateDisplay from "../components/StartEndDateDisplay";
 function Weekly() {
     const [chrome, setChrome] = useState<WeeklyChromeUsage | null>(null);
     const [programs, setPrograms] = useState<WeeklyProgramUsage | null>(null);
-
-    // FIXME: why is there three?
 
     const [prevWeeksRawTimeline, setPrevWeeksRawTimeline] =
         useState<WeeklyTimeline | null>(null);
@@ -100,6 +96,7 @@ function Weekly() {
     }, [searchParams]);
 
     useEffect(() => {
+        /* Handles on page load regardless of how you get here */
         const urlParam = searchParams.get("date"); // returns "5432"
         if (urlParam) {
             const urlParamAsDate = new Date(urlParam);
@@ -110,7 +107,10 @@ function Weekly() {
             return;
         }
         /* Load current week's data */
+        loadPresentWeek()
+    }, []);
 
+    function loadPresentWeek() {
         getPresentWeekProgramUsage().then((weekly: WeeklyProgramUsage) => {
             // TODO: Convert date string to new Date() like up above
             setPrograms(weekly);
@@ -134,11 +134,16 @@ function Weekly() {
         getTimelineForPresentWeek().then((weekly) => {
             setPresentWeekRawTimeline(weekly);
         });
-    }, []);
+
+        getEnhancedWeeklyBreakdown(getPreviousSunday()).then((breakdown: WeeklyBreakdown) => {
+            setWeeklyBreakdown(breakdown);
+        })
+    }
 
     useEffect(() => {
         /* Aggregation for previous weeks */
-        if (prevWeeksRawTimeline && aggregatedTimeline === null) {
+        const needToAggregatePrevWeekRawTimeline = prevWeeksRawTimeline && aggregatedTimeline === null
+        if (needToAggregatePrevWeekRawTimeline) {
             const days: DayOfAggregatedRows[] = [];
             for (const day of prevWeeksRawTimeline.days) {
                 const dayClicks = day.row.mouseRows;
@@ -157,7 +162,8 @@ function Weekly() {
 
     useEffect(() => {
         /* Aggregation */
-        if (presentWeekRawTimeline && aggregatedTimeline === null) {
+        const needToAggregatePresentWeekRawTimeline = presentWeekRawTimeline && aggregatedTimeline === null
+        if (needToAggregatePresentWeekRawTimeline) {
             const days: DayOfAggregatedRows[] = [];
             console.log(presentWeekRawTimeline, "95ru");
             const today: DayOfTimelineRows = presentWeekRawTimeline.today;
@@ -244,8 +250,10 @@ function Weekly() {
             // id: "keyboard-294003";
             setPrevWeeksRawTimeline(weekly);
         });
+        console.log("HERE \nhere\nhere\nhere\nhere")
         getEnhancedWeeklyBreakdown(weekStart).then(
             (breakdown: WeeklyBreakdown) => {
+                console.log(breakdown, "247ru")
                 setWeeklyBreakdown(breakdown);
             }
         );
