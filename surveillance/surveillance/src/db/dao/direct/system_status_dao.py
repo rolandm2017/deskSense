@@ -10,7 +10,7 @@ from surveillance.src.db.database import SQLALCHEMY_DATABASE_URL, SYNCHRONOUS_DB
 from surveillance.src.object.enums import SystemStatusType
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.db.models import SystemStatus
-from surveillance.src.util.time_layer import UserLocalTime
+from surveillance.src.util.time_wrappers import UserLocalTime
 
 
 class SystemStatusDao:

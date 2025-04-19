@@ -1,4 +1,4 @@
-from surveillance.src.object.classes import ChromeSessionData, ProgramSessionData
+from surveillance.src.object.classes import ChromeSession, ProgramSession
 from surveillance.src.object.arbiter_classes import InternalState
 
 from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
@@ -7,7 +7,7 @@ from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
 from surveillance.src.util.clock import UserFacingClock
-from surveillance.src.util.time_layer import UserLocalTime
+from surveillance.src.util.time_wrappers import UserLocalTime
 
 # Persistence component
 
@@ -27,7 +27,7 @@ class ActivityRecorder:
         if session.duration is None:
             raise ValueError("Session duration was not set")
 
-    def on_new_session(self, session: ProgramSessionData | ChromeSessionData):
+    def on_new_session(self, session: ProgramSession | ChromeSession):
         """
         This exists because some code I expected to start a log
         before any other code asked to update the log, did not create
@@ -35,20 +35,20 @@ class ActivityRecorder:
         In hindsight "add_ten_sec_to_end_time" doesn't really scream "creates the log file".
         """
         now = self.user_facing_clock.now()
-        if isinstance(session, ProgramSessionData):
+        if isinstance(session, ProgramSession):
             self.program_logging_dao.start_session(session)
             self.program_summary_dao.start_session(session, now)
-        elif isinstance(session, ChromeSessionData):
+        elif isinstance(session, ChromeSession):
             self.chrome_logging_dao.start_session(session)
             self.chrome_summary_dao.start_session(session, now)
         else:
             raise TypeError("Session was not the right type")
 
     def on_state_changed(self, session):
-        if isinstance(session, ProgramSessionData):
+        if isinstance(session, ProgramSession):
             self.validate_session(session)
             self.program_logging_dao.finalize_log(session)
-        elif isinstance(session, ChromeSessionData):
+        elif isinstance(session, ChromeSession):
             self.validate_session(session)
             self.chrome_logging_dao.finalize_log(session)
         else:
@@ -65,10 +65,10 @@ class ActivityRecorder:
         if session is None:
             raise ValueError("Session was None in add_ten_sec")
         now: UserLocalTime = self.user_facing_clock.now()
-        if isinstance(session, ProgramSessionData):
+        if isinstance(session, ProgramSession):
             self.program_logging_dao.push_window_ahead_ten_sec(session)
             self.program_summary_dao.push_window_ahead_ten_sec(session, now)
-        elif isinstance(session, ChromeSessionData):
+        elif isinstance(session, ChromeSession):
             self.chrome_logging_dao.push_window_ahead_ten_sec(session)
             self.chrome_summary_dao.push_window_ahead_ten_sec(session, now)
         else:
@@ -80,12 +80,12 @@ class ActivityRecorder:
         Here, the session's current window was cut short by a new session taking it's place.
         """
         today_start = self.user_facing_clock.today_start()
-        if isinstance(session, ProgramSessionData):
+        if isinstance(session, ProgramSession):
             print(
                 f"deducting {duration_in_sec} from {session.window_title}")
             self.program_summary_dao.deduct_remaining_duration(
                 session, duration_in_sec, today_start)
-        elif isinstance(session, ChromeSessionData):
+        elif isinstance(session, ChromeSession):
             print(f"deducting {duration_in_sec} from {session.domain}")
             self.chrome_summary_dao.deduct_remaining_duration(
                 session, duration_in_sec, today_start)

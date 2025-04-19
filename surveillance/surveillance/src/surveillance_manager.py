@@ -26,7 +26,7 @@ from .db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from .db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from .db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
-from .object.classes import ProgramSessionData
+from .object.classes import ProgramSession
 from .services.chrome_service import ChromeService
 from .trackers.mouse_tracker import MouseTrackerCore
 from .trackers.keyboard_tracker import KeyboardTrackerCore

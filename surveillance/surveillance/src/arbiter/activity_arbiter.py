@@ -6,7 +6,7 @@ import asyncio
 
 from surveillance.src.config.definitions import power_on_off_debug_file
 
-from surveillance.src.object.classes import ChromeSessionData, ProgramSessionData
+from surveillance.src.object.classes import ChromeSession, ProgramSession
 
 from .activity_state_machine import ActivityStateMachine
 from .session_heartbeat import KeepAliveEngine, ThreadedEngineContainer
@@ -67,13 +67,13 @@ class ActivityArbiter:
             # if asyncio.iscoroutine(result):
             #     self.loop.create_task(result)
 
-    def set_program_state(self, event: ProgramSessionData):
+    def set_program_state(self, event: ProgramSession):
         self.transition_state(event)
 
-    def set_tab_state(self, tab: ChromeSessionData):
+    def set_tab_state(self, tab: ChromeSession):
         self.transition_state(tab)
 
-    def transition_state(self, new_session: ChromeSessionData | ProgramSessionData):
+    def transition_state(self, new_session: ChromeSession | ProgramSession):
         """
         If newly_active = Chrome, start a session for the current tab.
         When Chrome is closed, end the session for the current tab.
@@ -81,7 +81,7 @@ class ActivityArbiter:
         When a program is opened, start a session for the program. And vice versa when it closes.
         """
         # print("\n" + "✦★✦" * 6 + " DEBUG " + "✦★✦" * 6 + "\n")
-        if isinstance(new_session, ProgramSessionData):
+        if isinstance(new_session, ProgramSession):
             print("[Arb]", new_session.window_title)
         else:
             print("[Tab]", new_session.domain)
@@ -115,7 +115,7 @@ class ActivityArbiter:
             # ### Put outgoing state into the DAO
             self.notify_summary_dao(concluded_session)
         else:
-            if isinstance(new_session, ProgramSessionData):
+            if isinstance(new_session, ProgramSession):
                 updated_state = ApplicationInternalState(
                     new_session.window_title, False,  new_session)
             else:

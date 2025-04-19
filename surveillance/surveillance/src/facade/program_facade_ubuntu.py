@@ -9,7 +9,7 @@ from surveillance.src.util.console_logger import ConsoleLogger
 
 
 class UbuntuProgramFacadeCore(ProgramFacadeInterface):
-    def __init__(self, os):
+    def __init__(self):
         self.console_logger = ConsoleLogger()
         self.Xlib = None
         self.display = display
@@ -106,30 +106,30 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 continue
         return None
-    
+
     def setup_window_hook(self) -> Generator[Dict, None, None]:
         """
         X11 implementation using event hooks for efficient window change detection.
         This method sets up an X11 event mask that triggers on window focus changes.
-        
+
         Yields:
             Dict: Information about the new active window after each focus change.
         """
         # Select events on the root window
         self.root.change_attributes(event_mask=X.PropertyChangeMask)
-        
+
         # Get atoms we need to watch
         net_active_window = self.display.intern_atom('_NET_ACTIVE_WINDOW')
-        
+
         while True:
             event = self.display.next_event()
-            
-            # Check if it's a property change event on the root window
-            if (event.type == X.PropertyNotify and 
-                event.window == self.root and 
-                event.atom == net_active_window):
-                
-                window_info = self._read_x11()
-                print(f"Window changed: {window_info['window_title']} ({window_info['process_name']})")
-                yield window_info
 
+            # Check if it's a property change event on the root window
+            if (event.type == X.PropertyNotify and
+                event.window == self.root and
+                    event.atom == net_active_window):
+
+                window_info = self._read_x11()
+                print(
+                    f"Window changed: {window_info['window_title']} ({window_info['process_name']})")
+                yield window_info

@@ -6,10 +6,11 @@ from zoneinfo import ZoneInfo
 import time
 
 from surveillance.src.arbiter.activity_state_machine import ActivityStateMachine, TransitionFromChromeMachine, TransitionFromProgramMachine
-from surveillance.src.object.classes import ChromeSessionData, ProgramSessionData
-from surveillance.src.util.clock import SystemClock
+from surveillance.src.object.classes import ChromeSession, ProgramSession
 from surveillance.src.db.models import ChromeTab
 from surveillance.src.object.arbiter_classes import ApplicationInternalState, ChromeInternalState
+from surveillance.src.util.clock import SystemClock
+from surveillance.src.util.time_wrappers import UserLocalTime
 
 from ..mocks.mock_clock import MockClock
 
@@ -32,9 +33,11 @@ class TestActivityStateMachine:
         assert asm.current_state is None
         assert asm.prior_state is None
 
-        first_session = ProgramSessionData("Visual Studio Code", "myfile.py", now)
+        first_session = ProgramSession(
+            "Visual Studio Code", "myfile.py", UserLocalTime(now))
 
-        second = ChromeSessionData("Claude.ai","How to Cook Chicken Well in Thirty Minutes", slightly_later)
+        second = ChromeSession(
+            "Claude.ai", "How to Cook Chicken Well in Thirty Minutes", UserLocalTime(slightly_later))
 
         # Act
         asm.set_new_session(first_session)
@@ -48,7 +51,7 @@ class TestActivityStateMachine:
         response = asm.get_concluded_session()
 
         assert response is not None
-        assert response.window_title == first_session.window_title
+        assert isinstance(response, ProgramSession)
         assert response.window_title == first_session.window_title
         assert response.start_time == first_session.start_time
         assert response.end_time is not None
@@ -70,15 +73,19 @@ class TestActivityStateMachine:
 
         asm = ActivityStateMachine(clock)
 
-        session1 = ProgramSessionData("Visual Studio Code", "myfile.py", t1)
+        session1 = ProgramSession(
+            "Visual Studio Code", "myfile.py", UserLocalTime(t1))
 
-        second = ChromeSessionData("Claude.ai", "How to Cook Chicken Well in Thirty Minutes", t2)
+        second = ChromeSession(
+            "Claude.ai", "How to Cook Chicken Well in Thirty Minutes", UserLocalTime(t2))
 
-        third = ChromeSessionData("ChatGPT.com", "Asian Stir Fry Tutorial", t3)
+        third = ChromeSession(
+            "ChatGPT.com", "Asian Stir Fry Tutorial", UserLocalTime(t3))
 
-        fourth = ProgramSessionData("Postmman", "POST requests folder", t4)
+        fourth = ProgramSession(
+            "Postmman", "POST requests folder", UserLocalTime(t4))
 
-        fifth = ProgramSessionData("Terminal", "~/Documents", t5)
+        fifth = ProgramSession("Terminal", "~/Documents", UserLocalTime(t5))
 
         asm.set_new_session(session1)
         response1 = asm.get_concluded_session()
@@ -89,7 +96,7 @@ class TestActivityStateMachine:
         response2 = asm.get_concluded_session()
 
         assert response2 is not None
-        assert isinstance(response2, ProgramSessionData)
+        assert isinstance(response2, ProgramSession)
         assert response2.window_title == session1.window_title
         print(t1.strftime('%M:%S'), "\n", t2.strftime('%M:%S'))
         assert response2.start_time == t1
@@ -101,7 +108,7 @@ class TestActivityStateMachine:
         response3 = asm.get_concluded_session()
 
         assert response3 is not None
-        assert isinstance(response3, ChromeSessionData)
+        assert isinstance(response3, ChromeSession)
         assert response3.domain == second.domain
         assert response3.start_time == t2
         assert response3.end_time is not None
@@ -112,7 +119,7 @@ class TestActivityStateMachine:
         response4 = asm.get_concluded_session()
 
         assert response4 is not None
-        assert isinstance(response4, ChromeSessionData)
+        assert isinstance(response4, ChromeSession)
         assert response4.domain == third.domain
         assert response4.start_time == t3
         assert response4.end_time is not None
@@ -122,7 +129,7 @@ class TestActivityStateMachine:
         response5 = asm.get_concluded_session()
 
         assert response5 is not None
-        assert isinstance(response5, ProgramSessionData)
+        assert isinstance(response5, ProgramSession)
         assert response5.window_title == fourth.window_title
         assert response5.start_time == t4
         assert response5.end_time is not None
@@ -148,7 +155,7 @@ class TestTransitionFromProgram:
         # Arrange
         clock = SystemClock()
         now = clock.now()
-        start_session = ProgramSessionData()
+        start_session = ProgramSession()
         start_session.window_title = "Postman"
         start_session.detail = "GET requests folder"
         start_session.start_time = now
@@ -157,7 +164,7 @@ class TestTransitionFromProgram:
         assert isinstance(current_state, ApplicationInternalState)
         tfpm = TransitionFromProgramMachine(current_state)
 
-        next_session = ProgramSessionData()
+        next_session = ProgramSession()
         next_session.window_title = "PyCharm"
         next_session.detail = "api.py"
         next_session.start_time = now + timedelta(seconds=2)
@@ -175,7 +182,7 @@ class TestTransitionFromProgram:
         system_clock = SystemClock()
 
         now = system_clock.now()
-        start_session = ProgramSessionData()
+        start_session = ProgramSession()
         start_session.window_title = "Postman"
         start_session.detail = "GET requests folder"
         start_session.start_time = now
@@ -183,7 +190,7 @@ class TestTransitionFromProgram:
             "Postman", False, start_session)
         tfpm = TransitionFromProgramMachine(current_state)
 
-        next_session = ProgramSessionData()
+        next_session = ProgramSession()
         next_session.window_title = "Postman"
         next_session.detail = "GET requests folder"
         next_session.start_time = now + timedelta(seconds=2)
@@ -201,7 +208,7 @@ class TestTransitionFromProgram:
         system_clock = SystemClock()
 
         now = system_clock.now()
-        start_session = ProgramSessionData()
+        start_session = ProgramSession()
         start_session.window_title = "Postman"
         start_session.detail = "GET requests folder"
         start_session.start_time = now
@@ -209,7 +216,8 @@ class TestTransitionFromProgram:
             "Postman", False, start_session)
         tfpm = TransitionFromProgramMachine(current_state)
 
-        next_session = ChromeSessionData("Google.com", "Search here", now + timedelta(seconds=2))
+        next_session = ChromeSession(
+            "Google.com", "Search here", now + timedelta(seconds=2))
 
         # Act
         output = tfpm.compute_next_state(next_session)
@@ -228,7 +236,7 @@ class TestTransitionFromProgram:
         system_clock = SystemClock()
         now = system_clock.now()
 
-        chrome_tab = ChromeSessionData("Claude.ai", "Baking tips", now)
+        chrome_tab = ChromeSession("Claude.ai", "Baking tips", now)
         current_state = ChromeInternalState(
             "Chrome", True, "Claude.ai", chrome_tab)
 
@@ -246,7 +254,8 @@ class TestTransitionFromChrome:
         """A sad path. Machine cannot start with ApplicationInternalState, by design."""
         system_clock = SystemClock()
 
-        session = ProgramSessionData("PyCharm", "test_my_wonerful_code.py", system_clock.now())
+        session = ProgramSession(
+            "PyCharm", "test_my_wonerful_code.py", system_clock.now())
         current_state = ApplicationInternalState("PyCharm", False, session)
 
         with pytest.raises(TypeError, match="requires a ChromeInternalState"):
@@ -261,12 +270,14 @@ class TestTransitionFromChrome:
 
         now = system_clock.now()
 
-        start_session = ChromeSessionData("ChatGPT.com", "American stir fry", now)
-        current_state = ChromeInternalState("Chrome", True, "ChatGPT.com", start_session)
+        start_session = ChromeSession("ChatGPT.com", "American stir fry", now)
+        current_state = ChromeInternalState(
+            "Chrome", True, "ChatGPT.com", start_session)
 
         tfcm = TransitionFromChromeMachine(current_state)
 
-        next_session = ProgramSessionData("Postman", "GET requests folder", now + timedelta(seconds=4))
+        next_session = ProgramSession(
+            "Postman", "GET requests folder", now + timedelta(seconds=4))
 
         output = tfcm.compute_next_state(next_session)
 
@@ -280,13 +291,14 @@ class TestTransitionFromChrome:
         now = system_clock.now()
 
         domain = "ChatGPT.com"
-        start_session = ChromeSessionData(domain, "American stir fry", now)
+        start_session = ChromeSession(domain, "American stir fry", now)
         current_state = ChromeInternalState(
             "Chrome", True, domain, start_session)
 
         tfcm = TransitionFromChromeMachine(current_state)
 
-        next_session = ChromeSessionData("Twitter.com", "Home", now + timedelta(seconds=10))
+        next_session = ChromeSession(
+            "Twitter.com", "Home", now + timedelta(seconds=10))
 
         output = tfcm.compute_next_state(next_session)
 
@@ -301,13 +313,13 @@ class TestTransitionFromChrome:
         later = now + timedelta(seconds=10)
 
         domain = "Facebook.com"
-        start_session = ChromeSessionData(domain, "Home", now)
+        start_session = ChromeSession(domain, "Home", now)
         current_state = ChromeInternalState(
             "Chrome", True, domain, start_session)
 
         tfcm = TransitionFromChromeMachine(current_state)
 
-        next_session = ChromeSessionData(domain, "Marketplace", later)
+        next_session = ChromeSession(domain, "Marketplace", later)
 
         output = tfcm.compute_next_state(next_session)
 

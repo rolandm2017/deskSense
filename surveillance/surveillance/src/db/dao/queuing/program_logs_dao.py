@@ -6,7 +6,7 @@ import asyncio
 from datetime import timedelta, datetime, date, timezone
 from typing import List
 
-from surveillance.src.object.classes import ChromeSessionData, ProgramSessionData
+from surveillance.src.object.classes import ChromeSession, ProgramSession
 
 from surveillance.src.db.models import DomainSummaryLog, ProgramSummaryLog
 from surveillance.src.db.dao.base_dao import BaseQueueingDao
@@ -40,7 +40,7 @@ class ProgramLoggingDao(BaseQueueingDao):
         self.async_session_maker = async_session_maker
         self.logger = ConsoleLogger()
 
-    def create_log(self, session: ProgramSessionData, right_now: datetime):
+    def create_log(self, session: ProgramSession, right_now: datetime):
         """
         Log an update to a summary table.
 
@@ -72,7 +72,7 @@ class ProgramLoggingDao(BaseQueueingDao):
             db_session.add(log_entry)
             db_session.commit()
 
-    def start_session(self, session: ProgramSessionData):
+    def start_session(self, session: ProgramSession):
         """
         A session of using a domain. End_time here is like, "when did the user tab away from the program?"
         """
@@ -99,7 +99,7 @@ class ProgramLoggingDao(BaseQueueingDao):
             db_session.add(log_entry)
             db_session.commit()
 
-    def find_session(self, session: ProgramSessionData):
+    def find_session(self, session: ProgramSession):
         # the database is storing and returning times in UTC
         if session.start_time is None:
             raise ValueError("Start time was None")
@@ -210,7 +210,7 @@ class ProgramLoggingDao(BaseQueueingDao):
         ).order_by(ProgramSummaryLog.hours_spent.desc())
         return self.execute_query(query)
 
-    def push_window_ahead_ten_sec(self, session: ProgramSessionData):
+    def push_window_ahead_ten_sec(self, session: ProgramSession):
         log: ProgramSummaryLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError(
@@ -220,7 +220,7 @@ class ProgramLoggingDao(BaseQueueingDao):
             db_session.merge(log)
             db_session.commit()
 
-    def finalize_log(self, session: ProgramSessionData):
+    def finalize_log(self, session: ProgramSession):
         """Overwrite value from the heartbeat. Expect something to ALWAYS be in the db already at this point."""
         if session.end_time is None:
             raise ValueError("End time was None")

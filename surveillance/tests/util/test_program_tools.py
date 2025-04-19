@@ -8,10 +8,10 @@ from ..mocks.mock_clock import MockClock
 
 from surveillance.src.config.definitions import productive_apps, productive_sites
 from surveillance.src.trackers.program_tracker import ProgramTrackerCore
-from surveillance.src.object.classes import ProgramSessionData
+from surveillance.src.object.classes import ProgramSession
 from surveillance.src.util.strings import no_space_dash_space
 from surveillance.src.util.program_tools import (separate_window_name_and_detail, is_expected_shape_else_throw,
-                                    tab_is_a_productive_tab,  separator_error_msg, window_is_chrome, is_productive)
+                                                 tab_is_a_productive_tab,  separator_error_msg, window_is_chrome, is_productive)
 
 
 def test_separate_window_name_and_detail():

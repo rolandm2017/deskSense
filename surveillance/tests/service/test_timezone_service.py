@@ -5,7 +5,7 @@ from datetime import datetime
 from surveillance.src.services.services import TimezoneService
 
 from surveillance.src.config.definitions import local_time_zone, regular_tz_offset, daylight_savings_tz_offset
-from surveillance.src.object.pydantic_dto import TabChangeEvent
+from surveillance.src.object.pydantic_dto import TabChangeEventWithUtcDt
 
 timezone_service = TimezoneService()
 
@@ -20,14 +20,14 @@ def test_convert_tab_change_timezone():
     tab_title = "World's Best Foo"
     url = "foo.com"
     start_time = datetime.now()
-    some_tab_change_event = TabChangeEvent(
+    some_tab_change_event = TabChangeEventWithUtcDt(
         tabTitle=tab_title, url=url, startTime=start_time)
     tz_for_user = timezone_service.get_tz_for_user(
         "whatever for now")
     updated_tab_change_event = timezone_service.convert_tab_change_timezone(
         some_tab_change_event, tz_for_user)
 
-    start_time = updated_tab_change_event.startTime
+    start_time = updated_tab_change_event.start_time_with_tz
 
     assert str(start_time.tzinfo) == local_time_zone
 
@@ -49,16 +49,17 @@ def test_real_scenario():
 
     # ### Cook start scenario:
     march_16_at_1_am = datetime(2025, 3, 16, 1, 27, 17)
-    event = TabChangeEvent(tabTitle="foo", url="bar",
-                           startTime=march_16_at_1_am)
+    event = TabChangeEventWithUtcDt(tabTitle="foo", url="bar",
+                                    startTime=march_16_at_1_am)
     tz_for_user = timezone_service.get_tz_for_user(
         9000)
     updated_tab_change_event = timezone_service.convert_tab_change_timezone(
         event, tz_for_user)
 
-    assert str(updated_tab_change_event.startTime.tzinfo) == local_time_zone
+    assert str(
+        updated_tab_change_event.start_time_with_tz.tzinfo) == local_time_zone
 
-    offset = updated_tab_change_event.startTime.utcoffset()
+    offset = updated_tab_change_event.start_time_with_tz.utcoffset()
     assert hasattr(offset, "total_seconds") and offset is not None
     offset_hours = int(offset.total_seconds() / 3600)
 
@@ -66,7 +67,7 @@ def test_real_scenario():
 
     # Test that the new time really really did come out as intended
 
-    output_hours = updated_tab_change_event.startTime.hour
+    output_hours = updated_tab_change_event.start_time_with_tz.hour
 
     expected_hours = (march_16_at_1_am.hour + regular_tz_offset) % 24
     expected_hours_v2 = (march_16_at_1_am.hour +

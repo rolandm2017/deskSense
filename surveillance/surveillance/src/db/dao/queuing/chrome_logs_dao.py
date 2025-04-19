@@ -6,7 +6,7 @@ import asyncio
 from datetime import timedelta, datetime, date, timezone
 from typing import List
 
-from surveillance.src.object.classes import ChromeSessionData, ProgramSessionData
+from surveillance.src.object.classes import ChromeSession, ProgramSession
 
 
 from surveillance.src.db.models import DomainSummaryLog, ProgramSummaryLog
@@ -16,7 +16,7 @@ from surveillance.src.util.errors import ImpossibleToGetHereError
 from surveillance.src.util.dao_wrapper import validate_session, guarantee_start_time
 from surveillance.src.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
 from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day
-from surveillance.src.util.time_layer import UserLocalTime
+from surveillance.src.util.time_wrappers import UserLocalTime
 
 
 #
@@ -42,7 +42,7 @@ class ChromeLoggingDao(BaseQueueingDao):
         self.async_session_maker = async_session_maker
         self.regular_session = session_maker
 
-    def create_log(self, session: ChromeSessionData, right_now: UserLocalTime):
+    def create_log(self, session: ChromeSession, right_now: UserLocalTime):
         """
         Log an update to a summary table.
 
@@ -70,7 +70,7 @@ class ChromeLoggingDao(BaseQueueingDao):
             db_session.add(log_entry)
             db_session.commit()
 
-    def start_session(self, session: ChromeSessionData):
+    def start_session(self, session: ChromeSession):
         """
         A session of using a domain. End_time here is like, "when did the user tab away from the program?"
         """
@@ -94,7 +94,7 @@ class ChromeLoggingDao(BaseQueueingDao):
             db_session.add(log_entry)
             db_session.commit()
 
-    def find_session(self, session: ChromeSessionData):
+    def find_session(self, session: ChromeSession):
         if session.start_time is None:
             raise ValueError("Start time was None")
         start_time_as_utc = convert_to_utc(session.start_time.get_dt_for_db())
@@ -166,7 +166,7 @@ class ChromeLoggingDao(BaseQueueingDao):
         ).order_by(DomainSummaryLog.created_at.desc())
         return await self.execute_query(query)
 
-    def push_window_ahead_ten_sec(self, session: ChromeSessionData):
+    def push_window_ahead_ten_sec(self, session: ChromeSession):
         log: DomainSummaryLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError(
@@ -176,7 +176,7 @@ class ChromeLoggingDao(BaseQueueingDao):
             db_session.merge(log)
             db_session.commit()
 
-    def finalize_log(self, session: ChromeSessionData):
+    def finalize_log(self, session: ChromeSession):
         """
         Overwrite value from the heartbeat. Expect something to ALWAYS be in the db already at this point.
         Note that if the computer was shutdown, this method is never called, and the rough estimate is kept.

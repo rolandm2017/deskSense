@@ -1,5 +1,5 @@
 from surveillance.src.object.arbiter_classes import ApplicationInternalState, ChromeInternalState, InternalState
-from surveillance.src.object.classes import ProgramSessionData, ChromeSessionData
+from surveillance.src.object.classes import ProgramSession, ChromeSession
 
 
 class UINotifier:
@@ -11,11 +11,11 @@ class UINotifier:
         """
         self.overlay = overlay
 
-    def on_state_changed(self, session: InternalState | ProgramSessionData | ChromeSessionData):
-        if isinstance(session, ProgramSessionData):
+    def on_state_changed(self, session: InternalState | ProgramSession | ChromeSession):
+        if isinstance(session, ProgramSession):
             display_text = session.window_title
             self.overlay.change_display_text(display_text, "lime")
-        elif isinstance(session, ChromeSessionData):
+        elif isinstance(session, ChromeSession):
             display_text = f"{session.domain}"
             # display_text = f"Chrome | {session.domain}"
             self.overlay.change_display_text(display_text, "#4285F4")

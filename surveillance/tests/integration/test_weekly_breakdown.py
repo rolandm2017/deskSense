@@ -29,7 +29,7 @@ from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
 from surveillance.src.db.models import Base, DailyDomainSummary, DailyProgramSummary
-from surveillance.src.object.classes import ChromeSessionData, ProgramSessionData
+from surveillance.src.object.classes import ChromeSession, ProgramSession
 from ..data.weekly_breakdown_programs import (
     duplicate_programs_march_2, duplicate_programs_march_3rd,
     programs_march_2nd, programs_march_3rd,
@@ -138,9 +138,9 @@ async def setup_with_populated_db(setup_parts):
         chrome_march_3rd() + duplicates_chrome_march_2() + \
         duplicates_chrome_march_3rd()
 
-    assert all(isinstance(s, ProgramSessionData)
+    assert all(isinstance(s, ProgramSession)
                for s in test_data_programs), "There was a bug in setup"
-    assert all(isinstance(s, ChromeSessionData)
+    assert all(isinstance(s, ChromeSession)
                for s in test_data_chrome), "There was a bug in setup"
 
     programs_sum = timedelta()

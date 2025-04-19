@@ -6,7 +6,7 @@ from typing import List, Callable, Optional, Type
 # Import the base and derived classes
 
 from surveillance.src.object.classes import PeripheralAggregate, KeyboardAggregate, MouseAggregate
-from surveillance.src.util.time_layer import UserLocalTime
+from surveillance.src.util.time_wrappers import UserLocalTime
 
 
 @dataclass

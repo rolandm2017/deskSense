@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from ..mocks.mock_clock import MockClock
 
 from surveillance.src.config.definitions import productive_apps, productive_sites
-from surveillance.src.object.classes import ProgramSessionData
+from surveillance.src.object.classes import ProgramSession
 from surveillance.src.trackers.program_tracker import ProgramTrackerCore
 from surveillance.src.util.strings import no_space_dash_space
 
@@ -95,7 +95,7 @@ def test_start_new_session():
 
     assert new_session.window_title == "Visual Studio Code"
     assert new_session.detail == "program_tracker.py - deskSense"
-    assert new_session.start_time is current_time
+    assert new_session.start_time.dt is current_time
 
 
 def test_conclude_session():
@@ -184,7 +184,7 @@ def test_window_change_triggers_handler():
     window_change_handler.assert_called_once()
 
     session_arg = window_change_handler.call_args[0][0]
-    assert isinstance(session_arg, ProgramSessionData)
+    assert isinstance(session_arg, ProgramSession)
     assert hasattr(session_arg, 'window_title')
     assert hasattr(session_arg, 'productive')
     assert hasattr(session_arg, 'duration')
@@ -212,7 +212,7 @@ def test_window_change_triggers_handler():
     assert window_change_handler.call_count == 2
 
     session_arg = window_change_handler.call_args[0][0]
-    assert isinstance(session_arg, ProgramSessionData)
+    assert isinstance(session_arg, ProgramSession)
     assert hasattr(session_arg, 'window_title')
     assert hasattr(session_arg, 'productive')
     assert hasattr(session_arg, 'duration')

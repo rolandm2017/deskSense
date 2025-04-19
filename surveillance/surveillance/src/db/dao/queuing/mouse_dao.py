@@ -9,7 +9,7 @@ from surveillance.src.db.models import MouseMove
 from surveillance.src.object.dto import MouseMoveDto
 from surveillance.src.object.classes import MouseMoveWindow
 from surveillance.src.util.console_logger import ConsoleLogger
-from surveillance.src.util.time_layer import UserLocalTime
+from surveillance.src.util.time_wrappers import UserLocalTime
 
 
 def get_rid_of_ms(time):

@@ -87,7 +87,7 @@ def chrome_service_fixture():
 
     arbiter.add_summary_dao_listener(mock_program_listener)
 
-    chrome_service = ChromeService(clock, arbiter, mock_dao)
+    chrome_service = ChromeService(clock, arbiter)
 
     # Return the initialized ChromeService instance
     return chrome_service
@@ -114,7 +114,7 @@ def chrome_service_with_mock():
 
     # Create mock dao
     mock_dao = AsyncMock()
-    
+
     # Create a custom ChromeService that uses our mock
     class TestChromeService(ChromeService):
         def __init__(self, *args, **kwargs):
@@ -201,7 +201,7 @@ async def test_order_message_queue(event_fixture, chrome_service_fixture):
         chrome_service_fixture.tab_queue.ordered_messages) == 0, "Initial environment had a problem"
 
     # ### Act
-    await chrome_service_fixture.tab_queue.order_message_queue()
+    chrome_service_fixture.tab_queue.order_message_queue()
 
     # ### Assert
     output = chrome_service_fixture.tab_queue.ordered_messages

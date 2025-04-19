@@ -4,7 +4,7 @@ from typing import List
 import json
 
 from surveillance.src.db.models import DailyDomainSummary, DailyProgramSummary, DomainSummaryLog, ProgramSummaryLog
-from surveillance.src.object.classes import ProgramSessionData
+from surveillance.src.object.classes import ProgramSession
 from surveillance.src.object.pydantic_dto import TabChangeEventWithUtcDt
 
 
@@ -34,7 +34,7 @@ def hours_to_minutes_seconds_ms(hours):
     return f"{minutes:02d}:{seconds:02d}:{milliseconds:03d}", minutes
 
 
-def write_to_large_usage_log(session: ProgramSessionData, hours_spent, time):
+def write_to_large_usage_log(session: ProgramSession, hours_spent, time):
     minutes_seconds, minutes = hours_to_minutes_seconds_ms(hours_spent)
     print("Writing to large usage log: " + str(minutes_seconds))
     with open("large_usage_log_-_arbiter_ver.txt", "a") as f:

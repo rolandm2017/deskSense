@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from surveillance.src.object.classes import ProgramSessionData, ChromeSessionData
+from surveillance.src.object.classes import ProgramSession, ChromeSession
 
 from surveillance.src.util.clock import SystemClock
 
@@ -67,46 +67,58 @@ times_for_system_clock = [t2, t3, t4, t5,
 
 
 # 1. Chrome - Claude
-session1 = ChromeSessionData(claude_ai, "Python code refactoring", t1, productive=True)
+session1 = ChromeSession(
+    claude_ai, "Python code refactoring", t1, productive=True)
 
 # 2. Pycharm
-session2 = ProgramSessionData(pycharm, "main.py - project_tracker", t2, productive=True)
+session2 = ProgramSession(
+    pycharm, "main.py - project_tracker", t2, productive=True)
 
 # 3. Chrome - Claude
-session3 = ChromeSessionData(claude_ai, "Data structure optimization", t3, productive=True)
+session3 = ChromeSession(
+    claude_ai, "Data structure optimization", t3, productive=True)
 
 # 4. Chrome - StackOverflow
-session4 = ChromeSessionData(stackoverflow, "Python datetime questions", t4, productive=True)
+session4 = ChromeSession(
+    stackoverflow, "Python datetime questions", t4, productive=True)
 
 # 5. Pycharm
-session5 = ProgramSessionData(pycharm, "utils.py - time formatting functions", t5, productive=True)
+session5 = ProgramSession(
+    pycharm, "utils.py - time formatting functions", t5, productive=True)
 
 # 6. Ventrilo
-session6 = ProgramSessionData(ventrilo, "Python Developers - #help-requests", t6, productive=True)
+session6 = ProgramSession(
+    ventrilo, "Python Developers - #help-requests", t6, productive=True)
 
 # 7. Chrome - StackOverflow
-session7 = ChromeSessionData(stackoverflow, "Python class inheritance", t7, productive=True)
+session7 = ChromeSession(
+    stackoverflow, "Python class inheritance", t7, productive=True)
 
 # 8. Chrome - Twitter.com
-session8 = ChromeSessionData(twitter, "Tech news feed", t8, productive=False)
+session8 = ChromeSession(twitter, "Tech news feed", t8, productive=False)
 
 # 9. Ventrilo
-session9 = ProgramSessionData(ventrilo, "Python Developers - #off-topic", t9, productive=False)
+session9 = ProgramSession(
+    ventrilo, "Python Developers - #off-topic", t9, productive=False)
 
 # 10. Pycharm
-session10 = ProgramSessionData(pycharm, "session_tracker.py - debugging", t10, productive=True)
+session10 = ProgramSession(
+    pycharm, "session_tracker.py - debugging", t10, productive=True)
 
 # 11. Postman
-session11 = ProgramSessionData(postman, "API testing - session endpoints", t11, productive=True)
+session11 = ProgramSession(
+    postman, "API testing - session endpoints", t11, productive=True)
 
 # 12. Ventrilo
-session12 = ProgramSessionData(ventrilo, "API Development - #general", t12, productive=True)
+session12 = ProgramSession(
+    ventrilo, "API Development - #general", t12, productive=True)
 
 # 13. Chrome - Twitter.com
-session13 = ChromeSessionData(twitter, "Developer threads", t13, productive=False)
+session13 = ChromeSession(twitter, "Developer threads", t13, productive=False)
 
 # 14. Chrome - Claude
-session14 = ChromeSessionData(claude_ai, "Code review assistance", t14, productive=True)
+session14 = ChromeSession(
+    claude_ai, "Code review assistance", t14, productive=True)
 
 test_sessions = [session1,
                  session2,

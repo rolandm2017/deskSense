@@ -1,4 +1,4 @@
-from surveillance.src.object.classes import ChromeSessionData, ProgramSessionData
+from surveillance.src.object.classes import ChromeSession, ProgramSession
 from surveillance.src.util.program_tools import window_is_chrome
 
 
@@ -12,7 +12,6 @@ class InternalState:
         return f"InternalState(application='{self.active_application}', is_chrome={self.is_chrome}, session={self.session})"
 
 
-
 class ApplicationInternalState(InternalState):
     def __init__(self, active_application, is_chrome, session):
         # NOTE: is_chrome is needed to indicate when the application, well, is on Chrome!
@@ -21,7 +20,6 @@ class ApplicationInternalState(InternalState):
 
     def __str__(self):
         return f"ApplicationInternalState(application='{self.active_application}', is_chrome={self.is_chrome}, session={self.session})"
-
 
 
 class ChromeInternalState(InternalState):

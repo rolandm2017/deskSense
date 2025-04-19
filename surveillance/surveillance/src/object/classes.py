@@ -3,10 +3,10 @@
 from datetime import datetime, timedelta
 from typing import TypedDict, Optional
 
-from surveillance.src.util.time_layer import UserLocalTime
+from surveillance.src.util.time_wrappers import UserLocalTime
 
 
-class ChromeSessionData:
+class ChromeSession:
     domain: str
     detail: str
     start_time: Optional[UserLocalTime]
@@ -43,14 +43,14 @@ class ChromeSessionData:
 
     def __str__(self):
         end_time = self.end_time
-        return f"ChromeSessionData(domain='{self.domain}', detail='{self.detail}', \n\tstart_time={self.start_time}, \n\tend_time={end_time}, duration={self.duration}, productive={self.productive})"
+        return f"ChromeSession(domain='{self.domain}', detail='{self.detail}', \n\tstart_time={self.start_time}, \n\tend_time={end_time}, duration={self.duration}, productive={self.productive})"
 
 
-class ProgramSessionData:
+class ProgramSession:
     window_title: str
     detail: str
-    start_time: Optional[UserLocalTime]  # UTC timestamps
-    end_time: Optional[UserLocalTime]  # UTC timestamps
+    start_time: Optional[UserLocalTime]
+    end_time: Optional[UserLocalTime]
     duration: Optional[timedelta]
     productive: bool
 
@@ -86,7 +86,7 @@ class ProgramSessionData:
 
     def __str__(self):
         end_time = self.end_time  # Was "TBD" (to be determined)
-        return f"ProgramSessionData(window_title='{self.window_title}', detail='{self.detail}', \n\tstart_time={self.start_time}, \n\tend_time={end_time}, duration={self.duration}, productive={self.productive})"
+        return f"ProgramSession(window_title='{self.window_title}', detail='{self.detail}', \n\tstart_time={self.start_time}, \n\tend_time={end_time}, duration={self.duration}, productive={self.productive})"
 
 
 class TabChangeEventWithLtz:
@@ -101,8 +101,8 @@ class TabChangeEventWithLtz:
 
     def __str__(self) -> str:
         """Custom string representation of the TabChangeEvent."""
-        formatted_time = self.startTime.strftime("%Y-%m-%d %H:%M:%S")
-        return f"TabChangeEvent(tabTitle='{self.tabTitle}', url='{self.url}', startTime='{formatted_time}')"
+        formatted_time = self.start_time_with_tz.strftime("%Y-%m-%d %H:%M:%S")
+        return f"TabChangeEvent(tabTitle='{self.tab_title}', url='{self.url}', startTime='{formatted_time}')"
 
 
 class MouseEvent(TypedDict):

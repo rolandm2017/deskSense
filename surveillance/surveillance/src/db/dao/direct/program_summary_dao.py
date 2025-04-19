@@ -9,7 +9,7 @@ from surveillance.src.config.definitions import power_on_off_debug_file
 
 from surveillance.src.db.models import DailyProgramSummary
 
-from surveillance.src.object.classes import ProgramSessionData
+from surveillance.src.object.classes import ProgramSession
 
 from surveillance.src.util.dao_wrapper import validate_start_end_and_duration, validate_start_and_end_times
 from surveillance.src.util.console_logger import ConsoleLogger
@@ -17,7 +17,7 @@ from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.errors import NegativeTimeError, ImpossibleToGetHereError
 from surveillance.src.util.debug_util import notice_suspicious_durations, log_if_needed
 from surveillance.src.util.time_formatting import get_start_of_day
-from surveillance.src.util.time_layer import UserLocalTime
+from surveillance.src.util.time_wrappers import UserLocalTime
 
 
 class DatabaseProtectionError(RuntimeError):
@@ -40,7 +40,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
         self.async_session_maker = async_session_maker
         self.logger = ConsoleLogger()
 
-    def start_session(self, program_session: ProgramSessionData, right_now):
+    def start_session(self, program_session: ProgramSession, right_now):
         target_program_name = program_session.window_title
 
         starting_window_amt = 10  # sec
@@ -137,7 +137,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             # Commit the changes
             session.commit()
 
-    def push_window_ahead_ten_sec(self, program_session: ProgramSessionData, right_now: UserLocalTime):
+    def push_window_ahead_ten_sec(self, program_session: ProgramSession, right_now: UserLocalTime):
         """
         Finds the given session and adds ten sec to its end_time
 
@@ -165,14 +165,15 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
                 raise ImpossibleToGetHereError(
                     "A program should already exist here, but was not found")
 
-    def deduct_remaining_duration(self, session: ProgramSessionData, duration_in_sec: int, today_start):
+    def deduct_remaining_duration(self, session: ProgramSession, duration_in_sec: int, today_start):
         """
         When a session is concluded, it was concluded partway thru the 10 sec window
 
         9 times out of 10. So we deduct the unfinished duration from its hours_spent.
         """
         print(session, "173ru")
-        print(duration_in_sec, "174ru")
+        if duration_in_sec > 10:
+            raise ValueError("Duration was somehow greater than 10")
         target_program_name = session.window_title
 
         tomorrow_start = today_start + timedelta(days=1)
@@ -185,7 +186,6 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.gathering_date >= today_start,
             DailyProgramSummary.gathering_date < tomorrow_start
         )
-        # Update it if found
         with self.regular_session() as db_session:
             program: DailyProgramSummary = db_session.scalars(query).first()
 

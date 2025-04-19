@@ -10,13 +10,14 @@ from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
-from surveillance.src.object.classes import ProgramSessionData, ChromeSessionData
+from surveillance.src.object.classes import ProgramSession, ChromeSession
 
 # Test implementations with proper session object instantiation
 
+
 @pytest.fixture
 def program_session():
-    return ProgramSessionData(
+    return ProgramSession(
         "Visual Studio Code",
         "main.py",
         datetime(2023, 1, 1, 12, 0, 0),
@@ -25,9 +26,10 @@ def program_session():
         timedelta(minutes=10)
     )
 
+
 @pytest.fixture
 def chrome_session():
-    return ChromeSessionData(
+    return ChromeSession(
         "github.com",
         "DeepSeek Chat Repository",
         datetime(2023, 1, 1, 12, 0, 0),
@@ -35,6 +37,7 @@ def chrome_session():
         productive=True,
         duration_for_tests=timedelta(minutes=5)
     )
+
 
 @pytest.fixture
 def mock_daos():
@@ -45,11 +48,13 @@ def mock_daos():
         'chrome_summary': AsyncMock(spec=ChromeSummaryDao),
     }
 
+
 @pytest.fixture
 def mock_clock():
     clock = MagicMock()
     clock.today_start.return_value = "2023-01-01"
     return clock
+
 
 @pytest.fixture
 def activity_recorder(mock_daos, mock_clock):
@@ -61,50 +66,55 @@ def activity_recorder(mock_daos, mock_clock):
         chrome_summary_dao=mock_daos['chrome_summary'],
     )
 
+
 @pytest.mark.asyncio
 async def test_on_state_changed_program(activity_recorder, mock_daos, program_session):
     activity_recorder.on_state_changed(program_session)
-    
-    mock_daos['program_logging'].finalize_log.assert_called_once_with(program_session)
+
+    mock_daos['program_logging'].finalize_log.assert_called_once_with(
+        program_session)
     mock_daos['chrome_logging'].finalize_log.assert_not_called()
+
 
 @pytest.mark.asyncio
 async def test_on_state_changed_chrome(activity_recorder, mock_daos, chrome_session):
     activity_recorder.on_state_changed(chrome_session)
-    
-    mock_daos['chrome_logging'].finalize_log.assert_called_once_with(chrome_session)
+
+    mock_daos['chrome_logging'].finalize_log.assert_called_once_with(
+        chrome_session)
     mock_daos['program_logging'].finalize_log.assert_not_called()
 
 
 @pytest.mark.asyncio
 async def test_deduct_duration_program(activity_recorder, mock_daos, program_session, mock_clock):
     duration = 5  # seconds
-    
+
     activity_recorder.deduct_duration(duration, program_session)
-    
+
     mock_daos['program_summary'].deduct_remaining_duration.assert_called_once_with(
         program_session, duration, "2023-01-01"
     )
+
 
 @pytest.mark.asyncio
 async def test_error_cases(activity_recorder):
     # Test invalid type
     with pytest.raises(TypeError):
         await activity_recorder.on_state_changed("not a session object")
-    
+
     # Test missing end_time
-    bad_session = ProgramSessionData()
+    bad_session = ProgramSession()
     bad_session.window_title = "Bad Session"
     bad_session.start_time = datetime.now()
     bad_session.end_time = None
     bad_session.duration = timedelta(seconds=10)
-    
+
     with pytest.raises(ValueError):
         await activity_recorder.on_state_changed(bad_session)
-    
+
     # Test missing duration
     bad_session.end_time = datetime.now()
     bad_session.duration = None
-    
+
     with pytest.raises(ValueError):
         await activity_recorder.on_state_changed(bad_session)

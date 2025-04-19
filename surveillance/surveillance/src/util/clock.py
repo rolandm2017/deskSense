@@ -5,7 +5,7 @@ from typing import Iterator
 
 from surveillance.src.config.definitions import local_time_zone
 from surveillance.src.util.time_formatting import get_start_of_day
-from surveillance.src.util.time_layer import UserLocalTime
+from surveillance.src.util.time_wrappers import UserLocalTime
 
 
 class ClockProtocol:

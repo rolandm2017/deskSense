@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 
-from surveillance.src.util.time_layer import UserLocalTime
+from surveillance.src.util.time_wrappers import UserLocalTime
 
 # Reports
 

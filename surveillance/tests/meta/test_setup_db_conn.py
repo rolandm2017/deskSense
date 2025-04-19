@@ -23,19 +23,20 @@ Offenders:
 # You can cause OSError by putting "gc.collect" after the engine dispose in conftest.py
 # and then running the below test, even with read_all() commented out.
 
+
 @pytest.mark.asyncio
-async def test_plain_async_engine(async_engine_and_asm):
+async def test_plain_async_engine(regular_session, async_engine_and_asm):
     engine, asm = async_engine_and_asm
 
-    assert isinstance(asm, async_sessionmaker), "You need to mark @pytest_asyncio.fixture somewhere if you see this error"
+    assert isinstance(
+        asm, async_sessionmaker), "You need to mark @pytest_asyncio.fixture somewhere if you see this error"
 
     # Try to use it
-    log_dao = ProgramLoggingDao(asm)
-    sum_dao = ProgramSummaryDao(log_dao, asm)
+    log_dao = ProgramLoggingDao(regular_session, asm)
+    sum_dao = ProgramSummaryDao(log_dao, regular_session, asm)
 
-
-    all_summaries = await sum_dao.read_all()
-    all_logs = await log_dao.read_all()
+    all_summaries = sum_dao.read_all()
+    all_logs = log_dao.read_all()
 
     assert 1 == 1
     assert all_summaries is not None
@@ -47,7 +48,7 @@ async def test_plain_async_engine(async_engine_and_asm):
     assert isinstance(all_summaries, list)
     assert isinstance(all_logs, list)
 
-  
+
 # @pytest.mark.asyncio
 # async def test_sqlite(async_db_session_in_mem):
 #       # Try to use it
@@ -69,4 +70,3 @@ async def test_plain_async_engine(async_engine_and_asm):
 #         print(v)
 #     assert len(all_summaries) == 0
 #     assert len(all_logs) == 0
-

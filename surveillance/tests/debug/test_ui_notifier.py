@@ -6,7 +6,7 @@ from datetime import datetime
 
 from surveillance.src.debug.ui_notifier import UINotifier
 from surveillance.src.object.arbiter_classes import ApplicationInternalState, ChromeInternalState
-from surveillance.src.object.classes import ProgramSessionData, ChromeSessionData
+from surveillance.src.object.classes import ProgramSession, ChromeSession
 
 
 # Import or recreate your classes here
@@ -41,7 +41,8 @@ def ui_notifier(mock_overlay):
 def test_internal_state_change(ui_notifier, mock_overlay):
     """Test that internal state changes update the overlay with the right text and color"""
     # Create a test state
-    program_session = ProgramSessionData("Test Window Title", "", datetime.now())
+    program_session = ProgramSession(
+        "Test Window Title", "", datetime.now())
     test_state = ApplicationInternalState(
         "Test Window Title", False, program_session)
 
@@ -59,7 +60,7 @@ def test_other_state_change(ui_notifier, mock_overlay):
     """Test that other state changes update the overlay with domain and blue color"""
     # Create a test state
 
-    chrome_session = ChromeSessionData("example.com", "", datetime.now())
+    chrome_session = ChromeSession("example.com", "", datetime.now())
     test_state = ChromeInternalState(
         "Chrome", True, "example.com", chrome_session)
 
@@ -76,8 +77,8 @@ def test_other_state_change(ui_notifier, mock_overlay):
 def test_multiple_state_changes(ui_notifier, mock_overlay):
     """Test multiple state changes in sequence"""
     # Create test states
-    program_session = ProgramSessionData("Internal App", "", datetime.now())
-    chrome_session = ChromeSessionData("test-domain.org", "", datetime.now())
+    program_session = ProgramSession("Internal App", "", datetime.now())
+    chrome_session = ChromeSession("test-domain.org", "", datetime.now())
     internal_state = ApplicationInternalState(
         "Internal App", True, program_session)
     other_state = ChromeInternalState(

@@ -10,7 +10,7 @@ from typing import List
 from surveillance.src.config.definitions import power_on_off_debug_file
 
 from surveillance.src.db.models import DailyDomainSummary
-from surveillance.src.object.classes import ChromeSessionData
+from surveillance.src.object.classes import ChromeSession
 
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.dao_wrapper import validate_start_end_and_duration, validate_start_and_end_times
@@ -18,7 +18,7 @@ from surveillance.src.util.errors import NegativeTimeError, ImpossibleToGetHereE
 from surveillance.src.util.debug_util import notice_suspicious_durations, log_if_needed
 from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.time_formatting import get_start_of_day
-from surveillance.src.util.time_layer import UserLocalTime
+from surveillance.src.util.time_wrappers import UserLocalTime
 
 
 # @@@@ @@@@ @@@@ @@@@ @@@@
@@ -34,7 +34,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         self.async_session_maker = async_session_maker
         self.logger = ConsoleLogger()
 
-    def start_session(self, chrome_session: ChromeSessionData, right_now):
+    def start_session(self, chrome_session: ChromeSession, right_now):
         target_domain_name = chrome_session.domain
 
         starting_window_amt = 10  # sec
@@ -129,7 +129,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             # Commit the changes
             session.commit()
 
-    def push_window_ahead_ten_sec(self, chrome_session: ChromeSessionData, right_now):
+    def push_window_ahead_ten_sec(self, chrome_session: ChromeSession, right_now):
         """Finds the given session and adds ten sec to its end_time
 
         NOTE: This only ever happens after start_session
@@ -153,7 +153,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
                 raise ImpossibleToGetHereError(
                     "A domain should already exist here, but was not found")
 
-    def deduct_remaining_duration(self, session: ChromeSessionData, duration_in_sec: int, today_start):
+    def deduct_remaining_duration(self, session: ChromeSession, duration_in_sec: int, today_start):
         """
         When a session is concluded, it was concluded partway thru the 10 sec window
 

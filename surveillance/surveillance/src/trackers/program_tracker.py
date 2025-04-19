@@ -8,7 +8,7 @@ from surveillance.src.config.definitions import productive_apps, productive_cate
 from surveillance.src.facade.program_facade_base import ProgramFacadeInterface
 
 
-from surveillance.src.object.classes import ProgramSessionData
+from surveillance.src.object.classes import ProgramSession
 
 from surveillance.src.util.detect_os import OperatingSystemInfo
 from surveillance.src.util.clock import SystemClock
@@ -16,7 +16,7 @@ from surveillance.src.util.threaded_tracker import ThreadedTracker
 from surveillance.src.util.program_tools import separate_window_name_and_detail,   contains_space_dash_space
 from surveillance.src.util.strings import no_space_dash_space
 from surveillance.src.util.copy_util import snapshot_obj_for_tests
-from surveillance.src.util.time_layer import UserLocalTime
+from surveillance.src.util.time_wrappers import UserLocalTime
 
 
 # TODO: report programs that aren't in the apps list.
@@ -55,7 +55,7 @@ class ProgramTrackerCore:
 
         self.current_is_chrome = False
 
-        self.current_session: ProgramSessionData | None = None
+        self.current_session: ProgramSession | None = None
 
         self.console_logger = ConsoleLogger()
 
@@ -97,7 +97,7 @@ class ProgramTrackerCore:
         return not self.current_session is None
 
     def start_new_session(self, window_change_dict, start_time):
-        new_session = ProgramSessionData()
+        new_session = ProgramSession()
         if contains_space_dash_space(window_change_dict["window_title"]):
             detail, window = separate_window_name_and_detail(
                 window_change_dict["window_title"])
@@ -116,13 +116,14 @@ class ProgramTrackerCore:
         # end_time = self.user_facing_clock.now()
         # Deep copy to prevent object mutation from ruining tests
         session_to_conclude = snapshot_obj_for_tests(self.current_session)
-        start_time: datetime = UserLocalTime(session_to_conclude.start_time)
+        start_time: UserLocalTime = UserLocalTime(
+            session_to_conclude.start_time)
         initializing = start_time is None
         if initializing:
-            start_time = end_time  # whatever
-        end_time = UserLocalTime(end_time)
-        duration = end_time - UserLocalTime(start_time)
-        session_to_conclude.end_time = end_time
+            start_time = UserLocalTime(end_time)  # whatever
+        end_time_as_ult = UserLocalTime(end_time)
+        duration = end_time_as_ult - UserLocalTime(start_time)
+        session_to_conclude.end_time = end_time_as_ult
         session_to_conclude.duration = duration
         self.current_session = session_to_conclude
 
@@ -130,8 +131,8 @@ class ProgramTrackerCore:
         """For when the program isn't found in the productive apps list"""
         self.console_logger.log_yellow(title)  # temp
 
-    def apply_handlers(self, session: ProgramSessionData):
-        if not isinstance(session, ProgramSessionData):
+    def apply_handlers(self, session: ProgramSession):
+        if not isinstance(session, ProgramSession):
             self.console_logger.log_yellow_multiple("[DEBUG]", session)
             raise ValueError("Was not a dict")
         #  {'os': 'Ubuntu', 'pid': 70442, 'process_name': 'pgadmin4', 'window_title': 'Alt-tab window'}

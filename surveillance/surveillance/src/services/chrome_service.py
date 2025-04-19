@@ -13,7 +13,7 @@ import copy
 from surveillance.src.config.definitions import power_on_off_debug_file
 
 from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from surveillance.src.object.classes import ChromeSessionData, TabChangeEventWithLtz
+from surveillance.src.object.classes import ChromeSession, TabChangeEventWithLtz
 from surveillance.src.object.pydantic_dto import TabChangeEventWithUtcDt
 from surveillance.src.config.definitions import productive_sites
 from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
@@ -136,7 +136,7 @@ class ChromeService:
         is_productive = url_deliverable.url in productive_sites
         start_time = url_deliverable.start_time_with_tz
         end_time = None
-        initialized: ChromeSessionData = ChromeSessionData(
+        initialized: ChromeSession = ChromeSession(
             url, title, start_time, end_time, is_productive)
 
         # NOTE: In the past, the intent was to keep everything in UTC.

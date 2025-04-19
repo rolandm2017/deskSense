@@ -10,7 +10,7 @@ from surveillance.src.db.models import TypingSession
 from surveillance.src.object.classes import KeyboardAggregate
 from surveillance.src.object.dto import TypingSessionDto
 from surveillance.src.util.console_logger import ConsoleLogger
-from surveillance.src.util.time_layer import UserLocalTime
+from surveillance.src.util.time_wrappers import UserLocalTime
 
 
 def get_rid_of_ms(time):

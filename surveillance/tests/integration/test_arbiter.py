@@ -8,7 +8,7 @@ from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
 from surveillance.src.arbiter.activity_recorder import ActivityRecorder
 from surveillance.src.arbiter.activity_state_machine import ActivityStateMachine
 from surveillance.src.debug.ui_notifier import UINotifier
-from surveillance.src.object.classes import ProgramSessionData, ChromeSessionData
+from surveillance.src.object.classes import ProgramSession, ChromeSession
 
 from ..data.arbiter_events import test_sessions, times_for_system_clock
 from ..mocks.mock_clock import MockClock
@@ -53,7 +53,7 @@ async def activity_arbiter_and_setup():
         side_effect=event_handler)
 
     arbiter.add_summary_dao_listener(mock_activity_recorder)
-    
+
     assert arbiter.activity_recorder == mock_activity_recorder, "Test setup conditions failed"
 
     # Optionally mock the chrome service integration
@@ -70,10 +70,10 @@ async def test_activity_arbiter(activity_arbiter_and_setup):
     # Setup: How much time should pass?
     expected_sum_of_time = 45 * 60  # 45 minutes, as per the arbiter_events.py file
     program_sessions_in_test = [
-        item for item in test_sessions if isinstance(item, ProgramSessionData)]
+        item for item in test_sessions if isinstance(item, ProgramSession)]
 
     chrome_sessions_in_test = [
-        item for item in test_sessions if isinstance(item, ChromeSessionData)]
+        item for item in test_sessions if isinstance(item, ChromeSession)]
 
     assert len(test_sessions) > 0, "Test setup failed"
 
@@ -91,12 +91,12 @@ async def test_activity_arbiter(activity_arbiter_and_setup):
 
     assert len(events) > 0, "Not even one event made it"
 
-    program_events = [e for e in events if isinstance(e, ProgramSessionData)]
-    chrome_events = [e for e in events if isinstance(e, ChromeSessionData)]
+    program_events = [e for e in events if isinstance(e, ProgramSession)]
+    chrome_events = [e for e in events if isinstance(e, ChromeSession)]
 
-    assert all(isinstance(log, ProgramSessionData)
+    assert all(isinstance(log, ProgramSession)
                for log in program_events), "A program event wasn't a program session"
-    assert all(isinstance(log, ChromeSessionData)
+    assert all(isinstance(log, ChromeSession)
                for log in chrome_events), "A Chrome event wasn't a Chrome session"
 
     assert any(isinstance(obj.duration, int) for obj in events) is False
