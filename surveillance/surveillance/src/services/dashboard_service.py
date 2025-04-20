@@ -109,8 +109,8 @@ class DashboardService:
             offset = 1
             days_per_week = 7
             days_since_sunday = (today.weekday() + offset) % days_per_week
-            sunday_that_starts_the_week = today - \
-                timedelta(days=days_since_sunday)
+            sunday_that_starts_the_week = UserLocalTime(today.dt -
+                                                        timedelta(days=days_since_sunday))
 
         days_before_today = []
 
@@ -124,7 +124,7 @@ class DashboardService:
 
             self.logger.log_days_retrieval("[get_current_week_timeline]", current_day, len(
                 mouse_events) + len(keyboard_events))
-            day = {"date": current_day,
+            day = {"date": current_day.dt,
                    "mouse_events": mouse_events,
                    "keyboard_events": keyboard_events}
             if current_day.date() == todays_date:
@@ -194,7 +194,7 @@ class DashboardService:
             offset = 1
             days_per_week = 7
             days_since_sunday = (today.weekday() + offset) % days_per_week
-            sunday_that_starts_the_week = today - \
+            sunday_that_starts_the_week = today.dt - \
                 timedelta(days=days_since_sunday)
 
         now = self.user_clock.now()

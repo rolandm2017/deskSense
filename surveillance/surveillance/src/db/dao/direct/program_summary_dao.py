@@ -79,7 +79,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
 
         self._create(target_program_name, usage_duration_in_hours, today_start)
 
-    def _create(self, target_program_name, duration_in_hours, when_it_was_gathered):
+    def _create(self, target_program_name: str, duration_in_hours: float, when_it_was_gathered: datetime):
         self.throw_if_negative(target_program_name, duration_in_hours)
         with self.regular_session() as session:
             new_entry = DailyProgramSummary(

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from surveillance.src.object.pydantic_dto import TabChangeEvent
+from surveillance.src.object.pydantic_dto import TabChangeEventWithUtcDt
 
 # NOTE: Originally, the TabChangeEvents were recorded *without* a timestamp.
 # NOTE: BUT, they SHOULD have a timestamp!
@@ -10,16 +10,16 @@ from surveillance.src.object.pydantic_dto import TabChangeEvent
 # NOTE #2: i changed .strptime into .fromisoformat because it looks like it works better
 
 chrome_data = [
-    TabChangeEvent(tabTitle='Google Docs', url='docs.google.com',
-                   startTime=datetime.fromisoformat('2025-03-22 16:15:02-07:00')),
-    TabChangeEvent(tabTitle='ChatGPT', url='chatgpt.com', 
-                   startTime=datetime.fromisoformat('2025-03-22 16:15:10-07:00')),
-    TabChangeEvent(tabTitle='Claude', url='claude.ai', 
-                   startTime=datetime.fromisoformat('2025-03-22 16:15:21-07:00')),
-    TabChangeEvent(tabTitle='ChatGPT', url='chatgpt.com', 
-                   startTime=datetime.fromisoformat('2025-03-22 16:15:30-07:00'))
+    TabChangeEventWithUtcDt(tabTitle='Google Docs', url='docs.google.com',
+                            startTime=datetime.fromisoformat('2025-03-22 16:15:02-07:00')),
+    TabChangeEventWithUtcDt(tabTitle='ChatGPT', url='chatgpt.com',
+                            startTime=datetime.fromisoformat('2025-03-22 16:15:10-07:00')),
+    TabChangeEventWithUtcDt(tabTitle='Claude', url='claude.ai',
+                            startTime=datetime.fromisoformat('2025-03-22 16:15:21-07:00')),
+    TabChangeEventWithUtcDt(tabTitle='ChatGPT', url='chatgpt.com',
+                            startTime=datetime.fromisoformat('2025-03-22 16:15:30-07:00'))
     # Commented out below entries because, because the tests were too long
-    # TabChangeEvent(tabTitle='Google', url='www.google.com', 
+    # TabChangeEvent(tabTitle='Google', url='www.google.com',
     #                startTime=datetime.strptime('2025-03-22 23:15:39', '%Y-%m-%d %H:%M:%S')),
     # TabChangeEvent(tabTitle='YouTube', url='www.youtube.com',
     #                startTime=datetime.strptime('2025-03-22 23:16:27', '%Y-%m-%d %H:%M:%S')),
@@ -27,7 +27,7 @@ chrome_data = [
     #                startTime=datetime.strptime('2025-03-22 23:16:37', '%Y-%m-%d %H:%M:%S')),
     # TabChangeEvent(tabTitle='Google Docs', url='docs.google.com',
     #                startTime=datetime.strptime('2025-03-22 23:16:50', '%Y-%m-%d %H:%M:%S')),
-    # TabChangeEvent(tabTitle='ChatGPT', url='chatgpt.com', 
+    # TabChangeEvent(tabTitle='ChatGPT', url='chatgpt.com',
     #                startTime=datetime.strptime(
     #     '2025-03-22 23:17:21', '%Y-%m-%d %H:%M:%S'))
 ]

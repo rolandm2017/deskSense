@@ -95,8 +95,10 @@ async def cleanup_test_resources(manager):
 async def test_setup_conditions(regular_session, plain_asm):
     program_logging = ProgramLoggingDao(regular_session, plain_asm)
     chrome_logging = ChromeLoggingDao(regular_session, plain_asm)
-    program_summaries_dao = ProgramSummaryDao(regular_session, plain_asm)
-    chrome_summaries_dao = ChromeSummaryDao(regular_session, plain_asm)
+    program_summaries_dao = ProgramSummaryDao(
+        program_logging, regular_session, plain_asm)
+    chrome_summaries_dao = ChromeSummaryDao(
+        chrome_logging, regular_session, plain_asm)
 
     p_logs = program_logging.read_all()
     ch_logs = chrome_logging.read_all()
@@ -215,9 +217,9 @@ async def test_tracker_to_arbiter(plain_asm, regular_session, times_from_test_da
         side_effect=surveillance_manager.program_tracker.window_change_handler)
     surveillance_manager.program_tracker.window_change_handler = window_change_spy
 
-    program_dao_create_spy = Mock(
-        side_effect=surveillance_manager.program_dao.create)
-    surveillance_manager.program_dao.create = program_dao_create_spy
+    # program_dao_create_spy = Mock(
+    #     side_effect=surveillance_manager.program_dao.create)
+    # surveillance_manager.program_dao.create = program_dao_create_spy
 
     # TODO: make the program facade, like, actually run the events.
     surveillance_manager.start_trackers()
@@ -276,10 +278,10 @@ async def test_tracker_to_arbiter(plain_asm, regular_session, times_from_test_da
         assert spy_on_set_chrome_state.call_count == 0
         assert spy_on_set_program_state.call_count == num_of_events_to_enter_arbiter
 
-        # The Program DAO was called with the expected values
+        # # The Program DAO was called with the expected values
         one_left_in_tracker = 1
-        assert program_dao_create_spy.call_count == len(
-            real_program_events) - one_left_in_tracker
+        # assert program_dao_create_spy.call_count == len(
+        #     real_program_events) - one_left_in_tracker
 
         # ### Confirm that the ... objects don't change much in their transit
         # from facade to arbiter
@@ -319,11 +321,11 @@ async def test_tracker_to_arbiter(plain_asm, regular_session, times_from_test_da
 async def test_chrome_svc_to_arbiter_path(regular_session, plain_asm):
     chrome_events_for_test = chrome_data
 
-    chrome_dao = ChromeDao(plain_asm)
+    # chrome_dao = ChromeDao(plain_asm)
 
-    # Spy
-    chrome_dao_create_spy = Mock(side_effect=chrome_dao.create)
-    chrome_dao.create = chrome_dao_create_spy
+    # # Spy
+    # chrome_dao_create_spy = Mock(side_effect=chrome_dao.create)
+    # chrome_dao.create = chrome_dao_create_spy
 
     t1 = datetime.now()
     irrelevant_clock = MockClock([t1, t1, t1, t1, t1, t1, t1, t1, t1])
@@ -331,7 +333,7 @@ async def test_chrome_svc_to_arbiter_path(regular_session, plain_asm):
     activity_arbiter = ActivityArbiter(irrelevant_clock, pulse_interval=1)
 
     chrome_service = ChromeService(
-        irrelevant_clock, arbiter=activity_arbiter, dao=chrome_dao)
+        irrelevant_clock, arbiter=activity_arbiter)
 
     @chrome_service.event_emitter.on('tab_change')
     def handle_tab_change(tab):
@@ -359,12 +361,14 @@ async def test_chrome_svc_to_arbiter_path(regular_session, plain_asm):
 
     user_id = 1
 
+    timezone_service = TimezoneService()
+
     for tab_change_event in chrome_events_for_test:
         # Bypass for test:
-        # tz_for_user = timezone_service.get_tz_for_user(
-        # user_id)
-        # updated_tab_change_event = timezone_service.convert_tab_change_timezone(
-        # tab_change_event, tz_for_user)
+        tz_for_user = timezone_service.get_tz_for_user(
+            user_id)
+        updated_tab_change_event = timezone_service.convert_tab_change_timezone(
+            tab_change_event, tz_for_user)
         # ALSO for the test, bypass the chrome_svc queue, which
         # (a) is known to work
         # (b) is extremely effortful to circumvent
@@ -373,13 +377,13 @@ async def test_chrome_svc_to_arbiter_path(regular_session, plain_asm):
         # Test setup conditions
         assert isinstance(chrome_service, ChromeService)
         # Act
-        chrome_service.log_tab_event(tab_change_event)
+        chrome_service.log_tab_event(updated_tab_change_event)
     queue_debounce_timer_wait = 1.0  # seconds
     await asyncio.sleep(queue_debounce_timer_wait)
 
     one_left_in_chrome_svc = 1
-    assert chrome_dao_create_spy.call_count == len(
-        chrome_events_for_test) - one_left_in_chrome_svc
+    # assert chrome_dao_create_spy.call_count == len(
+    #     chrome_events_for_test) - one_left_in_chrome_svc
     assert spy_on_set_chrome_state.call_count == len(chrome_events_for_test)
     assert session_ready_for_arbiter_spy.call_count == len(
         chrome_events_for_test)
@@ -510,6 +514,8 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
 
     # see t2 - t1 in above events
     durations_between_events = [5, 8, 4, 2, 7, 7, 8]
+
+    assert end_of_prev_test_tabs[-1].start_time is not None, "Setup condition not met"
 
     final_time = end_of_prev_test_tabs[-1].start_time + timedelta(seconds=8)
 

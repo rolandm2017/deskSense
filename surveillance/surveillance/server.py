@@ -302,7 +302,7 @@ async def get_timeline_weekly(dashboard_service: DashboardService = Depends(get_
         row = DayOfTimelineRows(date=day["date"], row=row)
         rows.append(row)
 
-    return PartiallyPrecomputedWeeklyTimeline(beforeToday=rows, today=todays_payload, startDate=latest_sunday)
+    return PartiallyPrecomputedWeeklyTimeline(beforeToday=rows, today=todays_payload, startDate=latest_sunday.dt)
 
 
 @app.get("/api/dashboard/timeline/week/{week_of}", response_model=WeeklyTimeline)
