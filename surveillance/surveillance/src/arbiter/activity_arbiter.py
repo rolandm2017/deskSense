@@ -13,6 +13,7 @@ from .session_heartbeat import KeepAliveEngine, ThreadedEngineContainer
 from surveillance.src.object.arbiter_classes import ChromeInternalState, ApplicationInternalState
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.copy_util import snapshot_obj_for_tests
+from surveillance.src.util.errors import ImpossibleToGetHereError
 
 
 class ActivityArbiter:
@@ -90,6 +91,8 @@ class ActivityArbiter:
         self.notify_display_update(new_session)
 
         if self.state_machine.current_state:
+            if self.current_heartbeat is None:
+                raise ValueError("First loop failed in Activity Arbiter")
             # ### Calculate the duration that the current state has existed
             # ### & create the replacement state
 
@@ -104,10 +107,12 @@ class ActivityArbiter:
 
             engine_loop = self.current_heartbeat.engine.save_loop_for_reuse()
             self.current_heartbeat.stop()  # stop the old one from prev loop
+
             new_keep_alive_engine = KeepAliveEngine(
                 new_session, self.activity_recorder, engine_loop)
             self.current_heartbeat = ThreadedEngineContainer(
                 new_keep_alive_engine, self.pulse_interval)
+
             self.current_heartbeat.start()
 
             if self.state_machine.is_initialization_session(concluded_session):

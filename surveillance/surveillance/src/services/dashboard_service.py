@@ -13,6 +13,7 @@ from surveillance.src.db.models import DailyDomainSummary, DailyProgramSummary, 
 from surveillance.src.config.definitions import productive_sites, productive_apps
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.clock import UserFacingClock
+from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.time_formatting import format_for_local_time
 
 
@@ -30,7 +31,7 @@ class DashboardService:
         self.user_clock = UserFacingClock()
         self.logger = ConsoleLogger()
 
-    async def get_weekly_productivity_overview(self, starting_sunday):
+    async def get_weekly_productivity_overview(self, starting_sunday: UserLocalTime):
         if starting_sunday.weekday() != 6:  # In Python, Sunday is 6
             raise ValueError("start_date must be a Sunday")
 
@@ -43,11 +44,11 @@ class DashboardService:
 
             current_day = starting_sunday + timedelta(days=i)
             date_as_datetime = datetime.combine(
-                current_day, datetime.min.time())
+                current_day.dt, datetime.min.time())
             daily_chrome_summaries: List[DailyDomainSummary] = self.chrome_summary_dao.read_day(
-                date_as_datetime)
+                UserLocalTime(date_as_datetime))
             daily_program_summaries: List[DailyProgramSummary] = self.program_summary_dao.read_day(
-                date_as_datetime)
+                UserLocalTime(date_as_datetime))
             productivity = 0
             leisure = 0
             for domain in daily_chrome_summaries:
@@ -296,10 +297,10 @@ class DashboardService:
         usage_from_days = []
         for i in range(7):
             current_day = start_sunday + timedelta(days=i)
-            date_as_datetime = datetime.combine(
-                current_day, datetime.min.time())
-            daily_summaries = await self.chrome_summary_dao.read_day(
-                date_as_datetime)
+            date_as_ult = UserLocalTime(datetime.combine(
+                current_day, datetime.min.time()))
+            daily_summaries = self.chrome_summary_dao.read_day(
+                date_as_ult)
 
             usage_from_days.extend(daily_summaries)
 

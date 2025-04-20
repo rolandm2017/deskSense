@@ -108,7 +108,7 @@ class DailyProgramSummary(Base):
     __tablename__ = "daily_program_summaries"
 
     id = Column(Integer, primary_key=True, index=True)
-    program_name = Column(String)
+    program_name: Mapped[str] = mapped_column(String)
     hours_spent: Mapped[float] = mapped_column(Float)
     # The date on which the program data was gathered, without hh:mm:ss
     # MUST be the date FOR THE USER. Otherwise, the program doesn't make sense

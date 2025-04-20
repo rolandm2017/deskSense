@@ -12,6 +12,7 @@ from surveillance.src.object.classes import KeyboardAggregate, MouseMoveWindow
 from surveillance.src.object.enums import ChartEventType
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.timeline_event_aggregator import aggregate_timeline_events
+from surveillance.src.util.time_wrappers import UserLocalTime
 
 
 class TimelineEntryDao(BaseQueueingDao):
@@ -86,7 +87,7 @@ class TimelineEntryDao(BaseQueueingDao):
             max_id = result.scalar()
             return max_id or 0  # Return 0 if table is empty
 
-    async def read_precomputed_entry_for_day(self, day: datetime, type: ChartEventType):
+    async def read_precomputed_entry_for_day(self, day: UserLocalTime, type: ChartEventType):
         # Get start of day (midnight) # time.min is 00:00:00
         start_of_day = datetime.combine(day.date(), time.min)
 
@@ -104,7 +105,7 @@ class TimelineEntryDao(BaseQueueingDao):
             # scalars_result = result.scalars()
             # return await await_if_needed(scalars_result)
 
-    async def read_day(self, day: datetime, event_type: ChartEventType) -> List[TimelineEntryObj]:
+    async def read_day(self, day: UserLocalTime, event_type: ChartEventType) -> List[TimelineEntryObj]:
         """Read all entries for the given day"""
         start_of_day = datetime.combine(day.date(), datetime.min.time())
         end_of_day = start_of_day + timedelta(days=1)
@@ -121,7 +122,7 @@ class TimelineEntryDao(BaseQueueingDao):
             # scalars_result = result.scalars()
             # return await await_if_needed(scalars_result)
 
-    async def read_day_mice(self, users_systems_day: datetime, user_facing_clock) -> List[TimelineEntryObj]:
+    async def read_day_mice(self, users_systems_day: UserLocalTime, user_facing_clock) -> List[TimelineEntryObj]:
         today = user_facing_clock.now().date()
         is_today = today == users_systems_day.date()
 
@@ -140,7 +141,7 @@ class TimelineEntryDao(BaseQueueingDao):
                 new_precomputed_day = await self.create_precomputed_day(read_events)
                 return new_precomputed_day
 
-    async def read_day_keyboard(self, users_systems_day: datetime, user_facing_clock) -> List[TimelineEntryObj]:
+    async def read_day_keyboard(self, users_systems_day: UserLocalTime, user_facing_clock) -> List[TimelineEntryObj]:
         today = user_facing_clock.now().date()
         is_today = today == users_systems_day.date()
         if is_today:

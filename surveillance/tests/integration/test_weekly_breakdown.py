@@ -30,6 +30,10 @@ from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
 from surveillance.src.db.models import Base, DailyDomainSummary, DailyProgramSummary
 from surveillance.src.object.classes import ChromeSession, ProgramSession
+from surveillance.src.util.const import SECONDS_PER_HOUR
+from surveillance.src.util.time_wrappers import UserLocalTime
+
+
 from ..data.weekly_breakdown_programs import (
     duplicate_programs_march_2, duplicate_programs_march_3rd,
     programs_march_2nd, programs_march_3rd,
@@ -127,10 +131,19 @@ async def setup_with_populated_db(setup_parts):
     test_data_feb_chrome = chrome_feb_23() + chrome_feb_24() + \
         chrome_feb_26()
 
+    ten_sec_as_hours = 10 / SECONDS_PER_HOUR
     for s in test_data_feb_programs:
-        program_summary_dao.create_if_new_else_update(s, s.end_time)
+        print(s)
+        assert isinstance(
+            s.end_time, UserLocalTime), "Setup conditions not met"
+        program_summary_dao._create(
+            s.window_title, ten_sec_as_hours, s.end_time.get_dt_for_db())
     for s in test_data_feb_chrome:
-        chrome_summary_dao.create_if_new_else_update(s, s.end_time)
+        print(s)
+        assert isinstance(
+            s.end_time, UserLocalTime), "Setup conditions not met"
+        chrome_summary_dao._create(
+            s.domain, ten_sec_as_hours, s.end_time.get_dt_for_db())
 
     test_data_programs = programs_march_2nd() + programs_march_3rd() + \
         duplicate_programs_march_2() + duplicate_programs_march_3rd()
@@ -148,18 +161,32 @@ async def setup_with_populated_db(setup_parts):
     for session in test_data_programs:
         programs_sum = programs_sum + session.duration
     for session in test_data_chrome:
-        chrome_sum = chrome_sum + session.duration
+        if session.duration:
+            chrome_sum = chrome_sum + session.duration
     print(programs_sum, chrome_sum)
+    seen_programs = []
     for session in test_data_programs:
         right_now_arg = session.end_time  # type:ignore
         programs_sum = programs_sum + session.duration
         # print(session.window_title, session.duration)
-        program_summary_dao.create_if_new_else_update(session, right_now_arg)
+        if session.window_title in seen_programs:
+            continue
+        else:
+            program_summary_dao.start_session(session, right_now_arg)
+            seen_programs.append(session.window_title)
+        # program_summary_dao.create_if_new_else_update(session, right_now_arg)
+
+    seen_domains = []
 
     for session in test_data_chrome:
         right_now_arg = session.end_time  # type:ignore
         # print(session.domain, session.duration)
-        chrome_summary_dao.create_if_new_else_update(session, right_now_arg)
+        if session.domain in seen_domains:
+            continue
+        else:
+            chrome_summary_dao.start_session(session, right_now_arg)
+            seen_domains.append(session.domain)
+        # chrome_summary_dao.create_if_new_else_update(session, right_now_arg)
 
     yield service, program_summary_dao, chrome_summary_dao
 
@@ -246,9 +273,9 @@ async def test_reading_individual_days(setup_with_populated_db):
     # NOTE that this date is in the test data for sure! it's circular.
 
     daily_program_summaries: List[DailyProgramSummary] = program_summary_dao.read_day(
-        march_2_2025)
+        UserLocalTime(march_2_2025))
     daily_chrome_summaries: List[DailyDomainSummary] = chrome_summary_dao.read_day(
-        march_2_2025)
+        UserLocalTime(march_2_2025))
 
     print(len(daily_program_summaries), march_2_program_count)
     assert len(daily_program_summaries) == march_2_program_count
@@ -261,9 +288,9 @@ async def test_reading_individual_days(setup_with_populated_db):
     march_3_modified = march_3_2025 + timedelta(hours=1, minutes=9, seconds=33)
 
     daily_program_summaries_2: List[DailyProgramSummary] = program_summary_dao.read_day(
-        march_3_modified)
+        UserLocalTime(march_3_modified))
     daily_chrome_summaries_2: List[DailyDomainSummary] = chrome_summary_dao.read_day(
-        march_3_modified)
+        UserLocalTime(march_3_modified))
 
     assert len(
         daily_program_summaries_2) == march_3_program_count, "A program session didn't load"
@@ -295,7 +322,7 @@ async def test_week_of_feb_23(setup_with_populated_db):
     # ### ###
     # # Check the test data to see what's in here
     # ### ###
-    weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(feb_23_2025_dt)
+    weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(UserLocalTime(feb_23_2025_dt))
 
     assert all(isinstance(d, dict)
                for d in weeks_overview), "Expected types not found"
@@ -313,7 +340,7 @@ async def test_week_of_march_2(setup_with_populated_db):
     dashboard_service = setup_with_populated_db[0]
     march_2_2025_dt = datetime(2025, 3, 2)  # Year, Month, Day
 
-    weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(march_2_2025_dt)
+    weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(UserLocalTime(march_2_2025_dt))
 
     assert all(isinstance(d, dict)
                for d in weeks_overview), "Expected types not found"
