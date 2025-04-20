@@ -9,6 +9,7 @@ from surveillance.src.db.models import TimelineEntryObj
 from surveillance.src.object.classes import KeyboardAggregate, MouseMoveWindow
 from surveillance.src.object.enums import ChartEventType
 from surveillance.src.util.clock import SystemClock
+from surveillance.src.util.time_wrappers import UserLocalTime
 
 
 import psutil
@@ -20,6 +21,8 @@ print(f"Num of open files: {num_open_files}")
 
 # FIXME: OSerror
 # FIXME: OSerror
+
+
 class TestTimelineEntryDao:
     @pytest.fixture
     def mock_session(self):
@@ -76,7 +79,7 @@ class TestTimelineEntryDao:
         # Arrange
         current_time = datetime.now()
         mouse_window = MouseMoveWindow(
-            current_time, current_time + timedelta(minutes=5))
+            UserLocalTime(current_time), UserLocalTime(current_time + timedelta(minutes=5)))
 
         # Mock highest_id query
         mock_result = AsyncMock()

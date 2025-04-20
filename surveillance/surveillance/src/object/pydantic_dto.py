@@ -67,11 +67,8 @@ class TabChangeEventWithUtcDt(BaseModel):
         return f"TabChangeEvent(tabTitle='{self.tabTitle}', url='{self.url}', startTime='{formatted_time}')"
 
 
-class YouTubeEvent(BaseModel):
-    tabTitle: str
-    url: str
+class YouTubeEvent(TabChangeEventWithUtcDt):
     channel: str
-    startTime: datetime
 
     def __str__(self) -> str:
         """Custom string representation of the YouTubeEvent."""

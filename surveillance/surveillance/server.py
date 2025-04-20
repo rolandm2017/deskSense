@@ -34,10 +34,7 @@ from surveillance.src.object.dashboard_dto import (
     WeeklyProgramUsageTimeline, WeeklyTimeline, DayOfTimelineRows
 )
 
-from surveillance.src.util.pydantic_factory import (
-    manufacture_chrome_bar_chart, manufacture_programs_bar_chart,
-    DtoMapper
-)
+from surveillance.src.facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
 from surveillance.src.surveillance_manager import FacadeInjector, SurveillanceManager
 
 from surveillance.src.services.dashboard_service import DashboardService
@@ -54,9 +51,13 @@ from surveillance.src.service_dependencies import (
 
 from surveillance.src.util.console_logger import ConsoleLogger
 
+from surveillance.src.util.pydantic_factory import (
+    manufacture_chrome_bar_chart, manufacture_programs_bar_chart,
+    DtoMapper
+)
 
 from surveillance.src.util.clock import UserFacingClock
-from surveillance.src.facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
+from surveillance.src.util.time_wrappers import UserLocalTime
 # from surveillance.src.facade.program_facade import ProgramApiFacadeCore
 
 import sys
@@ -207,7 +208,7 @@ async def get_chrome_time_for_dashboard(dashboard_service: DashboardService = De
 @app.get("/api/dashboard/breakdown/week/{week_of}", response_model=ProductivityBreakdownByWeek)
 async def get_productivity_breakdown(week_of: date = Path(..., description="Week starting date"),
                                      dashboard_service: DashboardService = Depends(get_dashboard_service)):
-    weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(week_of)
+    weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(UserLocalTime(week_of))
     if not isinstance(weeks_overview, list):
         raise HTTPException(
             status_code=500, detail="Failed to retrieve week of Chrome chart info")
@@ -308,7 +309,7 @@ async def get_timeline_weekly(dashboard_service: DashboardService = Depends(get_
 @app.get("/api/dashboard/timeline/week/{week_of}", response_model=WeeklyTimeline)
 async def get_previous_week_of_timeline(week_of: date = Path(..., description="Week starting date"),
                                         dashboard_service: DashboardService = Depends(get_dashboard_service)):
-    days, start_of_week = await dashboard_service.get_specific_week_timeline(week_of)
+    days, start_of_week = await dashboard_service.get_specific_week_timeline(UserLocalTime(week_of))
 
     rows: List[DayOfTimelineRows] = []
     for day in days:
@@ -388,7 +389,8 @@ async def get_program_usage_timeline_by_week(week_of: date = Path(..., descripti
 @app.get("/api/report/chrome")
 async def get_chrome_report(chrome_service: ChromeService = Depends(get_chrome_service)):
     logger.log_purple("[LOG] Get chrome tabs")
-    reports = await chrome_service.read_last_24_hrs()
+    # reports = await chrome_service.read_last_24_hrs()
+    reports = None  # might be deprecated, this endpoint
     return reports
 
 
@@ -468,7 +470,7 @@ async def receive_youtube_event(
 
 
 @app.post("/api/chrome/ignored", status_code=status.HTTP_204_NO_CONTENT)
-async def receive_chrome_tab(
+async def receive_ignored_tab(
     tab_change_event: TabChangeEventWithUtcDt,
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service)

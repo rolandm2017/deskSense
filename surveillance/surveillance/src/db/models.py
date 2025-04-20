@@ -70,6 +70,9 @@ class Program(Base):
 
 
 class ChromeTab(Base):
+    """
+    FIXME: Looks duplicated form of ChromeLoggingDao stuff
+    """
     __tablename__ = "chrome_tabs"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -112,7 +115,7 @@ class DailyProgramSummary(Base):
     hours_spent: Mapped[float] = mapped_column(Float)
     # The date on which the program data was gathered, without hh:mm:ss
     # MUST be the date FOR THE USER. Otherwise, the program doesn't make sense
-    gathering_date = Column(DateTime(timezone=True))
+    gathering_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     def __str__(self):
         formatted_date = self.gathering_date.strftime(
@@ -131,7 +134,7 @@ class DailyDomainSummary(Base):
     hours_spent: Mapped[float] = mapped_column(Float)
     # The date on which the program data was gathered
     # MUST be the date FOR THE USER. Otherwise, the program doesn't make sense
-    gathering_date = Column(DateTime(timezone=True))
+    gathering_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     def __str__(self):
         formatted_date = self.gathering_date.strftime(
@@ -312,7 +315,8 @@ class SystemStatus(Base):
     __tablename__ = "system_change_log"
 
     id = Column(Integer, primary_key=True, index=True)
-    status = Column(SQLAlchemyEnum(SystemStatusType))
+    status: Mapped[SystemStatusType] = mapped_column(
+        SQLAlchemyEnum(SystemStatusType))
     created_at = Column(DateTime(timezone=True))
 
 

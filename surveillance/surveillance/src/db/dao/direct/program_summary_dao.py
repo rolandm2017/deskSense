@@ -1,6 +1,7 @@
 # daily_summary_dao.py
 from sqlalchemy import select, func, text
 from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.sql.selectable import Select
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timedelta, timezone
 from typing import List
@@ -81,13 +82,16 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
 
     def _create(self, target_program_name: str, duration_in_hours: float, when_it_was_gathered: datetime):
         self.throw_if_negative(target_program_name, duration_in_hours)
+        new_entry = DailyProgramSummary(
+            program_name=target_program_name,
+            hours_spent=duration_in_hours,
+            gathering_date=when_it_was_gathered
+        )
+        self.add_entry(new_entry)
+
+    def add_entry(self, entry):
         with self.regular_session() as session:
-            new_entry = DailyProgramSummary(
-                program_name=target_program_name,
-                hours_spent=duration_in_hours,
-                gathering_date=when_it_was_gathered
-            )
-            session.add(new_entry)
+            session.add(entry)
             session.commit()
 
     def read_past_week(self, right_now: UserLocalTime):
@@ -99,9 +103,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             func.date(DailyProgramSummary.gathering_date) >= last_sunday.date()
         )
 
-        with self.regular_session() as session:
-            result = session.execute(query)
-            return result.scalars().all()
+        return self.execute_and_return(query)
 
     async def read_past_month(self, right_now: UserLocalTime):
         """Read all entries from the 1st of the current month through today."""
@@ -111,28 +113,25 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             func.date(DailyProgramSummary.gathering_date) >= start_of_month.date()
         )
 
-        async with self.regular_session() as session:
-            result = await session.execute(query)
-            return result.scalars().all()
+        return self.execute_and_return(query)
 
     def read_day(self, day: UserLocalTime) -> List[DailyProgramSummary]:
         """Read all entries for the given day."""
         today_start = get_start_of_day(day.dt)
         tomorrow_start = today_start + timedelta(days=1)
-        query = select(DailyProgramSummary).where(
+        query: Select = select(DailyProgramSummary).where(
             DailyProgramSummary.gathering_date >= today_start,
             DailyProgramSummary.gathering_date < tomorrow_start
         )
-        with self.regular_session() as session:
-            result = session.execute(query)
-            result = result.scalars().all()
-            return list(result)
+        return self.execute_and_return(query)
 
     def read_all(self):
         """Read all entries."""
-        with self.regular_session() as session:
-            result = session.execute(select(DailyProgramSummary))
-            return result.scalars().all()
+        query = select(DailyProgramSummary)
+        return self.execute_and_return(query)
+        # with self.regular_session() as session:
+        #     result = session.execute(query)
+        #     return result.scalars().all()
 
     def read_row_for_program(self, target_program_name: str, right_now: UserLocalTime):
         """Reads the row for the target program for today."""
@@ -145,9 +144,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.gathering_date < tomorrow_start
         )
 
-        with self.regular_session() as session:
-            result = session.execute(query)
-            return result.scalar_one_or_none()
+        return self.exec_and_read_one_or_none(query)
 
     # Updates section
 
@@ -194,6 +191,23 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
                 raise ImpossibleToGetHereError(
                     "A program should already exist here, but was not found")
 
+    def execute_and_return(self, query):
+        """
+        A utility method.
+
+        Code is more testable when the entry into sqlAlchemy-only code happens inside a func
+        """
+        with self.regular_session() as session:
+            result = session.execute(query)
+            result = result.scalars().all()
+            return list(result)
+
+    def exec_and_read_one_or_none(self, query):
+        """Helper method to make code more testable and pleasant to read"""
+        with self.regular_session() as session:
+            result = session.execute(query)
+            return result.scalar_one_or_none()
+
     def deduct_remaining_duration(self, session: ProgramSession, duration_in_sec: int, today_start):
         """
         When a session is concluded, it was concluded partway thru the 10 sec window
@@ -226,7 +240,7 @@ class ProgramSummaryDao:  # NOTE: Does not use BaseQueueDao
             program.hours_spent = new_duration  # Error is here GPT
             db_session.commit()
 
-    def throw_if_negative(self, activity, value):
+    def throw_if_negative(self, activity: str, value: int | float):
         if value < 0:
             raise NegativeTimeError(activity, value)
 

@@ -122,7 +122,7 @@ class DashboardService:
             mouse_events = await self.timeline_dao.read_day_mice(current_day, self.user_clock)
             keyboard_events = await self.timeline_dao.read_day_keyboard(current_day, self.user_clock)
 
-            self.logger.log_days_retrieval("[get_current_week_timeline]", current_day, len(
+            self.logger.log_days_retrieval("[get_current_week_timeline]", current_day.dt, len(
                 mouse_events) + len(keyboard_events))
             day = {"date": current_day.dt,
                    "mouse_events": mouse_events,
@@ -134,10 +134,11 @@ class DashboardService:
 
         return days_before_today, todays_unaggregated_payload, sunday_that_starts_the_week
 
-    async def get_specific_week_timeline(self, week_of):
+    async def get_specific_week_timeline(self, week_of: UserLocalTime):
         if isinstance(week_of, date):
             # Note: The transformation here is a requirement
-            week_of = datetime.combine(week_of, datetime.min.time())
+            week_of = UserLocalTime(datetime.combine(
+                week_of.dt, datetime.min.time()))
         else:
             raise TypeError("Expected a date object, got " + str(week_of))
         is_sunday = week_of.weekday() == 6
@@ -170,7 +171,7 @@ class DashboardService:
             # keyboard_events_as_local_time = format_for_local_time(
             # keyboard_events)
 
-            self.logger.log_days_retrieval("[get_specific_week_timeline]", current_day, len(
+            self.logger.log_days_retrieval("[get_specific_week_timeline]", current_day.dt, len(
                 mouse_events) + len(keyboard_events))
             day = {"date": current_day,
                    "mouse_events": mouse_events,
@@ -214,7 +215,7 @@ class DashboardService:
             program_usage_timeline: dict[str, ProgramSummaryLog] = await self.program_logging_dao.read_day_as_sorted(current_day)
 
             self.logger.log_days_retrieval(
-                "[get_current_week_program_usage_timeline]", current_day, len(program_usage_timeline))
+                "[get_current_week_program_usage_timeline]", current_day.dt, len(program_usage_timeline))
             day = {"date": current_day,
                    "program_usage_timeline": program_usage_timeline}
 

@@ -2,22 +2,27 @@ import psutil
 import pytest
 import pytest_asyncio
 
+
 from unittest.mock import AsyncMock, Mock, MagicMock
 from datetime import datetime, date, timedelta, timezone
+from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy import text
+from sqlalchemy.sql.selectable import Select
 
 
 from dotenv import load_dotenv
-import os
 
 from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
-
 from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from surveillance.src.db.models import DailyProgramSummary, Base
 from surveillance.src.object.classes import ProgramSession
+
+from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.clock import SystemClock
+from surveillance.src.util.time_wrappers import UserLocalTime
+
 
 from ....mocks.mock_clock import MockClock
 
@@ -85,453 +90,566 @@ async def cleanup_database(async_engine_and_asm):
 
 
 class TestProgramSummaryDao:
+    @pytest.fixture
+    def mock_session(self):
+        session = Mock(spec=Session)
+        session.commit = Mock()
+        session.refresh = Mock()
+        session.execute = Mock()
+        session.delete = Mock()
+        session.get = Mock()
+        session.add = Mock()
+        return session
+
+    @pytest.fixture
+    def mock_async_session(self):
+        session = AsyncMock(spec=AsyncSession)
+        session.commit = AsyncMock()
+        session.refresh = AsyncMock()
+        session.execute = AsyncMock()
+        session.delete = AsyncMock()
+        session.get = AsyncMock()
+        session.add = AsyncMock()
+        return session
+
+    @pytest.fixture
+    def mock_regular_session_maker(self, mock_session):
+        session_cm = AsyncMock()
+        session_cm.__aenter__.return_value = mock_session
+        session_cm.__aexit__.return_value = None
+
+        maker = MagicMock(spec=sessionmaker)
+        maker.return_value = session_cm
+        return maker
+
+    @pytest.fixture
+    def mock_async_session_maker(self, mock_async_session):
+        session_cm = AsyncMock()
+        session_cm.__aenter__.return_value = mock_async_session
+        session_cm.__aexit__.return_value = None
+
+        maker = MagicMock(spec=async_sessionmaker)
+        maker.return_value = session_cm
+        return maker
+
     @pytest_asyncio.fixture
-    async def program_summary_dao(self, regular_session, plain_asm):
+    async def program_summary_dao(self, mock_regular_session_maker, mock_async_session_maker):
         clock = SystemClock()
 
-        logging_dao = ProgramLoggingDao(regular_session, plain_asm)
+        logging_dao = ProgramLoggingDao(
+            mock_regular_session_maker, mock_async_session_maker)
         program_summary_dao = ProgramSummaryDao(
-            logging_dao, regular_session, plain_asm)
+            logging_dao, mock_regular_session_maker, mock_async_session_maker)
         yield program_summary_dao
-        await logging_dao.cleanup()
+        await logging_dao.cleanup()  # type: ignore
 
-    @pytest.mark.asyncio
-    async def test_create_if_new_else_update_new_entry(self, program_summary_dao):
-        # async def test_create_if_new_else_update_new_entry(self, class_mock_dao, mock_session):
-        # Arrange
-
-        time_for_test = datetime(2025, 3, 23, 9, 25, 25)
-
-        # FIXME: No longer rely on now(); instead, set a fixed time, so your test doesn't depend
-        # on what time it is
-
-        session_data = ProgramSession()
-        session_data.window_title = "TestProgramFromTest"
-        session_data.start_time = time_for_test
-
-        # awful in-test math to produce a good start/end time for a session
-        later = time_for_test + timedelta(minutes=3)
-
-        session_data.end_time = later
-        session_data.duration = later - time_for_test
-
-        # Act
-        program_summary_dao.create_if_new_else_update(
-            session_data, time_for_test)
-
-        # ### Assert
-        # Check if it's really in there
-        all = program_summary_dao.read_all()
-        assert len(all) == 1, "Expected exactly one row"
-        percent_of_hour = all[0].hours_spent
-
-        assert session_data.duration.seconds / (60 * 60) == percent_of_hour
-
-    @pytest.mark.asyncio
-    async def test_create_if_new_else_update_existing_entry(self, program_summary_dao):
-        # Arrange
-        t0 = datetime(2025, 3, 23, 9, 25, 31)
-
-        t0 = t0 - timedelta(hours=1)
-        t1 = t0 + timedelta(minutes=1)
-        t2 = t0 + timedelta(minutes=5)
-        t3 = t0 + timedelta(minutes=6)
-        # session_data = {
-        #     'window': 'TestProgram',
-        #     'start_time': datetime.now(),
-        #     'end_time': datetime.now().replace(hour=datetime.now().hour + 1)
-        # }
-        session_data = ProgramSession()
-        session_data.window_title = "ExistingEntryTestSession"
-        session_data.start_time = t0
-        session_data.end_time = t1
-        session_data.duration = t1 - t0
-
-        second_usage_by_user = ProgramSession()
-        second_usage_by_user.window_title = "ExistingEntryTestSession"
-        second_usage_by_user.start_time = t2
-        second_usage_by_user.end_time = t3
-        second_usage_by_user.duration = t3 - t2
-
-        # Arranging still: This session is already in there
-        program_summary_dao.create_if_new_else_update(session_data, t0)
-
-        # Create a spy for the create method
-        original_create = program_summary_dao._create
-        create_spy = AsyncMock()
-        program_summary_dao._create = create_spy
-
-        # Also spy on update_hours
-        original_update_hours = program_summary_dao.update_hours
-        update_spy = AsyncMock()
-        program_summary_dao.update_hours = update_spy
-
-        # Act
-        program_summary_dao.create_if_new_else_update(second_usage_by_user, t2)
-
-        # Assert
-        create_spy.assert_not_called()
-        update_spy.assert_called_once()
-        # assert mock_session.execute.called
-        # assert mock_session.commit.called
-
-    @pytest.mark.asyncio
-    async def test_read_day(self, program_summary_dao):
-        # Arrange
-        t0 = datetime(2025, 3, 23, 9, 25, 31)
-
-        t0 = t0 - timedelta(hours=1)
-        t1 = t0 + timedelta(minutes=1)
-        t2 = t0 + timedelta(minutes=5)
-        t3 = t0 + timedelta(minutes=6)
-        session_data = ProgramSession("readDayTest", "", t0, t1)
-
-        second_usage_by_user = ProgramSession(
-            "readDayTestMaterial", "", t2, t3)
-
-        program_summary_dao.create_if_new_else_update(session_data, t0)
-        program_summary_dao.create_if_new_else_update(second_usage_by_user, t2)
-
-        # Act
-        result = program_summary_dao.read_day(t0)
-
-        # Assert
-        assert len(result) == len([session_data, second_usage_by_user])
-        assert result[0].gathering_date.day == t0.day
-        assert result[1].gathering_date.day == t0.day
-
-    @pytest.mark.asyncio
-    async def test_read_all(self, program_summary_dao):
-        # Arrange
-        t0 = datetime(2025, 3, 23, 9, 25, 39)
-
-        t0 = t0 - timedelta(hours=1)
-        t1 = t0 + timedelta(minutes=1)
-        t2 = t0 + timedelta(minutes=5)
-        t3 = t0 + timedelta(minutes=6)
-        t4 = t0 + timedelta(minutes=8)
-        session_data = ProgramSession("readAllTest", "", t0, t1)
-
-        second_session = ProgramSession("readAllTestMaterial", "", t2, t3)
-        third = ProgramSession("readAllTestMaterialAgain", "", t3, t4)
-
-        program_summary_dao.create_if_new_else_update(session_data, t0)
-        program_summary_dao.create_if_new_else_update(second_session, t2)
-        program_summary_dao.create_if_new_else_update(third, t3)
-
-        # Act
-        result = program_summary_dao.read_all()
-
-        # Assert
-        assert len(result) == 3
-
-    @pytest.mark.asyncio
-    async def test_read_row_for_program(self, program_summary_dao):
-        # Arrange
-        program_name = "TestProgram"
-
-        t0 = datetime(2025, 3, 23, 8, 25, 41)
-        t0 = t0 - timedelta(hours=1)
-        t1 = t0 + timedelta(minutes=1)
-        session = ProgramSession(program_name, "", t0, t1)
-        program_summary_dao.create_if_new_else_update(session, t0)
-
-        # Act
-        result = program_summary_dao.read_row_for_program(program_name, t0)
-
-        # Assert
-        duration_as_percent_of_hour = (t1 - t0).seconds / (60 * 60)
-        assert result is not None
-        assert result.program_name == session.window_title
-        assert result.hours_spent == duration_as_percent_of_hour
-
-    # YAGNI:
-    # @pytest.mark.asyncio
-    # async def test_delete(self, class_mock_dao, mock_session):
-        # pass
-    # YAGNI:
-    # @pytest.mark.asyncio
-    # async def test_delete_nonexistent(self, class_mock_dao, mock_session):
-        # pass
-
-    @pytest.mark.asyncio
-    async def test_several_consecutive_writes(self, program_summary_dao):
-
+    def test_start_session(self, program_summary_dao):
         dt = datetime(2025, 1, 25, 15, 5)
-        # 1
 
         chrome = "Chrome"
-        pycharm = "PyCharm"
-        ventrilo = "Venrilo"
 
         dt2 = dt + timedelta(seconds=13)
         session_data_1 = ProgramSession(chrome, "Facebook.com", dt, dt2)
         session_data_1.productive = False
 
-        # 2
-        dt3 = dt2 + timedelta(seconds=12)
-        session_data_2 = ProgramSession(pycharm, "some_code.py", dt2, dt3)
-        session_data_2.productive = True
-
-        # 3
-        dt4 = dt3 + timedelta(seconds=28)
-        session_data_3 = ProgramSession(chrome, "Facebook.com", dt3, dt4)
-        session_data_3.productive = False
-
-        # 4
-        dt5 = dt4 + timedelta(seconds=22)
-        session_data_4 = ProgramSession(pycharm, "MyFile.tsx", dt4, dt5)
-        session_data_4.productive = True
-
-        # 5
-        dt6 = dt5 + timedelta(seconds=25)
-        session_data_5 = ProgramSession(
-            ventrilo, "Pyre - Exercises in Futility", dt5, dt6)
-        session_data_5.productive = False
-
-        # 6
-        dt7 = dt6 + timedelta(seconds=25)
-        session_data_6 = ProgramSession(chrome, "Claude.ai", dt6, dt7)
-        session_data_6.productive = True
-
-        chrome_count = 3
-        pycharm_count = 2
-        ventrilo_count = 1
-
-        total_time = (13 + 12 + 28 + 22 + 25 + 25) / (60 * 60)
+        create_spy = Mock()
+        program_summary_dao._create = create_spy
 
         # Act
-        program_summary_dao.create_if_new_else_update(session_data_1, dt)
-        program_summary_dao.create_if_new_else_update(session_data_2, dt2)
-        program_summary_dao.create_if_new_else_update(session_data_3, dt3)
-        program_summary_dao.create_if_new_else_update(session_data_4, dt4)
-        program_summary_dao.create_if_new_else_update(session_data_5, dt5)
-        program_summary_dao.create_if_new_else_update(session_data_6, dt6)
-
-        # TODO: Assert that the total time elapsed is what you expect
+        program_summary_dao.start_session(session_data_1, UserLocalTime(dt))
 
         # Assert
-        all = program_summary_dao.read_all()
-        total = sum(x.hours_spent for x in all)
-        assert len(all) == 3
-        assert total == total_time
+        create_spy.assert_called_once()
 
-    @pytest.mark.asyncio
-    async def test_series_of_database_operations(self, test_db_dao):
+        args, kwargs = create_spy.call_args
+        # Check that first argument is a Select object
+        assert isinstance(args[0], str)
+        assert isinstance(args[1], float)
+        assert isinstance(args[2], datetime)
+        assert args[0] == "Chrome"
+        assert args[1] == 10 / SECONDS_PER_HOUR
+        assert args[2].day == dt.day
+        assert args[2].hour == 0
+        assert args[2].minute == 0
 
-        # Get today's date
-        today = datetime.now(timezone.utc).date()
+    def test_create(self, program_summary_dao):
+        dt = datetime(2025, 1, 25, 15, 5)
 
-        # v = test_db_dao.read_all()
+        add_entry_spy = Mock()
+        program_summary_dao.add_entry = add_entry_spy
 
-        change_1 = 13
-        change_2 = 12
-        change_3 = 28
-        change_4 = 22
-        change_5 = 25
-        change_6 = 25
-        change_7 = 120
+        program_summary_dao._create("foo", 1 / 60, dt)
 
-        # Create a datetime object for today at 3:05 PM
-        dt = datetime(today.year, today.month, today.day,
-                      6, 5, tzinfo=timezone.utc)
-        print("base time for dt: ", dt.hour)
-        dt2 = dt + timedelta(seconds=change_1)
-        dt3 = dt2 + timedelta(seconds=change_2)
-        dt4 = dt3 + timedelta(seconds=change_3)
-        dt5 = dt4 + timedelta(seconds=change_4)
-        dt6 = dt5 + timedelta(seconds=change_5)
-        dt7 = dt6 + timedelta(seconds=change_6)
-        dt8 = dt7 + timedelta(seconds=change_7)
+        add_entry_spy.assert_called_once()
 
-        times = [dt, dt2, dt3, dt4, dt5, dt6, dt7, dt8]
+        args, kwargs = add_entry_spy.call_args
 
-        mock_clock = MockClock(times)
-        test_db_dao.clock = mock_clock
+        assert isinstance(args[0], DailyProgramSummary)
 
-        # First verify the database is empty
-        initial_entries = test_db_dao.read_all()
-        print("\nInitial entries:", [
-            (e.program_name, e.hours_spent) for e in initial_entries])
+        assert args[0].program_name == "foo"
+        assert args[0].hours_spent == 1/60
+        assert args[0].gathering_date.day == dt.day
+        assert args[0].gathering_date.hour == dt.hour
 
-        # Add explicit cleanup at start of test
-        with test_db_dao.regular_session() as session:
-            session.execute(text("DELETE FROM daily_program_summaries"))
-            session.commit()
+    # @pytest.mark.asyncio
+    # async def test_create_if_new_else_update_new_entry(self, program_summary_dao):
+    #     # async def test_create_if_new_else_update_new_entry(self, class_mock_dao, mock_session):
+    #     # Arrange
 
-        initial_entries = test_db_dao.read_all()
-        assert len(
-            initial_entries) == 0, "Database should be empty at start of test"
+    #     time_for_test = datetime(2025, 3, 23, 9, 25, 25)
 
-        chrome = "Chrome"
-        pycharm = "PyCharm"
-        ventrilo = "Ventrilo"
-        test_vs_code = "TestPyCharm"
-        chrome_time = 0
-        pycharm_time = 0
-        ventrilo_time = 0
+    #     # FIXME: No longer rely on now(); instead, set a fixed time, so your test doesn't depend
+    #     # on what time it is
 
-        # First create a single entry and verify it works
-        test_session = ProgramSession()
-        test_session.window_title = test_vs_code
-        test_session.start_time = dt
-        dt_modified = dt + timedelta(minutes=5)
-        test_session.end_time = dt_modified
-        test_session.duration = dt_modified - dt
+    #     session_data = ProgramSession()
+    #     session_data.window_title = "TestProgramFromTest"
+    #     session_data.start_time = UserLocalTime(time_for_test)
 
-        test_db_dao.create_if_new_else_update(test_session, dt)
+    #     # awful in-test math to produce a good start/end time for a session
+    #     later = time_for_test + timedelta(minutes=3)
 
-        # Verify it was created
-        entry = test_db_dao.read_row_for_program(test_vs_code, dt)
-        all = test_db_dao.read_all()
-        assert len(
-            all) == 1, "Either the test entry didn't get made, or more than one was made"
-        assert entry is not None
-        assert entry.program_name == test_vs_code
-        assert entry.hours_spent > 0
+    #     session_data.end_time = UserLocalTime(later)
+    #     session_data.duration = later - time_for_test
 
-        # 1
-        session_data_1 = ProgramSession(chrome, "Facebook.com", dt, dt2)
-        session_data_1.productive = False
-        chrome_time += change_1
-        # 2
-        dt3 = dt2 + timedelta(seconds=12)
-        session_data_2 = ProgramSession(pycharm, "some_code.py", dt2, dt3)
-        session_data_2.productive = True
-        pycharm_time += change_2
+    #     # Act
+    #     program_summary_dao.create_if_new_else_update(
+    #         session_data, time_for_test)
 
-        # 3
-        dt4 = dt3 + timedelta(seconds=28)
-        session_data_3 = ProgramSession(chrome, "Facebook.com", dt3, dt4)
-        session_data_3.productive = False
-        chrome_time += change_3
+    #     # ### Assert
+    #     # Check if it's really in there
+    #     all = program_summary_dao.read_all()
+    #     assert len(all) == 1, "Expected exactly one row"
+    #     percent_of_hour = all[0].hours_spent
 
-        # 4
-        dt5 = dt4 + timedelta(seconds=22)
-        session_data_4 = ProgramSession(pycharm, "MyFile.tsx", dt4, dt5)
-        session_data_4.productive = True
-        pycharm_time += change_4
+    #     assert session_data.duration.seconds / (60 * 60) == percent_of_hour
 
-        # 5
-        dt6 = dt5 + timedelta(seconds=25)
-        session_data_5 = ProgramSession(
-            ventrilo, "Pyre - Exercises in Futility", dt5, dt6)
-        session_data_5.productive = False
-        ventrilo_time += change_5
+    # @pytest.mark.asyncio
+    # async def test_create_if_new_else_update_existing_entry(self, program_summary_dao):
+    #     # Arrange
+    #     t0 = datetime(2025, 3, 23, 9, 25, 31)
 
-        # 6
-        dt7 = dt6 + timedelta(seconds=25)
-        session_data_6 = ProgramSession(chrome, "Claude.ai", dt6, dt7)
-        session_data_6.productive = True
-        chrome_time += change_6
+    #     t0 = t0 - timedelta(hours=1)
+    #     t1 = t0 + timedelta(minutes=1)
+    #     t2 = t0 + timedelta(minutes=5)
+    #     t3 = t0 + timedelta(minutes=6)
+    #     # session_data = {
+    #     #     'window': 'TestProgram',
+    #     #     'start_time': datetime.now(),
+    #     #     'end_time': datetime.now().replace(hour=datetime.now().hour + 1)
+    #     # }
+    #     session_data = ProgramSession()
+    #     session_data.window_title = "ExistingEntryTestSession"
+    #     session_data.start_time = UserLocalTime(t0)
+    #     session_data.end_time = UserLocalTime(t1)
+    #     session_data.duration = t1 - t0
 
-        # 7
-        dt8 = dt7 + timedelta(seconds=30)
-        session_data_7 = ProgramSession(pycharm, "some_file.py", dt7, dt8)
-        session_data_7.productive = True
-        pycharm_time += change_7
+    #     second_usage_by_user = ProgramSession()
+    #     second_usage_by_user.window_title = "ExistingEntryTestSession"
+    #     second_usage_by_user.start_time = UserLocalTime(t2)
+    #     second_usage_by_user.end_time = UserLocalTime(t3)
+    #     second_usage_by_user.duration = t3 - t2
 
-        sessions = [session_data_1, session_data_2, session_data_3,
-                    session_data_4, session_data_5, session_data_6, session_data_7]
+    #     # Arranging still: This session is already in there
+    #     program_summary_dao.create_if_new_else_update(session_data, t0)
 
-        unique_program_mentions = [test_vs_code, chrome, pycharm, ventrilo]
+    #     # Create a spy for the create method
+    #     original_create = program_summary_dao._create
+    #     create_spy = AsyncMock()
+    #     program_summary_dao._create = create_spy
 
-        for session in sessions:
-            test_db_dao.create_if_new_else_update(session, session.start_time)
+    #     # Also spy on update_hours
+    #     original_update_hours = program_summary_dao.update_hours
+    #     update_spy = AsyncMock()
+    #     program_summary_dao.update_hours = update_spy
 
-        # ### Verify all programs were created
-        all_entries = test_db_dao.read_all()
-        assert len(all_entries) == len(unique_program_mentions)
+    #     # Act
+    #     program_summary_dao.create_if_new_else_update(second_usage_by_user, t2)
 
-        # Verify specific program times
-        chrome_expected = (13 + 28 + 25) / (60 * 60)
-        ventrilo_expected = 25 / (60 * 60)
-        pyCharm_expected = (12 + 22 + 30) / (60 * 60)
-        # expected_hours_spent = [
-        #     chrome_expected, pycharm_expected, Ventrilo_expected, TestPyCharm_expected]
-        expected_hours_spent = [
-            chrome_expected, ventrilo_expected, pyCharm_expected]
-        for program in sessions:
-            entry = test_db_dao.read_row_for_program(
-                program.window_title, program.start_time)
-            assert entry is not None
-            assert entry.program_name == program.window_title
-            # FIXME - more specific claim pls, and passing
-            assert entry.hours_spent in expected_hours_spent
-            # assert entry.hours_spent > 0.01  # FIXME - more specific claim pls, and passing
+    #     # Assert
+    #     create_spy.assert_not_called()
+    #     update_spy.assert_called_once()
+    #     # assert mock_session.execute.called
+    #     # assert mock_session.commit.called
 
-        # Test updating existing entry
-        update_session = ProgramSession()
-        update_session.window_title = chrome
-        test_update_start_time = dt + timedelta(hours=3)
-        test_update_end_time = dt + timedelta(hours=5)
-        update_session.start_time = test_update_start_time
-        update_session.end_time = test_update_end_time
-        update_session.duration = test_update_end_time - test_update_start_time
+    def test_read_day(self, program_summary_dao, mock_session):
+        # Arrange
+        t0 = datetime(2025, 3, 23, 9, 25, 31)
 
-        # FIXME: duration = 2 hours
+        t1 = UserLocalTime(t0 - timedelta(hours=1))
+        t2 = UserLocalTime(t0 + timedelta(minutes=1))
+        t3 = UserLocalTime(t0 + timedelta(minutes=5))
+        t4 = UserLocalTime(t0 + timedelta(minutes=6))
+        session_data = ProgramSession("readDayTest", "", t1, t2)
 
-        test_db_dao.create_if_new_else_update(
-            update_session, test_update_start_time)
+        second_usage_by_user = ProgramSession(
+            "readDayTestMaterial", "", t3, t4)
 
-        time_from_chrome_update = test_update_end_time - test_update_start_time
-        time_from_chrome_update = time_from_chrome_update.total_seconds()
+        # Pretend this happened
+        # program_summary_dao.start_session(session_data, t1)
+        # program_summary_dao.start_session(second_usage_by_user, t3)
 
-        # Verify the update
-        chrome_entry = test_db_dao.read_row_for_program(
-            chrome, test_update_start_time)
-        assert chrome_entry is not None
-        # Original time plus update time
-        assert chrome_entry.hours_spent > 2.0  # 5 - 3
+        # Set up the mock session (not the session maker) to return the mock result
+        first_session_out = DailyProgramSummary()
+        first_session_out.program_name = "readDayTest"
+        first_session_out.gathering_date = t1.dt
+        second_usage_out = DailyProgramSummary()
+        second_usage_out.program_name = "readDayTestMaterial"
+        second_usage_out.gathering_date = t3.dt
 
-        # ### Test reading by day
+        pretend_result = [first_session_out, second_usage_out]
 
-        right_now = dt
-        day_entries = test_db_dao.read_day(right_now)
+        exec_and_return_spy = Mock()
+        exec_and_return_spy.return_value = pretend_result
+        program_summary_dao.execute_and_return = exec_and_return_spy
 
-        with test_db_dao.regular_session() as session:
-            result = session.execute(
-                text("SELECT program_name, gathering_date FROM daily_program_summaries"))
-            rows = result.fetchall()
-            for row in rows:
-                print(f"Program: {row[0]}, Gathering Date: {row[1]}")
-        # day_entries = await test_db_dao.read_day(dt)
-        assert len(day_entries) == len(unique_program_mentions)
+        # Act
+        result = program_summary_dao.read_day(t1)
 
-        # Test deletion
-        if len(day_entries) > 0:
-            first_entry = day_entries[0]
-            deleted_entry = test_db_dao.delete(first_entry.id)
-            assert deleted_entry is not None
+        # Assert
+        exec_and_return_spy.assert_called_once()
 
-            # Verify deletion
-            all_entries = test_db_dao.read_all()
-            assert len(all_entries) == len(unique_program_mentions) - 1
+        args, kwargs = exec_and_return_spy.call_args
+        # Check that first argument is a Select object
+        assert isinstance(args[0], Select)
 
-        # TEST that the total number of entries
-        # reflects the number of unique programs seen
-        assert len(all_entries) == 3  # Chrome, PyCharm, Ventrilo
+        assert len(result) == len(pretend_result)
+        assert result[0].gathering_date.day == t1.day
+        assert result[1].gathering_date.day == t3.day
 
-        # TEST that the total computed time is as expected
-        chrome_entry = None
-        pycharm_entry = None
-        ventrilo_entry = None
+    def test_read_all(self, program_summary_dao):
+        # Pretend these happened:
+        # program_summary_dao.create_if_new_else_update(session_data, t0)
+        # program_summary_dao.create_if_new_else_update(second_session, t2)
+        # program_summary_dao.create_if_new_else_update(third, t3)
 
-        for entry in all_entries:
-            if entry.program_name == "Chrome":
-                chrome_entry = entry
-            elif entry.program_name == "PyCharm":
-                pycharm_entry = entry
-            elif entry.program_name == "Ventrilo":
-                ventrilo_entry = entry
+        # Arrange
+        exec_and_return_spy = Mock()
+        exec_and_return_spy.return_value = [
+            1, 2, 3]  # Pretend they're the right type
+        program_summary_dao.execute_and_return = exec_and_return_spy
 
-        #
-        # # 3600 = 60 sec * 60 min = 3600 sec per hour
-        #
-        assert pycharm_entry is not None
-        assert ventrilo_entry is not None
-        assert chrome_entry is not None
-        assert pycharm_entry.hours_spent == pyCharm_expected
-        assert ventrilo_entry.hours_spent == ventrilo_expected
-        assert chrome_entry.hours_spent == (
-            chrome_time / 3600) + (time_from_chrome_update / 3600)
+        # Act
+        result = program_summary_dao.read_all()
+
+        # Assert
+        exec_and_return_spy.assert_called_once()
+
+        args, kwargs = exec_and_return_spy.call_args
+        # Check that first argument is a Select object
+        assert isinstance(args[0], Select)
+        assert len(result) == 3
+
+    def test_read_row_for_program(self, program_summary_dao):
+        # Arrange
+        program_name = "TestProgram"
+
+        t0 = datetime(2025, 3, 23, 8, 25, 41)
+        # t0 = t0 - timedelta(hours=1)
+        # t1 = t0 + timedelta(minutes=1)
+        # session = ProgramSession(program_name, "", t0, t1)
+        # program_summary_dao.create_if_new_else_update(session, t0)
+
+        exec_and_one_or_none_spy = Mock()
+        program_summary_dao.exec_and_read_one_or_none = exec_and_one_or_none_spy
+
+        # Act
+        program_summary_dao.read_row_for_program(
+            program_name, UserLocalTime(t0))
+
+        # Assert
+        exec_and_one_or_none_spy.assert_called_once()
+
+        args, kwargs = exec_and_one_or_none_spy.call_args
+        # Check that first argument is a Select object
+        assert isinstance(args[0], Select)
+
+    # # YAGNI:
+    # # @pytest.mark.asyncio
+    # # async def test_delete(self, class_mock_dao, mock_session):
+    #     # pass
+    # # YAGNI:
+    # # @pytest.mark.asyncio
+    # # async def test_delete_nonexistent(self, class_mock_dao, mock_session):
+    #     # pass
+
+    # @pytest.mark.asyncio
+    # async def test_several_consecutive_writes(self, program_summary_dao):
+
+    #     dt = datetime(2025, 1, 25, 15, 5)
+    #     # 1
+
+    #     chrome = "Chrome"
+    #     pycharm = "PyCharm"
+    #     ventrilo = "Venrilo"
+
+    #     dt2 = dt + timedelta(seconds=13)
+    #     session_data_1 = ProgramSession(chrome, "Facebook.com", dt, dt2)
+    #     session_data_1.productive = False
+
+    #     # 2
+    #     dt3 = dt2 + timedelta(seconds=12)
+    #     session_data_2 = ProgramSession(pycharm, "some_code.py", dt2, dt3)
+    #     session_data_2.productive = True
+
+    #     # 3
+    #     dt4 = dt3 + timedelta(seconds=28)
+    #     session_data_3 = ProgramSession(chrome, "Facebook.com", dt3, dt4)
+    #     session_data_3.productive = False
+
+    #     # 4
+    #     dt5 = dt4 + timedelta(seconds=22)
+    #     session_data_4 = ProgramSession(pycharm, "MyFile.tsx", dt4, dt5)
+    #     session_data_4.productive = True
+
+    #     # 5
+    #     dt6 = dt5 + timedelta(seconds=25)
+    #     session_data_5 = ProgramSession(
+    #         ventrilo, "Pyre - Exercises in Futility", dt5, dt6)
+    #     session_data_5.productive = False
+
+    #     # 6
+    #     dt7 = dt6 + timedelta(seconds=25)
+    #     session_data_6 = ProgramSession(chrome, "Claude.ai", dt6, dt7)
+    #     session_data_6.productive = True
+
+    #     chrome_count = 3
+    #     pycharm_count = 2
+    #     ventrilo_count = 1
+
+    #     total_time = (13 + 12 + 28 + 22 + 25 + 25) / (60 * 60)
+
+    #     # Act
+    #     program_summary_dao.create_if_new_else_update(session_data_1, dt)
+    #     program_summary_dao.create_if_new_else_update(session_data_2, dt2)
+    #     program_summary_dao.create_if_new_else_update(session_data_3, dt3)
+    #     program_summary_dao.create_if_new_else_update(session_data_4, dt4)
+    #     program_summary_dao.create_if_new_else_update(session_data_5, dt5)
+    #     program_summary_dao.create_if_new_else_update(session_data_6, dt6)
+
+    #     # TODO: Assert that the total time elapsed is what you expect
+
+    #     # Assert
+    #     all = program_summary_dao.read_all()
+    #     total = sum(x.hours_spent for x in all)
+    #     assert len(all) == 3
+    #     assert total == total_time
+
+    # @pytest.mark.asyncio
+    # async def test_series_of_database_operations(self, test_db_dao):
+
+    #     # Get today's date
+    #     today = datetime.now(timezone.utc).date()
+
+    #     # v = test_db_dao.read_all()
+
+    #     change_1 = 13
+    #     change_2 = 12
+    #     change_3 = 28
+    #     change_4 = 22
+    #     change_5 = 25
+    #     change_6 = 25
+    #     change_7 = 120
+
+    #     # Create a datetime object for today at 3:05 PM
+    #     dt = datetime(today.year, today.month, today.day,
+    #                   6, 5, tzinfo=timezone.utc)
+    #     print("base time for dt: ", dt.hour)
+    #     dt2 = dt + timedelta(seconds=change_1)
+    #     dt3 = dt2 + timedelta(seconds=change_2)
+    #     dt4 = dt3 + timedelta(seconds=change_3)
+    #     dt5 = dt4 + timedelta(seconds=change_4)
+    #     dt6 = dt5 + timedelta(seconds=change_5)
+    #     dt7 = dt6 + timedelta(seconds=change_6)
+    #     dt8 = dt7 + timedelta(seconds=change_7)
+
+    #     times = [dt, dt2, dt3, dt4, dt5, dt6, dt7, dt8]
+
+    #     mock_clock = MockClock(times)
+    #     test_db_dao.clock = mock_clock
+
+    #     # First verify the database is empty
+    #     initial_entries = test_db_dao.read_all()
+    #     print("\nInitial entries:", [
+    #         (e.program_name, e.hours_spent) for e in initial_entries])
+
+    #     # Add explicit cleanup at start of test
+    #     with test_db_dao.regular_session() as session:
+    #         session.execute(text("DELETE FROM daily_program_summaries"))
+    #         session.commit()
+
+    #     initial_entries = test_db_dao.read_all()
+    #     assert len(
+    #         initial_entries) == 0, "Database should be empty at start of test"
+
+    #     chrome = "Chrome"
+    #     pycharm = "PyCharm"
+    #     ventrilo = "Ventrilo"
+    #     test_vs_code = "TestPyCharm"
+    #     chrome_time = 0
+    #     pycharm_time = 0
+    #     ventrilo_time = 0
+
+    #     # First create a single entry and verify it works
+    #     test_session = ProgramSession()
+    #     test_session.window_title = test_vs_code
+    #     test_session.start_time = UserLocalTime(dt)
+    #     dt_modified = dt + timedelta(minutes=5)
+    #     test_session.end_time = UserLocalTime(dt_modified)
+    #     test_session.duration = dt_modified - dt
+
+    #     test_db_dao.create_if_new_else_update(test_session, dt)
+
+    #     # Verify it was created
+    #     entry = test_db_dao.read_row_for_program(test_vs_code, dt)
+    #     all = test_db_dao.read_all()
+    #     assert len(
+    #         all) == 1, "Either the test entry didn't get made, or more than one was made"
+    #     assert entry is not None
+    #     assert entry.program_name == test_vs_code
+    #     assert entry.hours_spent > 0
+
+    #     # 1
+    #     session_data_1 = ProgramSession(chrome, "Facebook.com", dt, dt2)
+    #     session_data_1.productive = False
+    #     chrome_time += change_1
+    #     # 2
+    #     dt3 = dt2 + timedelta(seconds=12)
+    #     session_data_2 = ProgramSession(pycharm, "some_code.py", dt2, dt3)
+    #     session_data_2.productive = True
+    #     pycharm_time += change_2
+
+    #     # 3
+    #     dt4 = dt3 + timedelta(seconds=28)
+    #     session_data_3 = ProgramSession(chrome, "Facebook.com", dt3, dt4)
+    #     session_data_3.productive = False
+    #     chrome_time += change_3
+
+    #     # 4
+    #     dt5 = dt4 + timedelta(seconds=22)
+    #     session_data_4 = ProgramSession(pycharm, "MyFile.tsx", dt4, dt5)
+    #     session_data_4.productive = True
+    #     pycharm_time += change_4
+
+    #     # 5
+    #     dt6 = dt5 + timedelta(seconds=25)
+    #     session_data_5 = ProgramSession(
+    #         ventrilo, "Pyre - Exercises in Futility", dt5, dt6)
+    #     session_data_5.productive = False
+    #     ventrilo_time += change_5
+
+    #     # 6
+    #     dt7 = dt6 + timedelta(seconds=25)
+    #     session_data_6 = ProgramSession(chrome, "Claude.ai", dt6, dt7)
+    #     session_data_6.productive = True
+    #     chrome_time += change_6
+
+    #     # 7
+    #     dt8 = dt7 + timedelta(seconds=30)
+    #     session_data_7 = ProgramSession(pycharm, "some_file.py", dt7, dt8)
+    #     session_data_7.productive = True
+    #     pycharm_time += change_7
+
+    #     sessions = [session_data_1, session_data_2, session_data_3,
+    #                 session_data_4, session_data_5, session_data_6, session_data_7]
+
+    #     unique_program_mentions = [test_vs_code, chrome, pycharm, ventrilo]
+
+    #     for session in sessions:
+    #         test_db_dao.create_if_new_else_update(session, session.start_time)
+
+    #     # ### Verify all programs were created
+    #     all_entries = test_db_dao.read_all()
+    #     assert len(all_entries) == len(unique_program_mentions)
+
+    #     # Verify specific program times
+    #     chrome_expected = (13 + 28 + 25) / (60 * 60)
+    #     ventrilo_expected = 25 / (60 * 60)
+    #     pyCharm_expected = (12 + 22 + 30) / (60 * 60)
+    #     # expected_hours_spent = [
+    #     #     chrome_expected, pycharm_expected, Ventrilo_expected, TestPyCharm_expected]
+    #     expected_hours_spent = [
+    #         chrome_expected, ventrilo_expected, pyCharm_expected]
+    #     for program in sessions:
+    #         entry = test_db_dao.read_row_for_program(
+    #             program.window_title, program.start_time)
+    #         assert entry is not None
+    #         assert entry.program_name == program.window_title
+    #         # FIXME - more specific claim pls, and passing
+    #         assert entry.hours_spent in expected_hours_spent
+    #         # assert entry.hours_spent > 0.01  # FIXME - more specific claim pls, and passing
+
+    #     # Test updating existing entry
+    #     update_session = ProgramSession()
+    #     update_session.window_title = chrome
+    #     test_update_start_time = dt + timedelta(hours=3)
+    #     test_update_end_time = dt + timedelta(hours=5)
+    #     update_session.start_time = UserLocalTime(test_update_start_time)
+    #     update_session.end_time = UserLocalTime(test_update_end_time)
+    #     update_session.duration = test_update_end_time - test_update_start_time
+
+    #     # FIXME: duration = 2 hours
+
+    #     test_db_dao.create_if_new_else_update(
+    #         update_session, test_update_start_time)
+
+    #     time_from_chrome_update = test_update_end_time - test_update_start_time
+    #     time_from_chrome_update = time_from_chrome_update.total_seconds()
+
+    #     # Verify the update
+    #     chrome_entry = test_db_dao.read_row_for_program(
+    #         chrome, test_update_start_time)
+    #     assert chrome_entry is not None
+    #     # Original time plus update time
+    #     assert chrome_entry.hours_spent > 2.0  # 5 - 3
+
+    #     # ### Test reading by day
+
+    #     right_now = dt
+    #     day_entries = test_db_dao.read_day(right_now)
+
+    #     with test_db_dao.regular_session() as session:
+    #         result = session.execute(
+    #             text("SELECT program_name, gathering_date FROM daily_program_summaries"))
+    #         rows = result.fetchall()
+    #         for row in rows:
+    #             print(f"Program: {row[0]}, Gathering Date: {row[1]}")
+    #     # day_entries = await test_db_dao.read_day(dt)
+    #     assert len(day_entries) == len(unique_program_mentions)
+
+    #     # Test deletion
+    #     if len(day_entries) > 0:
+    #         first_entry = day_entries[0]
+    #         deleted_entry = test_db_dao.delete(first_entry.id)
+    #         assert deleted_entry is not None
+
+    #         # Verify deletion
+    #         all_entries = test_db_dao.read_all()
+    #         assert len(all_entries) == len(unique_program_mentions) - 1
+
+    #     # TEST that the total number of entries
+    #     # reflects the number of unique programs seen
+    #     assert len(all_entries) == 3  # Chrome, PyCharm, Ventrilo
+
+    #     # TEST that the total computed time is as expected
+    #     chrome_entry = None
+    #     pycharm_entry = None
+    #     ventrilo_entry = None
+
+    #     for entry in all_entries:
+    #         if entry.program_name == "Chrome":
+    #             chrome_entry = entry
+    #         elif entry.program_name == "PyCharm":
+    #             pycharm_entry = entry
+    #         elif entry.program_name == "Ventrilo":
+    #             ventrilo_entry = entry
+
+    #     #
+    #     # # 3600 = 60 sec * 60 min = 3600 sec per hour
+    #     #
+    #     assert pycharm_entry is not None
+    #     assert ventrilo_entry is not None
+    #     assert chrome_entry is not None
+    #     assert pycharm_entry.hours_spent == pyCharm_expected
+    #     assert ventrilo_entry.hours_spent == ventrilo_expected
+    #     assert chrome_entry.hours_spent == (
+    #         chrome_time / 3600) + (time_from_chrome_update / 3600)
