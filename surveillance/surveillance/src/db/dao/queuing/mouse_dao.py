@@ -23,18 +23,7 @@ class MouseDao(BaseQueueingDao):
 
         self.logger = ConsoleLogger()
 
-    # NOTE: this whole DAO is a candidate for asyncio.create_task()'ing the writes
-
-    # async def create_from_start_end_times(self, start_time: UserLocalTime, end_time: UserLocalTime):
-    #     mouse_move = MouseMove(start_time=start_time.dt, end_time=end_time.dt)
-    #     if isinstance(mouse_move, MouseMoveWindow):
-    #         raise ValueError("mouse move window found!")
-    #     await self.queue_item(mouse_move, MouseMove, "create_from_start_end_times")
-
     async def create_from_window(self, window: MouseMoveWindow):
-        # Create dict first, to avoid MouseMoveWindow "infesting" a MouseMove object.
-        # See SHA 52d3c13c3150c5859243b909d47d609f5b2b8600 to experience the issue.
-        # self.logger.log_green("[LOG] Mouse move")
         mouse_move = MouseMove(
             start_time=window.start_time.get_dt_for_db(), end_time=window.end_time.get_dt_for_db())
         await self.queue_item(mouse_move, MouseMove, "create_from_window")
@@ -55,11 +44,8 @@ class MouseDao(BaseQueueingDao):
 
     async def read_all(self):
         """Read MouseMove entries."""
-        async with self.async_session_maker() as session:
-            result = await session.execute(select(MouseMove))
-            # return await result.scalars().all()
-            # Some tests think this needs to be 'awaited' but it doens't
-            return result.scalars().all()  # TODO: all .scalars().all() code into a func
+        query = select(MouseMove)
+        return await self.exec_and_return_all(query)
 
     async def read_by_id(self, mouse_move_id: int):
         async with self.async_session_maker() as session:
@@ -70,15 +56,21 @@ class MouseDao(BaseQueueingDao):
         Read mouse movement events that ended within the past 24 hours.
         Returns all movements ordered by their end time.
         """
-        query = select(MouseMove).where(
-            MouseMove.end_time >= right_now.dt - timedelta(days=1)
-        ).order_by(MouseMove.end_time.desc())
+        query = self.get_prev_24_hours_query(right_now.dt - timedelta(days=1))
 
+        return await self.exec_and_return_all(query)
+
+    def get_prev_24_hours_query(self, twenty_four_hours_ago):
+        return select(MouseMove).where(
+            MouseMove.start_time >= twenty_four_hours_ago
+        ).order_by(MouseMove.start_time.desc())
+
+    async def exec_and_return_all(self, query):
         async with self.async_session_maker() as session:
             result = await session.execute(query)
             # Some tests think this needs to be 'awaited' but it doens't
             # return await result.scalars().all()
-            return result.scalars().all()  # TODO: all .scalars().all() code into a func
+            return result.scalars().all()
 
     async def delete(self, id: int):
         """Delete an entry by ID"""

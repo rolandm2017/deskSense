@@ -6,6 +6,7 @@ import weakref
 
 from surveillance.src.util.errors import WayTooLongWaitError
 
+
 def handle_exception(loop, context):
     # context['message'] contains the error message
     # context['exception'] (if available) contains the exception object
@@ -16,6 +17,7 @@ def handle_exception(loop, context):
     # traceback.print_stack()
     print("Context:", context)
 
+
 class BaseQueueingDao:
     """
     DAO exists to provide a queue for writes.
@@ -25,7 +27,8 @@ class BaseQueueingDao:
 
     The point is to (a) prevent bottlenecks and (b) avoid wasted overhead resources.
     """
-    def __init__(self, async_session_maker: async_sessionmaker, batch_size=30, flush_interval=1, dao_name="BaseQueueingDao"):
+
+    def __init__(self, async_session_maker: async_sessionmaker, batch_size=30, flush_interval: int | float = 1, dao_name="BaseQueueingDao"):
         self.async_session_maker = async_session_maker
         self.batch_size = batch_size
         if flush_interval > 1:
@@ -48,8 +51,9 @@ class BaseQueueingDao:
         if isinstance(item, dict):
             raise ValueError("Dict found")
         if expected_type and not isinstance(item, expected_type):
-            raise ValueError(f"Expected {expected_type.__name__}, got {type(item).__name__}")
-        
+            raise ValueError(
+                f"Expected {expected_type.__name__}, got {type(item).__name__}")
+
         await self.queue.put(item)
 
         # Only start a new task if no task is running or the previous one is done
@@ -60,7 +64,7 @@ class BaseQueueingDao:
             # Create a new task and store a strong reference to it
             # self._queue_task = asyncio.create_task(self._wrapped_process_queue())
             self._queue_task = asyncio.create_task(
-                self._wrapped_process_queue(), 
+                self._wrapped_process_queue(),
                 name=f"{self.dao_name}-{source}-Task"
             )
             self._queue_task.add_done_callback(self._task_done_callback)
@@ -79,7 +83,7 @@ class BaseQueueingDao:
             # Report the exception to the event loop
             loop = asyncio.get_running_loop()
             loop.call_exception_handler({
-                "message": "Unhandled exception in process_queue", 
+                "message": "Unhandled exception in process_queue",
                 "exception": e,
                 "task": asyncio.current_task()
             })
@@ -94,7 +98,7 @@ class BaseQueueingDao:
             while idle_count < 3 and self.processing:  # Exit if idle too many times
                 # print(f"Processing queue (idle count: {idle_count})")
                 batch = []
-                
+
                 # Fill batch until full or queue empty
                 try:
                     while len(batch) < self.batch_size and not self.queue.empty():
@@ -104,7 +108,7 @@ class BaseQueueingDao:
                             idle_count = 0  # Reset idle count on activity
                         except asyncio.QueueEmpty:
                             break
-                    
+
                     # Save batch if not empty
                     if batch:
                         try:
@@ -118,13 +122,13 @@ class BaseQueueingDao:
                         # No items in queue, increment idle count and wait
                         idle_count += 1
                         await asyncio.sleep(self.flush_interval)
-                        
+
                 except Exception as e:
                     print(f"Unexpected error in process_queue: {e}")
                     # traceback.print_exc()
                     # Don't exit the loop on unexpected errors
                     await asyncio.sleep(self.flush_interval)
-                    
+
         except asyncio.CancelledError:
             print("Queue processing task was cancelled")
             # Save any remaining items before exiting if there are any
@@ -134,7 +138,7 @@ class BaseQueueingDao:
                 except Exception as e:
                     print(f"Error saving final batch during cancellation: {e}")
             raise  # Re-raise to ensure proper cancellation handling
-            
+
         finally:
             # print("Queue processing completed or cancelled")
             self.processing = False
@@ -150,10 +154,10 @@ class BaseQueueingDao:
             print("Task was cancelled, which is expected during cleanup")
         except Exception as e:
             print(f"Error checking task exception: {e}")
-        
+
         # Always ensure we reset processing state
         self.processing = False
-        
+
         # Only clear the queue task reference if it's this task
         if self._queue_task is task:
             self._queue_task = None
@@ -182,10 +186,10 @@ class BaseQueueingDao:
     async def cleanup(self):
         """Clean up resources and cancel any background tasks."""
         print("Starting cleanup...")
-        
+
         # Signal processing to stop
         self.processing = False
-        
+
         # Cancel any running task
         if self._queue_task and not self._queue_task.done():
             print("Cancelling running queue task")
@@ -193,7 +197,7 @@ class BaseQueueingDao:
             task = self._queue_task
             # First mark our reference as None to prevent race conditions
             self._queue_task = None
-            
+
             # Then cancel the task
             task.cancel()
             try:
@@ -203,17 +207,17 @@ class BaseQueueingDao:
                 print("Task cancellation completed or timed out")
             except Exception as e:
                 print(f"Unexpected error during task cancellation: {e}")
-        
+
         # Process any remaining items
         await self._force_process_queue()
-        
+
         print("Cleanup completed")
 
     async def _force_process_queue(self):
         """Force immediate processing of queued items. Useful for tests or shutdown."""
         # print("Force processing remaining queue items")
         remaining_items = []
-        
+
         # Empty the queue
         while not self.queue.empty():
             try:
@@ -221,7 +225,7 @@ class BaseQueueingDao:
                 remaining_items.append(item)
             except asyncio.QueueEmpty:
                 break
-        
+
         # Save items if there are any
         if remaining_items:
             print(f"Force saving {len(remaining_items)} remaining items")
@@ -229,12 +233,10 @@ class BaseQueueingDao:
         else:
             print("No remaining items to process")
 
-   
-        
     async def __aenter__(self):
         """Support for async context manager protocol"""
         return self
-        
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Ensure cleanup happens when using 'async with'"""
         await self.cleanup()

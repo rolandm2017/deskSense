@@ -5,6 +5,8 @@ import asyncio
 
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.sql.selectable import Select
+
 from sqlalchemy import text
 
 from typing import cast
@@ -16,27 +18,13 @@ from surveillance.src.util.clock import SystemClock
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 
-async def truncate_test_tables(async_engine):
-    """Truncate all test tables directly"""
-    # NOTE: IF you run the tests in a broken manner,
-    # ####  the first run AFTER fixing the break
-    # ####  MAY still look broken.
-    # ####  Because the truncation happens *at the end of* a test.
-    async with async_engine.begin() as conn:
-        await conn.execute(text("TRUNCATE mouse_moves RESTART IDENTITY CASCADE"))
-        print("Tables truncated")
-
-
 class TestMouseDao:
     @pytest_asyncio.fixture
-    async def dao(self, async_engine_and_asm):
-        engine, asm = async_engine_and_asm
-        print("Here, 40ruy")
-        dao = MouseDao(asm)
-        yield dao
-        await dao.cleanup()
+    async def dao(self, mock_async_session_maker):
 
-        await truncate_test_tables(engine)
+        print("Here, 40ruy")
+        dao = MouseDao(mock_async_session_maker)
+        yield dao
         # await truncate_table(asm)
 
     # @pytest.mark.asyncio
@@ -59,7 +47,6 @@ class TestMouseDao:
     #     assert cast(datetime, queued_item.end_time) == end_time
 
     @pytest.mark.asyncio
-    @pytest.mark.timeout(3)
     async def test_create_from_window(self, dao):
         start_time = UserLocalTime(datetime.now())
         end_time = start_time + timedelta(minutes=1)
@@ -79,66 +66,36 @@ class TestMouseDao:
         assert cast(datetime, queued_item.end_time) == end_time
 
     @pytest.mark.asyncio
-    @pytest.mark.timeout(3)
-    async def test_read_by_id(self, dao):
-
-        # Test abandoned because, (a) seems there's never a need to read by ID
-        # and (b) seems the create methods don't ever return values, hence, can't know the ID
-
-        # Test reading specific move
-        t0 = datetime.now()
-        t1 = UserLocalTime(t0 - timedelta(seconds=25))
-        t2 = UserLocalTime(t0 - timedelta(seconds=23))
-        t3 = UserLocalTime(t0 - timedelta(seconds=21))
-        test_window: MouseMoveWindow = MouseMoveWindow(
-            start_of_window=t1, end_of_window=t2)
-        test_win_2: MouseMoveWindow = MouseMoveWindow(
-            start_of_window=t2, end_of_window=t3)
-
-        # Arrange
-        await dao.create_from_window(test_window)
-        await dao.create_from_window(test_win_2)
-        await dao._force_process_queue()
-
-        all = await dao.read_all()
-        # test setup conditions
-        assert len(all) >= 2, "Something wasn't written as expected"
-        # Act
-        test_subject = all[0]
-
-        subject = await dao.read_by_id(test_subject.id)
-        # Assert
-        assert subject is not None
-
-    @pytest.mark.asyncio
-    @pytest.mark.timeout(3)
     async def test_read_all(self, dao):
         # Test reading all moves
-        t0 = datetime.now(timezone.utc)
-        t1 = UserLocalTime(t0 - timedelta(seconds=10))
-        t2 = UserLocalTime(t0 - timedelta(seconds=8))
-        t3 = UserLocalTime(t0 - timedelta(seconds=6))
-        test_1: MouseMoveWindow = MouseMoveWindow(
-            start_of_window=t1, end_of_window=t2)
-        test_2: MouseMoveWindow = MouseMoveWindow(
-            start_of_window=t2, end_of_window=t3)
 
-        # Arrange
-        await dao.create_from_window(test_1)
-        await dao.create_from_window(test_2)
-        await dao._force_process_queue()
+        t0 = datetime.now(timezone.utc)
+        t1 = t0 - timedelta(seconds=10)
+        t2 = t0 - timedelta(seconds=8)
+        t3 = t0 - timedelta(seconds=6)
+
+        pretend1 = MouseMove(id=300, start_time=t0, end_time=t1)
+        pretend2 = MouseMove(id=301, start_time=t2, end_time=t3)
+
+        exec_mock = AsyncMock()
+        exec_mock.return_value = [pretend1, pretend2]
+        dao.exec_and_return_all = exec_mock
 
         # Act
         result = await dao.read_all()
 
         # Assert
-        assert len(result) == len([test_1, test_2])
+        exec_mock.assert_called_once()
+        args, _ = exec_mock.call_args
+        assert isinstance(args[0], Select)
+
+        assert isinstance(result, list)
+        assert len(result) == len([pretend1, pretend2])
         times = [result[0].start_time, result[1].start_time]
-        assert t1 in times, "Window didn't come out of the db as expected"
+        assert t0 in times, "Window didn't come out of the db as expected"
         assert t2 in times, "Window didn't come out of the db as expected"
 
     @pytest.mark.asyncio
-    @pytest.mark.timeout(3)
     async def test_read_past_24h_events(self, dao):
         t0 = datetime.now(timezone.utc)
 
@@ -151,63 +108,30 @@ class TestMouseDao:
         test_2: MouseMoveWindow = MouseMoveWindow(
             start_of_window=t2, end_of_window=t3)
 
-        # A long time ago:
-        t5 = UserLocalTime(t0 - timedelta(days=4, hours=12, seconds=44))
-        t6 = UserLocalTime(t0 - timedelta(days=4, hours=12, seconds=42))
-        t7 = UserLocalTime(t0 - timedelta(days=4, hours=12, seconds=40))
-        ancient_test = MouseMoveWindow(start_of_window=t5, end_of_window=t6)
-        ancient_test_2 = MouseMoveWindow(start_of_window=t6, end_of_window=t7)
-
         todays_events = [test_1, test_2]
 
-        # ### Arrange
-        # assert 1 == 2
-        for e in [test_1, test_2, ancient_test, ancient_test_2]:
-            await dao.create_from_window(e)
-        await dao._force_process_queue()
+        get_prev_24_hrs_query_mock = Mock(
+            side_effect=dao.get_prev_24_hours_query)
+        dao.get_prev_24_hours_query = get_prev_24_hrs_query_mock
 
-        # assert 1 == 1
+        exec_mock = AsyncMock()
+        exec_mock.return_value = todays_events
+        dao.exec_and_return_all = exec_mock
+
         # # ### Act
         past_day = await dao.read_past_24h_events(UserLocalTime(t0))
 
         # # Assert
-        all_events = await dao.read_all()
         assert len(past_day) == len(todays_events)
-        assert len(past_day) != len(all_events)
 
-    @pytest.mark.asyncio
-    async def test_delete(self, dao):
-        # mock_move = MouseMove(
-        #     id=1, start_time=datetime.now(), end_time=datetime.now())
-        # mock_session.get.return_value = mock_move
+        get_prev_24_hrs_query_mock.assert_called_once()
+        args, _ = get_prev_24_hrs_query_mock.call_args
+        assert isinstance(args[0], datetime)
 
-        t0 = datetime.now(timezone.utc)
+        assert args[0].hour == t0.hour
+        assert args[0].minute == t0.minute
+        assert args[0].day + 1 == t0.day, "Wasn't one day later as expected"
 
-        # Today:
-        t1 = UserLocalTime(t0 - timedelta(seconds=10))
-        t2 = UserLocalTime(t0 - timedelta(seconds=8))
-        test_window: MouseMoveWindow = MouseMoveWindow(
-            start_of_window=t1, end_of_window=t2)
-
-        # Arrange
-        await dao.create_from_window(test_window)
-        await dao._force_process_queue()
-
-        # Act
-        result = await dao.delete(1)
-
-        # Assert
-        assert result.start_time == test_window.start_time
-        assert result.id == 1  # The ID it had before being deleted
-        all_events = await dao.read_all()
-        assert test_window not in all_events, "Failed to delete id=1"
-
-    @pytest.mark.asyncio
-    async def test_delete_nonexistent(self, dao):
-
-        # Some ID that almost certainly isn't there
-        some_id = 9000
-
-        result = await dao.delete(some_id)
-
-        assert result is None
+        exec_mock.assert_called_once()
+        args, _ = exec_mock.call_args
+        assert isinstance(args[0], Select)

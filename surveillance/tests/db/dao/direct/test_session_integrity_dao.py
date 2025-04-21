@@ -80,14 +80,16 @@ async def test_program_logs(plain_asm, test_power_events):
         base_time = events["base_time"]
 
         # Orphan type 1: started before shutdown, never ended
-        orphan_1 = ProgramSummaryLog(
-            program_name="Notepad",
-            hours_spent=1.0,
-            start_time=shutdown_time - timedelta(minutes=30),
-            end_time=None,  # Never ended
-            gathering_date=base_time.date(),
-            created_at=base_time
-        )
+        # Removed: Cannot have a "Never ended" as end_time is not Nullable
+
+        # orphan_1 = ProgramSummaryLog(
+        #     program_name="Notepad",
+        #     hours_spent=1.0,
+        #     start_time=shutdown_time - timedelta(minutes=30),
+        #     end_time=None,  # Never ended
+        #     gathering_date=base_time.date(),
+        #     created_at=base_time
+        # )
         # Orphan type 2: started before shutdown, ended after startup (impossible)
         orphan_2 = ProgramSummaryLog(
             program_name="Outlook",
@@ -120,7 +122,7 @@ async def test_program_logs(plain_asm, test_power_events):
                 gathering_date=base_time.date(),
                 created_at=base_time
             ),
-            orphan_1,
+
             orphan_2,
             phantom_1,
 
@@ -155,14 +157,14 @@ async def test_domain_logs(plain_asm, test_power_events):
         base_time = events["base_time"]
 
         # Orphan type 1: started before shutdown, never ended
-        orphan_1 = DomainSummaryLog(
-            domain_name="stackoverflow.com",
-            hours_spent=0.5,
-            start_time=shutdown_time - timedelta(minutes=40),
-            end_time=None,  # Never ended
-            gathering_date=base_time.date(),
-            created_at=base_time
-        )
+        # Removed: Cannot have a "Never ended" as end_time is not Nullable
+        # orphan_1 = DomainSummaryLog(
+        #     domain_name="stackoverflow.com",
+        #     hours_spent=0.5,
+        #     start_time=shutdown_time - timedelta(minutes=40),
+        #     end_time=None,  # Never ended
+        #     gathering_date=base_time.date(),
+        #     created_at=base_time
         # Orphan type 2: started before shutdown, ended after startup (impossible)
         orphan_2 = DomainSummaryLog(
             domain_name="youtube.com",
@@ -195,7 +197,6 @@ async def test_domain_logs(plain_asm, test_power_events):
                 gathering_date=base_time.date(),
                 created_at=base_time
             ),
-            orphan_1,
             orphan_2,
 
             phantom_1,
@@ -240,8 +241,6 @@ def test_dao_instances(regular_session, plain_asm):
         "session_integrity_dao": session_integrity_dao
     }
 
-    program_logging_dao.cleanup()
-    chrome_logging_dao.cleanup()
     # session_integrity_dao.cleanup()
 
 
@@ -306,12 +305,12 @@ async def test_find_orphans(full_test_environment):
         # Assertions
         assert isinstance(program_orphans, list)
         assert isinstance(domain_orphans, list)
-        assert len(program_orphans) == 2
-        assert len(domain_orphans) == 2
-        assert any(log.program_name == "Notepad" for log in program_orphans)
+
+        # Was 2 but one was removed because end_time is nonnullable
+        assert len(program_orphans) == 1
+        # Was 2 but one was removed because end_time is nonnullable
+        assert len(domain_orphans) == 1
         assert any(log.program_name == "Outlook" for log in program_orphans)
-        assert any(log.domain_name ==
-                   "stackoverflow.com" for log in domain_orphans)
         assert any(log.domain_name == "youtube.com" for log in domain_orphans)
 
     finally:
@@ -319,32 +318,32 @@ async def test_find_orphans(full_test_environment):
         truncate_test_tables(engine)
 
 
-# @pytest.mark.asyncio
-# async def test_find_phantoms(full_test_environment):
-#     """Test that phantom sessions are correctly identified"""
-#     env = full_test_environment
+@pytest.mark.asyncio
+async def test_find_phantoms(full_test_environment):
+    """Test that phantom sessions are correctly identified"""
+    env = full_test_environment
 
-#     # Get values from the environment
-#     engine = env["engine"]
-#     shutdown_time = env["power_events"]["shutdown_time"]
-#     startup_time = env["power_events"]["startup_time"]
-#     session_integrity_dao = env["daos"]["session_integrity_dao"]
+    # Get values from the environment
+    engine = env["engine"]
+    shutdown_time = env["power_events"]["shutdown_time"]
+    startup_time = env["power_events"]["startup_time"]
+    session_integrity_dao = env["daos"]["session_integrity_dao"]
 
-#     try:
-#         # Find phantoms
-#         program_phantoms, domain_phantoms = await session_integrity_dao.find_phantoms(
-#             shutdown_time, startup_time
-#         )
+    try:
+        # Find phantoms
+        program_phantoms, domain_phantoms = session_integrity_dao.find_phantoms(
+            shutdown_time, startup_time
+        )
 
-#         # Assertions
-#         assert len(program_phantoms) == 1
-#         assert len(domain_phantoms) == 1
-#         assert program_phantoms[0].program_name == "Firefox"
-#         assert domain_phantoms[0].domain_name == "reddit.com"
+        # Assertions
+        assert len(program_phantoms) == 1
+        assert len(domain_phantoms) == 1
+        assert program_phantoms[0].program_name == "Firefox"
+        assert domain_phantoms[0].domain_name == "reddit.com"
 
-#     finally:
-#         # Clean up after test, regardless of whether it passed or failed
-#         await truncate_test_tables(engine)
+    finally:
+        # Clean up after test, regardless of whether it passed or failed
+        truncate_test_tables(engine)
 
 
 # @pytest.mark.asyncio
