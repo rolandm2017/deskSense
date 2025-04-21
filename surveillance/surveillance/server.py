@@ -328,7 +328,7 @@ async def get_previous_week_of_timeline(week_of: date = Path(..., description="W
 
     # TODO: Convert from UTC to PST for the client
 
-    response = WeeklyTimeline(days=rows, start_date=start_of_week)
+    response = WeeklyTimeline(days=rows, start_date=start_of_week.dt)
 
     return response
 

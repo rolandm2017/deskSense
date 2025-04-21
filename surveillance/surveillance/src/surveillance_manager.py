@@ -79,7 +79,7 @@ class SurveillanceManager:
             program_summary_logger, chrome_summary_logger, self.async_session_maker)
         # FIXME: 04/04/2025: why isn't the sys status dao used anywhere?
         system_status_dao = SystemStatusDao(
-            self.async_session_maker, self.regular_session)
+            self.regular_session, self.async_session_maker)
 
         self.mouse_dao = MouseDao(self.async_session_maker)
         self.keyboard_dao = KeyboardDao(self.async_session_maker)
@@ -125,13 +125,20 @@ class SurveillanceManager:
         self.message_receiver.start()
 
     def check_session_integrity(self, latest_shutdown_time: datetime | None, latest_startup_time: datetime):
+        # FIXME:
+        # FIXME: This function isn't being used anywhere!
+        # FIXME:
         # FIXME: get latest times from system status dao
         if latest_shutdown_time is None:
-            self.loop.create_task(
-                self.session_integrity_dao.audit_first_startup(latest_startup_time))
+            self.session_integrity_dao.audit_first_startup(latest_startup_time)
+            # self.loop.create_task(
+            #     self.session_integrity_dao.audit_first_startup(latest_startup_time))
         else:
-            self.loop.create_task(self.session_integrity_dao.audit_sessions(
-                latest_shutdown_time, latest_startup_time))
+            self.session_integrity_dao.audit_sessions(
+                latest_shutdown_time, latest_startup_time)
+            #     latest_shutdown_time, latest_startup_time)
+            # self.loop.create_task(self.session_integrity_dao.audit_sessions(
+            #     latest_shutdown_time, latest_startup_time))
 
     def handle_keyboard_ready_for_db(self, event):
         self.loop.create_task(

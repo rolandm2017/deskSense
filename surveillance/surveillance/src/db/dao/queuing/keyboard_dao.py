@@ -63,14 +63,18 @@ class KeyboardDao(BaseQueueingDao):
 
     async def read_all(self):
         """Return all keystrokes."""
+        query = select(TypingSession)
+        all_results = await self.exec_and_return_all(query)
 
-        async with self.async_session_maker() as session:
-            result = await session.execute(select(TypingSession))
-            result = result.all()
-            dtos = [TypingSessionDto(
-                x[0].id, x[0].start_time, x[0].end_time) for x in result]
+        dtos = self.package_dtos(all_results)
 
-            return dtos
+        return dtos
+
+    def package_dtos(self, typing_sessions):
+        return [TypingSessionDto(
+            x.id, x.start_time, x.end_time) for x in typing_sessions]
+        # return [TypingSessionDto(
+        #     x[0].id, x[0].start_time, x[0].end_time) for x in typing_sessions]
 
     async def read_past_24h_events(self, right_now: UserLocalTime):
         """
@@ -80,24 +84,27 @@ class KeyboardDao(BaseQueueingDao):
         try:
             twenty_four_hours_ago = right_now.dt - timedelta(hours=24)
 
-            query = select(TypingSession).where(
-                TypingSession.start_time >= twenty_four_hours_ago
-            ).order_by(TypingSession.start_time.desc())
+            query = self.get_prev_24_hours_query(twenty_four_hours_ago)
 
-            async with self.async_session_maker() as session:
-                result = await session.execute(query)
-                rows = result.all()
+            all_results = await self.exec_and_return_all(query)
 
-                if not rows:  # Handle no results
-                    return []
+            dtos = self.package_dtos(all_results)
 
-                dtos = [
-                    TypingSessionDto(x[0].id, x[0].start_time, x[0].end_time)
-                    for x in rows
-                ]
-                return dtos
+            return dtos
         except Exception as e:
+            print(e)
             raise RuntimeError("Failed to read typing sessions") from e
+
+    def get_prev_24_hours_query(self, twenty_four_hours_ago):
+        return select(TypingSession).where(
+            TypingSession.start_time >= twenty_four_hours_ago
+        ).order_by(TypingSession.start_time.desc())
+
+    async def exec_and_return_all(self, query):
+        async with self.async_session_maker() as session:
+            result = await session.execute(query)
+            result = result.all()
+            return result
 
     async def delete(self, id: int):
         """Delete an entry by ID"""

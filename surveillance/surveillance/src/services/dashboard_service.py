@@ -134,17 +134,18 @@ class DashboardService:
 
         return days_before_today, todays_unaggregated_payload, sunday_that_starts_the_week
 
-    async def get_specific_week_timeline(self, week_of: UserLocalTime):
-        if isinstance(week_of, date):
+    async def get_specific_week_timeline(self, week_of_as_ult: UserLocalTime):
+        if isinstance(week_of_as_ult, UserLocalTime):
             # Note: The transformation here is a requirement
-            week_of = UserLocalTime(datetime.combine(
-                week_of.dt, datetime.min.time()))
+            week_of: UserLocalTime = UserLocalTime(datetime.combine(
+                week_of_as_ult.dt, datetime.min.time()))
         else:
-            raise TypeError("Expected a date object, got " + str(week_of))
+            raise TypeError("Expected a date object, got " +
+                            str(week_of_as_ult))
         is_sunday = week_of.weekday() == 6
         if is_sunday:
             # If the week_of is a sunday, start from there.
-            sunday_that_starts_the_week = week_of
+            sunday_that_starts_the_week: UserLocalTime = week_of
             days_since_sunday = 0
         else:
             # If the week_of is not a sunday,
@@ -153,8 +154,8 @@ class DashboardService:
             offset = 1
             days_per_week = 7
             days_since_sunday = (week_of.weekday() + offset) % days_per_week
-            sunday_that_starts_the_week = week_of - \
-                timedelta(days=days_since_sunday)
+            sunday_that_starts_the_week: UserLocalTime = UserLocalTime(week_of.dt -
+                                                                       timedelta(days=days_since_sunday))
 
         # TODO: Make this method purely, always, every time, retrieve the precomputed timelines,
         # TODO: as they are by definition tables that already were computed
@@ -162,7 +163,7 @@ class DashboardService:
         all_days = []
 
         for days_after_sunday in range(7):
-            current_day = sunday_that_starts_the_week + \
+            current_day = sunday_that_starts_the_week.dt + \
                 timedelta(days=days_after_sunday)
             mouse_events = await self.timeline_dao.read_day_mice(current_day, self.user_clock)
             keyboard_events = await self.timeline_dao.read_day_keyboard(current_day, self.user_clock)
@@ -206,7 +207,7 @@ class DashboardService:
         all_days = []
 
         for days_after_sunday in range(7):
-            current_day = sunday_that_starts_the_week + \
+            current_day = sunday_that_starts_the_week.dt + \
                 timedelta(days=days_after_sunday)
             is_in_future = current_day > start_of_tomorrow
             if is_in_future:
@@ -215,7 +216,7 @@ class DashboardService:
             program_usage_timeline: dict[str, ProgramSummaryLog] = await self.program_logging_dao.read_day_as_sorted(current_day)
 
             self.logger.log_days_retrieval(
-                "[get_current_week_program_usage_timeline]", current_day.dt, len(program_usage_timeline))
+                "[get_current_week_program_usage_timeline]", current_day, len(program_usage_timeline))
             day = {"date": current_day,
                    "program_usage_timeline": program_usage_timeline}
 

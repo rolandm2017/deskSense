@@ -5,6 +5,8 @@ from unittest.mock import AsyncMock, Mock, MagicMock
 
 from datetime import datetime, date, timedelta, timezone
 from sqlalchemy import text
+from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 import asyncio
 
 from surveillance.src.db.dao.direct.system_status_dao import SystemStatusDao
@@ -26,10 +28,44 @@ print(f"Num of open files: {num_open_files}")
 
 # FIXME: Tests are wayyyyyy too slow here
 
+# @pytest.fixture
+# def mock_session():
+#     session = Mock(spec=Session)
+#     session.commit = Mock()
+#     session.refresh = Mock()
+#     session.execute = Mock()
+#     session.delete = Mock()
+#     session.get = Mock()
+#     session.add = Mock()
+#     return session
+
+
+# @pytest.fixture
+# def mock_async_session():
+#     session = AsyncMock(spec=AsyncSession)
+#     session.commit = AsyncMock()
+#     session.refresh = AsyncMock()
+#     session.execute = AsyncMock()
+#     session.delete = AsyncMock()
+#     session.get = AsyncMock()
+#     session.add = AsyncMock()
+#     return session
+
+
+# @pytest.fixture
+# def mock_session_maker(mock_session):
+#     session_cm = AsyncMock()
+#     session_cm.__aenter__.return_value = mock_session
+#     session_cm.__aexit__.return_value = None
+
+#     maker = MagicMock(spec=async_sessionmaker)
+#     maker.return_value = session_cm
+#     return maker
+
+
 @pytest_asyncio.fixture(scope="function")
-async def test_db_dao(async_engine_and_asm, regular_session):
+async def test_db_dao(mock_regular_session_maker, mock_async_session):
     """Create a DAO instance with the async session maker"""
-    _, asm = async_engine_and_asm
 
     dt1 = datetime.now() - timedelta(seconds=20)
     dt2 = dt1 + timedelta(seconds=1)
@@ -39,7 +75,7 @@ async def test_db_dao(async_engine_and_asm, regular_session):
     times = [dt1, dt2, dt3, dt4, dt5]
     clock = MockClock(times)
 
-    dao = SystemStatusDao(asm, regular_session)
+    dao = SystemStatusDao(mock_async_session, mock_regular_session_maker)
 
     current_loop = asyncio.get_event_loop()
     dao.accept_power_tracker_loop(current_loop)
@@ -47,21 +83,21 @@ async def test_db_dao(async_engine_and_asm, regular_session):
     await dao.async_session_maker().close()  # Close session explicitly
 
 
-@pytest_asyncio.fixture(autouse=True)
-async def setup_test_db(test_db_dao):
-    """Runs before each test automatically"""
-    dao, clock = test_db_dao
+# @pytest_asyncio.fixture(autouse=True)
+# async def setup_test_db(test_db_dao):
+#     """Runs before each test automatically"""
+#     dao, clock = test_db_dao
 
-    async with dao.async_session_maker() as session:
-        await session.execute(text("TRUNCATE TABLE system_change_log RESTART IDENTITY CASCADE"))
-        await session.commit()
+#     async with dao.async_session_maker() as session:
+#         await session.execute(text("TRUNCATE TABLE system_change_log RESTART IDENTITY CASCADE"))
+#         await session.commit()
 
-    return dao, clock
+#     return dao, clock
 
 
 @pytest.mark.asyncio
-async def test_read_latest_status(setup_test_db):
-    dao, clock = setup_test_db
+async def test_read_latest_status(test_db_dao):
+    dao, clock = test_db_dao
     now = clock.now().replace(tzinfo=timezone.utc)
 
     # Test starting conditions:
@@ -89,8 +125,8 @@ async def test_read_latest_status(setup_test_db):
 
 
 @pytest.mark.asyncio
-async def test_create_different_statuses(setup_test_db):
-    dao, clock = setup_test_db
+async def test_create_different_statuses(test_db_dao):
+    dao, clock = test_db_dao
 
     # Arrange
     write_sync_spy = Mock()
@@ -133,8 +169,8 @@ async def test_create_different_statuses(setup_test_db):
 
 
 @pytest.mark.asyncio
-async def test_read_latest_shutdown(setup_test_db):
-    dao, clock = setup_test_db
+async def test_read_latest_shutdown(test_db_dao):
+    dao, clock = test_db_dao
     dt1 = clock.now().replace(tzinfo=timezone.utc)
 
     # # Test starting conditions:
@@ -192,8 +228,8 @@ async def test_read_latest_shutdown(setup_test_db):
 
 
 @pytest.mark.asyncio
-async def test_read_latest_status_returns_none_if_no_statuses(setup_test_db):
-    dao, clock = setup_test_db
+async def test_read_latest_status_returns_none_if_no_statuses(test_db_dao):
+    dao, _ = test_db_dao
 
     read_latest_status_from_db_mock = Mock()
     read_latest_status_from_db_mock.return_value = None
@@ -205,8 +241,8 @@ async def test_read_latest_status_returns_none_if_no_statuses(setup_test_db):
 
 
 @pytest.mark.asyncio
-async def test_read_latest_shutdown_returns_none_if_no_statuses(setup_test_db):
-    dao, clock = setup_test_db
+async def test_read_latest_shutdown_returns_none_if_no_statuses(test_db_dao):
+    dao, _ = test_db_dao
 
     read_latest_status_from_db_mock = Mock()
     read_latest_status_from_db_mock.return_value = None

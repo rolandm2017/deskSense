@@ -25,11 +25,11 @@ class MouseDao(BaseQueueingDao):
 
     # NOTE: this whole DAO is a candidate for asyncio.create_task()'ing the writes
 
-    async def create_from_start_end_times(self, start_time: UserLocalTime, end_time: UserLocalTime):
-        mouse_move = MouseMove(start_time=start_time.dt, end_time=end_time.dt)
-        if isinstance(mouse_move, MouseMoveWindow):
-            raise ValueError("mouse move window found!")
-        await self.queue_item(mouse_move, MouseMove, "create_from_start_end_times")
+    # async def create_from_start_end_times(self, start_time: UserLocalTime, end_time: UserLocalTime):
+    #     mouse_move = MouseMove(start_time=start_time.dt, end_time=end_time.dt)
+    #     if isinstance(mouse_move, MouseMoveWindow):
+    #         raise ValueError("mouse move window found!")
+    #     await self.queue_item(mouse_move, MouseMove, "create_from_start_end_times")
 
     async def create_from_window(self, window: MouseMoveWindow):
         # Create dict first, to avoid MouseMoveWindow "infesting" a MouseMove object.
@@ -59,7 +59,7 @@ class MouseDao(BaseQueueingDao):
             result = await session.execute(select(MouseMove))
             # return await result.scalars().all()
             # Some tests think this needs to be 'awaited' but it doens't
-            return result.scalars().all()
+            return result.scalars().all()  # TODO: all .scalars().all() code into a func
 
     async def read_by_id(self, mouse_move_id: int):
         async with self.async_session_maker() as session:
@@ -78,7 +78,7 @@ class MouseDao(BaseQueueingDao):
             result = await session.execute(query)
             # Some tests think this needs to be 'awaited' but it doens't
             # return await result.scalars().all()
-            return result.scalars().all()
+            return result.scalars().all()  # TODO: all .scalars().all() code into a func
 
     async def delete(self, id: int):
         """Delete an entry by ID"""

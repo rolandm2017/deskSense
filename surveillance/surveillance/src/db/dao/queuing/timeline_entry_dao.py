@@ -81,8 +81,8 @@ class TimelineEntryDao(BaseQueueingDao):
 
     async def read_highest_id(self):
         """Read the highest ID currently in the table"""
+        query = select(func.max(TimelineEntryObj.id))
         async with self.async_session_maker() as session:
-            query = select(func.max(TimelineEntryObj.id))
             result = await session.execute(query)
             max_id = result.scalar()
             return max_id or 0  # Return 0 if table is empty
@@ -98,29 +98,25 @@ class TimelineEntryDao(BaseQueueingDao):
             PrecomputedTimelineEntry.start >= start_of_day,
             PrecomputedTimelineEntry.end <= end_of_day
         )
-        async with self.async_session_maker() as session:
-            result = await session.execute(query)
-            return result.scalars().all()
-
-            # scalars_result = result.scalars()
-            # return await await_if_needed(scalars_result)
+        return await self.execute_and_return_all(query)
 
     async def read_day(self, day: UserLocalTime, event_type: ChartEventType) -> List[TimelineEntryObj]:
         """Read all entries for the given day"""
-        start_of_day = datetime.combine(day.date(), datetime.min.time())
+        start_of_day = datetime.combine(
+            day.dt.date(), datetime.min.time())
         end_of_day = start_of_day + timedelta(days=1)
 
-        query = select(TimelineEntryObj).where(
+        query = self.get_find_by_day_query(
+            start_of_day, end_of_day, event_type)
+
+        return await self.execute_and_return_all(query)
+
+    def get_find_by_day_query(self, start_of_day, end_of_day, event_type):
+        return select(TimelineEntryObj).where(
             TimelineEntryObj.start >= start_of_day,
             TimelineEntryObj.start < end_of_day,
             TimelineEntryObj.group == event_type
         ).order_by(TimelineEntryObj.start)
-
-        async with self.async_session_maker() as session:
-            result = await session.execute(query)
-            return result.scalars().all()
-            # scalars_result = result.scalars()
-            # return await await_if_needed(scalars_result)
 
     async def read_day_mice(self, users_systems_day: UserLocalTime, user_facing_clock) -> List[TimelineEntryObj]:
         today = user_facing_clock.now().date()
@@ -163,8 +159,12 @@ class TimelineEntryDao(BaseQueueingDao):
 
     async def read_all(self):
         """Read all timeline entries"""
+        query = select(TimelineEntryObj)
+        return await self.execute_and_return_all(query)
+
+    async def execute_and_return_all(self, query):
         async with self.async_session_maker() as session:
-            result = await session.execute(select(TimelineEntryObj))
+            result = await session.execute(query)
             return result.scalars().all()
 
     async def delete(self, id: int):

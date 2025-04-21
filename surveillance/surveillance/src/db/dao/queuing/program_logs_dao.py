@@ -104,9 +104,15 @@ class ProgramLoggingDao(BaseQueueingDao):
         if session.start_time is None:
             raise ValueError("Start time was None")
         start_time_as_utc = convert_to_utc(session.start_time.get_dt_for_db())
-        query = select(ProgramSummaryLog).where(
-            ProgramSummaryLog.start_time.op('=')(start_time_as_utc)
+        query = self.select_where_time_equals(start_time_as_utc)
+        return self.find_one_or_none(query)
+
+    def select_where_time_equals(self, some_time):
+        return select(ProgramSummaryLog).where(
+            ProgramSummaryLog.start_time.op('=')(some_time)
         )
+
+    def find_one_or_none(self, query):
         with self.regular_session() as db_session:
             result = db_session.execute(query)
             return result.scalar_one_or_none()
@@ -212,12 +218,20 @@ class ProgramLoggingDao(BaseQueueingDao):
 
     def push_window_ahead_ten_sec(self, session: ProgramSession):
         log: ProgramSummaryLog = self.find_session(session)
+        print(log, "215ru")
         if not log:
             raise ImpossibleToGetHereError(
                 "Start of heartbeat didn't reach the db")
         log.end_time = log.end_time + timedelta(seconds=10)
+        print(log.end_time, "220ru")
+        self.merge_item(log)
+        # with self.regular_session() as db_session:
+        #     db_session.merge(log)
+        #     db_session.commit()
+
+    def merge_item(self, item):
         with self.regular_session() as db_session:
-            db_session.merge(log)
+            db_session.merge(item)
             db_session.commit()
 
     def finalize_log(self, session: ProgramSession):

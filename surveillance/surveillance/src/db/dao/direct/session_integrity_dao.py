@@ -21,14 +21,16 @@ class SessionIntegrityDao:
         self.session_maker = session_maker
         self.logger = ConsoleLogger()
 
-    async def audit_sessions(self, latest_shutdown_time: datetime, startup_time: datetime):
+    def audit_sessions(self, latest_shutdown_time: datetime, startup_time: datetime):
         """
         Perform integrity checks on session data against system power states.
 
         Runs every time the program starts, unless it's a hot reload I guess.
         """
-        program_orphans, domain_orphans = await self.find_orphans(latest_shutdown_time, startup_time)
-        program_phantoms, domain_phantoms = await self.find_phantoms(latest_shutdown_time, startup_time)
+        program_orphans, domain_orphans = self.find_orphans(
+            latest_shutdown_time, startup_time)
+        program_phantoms, domain_phantoms = self.find_phantoms(
+            latest_shutdown_time, startup_time)
         a = len(program_orphans)
         b = len(domain_orphans)
         c = len(program_phantoms)
@@ -52,7 +54,8 @@ class SessionIntegrityDao:
         # and checks against program/chrome logs
         programs: List[ProgramSummaryLog] = self.program_logging_dao.find_orphans(
             latest_shutdown, startup_time)
-        domains: List[DomainSummaryLog] = self.chrome_logging_dao.find_orphans(latest_shutdown, startup_time)
+        domains: List[DomainSummaryLog] = self.chrome_logging_dao.find_orphans(
+            latest_shutdown, startup_time)
         return programs, domains
 
     def find_phantoms(self, latest_shutdown: datetime, startup_time: datetime):
@@ -63,13 +66,16 @@ class SessionIntegrityDao:
         # Implementation that checks for session start times during power-off periods
         programs: List[ProgramSummaryLog] = self.program_logging_dao.find_phantoms(
             latest_shutdown, startup_time)
-        domains: List[DomainSummaryLog] = self.chrome_logging_dao.find_phantoms(latest_shutdown, startup_time)
+        domains: List[DomainSummaryLog] = self.chrome_logging_dao.find_phantoms(
+            latest_shutdown, startup_time)
         return programs, domains
 
-    async def audit_first_startup(self, startup_time: datetime):
+    def audit_first_startup(self, startup_time: datetime):
         the_beginning_of_time = datetime.min
-        program_orphans, domain_orphans = await self.find_orphans(the_beginning_of_time, startup_time)
-        program_phantoms, domain_phantoms = await self.find_phantoms(the_beginning_of_time, startup_time)
+        program_orphans, domain_orphans = self.find_orphans(
+            the_beginning_of_time, startup_time)
+        program_phantoms, domain_phantoms = self.find_phantoms(
+            the_beginning_of_time, startup_time)
         a = len(program_orphans)
         b = len(domain_orphans)
         c = len(program_phantoms)

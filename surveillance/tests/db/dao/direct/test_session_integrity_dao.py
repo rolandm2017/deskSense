@@ -1,3 +1,4 @@
+import psutil
 import pytest
 import pytest_asyncio
 import asyncio
@@ -19,8 +20,6 @@ from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 load_dotenv()
 
 
-import psutil
-
 process = psutil.Process()
 open_files = process.open_files()
 num_open_files = len(open_files)
@@ -38,14 +37,12 @@ if SYNC_TEST_DB_URL is None:
     raise ValueError("SYNC_TEST_DB_URL environment variable is not set")
 
 # FIXME: Test is slow as a turtle
+# # TODO: make these tests extremely minimal. Test with 2-4 writes involved MAX. per orphan/phantom
 # FIXME: Test is slow as a turtle
+# # TODO: make these tests extremely minimal. Test with 2-4 writes involved MAX. per orphan/phantom
 # FIXME: Test is slow as a turtle
+# # TODO: make these tests extremely minimal. Test with 2-4 writes involved MAX. per orphan/phantom
 # FIXME: Test is slow as a turtle
-# FIXME: Test is slow as a turtle
-# FIXME: Test is slow as a turtle
-# FIXME: Test is slow as a turtle
-
-
 
 
 @pytest.fixture(scope="function")
@@ -279,9 +276,12 @@ def truncate_test_tables(engine):
     # ####  Because the truncation happens *at the end of* a test.
 
     with engine.begin() as conn:
-        conn.execute(text("TRUNCATE program_summary_logs RESTART IDENTITY CASCADE"))
-        conn.execute(text("TRUNCATE domain_summary_logs RESTART IDENTITY CASCADE"))
-        conn.execute(text("TRUNCATE system_change_log RESTART IDENTITY CASCADE"))
+        conn.execute(
+            text("TRUNCATE program_summary_logs RESTART IDENTITY CASCADE"))
+        conn.execute(
+            text("TRUNCATE domain_summary_logs RESTART IDENTITY CASCADE"))
+        conn.execute(
+            text("TRUNCATE system_change_log RESTART IDENTITY CASCADE"))
         print("Tables truncated")
 
 

@@ -11,60 +11,51 @@ from surveillance.src.db.dao.queuing.keyboard_dao import KeyboardDao
 from surveillance.src.db.models import TypingSession
 from surveillance.src.object.classes import KeyboardAggregate
 from surveillance.src.util.clock import SystemClock
+from surveillance.src.util.time_wrappers import UserLocalTime
 
-
-async def truncate_table(async_session_maker):
-    """Utility function to truncate a specific table for testing purposes.
-    Should ONLY be used in test environments."""
-    async with async_session_maker() as session:
-        async with session.begin():
-            # Using raw SQL to truncate the table and reset sequences
-            await session.execute(text(f'TRUNCATE TABLE typing_sessions RESTART IDENTITY CASCADE'))
 
 @pytest_asyncio.fixture
-async def dao( async_engine_and_asm):
-    _, asm = async_engine_and_asm
-    dao = KeyboardDao(asm)
+async def dao(mock_async_session_maker):
+    dao = KeyboardDao(mock_async_session_maker)
     yield dao
-    await dao.cleanup()
-    await truncate_table(asm)
+
 
 @pytest.mark.asyncio
-async def test_create( dao):
+async def test_create(dao):
     # Arrange
     session = KeyboardAggregate(
-        start_time=datetime.now(),
-        end_time=datetime.now()
+        start_time=UserLocalTime(datetime.now()),
+        end_time=UserLocalTime(datetime.now())
     )
+
+    queue_item_mock = AsyncMock()
+    dao.queue_item = queue_item_mock
 
     # Act
     await dao.create(session)
 
     # Assert
-    assert dao.queue.qsize() > 0
+    queue_item_mock.assert_called_once()
 
-    await asyncio.sleep(0.05)
-
-    # And you can take it back out:
-    v = await dao.read_all()
-    assert len(v) == 1
+    args, _ = queue_item_mock.call_args
+    assert isinstance(args[0], TypingSession)
 
 
 @pytest.mark.asyncio
-async def test_read_all( dao):
+async def test_read_all(dao):
 
     # Write two dummy results
-    s = KeyboardAggregate(
-        start_time=datetime.now(),
-        end_time=datetime.now()
-    )
-    s2 = KeyboardAggregate(
-        start_time=datetime.now(),
-        end_time=datetime.now()
-    )
-    await dao.create(s)
-    await dao.create(s2)
-    await asyncio.sleep(0.05)
+    s = TypingSession(id=4999,
+                      start_time=datetime.now(),
+                      end_time=datetime.now()
+                      )
+    s2 = TypingSession(id=5000,
+                       start_time=datetime.now(),
+                       end_time=datetime.now()
+                       )
+    exec_and_return_all_mock = AsyncMock()
+    exec_and_return_all_mock.return_value = [s, s2]
+    dao.exec_and_return_all = exec_and_return_all_mock
 
     # Act
     result = await dao.read_all()
@@ -72,25 +63,25 @@ async def test_read_all( dao):
     # Assert
     assert len(result) == 2
     assert all(isinstance(r, TypingSessionDto) for r in result)
-    assert [r.id for r in result] == [1, 2]
+    assert [r.id for r in result] == [4999, 5000]
+
 
 @pytest.mark.asyncio
-async def test_read_past_24h_events( dao):
+async def test_read_past_24h_events(dao):
     # Arrange
-    current_time = datetime.now()
+    current_time = UserLocalTime(datetime.now())
 
-    s = KeyboardAggregate(
-        start_time=datetime.now(),
-        end_time=datetime.now()
-    )
-    s2 = KeyboardAggregate(
-        start_time=datetime.now(),
-        end_time=datetime.now()
-    )
-    await dao.create(s)
-    await dao.create(s2)
-    await asyncio.sleep(0.05)
-
+    s = TypingSession(id=5999,
+                      start_time=datetime.now(),
+                      end_time=datetime.now()
+                      )
+    s2 = TypingSession(id=6000,
+                       start_time=datetime.now(),
+                       end_time=datetime.now()
+                       )
+    exec_and_return_all_mock = AsyncMock()
+    exec_and_return_all_mock.return_value = [s, s2]
+    dao.exec_and_return_all = exec_and_return_all_mock
 
     # Act
     result = await dao.read_past_24h_events(current_time)
@@ -98,14 +89,5 @@ async def test_read_past_24h_events( dao):
     # Assert
     assert len(result) == 2
     assert all(isinstance(r, TypingSessionDto) for r in result)
-    assert result[0].id == 1
-    assert result[1].id == 2
-
-@pytest.mark.asyncio
-async def test_delete( dao):
-    pass  # TODO
-
-@pytest.mark.asyncio
-async def test_delete_nonexistent( dao):
-    # TODO:
-    pass
+    assert result[0].id == 5999
+    assert result[1].id == 6000

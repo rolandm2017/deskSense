@@ -16,9 +16,9 @@ from surveillance.src.config.definitions import max_content_len
 class TypingSession(Base):
     __tablename__ = "typing_sessions"
 
-    id = Column(Integer, primary_key=True, index=True)
-    start_time = Column(DateTime(timezone=True))
-    end_time = Column(DateTime(timezone=True))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     def __repr__(self):
         return f"TypingSession(id={self.id}, start_time={self.start_time}, end_time={self.end_time})"

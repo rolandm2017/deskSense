@@ -44,94 +44,85 @@ print(f"Num of open files: {num_open_files}")
 #     raise ValueError("TEST_DB_STRING environment variable is not set")
 
 
-async def truncate_table(async_session_maker):
-    """Utility function to truncate a specific table for testing purposes.
-    Should ONLY be used in test environments."""
-    async with async_session_maker() as session:
-        async with session.begin():
-            # Using raw SQL to truncate the table and reset sequences
-            await session.execute(text(f'TRUNCATE TABLE program_summary_logs RESTART IDENTITY CASCADE'))
-            await session.execute(text(f'TRUNCATE TABLE daily_program_summaries RESTART IDENTITY CASCADE'))
+# async def truncate_table(async_session_maker):
+#     """Utility function to truncate a specific table for testing purposes.
+#     Should ONLY be used in test environments."""
+#     async with async_session_maker() as session:
+#         async with session.begin():
+#             # Using raw SQL to truncate the table and reset sequences
+#             await session.execute(text(f'TRUNCATE TABLE program_summary_logs RESTART IDENTITY CASCADE'))
+#             await session.execute(text(f'TRUNCATE TABLE daily_program_summaries RESTART IDENTITY CASCADE'))
+
+# @pytest_asyncio.fixture(scope="function")
+# async def test_db_dao():
+#     """Create a DAO instance with the async session maker"""
+
+#     logging_dao = ProgramLoggingDao(regular_session, asm)
+#     dao = ProgramSummaryDao(logging_dao, regular_session, asm)
+#     yield dao
+#     # Add explicit cleanup
+#     await logging_dao.cleanup()
+#     await truncate_table(asm)
 
 
-@pytest_asyncio.fixture(scope="function")
-async def test_db_dao(regular_session, async_engine_and_asm):
-    """Create a DAO instance with the async session maker"""
-    _, asm = async_engine_and_asm
+# @pytest_asyncio.fixture(autouse=True)
+# async def cleanup_database():
+#     """Automatically clean up the database after each test"""
+#     # Clean before test
+#     engine, asm = async_engine_and_asm
+#     async with asm() as session:
+#         await session.execute(text("DELETE FROM daily_program_summaries"))
+#         await session.execute(text("ALTER SEQUENCE daily_program_summaries_id_seq RESTART WITH 1"))
+#         await session.commit()
 
-    logging_dao = ProgramLoggingDao(regular_session, asm)
-    dao = ProgramSummaryDao(logging_dao, regular_session, asm)
-    yield dao
-    # Add explicit cleanup
-    await logging_dao.cleanup()
-    await truncate_table(asm)
+#     yield
 
-
-@pytest_asyncio.fixture(autouse=True)
-async def cleanup_database(async_engine_and_asm):
-    """Automatically clean up the database after each test"""
-    # Clean before test
-    engine, asm = async_engine_and_asm
-    async with asm() as session:
-        await session.execute(text("DELETE FROM daily_program_summaries"))
-        await session.execute(text("ALTER SEQUENCE daily_program_summaries_id_seq RESTART WITH 1"))
-        await session.commit()
-
-    yield
-
-    # Clean after test
-    try:
-        async with asm() as session:
-            await session.execute(text("DELETE FROM daily_program_summaries"))
-            await session.execute(text("ALTER SEQUENCE daily_program_summaries_id_seq RESTART WITH 1"))
-            await session.commit()
-    except Exception as e:
-        print(f"Error during database cleanup: {e}")
+#     # Clean after test
+#     try:
+#         async with asm() as session:
+#             await session.execute(text("DELETE FROM daily_program_summaries"))
+#             await session.execute(text("ALTER SEQUENCE daily_program_summaries_id_seq RESTART WITH 1"))
+#             await session.commit()
+#     except Exception as e:
+#         print(f"Error during database cleanup: {e}")
 
 
 class TestProgramSummaryDao:
-    @pytest.fixture
-    def mock_session(self):
-        session = Mock(spec=Session)
-        session.commit = Mock()
-        session.refresh = Mock()
-        session.execute = Mock()
-        session.delete = Mock()
-        session.get = Mock()
-        session.add = Mock()
-        return session
-
-    @pytest.fixture
-    def mock_async_session(self):
-        session = AsyncMock(spec=AsyncSession)
-        session.commit = AsyncMock()
-        session.refresh = AsyncMock()
-        session.execute = AsyncMock()
-        session.delete = AsyncMock()
-        session.get = AsyncMock()
-        session.add = AsyncMock()
-        return session
-
-    @pytest.fixture
-    def mock_regular_session_maker(self, mock_session):
-        session_cm = AsyncMock()
-        session_cm.__aenter__.return_value = mock_session
-        session_cm.__aexit__.return_value = None
-
-        maker = MagicMock(spec=sessionmaker)
-        maker.return_value = session_cm
-        return maker
-
-    @pytest.fixture
-    def mock_async_session_maker(self, mock_async_session):
-        session_cm = AsyncMock()
-        session_cm.__aenter__.return_value = mock_async_session
-        session_cm.__aexit__.return_value = None
-
-        maker = MagicMock(spec=async_sessionmaker)
-        maker.return_value = session_cm
-        return maker
-
+    # def mock_session(self):
+    #     session = Mock(spec=Session)
+    #     session.commit = Mock()
+    #     session.refresh = Mock()
+    #     session.execute = Mock()
+    #     session.delete = Mock()
+    #     session.get = Mock()
+    #     session.add = Mock()
+    #     return session
+    # @pytest.fixture
+    # def mock_async_session(self):
+    #     session = AsyncMock(spec=AsyncSession)
+    #     session.commit = AsyncMock()
+    #     session.refresh = AsyncMock()
+    #     session.execute = AsyncMock()
+    #     session.delete = AsyncMock()
+    #     session.get = AsyncMock()
+    #     session.add = AsyncMock()
+    #     return session
+    # @pytest.fixture
+    # def mock_regular_session_maker(self, mock_session):
+    #     session_cm = AsyncMock()
+    #     session_cm.__aenter__.return_value = mock_session
+    #     session_cm.__aexit__.return_value = None
+    #     maker = MagicMock(spec=sessionmaker)
+    #     maker.return_value = session_cm
+    #     return maker
+    # @pytest.fixture
+    # def mock_async_session_maker(self, mock_async_session):
+    #     session_cm = AsyncMock()
+    #     session_cm.__aenter__.return_value = mock_async_session
+    #     session_cm.__aexit__.return_value = None
+    #     maker = MagicMock(spec=async_sessionmaker)
+    #     maker.return_value = session_cm
+    #     return maker
     @pytest_asyncio.fixture
     async def program_summary_dao(self, mock_regular_session_maker, mock_async_session_maker):
         clock = SystemClock()
