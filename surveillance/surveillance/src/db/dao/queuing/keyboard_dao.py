@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from datetime import timedelta, datetime
 
+# TODO: Replace with AsyncUtilityDaoMixin
+from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 from surveillance.src.db.dao.base_dao import BaseQueueingDao
 from surveillance.src.db.models import TypingSession
 from surveillance.src.object.classes import KeyboardAggregate

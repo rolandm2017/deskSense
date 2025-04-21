@@ -52,19 +52,6 @@ class ActivityRecorder:
         else:
             raise TypeError("Session was not the right type")
 
-    def on_state_changed(self, session):
-        if isinstance(session, ProgramSession):
-            self.validate_session(session)
-            self.program_logging_dao.finalize_log(session)
-        elif isinstance(session, ChromeSession):
-            self.validate_session(session)
-            self.chrome_logging_dao.finalize_log(session)
-        else:
-            if isinstance(session, InternalState):
-                raise TypeError(
-                    "Argument was an InternalState when it should be a Session")
-            raise TypeError("Session was not the right type")
-
     def add_ten_sec_to_end_time(self, session):
         """
         Pushes the end of the window forward ten sec so that, 
@@ -80,6 +67,19 @@ class ActivityRecorder:
             self.chrome_logging_dao.push_window_ahead_ten_sec(session)
             self.chrome_summary_dao.push_window_ahead_ten_sec(session, now)
         else:
+            raise TypeError("Session was not the right type")
+
+    def on_state_changed(self, session):
+        if isinstance(session, ProgramSession):
+            self.validate_session(session)
+            self.program_logging_dao.finalize_log(session)
+        elif isinstance(session, ChromeSession):
+            self.validate_session(session)
+            self.chrome_logging_dao.finalize_log(session)
+        else:
+            if isinstance(session, InternalState):
+                raise TypeError(
+                    "Argument was an InternalState when it should be a Session")
             raise TypeError("Session was not the right type")
 
     def deduct_duration(self, duration_in_sec: int, session):

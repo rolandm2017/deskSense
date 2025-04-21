@@ -9,6 +9,7 @@ from typing import List
 
 from surveillance.src.config.definitions import power_on_off_debug_file
 
+from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 from surveillance.src.db.models import DailyDomainSummary
 from surveillance.src.object.classes import ChromeSession
 
@@ -26,7 +27,7 @@ from surveillance.src.util.time_wrappers import UserLocalTime
 # @@@@ @@@@ @@@@ @@@@ @@@@
 
 
-class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
+class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
     def __init__(self,  chrome_logging_dao, regular_session: sessionmaker, async_session_maker: async_sessionmaker):
         self.chrome_logging_dao = chrome_logging_dao
         self.debug = False
@@ -48,14 +49,12 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         print(
             f"creating for {target_domain_name} with duration {duration_in_hours * SECONDS_PER_HOUR}")
         self.throw_if_negative(target_domain_name, duration_in_hours)
-        with self.regular_session() as session:
-            new_entry = DailyDomainSummary(
-                domain_name=target_domain_name,
-                hours_spent=duration_in_hours,
-                gathering_date=when_it_was_gathered
-            )
-            session.add(new_entry)
-            session.commit()
+        new_entry = DailyDomainSummary(
+            domain_name=target_domain_name,
+            hours_spent=duration_in_hours,
+            gathering_date=when_it_was_gathered
+        )
+        self.add_new_item(new_entry)
 
     def find_todays_entry_for_domain(self, chrome_session: ChromeSession):
         if chrome_session.start_time is None:
@@ -83,9 +82,8 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyDomainSummary.gathering_date >= today,
             DailyDomainSummary.gathering_date < today + timedelta(days=1)
         )
-        with self.regular_session() as session:
-            result = session.execute(query)
-            return result.scalar_one_or_none()
+        # TODO: replace.
+        return self.exec_and_read_one_or_none(query)
 
     def read_past_week(self, right_now: UserLocalTime):
 
@@ -95,10 +93,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
         query = select(DailyDomainSummary).where(
             func.date(DailyDomainSummary.gathering_date) >= last_sunday.date()
         )
-
-        with self.regular_session() as session:
-            result = session.execute(query)
-            return result.scalars().all()
+        return self.execute_and_return_all(query)
 
     def read_past_month(self, right_now: UserLocalTime):
         """Read all entries from the 1st of the current month through today."""
@@ -109,9 +104,7 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             func.date(DailyDomainSummary.gathering_date) >= start_of_month.date()
         )
 
-        with self.regular_session() as session:
-            result = session.execute(query)
-            return result.scalars().all()
+        return self.execute_and_return_all(query)
 
     def read_day(self, day: UserLocalTime) -> List[DailyDomainSummary]:
         """Read all entries for the given day."""
@@ -122,16 +115,12 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             DailyDomainSummary.gathering_date >= today_start,
             DailyDomainSummary.gathering_date < tomorrow_start
         )
-        with self.regular_session() as session:
-            result = session.execute(query)
-            result = result.scalars().all()
-            return list(result)
+        return self.execute_and_return_all(query)
 
     def read_all(self):
         """Read all entries."""
-        with self.regular_session() as session:
-            result = session.execute(select(DailyDomainSummary))
-            return result.scalars().all()
+        query = select(DailyDomainSummary)
+        return self.execute_and_return_all(query)
 
     def update_hours(self, existing_entry, usage_duration_in_hours):
         with self.regular_session() as session:
@@ -177,8 +166,6 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
 
         9 times out of 10. So we deduct the unfinished duration from its hours_spent.
         """
-        print(session, "160ru")
-        print(duration_in_sec, "161ru")
         target_domain = session.domain
 
         tomorrow_start = today_start + timedelta(days=1)
@@ -195,12 +182,6 @@ class ChromeSummaryDao:  # NOTE: Does not use BaseQueueDao
             self.throw_if_negative(domain.domain_name, new_duration)
             domain.hours_spent = new_duration
             db_session.commit()
-
-    def exec_and_read_one_or_none(self, query):
-        """Helper method to make code more testable and pleasant to read"""
-        with self.regular_session() as session:
-            result = session.execute(query)
-            return result.scalar_one_or_none()
 
     def throw_if_negative(self, activity, value):
         if value < 0:

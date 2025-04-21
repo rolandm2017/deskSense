@@ -6,10 +6,13 @@ import asyncio
 from datetime import timedelta, datetime, date, timezone
 from typing import List
 
-from surveillance.src.object.classes import ChromeSession, ProgramSession
-
+from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 from surveillance.src.db.models import DomainSummaryLog, ProgramSummaryLog
 from surveillance.src.db.dao.base_dao import BaseQueueingDao
+from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
+
+from surveillance.src.object.classes import ChromeSession, ProgramSession
+
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.errors import ImpossibleToGetHereError
 from surveillance.src.util.dao_wrapper import validate_session, guarantee_start_time
@@ -24,7 +27,7 @@ from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_d
 #
 
 
-class ProgramLoggingDao(BaseQueueingDao):
+class ProgramLoggingDao(UtilityDaoMixin, BaseQueueingDao):
     """DAO for program activity logging. 
     TIMEZONE HANDLING:
     - All datetimes are stored in UTC by PostgreSQL
@@ -95,7 +98,7 @@ class ProgramLoggingDao(BaseQueueingDao):
         # self.do_add_entry(log_entry)
         self.add_new_item(log_entry)
 
-    def find_session(self, session: ProgramSession):
+    def find_session(self, session: ProgramSession) -> ProgramSummaryLog | None:
         # the database is storing and returning times in UTC
         if session.start_time is None:
             raise ValueError("Start time was None")
@@ -108,11 +111,6 @@ class ProgramLoggingDao(BaseQueueingDao):
             ProgramSummaryLog.start_time.op('=')(some_time)
         )
 
-    def find_one_or_none(self, query):
-        with self.regular_session() as db_session:
-            result = db_session.execute(query)
-            return result.scalar_one_or_none()
-
     async def read_day_as_sorted(self, day) -> dict[str, ProgramSummaryLog]:
         # NOTE: the database is storing and returning times in UTC
         start_of_day = day.replace(hour=0, minute=0, second=0,
@@ -124,18 +122,27 @@ class ProgramLoggingDao(BaseQueueingDao):
             ProgramSummaryLog.end_time < end_of_day
         ).order_by(ProgramSummaryLog.program_name)
 
-        async with self.async_session_maker() as session:
-            result = await session.execute(query)
-            logs = result.scalars().all()
+        logs = self.execute_and_return_all(query)
+        # Group the results by program_name
+        grouped_logs = {}
+        for log in logs:
+            if log.program_name not in grouped_logs:
+                grouped_logs[log.program_name] = []
+            grouped_logs[log.program_name].append(log)
 
-            # Group the results by program_name
-            grouped_logs = {}
-            for log in logs:
-                if log.program_name not in grouped_logs:
-                    grouped_logs[log.program_name] = []
-                grouped_logs[log.program_name].append(log)
+        return grouped_logs
+        #   async with self.async_session_maker() as session:
+        #     result = await session.execute(query)
+        #     logs = result.scalars().all()
 
-            return grouped_logs
+        #     # Group the results by program_name
+        #     grouped_logs = {}
+        #     for log in logs:
+        #         if log.program_name not in grouped_logs:
+        #             grouped_logs[log.program_name] = []
+        #         grouped_logs[log.program_name].append(log)
+
+        #     return grouped_logs
 
     def find_orphans(self,  latest_shutdown_time, startup_time):
         """
@@ -157,10 +164,7 @@ class ProgramLoggingDao(BaseQueueingDao):
             )
         ).order_by(ProgramSummaryLog.start_time)
         # the database is storing and returning times in UTC
-        return self.execute_query(query)
-        # async with self.async_session_maker() as session:
-        # result = await session.execute(query)
-        # return result.scalars().all()
+        return self.execute_and_return_all(query)
 
     def find_phantoms(self, latest_shutdown_time, startup_time):
         """
@@ -177,12 +181,12 @@ class ProgramLoggingDao(BaseQueueingDao):
             ProgramSummaryLog.start_time < startup_time
         ).order_by(ProgramSummaryLog.start_time)
         # the database is storing and returning times in UTC
-        return self.execute_query(query)
+        return self.execute_and_return_all(query)
 
     def read_all(self):
         """Fetch all program log entries"""
         query = select(ProgramSummaryLog)
-        return self.execute_query(query)
+        return self.execute_and_return_all(query)
 
     def read_last_24_hrs(self, right_now: datetime):
         """Fetch all program log entries from the last 24 hours
@@ -193,7 +197,7 @@ class ProgramLoggingDao(BaseQueueingDao):
         query = select(ProgramSummaryLog).where(
             ProgramSummaryLog.created_at >= cutoff_time
         ).order_by(ProgramSummaryLog.created_at.desc())
-        return self.execute_query(query)
+        return self.execute_and_return_all(query)
 
     def read_suspicious_entries(self):
         """Get entries with durations longer than 20 minutes"""
@@ -201,7 +205,7 @@ class ProgramLoggingDao(BaseQueueingDao):
         query = select(ProgramSummaryLog).where(
             ProgramSummaryLog.hours_spent > suspicious_duration
         ).order_by(ProgramSummaryLog.hours_spent.desc())
-        return self.execute_query(query)
+        return self.execute_and_return_all(query)
 
     def read_suspicious_alt_tab_windows(self):
         """Get alt-tab windows with durations longer than 10 seconds"""
@@ -210,21 +214,17 @@ class ProgramLoggingDao(BaseQueueingDao):
             ProgramSummaryLog.program_name == "Alt-tab window",
             ProgramSummaryLog.hours_spent > alt_tab_threshold
         ).order_by(ProgramSummaryLog.hours_spent.desc())
-        return self.execute_query(query)
+        return self.execute_and_return_all(query)
 
     def push_window_ahead_ten_sec(self, session: ProgramSession):
+        if session is None:
+            raise ValueError("Session was None")
         log: ProgramSummaryLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError(
                 "Start of heartbeat didn't reach the db")
         log.end_time = log.end_time + timedelta(seconds=10)
         self.update_item(log)
-
-    def update_item(self, item):
-        """ This handles both adding new and updating existing """
-        with self.regular_session() as db_session:
-            db_session.merge(item)
-            db_session.commit()
 
     def finalize_log(self, session: ProgramSession):
         """Overwrite value from the heartbeat. Expect something to ALWAYS be in the db already at this point."""
@@ -236,13 +236,3 @@ class ProgramLoggingDao(BaseQueueingDao):
                 "Start of heartbeat didn't reach the db")
         log.end_time = session.end_time.get_dt_for_db()
         self.update_item(log)
-
-    def add_new_item(self, item):
-        with self.regular_session() as db_session:
-            db_session.add(item)
-            db_session.commit()
-
-    def execute_query(self, query):
-        with self.regular_session() as session:
-            result = session.execute(query)
-            return result.scalars().all()

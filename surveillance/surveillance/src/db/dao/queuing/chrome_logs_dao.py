@@ -8,7 +8,7 @@ from typing import List
 
 from surveillance.src.object.classes import ChromeSession, ProgramSession
 
-
+from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 from surveillance.src.db.models import DomainSummaryLog, ProgramSummaryLog
 from surveillance.src.db.dao.base_dao import BaseQueueingDao
 from surveillance.src.util.console_logger import ConsoleLogger
@@ -26,7 +26,7 @@ from surveillance.src.util.time_wrappers import UserLocalTime
 #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #
 #
 
-class ChromeLoggingDao(BaseQueueingDao):
+class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
     """DAO for program activity logging. 
     TIMEZONE HANDLING:
     - All datetimes are stored in UTC by PostgreSQL
@@ -66,9 +66,7 @@ class ChromeLoggingDao(BaseQueueingDao):
             gathering_date=right_now.date(),
             created_at=right_now
         )
-        with self.regular_session() as db_session:
-            db_session.add(log_entry)
-            db_session.commit()
+        self.add_new_item(log_entry)
 
     def start_session(self, session: ChromeSession):
         """
@@ -90,28 +88,21 @@ class ChromeLoggingDao(BaseQueueingDao):
             gathering_date=start_of_day_as_utc,
             created_at=session.start_time.get_dt_for_db()
         )
-        with self.regular_session() as db_session:
-            db_session.add(log_entry)
-            db_session.commit()
+        self.add_new_item(log_entry)
 
     def find_session(self, session: ChromeSession):
         if session.start_time is None:
             raise ValueError("Start time was None")
         start_time_as_utc = convert_to_utc(session.start_time.get_dt_for_db())
         query = self.select_where_time_equals(start_time_as_utc)
-        return self.find_one_or_none(query)
+        return self.exec_and_read_one_or_none(query)
 
     def select_where_time_equals(self, some_time):
         return select(DomainSummaryLog).where(
             DomainSummaryLog.start_time.op('=')(some_time)
         )
 
-    def find_one_or_none(self, query):
-        with self.regular_session() as db_session:
-            result = db_session.execute(query)
-            return result.scalar_one_or_none()
-
-    async def read_day_as_sorted(self, day):
+    def read_day_as_sorted(self, day):
         start_of_day = day.replace(hour=0, minute=0, second=0,
                                    microsecond=0)  # Still has tz attached
         end_of_day = start_of_day + timedelta(days=1)
@@ -120,7 +111,7 @@ class ChromeLoggingDao(BaseQueueingDao):
             DomainSummaryLog.gathering_date >= start_of_day,
             DomainSummaryLog.gathering_date < end_of_day
         ).order_by(DomainSummaryLog.domain_name)
-        return await self.execute_query(query)
+        return self.execute_and_return_all(query)
 
     def find_orphans(self,  latest_shutdown_time, startup_time):
         """
@@ -141,7 +132,7 @@ class ChromeLoggingDao(BaseQueueingDao):
                 DomainSummaryLog.end_time >= startup_time  # End time after startup
             )
         ).order_by(DomainSummaryLog.start_time)
-        return self.execute_query(query)
+        return self.execute_and_return_all(query)
 
     def find_phantoms(self, latest_shutdown_time, startup_time):
         """
@@ -157,20 +148,20 @@ class ChromeLoggingDao(BaseQueueingDao):
             # But before startup
             DomainSummaryLog.start_time < startup_time
         ).order_by(DomainSummaryLog.start_time)
-        return self.execute_query(query)
+        return self.execute_and_return_all(query)
 
     def read_all(self):
         """Fetch all domain log entries"""
         query = select(DomainSummaryLog)
-        return self.execute_query(query)
+        return self.execute_and_return_all(query)
 
-    async def read_last_24_hrs(self, right_now: UserLocalTime):
+    def read_last_24_hrs(self, right_now: UserLocalTime):
         """Fetch all domain log entries from the last 24 hours"""
         cutoff_time = right_now.dt - timedelta(hours=24)
         query = select(DomainSummaryLog).where(
             DomainSummaryLog.created_at >= cutoff_time
         ).order_by(DomainSummaryLog.created_at.desc())
-        return await self.execute_query(query)
+        return self.execute_and_return_all(query)
 
     def push_window_ahead_ten_sec(self, session: ChromeSession):
         log: DomainSummaryLog = self.find_session(session)
@@ -179,15 +170,6 @@ class ChromeLoggingDao(BaseQueueingDao):
                 "Start of heartbeat didn't reach the db")
         log.end_time = log.end_time + timedelta(seconds=10)
         self.update_item(log)
-        # with self.regular_session() as db_session:
-        #     db_session.merge(log)
-        #     db_session.commit()
-
-    def update_item(self, item):
-        """This handles both adding new and updating existing"""
-        with self.regular_session() as db_session:
-            db_session.merge(item)
-            db_session.commit()
 
     def finalize_log(self, session: ChromeSession):
         """
@@ -202,8 +184,3 @@ class ChromeLoggingDao(BaseQueueingDao):
                 "Start of heartbeat didn't reach the db")
         log.end_time = session.end_time.get_dt_for_db()
         self.update_item(log)
-
-    def execute_query(self, query):
-        with self.regular_session() as session:
-            result = session.execute(query)
-            return result.scalars().all()

@@ -5,6 +5,8 @@ from datetime import datetime
 import asyncpg
 
 from surveillance.src.db.database import SQLALCHEMY_DATABASE_URL, SYNCHRONOUS_DB_URL
+from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
+
 
 # from surveillance.src.object.enums import SystemStatusType
 from surveillance.src.object.enums import SystemStatusType
@@ -13,7 +15,7 @@ from surveillance.src.db.models import SystemStatus
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 
-class SystemStatusDao:
+class SystemStatusDao(UtilityDaoMixin):
     """
     Does NOT use the queue because read/write here
     should always always get priority, i.e. no queue!
@@ -81,15 +83,18 @@ class SystemStatusDao:
             # Don't re-raise - this is critical shutdown code
 
     def write_sync(self, status: SystemStatus, now: UserLocalTime):
-        with self.shutdown_session_maker() as session:
-            session.add(status)
-            session.commit()
+        result = self.add_new_item(status)
+        if result:
             print("Synchronous database commit successful")
             self.logger.log_white_multiple(
                 "[system status dao] recorded status change: ", status)
             return True
+        else:
+            self.logger.log_red_multiple(
+                "[system status dao] failed to write: ", status)
 
     async def async_write(self, status: SystemStatus, now: UserLocalTime):
+        # TODO: Write an AsyncUtilityDaoMixin and use it here
         async with self.async_session_maker() as session:
             session.add(status)
             await session.commit()

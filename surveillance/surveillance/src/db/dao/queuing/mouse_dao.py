@@ -4,6 +4,8 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from datetime import timedelta, datetime
 
 from surveillance.src.db.dao.base_dao import BaseQueueingDao
+# TODO: Replace with AsyncUtilityDaoMixin
+from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 
 from surveillance.src.db.models import MouseMove
 from surveillance.src.object.dto import MouseMoveDto
