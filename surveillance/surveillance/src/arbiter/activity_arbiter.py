@@ -55,18 +55,12 @@ class ActivityArbiter:
     def notify_summary_dao(self, session):
         if self.activity_recorder:
             self.activity_recorder.on_state_changed(session)
-            # result = self.activity_recorder.on_state_changed(session)
-            # if asyncio.iscoroutine(result):
-            #     self.loop.create_task(result)
 
     def notify_of_new_session(self, session):
         if self.activity_recorder:
             # Prevent mutations from ruining test data
             session_copy = snapshot_obj_for_tests(session)
             self.activity_recorder.on_new_session(session_copy)
-            # result = self.activity_recorder.on_new_session(session)
-            # if asyncio.iscoroutine(result):
-            #     self.loop.create_task(result)
 
     def set_program_state(self, event: ProgramSession):
         self.transition_state(event)

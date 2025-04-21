@@ -127,7 +127,6 @@ async def main():
 
     week_of_productivity = await get_productivity_for_week(chosen_week)
 
-
     daily_packages = []
 
     productivity = {}
@@ -215,3 +214,5 @@ if __name__ == "__main__":
 #         "total_hours": productivity["productivity"] + productivity["leisure"]
 
 #     }
+
+# TODO: Go day by day for the past two weeks.

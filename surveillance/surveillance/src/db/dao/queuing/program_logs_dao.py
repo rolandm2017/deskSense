@@ -68,9 +68,7 @@ class ProgramLoggingDao(BaseQueueingDao):
             created_at=right_now
         )
         # print("[pr] Creating ", log_entry)
-        with self.regular_session() as db_session:
-            db_session.add(log_entry)
-            db_session.commit()
+        self.add_new_item(log_entry)
 
     def start_session(self, session: ProgramSession):
         """
@@ -95,9 +93,7 @@ class ProgramLoggingDao(BaseQueueingDao):
             created_at=base_start_time
         )
         # self.do_add_entry(log_entry)
-        with self.regular_session() as db_session:
-            db_session.add(log_entry)
-            db_session.commit()
+        self.add_new_item(log_entry)
 
     def find_session(self, session: ProgramSession):
         # the database is storing and returning times in UTC
@@ -218,18 +214,14 @@ class ProgramLoggingDao(BaseQueueingDao):
 
     def push_window_ahead_ten_sec(self, session: ProgramSession):
         log: ProgramSummaryLog = self.find_session(session)
-        print(log, "215ru")
         if not log:
             raise ImpossibleToGetHereError(
                 "Start of heartbeat didn't reach the db")
         log.end_time = log.end_time + timedelta(seconds=10)
-        print(log.end_time, "220ru")
-        self.merge_item(log)
-        # with self.regular_session() as db_session:
-        #     db_session.merge(log)
-        #     db_session.commit()
+        self.update_item(log)
 
-    def merge_item(self, item):
+    def update_item(self, item):
+        """ This handles both adding new and updating existing """
         with self.regular_session() as db_session:
             db_session.merge(item)
             db_session.commit()
@@ -243,8 +235,11 @@ class ProgramLoggingDao(BaseQueueingDao):
             raise ImpossibleToGetHereError(
                 "Start of heartbeat didn't reach the db")
         log.end_time = session.end_time.get_dt_for_db()
+        self.update_item(log)
+
+    def add_new_item(self, item):
         with self.regular_session() as db_session:
-            db_session.add(log)
+            db_session.add(item)
             db_session.commit()
 
     def execute_query(self, query):

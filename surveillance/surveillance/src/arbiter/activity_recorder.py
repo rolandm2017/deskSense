@@ -37,9 +37,17 @@ class ActivityRecorder:
         now = self.user_facing_clock.now()
         if isinstance(session, ProgramSession):
             self.program_logging_dao.start_session(session)
+            session_exists = self.program_summary_dao.find_todays_entry_for_program(
+                session)
+            if session_exists:
+                return
             self.program_summary_dao.start_session(session, now)
         elif isinstance(session, ChromeSession):
             self.chrome_logging_dao.start_session(session)
+            session_exists = self.chrome_summary_dao.find_todays_entry_for_domain(
+                session)
+            if session_exists:
+                return
             self.chrome_summary_dao.start_session(session, now)
         else:
             raise TypeError("Session was not the right type")

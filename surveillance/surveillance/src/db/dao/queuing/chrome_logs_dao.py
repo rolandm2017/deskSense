@@ -178,12 +178,13 @@ class ChromeLoggingDao(BaseQueueingDao):
             raise ImpossibleToGetHereError(
                 "Start of heartbeat didn't reach the db")
         log.end_time = log.end_time + timedelta(seconds=10)
-        self.merge_item(log)
+        self.update_item(log)
         # with self.regular_session() as db_session:
         #     db_session.merge(log)
         #     db_session.commit()
 
-    def merge_item(self, item):
+    def update_item(self, item):
+        """This handles both adding new and updating existing"""
         with self.regular_session() as db_session:
             db_session.merge(item)
             db_session.commit()
@@ -200,9 +201,7 @@ class ChromeLoggingDao(BaseQueueingDao):
             raise ImpossibleToGetHereError(
                 "Start of heartbeat didn't reach the db")
         log.end_time = session.end_time.get_dt_for_db()
-        with self.regular_session() as db_session:
-            db_session.add(log)
-            db_session.commit()
+        self.update_item(log)
 
     def execute_query(self, query):
         with self.regular_session() as session:
