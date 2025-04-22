@@ -19,15 +19,20 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade():
-    # 1. SET transaction_timeout (this is a session-level setting, not schema, so we'll skip it)
+    # 1. SET transaction_timeout [intentionally skipped]
 
     # 2. Modify chrome_tabs.tab_title to have a limit of 120 characters
-    # and change created_at from "with time zone" to "without time zone"
+    # and change created_at from "with time zone" to "without time zone" and remove DEFAULT
     op.alter_column('chrome_tabs', 'tab_title',
                     existing_type=sa.VARCHAR(),
                     type_=sa.VARCHAR(120),
                     existing_nullable=True)
 
+    # First remove the default constraint
+    op.execute(
+        "ALTER TABLE public.chrome_tabs ALTER COLUMN created_at DROP DEFAULT")
+
+    # Then change the type
     op.alter_column('chrome_tabs', 'created_at',
                     existing_type=sa.TIMESTAMP(timezone=True),
                     type_=sa.TIMESTAMP(timezone=False),
@@ -177,7 +182,12 @@ def downgrade():
                     type_=sa.VARCHAR(),
                     existing_nullable=True)
 
+    # Change the timestamp type back
     op.alter_column('chrome_tabs', 'created_at',
                     existing_type=sa.TIMESTAMP(timezone=False),
                     type_=sa.TIMESTAMP(timezone=True),
                     existing_nullable=True)
+
+    # Add back the default constraint
+    op.execute(
+        "ALTER TABLE public.chrome_tabs ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP")
