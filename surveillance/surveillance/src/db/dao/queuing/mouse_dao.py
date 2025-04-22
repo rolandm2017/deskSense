@@ -5,7 +5,7 @@ from datetime import timedelta, datetime
 
 from surveillance.src.db.dao.base_dao import BaseQueueingDao
 # TODO: Replace with AsyncUtilityDaoMixin
-from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
+from surveillance.src.db.dao.utility_dao_mixin import AsyncUtilityDaoMixin
 
 from surveillance.src.db.models import MouseMove
 from surveillance.src.object.dto import MouseMoveDto
@@ -18,7 +18,7 @@ def get_rid_of_ms(time):
     return str(time).split(".")[0]
 
 
-class MouseDao(BaseQueueingDao):
+class MouseDao(AsyncUtilityDaoMixin, BaseQueueingDao):
     def __init__(self, async_session_maker: async_sessionmaker, batch_size=100, flush_interval=1):
         super().__init__(async_session_maker=async_session_maker,
                          batch_size=batch_size, flush_interval=flush_interval, dao_name="Mouse")
@@ -47,7 +47,7 @@ class MouseDao(BaseQueueingDao):
     async def read_all(self):
         """Read MouseMove entries."""
         query = select(MouseMove)
-        return await self.exec_and_return_all(query)
+        return await self.execute_and_return_all_rows(query)
 
     async def read_by_id(self, mouse_move_id: int):
         async with self.async_session_maker() as session:
@@ -60,19 +60,19 @@ class MouseDao(BaseQueueingDao):
         """
         query = self.get_prev_24_hours_query(right_now.dt - timedelta(days=1))
 
-        return await self.exec_and_return_all(query)
+        return await self.execute_and_return_all_rows(query)
 
     def get_prev_24_hours_query(self, twenty_four_hours_ago):
         return select(MouseMove).where(
             MouseMove.start_time >= twenty_four_hours_ago
         ).order_by(MouseMove.start_time.desc())
 
-    async def exec_and_return_all(self, query):
-        async with self.async_session_maker() as session:
-            result = await session.execute(query)
-            # Some tests think this needs to be 'awaited' but it doens't
-            # return await result.scalars().all()
-            return result.scalars().all()
+    # async def exec_and_return_all(self, query):
+    #     async with self.async_session_maker() as session:
+    #         result = await session.execute(query)
+    #         # Some tests think this needs to be 'awaited' but it doens't
+    #         # return await result.scalars().all()
+    #         return result.scalars().all()
 
     async def delete(self, id: int):
         """Delete an entry by ID"""

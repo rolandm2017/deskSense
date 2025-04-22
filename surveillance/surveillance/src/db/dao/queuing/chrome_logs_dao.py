@@ -37,10 +37,9 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
     def __init__(self, session_maker: sessionmaker, async_session_maker: async_sessionmaker, batch_size=100, flush_interval=1):
         """ Exists mostly for debugging. """
 
-        super().__init__(async_session_maker=async_session_maker,
-                         batch_size=batch_size, flush_interval=flush_interval, dao_name="ChromeLogging")
-        self.async_session_maker = async_session_maker
-        self.regular_session = session_maker
+        # super().__init__(async_session_maker=async_session_maker,
+        #                  batch_size=batch_size, flush_interval=flush_interval, dao_name="ChromeLogging")
+        self.regular_session = session_maker  # Do not delete. UtilityDao still uses it
 
     def create_log(self, session: ChromeSession, right_now: UserLocalTime):
         """

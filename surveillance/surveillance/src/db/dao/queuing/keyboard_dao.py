@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from datetime import timedelta, datetime
 
 # TODO: Replace with AsyncUtilityDaoMixin
-from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
+from surveillance.src.db.dao.utility_dao_mixin import AsyncUtilityDaoMixin
 from surveillance.src.db.dao.base_dao import BaseQueueingDao
 from surveillance.src.db.models import TypingSession
 from surveillance.src.object.classes import KeyboardAggregate
@@ -19,11 +19,10 @@ def get_rid_of_ms(time):
     return str(time).split(".")[0]
 
 
-class KeyboardDao(BaseQueueingDao):
+class KeyboardDao(AsyncUtilityDaoMixin, BaseQueueingDao):
     def __init__(self, async_session_maker: async_sessionmaker, batch_size=100, flush_interval=1):
         super().__init__(async_session_maker=async_session_maker,
                          batch_size=batch_size, flush_interval=flush_interval, dao_name="Keyboard")
-
         self.logger = ConsoleLogger()
 
     async def create(self, session: KeyboardAggregate):
@@ -43,6 +42,7 @@ class KeyboardDao(BaseQueueingDao):
         )
 
         # Create a new session from the session_maker
+
         async with self.async_session_maker() as db_session:
             # Begin a transaction
             async with db_session.begin():
@@ -59,6 +59,8 @@ class KeyboardDao(BaseQueueingDao):
         """
         Read Keystroke entries. 
         """
+        # TODO: refactor
+        # return self.get_with_session(argType, argId)
         async with self.async_session_maker() as db_session:
             result = await db_session.get(TypingSession, keystroke_id)
             return result
@@ -66,7 +68,7 @@ class KeyboardDao(BaseQueueingDao):
     async def read_all(self):
         """Return all keystrokes."""
         query = select(TypingSession)
-        all_results = await self.exec_and_return_all(query)
+        all_results = await self.execute_and_return_all_rows(query)
 
         dtos = self.package_dtos(all_results)
 
@@ -88,7 +90,7 @@ class KeyboardDao(BaseQueueingDao):
 
             query = self.get_prev_24_hours_query(twenty_four_hours_ago)
 
-            all_results = await self.exec_and_return_all(query)
+            all_results = await self.execute_and_return_all_rows(query)
 
             dtos = self.package_dtos(all_results)
 
@@ -102,14 +104,9 @@ class KeyboardDao(BaseQueueingDao):
             TypingSession.start_time >= twenty_four_hours_ago
         ).order_by(TypingSession.start_time.desc())
 
-    async def exec_and_return_all(self, query):
-        async with self.async_session_maker() as session:
-            result = await session.execute(query)
-            result = result.all()
-            return result
-
     async def delete(self, id: int):
         """Delete an entry by ID"""
+        # TODO: Refactor
         async with self.async_session_maker() as session:
             entry = await session.get(TypingSession, id)
             if entry:

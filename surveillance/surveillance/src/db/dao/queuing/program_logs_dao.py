@@ -27,7 +27,7 @@ from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_d
 #
 
 
-class ProgramLoggingDao(UtilityDaoMixin, BaseQueueingDao):
+class ProgramLoggingDao(UtilityDaoMixin):
     """DAO for program activity logging. 
     TIMEZONE HANDLING:
     - All datetimes are stored in UTC by PostgreSQL
@@ -37,10 +37,7 @@ class ProgramLoggingDao(UtilityDaoMixin, BaseQueueingDao):
 
     def __init__(self, session_maker: sessionmaker, async_session_maker: async_sessionmaker, batch_size=100, flush_interval=1, dao_name="ProgramLogging"):
         """ Exists mostly for debugging. """
-        super().__init__(async_session_maker=async_session_maker,
-                         batch_size=batch_size, flush_interval=flush_interval, dao_name=dao_name)
-        self.regular_session = session_maker
-        self.async_session_maker = async_session_maker
+        self.regular_session = session_maker  # Do not delete. UtilityDao still uses it
         self.logger = ConsoleLogger()
 
     def create_log(self, session: ProgramSession, right_now: datetime):

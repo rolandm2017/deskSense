@@ -149,14 +149,11 @@ class SystemStatusDao(UtilityDaoMixin):
             return None
 
     def read_latest_status_from_db(self, query) -> SystemStatus | None:
-        with self.shutdown_session_maker() as session:
-            result = session.execute(query)
-            latest_status = result.scalar_one_or_none()
-
-            if latest_status:
-                self.logger.log_white_multiple(
-                    "[dao] Found latest status: ", latest_status.status)
-                return latest_status
-            else:
-                self.logger.log_purple("[dao] No status found")
-                return None
+        latest_status = self.exec_and_read_one_or_none(query)
+        if latest_status:
+            self.logger.log_white_multiple(
+                "[dao] Found latest status: ", latest_status.status)
+            return latest_status
+        else:
+            self.logger.log_purple("[dao] No status found")
+            return None

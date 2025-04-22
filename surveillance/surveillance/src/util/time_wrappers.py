@@ -81,7 +81,8 @@ class UserLocalTime:
 
     def get_start_of_day(self):
         """Get the start of the day for this time"""
-        return get_start_of_day(self.dt)
+        dt = get_start_of_day(self.dt)
+        return UserLocalTime(dt)
 
     # Optional: Implement other datetime methods directly
     # This allows for direct calling like my_time.strftime()
@@ -103,13 +104,15 @@ class UserLocalTime:
             return self.dt < other
         return NotImplemented
 
-    # Support datetime arithmetic
+       # Support datetime arithmetic
     def __sub__(self, other):
-        """Support subtraction between time objects"""
+        """Support subtraction between time objects or timedelta objects"""
         if isinstance(other, (UserLocalTime, SystemTime)):
             return self.dt - other.dt
         elif isinstance(other, datetime):
             return self.dt - other
+        elif hasattr(other, 'days'):  # Check if it's a timedelta-like object
+            return UserLocalTime(self.dt - other)
         return NotImplemented
 
     def __rsub__(self, other):

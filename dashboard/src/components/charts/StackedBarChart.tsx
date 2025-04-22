@@ -3,11 +3,14 @@ import * as d3 from "d3";
 import { BreakdownByDay } from "../../interface/weekly.interface";
 
 interface StackedBarChartProps {
-    data: BreakdownByDay[];
+    dayByDayBreakdown: BreakdownByDay[];
     title: string;
 }
 
-const StackedBarChart: React.FC<StackedBarChartProps> = ({ data, title }) => {
+const StackedBarChart: React.FC<StackedBarChartProps> = ({
+    dayByDayBreakdown,
+    title,
+}) => {
     const svgRef = useRef<SVGSVGElement>(null);
 
     // Set up dimensions
@@ -16,13 +19,20 @@ const StackedBarChart: React.FC<StackedBarChartProps> = ({ data, title }) => {
     const height = 400 - margin.top - margin.bottom;
 
     useEffect(() => {
-        if (!svgRef.current || !data) return;
+        if (!svgRef.current || !dayByDayBreakdown) return;
 
         // Clear previous SVG content
         d3.select(svgRef.current).selectAll("*").remove();
 
+        for (const day of dayByDayBreakdown) {
+            if (day.productiveHours > 0 || day.leisureHours > 0) {
+                console.log("Day: ", day.day);
+                console.log("Productive hours: ", day.productiveHours);
+                console.log("Leisure hours: ", day.leisureHours);
+            }
+        }
         // Process the data to get day names
-        const processedData = data.map((d) => ({
+        const processedData = dayByDayBreakdown.map((d) => ({
             day: d.day.toLocaleDateString("en-US", { weekday: "long" }),
             productiveHours: d.productiveHours,
             leisureHours: d.leisureHours,
@@ -150,7 +160,7 @@ const StackedBarChart: React.FC<StackedBarChartProps> = ({ data, title }) => {
             .attr("y", 9.5)
             .attr("dy", "0.32em")
             .text((d) => d);
-    }, [data, title]);
+    }, [dayByDayBreakdown, title]);
 
     return (
         <svg

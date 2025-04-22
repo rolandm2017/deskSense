@@ -180,7 +180,6 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
 
         9 times out of 10. So we deduct the unfinished duration from its hours_spent.
         """
-        print(session, "173ru")
         if duration_in_sec > 10:
             raise ValueError("Duration was somehow greater than 10")
         target_program_name = session.window_title

@@ -182,42 +182,41 @@ class DashboardService:
         return all_days, sunday_that_starts_the_week
 
     async def get_current_week_program_usage_timeline(self):
-        today = self.user_clock.now()
+        today: UserLocalTime = self.user_clock.now()
 
-        is_sunday = today.weekday() == 6
+        is_sunday: bool = today.dt.weekday() == 6
         if is_sunday:
             # If the week_of is a sunday, start from there.
-            sunday_that_starts_the_week = today
+            sunday_that_starts_the_week: UserLocalTime = today
             days_since_sunday = 0
         else:
             # If the week_of is not a sunday,
             # go back in time to the most recent sunday,
             # and start from there. This is error handling
-            offset = 1
-            days_per_week = 7
-            days_since_sunday = (today.weekday() + offset) % days_per_week
-            sunday_that_starts_the_week = today.dt - \
+            offset: int = 1
+            days_per_week: int = 7
+            days_since_sunday: int = (today.weekday() + offset) % days_per_week
+            sunday_that_starts_the_week: UserLocalTime = today - \
                 timedelta(days=days_since_sunday)
 
-        now = self.user_clock.now()
-        start_of_today = now.replace(hour=0, minute=0, second=0,
-                                     microsecond=0)
-        start_of_tomorrow = start_of_today + timedelta(days=1)
+        now: UserLocalTime = self.user_clock.now()
+        start_of_today: UserLocalTime = now.get_start_of_day()
+        start_of_tomorrow: UserLocalTime = start_of_today + timedelta(days=1)
 
         all_days = []
 
         for days_after_sunday in range(7):
-            current_day = sunday_that_starts_the_week.dt + \
+            current_day: UserLocalTime = sunday_that_starts_the_week + \
                 timedelta(days=days_after_sunday)
-            is_in_future = current_day > start_of_tomorrow
+            is_in_future: bool = current_day > start_of_tomorrow
             if is_in_future:
                 continue  # avoid reading future dates from db
 
             program_usage_timeline: dict[str, ProgramSummaryLog] = await self.program_logging_dao.read_day_as_sorted(current_day)
 
             self.logger.log_days_retrieval(
-                "[get_current_week_program_usage_timeline]", current_day, len(program_usage_timeline))
-            day = {"date": current_day,
+                "[get_current_week_program_usage_timeline]", current_day.dt, len(program_usage_timeline))
+            day = {"date": current_day.dt,
                    "program_usage_timeline": program_usage_timeline}
 
             all_days.append(day)
@@ -308,14 +307,14 @@ class DashboardService:
 
         return usage_from_days
 
-    async def get_past_month_summaries_programs(self):
+    def get_past_month_summaries_programs(self):
         right_now = self.user_clock.now()
 
-        all = await self.program_summary_dao.read_past_month(right_now)
+        all = self.program_summary_dao.read_past_month(right_now)
         return all
 
-    async def get_past_month_summaries_chrome(self):
+    def get_past_month_summaries_chrome(self):
         right_now = self.user_clock.now()
 
-        all = await self.chrome_summary_dao.read_past_month(right_now)
+        all = self.chrome_summary_dao.read_past_month(right_now)
         return all

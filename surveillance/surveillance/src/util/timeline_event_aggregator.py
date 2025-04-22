@@ -24,9 +24,15 @@ half_sec = 500
 
 def aggregate_timeline_events(events: List[TimelineEntryObj], threshold=half_sec) -> List[PrecomputedTimelineEntry]:
     acc = []
+    not_a_list = not isinstance(events, list)
+    if not_a_list:
+        raise ValueError("Timeline events aggregator must receive a list")
+    if len(events) == 0:
+        return []
     for i in range(0, len(events)):
         if i == 0:
             first_obj = events[i]
+            print(first_obj,  type(first_obj), "32ru")
             first_compressed_obj = PrecomputedTimelineEntry(clientFacingId=first_obj.clientFacingId, group=first_obj.group,
                                                             content=first_obj.content, start=first_obj.start, end=first_obj.end, eventCount=1)
             acc.append(first_compressed_obj)
