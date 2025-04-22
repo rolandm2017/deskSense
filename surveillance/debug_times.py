@@ -124,9 +124,6 @@ async def main():
 
     week_of_productivity = await get_productivity_for_week(chosen_week)
 
-    # for v in week_of_productivity:
-    #     print(v, '90ru')
-
     daily_packages = []
 
     productivity = {}

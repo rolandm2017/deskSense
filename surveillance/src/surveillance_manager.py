@@ -145,7 +145,6 @@ class SurveillanceManager:
     def handle_window_change(self, event):
         self.loop.create_task(self.arbiter.set_program_state(event))
 
-    # FIXME: Am double counting for sure
     def handle_program_ready_for_db(self, event):
         self.loop.create_task(self.program_dao.create(event))
 

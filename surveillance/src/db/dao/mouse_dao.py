@@ -7,7 +7,8 @@ from .base_dao import BaseQueueingDao
 
 from ..models import MouseMove
 from ...object.dto import MouseMoveDto
-from ...trackers.mouse_tracker import MouseMoveWindow
+from ...object.classes import MouseEvent
+# from ...trackers.mouse_tracker import MouseMoveWindow
 from ...util.console_logger import ConsoleLogger
 
 
@@ -24,16 +25,14 @@ class MouseDao(BaseQueueingDao):
 
     async def create_from_start_end_times(self, start_time: datetime, end_time: datetime):
         mouse_move = MouseMove(start_time=start_time, end_time=end_time)
-        if isinstance(mouse_move, MouseMoveWindow):
-            raise ValueError("mouse move window found!")
         await self.queue_item(mouse_move, MouseMove)
 
-    async def create_from_window(self, window: MouseMoveWindow):
+    async def create_from_window(self, window: MouseEvent):
         # Create dict first, to avoid MouseMoveWindow "infesting" a MouseMove object.
         # See SHA 52d3c13c3150c5859243b909d47d609f5b2b8600 to experience the issue.
         # self.logger.log_green("[LOG] Mouse move")
         mouse_move = MouseMove(
-            start_time=window.start_time, end_time=window.end_time)
+            start_time=window["start"], end_time=window["end"])
         await self.queue_item(mouse_move, MouseMove)
 
     async def create_without_queue(self, start_time: datetime, end_time: datetime):

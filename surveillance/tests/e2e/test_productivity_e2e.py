@@ -3,6 +3,7 @@ import pytest
 from unittest.mock import Mock, patch, AsyncMock, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy import text
+import asyncio
 
 from datetime import datetime
 
@@ -69,7 +70,10 @@ async def async_engine():
     default_url = ASYNC_TEST_DB_URL.rsplit('/', 1)[0] + '/postgres'
     admin_engine = create_async_engine(
         default_url,
-        isolation_level="AUTOCOMMIT"
+        isolation_level="AUTOCOMMIT",  # Add this
+        pool_pre_ping=True,            # Add connection check
+        pool_recycle=3600,             # Prevent connection timeout
+        pool_timeout=30                # Increase pool timeout
     )
 
     async with admin_engine.connect() as conn:
@@ -101,7 +105,14 @@ async def async_engine():
     try:
         yield test_engine
     finally:
+        # Add a delay to ensure all operations complete before disposal
+        await asyncio.sleep(1)
+
+        # Close all connections in the pool
         await test_engine.dispose()
+
+        # Ensure we're completely done before dropping the database
+        await asyncio.sleep(1)
 
         # Clean up by dropping test database
         admin_engine = create_async_engine(
@@ -109,12 +120,14 @@ async def async_engine():
             isolation_level="AUTOCOMMIT"
         )
         async with admin_engine.connect() as conn:
+            # More aggressive connection termination
             await conn.execute(text("""
                 SELECT pg_terminate_backend(pid)
                 FROM pg_stat_activity
                 WHERE datname = 'dsTestDb'
                 AND pid <> pg_backend_pid()
             """))
+            await asyncio.sleep(0.5)  # Short pause after terminating connections
             await conn.execute(text("DROP DATABASE IF EXISTS dsTestDb"))
         await admin_engine.dispose()
 
@@ -208,27 +221,28 @@ def shutdown_session_maker(sync_engine):
     return session_maker
 
 
-#       oooox
-#     oox   oox
-#    ox       ox
-#   ox         ox
-#   ox         ox
-#   ox         ox
-#    ox       ox
-#     oox   oox
-#       oooox
+#       oooox              oooox
+#     oox   oox          oox   oox
+#    ox       ox        ox       ox
+#   ox         ox      ox         ox
+#   ox         ox      ox         ox
+#   ox         ox      ox         ox
+#    ox       ox        ox       ox
+#     oox   oox          oox   oox
+#       oooox              oooox
 #
 # First, events are recorded.
 
 @pytest.mark.asyncio
 async def test_recording_and_reading_sessions(async_session_maker, shutdown_session_maker):
-
+    async_session_maker = await async_session_maker  # must be done
+    # above line fixes "TypeError: 'coroutine' object is not callable"
     program_facade = Mock()
 
-    real_program_events = [x["event"] for x in program_data]
+    real_program_events = [x["event"] for x in program_data[:3]]
     real_chrome_events = chrome_data
 
-    times_for_program_events = [x["time"] for x in program_data]
+    times_for_program_events = [x["time"] for x in program_data[:3]]
 
     program_durations = []
 
@@ -240,7 +254,29 @@ async def test_recording_and_reading_sessions(async_session_maker, shutdown_sess
         change = next_event - current
         program_durations.append(change)
 
-    program_facade.listen_for_window_changes.side_effect = real_program_events
+    class MockProgramFacade:
+        def __init__(self, events):
+            self.events = events
+
+        def listen_for_window_changes(self):
+            """This is a generator function that yields events one by one"""
+            for event in self.events:
+                yield event
+
+    # Create an instance with your test events
+    mock_facade = MockProgramFacade(real_program_events)
+
+    # Create a factory function that returns this facade regardless of OS
+
+    def mock_program_facade_factory(os):
+        return mock_facade
+
+    # Change your FacadeInjector setup to use this factory
+    facades = FacadeInjector(
+        get_keyboard_facade_instance,
+        get_mouse_facade_instance,
+        mock_program_facade_factory  # Use our factory instead of the Mock
+    )
 
     program_logging_dao = ProgramLoggingDao(async_session_maker)
     chrome_logging_dao = ChromeLoggingDao(async_session_maker)
@@ -259,15 +295,10 @@ async def test_recording_and_reading_sessions(async_session_maker, shutdown_sess
         side_effect=chrome_summary_dao.create_if_new_else_update)
     chrome_summary_dao.create_if_new_else_update = chrome_summary_spy
 
-    clock_again = MockClock([])
-
+    clock = MockClock(times_for_program_events)
     activity_recorder = ActivityRecorder(
-        clock_again, program_summary_dao, chrome_summary_dao)
-
-    facades = FacadeInjector(
-        get_keyboard_facade_instance, get_mouse_facade_instance, program_facade)
+        clock, program_summary_dao, chrome_summary_dao)
     # TODO: async session from the test db
-    clock = MockClock([])
     activity_arbiter = ActivityArbiter(clock)
 
     activity_arbiter.add_summary_dao_listener(activity_recorder)
@@ -292,8 +323,17 @@ async def test_recording_and_reading_sessions(async_session_maker, shutdown_sess
     # Prevent odd shutdown triggers from firing when tests close
     surveillance_manager.system_tracker = None  # type: ignore
 
+    # Run the events through the trackers
+    surveillance_manager.start_trackers()
+
+    # Checkpoint:
+    # The Program DAO received the expected num of events
+    # And they all had expected timestamps
+    assert create_spy.call_count == 10
+
     # Checkpoint:
     # The Arbiter was called with the expected values
+    # FIXME: 0 != 10
     assert spy_on_set_program_state.call_count == len(real_program_events) - 1
     # The DAO was called with the expected values
     assert create_spy.call_count == len(real_program_events) - 1
@@ -345,6 +385,21 @@ async def test_recording_and_reading_sessions(async_session_maker, shutdown_sess
     # Checkpoint:
     # Dashboard Service reports the right amount of time for get_weekly_productivity_overview
     dashboard_service = await get_dashboard_service()
+
+    await surveillance_manager.shutdown_handler()
+    await surveillance_manager.cleanup()
+
+    # Wait for any pending database operations to complete
+    # Create a new session to ensure all previous ones are finished
+    async with async_session_maker() as session:
+        # Execute a simple query that won't affect your data but ensures all previous
+        # operations are committed
+        await session.execute(text("SELECT 1"))
+        await session.commit()
+
+    # Add a small sleep to ensure all connections are properly closed
+    # before the test exits and fixtures tear down
+    await asyncio.sleep(0.5)
 
 # Then, we check that the events are there as planned.
 

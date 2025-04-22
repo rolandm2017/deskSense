@@ -87,7 +87,6 @@ class ProgramLoggingDao(BaseQueueingDao):
                 ProgramSummaryLog.end_time >= startup_time  # End time after startup
             )
         ).order_by(ProgramSummaryLog.start_time)
-
         async with self.session_maker() as session:
             result = await session.execute(query)
             return result.scalars().all()

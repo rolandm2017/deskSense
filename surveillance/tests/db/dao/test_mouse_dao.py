@@ -6,7 +6,7 @@ from typing import cast
 
 from src.db.dao.mouse_dao import MouseDao
 from src.db.models import MouseMove
-from src.trackers.mouse_tracker import MouseMoveWindow
+from src.object.classes import MouseEvent
 from src.util.clock import SystemClock
 
 
@@ -66,7 +66,8 @@ class TestMouseDao:
     async def test_create_from_window(self, dao, mock_queue_item):
         start_time = datetime.now()
         end_time = start_time + timedelta(minutes=1)
-        window = MouseMoveWindow(start_time, end_time)
+        window: MouseEvent = {
+            "start": start_time.timestamp(), "end": end_time.timestamp()}
 
         await dao.create_from_window(window)
 
@@ -146,14 +147,3 @@ class TestMouseDao:
         assert result is None
         mock_session.delete.assert_not_called()
         assert not mock_session.commit.called
-
-    @pytest.mark.asyncio
-    async def test_create_from_window_type_check(self, dao, mock_queue_item):
-        window = MouseMoveWindow(datetime.now(), datetime.now())
-
-        with pytest.raises(ValueError, match="mouse move window, and mouse move, were indeed different"):
-            mouse_move = MouseMove(
-                start_time=window.start_time, end_time=window.end_time)
-            if not isinstance(mouse_move, MouseMoveWindow):
-                raise ValueError(
-                    "mouse move window, and mouse move, were indeed different")

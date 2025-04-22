@@ -58,6 +58,7 @@ class ProgramTrackerCore:
         self.console_logger = ConsoleLogger()
 
     def run_tracking_loop(self):
+        print(self.program_facade.listen_for_window_changes, '61ru')
         for window_change in self.program_facade.listen_for_window_changes():
 
             # is_expected_shape_else_throw(window_change)
