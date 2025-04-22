@@ -185,7 +185,6 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         """
         if duration_in_sec > 10:
             raise ValueError("Duration was somehow greater than 10")
-        target_program_name = session.window_title
 
         tomorrow_start = today_start + timedelta(days=1)
 
@@ -193,7 +192,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         self.throw_if_negative(session.window_title, time_to_remove)
 
         query = select(DailyProgramSummary).where(
-            DailyProgramSummary.program_name == target_program_name,
+            DailyProgramSummary.exe_path == session.process_name,
             DailyProgramSummary.gathering_date >= today_start,
             DailyProgramSummary.gathering_date < tomorrow_start
         )

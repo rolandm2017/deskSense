@@ -2,7 +2,6 @@ import threading
 from datetime import datetime
 
 
-
 class MouseEventDispatch:
     """
     Moving the mouse in any non-tiny manner yields a stream of perhaps 50 to 100 events
@@ -18,7 +17,7 @@ class MouseEventDispatch:
 
     def __init__(self, event_aggregator, event_ready_handler):
         # fifty_ms = 0.1  # NOTE: 100 ms is a LONG time in mouse move events
-        debug_timeout_ms = 200  # NOTE: 100 ms is a LONG time in mouse move events
+        debug_timeout_ms = 300  # NOTE: 300 ms is a LONG time in mouse move events
         ms_per_sec = 1000
         self.max_delay_for_end_bundle = debug_timeout_ms / ms_per_sec  # ms / 1000 ms/sec
         # NOTE about max_agg: 300 is for programming, but 1200 is for FPS
@@ -64,7 +63,7 @@ class MouseEventDispatch:
         # Process the events
         if len(self.event_aggregator.current_aggregation) > 0:
             # print("Event ready handler")
-            print("[start]", self.start_time)
+            # print("[start]", self.start_time)
             end_time = datetime.now()
             # print("[end]", end_time)
             # print("[duration]", end_time - self.start_time)
