@@ -8,7 +8,7 @@ import asyncio
 from .debug.ui_notifier import UINotifier
 
 from .services.chrome_service import ChromeService
-from .services.services import KeyboardService, MouseService, ProgramService, TimezoneService
+from .services.services import KeyboardService, MouseService, TimezoneService
 from .facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
 
 from .db.database import async_session_maker, regular_session_maker
@@ -35,9 +35,9 @@ system_clock = SystemClock()
 user_facing_clock = UserFacingClock()
 
 _program_logging_dao = ProgramLoggingDao(
-    regular_session_maker, async_session_maker)
+    regular_session_maker)
 _chrome_logging_dao = ChromeLoggingDao(
-    regular_session_maker, async_session_maker)
+    regular_session_maker)
 
 
 async def get_keyboard_dao() -> KeyboardDao:
@@ -100,10 +100,10 @@ async def get_mouse_service(dao: MouseDao = Depends(get_mouse_dao)) -> MouseServ
     return MouseService(dao)
 
 
-async def get_program_service() -> ProgramService:
-    # Lazy import to avoid circular dependency
-    from .services.services import ProgramService
-    return ProgramService(None)  # Under construction
+# async def get_program_service() -> ProgramService:
+#     # Lazy import to avoid circular dependency
+#     from .services.services import ProgramService
+#     return ProgramService(None)  # Under construction
 
 
 async def get_dashboard_service(
@@ -134,9 +134,9 @@ async def get_activity_arbiter():
     system_clock = SystemClock()
     user_facing_clock = UserFacingClock()
     chrome_logging_dao = ChromeLoggingDao(
-        regular_session_maker, async_session_maker)
+        regular_session_maker)
     program_logging_dao = ProgramLoggingDao(
-        regular_session_maker, async_session_maker)
+        regular_session_maker)
 
     program_summary_dao = ProgramSummaryDao(
         program_logging_dao, regular_session_maker, async_session_maker)

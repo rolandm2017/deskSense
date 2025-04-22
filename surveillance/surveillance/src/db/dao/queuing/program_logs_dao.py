@@ -35,12 +35,12 @@ class ProgramLoggingDao(UtilityDaoMixin):
     - Input datetimes should be timezone-aware
     - Date comparisons are performed in UTC"""
 
-    def __init__(self, session_maker: sessionmaker, async_session_maker: async_sessionmaker, batch_size=100, flush_interval=1, dao_name="ProgramLogging"):
+    def __init__(self, session_maker: sessionmaker):
         """ Exists mostly for debugging. """
         self.regular_session = session_maker  # Do not delete. UtilityDao still uses it
         self.logger = ConsoleLogger()
 
-    def create_log(self, session: ProgramSession, right_now: datetime):
+    def create_full_log(self, session: ProgramSession, right_now: datetime):
         """
         Log an update to a summary table.
 
@@ -59,6 +59,7 @@ class ProgramLoggingDao(UtilityDaoMixin):
         # FIXME: do not need hours_spent AND duration?
         print("creating ", session.start_time)
         log_entry = ProgramSummaryLog(
+            exe_path=session.process_name,
             program_name=session.window_title,
             hours_spent=start_end_time_duration_as_hours,
             start_time=session.start_time.get_dt_for_db(),
@@ -84,7 +85,7 @@ class ProgramLoggingDao(UtilityDaoMixin):
         start_of_day_as_utc = convert_to_utc(start_of_day)
         start_window_end = base_start_time + timedelta(seconds=10)
         log_entry = ProgramSummaryLog(
-            program_exe=session.process_name,
+            exe_path=session.process_name,
             program_name=session.window_title,
             hours_spent=unknown,
             start_time=base_start_time,
@@ -97,6 +98,7 @@ class ProgramLoggingDao(UtilityDaoMixin):
         self.add_new_item(log_entry)
 
     def find_session(self, session: ProgramSession) -> ProgramSummaryLog | None:
+        """Is finding it by time! Looking for the one, specifically, with the arg's time"""
         # the database is storing and returning times in UTC
         if session.start_time is None:
             raise ValueError("Start time was None")

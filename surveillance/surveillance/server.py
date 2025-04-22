@@ -44,8 +44,7 @@ from surveillance.src.services.chrome_service import ChromeService
 from surveillance.src.services.services import TimezoneService
 
 from surveillance.src.service_dependencies import (
-    get_keyboard_service, get_mouse_service, get_program_service,
-    get_dashboard_service, get_chrome_service, get_activity_arbiter, get_timezone_service,
+    get_keyboard_service, get_mouse_service,     get_dashboard_service, get_chrome_service, get_activity_arbiter, get_timezone_service,
     get_video_service
 )
 

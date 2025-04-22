@@ -8,11 +8,11 @@ from surveillance.src.object.pydantic_dto import (
 )
 
 from surveillance.src.services.services import (
-    KeyboardService, MouseService, ProgramService
+    KeyboardService, MouseService
 )
 
 from surveillance.src.service_dependencies import (
-    get_keyboard_service, get_mouse_service, get_program_service, get_chrome_service
+    get_keyboard_service, get_mouse_service, get_chrome_service
 )
 
 from surveillance.src.util.pydantic_factory import (
@@ -77,26 +77,26 @@ async def get_mouse_report(mouse_service: MouseService = Depends(get_mouse_servi
     return MouseReport(count=len(reports), mouseLogs=reports)
 
 
-@router.get("/program/all", response_model=ProgramActivityReport)
-async def get_all_program_reports(program_service: ProgramService = Depends(get_program_service)):
-    events = await program_service.get_all_events()
-    if not isinstance(events, list):
-        raise HTTPException(
-            status_code=500, detail="Failed to generate program report")
+# @router.get("/program/all", response_model=ProgramActivityReport)
+# async def get_all_program_reports(program_service: ProgramService = Depends(get_program_service)):
+#     events = await program_service.get_all_events()
+#     if not isinstance(events, list):
+#         raise HTTPException(
+#             status_code=500, detail="Failed to generate program report")
 
-    reports = [make_program_log(e) for e in events]
-    return ProgramActivityReport(count=len(reports), programLogs=reports)
+#     reports = [make_program_log(e) for e in events]
+#     return ProgramActivityReport(count=len(reports), programLogs=reports)
 
 
-@router.get("/program", response_model=ProgramActivityReport)
-async def get_program_activity_report(program_service: ProgramService = Depends(get_program_service)):
-    events = await program_service.get_past_days_events()
-    if not isinstance(events, list):
-        raise HTTPException(
-            status_code=500, detail="Failed to generate program report")
+# @router.get("/program", response_model=ProgramActivityReport)
+# async def get_program_activity_report(program_service: ProgramService = Depends(get_program_service)):
+#     events = await program_service.get_past_days_events()
+#     if not isinstance(events, list):
+#         raise HTTPException(
+#             status_code=500, detail="Failed to generate program report")
 
-    reports = [make_program_log(e) for e in events]
-    return ProgramActivityReport(count=len(reports), programLogs=reports)
+#     reports = [make_program_log(e) for e in events]
+#     return ProgramActivityReport(count=len(reports), programLogs=reports)
 
 
 @router.get("/chrome")

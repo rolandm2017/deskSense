@@ -35,70 +35,70 @@ class MouseMove(Base):
         return f"MouseMove(id={self.id}, start_time={self.start_time})"
 
 
-class Program(Base):
-    """
-    FIXME: Looks duplicated form of ProgramLoggingDao stuff
-    """
-    __tablename__ = "program_changes"
+# class Program(Base):
+#     """
+#     FIXME: Looks duplicated form of ProgramLoggingDao stuff
+#     """
+#     __tablename__ = "program_changes"
 
-    id = Column(Integer, primary_key=True, index=True)
-    window = Column(String(max_content_len), unique=False, index=True)
-    # As of Jan 19, I am unsure that I need this column. Could take it out.
-    detail = Column(String(max_content_len))
-    # time stfuf
-    start_time = Column(DateTime(timezone=True))
-    end_time = Column(DateTime(timezone=True))
-    duration = Column(Interval)
-    created_at = Column(DateTime, default=datetime.now)
-    #
-    productive = Column(Boolean)
+#     id = Column(Integer, primary_key=True, index=True)
+#     window = Column(String(max_content_len), unique=False, index=True)
+#     # As of Jan 19, I am unsure that I need this column. Could take it out.
+#     detail = Column(String(max_content_len))
+#     # time stfuf
+#     start_time = Column(DateTime(timezone=True))
+#     end_time = Column(DateTime(timezone=True))
+#     duration = Column(Interval)
+#     created_at = Column(DateTime, default=datetime.now)
+#     #
+#     productive = Column(Boolean)
 
-    def __eq__(self, other):
-        if not isinstance(other, Program):
-            return False
-        return (
-            self.id == other.id and
-            self.window == other.window and
-            self.detail == other.detail and
-            self.start_time == other.start_time and
-            self.end_time == other.end_time and
-            self.productive == other.productive
-        )
+#     def __eq__(self, other):
+#         if not isinstance(other, Program):
+#             return False
+#         return (
+#             self.id == other.id and
+#             self.window == other.window and
+#             self.detail == other.detail and
+#             self.start_time == other.start_time and
+#             self.end_time == other.end_time and
+#             self.productive == other.productive
+#         )
 
-    def __repr__(self):
-        return f"Program(\n\tid={self.id}, window='{self.window}', \n\tstart_time={self.start_time},\n\tend_time={self.end_time},\n\tproductive={self.productive})"
+#     def __repr__(self):
+#         return f"Program(\n\tid={self.id}, window='{self.window}', \n\tstart_time={self.start_time},\n\tend_time={self.end_time},\n\tproductive={self.productive})"
 
 
-class ChromeTab(Base):
-    """
-    FIXME: Looks duplicated form of ChromeLoggingDao stuff
-    """
-    __tablename__ = "chrome_tabs"
+# class ChromeTab(Base):
+#     """
+#     FIXME: Looks duplicated form of ChromeLoggingDao stuff
+#     """
+#     __tablename__ = "chrome_tabs"
 
-    id = Column(Integer, primary_key=True, index=True)
-    url = Column(String(max_content_len))
-    # _ (underscore) because the @property and @tab_title.setter use "tab_title"
-    _tab_title = Column("tab_title", String(max_content_len), index=True)
-    start_time = Column(DateTime(timezone=True))
-    end_time = Column(DateTime(timezone=True))
-    productive = Column(Boolean)
-    # TODO: Remove "tab_change_time"
-    tab_change_time = Column(DateTime(timezone=True))
-    created_at = Column(DateTime, default=datetime.now)
+#     id = Column(Integer, primary_key=True, index=True)
+#     url = Column(String(max_content_len))
+#     # _ (underscore) because the @property and @tab_title.setter use "tab_title"
+#     _tab_title = Column("tab_title", String(max_content_len), index=True)
+#     start_time = Column(DateTime(timezone=True))
+#     end_time = Column(DateTime(timezone=True))
+#     productive = Column(Boolean)
+#     # TODO: Remove "tab_change_time"
+#     tab_change_time = Column(DateTime(timezone=True))
+#     created_at = Column(DateTime, default=datetime.now)
 
-    @property
-    def tab_title(self):
-        return self._tab_title
+#     @property
+#     def tab_title(self):
+#         return self._tab_title
 
-    @tab_title.setter
-    def tab_title(self, value):
-        if value:
-            self._tab_title = value[:max_content_len]  # truncates to 80 chars
-        else:
-            self._tab_title = value
+#     @tab_title.setter
+#     def tab_title(self, value):
+#         if value:
+#             self._tab_title = value[:max_content_len]  # truncates to 80 chars
+#         else:
+#             self._tab_title = value
 
-    def __repr__(self):
-        return f"Chrome(id={self.id}, tab_title='{self.tab_title}', productive={self.productive})"
+#     def __repr__(self):
+#         return f"Chrome(id={self.id}, tab_title='{self.tab_title}', productive={self.productive})"
 
 # ###
 # ###
@@ -111,7 +111,7 @@ class DailyProgramSummary(Base):
     __tablename__ = "daily_program_summaries"
 
     id = Column(Integer, primary_key=True, index=True)
-    program_exe: Mapped[str] = mapped_column(String)
+    exe_path: Mapped[str] = mapped_column(String)  # unique identifier
     program_name: Mapped[str] = mapped_column(String)
     hours_spent: Mapped[float] = mapped_column(Float)
     # The date on which the program data was gathered, without hh:mm:ss
@@ -150,7 +150,7 @@ class ProgramSummaryLog(Base):
     __tablename__ = "program_summary_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    program_exe: Mapped[str] = mapped_column(String)
+    exe_path: Mapped[str] = mapped_column(String)  # unique identifier
     program_name: Mapped[str] = mapped_column(String)
     hours_spent: Mapped[float] = mapped_column(Float)
     # time stuff

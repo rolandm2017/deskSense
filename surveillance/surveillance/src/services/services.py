@@ -10,7 +10,7 @@ from surveillance.src.db.dao.queuing.mouse_dao import MouseDao
 from surveillance.src.db.dao.queuing.keyboard_dao import KeyboardDao
 from surveillance.src.db.dao.queuing.video_dao import VideoDao
 from surveillance.src.db.dao.direct.frame_dao import FrameDao
-from surveillance.src.db.models import Program, MouseMove
+from surveillance.src.db.models import MouseMove
 from surveillance.src.object.dto import TypingSessionDto
 from surveillance.src.object.classes import TabChangeEventWithLtz
 
@@ -62,17 +62,17 @@ class MouseService:
         return await self.dao.read_all()
 
 
-class ProgramService:
-    def __init__(self, clock, dao=None):
-        self.clock = clock
-        self.dao = dao
+# class ProgramService:
+#     def __init__(self, clock, dao=None):
+#         self.clock = clock
+#         self.dao = dao
 
-    async def get_past_days_events(self) -> List[Program]:
-        events = await self.dao.read_past_24h_events(self.clock.now())
-        return events
+#     async def get_past_days_events(self) -> List[Program]:
+#         events = await self.dao.read_past_24h_events(self.clock.now())
+#         return events
 
-    async def get_all_events(self) -> List[Program]:
-        return await self.dao.read_all()
+#     async def get_all_events(self) -> List[Program]:
+#         return await self.dao.read_all()
 
 
 class VideoService:

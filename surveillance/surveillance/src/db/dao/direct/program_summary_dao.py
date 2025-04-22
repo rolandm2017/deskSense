@@ -51,11 +51,13 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
 
         today_start = get_start_of_day(right_now)
 
-        self._create(target_program_name, usage_duration_in_hours, today_start)
+        self._create(program_session.process_name,
+                     target_program_name, usage_duration_in_hours, today_start)
 
-    def _create(self, target_program_name: str, duration_in_hours: float, when_it_was_gathered: datetime):
+    def _create(self, exe_path, target_program_name: str, duration_in_hours: float, when_it_was_gathered: datetime):
         self.throw_if_negative(target_program_name, duration_in_hours)
         new_entry = DailyProgramSummary(
+            exe_path=exe_path,
             program_name=target_program_name,
             hours_spent=duration_in_hours,
             gathering_date=when_it_was_gathered
@@ -63,6 +65,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         self.add_new_item(new_entry)
 
     def find_todays_entry_for_program(self, program_session: ProgramSession):
+        """Find by process_name / exe_path"""
         if program_session.start_time is None:
             raise ValueError("start_time was not set")
 
@@ -73,7 +76,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             start_time.date(), time.max, tzinfo=start_time.tzinfo)
 
         query = select(DailyProgramSummary).where(
-            DailyProgramSummary.program_name == program_session.window_title,
+            DailyProgramSummary.exe_path == program_session.process_name,
             DailyProgramSummary.gathering_date >= start_of_day,
             DailyProgramSummary.gathering_date < end_of_day
         )
@@ -160,7 +163,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         tomorrow_start = today_start + timedelta(days=1)
 
         query = select(DailyProgramSummary).where(
-            DailyProgramSummary.program_name == target_program_name,
+            DailyProgramSummary.exe_path == program_session.process_name,
             DailyProgramSummary.gathering_date >= today_start,
             DailyProgramSummary.gathering_date < tomorrow_start
         )

@@ -34,14 +34,14 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
     - Input datetimes should be timezone-aware
     - Date comparisons are performed in UTC"""
 
-    def __init__(self, session_maker: sessionmaker, async_session_maker: async_sessionmaker, batch_size=100, flush_interval=1):
+    def __init__(self, session_maker: sessionmaker):
         """ Exists mostly for debugging. """
 
         # super().__init__(async_session_maker=async_session_maker,
         #                  batch_size=batch_size, flush_interval=flush_interval, dao_name="ChromeLogging")
         self.regular_session = session_maker  # Do not delete. UtilityDao still uses it
 
-    def create_log(self, session: ChromeSession, right_now: UserLocalTime):
+    def create_full_log(self, session: ChromeSession, right_now: UserLocalTime):
         """
         Log an update to a summary table.
 
@@ -90,6 +90,7 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
         self.add_new_item(log_entry)
 
     def find_session(self, session: ChromeSession):
+        """Is finding it by time! Looking for the one, specifically, with the arg's time"""
         if session.start_time is None:
             raise ValueError("Start time was None")
         start_time_as_utc = convert_to_utc(session.start_time.get_dt_for_db())

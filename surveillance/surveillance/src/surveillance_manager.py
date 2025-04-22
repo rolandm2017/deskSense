@@ -71,9 +71,9 @@ class SurveillanceManager:
         self.loop = asyncio.get_event_loop()
 
         program_summary_logger = ProgramLoggingDao(
-            self.regular_session, self.async_session_maker)
+            self.regular_session)
         chrome_summary_logger = ChromeLoggingDao(
-            self.regular_session, self.async_session_maker)
+            self.regular_session)
 
         self.session_integrity_dao = SessionIntegrityDao(
             program_summary_logger, chrome_summary_logger, self.async_session_maker)
