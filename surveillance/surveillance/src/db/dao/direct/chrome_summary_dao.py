@@ -178,6 +178,10 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         # Update it if found
         with self.regular_session() as db_session:
             domain: DailyDomainSummary = db_session.scalars(query).first()
+
+            if domain is None:
+                raise ImpossibleToGetHereError(
+                    "Session should exist before deduct_remaining_duration occurs")
             new_duration = domain.hours_spent - duration_in_sec / SECONDS_PER_HOUR
             self.throw_if_negative(domain.domain_name, new_duration)
             domain.hours_spent = new_duration

@@ -1,8 +1,11 @@
 #!/usr/bin/env python
+# surveillance/peripherals.py
 """
 Wrapper to run peripheral monitors from the project root.
 """
 
+from surveillance.src.util.detect_os import OperatingSystemInfo
+from surveillance.src.trackers.message_dispatch import publish_keyboard_event, publish_mouse_events
 import threading
 import os
 import sys
@@ -14,8 +17,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import project modules
-from surveillance.src.trackers.message_dispatch import publish_keyboard_event, publish_mouse_events
-from surveillance.src.util.detect_os import OperatingSystemInfo
 
 
 def debug_logger_aggregate(agg):
@@ -30,6 +31,7 @@ def debug_logger_keyboard():
 
 # Global running flag to control all threads
 running = True
+
 
 def exit_all_monitors():
     """Exit function that will be called by keyboard shortcut"""
@@ -46,19 +48,19 @@ if __name__ == "__main__":
     if current_os.is_windows:
         from surveillance.src.trackers.peripherals.windows.win_keyboard_detector import win_monitor_keyboard
         from surveillance.src.trackers.peripherals.windows.win_mouse_detector import win_monitor_mouse
-        
+
         # On Windows, we'll use dummy paths since the actual paths aren't needed
         keyboard_path = os.getenv("WINDOWS_KEYBOARD_PATH", "WINDOWS_KEYBOARD")
         mouse_path = os.getenv("WINDOWS_MOUSE_PATH", "WINDOWS_MOUSE")
-        
+
         chosen_keyboard_monitor = win_monitor_keyboard
         chosen_mouse_monitor = win_monitor_mouse
     else:
         from surveillance.src.trackers.peripherals.linux.linux_peripheral_detector import linux_monitor_keyboard, linux_monitor_mouse
-        
+
         keyboard_path = os.getenv("UBUNTU_KEYBOARD_PATH")
         mouse_path = os.getenv("UBUNTU_MOUSE_PATH")
-        
+
         chosen_keyboard_monitor = linux_monitor_keyboard
         chosen_mouse_monitor = linux_monitor_mouse
 
@@ -72,14 +74,16 @@ if __name__ == "__main__":
     # Create threads with shared running flag
     keyboard_thread = threading.Thread(
         target=chosen_keyboard_monitor,
-        args=(keyboard_path, lambda: running),  # Pass a function that returns the running state
+        # Pass a function that returns the running state
+        args=(keyboard_path, lambda: running),
         daemon=True,
         name="KeyboardMonitorThread"
     )
 
     mouse_thread = threading.Thread(
         target=chosen_mouse_monitor,
-        args=(mouse_path, lambda: running),  # Pass the same function to mouse monitor
+        # Pass the same function to mouse monitor
+        args=(mouse_path, lambda: running),
         daemon=True,
         name="MouseMonitorThread"
     )
@@ -92,15 +96,15 @@ if __name__ == "__main__":
         # Main loop - check running flag periodically
         while running:
             time.sleep(0.1)
-            
+
         # If we get here, running is False, so clean up
         print("Shutting down all monitors...")
         time.sleep(1)  # Give threads time to clean up
-        
+
     except KeyboardInterrupt:
         print("Interrupted by user")
         running = False
         time.sleep(1)  # Give threads time to clean up
-    
+
     print("All monitoring stopped")
     sys.exit(0)

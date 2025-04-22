@@ -200,6 +200,10 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         with self.regular_session() as db_session:
             program: DailyProgramSummary = db_session.scalars(query).first()
 
+            if program is None:
+                raise ImpossibleToGetHereError(
+                    "Session should exist before deduct_remaining_duration occurs")
+
             # FIXME: so, hours_spent is not set properly when the
             # new session is created, i think. so when the program
             # comes in here to deduct 5 seconds, there's only 0 seconds existing
