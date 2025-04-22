@@ -111,7 +111,16 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
             DomainSummaryLog.gathering_date >= start_of_day,
             DomainSummaryLog.gathering_date < end_of_day
         ).order_by(DomainSummaryLog.domain_name)
-        return self.execute_and_return_all(query)
+
+        logs = self.execute_and_return_all(query)
+
+        grouped_logs = {}
+        for log in logs:
+            if log.domain_name not in grouped_logs:
+                grouped_logs[log.domain_name] = []
+            grouped_logs[log.domain_name].append(log)
+
+        return grouped_logs
 
     def find_orphans(self,  latest_shutdown_time, startup_time):
         """
@@ -176,6 +185,8 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
         Overwrite value from the heartbeat. Expect something to ALWAYS be in the db already at this point.
         Note that if the computer was shutdown, this method is never called, and the rough estimate is kept.
         """
+        if session.start_time is None:
+            raise ValueError("Start time was None")
         if session.end_time is None:
             raise ValueError("End time was None")
         log: DomainSummaryLog = self.find_session(session)
@@ -183,4 +194,6 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
             raise ImpossibleToGetHereError(
                 "Start of heartbeat didn't reach the db")
         log.end_time = session.end_time.get_dt_for_db()
+        # TODO: Decide whether to store duration as duration, or as just a on the fly calculation from end - start
+        # log.duration = session.end_time.dt - session.start_time.dt
         self.update_item(log)

@@ -40,7 +40,7 @@ class DashboardService:
         alt_tab_window_hours = []
 
         for i in range(7):
-            significant_programs = {}  # New dictionary to track programs with >1hr usage
+            # significant_programs = {}  # New dictionary to track programs with >1hr usage
 
             current_day = starting_sunday + timedelta(days=i)
             date_as_datetime = datetime.combine(
@@ -65,9 +65,9 @@ class DashboardService:
                 # print(program.program_name, float(
                 # f"{program.hours_spent:.4f}"))
                 # Track programs with >1hr usage
-                if hours_spent > 1:
-                    significant_programs[program.program_name] = float(
-                        f"{program.hours_spent:.4f}")
+                # if hours_spent > 1:
+                #     significant_programs[program.program_name] = float(
+                #         f"{program.hours_spent:.4f}")
 
                 if str(program.program_name) == 'Alt-tab window':
                     alt_tab_window_hours.append(program.hours_spent)
@@ -212,7 +212,8 @@ class DashboardService:
             if is_in_future:
                 continue  # avoid reading future dates from db
 
-            program_usage_timeline: dict[str, ProgramSummaryLog] = await self.program_logging_dao.read_day_as_sorted(current_day)
+            program_usage_timeline: dict[str, ProgramSummaryLog] = self.program_logging_dao.read_day_as_sorted(
+                current_day)
 
             self.logger.log_days_retrieval(
                 "[get_current_week_program_usage_timeline]", current_day.dt, len(program_usage_timeline))
@@ -259,7 +260,8 @@ class DashboardService:
             if is_in_future:
                 continue  # avoid reading future dates from db
 
-            program_usage_timeline: dict[str, ProgramSummaryLog] = await self.program_logging_dao.read_day_as_sorted(current_day)
+            program_usage_timeline: dict[str, ProgramSummaryLog] = self.program_logging_dao.read_day_as_sorted(
+                current_day)
 
             self.logger.log_days_retrieval(
                 "[get_program_usage_timeline]", current_day, len(program_usage_timeline))

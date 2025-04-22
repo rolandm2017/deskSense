@@ -111,7 +111,7 @@ class ProgramLoggingDao(UtilityDaoMixin):
             ProgramSummaryLog.start_time.op('=')(some_time)
         )
 
-    async def read_day_as_sorted(self, day) -> dict[str, ProgramSummaryLog]:
+    def read_day_as_sorted(self, day) -> dict[str, ProgramSummaryLog]:
         # NOTE: the database is storing and returning times in UTC
         start_of_day = day.replace(hour=0, minute=0, second=0,
                                    microsecond=0)  # Still has tz attached
