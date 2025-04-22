@@ -34,8 +34,10 @@ from .arbiter.activity_recorder import ActivityRecorder
 system_clock = SystemClock()
 user_facing_clock = UserFacingClock()
 
-_program_logging_dao = ProgramLoggingDao(regular_session_maker, async_session_maker)
-_chrome_logging_dao = ChromeLoggingDao(regular_session_maker, async_session_maker)
+_program_logging_dao = ProgramLoggingDao(
+    regular_session_maker, async_session_maker)
+_chrome_logging_dao = ChromeLoggingDao(
+    regular_session_maker, async_session_maker)
 
 
 async def get_keyboard_dao() -> KeyboardDao:
@@ -44,9 +46,6 @@ async def get_keyboard_dao() -> KeyboardDao:
 
 async def get_mouse_dao() -> MouseDao:
     return MouseDao(async_session_maker)
-
-
-
 
 
 async def get_timeline_dao() -> TimelineEntryDao:
@@ -134,8 +133,10 @@ async def get_activity_arbiter():
     loop = asyncio.get_event_loop()
     system_clock = SystemClock()
     user_facing_clock = UserFacingClock()
-    chrome_logging_dao = ChromeLoggingDao(regular_session_maker, async_session_maker)
-    program_logging_dao = ProgramLoggingDao(regular_session_maker, async_session_maker)
+    chrome_logging_dao = ChromeLoggingDao(
+        regular_session_maker, async_session_maker)
+    program_logging_dao = ProgramLoggingDao(
+        regular_session_maker, async_session_maker)
 
     program_summary_dao = ProgramSummaryDao(
         program_logging_dao, regular_session_maker, async_session_maker)

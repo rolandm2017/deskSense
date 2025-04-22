@@ -61,7 +61,6 @@ class ProgramTrackerCore:
 
     def run_tracking_loop(self):
         for window_change in self.program_facade.listen_for_window_changes():
-            print(window_change, 'windoe change')
             # is_expected_shape_else_throw(window_change)
             # FIXME: "Running Server (WindowsTerminal.exe)" -> Terminal (Terminal)
             on_a_different_window_now = self.current_session and window_change[
@@ -74,7 +73,7 @@ class ProgramTrackerCore:
                 # capture_program_data_for_tests(window_change, current_time)
                 self.conclude_session(current_time)
                 # when a window closes, call that with "conclude_session_handler()" to maintain other flows
-                self.apply_handlers(self.current_session)
+                self.apply_done_handlers(self.current_session)
                 new_session = self.start_new_session(
                     window_change, current_time)
                 self.current_session = new_session
@@ -97,15 +96,14 @@ class ProgramTrackerCore:
         return not self.current_session is None
 
     def start_new_session(self, window_change_dict, start_time):
-        new_session = ProgramSession()
         if contains_space_dash_space(window_change_dict["window_title"]):
-            detail, window = separate_window_name_and_detail(
+            detail, window_title = separate_window_name_and_detail(
                 window_change_dict["window_title"])
-            new_session.window_title = window
-            new_session.detail = detail
         else:
-            new_session.window_title = window_change_dict["window_title"]
-            new_session.detail = no_space_dash_space
+            window_title = window_change_dict["window_title"]
+            detail = no_space_dash_space
+        new_session = ProgramSession(
+            window_change_dict["process_name"], window_title, detail)
         new_session.start_time = UserLocalTime(start_time)
         # end_time, duration, productive not set yet
         return new_session
@@ -131,7 +129,7 @@ class ProgramTrackerCore:
         """For when the program isn't found in the productive apps list"""
         self.console_logger.log_yellow(title)  # temp
 
-    def apply_handlers(self, session: ProgramSession):
+    def apply_done_handlers(self, session: ProgramSession):
         if not isinstance(session, ProgramSession):
             self.console_logger.log_yellow_multiple("[DEBUG]", session)
             raise ValueError("Was not a dict")

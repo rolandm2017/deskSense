@@ -84,6 +84,7 @@ class ProgramLoggingDao(UtilityDaoMixin):
         start_of_day_as_utc = convert_to_utc(start_of_day)
         start_window_end = base_start_time + timedelta(seconds=10)
         log_entry = ProgramSummaryLog(
+            program_exe=session.process_name,
             program_name=session.window_title,
             hours_spent=unknown,
             start_time=base_start_time,

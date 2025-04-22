@@ -57,7 +57,8 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
             # Sanity check on the PID
             if pid <= 0:
                 self.console_logger.debug("Invalid window:")
-                self.console_logger.debug(window, "Sub zero PID")
+                self.console_logger.debug("Sub zero PID")
+                self.console_logger.debug(window)
                 return {
                     "os": "Windows",
                     "pid": None,
@@ -140,7 +141,7 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
         callback = WinEventProc(win_event_callback)
 
         # Set up the event hook
-        hook = win32api.SetWinEventHook(
+        hook = win32api.SetWinEventHook(  # type: ignore
             win32con.EVENT_SYSTEM_FOREGROUND,
             win32con.EVENT_SYSTEM_FOREGROUND,
             0,
@@ -154,7 +155,7 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
 
         try:
             # Message pump to keep the hook active
-            msg = ctypes.wintypes.MSG()
+            msg = ctypes.wintypes.MSG()  # type: ignore
             while True:
                 if self.latest_window_info:
                     window_info = self.latest_window_info
@@ -169,4 +170,4 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
                     time.sleep(0.1)  # Sleep to avoid high CPU usage
         finally:
             # Clean up the hook when done
-            win32api.UnhookWinEvent(hook)
+            win32api.UnhookWinEvent(hook)  # type: ignore

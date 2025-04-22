@@ -111,6 +111,7 @@ class DailyProgramSummary(Base):
     __tablename__ = "daily_program_summaries"
 
     id = Column(Integer, primary_key=True, index=True)
+    program_exe: Mapped[str] = mapped_column(String)
     program_name: Mapped[str] = mapped_column(String)
     hours_spent: Mapped[float] = mapped_column(Float)
     # The date on which the program data was gathered, without hh:mm:ss
@@ -149,8 +150,9 @@ class ProgramSummaryLog(Base):
     __tablename__ = "program_summary_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    program_name = Column(String)
-    hours_spent = Column(Float)
+    program_exe: Mapped[str] = mapped_column(String)
+    program_name: Mapped[str] = mapped_column(String)
+    hours_spent: Mapped[float] = mapped_column(Float)
     # time stuff
     start_time = Column(DateTime(timezone=True))
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))

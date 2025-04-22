@@ -78,6 +78,7 @@ class SurveillanceManager:
         self.session_integrity_dao = SessionIntegrityDao(
             program_summary_logger, chrome_summary_logger, self.async_session_maker)
         # FIXME: 04/04/2025: why isn't the sys status dao used anywhere?
+        # FIXME: 04/21/2025: it should be!
         system_status_dao = SystemStatusDao(
             self.regular_session, self.async_session_maker)
 

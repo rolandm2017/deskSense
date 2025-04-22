@@ -47,6 +47,7 @@ class ChromeSession:
 
 
 class ProgramSession:
+    process_name: str
     window_title: str
     detail: str
     start_time: Optional[UserLocalTime]
@@ -54,8 +55,9 @@ class ProgramSession:
     duration: Optional[timedelta]
     productive: bool
 
-    def __init__(self, title="", detail="", start_time=None, end_time=None, productive=False, duration_for_tests=None):
+    def __init__(self, process_name="", title="", detail="", start_time=None, end_time=None, productive=False, duration_for_tests=None):
         """Only use duration in testing. Don't use it otherwise. 'duration_for_tests' exists only for e2e tests thresholds"""
+        self.process_name = process_name
         self.window_title = title
         self.detail = detail
         self.start_time = start_time
