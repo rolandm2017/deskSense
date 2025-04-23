@@ -21,7 +21,6 @@ export const aggregateEvents = (
                 });
                 return acc;
             }
-            // console.log(lastEvent, idx, "16ru");
             const lastEnd = new Date(lastEvent.end);
             const timeBetweenEventsIsSmall =
                 currStart.getTime() - lastEnd.getTime() < threshold;

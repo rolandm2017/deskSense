@@ -50,7 +50,6 @@ function Home() {
         if (programSummaries == null) {
             //
             getProgramSummaries().then((sums) => {
-                console.log(sums, "44ru");
                 setProgramSummaries(sums);
             });
         }
@@ -59,7 +58,6 @@ function Home() {
     useEffect(() => {
         if (chromeSummaries == null) {
             getChromeSummaries().then((sums) => {
-                console.log(sums, "58ru");
                 setChromeSummaries(sums);
             });
         }
@@ -70,7 +68,6 @@ function Home() {
             getTimelineForPresentWeek().then((weekly) => {
                 // TODO: Get the start and end date
                 // Do I make
-                console.log(weekly, "72ru");
                 setRawTimeline(weekly);
             });
         }

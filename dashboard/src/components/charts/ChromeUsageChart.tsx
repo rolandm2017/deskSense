@@ -16,7 +16,6 @@ const ChromeUsageChart: React.FC<ChromeUsageChartProps> = ({ barsInput }) => {
 
     useEffect(() => {
         if (barsInput) {
-            // console.log(barsInput, "18ru");
             const sortedCols = [...barsInput.columns].sort(
                 (a, b) => b.hoursSpent - a.hoursSpent
             );

@@ -101,13 +101,12 @@ function Weekly() {
         if (urlParam) {
             const urlParamAsDate = new Date(urlParam);
             /* Load data for refreshes on prior weeks. */
-            console.log(urlParam, "68ru");
             loadDataForWeek(urlParamAsDate);
             updateNextWeekIsAvailable(urlParamAsDate);
             return;
         }
         /* Load current week's data */
-        loadPresentWeek()
+        loadPresentWeek();
     }, []);
 
     function loadPresentWeek() {
@@ -135,14 +134,17 @@ function Weekly() {
             setPresentWeekRawTimeline(weekly);
         });
 
-        getEnhancedWeeklyBreakdown(getPreviousSunday()).then((breakdown: WeeklyBreakdown) => {
-            setWeeklyBreakdown(breakdown);
-        })
+        getEnhancedWeeklyBreakdown(getPreviousSunday()).then(
+            (breakdown: WeeklyBreakdown) => {
+                setWeeklyBreakdown(breakdown);
+            }
+        );
     }
 
     useEffect(() => {
         /* Aggregation for previous weeks */
-        const needToAggregatePrevWeekRawTimeline = prevWeeksRawTimeline && aggregatedTimeline === null
+        const needToAggregatePrevWeekRawTimeline =
+            prevWeeksRawTimeline && aggregatedTimeline === null;
         if (needToAggregatePrevWeekRawTimeline) {
             const days: DayOfAggregatedRows[] = [];
             for (const day of prevWeeksRawTimeline.days) {
@@ -162,12 +164,11 @@ function Weekly() {
 
     useEffect(() => {
         /* Aggregation */
-        const needToAggregatePresentWeekRawTimeline = presentWeekRawTimeline && aggregatedTimeline === null
+        const needToAggregatePresentWeekRawTimeline =
+            presentWeekRawTimeline && aggregatedTimeline === null;
         if (needToAggregatePresentWeekRawTimeline) {
             const days: DayOfAggregatedRows[] = [];
-            console.log(presentWeekRawTimeline, "95ru");
             const today: DayOfTimelineRows = presentWeekRawTimeline.today;
-            console.log(today, "96ru");
 
             // Aggregate today:
             const dayClicks = today.row.mouseRows;
@@ -235,13 +236,11 @@ function Weekly() {
     }
 
     function loadDataForWeek(weekStart: Date) {
-        console.log(weekStart, "234ru");
         getEnhancedChromeUsageForPastWeek(weekStart).then((chrome) => {
             setChrome(chrome);
         });
 
         getTimelineForPastWeek(weekStart).then((weekly) => {
-            console.log(weekly, "237ru");
             // // FIXME:
             // content: "Typing Session 294003";
             // start: "2025-03-08T03:55:27.826138-08:00"; // 3:55 AM? I was not awake then.
@@ -250,10 +249,9 @@ function Weekly() {
             // id: "keyboard-294003";
             setPrevWeeksRawTimeline(weekly);
         });
-        console.log("HERE \nhere\nhere\nhere\nhere")
+        console.log("HERE \nhere\nhere\nhere\nhere");
         getEnhancedWeeklyBreakdown(weekStart).then(
             (breakdown: WeeklyBreakdown) => {
-                console.log(breakdown, "247ru")
                 setWeeklyBreakdown(breakdown);
             }
         );

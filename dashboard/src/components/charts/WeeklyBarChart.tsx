@@ -12,7 +12,6 @@ const WeeklyUsageChart: React.FC<WeeklyUsageChartProps> = ({ data, title }) => {
     // FIXME: On Feb 20, I observed the program stating that I was
     // FIXME: on Twitter for 10h sunday, 13h Monday. Obviously not true. Hence
     // FIXME: Twitter sessions is being left open while I shut the computer down
-    // console.log(data, "12ru");
     const svgRef = useRef<SVGSVGElement>(null);
 
     // Set up dimensions
