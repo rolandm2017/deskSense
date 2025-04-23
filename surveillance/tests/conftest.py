@@ -275,7 +275,11 @@ async def async_db_session_in_mem():
 
     # Teardown: drop all tables
     async with engine.begin() as conn:
+        # This should reset my sqlite db
         await conn.run_sync(Base.metadata.drop_all)
+
+    # Explicitly close all sessions and dispose of the engine to
+    await engine.dispose()
 
 SYNC_TEST_DB_URL = os.getenv("SYNC_TEST_DB_URL")
 

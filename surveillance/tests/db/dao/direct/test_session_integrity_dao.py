@@ -92,6 +92,8 @@ async def test_program_logs(plain_asm, test_power_events):
         # )
         # Orphan type 2: started before shutdown, ended after startup (impossible)
         orphan_2 = ProgramSummaryLog(
+            exe_path_as_id="C:/ProgramFiles/Outlook.exe",
+            process_name="Outlook.exe",
             program_name="Outlook",
             hours_spent=12.0,  # Impossibly long session
             start_time=shutdown_time - timedelta(minutes=45),
@@ -101,6 +103,8 @@ async def test_program_logs(plain_asm, test_power_events):
         )
         # Phantom: impossibly started during system off time
         phantom_1 = ProgramSummaryLog(
+            exe_path_as_id="C:/ProgramFiles/Firefox.exe",
+            process_name="Firefox.exe",
             program_name="Firefox",
             hours_spent=0.5,
             # Started after shutdown
@@ -115,6 +119,8 @@ async def test_program_logs(plain_asm, test_power_events):
         program_logs = [
             # Normal session: started and ended before shutdown
             ProgramSummaryLog(
+                exe_path_as_id="C:/ProgramFiles/PyCharm.exe",
+                process_name="Pycharm.exe",
                 program_name="PyCharm",
                 hours_spent=2.0,
                 start_time=shutdown_time - timedelta(hours=3),
@@ -128,6 +134,8 @@ async def test_program_logs(plain_asm, test_power_events):
 
             # Normal session after startup
             ProgramSummaryLog(
+                exe_path_as_id="C:/ProgramFiles/Chrome.exe",
+                process_name="Chrome.exe",
                 program_name="Chrome",
                 hours_spent=1.5,
                 start_time=startup_time + timedelta(minutes=5),
@@ -225,8 +233,8 @@ async def test_domain_logs(plain_asm, test_power_events):
 def test_dao_instances(regular_session, plain_asm):
     """Create the necessary DAO instances for session integrity testing"""
     # Create the DAOs
-    program_logging_dao = ProgramLoggingDao(regular_session, plain_asm)
-    chrome_logging_dao = ChromeLoggingDao(regular_session, plain_asm)
+    program_logging_dao = ProgramLoggingDao(regular_session)
+    chrome_logging_dao = ChromeLoggingDao(regular_session)
 
     # Create the session integrity dao
     session_integrity_dao = SessionIntegrityDao(

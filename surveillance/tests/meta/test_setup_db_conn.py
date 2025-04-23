@@ -32,7 +32,7 @@ async def test_plain_async_engine(regular_session, async_engine_and_asm):
         asm, async_sessionmaker), "You need to mark @pytest_asyncio.fixture somewhere if you see this error"
 
     # Try to use it
-    log_dao = ProgramLoggingDao(regular_session, asm)
+    log_dao = ProgramLoggingDao(regular_session)
     sum_dao = ProgramSummaryDao(log_dao, regular_session, asm)
 
     all_summaries = sum_dao.read_all()
