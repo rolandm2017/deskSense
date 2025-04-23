@@ -51,11 +51,11 @@ def tracker(mock_facade, mock_event_handler, clock):
     return ProgramTrackerCore(clock, mock_facade, mock_event_handler, handler)
 
 
-ex3 = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg',
+ex3 = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg', "exe_path": "C:/some/imaginary/path.exe",
        'window_title': 'H&M | Online Fashion, Homeware & Kids Clothes | H&M CA - Google Chrome'}
 ex4 = {'os': 'Ubuntu', 'pid': 128216,
-       'process_name': 'Xorg', 'window_title': 'Alt-tab window'}
-ex5 = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg',
+       'process_name': 'Xorg', "exe_path": "C:/some/imaginary/other/path2.exe", 'window_title': 'Alt-tab window'}
+ex5 = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg', "exe_path": "C:/some/imaginary/path/again.exe",
        'window_title': 'program_tracker.py - deskSense - Visual Studio Code'}
 
 
@@ -78,7 +78,7 @@ def test_start_new_session():
     # assert tracker.current_session.start_time is None, "Initialization conditions weren't met"
 
     # Act
-    window_change = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg',
+    window_change = {'os': 'Ubuntu', 'pid': 128999, 'process_name': 'Xorg', "exe_path": "H:/some/path.exe",
                      'window_title': 'program_tracker.py - deskSense - Visual Studio Code'}
     current_time = tracker.user_facing_clock.now()
     new_session = tracker.start_new_session(
@@ -118,7 +118,7 @@ def test_conclude_session():
     # assert tracker.current_session.detail == "", "Initialization conditions weren't met"
     # assert tracker.current_session.start_time is None, "Initialization conditions weren't met"
 
-    window_change = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg',
+    window_change = {'os': 'Ubuntu', 'pid': 4444216, 'process_name': 'Xorg', "exe_path": "C:/AwesomeFiles/file.exe",
                      'window_title': 'program_tracker.py - deskSense - Visual Studio Code'}
 
     started_session = tracker.start_new_session(
@@ -162,7 +162,8 @@ def test_window_change_triggers_handler():
     first_test_item = {
         'process_name': 'code',
         'window_title': 'test.py - Visual Studio Code',
-        "os": "Ubuntu"
+        "os": "Ubuntu",
+        "exe_path": "C:/Programs/Program.exe"
     }
     facade.listen_for_window_changes.return_value = iter([first_test_item])
 
@@ -235,7 +236,7 @@ def test_handle_alt_tab_window():
     facade = Mock()
     tracker = ProgramTrackerCore(clock, facade, Mock(), Mock())
 
-    example = {'os': 'Ubuntu', 'pid': 128216,
+    example = {'os': 'Ubuntu', 'pid': 128216, "exe_path": "C:/Foo.exe",
                'process_name': 'Xorg', 'window_title': 'Alt-tab window'}
 
     time = clock.now()
@@ -280,7 +281,7 @@ def test_a_series_of_programs():
     assert tracker.current_session is None, "Initialization conditions not met"
 
     # Setup
-    program1 = {"os": "some_val", 'process_name': 'code',
+    program1 = {"os": "some_val", 'process_name': 'code', "exe_path": "C:/whatever.exe",
                 'window_title': 'Alt-tab window'}
     facade.listen_for_window_changes.return_value = iter([program1])
 
@@ -295,7 +296,7 @@ def test_a_series_of_programs():
     assert len(handler1_calls) == 0 and len(handler2_calls) == 0
 
     # More setup
-    program2 = {"os": "some_val", 'process_name': 'Xorg',
+    program2 = {"os": "some_val", 'process_name': 'Xorg', "exe_path": "C:/whatever5.exe",
                 'window_title': 'rlm@kingdom: ~/Code/deskSense/surveillance'}
     facade.listen_for_window_changes.return_value = iter([program2])
     # Act
@@ -311,7 +312,7 @@ def test_a_series_of_programs():
     assert len(handler2_calls) == 1
 
     # More setup
-    program3 = {"os": "some_val", 'process_name': 'Xorg',
+    program3 = {"os": "some_val", 'process_name': 'Xorg', "exe_path": "C:/whatever11.exe",
                 'window_title': 'Vite + React + TS - Google Chrome'}
     facade.listen_for_window_changes.return_value = iter([program3])
     # Act
@@ -324,7 +325,7 @@ def test_a_series_of_programs():
     assert len(handler1_calls) == 2
 
     # More setup
-    program4 = {"os": "some_val", 'process_name': None,
+    program4 = {"os": "some_val", 'process_name': None, "exe_path": "C:/wherever.exe",
                 'window_title': 'Alt-tab window'}
 
     facade.listen_for_window_changes.return_value = iter([program4])
@@ -337,7 +338,7 @@ def test_a_series_of_programs():
     assert len(handler1_calls) == 3
 
     # More setup
-    program5 = {"os": "some_val", 'process_name': 'Xorg',
+    program5 = {"os": "some_val", 'process_name': 'Xorg', "exe_path": "C:/whatever25.exe",
                 'window_title': 'program_tracker.py - deskSense - Visual Studio Code'}
     facade.listen_for_window_changes.return_value = iter([program5])
     # Act

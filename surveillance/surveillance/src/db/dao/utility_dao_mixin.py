@@ -23,9 +23,6 @@ class UtilityDaoMixin:
             db_session.add(item)
             db_session.commit()
 
-    def find_one_or_none(self, query):
-        return self.exec_and_read_one_or_none(query)
-
     def execute_and_return_all(self, query):
         """
         Executes query and returns a list of results
@@ -41,7 +38,7 @@ class UtilityDaoMixin:
             db_session.merge(item)
             db_session.commit()
 
-    def exec_and_read_one_or_none(self, query):
+    def execute_and_read_one_or_none(self, query):
         """Helper method to make code more testable and pleasant to read"""
         with self.regular_session() as session:
             result = session.execute(query)
@@ -68,9 +65,6 @@ class AsyncUtilityDaoMixin:
         with self.async_session_maker() as db_session:
             db_session.add(item)
             db_session.commit()
-
-    async def find_one_or_none(self, query):
-        return self.exec_and_read_one_or_none(query)
 
     async def execute_and_return_all_with_scalars(self, query):
         """
@@ -102,7 +96,7 @@ class AsyncUtilityDaoMixin:
             db_session.merge(item)
             db_session.commit()
 
-    async def exec_and_read_one_or_none(self, query):
+    async def execute_and_read_one_or_none(self, query):
         """Helper method to make code more testable and pleasant to read"""
         with self.async_session_maker() as session:
             result = session.execute(query)

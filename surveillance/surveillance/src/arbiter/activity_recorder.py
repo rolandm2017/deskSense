@@ -39,17 +39,14 @@ class ActivityRecorder:
             self.program_logging_dao.start_session(session)
             session_exists = self.program_summary_dao.find_todays_entry_for_program(
                 session)
-            print(session_exists, "42ru")
             if session_exists:
                 return
             self.program_summary_dao.start_session(session, now)
         elif isinstance(session, ChromeSession):
             print(f"FINDING {session.domain}")
             self.chrome_logging_dao.start_session(session)
-            print("HERE 49ru")
             session_exists = self.chrome_summary_dao.find_todays_entry_for_domain(
                 session)
-            print(session_exists, "chrome session 51ru")
             if session_exists:
                 print(f"###\n### FOUND -> {session.domain}")
                 return

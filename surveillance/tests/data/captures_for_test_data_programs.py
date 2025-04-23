@@ -2,7 +2,8 @@ program_data = [{"time": "2025-03-22 16:14:50.201399-07:00",
                  "event": {
                      "os": "Ubuntu",
                      "pid": None,  # Was "null"
-                     "process_name": None,  # Was "null"
+                     "exe_path": "imaginary/path/to/Chrome.exe",
+                     "process_name": "Chrome.exe",  # Was "null"
                      "window_title": "X. It\u2019s what\u2019s happening / X - Google Chrome"
                  }},
 
@@ -18,6 +19,7 @@ program_data = [{"time": "2025-03-22 16:14:50.201399-07:00",
                  "event": {
                      "os": "Ubuntu",
                      "pid": 2682,
+                     "exe_path": "C:/wherever/you/find/Postman.exe",
                      "process_name": "Xorg",
                      "window_title": "dash | Overview - My Workspace"
                  }},
@@ -26,6 +28,7 @@ program_data = [{"time": "2025-03-22 16:14:50.201399-07:00",
                  "event": {
                      "os": "Ubuntu",
                      "pid": 8573,
+                     "exe_path": "C:/path/to/VSCode.exe",
                      "process_name": "code",
                      "window_title": "surveillance_manager.py - deskSense - Visual Studio Code"
                  }},
@@ -34,6 +37,7 @@ program_data = [{"time": "2025-03-22 16:14:50.201399-07:00",
                  "event": {
                      "os": "Ubuntu",
                      "pid": 2988,
+                     "exe_path": "C:/path/to/gnome-shell.exe",
                      "process_name": "gnome-shell",
                      "window_title": "Google - Google Chrome"
                  }}
@@ -78,4 +82,4 @@ program_data = [{"time": "2025-03-22 16:14:50.201399-07:00",
                 #      "process_name": "Xorg",
                 #      "window_title": "rlm@kingdom: ~/Code/deskSense/surveillance"
                 #  }}
-                 ]
+                ]

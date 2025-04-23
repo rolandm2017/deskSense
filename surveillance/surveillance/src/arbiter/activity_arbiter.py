@@ -17,7 +17,7 @@ from surveillance.src.util.errors import ImpossibleToGetHereError
 
 
 class ActivityArbiter:
-    def __init__(self, user_facing_clock, pulse_interval=1, loop=None):
+    def __init__(self, user_facing_clock, pulse_interval: int | float = 1, loop=None):
         """
         This class exists to prevent the Chrome Service from doing ANYTHING but reporting which tab is active.
 
@@ -83,9 +83,6 @@ class ActivityArbiter:
         assert not isinstance(
             new_session, dict), "Found an empty dictionary as session"
         self.notify_display_update(new_session)
-        # print(self.state_machine.current_state, "86ru")
-        # print(self.state_machine.current_state, "86ru")
-        # print(self.state_machine.current_state, "86ru")
         # print(self.state_machine.current_state, "86ru")
         # print(self.state_machine.current_state, "86ru")
         # print(self.state_machine.current_state, "86ru")

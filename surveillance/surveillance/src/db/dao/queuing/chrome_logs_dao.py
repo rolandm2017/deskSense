@@ -95,7 +95,8 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
             raise ValueError("Start time was None")
         start_time_as_utc = convert_to_utc(session.start_time.get_dt_for_db())
         query = self.select_where_time_equals(start_time_as_utc)
-        return self.exec_and_read_one_or_none(query)
+
+        return self.execute_and_read_one_or_none(query)
 
     def select_where_time_equals(self, some_time):
         return select(DomainSummaryLog).where(

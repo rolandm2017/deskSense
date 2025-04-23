@@ -119,9 +119,9 @@ class TestTimelineEntryDao:
         get_find_by_day_mock = Mock(side_effect=dao.get_find_by_day_query)
         dao.get_find_by_day_query = get_find_by_day_mock
 
-        exec_and_return_mock = AsyncMock()
-        exec_and_return_mock.return_value = mock_entries
-        dao.execute_and_return_all = exec_and_return_mock
+        execute_and_return_mock = AsyncMock()
+        execute_and_return_mock.return_value = mock_entries
+        dao.execute_and_return_all = execute_and_return_mock
 
         # Act
         result = await dao.read_day(test_day, event_type)
@@ -141,7 +141,7 @@ class TestTimelineEntryDao:
         assert args[0].day + \
             1 == args[1].day, "Expected arg1 to be a day later than arg0"
 
-        args, _ = exec_and_return_mock.call_args
+        args, _ = execute_and_return_mock.call_args
 
         assert isinstance(args[0], Select)
 

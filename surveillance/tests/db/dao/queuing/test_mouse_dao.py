@@ -27,25 +27,6 @@ class TestMouseDao:
         yield dao
         # await truncate_table(asm)
 
-    # @pytest.mark.asyncio
-    # @pytest.mark.timeout(3)
-    # async def test_create_from_start_end_times(self, dao):
-    #     start_time = datetime.now()
-    #     end_time = start_time + timedelta(minutes=1)
-
-    #     original_queue_item = dao.queue_item
-    #     queue_item_spy = AsyncMock(side_effect=original_queue_item)
-    #     dao.queue_item = queue_item_spy
-
-    #     await dao.create_from_start_end_times(start_time, end_time)
-
-    #     queue_item_spy.assert_called_once()
-
-    #     queued_item = queue_item_spy.call_args[0][0]
-    #     assert isinstance(queued_item, MouseMove)
-    #     assert cast(datetime, queued_item.start_time) == start_time
-    #     assert cast(datetime, queued_item.end_time) == end_time
-
     @pytest.mark.asyncio
     async def test_create_from_window(self, dao):
         start_time = UserLocalTime(datetime.now())
@@ -77,16 +58,16 @@ class TestMouseDao:
         pretend1 = MouseMove(id=300, start_time=t0, end_time=t1)
         pretend2 = MouseMove(id=301, start_time=t2, end_time=t3)
 
-        exec_mock = AsyncMock()
-        exec_mock.return_value = [pretend1, pretend2]
-        dao.exec_and_return_all = exec_mock
+        execute_and_return_all_rows_mock = AsyncMock()
+        execute_and_return_all_rows_mock.return_value = [pretend1, pretend2]
+        dao.execute_and_return_all_rows = execute_and_return_all_rows_mock
 
         # Act
         result = await dao.read_all()
 
         # Assert
-        exec_mock.assert_called_once()
-        args, _ = exec_mock.call_args
+        execute_and_return_all_rows_mock.assert_called_once()
+        args, _ = execute_and_return_all_rows_mock.call_args
         assert isinstance(args[0], Select)
 
         assert isinstance(result, list)
@@ -116,15 +97,17 @@ class TestMouseDao:
 
         exec_mock = AsyncMock()
         exec_mock.return_value = todays_events
-        dao.exec_and_return_all = exec_mock
+        dao.execute_and_return_all_rows = exec_mock
 
         # # ### Act
         past_day = await dao.read_past_24h_events(UserLocalTime(t0))
 
         # # Assert
+        exec_mock.assert_called_once()
+        get_prev_24_hrs_query_mock.assert_called_once()
+
         assert len(past_day) == len(todays_events)
 
-        get_prev_24_hrs_query_mock.assert_called_once()
         args, _ = get_prev_24_hrs_query_mock.call_args
         assert isinstance(args[0], datetime)
 
@@ -132,6 +115,5 @@ class TestMouseDao:
         assert args[0].minute == t0.minute
         assert args[0].day + 1 == t0.day, "Wasn't one day later as expected"
 
-        exec_mock.assert_called_once()
         args, _ = exec_mock.call_args
         assert isinstance(args[0], Select)

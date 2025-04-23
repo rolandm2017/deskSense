@@ -53,9 +53,9 @@ async def test_read_all(dao):
                        start_time=datetime.now(),
                        end_time=datetime.now()
                        )
-    exec_and_return_all_mock = AsyncMock()
-    exec_and_return_all_mock.return_value = [s, s2]
-    dao.exec_and_return_all = exec_and_return_all_mock
+    execute_and_return_all_mock = AsyncMock()
+    execute_and_return_all_mock.return_value = [s, s2]
+    dao.execute_and_return_all_rows = execute_and_return_all_mock
 
     # Act
     result = await dao.read_all()
@@ -79,9 +79,9 @@ async def test_read_past_24h_events(dao):
                        start_time=datetime.now(),
                        end_time=datetime.now()
                        )
-    exec_and_return_all_mock = AsyncMock()
-    exec_and_return_all_mock.return_value = [s, s2]
-    dao.exec_and_return_all = exec_and_return_all_mock
+    execute_and_return_all_mock = AsyncMock()
+    execute_and_return_all_mock.return_value = [s, s2]
+    dao.execute_and_return_all_rows = execute_and_return_all_mock
 
     # Act
     result = await dao.read_past_24h_events(current_time)

@@ -44,21 +44,19 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         self.logger = ConsoleLogger()
 
     def start_session(self, program_session: ProgramSession, right_now):
-        target_program_name = program_session.window_title
 
         starting_window_amt = 10  # sec
         usage_duration_in_hours = starting_window_amt / SECONDS_PER_HOUR
 
         today_start = get_start_of_day(right_now)
 
-        self._create(program_session.process_name,
-                     target_program_name, usage_duration_in_hours, today_start)
+        self._create(program_session, usage_duration_in_hours, today_start)
 
-    def _create(self, exe_path, target_program_name: str, duration_in_hours: float, when_it_was_gathered: datetime):
-        self.throw_if_negative(target_program_name, duration_in_hours)
+    def _create(self, session: ProgramSession, duration_in_hours: float, when_it_was_gathered: datetime):
+        self.throw_if_negative(session.process_name, duration_in_hours)
         new_entry = DailyProgramSummary(
-            exe_path_as_id=exe_path,
-            program_name=target_program_name,
+            exe_path_as_id=session.exe_path,
+            program_name=session.window_title,
             hours_spent=duration_in_hours,
             gathering_date=when_it_was_gathered
         )
@@ -81,7 +79,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.gathering_date < end_of_day
         )
 
-        return self.exec_and_read_one_or_none(query)
+        return self.execute_and_read_one_or_none(query)
 
     def read_past_week(self, right_now: UserLocalTime):
         # +1 because weekday() counts from Monday=0
@@ -130,7 +128,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.gathering_date < tomorrow_start
         )
 
-        return self.exec_and_read_one_or_none(query)
+        return self.execute_and_read_one_or_none(query)
 
     # Updates section
 
@@ -167,6 +165,9 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.gathering_date >= today_start,
             DailyProgramSummary.gathering_date < tomorrow_start
         )
+        self.exec_window_push(query)
+
+    def exec_window_push(self, query):
         with self.regular_session() as db_session:
             program: DailyProgramSummary = db_session.scalars(query).first()
             # FIXME: Sometimes program is None
@@ -196,6 +197,9 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.gathering_date >= today_start,
             DailyProgramSummary.gathering_date < tomorrow_start
         )
+        self.do_deduction(query, time_to_remove)
+
+    def do_deduction(self, query, time_to_remove):
         with self.regular_session() as db_session:
             program: DailyProgramSummary = db_session.scalars(query).first()
 

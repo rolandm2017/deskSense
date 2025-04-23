@@ -41,8 +41,7 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         starting_window_amt = 10  # sec
         usage_duration_in_hours = starting_window_amt / SECONDS_PER_HOUR
 
-        today = right_now.replace(hour=0, minute=0, second=0,
-                                  microsecond=0)  # Still has tz attached
+        today = get_start_of_day(right_now)  # Still has tz attached
         self._create(target_domain_name, usage_duration_in_hours, today)
 
     def _create(self, target_domain_name, duration_in_hours, when_it_was_gathered):
@@ -74,7 +73,7 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             DailyDomainSummary.gathering_date < end_of_day
         )
 
-        return self.exec_and_read_one_or_none(query)
+        return self.execute_and_read_one_or_none(query)
 
     def read_row_for_domain(self, target_domain_name, right_now):
         today = right_now.replace(hour=0, minute=0, second=0,
@@ -85,7 +84,7 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             DailyDomainSummary.gathering_date < today + timedelta(days=1)
         )
         # TODO: replace.
-        return self.exec_and_read_one_or_none(query)
+        return self.execute_and_read_one_or_none(query)
 
     def read_past_week(self, right_now: UserLocalTime):
 
@@ -152,7 +151,11 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             DailyDomainSummary.gathering_date >= today_start,
             DailyDomainSummary.gathering_date < tomorrow_start
         )
+        self.exec_window_push(query)
+
+    def exec_window_push(self, query):
         with self.regular_session() as db_session:
+            # TODO: change to "Update hours"
             domain: DailyDomainSummary = db_session.scalars(query).first()
             # FIXME: Sometimes domain is none
             if domain:
@@ -178,6 +181,9 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             DailyDomainSummary.gathering_date < tomorrow_start
         )
         # Update it if found
+        self.do_deduction(query, duration_in_sec)
+
+    def do_deduction(self, query, duration_in_sec):
         with self.regular_session() as db_session:
             domain: DailyDomainSummary = db_session.scalars(query).first()
 

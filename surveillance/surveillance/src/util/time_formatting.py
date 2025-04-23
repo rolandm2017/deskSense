@@ -20,6 +20,7 @@ def convert_to_utc(dt: datetime):
 
 def get_start_of_day(dt: datetime):
     """If you put in March 3 3:00 PM PST, you will get out march 3 12:00 AM *PST*! """
+    # Timezone stays attached.
     return dt.replace(hour=0, minute=0, second=0, microsecond=0)
 
 

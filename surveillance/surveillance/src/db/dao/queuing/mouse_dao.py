@@ -47,6 +47,13 @@ class MouseDao(AsyncUtilityDaoMixin, BaseQueueingDao):
     async def read_all(self):
         """Read MouseMove entries."""
         query = select(MouseMove)
+        print("HERE")
+        print("HERE")
+        print("HERE")
+        print("HERE")
+        print("HERE")
+        print("HERE")
+        print(self.execute_and_return_all_rows, "58ru")
         return await self.execute_and_return_all_rows(query)
 
     async def read_by_id(self, mouse_move_id: int):
@@ -58,7 +65,9 @@ class MouseDao(AsyncUtilityDaoMixin, BaseQueueingDao):
         Read mouse movement events that ended within the past 24 hours.
         Returns all movements ordered by their end time.
         """
+        print("61ru")
         query = self.get_prev_24_hours_query(right_now.dt - timedelta(days=1))
+        print(query, "61ru")
 
         return await self.execute_and_return_all_rows(query)
 
@@ -66,13 +75,6 @@ class MouseDao(AsyncUtilityDaoMixin, BaseQueueingDao):
         return select(MouseMove).where(
             MouseMove.start_time >= twenty_four_hours_ago
         ).order_by(MouseMove.start_time.desc())
-
-    # async def exec_and_return_all(self, query):
-    #     async with self.async_session_maker() as session:
-    #         result = await session.execute(query)
-    #         # Some tests think this needs to be 'awaited' but it doens't
-    #         # return await result.scalars().all()
-    #         return result.scalars().all()
 
     async def delete(self, id: int):
         """Delete an entry by ID"""

@@ -77,8 +77,8 @@ async def setup_parts(regular_session, async_engine_and_asm):
     # Get all required DAOs
     timeline_dao = TimelineEntryDao(session_maker_async)
     program_logging_dao = ProgramLoggingDao(
-        regular_session, session_maker_async)
-    chrome_logging_dao = ChromeLoggingDao(regular_session, session_maker_async)
+        regular_session)
+    chrome_logging_dao = ChromeLoggingDao(regular_session)
     program_summary_dao = ProgramSummaryDao(
         program_logging_dao, regular_session, session_maker_async)
     chrome_summary_dao = ChromeSummaryDao(
@@ -137,7 +137,7 @@ async def setup_with_populated_db(setup_parts):
         assert isinstance(
             s.end_time, UserLocalTime), "Setup conditions not met"
         program_summary_dao._create(
-            s.window_title, ten_sec_as_hours, s.end_time.get_dt_for_db())
+            "path/to/home/of/exe.exe", s.window_title, ten_sec_as_hours, s.end_time.get_dt_for_db())
     for s in test_data_feb_chrome:
         print(s)
         assert isinstance(
@@ -190,8 +190,8 @@ async def setup_with_populated_db(setup_parts):
 
     yield service, program_summary_dao, chrome_summary_dao
 
-    await program_summary_dao.program_logging_dao.cleanup()
-    await chrome_summary_dao.chrome_logging_dao.cleanup()
+    # await program_summary_dao.program_logging_dao.cleanup()
+    # await chrome_summary_dao.chrome_logging_dao.cleanup()
     # await program_summary_dao.cleanup()
     # await chrome_summary_dao.cleanup()
 

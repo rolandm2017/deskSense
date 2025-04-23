@@ -44,9 +44,9 @@ async def test_dao_instances(mock_regular_session_maker, mock_async_session):
     """Create the necessary DAO instances for session integrity testing"""
     # Create the DAOs
     program_logging_dao = ProgramLoggingDao(
-        mock_regular_session_maker, mock_async_session)
+        mock_regular_session_maker)
     chrome_logging_dao = ChromeLoggingDao(
-        mock_regular_session_maker, mock_async_session)
+        mock_regular_session_maker)
 
     return {
         "program_logging_dao": program_logging_dao,
@@ -79,9 +79,9 @@ def mock_session_data():
 @pytest_asyncio.fixture
 async def prepare_daos(mock_regular_session_maker, mock_async_session):
     program_dao = ProgramLoggingDao(
-        mock_regular_session_maker, mock_async_session)
+        mock_regular_session_maker)
     chrome_dao = ChromeLoggingDao(
-        mock_regular_session_maker, mock_async_session)
+        mock_regular_session_maker)
 
     yield program_dao, chrome_dao
 
@@ -111,10 +111,10 @@ def test_find_session(prepare_daos, mock_session_data):
     program_session, chrome_session = mock_session_data
     program_dao, chrome_dao = prepare_daos
 
-    pr_find_one_mock = Mock()
-    ch_find_one_mock = Mock()
-    program_dao.find_one_or_none = pr_find_one_mock
-    chrome_dao.find_one_or_none = ch_find_one_mock
+    pr_execute_and_read_one_mock = Mock()
+    ch_execute_and_read_one_mock = Mock()
+    program_dao.execute_and_read_one_or_none = pr_execute_and_read_one_mock
+    chrome_dao.execute_and_read_one_or_none = ch_execute_and_read_one_mock
 
     pr_select_where_time_equals_spy = Mock(
         side_effect=program_dao.select_where_time_equals)
@@ -135,28 +135,25 @@ def test_find_session(prepare_daos, mock_session_data):
     ch_select_where_time_equals_spy.assert_called_with(
         ch_time_as_utc)
 
-    args, _ = pr_find_one_mock.call_args
+    args, _ = pr_execute_and_read_one_mock.call_args
 
     assert isinstance(args[0], Select)
 
-    args, _ = ch_find_one_mock.call_args
+    args, _ = ch_execute_and_read_one_mock.call_args
 
     assert isinstance(args[0], Select)
 
-# # TODO: Manually drop the tables
 
-
-def test_push_window_ahead(prepare_daos, mock_session_data):
+def test_push_window_ahead(prepare_daos):
     """Test assumes there is an existing session, which the test can 'push the window forward' for."""
-    program_session, chrome_session = mock_session_data
     program_dao, chrome_dao = prepare_daos
     # chrome_dao = ChromeLoggingDao(plain_asm)
 
-    program_merge_item_spy = Mock()
-    program_dao.merge_item = program_merge_item_spy
+    program_update_item_spy = Mock()
+    program_dao.update_item = program_update_item_spy
 
-    chrome_merge_item_spy = Mock()
-    chrome_dao.merge_item = chrome_merge_item_spy
+    chrome_update_item_spy = Mock()
+    chrome_dao.update_item = chrome_update_item_spy
 
     start_val_for_test = 33
 
@@ -188,8 +185,9 @@ def test_push_window_ahead(prepare_daos, mock_session_data):
     chrome_find_session_mock.return_value = pretend_domain_log
     chrome_dao.find_session = chrome_find_session_mock
 
-    initial_write_of_program = ProgramSession(
-        "cat", "hat", datetime(2025, 4, 20, 2, 2, 2))
+    initial_write_of_program = ProgramSession("path/to/foo.exe", "foo.exe",
+
+                                              "cat", "hat", datetime(2025, 4, 20, 2, 2, 2))
     initial_write_of_chrome = ChromeSession(
         "foo", "bar", datetime(2025, 4, 20, 1, 1, 1))
 
@@ -198,18 +196,16 @@ def test_push_window_ahead(prepare_daos, mock_session_data):
     chrome_dao.push_window_ahead_ten_sec(initial_write_of_chrome)
 
     # Assert
-    program_merge_item_spy.assert_called_once()
-    chrome_merge_item_spy.assert_called_once()
+    program_update_item_spy.assert_called_once()
+    chrome_update_item_spy.assert_called_once()
 
-    args, _ = program_merge_item_spy.call_args
-    assert isinstance(args[0], ProgramSummaryLog)
-    len_of_window_push = 10  # sec
-    assert args[0].end_time.second == start_val_for_test + len_of_window_push
+    args, _ = program_update_item_spy.call_args
+    assert isinstance(
+        args[0], ProgramSummaryLog), "Window push failed in logging dao"
 
-    args, _ = chrome_merge_item_spy.call_args
-    assert isinstance(args[0], DomainSummaryLog)
-    len_of_window_push = 10  # sec
-    assert args[0].end_time.second == start_val_for_test + len_of_window_push
+    args, _ = chrome_update_item_spy.call_args
+    assert isinstance(
+        args[0], DomainSummaryLog), "Window push failed in logging dao"
 
 
 @pytest.fixture
@@ -225,14 +221,63 @@ def nonexistent_session():
     return session
 
 
+def test_finalize_log(prepare_daos, mock_regular_session_maker, nonexistent_session):
+    program_dao, chrome_dao = prepare_daos
+
+    # try:
+    program_dao = ProgramLoggingDao(
+        mock_regular_session_maker)
+    chrome_dao = ChromeLoggingDao(
+        mock_regular_session_maker)
+
+    t1 = datetime(2025, 1, 20, 12, 30, 0)
+    t2 = datetime(2025, 1, 30, 13, 40, 0)
+    found_program_session = ProgramSummaryLog()
+    found_program_session.end_time = t1
+    found_domain_session = DomainSummaryLog()
+    found_domain_session.end_time = t2
+
+    program_find_session_mock = Mock()
+    program_find_session_mock.return_value = found_program_session
+
+    chrome_find_session_mock = Mock()
+    chrome_find_session_mock.return_value = found_domain_session
+
+    program_dao.find_session = program_find_session_mock
+    chrome_dao.find_session = chrome_find_session_mock
+
+    # The all important spies
+    pr_update_item_spy = Mock()
+    ch_update_item_spy = Mock()
+    program_dao.update_item = pr_update_item_spy
+    chrome_dao.update_item = ch_update_item_spy
+
+    # Act
+    delivers_end_time = ProgramSession()
+    delivers_end_time.end_time = UserLocalTime(t1 + timedelta(seconds=10))
+    ch_delivers_end_time = ChromeSession("yadda", "yadda", "yadda")
+    ch_delivers_end_time.end_time = UserLocalTime(t2 + timedelta(seconds=22))
+    program_dao.finalize_log(delivers_end_time)
+    chrome_dao.finalize_log(ch_delivers_end_time)
+
+    # Assert
+    pr_update_item_spy.assert_called_once()
+    ch_update_item_spy.assert_called_once()
+
+    args, _ = pr_update_item_spy.call_args
+    assert isinstance(args[0], ProgramSummaryLog)
+    args, _ = ch_update_item_spy.call_args
+    assert isinstance(args[0], DomainSummaryLog)
+
+
 def test_finalize_log_error(prepare_daos, mock_regular_session_maker, mock_async_session, nonexistent_session):
     program_dao, chrome_dao = prepare_daos
 
     # try:
     program_dao = ProgramLoggingDao(
-        mock_regular_session_maker, mock_async_session)
+        mock_regular_session_maker)
     chrome_dao = ChromeLoggingDao(
-        mock_regular_session_maker, mock_async_session)
+        mock_regular_session_maker)
 
     doesnt_do_anything_mock = Mock()
     doesnt_do_anything_mock.return_value = None

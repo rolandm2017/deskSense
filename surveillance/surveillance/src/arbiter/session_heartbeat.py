@@ -77,10 +77,11 @@ class KeepAliveEngine:
         window_length = self.max_interval  # 10
         remaining = window_length - used_amount
         return remaining
-    
+
     def save_loop_for_reuse(self):
         """Less resources if you reuse a loop instead of making a new one"""
         return self.loop
+
 
 class ThreadedEngineContainer:
     """
@@ -90,7 +91,8 @@ class ThreadedEngineContainer:
 
     # TODO: Also keep the EngineContainer between engines. just change it out. Keep the thread alive.
     """
-    def __init__(self, engine: KeepAliveEngine, interval=1, sleep_fn=time.sleep):
+
+    def __init__(self, engine: KeepAliveEngine, interval: int | float = 1, sleep_fn=time.sleep):
         self.engine = engine
         self.sleep_fn = sleep_fn  # More testable
         self.stop_event = threading.Event()
@@ -107,7 +109,7 @@ class ThreadedEngineContainer:
             self.hook_thread.daemon = True
             self.hook_thread.start()
             self.is_running = True
-        
+
     def _iterate_loop(self):
         while not self.stop_event.is_set():
             self.engine.iterate_loop()
@@ -123,4 +125,3 @@ class ThreadedEngineContainer:
             if self.hook_thread is not None and self.hook_thread.is_alive():
                 self.hook_thread.join(timeout=1)
             self.is_running = False
-        

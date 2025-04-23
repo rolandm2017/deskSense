@@ -26,6 +26,7 @@ class MouseEventDispatch:
         self.debounce_timer = None
         self.event_ready_handler = event_ready_handler
         self._timer_lock = threading.Lock()  # Add a lock for thread safety
+        self.fun_counter = 0
 
     def add_to_aggregator(self):
         # Add the event
@@ -35,7 +36,8 @@ class MouseEventDispatch:
 
         # If we've reached the maximum number of events, handle it immediately
         if len(self.event_aggregator.current_aggregation) >= self.MAX_AGGREGATIONS:
-            print("--> beyond max count of aggregates")
+            print("--> beyond max count of aggregates: " + str(self.fun_counter))
+            self.fun_counter += 1
             with self._timer_lock:
                 if self.debounce_timer:
                     self.debounce_timer.cancel()
