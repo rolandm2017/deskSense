@@ -32,12 +32,44 @@ feb_23_2025 = datetime(2025, 2, 23, tzinfo=timezone.utc)
 feb_24_2025 = datetime(2025, 2, 24, tzinfo=timezone.utc)
 feb_26_2025 = datetime(2025, 2, 26, tzinfo=timezone.utc)
 
+zoom_path = "C:/Program Files/Zoom/Zoom.exe"
+zoom_process = "Zoom.exe"
+
+msword_path = "C:/Program Files/Microsoft Office/Office16/WINWORD.EXE"
+msword_process = "WINWORD.EXE"
+
+
+slack_path = "C:/Users/AppData/Local/Slack/Slack.exe"
+slack_process = "Slack.exe"
+
+pycharm_path = "C:/Path/to/PyCharm.exe"
+pycharm_process = "PyCharm.exe"
+
+chrome_path = "C:/Program Files/Google/Chrome/Application/chrome.exe"
+chrome_process = "Chrome.exe"
+
+vscode_path = "C:/Program Files/Microsoft VS Code/Code.exe"
+vscode_process = "Code.exe"
+
+notion_path = "C:/Path/to/Notion.exe"
+notion_process = "Notion.exe"
+
+
+excel_path = "C:/ProgramFiles/Excel.exe"
+excel_process = "Excel.exe"
+
+
+spotify_path = "C:/Path/to/spotify.exe"
+spotify_process = "Spotify.exe"
+
 
 def programs_feb_23() -> List:
     program_sessions = []
 
     # Pycharm session
     pycharm_session = ProgramSession()
+    pycharm_session.exe_path = vscode_path
+    pycharm_session.process_name = vscode_process
     pycharm_session.window_title = "Visual Studio CodeTEST"
     pycharm_session.detail = "Initial project setup"
     pycharm_session.start_time = UserLocalTime(
@@ -49,6 +81,9 @@ def programs_feb_23() -> List:
 
     # Notion session
     notion_session = ProgramSession()
+    notion_session = ProgramSession()
+    notion_session.exe_path = notion_path
+    notion_session.process_name = notion_process
     notion_session.window_title = "NotionTEST"
     notion_session.detail = "Sprint planning documentation"
     notion_session.start_time = UserLocalTime(add_time(feb_23_2025, 14, 20, 0))
@@ -65,6 +100,8 @@ def programs_feb_24() -> List:
 
     # PyCharm session
     pycharm_session = ProgramSession()
+    pycharm_session.exe_path = pycharm_path
+    pycharm_session.process_name = pycharm_process
     pycharm_session.window_title = "PyCharmTEST"
     pycharm_session.detail = "Refactoring database models"
     pycharm_session.start_time = UserLocalTime(add_time(feb_24_2025, 9, 30, 0))
@@ -75,6 +112,8 @@ def programs_feb_24() -> List:
 
     # Zoom session
     zoom_session = ProgramSession()
+    zoom_session.exe_path = zoom_path
+    zoom_session.process_name = zoom_process
     zoom_session.window_title = "ZoomTEST"
     zoom_session.detail = "Weekly team sync"
     zoom_session.start_time = UserLocalTime(add_time(feb_24_2025, 13, 0, 0))
@@ -91,6 +130,8 @@ def programs_feb_26() -> List:
 
     # Visual Studio Code session
     pycharm_session = ProgramSession()
+    pycharm_session.exe_path = vscode_path
+    pycharm_session.process_name = vscode_process
     pycharm_session.window_title = "Visual Studio CodeTEST"
     pycharm_session.detail = "Implementing new API endpoints"
     pycharm_session.start_time = UserLocalTime(add_time(feb_26_2025, 10, 0, 0))
@@ -101,6 +142,8 @@ def programs_feb_26() -> List:
 
     # Slack session
     slack_session = ProgramSession()
+    slack_session.exe_path = slack_path
+    slack_session.process_name = slack_process
     slack_session.window_title = "SlackTEST"
     slack_session.detail = "Project coordination"
     slack_session.start_time = UserLocalTime(add_time(feb_26_2025, 15, 45, 0))
@@ -131,6 +174,9 @@ def programs_march_2nd() -> List:
 
     # Pycharm session
     pycharm_session = ProgramSession()
+    pycharm_session.exe_path = vscode_path
+    pycharm_session.process_name = vscode_process
+
     pycharm_session.window_title = "Visual Studio CodeTEST"
     pycharm_session.detail = "Working on async SQLAlchemy project"
     pycharm_session.start_time = UserLocalTime(
@@ -142,6 +188,8 @@ def programs_march_2nd() -> List:
 
     # Excel session
     excel_session = ProgramSession()
+    excel_session.exe_path = excel_path
+    excel_session.process_name = excel_process
     excel_session.window_title = "Microsoft ExcelTEST"
     excel_session.detail = "Data analysis for project metrics"
     excel_session.start_time = UserLocalTime(add_time(march_2_2025, 12, 39, 0))
@@ -152,6 +200,8 @@ def programs_march_2nd() -> List:
 
     # Slack session
     slack_session = ProgramSession()
+    slack_session.exe_path = slack_path
+    slack_session.process_name = slack_process
     slack_session.window_title = "SlackTEST"
     slack_session.detail = "Team communication"
     slack_session.start_time = UserLocalTime(add_time(march_2_2025, 13, 30, 0))
@@ -162,6 +212,8 @@ def programs_march_2nd() -> List:
 
     # Alt-tab session
     alt_tab_session = ProgramSession()
+    alt_tab_session.exe_path = "C:/wherever/altTab/lives.exe"
+    alt_tab_session.process_name = "lives.exe"
     alt_tab_session.window_title = "Alt-tab windowTEST"
     alt_tab_session.detail = "Switching between applications"
     alt_tab_session.start_time = UserLocalTime(
@@ -173,6 +225,8 @@ def programs_march_2nd() -> List:
 
     # PyCharm session
     pycharm_session = ProgramSession()
+    pycharm_session.exe_path = pycharm_path
+    pycharm_session.process_name = pycharm_process
     pycharm_session.window_title = "PyCharmTEST"
     pycharm_session.detail = "Database model development"
     pycharm_session.start_time = UserLocalTime(
@@ -184,6 +238,8 @@ def programs_march_2nd() -> List:
 
     # Spotify session
     spotify_session = ProgramSession()
+    spotify_session.exe_path = spotify_path
+    spotify_session.process_name = spotify_process
     spotify_session.window_title = "SpotifyTEST"
     spotify_session.detail = "Background music while working"
     spotify_session.start_time = UserLocalTime(
@@ -196,84 +252,14 @@ def programs_march_2nd() -> List:
     return program_sessions
 
 
-def programs_march_3rd() -> List:
-    # March 3, 2025 sessions
-    program_sessions = []
-
-    # Pycharm session day 2
-    pycharm_session2 = ProgramSession()
-    pycharm_session2.window_title = "Visual Studio CodeTEST"
-    pycharm_session2.detail = "Test suite development"
-    pycharm_session2.start_time = UserLocalTime(
-        add_time(march_3_2025, 12, 0, 0))
-    pycharm_session2.end_time = UserLocalTime(
-        add_time(march_3_2025, 12, 30, 0))
-    pycharm_session2.duration = pycharm_session2.end_time - pycharm_session2.start_time
-    pycharm_session2.productive = True
-    program_sessions.append(pycharm_session2)
-
-    # Zoom session
-    zoom_session = ProgramSession()
-    zoom_session.window_title = "ZoomTEST"
-    zoom_session.detail = "Team standups and planning meeting"
-    zoom_session.start_time = UserLocalTime(add_time(march_3_2025, 14, 1, 0))
-    zoom_session.end_time = UserLocalTime(add_time(march_3_2025, 15, 0, 0))
-    zoom_session.duration = zoom_session.end_time - zoom_session.start_time
-    zoom_session.productive = True
-    program_sessions.append(zoom_session)
-
-    # Word session
-    word_session = ProgramSession()
-    word_session.window_title = "Microsoft WordTEST"
-    word_session.detail = "Documentation writing"
-    word_session.start_time = UserLocalTime(add_time(march_3_2025, 15, 25, 0))
-    word_session.end_time = UserLocalTime(add_time(march_3_2025, 16, 22, 0))
-    word_session.duration = word_session.end_time - word_session.start_time
-    word_session.productive = True
-    program_sessions.append(word_session)
-
-    # Chrome session
-    chrome_session = ProgramSession()
-    chrome_session.window_title = "ChromeTEST"
-    chrome_session.detail = "Web browsing for work research"
-    chrome_session.start_time = UserLocalTime(
-        add_time(march_3_2025, 12, 15, 0))
-    chrome_session.end_time = UserLocalTime(add_time(march_3_2025, 13, 0, 0))
-    chrome_session.duration = chrome_session.end_time - chrome_session.start_time
-    chrome_session.productive = True
-    program_sessions.append(chrome_session)
-
-    # Notion session
-    notion_session = ProgramSession()
-    notion_session.window_title = "NotionTEST"
-    notion_session.detail = "Project planning and notes"
-    notion_session.start_time = UserLocalTime(
-        add_time(march_3_2025, 16, 30, 0))
-    notion_session.end_time = UserLocalTime(add_time(march_3_2025, 17, 24, 0))
-    notion_session.duration = notion_session.end_time - notion_session.start_time
-    notion_session.productive = True
-    program_sessions.append(notion_session)
-
-    # Slack session day 2
-    slack_session2 = ProgramSession()
-    slack_session2.window_title = "SlackTEST"
-    slack_session2.detail = "End of day team updates"
-    slack_session2.start_time = UserLocalTime(
-        add_time(march_3_2025, 17, 50, 0))
-    slack_session2.end_time = UserLocalTime(add_time(march_3_2025, 18, 45, 0))
-    slack_session2.duration = slack_session2.end_time - slack_session2.start_time
-    slack_session2.productive = True
-    program_sessions.append(slack_session2)
-
-    return program_sessions
-
-
 # Four duplicate Program session entries
 def duplicate_programs_march_2() -> List:
     duplicate_program_sessions = []
 
     # Duplicate 1: Slack session (with slight time variation)
     slack_session_dup = ProgramSession()
+    slack_session_dup.exe_path = slack_path
+    slack_session_dup.process_name = slack_process
     slack_session_dup.window_title = "SlackTEST"
     slack_session_dup.detail = "Quick team check-in"
     slack_session_dup.start_time = UserLocalTime(
@@ -286,6 +272,8 @@ def duplicate_programs_march_2() -> List:
 
     # Duplicate 2: PyCharm session (with slight time variation)
     pycharm_session_dup = ProgramSession()
+    pycharm_session_dup.exe_path = pycharm_path
+    pycharm_session_dup.process_name = pycharm_process
     pycharm_session_dup.window_title = "PyCharmTEST"
     pycharm_session_dup.detail = "Schema improvements"
     pycharm_session_dup.start_time = UserLocalTime(
@@ -297,14 +285,114 @@ def duplicate_programs_march_2() -> List:
     pycharm_session_dup.productive = True
     duplicate_program_sessions.append(pycharm_session_dup)
 
+    # Dupe 3: Spotify session
+    spotify_session = ProgramSession()
+    spotify_session.exe_path = spotify_path
+    spotify_session.process_name = spotify_process
+    spotify_session.window_title = "SpotifyTEST"
+    spotify_session.detail = "Lively dance session"
+    spotify_session.start_time = UserLocalTime(
+        add_time(march_2_2025, 12, 49, 0))
+    spotify_session.end_time = UserLocalTime(
+        add_time(march_2_2025, 13, 51, 33))
+    spotify_session.duration = spotify_session.end_time - spotify_session.start_time
+    spotify_session.productive = False  # Background app
+    duplicate_program_sessions.append(spotify_session)
+
     return duplicate_program_sessions
+
+
+def programs_march_3rd() -> List:
+    # March 3, 2025 sessions
+    program_sessions = []
+
+    # Pycharm session day 2
+    pycharm_session2 = ProgramSession()
+    pycharm_session2.exe_path = vscode_path
+    pycharm_session2.process_name = vscode_process
+    pycharm_session2.window_title = "Visual Studio CodeTEST"
+    pycharm_session2.detail = "Test suite development"
+    pycharm_session2.start_time = UserLocalTime(
+        add_time(march_3_2025, 12, 0, 0))
+    pycharm_session2.end_time = UserLocalTime(
+        add_time(march_3_2025, 12, 30, 0))
+    pycharm_session2.duration = pycharm_session2.end_time - pycharm_session2.start_time
+    pycharm_session2.productive = True
+    program_sessions.append(pycharm_session2)
+
+    # Zoom session
+    zoom_session = ProgramSession()
+    zoom_session.exe_path = zoom_path
+    zoom_session.process_name = zoom_process
+    zoom_session.window_title = "ZoomTEST"
+    zoom_session.detail = "Team standups and planning meeting"
+    zoom_session.start_time = UserLocalTime(add_time(march_3_2025, 14, 1, 0))
+    zoom_session.end_time = UserLocalTime(add_time(march_3_2025, 15, 0, 0))
+    zoom_session.duration = zoom_session.end_time - zoom_session.start_time
+    zoom_session.productive = True
+    program_sessions.append(zoom_session)
+
+    # Word session
+    word_session = ProgramSession()
+    word_session.exe_path = msword_path
+    word_session.process_name = msword_process
+    word_session.window_title = "Microsoft WordTEST"
+    word_session.detail = "Documentation writing"
+    word_session.start_time = UserLocalTime(add_time(march_3_2025, 15, 25, 0))
+    word_session.end_time = UserLocalTime(add_time(march_3_2025, 16, 22, 0))
+    word_session.duration = word_session.end_time - word_session.start_time
+    word_session.productive = True
+    program_sessions.append(word_session)
+
+    # Chrome session
+    chrome_session = ProgramSession()
+    chrome_session.exe_path = chrome_path
+    chrome_session.process_name = chrome_process
+    chrome_session.window_title = "ChromeTEST"
+    chrome_session.detail = "Web browsing for work research"
+    chrome_session.start_time = UserLocalTime(
+        add_time(march_3_2025, 12, 15, 0))
+    chrome_session.end_time = UserLocalTime(add_time(march_3_2025, 13, 0, 0))
+    chrome_session.duration = chrome_session.end_time - chrome_session.start_time
+    chrome_session.productive = True
+    program_sessions.append(chrome_session)
+
+    # Notion session
+    notion_session = ProgramSession()
+    notion_session.exe_path = notion_path
+    notion_session.process_name = notion_process
+    notion_session.window_title = "NotionTEST"
+    notion_session.detail = "Project planning and notes"
+    notion_session.start_time = UserLocalTime(
+        add_time(march_3_2025, 16, 30, 0))
+    notion_session.end_time = UserLocalTime(add_time(march_3_2025, 17, 24, 0))
+    notion_session.duration = notion_session.end_time - notion_session.start_time
+    notion_session.productive = True
+    program_sessions.append(notion_session)
+
+    # Slack session day 2
+    slack_session2 = ProgramSession()
+    slack_session2.exe_path = slack_path
+    slack_session2.process_name = slack_process
+    slack_session2.window_title = "SlackTEST"
+    slack_session2.detail = "End of day team updates"
+    slack_session2.start_time = UserLocalTime(
+        add_time(march_3_2025, 17, 50, 0))
+    slack_session2.end_time = UserLocalTime(add_time(march_3_2025, 18, 45, 0))
+    slack_session2.duration = slack_session2.end_time - slack_session2.start_time
+    slack_session2.productive = True
+    program_sessions.append(slack_session2)
+
+    return program_sessions
 
 
 def duplicate_programs_march_3rd() -> List:
     duplicate_program_sessions = []
 
-    # Duplicate 3: Chrome program session (with slight time variation)
+    # Duplicate 4: Chrome program session (with slight time variation)
     chrome_session_dup = ProgramSession()
+    chrome_session_dup.exe_path = chrome_path
+    chrome_session_dup.process_name = chrome_process
     chrome_session_dup.window_title = "ChromeTEST"
     chrome_session_dup.detail = "Researching SQLAlchemy async features"
     chrome_session_dup.start_time = UserLocalTime(
@@ -316,8 +404,10 @@ def duplicate_programs_march_3rd() -> List:
     chrome_session_dup.productive = True
     duplicate_program_sessions.append(chrome_session_dup)
 
-    # Duplicate 4: Pycharm session (with slight time variation)
+    # Duplicate 5: Pycharm session (with slight time variation)
     pycharm_session_dup = ProgramSession()
+    pycharm_session_dup.exe_path = vscode_path
+    pycharm_session_dup.process_name = vscode_process
     pycharm_session_dup.window_title = "Visual Studio CodeTEST"
     pycharm_session_dup.detail = "Debugging database connections"
     pycharm_session_dup.start_time = UserLocalTime(
@@ -329,34 +419,22 @@ def duplicate_programs_march_3rd() -> List:
     pycharm_session_dup.productive = True
     duplicate_program_sessions.append(pycharm_session_dup)
 
+    # Dupe 6: Notion session
+    notion_session = ProgramSession()
+    notion_session.exe_path = notion_path
+    notion_session.process_name = notion_process
+    notion_session.window_title = "NotionTEST"
+    notion_session.detail = "Project planning and notes"
+    notion_session.start_time = UserLocalTime(
+        add_time(march_3_2025, 16, 30, 0))
+    notion_session.end_time = UserLocalTime(add_time(march_3_2025, 17, 27, 0))
+    notion_session.duration = notion_session.end_time - notion_session.start_time
+    notion_session.productive = True
+    duplicate_program_sessions.append(notion_session)
+
     return duplicate_program_sessions
 
 
 # counted manually from Ctrl + F "t_time = add_time(march_2_2"
 march_2_program_count = len(programs_march_2nd())
 march_3_program_count = len(programs_march_3rd())
-
-# Example usage:
-#
-# chrome_sessions = create_chrome_session_test_data()
-# program_sessions = create_program_session_test_data()
-#
-# print(f"Generated {len(chrome_sessions)} Chrome sessions")
-# print(f"Generated {len(program_sessions)} Program sessions")
-#
-# # Example of how you might use these with your DAOs:
-# async def test_chrome_summary_dao():
-#     # Set up test dependencies like session_maker, logging_dao, etc.
-#     chrome_logging_dao = MockChromeLoggingDao()
-#     session_maker = get_test_session_maker()
-#     chrome_dao = ChromeSummaryDao(chrome_logging_dao, session_maker)
-#
-#     # Current test time - use a fixed time for deterministic tests
-#     now = datetime(2025, 3, 3, 19, 0, 0, tzinfo=timezone.utc)
-#
-#     # Process all test chrome sessions
-#     for session in chrome_sessions:
-#         await chrome_dao.create_if_new_else_update(session, now)
-#
-#     # Then assert expected state in database
-#     # ...

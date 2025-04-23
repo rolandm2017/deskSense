@@ -35,18 +35,18 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         self.async_session_maker = async_session_maker
         self.logger = ConsoleLogger()
 
-    def start_session(self, chrome_session: ChromeSession, right_now):
+    def start_session(self, chrome_session: ChromeSession, right_now: UserLocalTime):
         target_domain_name = chrome_session.domain
 
         starting_window_amt = 10  # sec
         usage_duration_in_hours = starting_window_amt / SECONDS_PER_HOUR
 
-        today = get_start_of_day(right_now)  # Still has tz attached
+        today = get_start_of_day(right_now.dt)  # Still has tz attached
         self._create(target_domain_name, usage_duration_in_hours, today)
 
     def _create(self, target_domain_name, duration_in_hours, when_it_was_gathered):
-        print(
-            f"creating for {target_domain_name} with duration {duration_in_hours * SECONDS_PER_HOUR}")
+        # self.logger.log_white(
+        #     f"[info] creating for {target_domain_name} with duration {duration_in_hours * SECONDS_PER_HOUR}")
         self.throw_if_negative(target_domain_name, duration_in_hours)
         new_entry = DailyDomainSummary(
             domain_name=target_domain_name,

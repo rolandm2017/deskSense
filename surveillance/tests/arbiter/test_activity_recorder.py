@@ -11,20 +11,22 @@ from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
 from surveillance.src.object.classes import ProgramSession, ChromeSession
+from surveillance.src.util.time_wrappers import UserLocalTime
+
 
 # Test implementations with proper session object instantiation
 
 
 @pytest.fixture
 def program_session():
-    return ProgramSession(
-        "Visual Studio Code",
-        "main.py",
-        datetime(2023, 1, 1, 12, 0, 0),
-        datetime(2023, 1, 1, 12, 10, 0),
-        True,
-        timedelta(minutes=10)
-    )
+    return ProgramSession("C:/ProgramFiles/Code.exe", "Code.exe",
+                          "Visual Studio Code",
+                          "main.py",
+                          datetime(2023, 1, 1, 12, 0, 0),
+                          datetime(2023, 1, 1, 12, 10, 0),
+                          True,
+                          timedelta(minutes=10)
+                          )
 
 
 @pytest.fixture
@@ -105,7 +107,7 @@ async def test_error_cases(activity_recorder):
     # Test missing end_time
     bad_session = ProgramSession()
     bad_session.window_title = "Bad Session"
-    bad_session.start_time = datetime.now()
+    bad_session.start_time = UserLocalTime(datetime.now())
     bad_session.end_time = None
     bad_session.duration = timedelta(seconds=10)
 
@@ -113,7 +115,7 @@ async def test_error_cases(activity_recorder):
         await activity_recorder.on_state_changed(bad_session)
 
     # Test missing duration
-    bad_session.end_time = datetime.now()
+    bad_session.end_time = UserLocalTime(datetime.now())
     bad_session.duration = None
 
     with pytest.raises(ValueError):

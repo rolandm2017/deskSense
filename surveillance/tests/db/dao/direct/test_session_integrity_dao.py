@@ -373,9 +373,3 @@ async def test_find_phantoms(full_test_environment):
 #     finally:
 #         # Clean up after test, regardless of whether it passed or failed
 #         await truncate_test_tables(engine)
-
-
-process = psutil.Process()
-open_files = process.open_files()
-num_open_files = len(open_files)
-print(f"END: Num of open files: {num_open_files}")

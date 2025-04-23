@@ -32,7 +32,7 @@ class TestActivityStateMachine:
         assert asm.current_state is None
         assert asm.prior_state is None
 
-        first_session = ProgramSession("some/exe/path.exe",
+        first_session = ProgramSession("some/exe/path.exe", "path.exe",
                                        "Visual Studio Code", "myfile.py", UserLocalTime(now))
 
         second = ChromeSession(
@@ -72,7 +72,7 @@ class TestActivityStateMachine:
 
         asm = ActivityStateMachine(clock)
 
-        session1 = ProgramSession("some/path/to/an/exe.exe",
+        session1 = ProgramSession("some/path/to/an/exe.exe", "exe.exe",
                                   "Visual Studio Code", "myfile.py", UserLocalTime(t1))
 
         second = ChromeSession(
@@ -81,10 +81,10 @@ class TestActivityStateMachine:
         third = ChromeSession(
             "ChatGPT.com", "Asian Stir Fry Tutorial", UserLocalTime(t3))
 
-        fourth = ProgramSession("some/path/to/an/exe2.exe",
+        fourth = ProgramSession("some/path/to/an/exe2.exe", "exe2.exe",
                                 "Postmman", "POST requests folder", UserLocalTime(t4))
 
-        fifth = ProgramSession("some/path/to/an/exe4.exe",
+        fifth = ProgramSession("some/path/to/an/exe4.exe", "exe4.exe",
                                "Terminal", "~/Documents", UserLocalTime(t5))
 
         asm.set_new_session(session1)
@@ -254,7 +254,7 @@ class TestTransitionFromChrome:
         """A sad path. Machine cannot start with ApplicationInternalState, by design."""
         system_clock = SystemClock()
 
-        session = ProgramSession("path/to/exe10.exe",
+        session = ProgramSession("path/to/exe10.exe", "exe10.exe",
                                  "PyCharm", "test_my_wonerful_code.py", system_clock.now())
         current_state = ApplicationInternalState("PyCharm", False, session)
 
@@ -277,6 +277,7 @@ class TestTransitionFromChrome:
         tfcm = TransitionFromChromeMachine(current_state)
 
         next_session = ProgramSession("some/path.exe",
+                                      "path.exe",
                                       "Postman", "GET requests folder", UserLocalTime(now) + timedelta(seconds=4))
 
         output = tfcm.compute_next_state(next_session)
