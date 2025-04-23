@@ -107,7 +107,7 @@ class ActivityArbiter:
             new_keep_alive_engine = KeepAliveEngine(
                 new_session, self.activity_recorder, engine_loop)
             self.current_heartbeat = ThreadedEngineContainer(
-                new_keep_alive_engine, self.pulse_interval)
+                new_keep_alive_engine,  self.pulse_interval)
 
             self.current_heartbeat.start()
 

@@ -29,7 +29,7 @@ def is_expected_shape_else_throw(shape):
     return compliant_shape
 
 
-def window_is_chrome(new_window):
+def window_is_chrome(new_window: str | dict):
     if isinstance(new_window, str):
         return new_window.endswith("Google Chrome")
     else:

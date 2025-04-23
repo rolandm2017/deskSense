@@ -4,6 +4,7 @@ import time
 
 from datetime import timedelta
 
+
 """
 A class responsible for updating the end_time value of the latest Program or Chrome session.
 
@@ -92,13 +93,14 @@ class ThreadedEngineContainer:
     # TODO: Also keep the EngineContainer between engines. just change it out. Keep the thread alive.
     """
 
-    def __init__(self, engine: KeepAliveEngine, interval: int | float = 1, sleep_fn=time.sleep):
+    def __init__(self, engine: KeepAliveEngine, timestamp,  interval: int | float = 1, sleep_fn=time.sleep):
         self.engine = engine
         self.sleep_fn = sleep_fn  # More testable
         self.stop_event = threading.Event()
         self.interval = interval  # seconds - delay between loops
         self.hook_thread = None
         self.is_running = False
+        self.timestamp = timestamp
 
     def start(self):
         """
@@ -112,6 +114,7 @@ class ThreadedEngineContainer:
 
     def _iterate_loop(self):
         while not self.stop_event.is_set():
+            self.timestamp()
             self.engine.iterate_loop()
             self.sleep_fn(self.interval)  # Sleep for 1 second
 

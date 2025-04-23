@@ -1,6 +1,3 @@
-from surveillance.src.object.classes import ChromeSession, ProgramSession
-from surveillance.src.util.program_tools import window_is_chrome
-
 
 class InternalState:
     def __init__(self, active_application, is_chrome, session):

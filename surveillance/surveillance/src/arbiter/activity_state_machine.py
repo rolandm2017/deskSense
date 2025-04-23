@@ -4,7 +4,6 @@ from datetime import timedelta
 from surveillance.src.object.classes import ChromeSession, ProgramSession
 from surveillance.src.object.arbiter_classes import ChromeInternalState, ApplicationInternalState, InternalState
 from surveillance.src.util.program_tools import window_is_chrome
-from surveillance.src.util.errors import MismatchedTimezonesError, SuspiciousDurationError, TimezoneUnawareError
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.copy_util import snapshot_obj_for_tests
 from surveillance.src.util.time_wrappers import UserLocalTime
@@ -37,7 +36,9 @@ class ActivityStateMachine:
         if self.is_initialization_session(next_session):
             raise ValueError("next_session cannot be an empty dictionary")
         next_session = snapshot_obj_for_tests(next_session)
-
+        # TODO: It might be cleaner to say,
+        # next_state = package_session_into_state(next_session)
+        # and then use next_state in the compute_next_state func.
         if self.current_state:
             prior_update_was_program = isinstance(
                 self.current_state, ApplicationInternalState)
@@ -154,9 +155,9 @@ class TransitionFromProgramMachine:
             # Create a new state that is on a different program
             is_chrome = False
             current_tab = None
-            next_state = ApplicationInternalState(
+            brand_new_state = ApplicationInternalState(
                 next_session.window_title, is_chrome, next_session)
-            return next_state
+            return brand_new_state
 
     def _stay_on_same_program(self) -> ApplicationInternalState:
         return self.current_state  # No change needed
@@ -183,23 +184,23 @@ class TransitionFromChromeMachine:
 
         self.current_state = current_state
 
-    def compute_next_state(self, next_state: ProgramSession | ChromeSession) -> InternalState:
-        if isinstance(next_state, ProgramSession):
-            return self._transit_to_program(next_state)
+    def compute_next_state(self, next_session: ProgramSession | ChromeSession) -> InternalState:
+        if isinstance(next_session, ProgramSession):
+            return self._transit_to_program(next_session)
         else:
-            return self._handle_change_tabs(next_state)
+            return self._handle_change_tabs(next_session)
 
-    def _transit_to_program(self, next_state: ProgramSession) -> InternalState:
-        now_on_regular_app = not window_is_chrome(next_state.window_title)
+    def _transit_to_program(self, next_session: ProgramSession) -> InternalState:
+        now_on_regular_app = not window_is_chrome(next_session.window_title)
         if now_on_regular_app:
-            return self._change_to_new_program(next_state)
+            return self._change_to_new_program(next_session)
         else:
             return self._stay_on_chrome()  # Still on Chrome - Pass
 
-    def _handle_change_tabs(self, next_state: ChromeSession) -> ChromeInternalState:
-        on_different_tab = self.current_state.current_tab != next_state.domain
+    def _handle_change_tabs(self, next_session: ChromeSession) -> ChromeInternalState:
+        on_different_tab = self.current_state.current_tab != next_session.domain
         if on_different_tab:
-            return self._change_to_new_tab(next_state)
+            return self._change_to_new_tab(next_session)
         else:
             return self._stay_on_current_tab()
 

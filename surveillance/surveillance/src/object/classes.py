@@ -6,44 +6,17 @@ from typing import TypedDict, Optional
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 
-class ChromeSession:
-    domain: str
+class CompletedProgramSession:
+    exe_path: str
+    process_name: str
+    window_title: str
     detail: str
-    start_time: Optional[UserLocalTime]
-    end_time: Optional[UserLocalTime]
-    duration: Optional[timedelta]
+    start_time: UserLocalTime
+    end_time: UserLocalTime
+    duration: timedelta
     productive: bool
 
-    def __init__(self, domain, detail, start_time, end_time=None, productive=False, duration_for_tests=None):
-        self.domain = domain
-        self.detail = detail
-        self.start_time = start_time
-        self.end_time = end_time
-        if duration_for_tests:
-            self.duration = duration_for_tests
-        else:
-            self.duration = None
-        self.productive = productive
-
-    @staticmethod
-    def parse_time_string(time_str):
-        parts = time_str.split(':')
-        hours = int(parts[0])
-        minutes = int(parts[1])
-        seconds_parts = parts[2].split('.')
-        seconds = int(seconds_parts[0])
-        microseconds = int(seconds_parts[1]) if len(seconds_parts) > 1 else 0
-
-        return timedelta(
-            hours=hours,
-            minutes=minutes,
-            seconds=seconds,
-            microseconds=microseconds
-        )
-
-    def __str__(self):
-        end_time = self.end_time
-        return f"ChromeSession(domain='{self.domain}', detail='{self.detail}', \n\tstart_time={self.start_time}, \n\tend_time={end_time}, duration={self.duration}, productive={self.productive})"
+    # TODO: Transfer whole codebase to use 2-3 vers of the program session.
 
 
 class ProgramSession:
@@ -91,6 +64,57 @@ class ProgramSession:
     def __str__(self):
         end_time = self.end_time  # Was "TBD" (to be determined)
         return f"ProgramSession(window_title='{self.window_title}', detail='{self.detail}', \n\tstart_time={self.start_time}, \n\tend_time={end_time}, duration={self.duration}, productive={self.productive})"
+
+
+class CompletedChromeSession:
+    domain: str
+    detail: str
+    start_time: UserLocalTime
+    end_time: UserLocalTime
+    duration: timedelta
+    productive: bool
+
+# TODO: Convert to use CompletedChromeSession to avoid that gross "start_time is not None" bs
+
+
+class ChromeSession:
+    domain: str
+    detail: str
+    start_time: Optional[UserLocalTime]
+    end_time: Optional[UserLocalTime]
+    duration: Optional[timedelta]
+    productive: bool
+
+    def __init__(self, domain, detail, start_time, end_time=None, productive=False, duration_for_tests=None):
+        self.domain = domain
+        self.detail = detail
+        self.start_time = start_time
+        self.end_time = end_time
+        if duration_for_tests:
+            self.duration = duration_for_tests
+        else:
+            self.duration = None
+        self.productive = productive
+
+    @staticmethod
+    def parse_time_string(time_str):
+        parts = time_str.split(':')
+        hours = int(parts[0])
+        minutes = int(parts[1])
+        seconds_parts = parts[2].split('.')
+        seconds = int(seconds_parts[0])
+        microseconds = int(seconds_parts[1]) if len(seconds_parts) > 1 else 0
+
+        return timedelta(
+            hours=hours,
+            minutes=minutes,
+            seconds=seconds,
+            microseconds=microseconds
+        )
+
+    def __str__(self):
+        end_time = self.end_time
+        return f"ChromeSession(domain='{self.domain}', detail='{self.detail}', \n\tstart_time={self.start_time}, \n\tend_time={end_time}, duration={self.duration}, productive={self.productive})"
 
 
 class TabChangeEventWithLtz:

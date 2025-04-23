@@ -9,6 +9,7 @@ from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from surveillance.src.util.clock import UserFacingClock
 from surveillance.src.util.time_wrappers import UserLocalTime
 
+
 # Persistence component
 
 
