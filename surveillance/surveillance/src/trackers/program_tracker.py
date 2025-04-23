@@ -102,8 +102,8 @@ class ProgramTrackerCore:
         else:
             window_title = window_change_dict["window_title"]
             detail = no_space_dash_space
-        new_session = ProgramSession(
-            window_change_dict["process_name"], window_title, detail)
+        new_session = ProgramSession(window_change_dict["exe_path"],
+                                     window_change_dict["process_name"], window_title, detail)
         new_session.start_time = UserLocalTime(start_time)
         # end_time, duration, productive not set yet
         return new_session

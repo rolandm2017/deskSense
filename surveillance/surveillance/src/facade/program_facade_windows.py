@@ -47,6 +47,7 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
                 "os": "Windows",
                 "pid": None,
                 "process_name": "No foreground window",
+                "exe_path": "No foreground window",
                 "window_title": ""
             }
         # pid = self.win32process.GetWindowThreadProcessId(window)[1]
@@ -63,6 +64,7 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
                     "os": "Windows",
                     "pid": None,
                     "process_name": "Invalid process",
+                    "exe_path": "Invalid",
                     "window_title": self.win32gui.GetWindowText(window)
                 }
             # FIXME: ValueError: pid must be a positive integer (got -516382288)
@@ -70,6 +72,7 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
             # FIXME: ValueError: pid must be a positive integer (got -792075456
             # FIXME: Think the above errors happeneed while starting up pc
             process = psutil.Process(pid)
+            exe_path = process.exe()  # This gets the full path to the executable
             process_name = process.name()
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             process_name = "Unknown"
@@ -78,6 +81,7 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
             "os": "Windows",
             "pid": pid,
             "process_name": process_name,
+            "exe_path": exe_path,
             "window_title": self.win32gui.GetWindowText(window)
         }
 

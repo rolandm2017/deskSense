@@ -57,7 +57,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
     def _create(self, exe_path, target_program_name: str, duration_in_hours: float, when_it_was_gathered: datetime):
         self.throw_if_negative(target_program_name, duration_in_hours)
         new_entry = DailyProgramSummary(
-            exe_path=exe_path,
+            exe_path_as_id=exe_path,
             program_name=target_program_name,
             hours_spent=duration_in_hours,
             gathering_date=when_it_was_gathered
@@ -76,7 +76,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             start_time.date(), time.max, tzinfo=start_time.tzinfo)
 
         query = select(DailyProgramSummary).where(
-            DailyProgramSummary.exe_path == program_session.process_name,
+            DailyProgramSummary.exe_path_as_id == program_session.process_name,
             DailyProgramSummary.gathering_date >= start_of_day,
             DailyProgramSummary.gathering_date < end_of_day
         )
@@ -163,7 +163,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         tomorrow_start = today_start + timedelta(days=1)
 
         query = select(DailyProgramSummary).where(
-            DailyProgramSummary.exe_path == program_session.process_name,
+            DailyProgramSummary.exe_path_as_id == program_session.process_name,
             DailyProgramSummary.gathering_date >= today_start,
             DailyProgramSummary.gathering_date < tomorrow_start
         )
@@ -192,7 +192,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         self.throw_if_negative(session.window_title, time_to_remove)
 
         query = select(DailyProgramSummary).where(
-            DailyProgramSummary.exe_path == session.process_name,
+            DailyProgramSummary.exe_path_as_id == session.process_name,
             DailyProgramSummary.gathering_date >= today_start,
             DailyProgramSummary.gathering_date < tomorrow_start
         )

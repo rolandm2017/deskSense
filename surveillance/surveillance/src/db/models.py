@@ -111,7 +111,7 @@ class DailyProgramSummary(Base):
     __tablename__ = "daily_program_summaries"
 
     id = Column(Integer, primary_key=True, index=True)
-    exe_path: Mapped[str] = mapped_column(String)  # unique identifier
+    exe_path_as_id: Mapped[str] = mapped_column(String)  # unique identifier
     program_name: Mapped[str] = mapped_column(String)
     hours_spent: Mapped[float] = mapped_column(Float)
     # The date on which the program data was gathered, without hh:mm:ss
@@ -150,7 +150,8 @@ class ProgramSummaryLog(Base):
     __tablename__ = "program_summary_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    exe_path: Mapped[str] = mapped_column(String)  # unique identifier
+    exe_path_as_id: Mapped[str] = mapped_column(String)  # unique identifier
+    process_name: Mapped[str] = mapped_column(String)
     program_name: Mapped[str] = mapped_column(String)
     hours_spent: Mapped[float] = mapped_column(Float)
     # time stuff

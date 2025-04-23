@@ -139,6 +139,22 @@ class UserLocalTime:
         from copy import deepcopy
         return UserLocalTime(deepcopy(self.dt, memo))
 
+    def __gt__(self, other):
+        """Support greater than comparison (>)"""
+        if isinstance(other, (UserLocalTime, SystemTime)):
+            return self.dt > other.dt
+        elif isinstance(other, datetime):
+            return self.dt > other
+        return NotImplemented
+
+    def __le__(self, other):
+        """Support less than or equal comparison (<=)"""
+        if isinstance(other, (UserLocalTime, SystemTime)):
+            return self.dt <= other.dt
+        elif isinstance(other, datetime):
+            return self.dt <= other
+        return NotImplemented
+
 # TODO: Implement a .to_system_time() method
 # Converted into system time, it should keep track of what it previously was
 

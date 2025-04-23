@@ -47,6 +47,7 @@ class ChromeSession:
 
 
 class ProgramSession:
+    exe_path: str
     process_name: str
     window_title: str
     detail: str

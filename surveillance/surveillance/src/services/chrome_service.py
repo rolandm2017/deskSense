@@ -31,13 +31,19 @@ class TabQueue:
         self.log_tab_event = log_tab_event
 
     async def add_to_arrival_queue(self, tab_change_event: TabChangeEventWithLtz):
+        print("into the add to arrival queue, 34ru")
+        # FIXME:
+        # FIXME:
+        # FIXME: Chrome Service tabs do not get from here to the arbiter.
+        # FIXME: Suspect the problem is somethng to do with async/await here and debounce.
+        # FIXME:
         self.message_queue.append(tab_change_event)
         MAX_QUEUE_LEN = 40
 
         if len(self.message_queue) >= MAX_QUEUE_LEN:
             assert self.debounce_timer is not None, "Debounce timer was None when it should exist"
             self.debounce_timer.cancel()
-            await self.start_processing_msgs()
+            self.start_processing_msgs()
             return
 
         if self.debounce_timer:
@@ -52,14 +58,21 @@ class TabQueue:
         self.start_processing_msgs()
 
     def start_processing_msgs(self):
+        print("start_processing_msgs, 61ru")
         self.order_message_queue()
+        print("Step 1 complete")
         self.remove_transient_tabs()
+        print("Step 2 complete")
         self.empty_queue_as_sessions()
+        print("Step 3 complete")
 
     def order_message_queue(self):
+        print("order_message_queue, 6y8ru")
         current = self.message_queue
-        sorted_events = sorted(current, key=attrgetter('startTime'))
+        print(f"len of current {len(current)}")
+        sorted_events = sorted(current, key=attrgetter('start_time_with_tz'))
         self.ordered_messages = sorted_events
+        print(f"len sorted events {len(sorted_events)}")
         self.message_queue = []
 
     def tab_is_transient(self, current, next):
@@ -68,6 +81,7 @@ class TabQueue:
         return tab_duration < timedelta(milliseconds=transience_time_in_ms)
 
     def remove_transient_tabs(self):
+        print("remove_transient_tabs, 78ru")
         current_queue = self.ordered_messages
         if len(current_queue) == 0:
             return
@@ -80,6 +94,7 @@ class TabQueue:
             current_event = current_queue[i]
             next_event = current_queue[i + 1]
             if self.tab_is_transient(current_event, next_event):
+                print("Removing transient tab")
                 pass
             else:
                 remaining.append(current_event)
@@ -87,7 +102,9 @@ class TabQueue:
         self.ordered_messages = []
 
     def empty_queue_as_sessions(self):
+        print("empty_queue_as_sessions, 98ru")
         for event in self.ready_queue:
+            print(event, "107ru")
             self.log_tab_event(event)
         self.ready_queue = []
 
@@ -130,6 +147,7 @@ class ChromeService:
         Then, before Bar replaces Foo, Foo has its duration added. Foo is then logged. Cycle repeats.
         """
         # TODO: Write tests for this function
+        print("Tab event is being logged, 133ru")
 
         url = url_deliverable.url
         title = url_deliverable.tab_title
@@ -146,12 +164,18 @@ class ChromeService:
         self.handle_session_ready_for_arbiter(initialized)
 
         if self.last_entry:
-            concluding_session = self.last_entry
+            concluding_session: ChromeSession = self.last_entry
             # ### Ensure both datetimes are timezone-naive
             # Must be utc already since it is set up there
-            concluding_start_time: datetime = self.last_entry.start_time
+            if self.last_entry.start_time is None:
+                raise ValueError(
+                    "last_entry.start_time was None in Chrome Service")
+            concluding_start_time: datetime = self.last_entry.start_time.dt
 
             next_session_start_time = initialized.start_time
+            if next_session_start_time is None:
+                raise ValueError(
+                    "initialized.start_time was None in Chrome Service")
 
             # duration_of_alt_tab   # used to be a thing
             duration = next_session_start_time - concluding_start_time
@@ -164,7 +188,9 @@ class ChromeService:
         self.last_entry = initialized
 
     def handle_session_ready_for_arbiter(self, session):
+        print(session, "crhoem service 168ru")
         session_copy = copy.deepcopy(session)
+        # Leads to activityArbiter.set_tab_state
         self.event_emitter.emit('tab_change', session_copy)
 
     # FIXME: When Chrome is active, recording time should take place.

@@ -62,19 +62,6 @@ class MouseService:
         return await self.dao.read_all()
 
 
-# class ProgramService:
-#     def __init__(self, clock, dao=None):
-#         self.clock = clock
-#         self.dao = dao
-
-#     async def get_past_days_events(self) -> List[Program]:
-#         events = await self.dao.read_past_24h_events(self.clock.now())
-#         return events
-
-#     async def get_all_events(self) -> List[Program]:
-#         return await self.dao.read_all()
-
-
 class VideoService:
     def __init__(self, video_dao: VideoDao, frame_dao: FrameDao):
         self.video_dao = video_dao

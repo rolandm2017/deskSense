@@ -59,7 +59,8 @@ class ProgramLoggingDao(UtilityDaoMixin):
         # FIXME: do not need hours_spent AND duration?
         print("creating ", session.start_time)
         log_entry = ProgramSummaryLog(
-            exe_path=session.process_name,
+            exe_path_as_id=session.process_name,
+            process_name=session.process_name,
             program_name=session.window_title,
             hours_spent=start_end_time_duration_as_hours,
             start_time=session.start_time.get_dt_for_db(),
@@ -85,7 +86,8 @@ class ProgramLoggingDao(UtilityDaoMixin):
         start_of_day_as_utc = convert_to_utc(start_of_day)
         start_window_end = base_start_time + timedelta(seconds=10)
         log_entry = ProgramSummaryLog(
-            exe_path=session.process_name,
+            exe_path_as_id=session.process_name,
+            process_name=session.process_name,
             program_name=session.window_title,
             hours_spent=unknown,
             start_time=base_start_time,

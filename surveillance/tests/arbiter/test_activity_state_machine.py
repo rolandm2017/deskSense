@@ -7,7 +7,6 @@ import time
 
 from surveillance.src.arbiter.activity_state_machine import ActivityStateMachine, TransitionFromChromeMachine, TransitionFromProgramMachine
 from surveillance.src.object.classes import ChromeSession, ProgramSession
-from surveillance.src.db.models import ChromeTab
 from surveillance.src.object.arbiter_classes import ApplicationInternalState, ChromeInternalState
 from surveillance.src.util.clock import SystemClock
 from surveillance.src.util.time_wrappers import UserLocalTime
@@ -33,8 +32,8 @@ class TestActivityStateMachine:
         assert asm.current_state is None
         assert asm.prior_state is None
 
-        first_session = ProgramSession(
-            "Visual Studio Code", "myfile.py", UserLocalTime(now))
+        first_session = ProgramSession("some/exe/path.exe",
+                                       "Visual Studio Code", "myfile.py", UserLocalTime(now))
 
         second = ChromeSession(
             "Claude.ai", "How to Cook Chicken Well in Thirty Minutes", UserLocalTime(slightly_later))
@@ -73,8 +72,8 @@ class TestActivityStateMachine:
 
         asm = ActivityStateMachine(clock)
 
-        session1 = ProgramSession(
-            "Visual Studio Code", "myfile.py", UserLocalTime(t1))
+        session1 = ProgramSession("some/path/to/an/exe.exe",
+                                  "Visual Studio Code", "myfile.py", UserLocalTime(t1))
 
         second = ChromeSession(
             "Claude.ai", "How to Cook Chicken Well in Thirty Minutes", UserLocalTime(t2))
@@ -82,10 +81,11 @@ class TestActivityStateMachine:
         third = ChromeSession(
             "ChatGPT.com", "Asian Stir Fry Tutorial", UserLocalTime(t3))
 
-        fourth = ProgramSession(
-            "Postmman", "POST requests folder", UserLocalTime(t4))
+        fourth = ProgramSession("some/path/to/an/exe2.exe",
+                                "Postmman", "POST requests folder", UserLocalTime(t4))
 
-        fifth = ProgramSession("Terminal", "~/Documents", UserLocalTime(t5))
+        fifth = ProgramSession("some/path/to/an/exe4.exe",
+                               "Terminal", "~/Documents", UserLocalTime(t5))
 
         asm.set_new_session(session1)
         response1 = asm.get_concluded_session()
@@ -158,7 +158,7 @@ class TestTransitionFromProgram:
         start_session = ProgramSession()
         start_session.window_title = "Postman"
         start_session.detail = "GET requests folder"
-        start_session.start_time = now
+        start_session.start_time = UserLocalTime(now)
         current_state = ApplicationInternalState(
             "Postman", False, start_session)
         assert isinstance(current_state, ApplicationInternalState)
@@ -167,7 +167,7 @@ class TestTransitionFromProgram:
         next_session = ProgramSession()
         next_session.window_title = "PyCharm"
         next_session.detail = "api.py"
-        next_session.start_time = now + timedelta(seconds=2)
+        next_session.start_time = UserLocalTime(now) + timedelta(seconds=2)
 
         # Act
         output = tfpm.compute_next_state(next_session)
@@ -185,7 +185,7 @@ class TestTransitionFromProgram:
         start_session = ProgramSession()
         start_session.window_title = "Postman"
         start_session.detail = "GET requests folder"
-        start_session.start_time = now
+        start_session.start_time = UserLocalTime(now)
         current_state = ApplicationInternalState(
             "Postman", False, start_session)
         tfpm = TransitionFromProgramMachine(current_state)
@@ -193,7 +193,7 @@ class TestTransitionFromProgram:
         next_session = ProgramSession()
         next_session.window_title = "Postman"
         next_session.detail = "GET requests folder"
-        next_session.start_time = now + timedelta(seconds=2)
+        next_session.start_time = UserLocalTime(now) + timedelta(seconds=2)
 
         # Act
         output = tfpm.compute_next_state(next_session)
@@ -211,7 +211,7 @@ class TestTransitionFromProgram:
         start_session = ProgramSession()
         start_session.window_title = "Postman"
         start_session.detail = "GET requests folder"
-        start_session.start_time = now
+        start_session.start_time = UserLocalTime(now)
         current_state = ApplicationInternalState(
             "Postman", False, start_session)
         tfpm = TransitionFromProgramMachine(current_state)
@@ -254,8 +254,8 @@ class TestTransitionFromChrome:
         """A sad path. Machine cannot start with ApplicationInternalState, by design."""
         system_clock = SystemClock()
 
-        session = ProgramSession(
-            "PyCharm", "test_my_wonerful_code.py", system_clock.now())
+        session = ProgramSession("path/to/exe10.exe",
+                                 "PyCharm", "test_my_wonerful_code.py", system_clock.now())
         current_state = ApplicationInternalState("PyCharm", False, session)
 
         with pytest.raises(TypeError, match="requires a ChromeInternalState"):
@@ -276,8 +276,8 @@ class TestTransitionFromChrome:
 
         tfcm = TransitionFromChromeMachine(current_state)
 
-        next_session = ProgramSession(
-            "Postman", "GET requests folder", now + timedelta(seconds=4))
+        next_session = ProgramSession("some/path.exe",
+                                      "Postman", "GET requests folder", UserLocalTime(now) + timedelta(seconds=4))
 
         output = tfcm.compute_next_state(next_session)
 

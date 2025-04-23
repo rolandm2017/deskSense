@@ -39,15 +39,21 @@ class ActivityRecorder:
             self.program_logging_dao.start_session(session)
             session_exists = self.program_summary_dao.find_todays_entry_for_program(
                 session)
+            print(session_exists, "42ru")
             if session_exists:
                 return
             self.program_summary_dao.start_session(session, now)
         elif isinstance(session, ChromeSession):
+            print(f"FINDING {session.domain}")
             self.chrome_logging_dao.start_session(session)
+            print("HERE 49ru")
             session_exists = self.chrome_summary_dao.find_todays_entry_for_domain(
                 session)
+            print(session_exists, "chrome session 51ru")
             if session_exists:
+                print(f"###\n### FOUND -> {session.domain}")
                 return
+            print(f"@ @ \n@ @ STARTING {session.domain}")
             self.chrome_summary_dao.start_session(session, now)
         else:
             raise TypeError("Session was not the right type")
@@ -89,12 +95,12 @@ class ActivityRecorder:
         """
         today_start = self.user_facing_clock.today_start()
         if isinstance(session, ProgramSession):
-            print(
-                f"deducting {duration_in_sec} from {session.window_title}")
+            # print(
+            #     f"deducting {duration_in_sec} from {session.window_title}")
             self.program_summary_dao.deduct_remaining_duration(
                 session, duration_in_sec, today_start)
         elif isinstance(session, ChromeSession):
-            print(f"deducting {duration_in_sec} from {session.domain}")
+            # print(f"deducting {duration_in_sec} from {session.domain}")
             self.chrome_summary_dao.deduct_remaining_duration(
                 session, duration_in_sec, today_start)
         else:

@@ -165,9 +165,11 @@ async def get_activity_arbiter():
         @chrome_service.event_emitter.on('tab_change')
         def handle_tab_change(tab):
             # Create and schedule the task
+            print(_arbiter_instance is None, "is none? 168ru")
             if _arbiter_instance is None:
                 raise ValueError("Arbiter instance should be set by now")
             # loop.create_task(_arbiter_instance.set_tab_state(tab))
+            print("setting tab state, 172ru")
             _arbiter_instance.set_tab_state(tab)
 
         print("ActivityArbiter created successfully")
