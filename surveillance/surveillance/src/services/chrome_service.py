@@ -14,7 +14,7 @@ from surveillance.src.config.definitions import power_on_off_debug_file
 
 from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from surveillance.src.object.classes import ChromeSession, TabChangeEventWithLtz
-from surveillance.src.object.pydantic_dto import TabChangeEventWithUtcDt
+from surveillance.src.object.pydantic_dto import UtcDtTabChange
 from surveillance.src.config.definitions import productive_sites
 from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
 from surveillance.src.util.console_logger import ConsoleLogger
@@ -22,15 +22,17 @@ from surveillance.src.util.errors import SuspiciousDurationError
 
 
 class TabQueue:
-    def __init__(self, log_tab_event):
+    def __init__(self, log_tab_event, debounce_delay=0.5):
         self.last_entry = None
-        self.message_queue = []
-        self.ordered_messages = []
-        self.ready_queue = []
+        self.message_queue: list[TabChangeEventWithLtz] = []
+        self.ordered_messages: list[TabChangeEventWithLtz] = []
+        self.ready_queue: list[TabChangeEventWithLtz] = []
+        self.debounce_delay = debounce_delay  # One full sec was too long.
         self.debounce_timer = None
         self.log_tab_event = log_tab_event
 
     async def add_to_arrival_queue(self, tab_change_event: TabChangeEventWithLtz):
+
         print("into the add to arrival queue, 34ru")
         # FIXME:
         # FIXME:
@@ -52,36 +54,27 @@ class TabQueue:
         self.debounce_timer = asyncio.create_task(self.debounced_process())
 
     async def debounced_process(self):
-        half_sec = 0.5  # One full sec was too long.
-        await asyncio.sleep(half_sec)
+        await asyncio.sleep(self.debounce_delay)
         # print("[debug] Starting processing")
         self.start_processing_msgs()
 
     def start_processing_msgs(self):
-        print("start_processing_msgs, 61ru")
         self.order_message_queue()
-        print("Step 1 complete")
         self.remove_transient_tabs()
-        print("Step 2 complete")
         self.empty_queue_as_sessions()
-        print("Step 3 complete")
 
     def order_message_queue(self):
-        print("order_message_queue, 6y8ru")
         current = self.message_queue
-        print(f"len of current {len(current)}")
         sorted_events = sorted(current, key=attrgetter('start_time_with_tz'))
         self.ordered_messages = sorted_events
-        print(f"len sorted events {len(sorted_events)}")
         self.message_queue = []
 
-    def tab_is_transient(self, current, next):
+    def tab_is_transient(self, current: TabChangeEventWithLtz, next: TabChangeEventWithLtz):
         transience_time_in_ms = 300
-        tab_duration = next.startTime - current.startTime
+        tab_duration = next.start_time_with_tz - current.start_time_with_tz
         return tab_duration < timedelta(milliseconds=transience_time_in_ms)
 
     def remove_transient_tabs(self):
-        print("remove_transient_tabs, 78ru")
         current_queue = self.ordered_messages
         if len(current_queue) == 0:
             return
@@ -102,15 +95,13 @@ class TabQueue:
         self.ordered_messages = []
 
     def empty_queue_as_sessions(self):
-        print("empty_queue_as_sessions, 98ru")
         for event in self.ready_queue:
-            print(event, "107ru")
             self.log_tab_event(event)
         self.ready_queue = []
 
 
 class ChromeService:
-    def __init__(self, user_facing_clock, arbiter: ActivityArbiter):
+    def __init__(self, user_facing_clock, arbiter: ActivityArbiter, debounce_delay=0.5):
         print("╠════════╣")
         print("║ ****** ║ Starting Chrome Service")
         print("╚════════╝")
@@ -121,7 +112,7 @@ class ChromeService:
         self.elapsed_alt_tab = None
         # self.summary_dao = summary_dao
 
-        self.tab_queue = TabQueue(self.log_tab_event)
+        self.tab_queue = TabQueue(self.log_tab_event, debounce_delay)
         self.arbiter = arbiter  # Replace direct arbiter calls
 
         self.event_emitter = EventEmitter()

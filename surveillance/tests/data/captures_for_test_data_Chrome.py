@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from surveillance.src.object.pydantic_dto import TabChangeEventWithUtcDt
+from surveillance.src.object.pydantic_dto import UtcDtTabChange
 
 # NOTE: Originally, the TabChangeEvents were recorded *without* a timestamp.
 # NOTE: BUT, they SHOULD have a timestamp!
@@ -10,13 +10,13 @@ from surveillance.src.object.pydantic_dto import TabChangeEventWithUtcDt
 # NOTE #2: i changed .strptime into .fromisoformat because it looks like it works better
 
 chrome_data = [
-    TabChangeEventWithUtcDt(tabTitle='Google Docs', url='docs.google.com',
+    UtcDtTabChange(tabTitle='Google Docs', url='docs.google.com',
                             startTime=datetime.fromisoformat('2025-03-22 16:15:02-07:00')),
-    TabChangeEventWithUtcDt(tabTitle='ChatGPT', url='chatgpt.com',
+    UtcDtTabChange(tabTitle='ChatGPT', url='chatgpt.com',
                             startTime=datetime.fromisoformat('2025-03-22 16:15:10-07:00')),
-    TabChangeEventWithUtcDt(tabTitle='Claude', url='claude.ai',
+    UtcDtTabChange(tabTitle='Claude', url='claude.ai',
                             startTime=datetime.fromisoformat('2025-03-22 16:15:21-07:00')),
-    TabChangeEventWithUtcDt(tabTitle='ChatGPT', url='chatgpt.com',
+    UtcDtTabChange(tabTitle='ChatGPT', url='chatgpt.com',
                             startTime=datetime.fromisoformat('2025-03-22 16:15:30-07:00'))
     # Commented out below entries because, because the tests were too long
     # TabChangeEvent(tabTitle='Google', url='www.google.com',

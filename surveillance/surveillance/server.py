@@ -19,7 +19,7 @@ from surveillance.src.db.models import DailyDomainSummary, DailyProgramSummary, 
 from surveillance.src.routes.report_routes import router as report_router
 from surveillance.src.routes.video_routes import router as video_routes
 
-from surveillance.src.object.pydantic_dto import TabChangeEventWithUtcDt, YouTubeEvent
+from surveillance.src.object.pydantic_dto import UtcDtTabChange, YouTubeEvent
 from surveillance.src.object.classes import TabChangeEventWithLtz
 
 from surveillance.src.object.dashboard_dto import (
@@ -395,7 +395,7 @@ async def get_chrome_report(chrome_service: ChromeService = Depends(get_chrome_s
 
 @app.post("/api/chrome/tab", status_code=status.HTTP_204_NO_CONTENT)
 async def receive_chrome_tab(
-    tab_change_event: TabChangeEventWithUtcDt,
+    tab_change_event: UtcDtTabChange,
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service)
 ):
@@ -470,7 +470,7 @@ async def receive_youtube_event(
 
 @app.post("/api/chrome/ignored", status_code=status.HTTP_204_NO_CONTENT)
 async def receive_ignored_tab(
-    tab_change_event: TabChangeEventWithUtcDt,
+    tab_change_event: UtcDtTabChange,
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service)
 ):

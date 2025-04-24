@@ -5,7 +5,7 @@ import json
 
 from surveillance.src.db.models import DailyDomainSummary, DailyProgramSummary, DomainSummaryLog, ProgramSummaryLog
 from surveillance.src.object.classes import ProgramSession
-from surveillance.src.object.pydantic_dto import TabChangeEventWithUtcDt
+from surveillance.src.object.pydantic_dto import UtcDtTabChange
 
 
 def write_to_debug_log(name, hours_spent, time):
@@ -42,7 +42,7 @@ def write_to_large_usage_log(session: ProgramSession, hours_spent, time):
 
 
 # TODO: Move this
-def write_temp_log(event: TabChangeEventWithUtcDt):
+def write_temp_log(event: UtcDtTabChange):
     with open("events.csv", "a") as f:
         out = f"{event.tabTitle.replace(",", "::")},{event.url},{
             str(event.startTime)}"

@@ -45,7 +45,7 @@ class ProgramActivityReport(BaseModel):
 
 # Chrome stuff
 
-class TabChangeEvent(BaseModel):
+class TabChangeEventWithUnknownTz(BaseModel):
     tabTitle: str
     url: str
     startTime: datetime
@@ -56,7 +56,7 @@ class TabChangeEvent(BaseModel):
         return f"TabChangeEvent(tabTitle='{self.tabTitle}', url='{self.url}', startTime='{formatted_time}')"
 
 
-class TabChangeEventWithUtcDt(BaseModel):
+class UtcDtTabChange(BaseModel):
     tabTitle: str
     url: str
     startTime: datetime
@@ -67,7 +67,7 @@ class TabChangeEventWithUtcDt(BaseModel):
         return f"TabChangeEvent(tabTitle='{self.tabTitle}', url='{self.url}', startTime='{formatted_time}')"
 
 
-class YouTubeEvent(TabChangeEventWithUtcDt):
+class YouTubeEvent(UtcDtTabChange):
     channel: str
 
     def __str__(self) -> str:

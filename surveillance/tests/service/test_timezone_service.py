@@ -5,7 +5,7 @@ from datetime import datetime
 from surveillance.src.services.services import TimezoneService
 
 from surveillance.src.config.definitions import local_time_zone, regular_tz_offset, daylight_savings_tz_offset
-from surveillance.src.object.pydantic_dto import TabChangeEventWithUtcDt
+from surveillance.src.object.pydantic_dto import UtcDtTabChange
 
 timezone_service = TimezoneService()
 
@@ -20,7 +20,7 @@ def test_convert_tab_change_timezone():
     tab_title = "World's Best Foo"
     url = "foo.com"
     start_time = datetime.now()
-    some_tab_change_event = TabChangeEventWithUtcDt(
+    some_tab_change_event = UtcDtTabChange(
         tabTitle=tab_title, url=url, startTime=start_time)
     tz_for_user = timezone_service.get_tz_for_user(
         "whatever for now")
@@ -49,7 +49,7 @@ def test_real_scenario():
 
     # ### Cook start scenario:
     march_16_at_1_am = datetime(2025, 3, 16, 1, 27, 17)
-    event = TabChangeEventWithUtcDt(tabTitle="foo", url="bar",
+    event = UtcDtTabChange(tabTitle="foo", url="bar",
                                     startTime=march_16_at_1_am)
     tz_for_user = timezone_service.get_tz_for_user(
         9000)
