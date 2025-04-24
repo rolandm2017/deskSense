@@ -33,7 +33,6 @@ class TabQueue:
 
     async def add_to_arrival_queue(self, tab_change_event: TabChangeEventWithLtz):
 
-        print("into the add to arrival queue, 34ru")
         # FIXME:
         # FIXME:
         # FIXME: Chrome Service tabs do not get from here to the arbiter.
@@ -138,7 +137,6 @@ class ChromeService:
         Then, before Bar replaces Foo, Foo has its duration added. Foo is then logged. Cycle repeats.
         """
         # TODO: Write tests for this function
-        print("Tab event is being logged, 133ru")
 
         url = url_deliverable.url
         title = url_deliverable.tab_title
@@ -179,7 +177,6 @@ class ChromeService:
         self.last_entry = initialized
 
     def handle_session_ready_for_arbiter(self, session):
-        print(session, "crhoem service 168ru")
         session_copy = copy.deepcopy(session)
         # Leads to activityArbiter.set_tab_state
         self.event_emitter.emit('tab_change', session_copy)

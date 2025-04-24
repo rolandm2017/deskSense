@@ -63,7 +63,7 @@ class ProgramSession:
 
     def __str__(self):
         end_time = self.end_time  # Was "TBD" (to be determined)
-        return f"ProgramSession(window_title='{self.window_title}', detail='{self.detail}', \n\tstart_time={self.start_time}, \n\tend_time={end_time}, duration={self.duration}, productive={self.productive})"
+        return f"ProgramSession(exe_path='{self.exe_path}', process_name='{self.process_name}', \n\ttitle='{self.window_title}', detail='{self.detail}', \n\tstart_time='{self.start_time}', \n\tend_time='{end_time}', duration='{self.duration}', productive='{self.productive}')"
 
 
 class CompletedChromeSession:
@@ -114,7 +114,7 @@ class ChromeSession:
 
     def __str__(self):
         end_time = self.end_time
-        return f"ChromeSession(domain='{self.domain}', detail='{self.detail}', \n\tstart_time={self.start_time}, \n\tend_time={end_time}, duration={self.duration}, productive={self.productive})"
+        return f"ChromeSession(domain='{self.domain}', detail='{self.detail}', \n\tstart_time='{self.start_time}', \n\tend_time='{end_time}', duration='{self.duration}', productive='{self.productive}')"
 
 
 class TabChangeEventWithLtz:

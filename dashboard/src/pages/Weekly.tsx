@@ -249,7 +249,6 @@ function Weekly() {
             // id: "keyboard-294003";
             setPrevWeeksRawTimeline(weekly);
         });
-        console.log("HERE \nhere\nhere\nhere\nhere");
         getEnhancedWeeklyBreakdown(weekStart).then(
             (breakdown: WeeklyBreakdown) => {
                 setWeeklyBreakdown(breakdown);

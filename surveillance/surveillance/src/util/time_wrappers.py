@@ -69,9 +69,6 @@ class UserLocalTime:
                 f"{self.__class__.__name__} has no attribute {name}")
         return getattr(self.dt, name)
 
-    def __str__(self):
-        return f"UserLocalTime({self.dt})"
-
     def __repr__(self):
         return f"UserLocalTime({self.dt!r})"
 
@@ -154,6 +151,9 @@ class UserLocalTime:
         elif isinstance(other, datetime):
             return self.dt <= other
         return NotImplemented
+
+    def __str__(self):
+        return str(f"UserLocalTime('{str(self.dt)})'")
 
 # TODO: Implement a .to_system_time() method
 # Converted into system time, it should keep track of what it previously was

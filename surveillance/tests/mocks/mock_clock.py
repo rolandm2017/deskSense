@@ -7,23 +7,29 @@ from zoneinfo import ZoneInfo
 from surveillance.src.config.definitions import local_time_zone
 
 from surveillance.src.util.clock import ClockProtocol
+from surveillance.src.util.time_wrappers import UserLocalTime
 
 
 class MockClock(ClockProtocol):
     def __init__(self, times: list[datetime] | Iterator[datetime]):
-        self.times = iter(times) if isinstance(times, list) else times
+        value_for_iter = iter(times) if isinstance(times, list) else times
+        self.times = value_for_iter
+        self.count_of_times = 0
         self._current_time = None
 
     def now(self) -> datetime:
         try:
-            self._current_time = next(self.times)
+            next_val_from_iter = next(self.times)
+            self._current_time = next_val_from_iter
             if self._current_time.tzinfo is None:
                 self._current_time = self._current_time.replace(
                     tzinfo=timezone.utc)
             # print("[debug] Returning ", self._current_time, datetime.now().strftime("%I:%M:%S %p"))
+            self.count_of_times += 1
             return self._current_time
         except StopIteration:
-            raise RuntimeError("MockClock ran out of times")
+            raise RuntimeError(
+                f"MockClock ran out of times. It started with {self.count_of_times}")
 
     def seconds_have_elapsed(self, current_time: datetime, previous_time: datetime, seconds: int) -> bool:
         """Check if the specified number of seconds has elapsed between two times."""
@@ -43,14 +49,62 @@ class MockClock(ClockProtocol):
             self._current_time = next(self.times)
 
     def today_start(self):
+        prev_current_time = self._current_time
+        if prev_current_time:
+            return prev_current_time.replace(hour=0, minute=0, second=0, microsecond=0)
+        else:
+            new_time = self.now()
+            return new_time.replace(hour=0, minute=0, second=0, microsecond=0)
+        # return datetime.now(ZoneInfo(local_time_zone)).replace(
+        #     hour=0, minute=0, second=0, microsecond=0)
         # Use self._current_time instead of datetime.now()
-        if self._current_time is None:
-            # If no time has been returned yet, get the next time
-            try:
-                self._current_time = next(self.times)
-            except StopIteration:
-                raise RuntimeError("MockClock ran out of times")
-        
-        # Return the start of the day for the current mocked time
-        return self._current_time.replace(
-            hour=0, minute=0, second=0, microsecond=0)
+
+
+class UserLocalTimeMockClock(ClockProtocol):
+    def __init__(self, times: list[UserLocalTime] | Iterator[UserLocalTime]):
+        value_for_iter = iter(times) if isinstance(times, list) else times
+        self.times = value_for_iter
+        self.count_of_times = 0
+        self._current_time = None
+
+    def now(self) -> UserLocalTime:
+        try:
+            next_val_from_iter = next(self.times)
+            self._current_time = next_val_from_iter
+            if self._current_time.tzinfo is None:
+                self._current_time = self._current_time.replace(
+                    tzinfo=timezone.utc)
+            # print("[debug] Returning ", self._current_time, UserLocalTime.now().strftime("%I:%M:%S %p"))
+            self.count_of_times += 1
+            return self._current_time
+        except StopIteration:
+            raise RuntimeError(
+                f"MockClock ran out of times. It started with {self.count_of_times}")
+
+    def seconds_have_elapsed(self, current_time: UserLocalTime, previous_time: UserLocalTime, seconds: int) -> bool:
+        """Check if the specified number of seconds has elapsed between two times."""
+        elapsed = current_time.dt - previous_time.dt
+        return elapsed >= timedelta(seconds=seconds)
+
+    def advance_time(self, n: int):
+        """
+        Advance the iterator by n positions.
+        Example: self.times is [3, 4, 15, 16, 28, 29]
+        next(self.times) would grab 3.
+        advance_time(3) is called. 
+        3 -> 4 -> 15 -> 16 is 3 skips. next(self.times) grabs 28.
+        """
+
+        for position in range(n):
+            self._current_time = next(self.times)
+
+    def today_start(self):
+        prev_current_time = self._current_time
+        if prev_current_time:
+            return prev_current_time.replace(hour=0, minute=0, second=0, microsecond=0)
+        else:
+            new_time = self.now()
+            return new_time.replace(hour=0, minute=0, second=0, microsecond=0)
+        # return datetime.now(ZoneInfo(local_time_zone)).replace(
+        #     hour=0, minute=0, second=0, microsecond=0)
+        # Use self._current_time instead of datetime.now()

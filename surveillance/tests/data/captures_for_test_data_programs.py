@@ -1,8 +1,10 @@
+imaginary_path_to_chrome = "imaginary/path/to/Chrome.exe"
+
 program_data = [{"time": "2025-03-22 16:14:50.201399-07:00",
                  "event": {
                      "os": "Ubuntu",
                      "pid": None,  # Was "null"
-                     "exe_path": "imaginary/path/to/Chrome.exe",
+                     "exe_path": imaginary_path_to_chrome,
                      "process_name": "Chrome.exe",  # Was "null"
                      "window_title": "X. It\u2019s what\u2019s happening / X - Google Chrome"
                  }},

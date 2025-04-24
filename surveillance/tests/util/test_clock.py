@@ -8,7 +8,6 @@ from zoneinfo import ZoneInfo
 from surveillance.src.services.services import TimezoneService
 
 from surveillance.src.config.definitions import local_time_zone, regular_tz_offset, daylight_savings_tz_offset
-from surveillance.src.object.pydantic_dto import TabChangeEvent
 from surveillance.src.util.clock import UserFacingClock
 from surveillance.src.util.time_wrappers import UserLocalTime
 

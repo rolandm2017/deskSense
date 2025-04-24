@@ -2,6 +2,8 @@
 from fastapi import Depends
 from typing import List, cast
 
+from datetime import datetime
+
 
 from surveillance.src.object.pydantic_dto import UtcDtTabChange
 from surveillance.src.util.time_formatting import convert_to_timezone
@@ -17,6 +19,7 @@ from surveillance.src.object.classes import TabChangeEventWithLtz
 
 from surveillance.src.config.definitions import local_time_zone, productive_sites
 from surveillance.src.util.console_logger import ConsoleLogger
+from surveillance.src.util.time_wrappers import UserLocalTime
 
 
 class TimezoneService:
@@ -29,10 +32,10 @@ class TimezoneService:
         return local_time_zone
 
     def convert_tab_change_timezone(self, tab_change_event: UtcDtTabChange, new_tz: str) -> TabChangeEventWithLtz:
-        new_datetime_with_tz = convert_to_timezone(
+        new_datetime_with_tz: datetime = convert_to_timezone(
             tab_change_event.startTime, new_tz)
         tab_change_with_time_zone = TabChangeEventWithLtz(
-            tab_change_event.tabTitle, tab_change_event.url, new_datetime_with_tz)
+            tab_change_event.tabTitle, tab_change_event.url, UserLocalTime(new_datetime_with_tz))
         return tab_change_with_time_zone
 
 

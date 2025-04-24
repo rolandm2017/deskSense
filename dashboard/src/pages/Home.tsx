@@ -83,15 +83,12 @@ function Home() {
 
     useEffect(() => {
         /* Aggregation */
-        console.log(presentWeekRawTimeline, aggregatedDays, "80ru");
         if (presentWeekRawTimeline && aggregatedDays === null) {
             const days: DayOfAggregatedRows[] = [];
             // FIXME: Days before today are already aggregated on server
             // FIXME: so you don't need to repeat it here. You really don't. It's an interface problem.
-            console.log(presentWeekRawTimeline, "95ru");
             // FIXME: comes back as 7 days
             const today: DayOfTimelineRows = presentWeekRawTimeline.today;
-            console.log(today, "96ru");
 
             // Aggregate today:
             const dayClicks = today.row.mouseRows;

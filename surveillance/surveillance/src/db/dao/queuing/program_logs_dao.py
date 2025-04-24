@@ -18,6 +18,8 @@ from surveillance.src.util.errors import ImpossibleToGetHereError
 from surveillance.src.util.dao_wrapper import validate_session, guarantee_start_time
 from surveillance.src.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
 from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day
+from surveillance.src.util.const import ten_sec_as_pct_of_hour
+
 
 #
 # #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #
@@ -89,7 +91,8 @@ class ProgramLoggingDao(UtilityDaoMixin):
             exe_path_as_id=session.process_name,
             process_name=session.process_name,
             program_name=session.window_title,
-            hours_spent=unknown,
+            # Assumes (10 - n) sec will be deducted later
+            hours_spent=ten_sec_as_pct_of_hour,
             start_time=base_start_time,
             end_time=start_window_end,
             duration=unknown,

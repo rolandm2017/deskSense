@@ -17,6 +17,7 @@ from surveillance.src.util.dao_wrapper import validate_session, guarantee_start_
 from surveillance.src.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
 from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day
 from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.src.util.const import ten_sec_as_pct_of_hour
 
 
 #
@@ -80,7 +81,8 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
         start_window_end = base_start_time + timedelta(seconds=10)
         log_entry = DomainSummaryLog(
             domain_name=session.domain,
-            hours_spent=unknown,
+            # Assumes (10 - n) sec will be deducted later
+            hours_spent=ten_sec_as_pct_of_hour,
             start_time=base_start_time,
             end_time=start_window_end,
             duration=unknown,

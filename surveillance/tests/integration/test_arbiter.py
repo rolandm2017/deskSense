@@ -185,10 +185,6 @@ def test_activity_arbiter(activity_arbiter_and_setup):
     assert arbiter.state_machine.current_state.session.start_time == test_sessions[
         len(test_sessions) - 1].start_time
 
-    # print("HERE", events_from_on_state_changed_handler[0], "182ru")
-    # print(
-    #     "HERE", events_from_on_state_changed_handler[final_event_index - 1], "182ru")
-
     t0 = events_from_on_state_changed_handler[0].start_time
     t13 = events_from_on_state_changed_handler[final_event_index].start_time
 

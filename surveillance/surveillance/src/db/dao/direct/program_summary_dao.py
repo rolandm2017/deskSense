@@ -200,7 +200,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         self.throw_if_negative(session.window_title, time_to_remove)
 
         query = select(DailyProgramSummary).where(
-            DailyProgramSummary.exe_path_as_id == session.process_name,
+            DailyProgramSummary.exe_path_as_id == session.exe_path,
             DailyProgramSummary.gathering_date >= today_start,
             DailyProgramSummary.gathering_date < tomorrow_start
         )

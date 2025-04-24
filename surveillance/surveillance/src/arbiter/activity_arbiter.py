@@ -77,9 +77,9 @@ class ActivityArbiter:
         """
         # print("\n" + "✦★✦" * 6 + " DEBUG " + "✦★✦" * 6 + "\n")
         if isinstance(new_session, ProgramSession):
-            print("[Arb]", new_session.window_title)
+            self.logger.log_white("[Arb]", new_session.window_title)
         else:
-            print("[Tab]", new_session.domain)
+            self.logger.log_white("[Tab]", new_session.domain)
         assert not isinstance(
             new_session, dict), "Found an empty dictionary as session"
         self.notify_display_update(new_session)
@@ -98,7 +98,6 @@ class ActivityArbiter:
             concluded_session = self.state_machine.get_concluded_session()
 
             # ### Start the first window
-            print("going into notify new session", new_session)
             self.notify_of_new_session(new_session)
 
             engine_loop = self.current_heartbeat.engine.save_loop_for_reuse()
@@ -127,7 +126,7 @@ class ActivityArbiter:
                     session=new_session
                 )
             start_of_loop = asyncio.new_event_loop()
-            print("in arbiter init")
+            self.logger.log_white("in arbiter init")
             self.notify_of_new_session(new_session)
             new_keep_alive_engine = KeepAliveEngine(
                 new_session, self.activity_recorder, start_of_loop)
