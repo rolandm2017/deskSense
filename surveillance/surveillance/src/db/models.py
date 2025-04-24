@@ -35,88 +35,29 @@ class MouseMove(Base):
         return f"MouseMove(id={self.id}, start_time={self.start_time})"
 
 
-# class Program(Base):
-#     """
-#     FIXME: Looks duplicated form of ProgramLoggingDao stuff
-#     """
-#     __tablename__ = "program_changes"
+class DailySummaryBase(Base):
+    """
+    Base class for summary models with common fields
+    """
+    __abstract__ = True
 
-#     id = Column(Integer, primary_key=True, index=True)
-#     window = Column(String(max_content_len), unique=False, index=True)
-#     # As of Jan 19, I am unsure that I need this column. Could take it out.
-#     detail = Column(String(max_content_len))
-#     # time stfuf
-#     start_time = Column(DateTime(timezone=True))
-#     end_time = Column(DateTime(timezone=True))
-#     duration = Column(Interval)
-#     created_at = Column(DateTime, default=datetime.now)
-#     #
-#     productive = Column(Boolean)
+    id = Column(Integer, primary_key=True, index=True)
 
-#     def __eq__(self, other):
-#         if not isinstance(other, Program):
-#             return False
-#         return (
-#             self.id == other.id and
-#             self.window == other.window and
-#             self.detail == other.detail and
-#             self.start_time == other.start_time and
-#             self.end_time == other.end_time and
-#             self.productive == other.productive
-#         )
-
-#     def __repr__(self):
-#         return f"Program(\n\tid={self.id}, window='{self.window}', \n\tstart_time={self.start_time},\n\tend_time={self.end_time},\n\tproductive={self.productive})"
+    hours_spent: Mapped[float] = mapped_column(Float)
+    # The date on which the program data was gathered, without hh:mm:ss
+    # MUST be the date FOR THE USER. Otherwise, the program doesn't make sense
+    gathering_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    # TODO: Try gathering_date not as .date() but the full hh:mm:ss thing. Until you figure out why it isn't like that already
 
 
-# class ChromeTab(Base):
-#     """
-#     FIXME: Looks duplicated form of ChromeLoggingDao stuff
-#     """
-#     __tablename__ = "chrome_tabs"
-
-#     id = Column(Integer, primary_key=True, index=True)
-#     url = Column(String(max_content_len))
-#     # _ (underscore) because the @property and @tab_title.setter use "tab_title"
-#     _tab_title = Column("tab_title", String(max_content_len), index=True)
-#     start_time = Column(DateTime(timezone=True))
-#     end_time = Column(DateTime(timezone=True))
-#     productive = Column(Boolean)
-#     # TODO: Remove "tab_change_time"
-#     tab_change_time = Column(DateTime(timezone=True))
-#     created_at = Column(DateTime, default=datetime.now)
-
-#     @property
-#     def tab_title(self):
-#         return self._tab_title
-
-#     @tab_title.setter
-#     def tab_title(self, value):
-#         if value:
-#             self._tab_title = value[:max_content_len]  # truncates to 80 chars
-#         else:
-#             self._tab_title = value
-
-#     def __repr__(self):
-#         return f"Chrome(id={self.id}, tab_title='{self.tab_title}', productive={self.productive})"
-
-# ###
-# ###
-
-
-class DailyProgramSummary(Base):
+class DailyProgramSummary(DailySummaryBase):
     """
     A summation of every instance of time spent on a program
     """
     __tablename__ = "daily_program_summaries"
 
-    id = Column(Integer, primary_key=True, index=True)
     exe_path_as_id: Mapped[str] = mapped_column(String)  # unique identifier
     program_name: Mapped[str] = mapped_column(String)
-    hours_spent: Mapped[float] = mapped_column(Float)
-    # The date on which the program data was gathered, without hh:mm:ss
-    # MUST be the date FOR THE USER. Otherwise, the program doesn't make sense
-    gathering_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     def __str__(self):
         formatted_date = self.gathering_date.strftime(
@@ -124,18 +65,13 @@ class DailyProgramSummary(Base):
         return f"Program: {self.program_name}, \tHours: {self.hours_spent:.2f}, \tDate: {formatted_date}"
 
 
-class DailyDomainSummary(Base):
+class DailyDomainSummary(DailySummaryBase):
     """
     A summation of every instance of time spent on a domain
     """
     __tablename__ = "daily_chrome_summaries"
 
-    id = Column(Integer, primary_key=True, index=True)
     domain_name = Column(String)
-    hours_spent: Mapped[float] = mapped_column(Float)
-    # The date on which the program data was gathered
-    # MUST be the date FOR THE USER. Otherwise, the program doesn't make sense
-    gathering_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     def __str__(self):
         formatted_date = self.gathering_date.strftime(
@@ -143,24 +79,32 @@ class DailyDomainSummary(Base):
         return f"Domain: {self.domain_name}, \tHours: {self.hours_spent:.2f}, \tDate: {formatted_date}"
 
 
-class ProgramSummaryLog(Base):
+class SummaryLogBase(Base):
+    """
+    Base class for summary logs with common fields
+    """
+    __abstract__ = True
+
+    id = Column(Integer, primary_key=True, index=True)
+    hours_spent: Mapped[float] = mapped_column(Float)
+    # time stuff
+    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    duration = Column(Float, nullable=True)
+    # The date on which the data was gathered
+    gathering_date = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True))
+
+
+class ProgramSummaryLog(SummaryLogBase):
     """
     Logs a singular addition to the ProgramSummary table
     """
     __tablename__ = "program_summary_logs"
 
-    id = Column(Integer, primary_key=True, index=True)
     exe_path_as_id: Mapped[str] = mapped_column(String)  # unique identifier
     process_name: Mapped[str] = mapped_column(String)
     program_name: Mapped[str] = mapped_column(String)
-    hours_spent: Mapped[float] = mapped_column(Float)
-    # time stuff
-    start_time = Column(DateTime(timezone=True))
-    end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    duration = Column(Float, nullable=True)
-    created_at = Column(DateTime(timezone=True))
-    # The date on which the program data was gathered
-    gathering_date = Column(DateTime(timezone=True))
 
     def __str__(self):
         return f"ProgramSummaryLog(program_name={self.program_name}, hours_spent={self.hours_spent}, " \
@@ -168,18 +112,10 @@ class ProgramSummaryLog(Base):
             f"gathering_date={self.gathering_date}, created_at={self.created_at})"
 
 
-class DomainSummaryLog(Base):
+class DomainSummaryLog(SummaryLogBase):
     __tablename__ = "domain_summary_logs"
 
-    id = Column(Integer, primary_key=True, index=True)
-    domain_name = Column(String)
-    hours_spent = Column(Float)
-    start_time = Column(DateTime(timezone=True))
-    end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    duration = Column(Float, nullable=True)
-    # The date on which the program data was gathered
-    gathering_date = Column(DateTime(timezone=True))
-    created_at = Column(DateTime(timezone=True))
+    domain_name: Mapped[str] = mapped_column(String)
 
     def __str__(self):
         return f"DomainSummaryLog(domain_name={self.domain_name}, hours_spent={self.hours_spent}, " \
