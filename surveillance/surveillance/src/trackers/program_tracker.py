@@ -46,12 +46,6 @@ class ProgramTrackerCore:
         self.window_change_handler = window_change_handler
         # self.chrome_event_update = chrome_event_update
 
-        # FIXME: why is there three "productive categories" fields?
-        self.productive_apps = productive_apps
-        self.unproductive = unproductive_apps
-        self.productive_categories = productive_categories
-        self.productive_sites = productive_sites
-
         self.current_is_chrome = False
 
         self.current_session: ProgramSession | None = None
@@ -60,7 +54,6 @@ class ProgramTrackerCore:
 
     def run_tracking_loop(self):
         for window_change in self.program_facade.listen_for_window_changes():
-            print(window_change, "63ru")
             # is_expected_shape_else_throw(window_change)
             # FIXME: "Running Server (WindowsTerminal.exe)" -> Terminal (Terminal)
             on_a_different_window_now = self.current_session and window_change[
@@ -70,8 +63,7 @@ class ProgramTrackerCore:
                     raise ValueError("Current session was None")
 
                 current_time: datetime = self.user_facing_clock.now()  # once per loop
-                # capture_program_data_for_tests(window_change, current_time)
-                # self.apply_done_handlers(self.current_session)
+
                 new_session = self.start_new_session(
                     window_change, current_time)
                 self.current_session = new_session

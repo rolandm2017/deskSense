@@ -42,18 +42,6 @@ from ..mocks.mock_clock import UserLocalTimeMockClock
 def fmt_time_string(s):
     return datetime.fromisoformat(s)
 
-
-# def make_up_pids():
-#     print("2345")
-#     yield 2345
-#     print("3456")
-#     yield 3456
-#     print("4567")
-#     yield 4567
-#     print("5678")
-#     yield 5678
-#     print("out of pids")
-
 made_up_pids = [2345, 3456, 4567, 5678]
 
 
@@ -122,7 +110,7 @@ test_events = [
     session4
 ]
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def validate_test_data():
     """Exists to ensure no PEBKAC. The data really does say what was intended."""
     # Validate your dummy test data
@@ -141,33 +129,33 @@ def validate_test_data():
     return test_events
 
 
-async def cleanup_test_resources(manager):
-    print("Cleaning up test resources...")
+# async def cleanup_test_resources(manager):
+#     print("Cleaning up test resources...")
 
-    # Clean up surveillance manager (this should now properly clean up MessageReceiver)
-    try:
-        await manager.cleanup()
-    except Exception as e:
-        print(f"Error during surveillance_manager cleanup: {e}")
-        traceback.print_exc()
+#     # Clean up surveillance manager (this should now properly clean up MessageReceiver)
+#     try:
+#         await manager.cleanup()
+#     except Exception as e:
+#         print(f"Error during surveillance_manager cleanup: {e}")
+#         traceback.print_exc()
 
-    # Allow some time for all resources to be properly cleaned up
-    await asyncio.sleep(0.5)
+#     # Allow some time for all resources to be properly cleaned up
+#     await asyncio.sleep(0.5)
 
-    # Ensure all asyncio tasks are properly awaited or cancelled
-    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
-    if tasks:
-        print(f"Cancelling {len(tasks)} remaining tasks...")
-        for task in tasks:
-            if not task.done():
-                task.cancel()
+#     # Ensure all asyncio tasks are properly awaited or cancelled
+#     tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+#     if tasks:
+#         print(f"Cancelling {len(tasks)} remaining tasks...")
+#         for task in tasks:
+#             if not task.done():
+#                 task.cancel()
 
-        try:
-            await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=1.0)
-        except asyncio.TimeoutError:
-            print("Some tasks did not complete in time during test cleanup")
+#         try:
+#             await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=1.0)
+#         except asyncio.TimeoutError:
+#             print("Some tasks did not complete in time during test cleanup")
 
-    print("Test resources cleanup completed")
+#     print("Test resources cleanup completed")
 
 
 # @pytest.fixture
@@ -412,7 +400,10 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
                 print(mock_program_facade.yield_count,
                     "stop signal ++ \n ++ \n ++ \n ++")
                 break
-            await asyncio.sleep(1.7)  # Short sleep between checks ("short")
+            # Seems 1.3 is the minimum wait to get this done
+            await asyncio.sleep(1.3)  # Short sleep between checks ("short")
+            # await asyncio.sleep(1.3)  # Short sleep between checks ("short")
+            # await asyncio.sleep(1.7)  # Short sleep between checks ("short")
             # await asyncio.sleep(0.8)  # Short sleep between checks ("short")
             # Check if we have the expected number of calls
             if spy_on_set_program_state.call_count >= len(valid_test_data) - 1:
@@ -501,111 +492,114 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
         assert_all_on_state_changes_received_sessions()
         assert_deduct_duration_happened_as_expected()
 
-    try: 
-        # TODO: Final act here should be to organize the assertions.
-        # ### Assert!
-
-        # Most ambitious stuff at the end. Alternatively: Earlier encounters asserted first
 
 
-        # Some basics, including, "assert that each session's field was used as intended"
 
-        # TODO: Cook it so that push_window_ahead_ten_sec is called 2? 3x? for each dao type
-        # TODO: Otherwise, the method isn't covered! 
-        
-        # ## Assert that each session showed up as specified above, in the correct place
-        
-        # assert that they form a chain
-        
-        assert event_count == 4
-        assert window_change_spy.call_count == 4
-        assert window_change_spy.call_count == event_count
 
-        def assert_window_change_spy_as_expected(arg):
-            assert isinstance(arg, ProgramSession)
-            assert arg.exe_path == test_events[i].exe_path
 
-        for i in range(0, event_count):
-            arg = window_change_spy.call_args_list[i][0][0]
-            assert_window_change_spy_as_expected(arg)
-
-        window_change_calls = window_change_spy.call_args_list
-
-        assert_all_spy_args_were_sessions(window_change_spy, event_count, "Window change spy")
-
-        assert_all_window_change_args_match_src_material(window_change_calls)
-
-        assert len(window_change_calls) == 4, "The number of sessions is four, so the calls should be four"
-
-        assert window_change_spy.call_count == event_count  # Deliberately redundant
-
-        assert spy_on_set_program_state.call_count == event_count  # Deliberately redundant
-
-        assert_state_machine_had_correct_order()
-
-        assert_activity_recorder_saw_expected_vals()
-
-        assert_activity_recorder_called_expected_times(event_count)
-
-        assert find_todays_entry_for_program_mock.call_count == event_count
+    # ## Assert that each session showed up as specified above, in the correct place
     
-        def assert_sqlalchemy_layer_went_as_expected():
-            """Covers only stuff that obscures sqlalchemy code."""
-            assert sum_dao_execute_and_read_one_or_none_spy.call_count == event_count
-            assert logging_dao_execute_and_read_one_or_none_spy.call_count == event_count
-
-            assert summary_add_new_item_spy.call_count == 0, "A Summary existed already for each session, so this shouldn't happen"
-            assert logger_add_new_item_spy.call_count == event_count
-
-            assert update_item_spy.call_count == event_count  # Why is this 4 and not 6? It appears in multiple places    
-
-            assert execute_window_push_spy.call_count == final_entry_left_in_arbiter
-
-        assert_sqlalchemy_layer_went_as_expected()
+    # --
+    # -- Most ambitious stuff at the end. Alternatively: Earlier encounters asserted first
+    # --
     
-        args = push_window_ahead_ten_sec_spy.call_args_list[0][0]
+    assert event_count == 4
+    assert window_change_spy.call_count == 4
+    assert window_change_spy.call_count == event_count
 
-        assert isinstance(args[0], ProgramSession)
+    def assert_window_change_spy_as_expected(arg):
+        assert isinstance(arg, ProgramSession)
+        assert arg.exe_path == test_events[i].exe_path
 
-        def assert_lingering_session_triggered_timed_push(arg_from_spy):
-            push_window_ahead_arg = arg_from_spy[0]
-            assert push_window_ahead_arg.exe_path == session4.exe_path
-            assert push_window_ahead_arg.process_name == session4.process_name
+    for i in range(0, event_count):
+        arg = window_change_spy.call_args_list[i][0][0]
+        assert_window_change_spy_as_expected(arg)
 
-            received_time =  args[0].start_time.dt
-            target_time = session4.start_time.dt
-            assert received_time.hour == target_time.hour
-            assert received_time.minute == target_time.minute
-            assert received_time.second == target_time.second
+    window_change_calls = window_change_spy.call_args_list
 
-        assert_lingering_session_triggered_timed_push(args)
-        
-        
+    assert_all_spy_args_were_sessions(window_change_spy, event_count, "Window change spy")
 
-        assert push_window_ahead_ten_sec_spy.call_count == final_entry_left_in_arbiter  # The final entry being held suspended in Arbiter        
-        
-        
-        assert do_deduction_spy.call_count == event_count - final_entry_left_in_arbiter
+    assert_all_window_change_args_match_src_material(window_change_calls)
 
-        assert finalize_log_spy.call_count == event_count - final_entry_left_in_arbiter
+    assert len(window_change_calls) == 4, "The number of sessions is four, so the calls should be four"
 
-        # TODO assert that process_name made it into where it belongs, and looked right
-        # TODO: assert that detail looked right
+    assert window_change_spy.call_count == event_count  # Deliberately redundant
 
-        assert summary_add_new_item_spy.call_count == 0, "A new summary was created despite preexisting sessions"
-        
+    assert spy_on_set_program_state.call_count == event_count  # Deliberately redundant
+
+    assert_state_machine_had_correct_order()
+
+    assert_activity_recorder_saw_expected_vals()
+
+    assert_activity_recorder_called_expected_times(event_count)
+
+    assert find_todays_entry_for_program_mock.call_count == event_count
+
+    def assert_sqlalchemy_layer_went_as_expected():
+        """Covers only stuff that obscures sqlalchemy code."""
+        assert sum_dao_execute_and_read_one_or_none_spy.call_count == event_count
+        assert logging_dao_execute_and_read_one_or_none_spy.call_count == event_count
+
+        assert summary_add_new_item_spy.call_count == 0, "A Summary existed already for each session, so this shouldn't happen"
         assert logger_add_new_item_spy.call_count == event_count
-        
-        assert len(logger_add_new_item_spy.call_args_list) == event_count
 
+        assert update_item_spy.call_count == event_count  # Why is this 4 and not 6? It appears in multiple places    
+
+        assert execute_window_push_spy.call_count == final_entry_left_in_arbiter
+
+    assert_sqlalchemy_layer_went_as_expected()
+
+    args = push_window_ahead_ten_sec_spy.call_args_list[0][0]
+
+    assert isinstance(args[0], ProgramSession)
+
+    def assert_lingering_session_triggered_timed_push(arg_from_spy):
+        push_window_ahead_arg = arg_from_spy[0]
+        assert push_window_ahead_arg.exe_path == session4.exe_path
+        assert push_window_ahead_arg.process_name == session4.process_name
+
+        received_time =  args[0].start_time.dt
+        target_time = session4.start_time.dt
+        assert received_time.hour == target_time.hour
+        assert received_time.minute == target_time.minute
+        assert received_time.second == target_time.second
+
+    assert_lingering_session_triggered_timed_push(args)
+    
+    
+    def assert_sessions_form_a_chain():
+        sessions = []
         for i in range(0, event_count - final_entry_left_in_arbiter):
-            summary_log = logger_add_new_item_spy.call_args_list[i][0][0]
+            args = on_state_changed_spy.call_args_list[i][0]
+            sessions.append(args[0])
+        assert sessions[0].end_time == sessions[1].start_time
+        assert sessions[1].end_time == sessions[2].start_time
+        # assert sessions[2].end_time == sessions[3].start_time
+        # Sessions[3] has no .start_time to link up with
+        # Sessions[4] is still left in the arbiter (not spied on)
+            
+    assert_sessions_form_a_chain()
 
-            assert isinstance(summary_log, ProgramSummaryLog)
-            # FIXME: 
-            assert summary_log.exe_path_as_id == valid_test_data[i].exe_path, "Exe path didn't make it to one of it's destinations"
-            assert summary_log.process_name == valid_test_data[i].process_name
-            assert summary_log.program_name == valid_test_data[i].window_title, "Window title's end result didn't look right"
-    finally:
-        # Run the cleanup
-        await cleanup_test_resources(surveillance_manager)
+    assert push_window_ahead_ten_sec_spy.call_count == final_entry_left_in_arbiter  # The final entry being held suspended in Arbiter        
+    
+    assert do_deduction_spy.call_count == event_count - final_entry_left_in_arbiter
+
+    assert finalize_log_spy.call_count == event_count - final_entry_left_in_arbiter
+
+    # TODO assert that process_name made it into where it belongs, and looked right
+    # TODO: assert that detail looked right
+
+    assert summary_add_new_item_spy.call_count == 0, "A new summary was created despite preexisting sessions"
+    
+    assert logger_add_new_item_spy.call_count == event_count
+    
+    assert len(logger_add_new_item_spy.call_args_list) == event_count
+
+    for i in range(0, event_count - final_entry_left_in_arbiter):
+        summary_log = logger_add_new_item_spy.call_args_list[i][0][0]
+
+        assert isinstance(summary_log, ProgramSummaryLog)
+        assert summary_log.exe_path_as_id == valid_test_data[i].exe_path, "Exe path didn't make it to one of it's destinations"
+        assert summary_log.process_name == valid_test_data[i].process_name
+        assert summary_log.program_name == valid_test_data[i].window_title, "Window title's end result didn't look right"
+
