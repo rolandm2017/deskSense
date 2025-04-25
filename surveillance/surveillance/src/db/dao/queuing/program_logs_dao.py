@@ -42,8 +42,6 @@ class ProgramLoggingDao(UtilityDaoMixin):
         self.regular_session = session_maker  # Do not delete. UtilityDao still uses it
         self.logger = ConsoleLogger()
 
-    
-
     def start_session(self, session: ProgramSession):
         """
         A session of using a domain. End_time here is like, "when did the user tab away from the program?"

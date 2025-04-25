@@ -450,6 +450,10 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
 
     def assert_session_was_in_order(actual: ProgramSession, i):
         expected = test_events[i]
+        assert actual.exe_path == expected.exe_path
+        assert actual.process_name == expected.process_name
+        assert actual.window_title == expected.window_title  # FIXME: 
+        # assert actual.detail == expected.detail  # FIXME - does not match
         assert actual.start_time == expected.start_time
 
     def assert_all_spy_args_were_sessions(spy_from_mock, expected_loops: int, spy_name: str):
@@ -518,7 +522,6 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
         assert window_change_spy.call_count == event_count
 
         def assert_window_change_spy_as_expected(arg):
-            print(i,window_change_spy.call_count, "424ru")
             assert isinstance(arg, ProgramSession)
             assert arg.exe_path == test_events[i].exe_path
 
@@ -541,9 +544,6 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
         assert_state_machine_had_correct_order()
 
         assert_activity_recorder_saw_expected_vals()
-
-        def assert_high_level_recorder_spies_match(v):
-            pass
         
         assert find_todays_entry_for_program_mock.call_count == event_count
         assert sum_dao_execute_and_read_one_or_none_spy.call_count == event_count
@@ -588,6 +588,8 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
         
         assert logger_add_new_item_spy.call_count == event_count
         
+        assert len(logger_add_new_item_spy.call_args_list) == event_count
+
         for i in range(0, event_count - final_entry_left_in_arbiter):
             summary_log = logger_add_new_item_spy.call_args_list[i][0][0]
 

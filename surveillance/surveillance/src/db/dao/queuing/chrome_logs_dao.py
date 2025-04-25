@@ -1,10 +1,12 @@
+
+import asyncio
+from datetime import timedelta, datetime, date, timezone
+from typing import List
+
 from sqlalchemy import select, or_
 from sqlalchemy.orm import sessionmaker
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
-import asyncio
-from datetime import timedelta, datetime, date, timezone
-from typing import List
 
 from surveillance.src.object.classes import ChromeSession, ProgramSession
 
@@ -38,11 +40,8 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
     def __init__(self, session_maker: sessionmaker):
         """ Exists mostly for debugging. """
 
-        # super().__init__(async_session_maker=async_session_maker,
-        #                  batch_size=batch_size, flush_interval=flush_interval, dao_name="ChromeLogging")
         self.regular_session = session_maker  # Do not delete. UtilityDao still uses it
       
-
     def start_session(self, session: ChromeSession):
         """
         A session of using a domain. End_time here is like, "when did the user tab away from the program?"
