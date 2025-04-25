@@ -177,7 +177,6 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         if program_session is None:
             raise ValueError("Session should not be None")
 
-        target_program_name = program_session.window_title
         today_start = get_start_of_day(right_now.dt)
         tomorrow_start = today_start + timedelta(days=1)
 
@@ -189,10 +188,10 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.gathering_date >= today_start,
             DailyProgramSummary.gathering_date < tomorrow_start
         )
-        self.exec_window_push(query, program_session.exe_path)
+        self.execute_window_push(query, program_session.exe_path, program_session.start_time.dt)
 
-    def exec_window_push(self, query, purpose):
-        self.logger.log_white(f"info: looking for {purpose}")
+    def execute_window_push(self, query, purpose, identifier: datetime):
+        self.logger.log_white(f"[info] looking for {purpose} with {identifier}")
         with self.regular_session() as db_session:
             program: DailyProgramSummary = db_session.scalars(query).first()
             # FIXME: Sometimes program is None

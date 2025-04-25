@@ -92,7 +92,6 @@ class ActivityArbiter:
             # ### & create the replacement state
 
             # end_time & duration is set inside the ASM
-            print(new_session, type(new_session.start_time), "96ru")
             self.state_machine.set_new_session(new_session)
 
             concluded_session = self.state_machine.get_concluded_session()
@@ -127,13 +126,16 @@ class ActivityArbiter:
                 )
             start_of_loop = asyncio.new_event_loop()
             self.logger.log_white("in arbiter init")
+
             self.notify_of_new_session(new_session)
+            self.state_machine.set_new_session(new_session)
+            
             new_keep_alive_engine = KeepAliveEngine(
                 new_session, self.activity_recorder, start_of_loop)
             self.current_heartbeat = ThreadedEngineContainer(
                 new_keep_alive_engine, self.pulse_interval)
             self.current_heartbeat.start()
-            self.state_machine.current_state = updated_state
+            # self.state_machine.current_state = updated_state
 
     def shutdown(self):
         """Concludes the current state/session without adding a new one"""

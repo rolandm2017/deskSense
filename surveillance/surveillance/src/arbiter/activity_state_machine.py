@@ -43,8 +43,7 @@ class ActivityStateMachine:
                 updated_state = self.transition_from_chrome.compute_next_state(
                     next_session)
             if next_session.start_time:
-                print(next_session.start_time, type(
-                    next_session.start_time), "53ru")
+                
                 self._conclude_session(
                     self.current_state, next_session.start_time)
                 self.prior_state = self.current_state

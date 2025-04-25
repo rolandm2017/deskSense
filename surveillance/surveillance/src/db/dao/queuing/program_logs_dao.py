@@ -228,6 +228,7 @@ class ProgramLoggingDao(UtilityDaoMixin):
         if not log:
             raise ImpossibleToGetHereError(
                 "Start of heartbeat didn't reach the db")
+        print(log, "231ru")
         log.end_time = log.end_time + timedelta(seconds=10)
         self.update_item(log)
 

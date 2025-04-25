@@ -32,7 +32,7 @@ from .trackers.mouse_tracker import MouseTrackerCore
 from .trackers.keyboard_tracker import KeyboardTrackerCore
 from .trackers.program_tracker import ProgramTrackerCore
 from .util.detect_os import OperatingSystemInfo
-from .util.clock import SystemClock, UserFacingClock
+from .util.clock import UserFacingClock
 from .util.threaded_tracker import ThreadedTracker
 from surveillance.src.util.copy_util import snapshot_obj_for_tests
 
@@ -107,7 +107,7 @@ class SurveillanceManager:
         self.operate_facades()
         # Program tracker
         self.program_tracker = ProgramTrackerCore(
-            clock, program_facade, self.handle_window_change, self.handle_program_ready_for_db)
+            clock, program_facade, self.handle_window_change)
 
         self.keyboard_thread = ThreadedTracker(self.keyboard_tracker)
         self.mouse_thread = ThreadedTracker(self.mouse_tracker)
@@ -124,7 +124,6 @@ class SurveillanceManager:
         """Start the message receiver."""
         print("[info] message receiver starting")
         self.message_receiver.start()
-        print("foo 127ru")
 
     def check_session_integrity(self, latest_shutdown_time: datetime | None, latest_startup_time: datetime):
         # FIXME:

@@ -6,6 +6,7 @@ from typing import List, cast
 from surveillance.src.db.models import TimelineEntryObj
 
 from surveillance.src.config.definitions import local_time_zone, daylight_savings_tz_offset
+from surveillance.src.util.time_wrappers import UserLocalTime
 
 
 def convert_to_utc(dt: datetime):
@@ -18,10 +19,12 @@ def convert_to_utc(dt: datetime):
 #     return datetime(dt.year, dt.month, dt.day, tzinfo=dt.tzinfo)
 
 
-def get_start_of_day(dt: datetime):
+def get_start_of_day(some_time_obj: datetime | UserLocalTime):
     """If you put in March 3 3:00 PM PST, you will get out march 3 12:00 AM *PST*! """
     # Timezone stays attached.
-    return dt.replace(hour=0, minute=0, second=0, microsecond=0)
+    if isinstance(some_time_obj, UserLocalTime):
+        return some_time_obj.dt.replace(hour=0, minute=0, second=0, microsecond=0)
+    return some_time_obj.replace(hour=0, minute=0, second=0, microsecond=0)
 
 
 def account_for_timezone_offset(dt, users_local_tz_offset):

@@ -311,7 +311,7 @@ function Weekly() {
                     {weeklyBreakdown ? (
                         <StackedBarChart
                             title={""}
-                            data={weeklyBreakdown.days}
+                            dayByDayBreakdown={weeklyBreakdown.days}
                         />
                     ) : null}
                 </div>

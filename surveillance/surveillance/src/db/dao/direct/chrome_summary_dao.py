@@ -149,9 +149,9 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             DailyDomainSummary.gathering_date >= today_start,
             DailyDomainSummary.gathering_date < tomorrow_start
         )
-        self.exec_window_push(query)
+        self.execute_window_push(query)
 
-    def exec_window_push(self, query):
+    def execute_window_push(self, query):
         with self.regular_session() as db_session:
             # TODO: change to "Update hours"
             domain: DailyDomainSummary = db_session.scalars(query).first()
