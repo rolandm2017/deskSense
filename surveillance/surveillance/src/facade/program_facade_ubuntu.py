@@ -1,11 +1,12 @@
 import psutil
 from Xlib import display, X
 
-from typing import Dict, Optional, Generator
+from typing import Dict, Optional, Generator, cast
 
 from .program_facade_base import ProgramFacadeInterface
 
 from surveillance.src.util.console_logger import ConsoleLogger
+from surveillance.src.object.classes import ProgramSessionDict
 
 
 class UbuntuProgramFacadeCore(ProgramFacadeInterface):
@@ -15,21 +16,15 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
         self.display = display
         self.X = X
 
-    def read_current_program_info(self) -> Dict:
+    def read_current_program_info(self) -> ProgramSessionDict:
         return self._read_ubuntu()
 
-    # def _read_windows(self) -> Dict:
-    #     window = self.win32gui.GetForegroundWindow()
-    #     pid = self.win32process.GetWindowThreadProcessId(window)[1]
-    #     process = psutil.Process(pid)
-    #     return {
-    #         "os": "Windows",
-    #         "pid": pid,
-    #         "process_name": process.name(),
-    #         "window_title": self.win32gui.GetWindowText(window)
-    #     }
+    def read_exe_path_for_pid(self, pid):
+        process = psutil.Process(pid)
+        exe_path = process.exe()  # works on Linux t
+        return exe_path
 
-    def listen_for_window_changes(self):
+    def listen_for_window_changes(self) -> Generator[ProgramSessionDict, None, None]:
         if self.X is None or self.display is None:
             raise AttributeError(
                 "Crucial component was not initialized")
@@ -50,16 +45,21 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
                     window_info = self._read_ubuntu()
                     yield window_info
 
-    def _read_ubuntu(self) -> Dict:
+    def _read_ubuntu(self) -> ProgramSessionDict:
         # Ubuntu implementation using wmctrl or xdotool could go here
         # For now, returning active process info
         active = self._get_active_window_ubuntu()
+        active_process_name = cast(
+            str, active["name"] if active else "Unknown")
+        active_process_pid = cast(int, active["pid"] if active else 9999)
+        exe_path = self.read_exe_path_for_pid(active_process_pid)
         window_name = self._read_active_window_name_ubuntu()
         # FIXME: "Program None - rlm@kingdom: ~/Code/deskSense/surveillance"
         return {
+            "exe_path": exe_path,
             "os": "Ubuntu",
-            "pid": active["pid"] if active else None,
-            "process_name": active["name"] if active else None,
+            "pid": active_process_pid,
+            "process_name": active_process_name,
             "window_title": window_name  # window_title with the detail
         }
 
@@ -95,6 +95,7 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
             # <class 'Xlib.error.BadWindow'>:
             #     code = 3, resource_id = <Resource 0x00000000>,
             #     sequence_number = 22, major_opcode = 20, minor_opcode = 0 []
+            # TODO: ensure it's alt tab window
             return "Alt-tab window"  # "Alt-Tab Window (Most Likely)"
 
     def _get_active_window_ubuntu(self) -> Optional[Dict]:
@@ -107,7 +108,7 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
                 continue
         return None
 
-    def setup_window_hook(self) -> Generator[Dict, None, None]:
+    def setup_window_hook(self) -> Generator[ProgramSessionDict, None, None]:
         """
         X11 implementation using event hooks for efficient window change detection.
         This method sets up an X11 event mask that triggers on window focus changes.
