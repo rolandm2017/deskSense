@@ -27,6 +27,7 @@ class MockClock(ClockProtocol):
             # print("[debug] Returning ", self._current_time, datetime.now().strftime("%I:%M:%S %p"))
             self.count_of_times += 1
             return self._current_time
+          
         except StopIteration:
             raise RuntimeError(
                 f"MockClock ran out of times. It started with {self.count_of_times}")
@@ -71,12 +72,17 @@ class UserLocalTimeMockClock(ClockProtocol):
         try:
             next_val_from_iter = next(self.times)
             self._current_time = next_val_from_iter
-            if self._current_time.tzinfo is None:
-                self._current_time = self._current_time.replace(
-                    tzinfo=timezone.utc)
-            # print("[debug] Returning ", self._current_time, UserLocalTime.now().strftime("%I:%M:%S %p"))
-            self.count_of_times += 1
-            return self._current_time
+            try:
+                if self._current_time.tzinfo is None:
+                    self._current_time = self._current_time.replace(
+                        tzinfo=timezone.utc)
+                # print("[debug] Returning ", self._current_time, UserLocalTime.now().strftime("%I:%M:%S %p"))
+                self.count_of_times += 1
+                return self._current_time
+            except AttributeError as e:
+                print(f"After {self.count_of_times}, _current_time was None")
+                print(e)
+                raise
         except StopIteration:
             raise RuntimeError(
                 f"MockClock ran out of times. It started with {self.count_of_times}")

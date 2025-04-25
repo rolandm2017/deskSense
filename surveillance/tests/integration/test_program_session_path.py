@@ -35,7 +35,7 @@ from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.clock import UserFacingClock
 
 
-from ..mocks.mock_clock import UserLocalTimeMockClock, MockClock
+from ..mocks.mock_clock import UserLocalTimeMockClock
 
 
 def fmt_time_string(s):
@@ -121,6 +121,20 @@ test_events = [
     session4
 ]
 
+@pytest.fixture
+def validate_test_data():
+    """Exists to ensure no PEBKAC. The data really does say what was intended."""
+    # Validate your dummy test data
+    for i in range(0, 4):
+        assert isinstance(test_events[i].start_time, UserLocalTime)
+        assert isinstance(test_events[i].start_time.dt, datetime)
+        assert test_events[i].start_time.dt.tzinfo is not None
+
+        assert test_events[i].end_time is None
+    
+    # Return the data to the test
+    return test_events
+
 
 async def cleanup_test_resources(manager):
     print("Cleaning up test resources...")
@@ -151,15 +165,34 @@ async def cleanup_test_resources(manager):
     print("Test resources cleanup completed")
 
 
-@pytest.fixture
-def setup_for_test(regular_session, mock_async_session_maker):
-    # TODO: refactor so that this class lives in one place (it's a duplicate)
+# @pytest.fixture
+# def setup_for_test(regular_session, mock_async_session_maker):
+#     # TODO: refactor so that this class lives in one place (it's a duplicate)
+
+#     return surveillance_manager, program_sum_dao, program_logging_dao, mock_program_facade, activity_arbiter
+
+sum_counter = 0
+log_counter = 0
+
+@pytest.mark.asyncio
+async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, regular_session, mock_async_session_maker):
+    """
+    The goal of the test is to prove that programSesssions get thru the DAO layer fine
+    
+    Here, "preexisting session" means "a value that, in 
+    pretend, already existed in the db when the test started."
+
+    Intent is to not worry about start and end times too much. Focus is the str vals.
+    """
+    # surveillance_manager, summary_dao, logging_dao, mock_program_facade, arbiter = setup_for_test
+
+    valid_test_data = validate_test_data
 
     class MockProgramFacade:
         def __init__(self):
             self.yield_count = 0  # Initialize the counter
-            self.MAX_EVENTS = len(test_events)
-            self.test_program_dicts = [convert_back_to_dict(x, made_up_pids[i]) for i, x in enumerate(test_events)]
+            self.MAX_EVENTS = len(valid_test_data)
+            self.test_program_dicts = [convert_back_to_dict(x, made_up_pids[i]) for i, x in enumerate(valid_test_data)]
 
         def listen_for_window_changes(self):
             print("Mock listen_for_window_changes called")
@@ -178,44 +211,54 @@ def setup_for_test(regular_session, mock_async_session_maker):
 
     mock_program_facade = MockProgramFacade()
 
+    # Spy on listen_for_window_changes
+    spy_on_listen_for_window = Mock(
+        side_effect=mock_program_facade.listen_for_window_changes)
+    mock_program_facade.listen_for_window_changes = spy_on_listen_for_window
+
     def choose_program_facade(current_os):
         return mock_program_facade
 
     facades = FacadeInjector(
         get_keyboard_facade_instance, get_mouse_facade_instance, choose_program_facade)
-    mock_user_facing_clock = MockClock([])
-    get_it_done_quickly_interval = 0.1
-    activity_arbiter = ActivityArbiter(
-        mock_user_facing_clock, pulse_interval=get_it_done_quickly_interval)
+    
+    times = []
+    for event in valid_test_data:
+        times.append(event.start_time)  # FIXME: almost certrainly wrong inputs for mockClock
+        times.append(event.start_time)  # FIXME: almost certrainly wrong inputs for mockClock
 
-    program_logging_dao = ProgramLoggingDao(regular_session)
+    mock_user_facing_clock = UserLocalTimeMockClock(times)
+
+    activity_arbiter = ActivityArbiter(
+        mock_user_facing_clock, pulse_interval=0.1)
+
+    p_logging_dao = ProgramLoggingDao(regular_session)
     chrome_logging_dao = ChromeLoggingDao(regular_session)
 
-    program_sum_dao = ProgramSummaryDao(
-        program_logging_dao, regular_session, mock_async_session_maker)
+    p_summary_dao = ProgramSummaryDao(
+        p_logging_dao, regular_session, mock_async_session_maker)
     chrome_sum_dao = ChromeSummaryDao(
         chrome_logging_dao, regular_session, mock_async_session_maker)
-
-    activity_recorder = ActivityRecorder(
-        cast(UserFacingClock, mock_user_facing_clock), program_logging_dao, chrome_logging_dao, program_sum_dao, chrome_sum_dao)
 
     chrome_svc = ChromeService(mock_user_facing_clock, activity_arbiter)
     surveillance_manager = SurveillanceManager(cast(UserFacingClock, mock_user_facing_clock),
                                                mock_async_session_maker, regular_session, chrome_svc, activity_arbiter, facades)
 
-    return surveillance_manager, program_sum_dao, program_logging_dao, mock_program_facade, activity_arbiter
+    window_change_spy = Mock(
+        side_effect=surveillance_manager.program_tracker.window_change_handler)
+    surveillance_manager.program_tracker.window_change_handler = window_change_spy
 
-counter = 0
 
-@pytest.mark.asyncio
-async def test_tracker_to_db_path_with_preexisting_sessions(setup_for_test):
-    """The goal of the test is to prove that programSesssions get thru the DAO layer fine"""
-    surveillance_manager, summary_dao, logging_dao, mock_program_facade, arbiter = setup_for_test
+    activity_recorder = ActivityRecorder(
+        cast(UserFacingClock, mock_user_facing_clock), p_logging_dao, chrome_logging_dao, p_summary_dao, chrome_sum_dao)
+
+    
+    activity_arbiter.add_recorder_listener(activity_recorder)
 
     # ### Arrange
     starting_hours_spent_in_db = 1.0
 
-    def make_preexisting_entry(session, id_for_session):
+    def make_preexisting_summary(session, id_for_session):
         """foosssdfdfdsdsdfsdfds"""
         return DailyProgramSummary(
             id=id_for_session, 
@@ -224,32 +267,49 @@ async def test_tracker_to_db_path_with_preexisting_sessions(setup_for_test):
             hours_spent=starting_hours_spent_in_db, 
             gathering_date=session.start_time.date())
 
-    def group_of_preexisting_entries():
-        s1 = make_preexisting_entry(session1, made_up_pids[0])
-        s2 = make_preexisting_entry(session2, made_up_pids[1])
-        s3 = make_preexisting_entry(session3, made_up_pids[2])
-        s4 = make_preexisting_entry(session4, made_up_pids[3])
+    def group_of_preexisting_summaries():
+        s1 = make_preexisting_summary(session1, made_up_pids[0])
+        s2 = make_preexisting_summary(session2, made_up_pids[1])
+        s3 = make_preexisting_summary(session3, made_up_pids[2])
+        s4 = make_preexisting_summary(session4, made_up_pids[3])
+        return [s1,s2,s3,s4]
+    
+    def make_preexisting_log(session, id_for_log):
+        return ProgramSummaryLog()
+    
+    def group_of_preexisting_logs():
+        s1 = make_preexisting_log(session1, made_up_pids[0])
+        s2 = make_preexisting_log(session2, made_up_pids[1])
+        s3 = make_preexisting_log(session3, made_up_pids[2])
+        s4 = make_preexisting_log(session4, made_up_pids[3])
         return [s1,s2,s3,s4]
 
-    pretend_rows_from_db = group_of_preexisting_entries()
+    pretend_sums_from_db = group_of_preexisting_summaries()
+    pretend_logs_from_db = group_of_preexisting_logs()
 
-    def side_effect_function(query):
-        global counter
-        result = pretend_rows_from_db[counter % 4]
-        counter += 1
+    def side_effect_function_for_sums(query):
+        global sum_counter
+        result = pretend_sums_from_db[sum_counter % 4]
+        sum_counter += 1
+        return result
+    
+    def side_effect_function_for_logs(query):
+        global log_counter
+        result = pretend_logs_from_db[log_counter % 4]
+        log_counter += 1
         return result
 
     # Summary methods
     summary_add_new_item_spy = Mock()
-    summary_dao.add_new_item = summary_add_new_item_spy
+    p_summary_dao.add_new_item = summary_add_new_item_spy
 
     make_find_all_from_day_query_spy = Mock(
-        side_effect=summary_dao.create_find_all_from_day_query)
-    summary_dao.create_find_all_from_day_query = make_find_all_from_day_query_spy
+        side_effect=p_summary_dao.create_find_all_from_day_query)
+    p_summary_dao.create_find_all_from_day_query = make_find_all_from_day_query_spy
 
     sum_dao_execute_and_read_one_or_none_spy = Mock()
-    sum_dao_execute_and_read_one_or_none_spy.return_value = side_effect_function  # FIXME: if this causes problems, move it to line 212, meaning "replace the dao method return val instead"
-    summary_dao.execute_and_read_one_or_none = sum_dao_execute_and_read_one_or_none_spy
+    sum_dao_execute_and_read_one_or_none_spy.return_value = side_effect_function_for_sums
+    p_summary_dao.execute_and_read_one_or_none = sum_dao_execute_and_read_one_or_none_spy
 
     # find_todays_entry_for_program_mock = Mock(
     #     side_effect=summary_dao.find_todays_entry_for_program)
@@ -259,74 +319,66 @@ async def test_tracker_to_db_path_with_preexisting_sessions(setup_for_test):
 
     # Logger methods
     logger_add_new_item_spy = Mock()
-    logging_dao.add_new_item = logger_add_new_item_spy
+    p_logging_dao.add_new_item = logger_add_new_item_spy
+
+    find_session_spy = Mock(side_effect=p_logging_dao.find_session)
+    find_session_spy.return_value = side_effect_function_for_logs  # returns a ProgramLog
+    p_logging_dao.find_session = find_session_spy
 
     logging_dao_execute_and_read_one_or_none_spy = Mock()
-    logging_dao_execute_and_read_one_or_none_spy.return_value = None  # FIXME: if this causes problems, move it to line 212, meaning "replace the dao method return val instead"
-    logging_dao.execute_and_read_one_or_none = logging_dao_execute_and_read_one_or_none_spy
+    # This happens in 
+    logging_dao_execute_and_read_one_or_none_spy.return_value = side_effect_function_for_logs
+    p_logging_dao.execute_and_read_one_or_none = logging_dao_execute_and_read_one_or_none_spy
 
-    finalize_log_spy = Mock(side_effect=logging_dao.finalize_log)
-    logging_dao.finalize_log = finalize_log_spy
+    finalize_log_spy = Mock(side_effect=p_logging_dao.finalize_log)
+    p_logging_dao.finalize_log = finalize_log_spy
 
     update_item_spy = Mock()
-    logging_dao.update_item = update_item_spy
+    p_logging_dao.update_item = update_item_spy
 
     # program_facade = MockProgramFacade()
 
     spy_on_set_program_state = Mock(
-        side_effect=arbiter.set_program_state)
-    arbiter.set_program_state = spy_on_set_program_state
+        side_effect=activity_arbiter.set_program_state)
+    activity_arbiter.set_program_state = spy_on_set_program_state
 
     # Spy on listen_for_window_changes
     spy_on_listen_for_window = Mock(
         side_effect=mock_program_facade.listen_for_window_changes)
     mock_program_facade.listen_for_window_changes = spy_on_listen_for_window
+
+     # ### Act
+    surveillance_manager.start_trackers()
+
+    async def wait_for_events_to_process():
+        # Wait for events to be processed
+        print("\n++\n++\nWaiting for events to be processed...")
+        # Give the events time to propagate through the system
+        # Try for up to 10 iterations
+        for _ in range(len(valid_test_data)):
+            if mock_program_facade.yield_count == 4:
+                print(mock_program_facade.yield_count,
+                    "stop signal ++ \n ++ \n ++ \n ++")
+                break
+            await asyncio.sleep(1.7)  # Short sleep between checks ("short")
+            # await asyncio.sleep(0.8)  # Short sleep between checks ("short")
+            # Check if we have the expected number of calls
+            if spy_on_set_program_state.call_count >= len(valid_test_data) - 1:
+                print(f"Events processed after {_+1} iterations")
+                surveillance_manager.program_thread.stop()  # Stop the thread properly
+                break
+
+    await wait_for_events_to_process()
+
     try: 
-
-        # ### Act
-        surveillance_manager.start_trackers()
-
-        async def wait_for_events_to_process():
-            # Wait for events to be processed
-            print("\n++\n++\nWaiting for events to be processed...")
-            # Give the events time to propagate through the system
-            # Try for up to 10 iterations
-            for _ in range(len(test_events)):
-                if mock_program_facade.yield_count == 4:
-                    print(mock_program_facade.yield_count,
-                        "stop signal ++ \n ++ \n ++ \n ++")
-                    break
-                await asyncio.sleep(1.7)  # Short sleep between checks ("short")
-                # await asyncio.sleep(0.8)  # Short sleep between checks ("short")
-                # Check if we have the expected number of calls
-                if spy_on_set_program_state.call_count >= len(test_events) - 1:
-                    print(f"Events processed after {_+1} iterations")
-                    surveillance_manager.program_thread.stop()  # Stop the thread properly
-                    break
-
-        await wait_for_events_to_process()
 
         # ### Assert!
 
-        event_count = len(test_events)
+        # Most ambitious stuff at the end. Alternatively: Earlier encounters asserted first
+
+        event_count = len(valid_test_data)
 
         # Some basics, including, "assert that each session's field was used as intended"
-        assert summary_add_new_item_spy.call_count == len(test_events)
-        
-        args, _ = summary_add_new_item_spy.call_args    
-        assert all(isinstance(arg, DailyProgramSummary) for arg in args[:event_count])
-        for i in range(0, event_count):
-            assert args[i].exe_path_as_id == test_events[i].exe_path, "Exe path didn't make it to one of it's destinations"
-            assert args[i].program_name == test_events[i].window_title, "Window title's end result didn't look right"
-        
-        assert logger_add_new_item_spy.call_count == len(test_events)
-        
-        args, _ = summary_add_new_item_spy.call_args    
-        assert all(isinstance(arg, ProgramSummaryLog) for arg in args[:event_count])
-        for i in range(0, event_count):
-            assert args[i].exe_path_as_id == test_events[i].exe_path, "Exe path didn't make it to one of it's destinations"
-            assert args[i].process_name == test_events[i].process_name
-            assert args[i].program_name == test_events[i].window_title, "Window title's end result didn't look right"
 
         # TODO:
         # TODO: Cook it so that push_window_ahead_ten_sec is called 2? 3x? for each dao type
@@ -351,6 +403,23 @@ async def test_tracker_to_db_path_with_preexisting_sessions(setup_for_test):
 
         # assert that process_name made it into where it belongs, and looked right
         # TODO: assert that detail looked right
+
+        assert summary_add_new_item_spy.call_count == len(valid_test_data)
+        
+        args, _ = summary_add_new_item_spy.call_args    
+        assert all(isinstance(arg, DailyProgramSummary) for arg in args[:event_count])
+        for i in range(0, event_count):
+            assert args[i].exe_path_as_id == valid_test_data[i].exe_path, "Exe path didn't make it to one of it's destinations"
+            assert args[i].program_name == valid_test_data[i].window_title, "Window title's end result didn't look right"
+        
+        assert logger_add_new_item_spy.call_count == len(valid_test_data)
+        
+        args, _ = summary_add_new_item_spy.call_args    
+        assert all(isinstance(arg, ProgramSummaryLog) for arg in args[:event_count])
+        for i in range(0, event_count):
+            assert args[i].exe_path_as_id == valid_test_data[i].exe_path, "Exe path didn't make it to one of it's destinations"
+            assert args[i].process_name == valid_test_data[i].process_name
+            assert args[i].program_name == valid_test_data[i].window_title, "Window title's end result didn't look right"
     finally:
         # Run the cleanup
         await cleanup_test_resources(surveillance_manager)

@@ -124,6 +124,7 @@ class SurveillanceManager:
         """Start the message receiver."""
         print("[info] message receiver starting")
         self.message_receiver.start()
+        print("foo 127ru")
 
     def check_session_integrity(self, latest_shutdown_time: datetime | None, latest_startup_time: datetime):
         # FIXME:

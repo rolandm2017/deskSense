@@ -41,15 +41,15 @@ class ActivityArbiter:
     def add_ui_listener(self, listener):
         self.ui_update_listener = listener
 
-    def add_summary_dao_listener(self, listener):
+    def notify_display_update(self, state):
+        if self.ui_update_listener:
+            self.ui_update_listener(state)
+
+    def add_recorder_listener(self, listener):
         if hasattr(listener, "on_state_changed"):
             self.activity_recorder = listener
         else:
             raise AttributeError("Listener method was missing")
-
-    def notify_display_update(self, state):
-        if self.ui_update_listener:
-            self.ui_update_listener(state)
 
     def notify_summary_dao(self, session):
         if self.activity_recorder:

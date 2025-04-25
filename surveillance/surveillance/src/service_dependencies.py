@@ -158,7 +158,7 @@ async def get_activity_arbiter():
         )
 
         _arbiter_instance.add_ui_listener(ui_layer.on_state_changed)
-        _arbiter_instance.add_summary_dao_listener(
+        _arbiter_instance.add_recorder_listener(
             activity_recorder)
 
         # Create wrapper for async handler

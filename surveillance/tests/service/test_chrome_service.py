@@ -81,7 +81,7 @@ def chrome_service_fixture_with_arbiter():
     mock_program_listener = MagicMock()
     mock_program_listener.on_state_changed = None  # Isn't used?
 
-    arbiter.add_summary_dao_listener(mock_program_listener)
+    arbiter.add_recorder_listener(mock_program_listener)
 
     chrome_service = ChromeService(clock, arbiter, shorter_debounce)
 

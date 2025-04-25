@@ -40,6 +40,7 @@ class MessageReceiver:
     async def zmq_listener(self):
         """Continuously receive messages from ZMQ and add them to the queue."""
         while self.is_running:
+            print("while self is running, 43ru")
             try:
                 message = await self.socket.recv_json()
                 await self.event_queue.put(message)
@@ -81,12 +82,15 @@ class MessageReceiver:
     def start(self):
         """Start the message receiver in a way that doesn't require async/await."""
         # Create a new event loop if one doesn't exist
+        print("foo 84ru")
+
         try:
             loop = asyncio.get_event_loop()
         except RuntimeError:
             # No event loop in current thread
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
+        print("foo 92ru")
 
         self.is_running = True
 
@@ -96,6 +100,7 @@ class MessageReceiver:
                 asyncio.create_task(self.zmq_listener()),
                 asyncio.create_task(self.process_events())
             ]
+            print("past run tasks start, now gathering 102ru")
             await asyncio.gather(*self.tasks)
 
         # Run the coroutines in the event loop
@@ -107,6 +112,7 @@ class MessageReceiver:
         else:
             # If the loop is not running, run it until complete
             try:
+                print("run utnil complete 113ru")
                 return loop.run_until_complete(run_tasks())
             except KeyboardInterrupt:
                 print("Keyboard interrupt received, stopping...")

@@ -59,7 +59,7 @@ def activity_arbiter_and_setup():
     # mock_activity_recorder.on_state_changed = Mock(
     #     side_effect=event_handler)
 
-    arbiter.add_summary_dao_listener(recorder_spy)
+    arbiter.add_recorder_listener(recorder_spy)
 
     assert arbiter.activity_recorder == recorder_spy, "Test setup conditions failed"
 
