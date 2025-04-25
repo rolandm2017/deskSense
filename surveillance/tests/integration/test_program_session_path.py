@@ -65,7 +65,7 @@ def convert_back_to_dict(session: ProgramSession, pid) -> ProgramSessionDict:
             "window_title": session.window_title}
 
 
-imaginary_path_to_chrome = "imaginary/path/to/Chrome.exe"
+imaginary_path_to_chrome = "C:/Programs/imaginary/path/to/Chrome.exe"
 imaginary_chrome_processe = "Chrome.exe"
 
 
@@ -227,13 +227,20 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
     facades = FacadeInjector(
         get_keyboard_facade_instance, get_mouse_facade_instance, choose_program_facade)
     
-    times = []
     """
     Count of occurrences of the clock being used:
     1. ProgramTrackerCore - 1x per session
     2. ActivityRecorder.on_new_session - 1x per session
     3. ActivityRecorder.add_ten_sec_to_end_time - whenever it's called
     """
+    # fmt: off
+    times = [session1.start_time, session1.start_time, 
+             session2.start_time, session2.start_time,
+             session3.start_time, session3.start_time,
+             session4.start_time, session4.start_time, session4.start_time, session4.start_time
+             ]
+    # fmt: on
+    
     mock_user_facing_clock = UserLocalTimeMockClock(times)
 
     wont_be_used = UserLocalTimeMockClock([])
@@ -425,7 +432,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
         assert calls_from_spy[3][0][0].exe_path == session4.exe_path
 
     def assert_state_machine_had_correct_order():
-        assert_all_spy_args_were_sessions(asm_set_new_session_spy, "Activity State Machine")
+        assert_all_spy_args_were_sessions(asm_set_new_session_spy, event_count, "Activity State Machine")
         # for i in range(0, event_count):
         #     some_session = asm_set_new_session_spy.call_args_list[i][0][0]
         #     assert isinstance(some_session, ProgramSession)
@@ -443,47 +450,46 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
 
     def assert_session_was_in_order(actual: ProgramSession, i):
         expected = test_events[i]
-        print(i, "441ru")
-        print("Actual start time: \t", actual.start_time)
-        print("Expected start time: \t", expected.start_time)
-        print("\n", actual, "441ru")
-        print("\n", expected, "442ru")
         assert actual.start_time == expected.start_time
 
-    def assert_all_spy_args_were_sessions(spy_from_mock, spy_name):
-        print(f"Asserting against {spy_name}")
-        for i in range(0, event_count):
+    def assert_all_spy_args_were_sessions(spy_from_mock, expected_loops: int, spy_name: str):
+        print(f"Asserting against {spy_name} with count {len(spy_from_mock.call_args_list)}")
+        for i in range(0, expected_loops):
             some_session = spy_from_mock.call_args_list[i][0][0]
             assert isinstance(some_session, ProgramSession)
             assert_session_was_in_order(some_session, i)
         call_count = len(spy_from_mock.call_args_list)
-        assert call_count == event_count, f"Expected exactly {event_count} calls"
+        assert call_count == expected_loops, f"Expected exactly {expected_loops} calls"
 
     def assert_all_on_new_sessions_received_sessions():
-        assert_all_spy_args_were_sessions(on_new_session_spy, "on_new_session_spy")
-        # for i in range(0, count_of_events):
-        #     some_session = on_new_session_spy.call_args_list[i][0]
-        #     assert isinstance(some_session, ProgramSession) or isinstance(some_session, ChromeSession)
-        # call_count = len(on_new_session_spy.call_args_list)
-        # assert call_count == count_of_events, f"Expected exactly {count_of_events} calls"
+        assert_all_spy_args_were_sessions(on_new_session_spy, event_count, "on_new_session_spy")
 
     def assert_all_on_state_changes_received_sessions():
         """
         Note that on_state_changed probably is called 3x, not 4x, because
         nothing happens to push the final session out of the Arbiter.
         """
-        assert_all_spy_args_were_sessions(on_state_changed_spy, "on_state_changed_spy")
-        # for i in range(0, count_of_events):
-        #     some_session = on_state_changed_spy.call_args_list[i][0]
-        #     assert isinstance(some_session, ProgramSession) or isinstance(some_session, ChromeSession)
-        # call_count = len(on_state_changed_spy.call_args_list)
-        # assert call_count == count_of_events, f"Expected exactly {count_of_events} calls"
+        one_left_in_arb = 1
+        assert_all_spy_args_were_sessions(on_state_changed_spy, event_count - one_left_in_arb, "on_state_changed_spy")
 
     def assert_deduct_duration_happened_as_expected():
         """
         Deduct duration might happen 3x b/c of the final val staying in the Arbiter.
         """
-        assert_all_spy_args_were_sessions(deduct_duration_spy, "deduct_duration_spy")
+        # This func does not use assert_all_spy_args_were_sessions because 
+        # the arg order is reversed here, i.e. 0th arg is an int
+        one_left_in_arb = 1
+        total_loops = event_count - one_left_in_arb
+        for i in range(0, total_loops):
+            some_duration = deduct_duration_spy.call_args_list[i][0][0]
+            assert isinstance(some_duration, int)
+
+            some_session = deduct_duration_spy.call_args_list[i][0][1]
+            assert isinstance(some_session, ProgramSession)
+            assert_session_was_in_order(some_session, i)
+
+        call_count = len(deduct_duration_spy.call_args_list)
+        assert call_count == total_loops, f"Expected exactly {total_loops} calls"
 
     def assert_activity_recorder_saw_expected_vals():
         """Asserts that the recorder spies all saw, in general, what was expected."""
@@ -506,17 +512,11 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
         # ## Assert that each session showed up as specified above, in the correct place
         
         # assert that they form a chain
-
-        #
-        # ### Stuff before the Recorder layer - sanity checks.
-        #
-
         
         assert event_count == 4
         assert window_change_spy.call_count == 4
         assert window_change_spy.call_count == event_count
 
-        # args, _ = window_change_spy.call_args_list
         def assert_window_change_spy_as_expected(arg):
             print(i,window_change_spy.call_count, "424ru")
             assert isinstance(arg, ProgramSession)
@@ -525,16 +525,10 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
         for i in range(0, event_count):
             arg = window_change_spy.call_args_list[i][0][0]
             assert_window_change_spy_as_expected(arg)
-            # assert isinstance(arg, tuple)  # Cannot explain, expected ProgramSession
-            # print(i,window_change_spy.call_count, "424ru")
-            # print(arg, "428ru")
-            # assert isinstance(arg[0], ProgramSession)
-            # assert arg[0].exe_path == test_events[i].exe_path
-
 
         window_change_calls = window_change_spy.call_args_list
 
-        assert_all_spy_args_were_sessions(window_change_spy, "Window change spy")
+        assert_all_spy_args_were_sessions(window_change_spy, event_count, "Window change spy")
 
         assert_all_window_change_args_match_src_material(window_change_calls)
 
@@ -561,52 +555,47 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
         assert summary_add_new_item_spy.call_count == 0, "A Summary existed already for each session, so this shouldn't happen"
         assert logger_add_new_item_spy.call_count == event_count
         assert update_item_spy.call_count == event_count
-        v = execute_window_push_spy.call_args_list
-        print(v, "457ru")
-        # FIXME: [call(<sqlalchemy.sql.selectable.Select object at 0x000001314FD61610>, 'imaginary/path/to/Chrome.exe', 
-        # datetime.datetime(2025, 3, 22, 16, 16, 3, 374304, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=61200))))] 457ru
-        # NOTE that this is the start_time of session3, but the path of session4. How can this be? Unless something was switched
 
-        # TEMP TODO: move this
-        print(push_window_ahead_ten_sec_spy.call_args_list, "470ru")
         args = push_window_ahead_ten_sec_spy.call_args_list[0][0]
 
-        assert args[0].exe_path == session4.exe_path
-        received =  args[0].start_time.dt
-        target = session4.start_time.dt
-        assert received.hour == target.hour
-        assert received.minute == target.minute
-        assert received.second == target.second
+        assert isinstance(args[0], ProgramSession)
 
-        assert push_window_ahead_ten_sec_spy.call_count == 1  # The final entry being held suspended in Arbiter        
+        def assert_lingering_session_triggered_timed_push(arg_from_spy):
+            push_window_ahead_arg = arg_from_spy[0]
+            assert push_window_ahead_arg.exe_path == session4.exe_path
+            assert push_window_ahead_arg.process_name == session4.process_name
 
-        assert execute_window_push_spy.call_count == event_count
-        assert do_deduction_spy.call_count == event_count
+            received_time =  args[0].start_time.dt
+            target_time = session4.start_time.dt
+            assert received_time.hour == target_time.hour
+            assert received_time.minute == target_time.minute
+            assert received_time.second == target_time.second
 
-        assert finalize_log_spy.call_count == event_count
+        assert_lingering_session_triggered_timed_push(args)
+        
+        final_entry_left_in_arbiter = 1
+        assert push_window_ahead_ten_sec_spy.call_count == final_entry_left_in_arbiter  # The final entry being held suspended in Arbiter        
+        assert execute_window_push_spy.call_count == final_entry_left_in_arbiter
+        
+        assert do_deduction_spy.call_count == event_count - final_entry_left_in_arbiter
 
-        # assert that process_name made it into where it belongs, and looked right
+        assert finalize_log_spy.call_count == event_count - final_entry_left_in_arbiter
+
+        # TODO assert that process_name made it into where it belongs, and looked right
         # TODO: assert that detail looked right
 
-        assert summary_add_new_item_spy.call_count == len(valid_test_data)
+        assert summary_add_new_item_spy.call_count == 0, "A new summary was created despite preexisting sessions"
         
-        args, _ = summary_add_new_item_spy.call_args    
-        assert all(isinstance(arg, DailyProgramSummary) for arg in args[:event_count])
-        for i in range(0, event_count):
-            assert args[i].exe_path_as_id == valid_test_data[i].exe_path, "Exe path didn't make it to one of it's destinations"
-            assert args[i].program_name == valid_test_data[i].window_title, "Window title's end result didn't look right"
+        assert logger_add_new_item_spy.call_count == event_count
         
-        assert logger_add_new_item_spy.call_count == len(valid_test_data)
-        
-        args, _ = summary_add_new_item_spy.call_args    
+        for i in range(0, event_count - final_entry_left_in_arbiter):
+            summary_log = logger_add_new_item_spy.call_args_list[i][0][0]
 
-        # def assert_summary_dao_add_new_item_received_expected_vals():
-        #     pass
-        assert all(isinstance(arg, ProgramSummaryLog) for arg in args[:event_count])
-        for i in range(0, event_count):
-            assert args[i].exe_path_as_id == valid_test_data[i].exe_path, "Exe path didn't make it to one of it's destinations"
-            assert args[i].process_name == valid_test_data[i].process_name
-            assert args[i].program_name == valid_test_data[i].window_title, "Window title's end result didn't look right"
+            assert isinstance(summary_log, ProgramSummaryLog)
+            # FIXME: 
+            assert summary_log.exe_path_as_id == valid_test_data[i].exe_path, "Exe path didn't make it to one of it's destinations"
+            assert summary_log.process_name == valid_test_data[i].process_name
+            assert summary_log.program_name == valid_test_data[i].window_title, "Window title's end result didn't look right"
     finally:
         # Run the cleanup
         await cleanup_test_resources(surveillance_manager)
