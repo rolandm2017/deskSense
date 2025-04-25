@@ -54,7 +54,6 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
 
     def _create(self, session: ProgramSession, duration_in_hours: float, when_it_was_gathered: datetime):
         self.logger.log_white("[debug] creating session: " + session.exe_path)
-        print("GATHERING DATE: ", when_it_was_gathered)
         self.throw_if_negative(session.process_name, duration_in_hours)
         new_entry = DailyProgramSummary(
             exe_path_as_id=session.exe_path,
@@ -180,8 +179,6 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         today_start = get_start_of_day(right_now.dt)
         tomorrow_start = today_start + timedelta(days=1)
 
-        print("gathering date >=", today_start)
-        print("gathering date <", tomorrow_start)
 
         query = select(DailyProgramSummary).where(
             DailyProgramSummary.exe_path_as_id == program_session.exe_path,

@@ -55,7 +55,6 @@ class ProgramLoggingDao(UtilityDaoMixin):
         start_of_day = get_start_of_day(session.start_time.get_dt_for_db())
         start_of_day_as_utc = convert_to_utc(start_of_day)
         start_window_end = base_start_time + timedelta(seconds=10)
-        print("\n++\n\t++\n\t\t++CREATING ", session.exe_path)
 
         log_entry = ProgramSummaryLog(
             exe_path_as_id=session.exe_path,

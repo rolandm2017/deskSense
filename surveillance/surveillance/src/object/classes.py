@@ -37,11 +37,11 @@ class ProgramSession:
     duration: Optional[timedelta]
     productive: bool
 
-    def __init__(self, exe_path, process_name, title, detail, start_time, end_time=None, productive=False, duration_for_tests=None):
+    def __init__(self, exe_path, process_name, window_title, detail, start_time, end_time=None, productive=False, duration_for_tests=None):
         """Only use duration in testing. Don't use it otherwise. 'duration_for_tests' exists only for e2e tests thresholds"""
         self.exe_path = exe_path
         self.process_name = process_name
-        self.window_title = title
+        self.window_title = window_title
         self.detail = detail
         self.start_time = start_time
         self.end_time = end_time

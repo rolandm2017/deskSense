@@ -62,7 +62,7 @@ def convert_back_to_dict(session: ProgramSession, pid) -> ProgramSessionDict:
             "pid": pid,
             "exe_path": session.exe_path,
             "process_name": session.process_name,
-            "window_title": session.window_title}
+            "window_title": session.detail + " - " + session.window_title}
 
 
 imaginary_path_to_chrome = "C:/Programs/imaginary/path/to/Chrome.exe"
@@ -72,7 +72,7 @@ imaginary_chrome_processe = "Chrome.exe"
 session1 = ProgramSession(
     exe_path=imaginary_path_to_chrome,
     process_name=imaginary_chrome_processe,
-    title='Google Chrome',
+    window_title='Google Chrome',
     detail="X. It's what's happening / X",
     start_time=UserLocalTime(fmt_time_string(
         "2025-03-22 16:14:50.201399-07:00")),
@@ -83,7 +83,7 @@ session1 = ProgramSession(
 session2 = ProgramSession(
     exe_path='C:/wherever/you/find/Postman.exe',
     process_name='Xorg',
-    title='My Workspace',
+    window_title='My Workspace',
     detail='dash | Overview',
     start_time=UserLocalTime(fmt_time_string(
         "2025-03-22 16:15:55.237392-07:00")),
@@ -94,7 +94,7 @@ session2 = ProgramSession(
 session3 = ProgramSession(
     exe_path='C:/path/to/VSCode.exe',
     process_name='Code.exe',
-    title='Visual Studio Code',
+    window_title='Visual Studio Code',
     detail='surveillance_manager.py - deskSense',
     start_time=UserLocalTime(fmt_time_string(
         "2025-03-22 16:16:03.374304-07:00")),
@@ -107,8 +107,8 @@ session4 = ProgramSession(
     # NOTE: Manual change from Gnome Shell to a second Chrome entry
     exe_path=imaginary_path_to_chrome,
     process_name=imaginary_chrome_processe,
-    title='Google Chrome',
-    detail='Google',
+    window_title='Google Chrome',
+    detail='TikTok: Waste Your Time Today!',
     start_time=UserLocalTime(fmt_time_string(
         "2025-03-22 16:16:17.480951-07:00")),
     end_time=None,
@@ -423,7 +423,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
     await wait_for_events_to_process()
 
     event_count = len(valid_test_data)
-
+    final_entry_left_in_arbiter = 1
 
     def assert_all_window_change_args_match_src_material(calls_from_spy):
         assert calls_from_spy[0][0][0].exe_path == session1.exe_path
@@ -441,19 +441,19 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
     def assert_activity_recorder_called_expected_times(count_of_events):
         assert on_new_session_spy.call_count == count_of_events
 
-        assert push_window_ahead_ten_sec_spy.call_count == count_of_events
+        assert push_window_ahead_ten_sec_spy.call_count == final_entry_left_in_arbiter
 
-        assert finalize_log_spy.call_count == count_of_events
-        assert deduct_duration_spy.call_count == count_of_events
+        # The final entry here is holding the window push open
+        assert finalize_log_spy.call_count == count_of_events - final_entry_left_in_arbiter
+        assert deduct_duration_spy.call_count == count_of_events - final_entry_left_in_arbiter
 
-   
 
     def assert_session_was_in_order(actual: ProgramSession, i):
         expected = test_events[i]
         assert actual.exe_path == expected.exe_path
         assert actual.process_name == expected.process_name
-        assert actual.window_title == expected.window_title  # FIXME: 
-        # assert actual.detail == expected.detail  # FIXME - does not match
+        assert actual.window_title == expected.window_title
+        assert actual.detail == expected.detail  
         assert actual.start_time == expected.start_time
 
     def assert_all_spy_args_were_sessions(spy_from_mock, expected_loops: int, spy_name: str):
@@ -544,18 +544,25 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
         assert_state_machine_had_correct_order()
 
         assert_activity_recorder_saw_expected_vals()
-        
-        assert find_todays_entry_for_program_mock.call_count == event_count
-        assert sum_dao_execute_and_read_one_or_none_spy.call_count == event_count
-        assert logging_dao_execute_and_read_one_or_none_spy.call_count == event_count
-        
-        #
-        # assert that the alchemy layer was used as expected. Each of them.
-        #
-        assert summary_add_new_item_spy.call_count == 0, "A Summary existed already for each session, so this shouldn't happen"
-        assert logger_add_new_item_spy.call_count == event_count
-        assert update_item_spy.call_count == event_count
 
+        assert_activity_recorder_called_expected_times(event_count)
+
+        assert find_todays_entry_for_program_mock.call_count == event_count
+    
+        def assert_sqlalchemy_layer_went_as_expected():
+            """Covers only stuff that obscures sqlalchemy code."""
+            assert sum_dao_execute_and_read_one_or_none_spy.call_count == event_count
+            assert logging_dao_execute_and_read_one_or_none_spy.call_count == event_count
+
+            assert summary_add_new_item_spy.call_count == 0, "A Summary existed already for each session, so this shouldn't happen"
+            assert logger_add_new_item_spy.call_count == event_count
+
+            assert update_item_spy.call_count == event_count  # Why is this 4 and not 6? It appears in multiple places    
+
+            assert execute_window_push_spy.call_count == final_entry_left_in_arbiter
+
+        assert_sqlalchemy_layer_went_as_expected()
+    
         args = push_window_ahead_ten_sec_spy.call_args_list[0][0]
 
         assert isinstance(args[0], ProgramSession)
@@ -573,9 +580,10 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
 
         assert_lingering_session_triggered_timed_push(args)
         
-        final_entry_left_in_arbiter = 1
+        
+
         assert push_window_ahead_ten_sec_spy.call_count == final_entry_left_in_arbiter  # The final entry being held suspended in Arbiter        
-        assert execute_window_push_spy.call_count == final_entry_left_in_arbiter
+        
         
         assert do_deduction_spy.call_count == event_count - final_entry_left_in_arbiter
 
