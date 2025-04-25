@@ -11,6 +11,8 @@ from typing import cast
 
 from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
 from surveillance.src.arbiter.activity_recorder import ActivityRecorder
+from surveillance.src.surveillance_manager import FacadeInjector, SurveillanceManager
+
 from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 
@@ -25,7 +27,6 @@ from surveillance.src.services.services import TimezoneService
 from surveillance.src.service_dependencies import get_dashboard_service
 from surveillance.src.object.classes import TabChangeEventWithLtz
 
-from surveillance.src.surveillance_manager import FacadeInjector, SurveillanceManager
 from surveillance.src.object.classes import ChromeSession, ProgramSession
 from surveillance.src.util.program_tools import separate_window_name_and_detail
 from surveillance.src.util.clock import UserFacingClock
@@ -195,7 +196,6 @@ async def test_tracker_to_arbiter(plain_asm, regular_session, times_from_test_da
 
     facades = FacadeInjector(
         get_keyboard_facade_instance, get_mouse_facade_instance, choose_program_facade)
-    # TODO: async session from the test db
     irrelevant_clock = MockClock(testing_num_of_times)
     activity_arbiter = ActivityArbiter(irrelevant_clock, pulse_interval=1)
     transition_state_mock = Mock()
@@ -218,11 +218,6 @@ async def test_tracker_to_arbiter(plain_asm, regular_session, times_from_test_da
         side_effect=surveillance_manager.program_tracker.window_change_handler)
     surveillance_manager.program_tracker.window_change_handler = window_change_spy
 
-    # program_dao_create_spy = Mock(
-    #     side_effect=surveillance_manager.program_dao.create)
-    # surveillance_manager.program_dao.create = program_dao_create_spy
-
-    # TODO: make the program facade, like, actually run the events.
     surveillance_manager.start_trackers()
 
     async def wait_for_events_to_process():
@@ -286,7 +281,7 @@ async def test_tracker_to_arbiter(plain_asm, regular_session, times_from_test_da
         # assert program_dao_create_spy.call_count == len(
         #     real_program_events) - one_left_in_tracker
 
-        # ### Confirm that the ... objects don't change much in their transit
+        # ### Confirm that the objects don't change much in their transit
         # from facade to arbiter
         for i in range(0, 4):
             event = real_program_events[i]
@@ -476,24 +471,24 @@ def fmt_time_string_2(s, offset="-07:00"):
 
 
 # Events are from previous tests
-program_events_from_prev_test = [
-    ProgramSession(title='Google Chrome', detail='X. It’s what’s happening / X',
-                   start_time=fmt_time_string(
-                       "2025-03-22 16:14:50.201399-07:00"),
-                   end_time=None, duration_for_tests=None, productive=False),
-    ProgramSession(title='My Workspace', detail='dash | Overview',
-                   start_time=fmt_time_string(
-                       "2025-03-22 16:15:55.237392-07:00"),
-                   end_time=None, duration_for_tests=None, productive=False),
-    ProgramSession(title='Visual Studio Code', detail='surveillance_manager.py - deskSense',
-                   start_time=fmt_time_string(
-                       "2025-03-22 16:16:03.374304-07:00"),
-                   end_time=None, duration_for_tests=None, productive=False),
-    ProgramSession(title='Google Chrome', detail='Google',
-                   start_time=fmt_time_string(
-                       "2025-03-22 16:16:17.480951-07:00"),
-                   end_time=None, duration_for_tests=None, productive=False)
-]
+# program_events_from_prev_test = [
+#     ProgramSession(title='Google Chrome', detail='X. It’s what’s happening / X',
+#                    start_time=fmt_time_string(
+#                        "2025-03-22 16:14:50.201399-07:00"),
+#                    end_time=None, duration_for_tests=None, productive=False),
+#     ProgramSession(title='My Workspace', detail='dash | Overview',
+#                    start_time=fmt_time_string(
+#                        "2025-03-22 16:15:55.237392-07:00"),
+#                    end_time=None, duration_for_tests=None, productive=False),
+#     ProgramSession(title='Visual Studio Code', detail='surveillance_manager.py - deskSense',
+#                    start_time=fmt_time_string(
+#                        "2025-03-22 16:16:03.374304-07:00"),
+#                    end_time=None, duration_for_tests=None, productive=False),
+#     ProgramSession(title='Google Chrome', detail='Google',
+#                    start_time=fmt_time_string(
+#                        "2025-03-22 16:16:17.480951-07:00"),
+#                    end_time=None, duration_for_tests=None, productive=False)
+# ]
 
 # NOTE I COOKED these numbers manually, they DO NOT reflect the times from the prev tests.
 # TODO: Cook the above test's inputs so that they come out with LINEAR sessions program -> chrome & 1-10 sec durations
@@ -516,7 +511,7 @@ chrome_events_from_prev_test = [
 imaginary_path_to_chrome = "imaginary/path/to/Chrome.exe"
 imaginary_chrome_processe = "Chrome.exe"
 
-pr_events_v2 = [ProgramSession(exe_path=imaginary_path_to_chrome, process_name=imaginary_chrome_processe, title='Google Chrome', detail='X. It’s what’s happening / X',
+pr_events_v2 = [ProgramSession(exe_path=imaginary_path_to_chrome, process_name=imaginary_chrome_processe, title='Google Chrome', detail="X. It’s what’s happening / X",
                                start_time=UserLocalTime(fmt_time_string(
                                    "2025-03-22 16:14:50.201399-07:00")),
                                end_time=None, duration_for_tests=None, productive=False),
@@ -524,7 +519,7 @@ pr_events_v2 = [ProgramSession(exe_path=imaginary_path_to_chrome, process_name=i
                 start_time=UserLocalTime(fmt_time_string(
                     "2025-03-22 16:15:55.237392-07:00")),
                 end_time=None, duration_for_tests=None, productive=False),
-                ProgramSession(exe_path='C:/path/to/VSCode.exe', process_name='code', title='Visual Studio Code', detail='surveillance_manager.py - deskSense',
+                ProgramSession(exe_path='C:/path/to/VSCode.exe', process_name='Code.exe', title='Visual Studio Code', detail='surveillance_manager.py - deskSense',
                 start_time=UserLocalTime(fmt_time_string(
                     "2025-03-22 16:16:03.374304-07:00")),
                 end_time=None, duration_for_tests=None, productive=False),

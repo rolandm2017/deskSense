@@ -8,11 +8,12 @@ import ctypes
 from ctypes import wintypes
 import time
 
-from typing import Dict, Generator
+from typing import Dict, Generator, List, TypedDict
 
 from .program_facade_base import ProgramFacadeInterface
 
 from surveillance.src.util.console_logger import ConsoleLogger
+from surveillance.src.object.classes import ProgramSessionDict
 
 
 class WindowsProgramFacadeCore(ProgramFacadeInterface):
@@ -22,7 +23,7 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
         self.win32process = win32process
         self.previous_window = None
 
-    def read_current_program_info(self) -> Dict:
+    def read_current_program_info(self) -> ProgramSessionDict:
         """
         Gets information about the currently active window.
 
@@ -31,7 +32,7 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
         """
         return self._read_windows()
 
-    def _read_windows(self) -> Dict:
+    def _read_windows(self) -> ProgramSessionDict:
         """
         Reads information about the currently active window on Windows.
 
@@ -85,7 +86,7 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
             "window_title": self.win32gui.GetWindowText(window)
         }
 
-    def listen_for_window_changes(self) -> Generator[Dict, None, None]:
+    def listen_for_window_changes(self) -> Generator[ProgramSessionDict, None, None]:
         """
         Listens for window focus changes and yields window information when changes occur.
 

@@ -6,6 +6,14 @@ from typing import TypedDict, Optional
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 
+class ProgramSessionDict(TypedDict):
+    os: str
+    pid: int | None
+    process_name: str
+    exe_path: str
+    window_title: str
+
+
 class CompletedProgramSession:
     exe_path: str
     process_name: str
@@ -24,12 +32,12 @@ class ProgramSession:
     process_name: str
     window_title: str
     detail: str
-    start_time: Optional[UserLocalTime]
+    start_time: UserLocalTime
     end_time: Optional[UserLocalTime]
     duration: Optional[timedelta]
     productive: bool
 
-    def __init__(self, exe_path="", process_name="", title="", detail="", start_time=None, end_time=None, productive=False, duration_for_tests=None):
+    def __init__(self, exe_path, process_name, title, detail, start_time, end_time=None, productive=False, duration_for_tests=None):
         """Only use duration in testing. Don't use it otherwise. 'duration_for_tests' exists only for e2e tests thresholds"""
         self.exe_path = exe_path
         self.process_name = process_name

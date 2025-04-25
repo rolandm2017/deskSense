@@ -64,8 +64,6 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             start_time.date(), time.min, tzinfo=start_time.tzinfo)
         end_of_day = datetime.combine(
             start_time.date(), time.max, tzinfo=start_time.tzinfo)
-        print("BETWEEN ", start_of_day)
-        print("AND ", end_of_day)
 
         query = select(DailyDomainSummary).where(
             DailyDomainSummary.domain_name == chrome_session.domain,

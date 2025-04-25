@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.sql.selectable import Select
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timedelta, timezone, time
-from typing import List
+from typing import List, TypedDict
 
 from surveillance.src.config.definitions import power_on_off_debug_file
 
@@ -64,7 +64,21 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         )
         self.add_new_item(new_entry)
 
-    def find_todays_entry_for_program(self, program_session: ProgramSession):
+    # class CreationContent(TypedDict):
+    #     exe_path: str
+    #     window_title: str
+    #     duration_in_hours: float
+    #     gathering_date: datetime
+
+    # def package_model_for_db(self, content: CreationContent):
+    #     return DailyProgramSummary(
+    #         exe_path_as_id=exe_path,
+    #         program_name=window_title,
+    #         hours_spent=duration_in_hours,
+    #         gathering_date=gathering_date
+    #     )
+
+    def find_todays_entry_for_program(self, program_session: ProgramSession) -> DailyProgramSummary:
         """Find by process_name / exe_path"""
         if program_session.start_time is None:
             raise ValueError("start_time was not set")
@@ -75,13 +89,17 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         end_of_day = datetime.combine(
             start_time.date(), time.max, tzinfo=start_time.tzinfo)
 
-        query = select(DailyProgramSummary).where(
-            DailyProgramSummary.exe_path_as_id == program_session.exe_path,
+        query = self.create_find_all_from_day_query(
+            program_session.exe_path, start_of_day, end_of_day)
+
+        return self.execute_and_read_one_or_none(query)
+
+    def create_find_all_from_day_query(self, exe_path, start_of_day, end_of_day):
+        return select(DailyProgramSummary).where(
+            DailyProgramSummary.exe_path_as_id == exe_path,
             DailyProgramSummary.gathering_date >= start_of_day,
             DailyProgramSummary.gathering_date < end_of_day
         )
-
-        return self.execute_and_read_one_or_none(query)
 
     def read_past_week(self, right_now: UserLocalTime):
         # +1 because weekday() counts from Monday=0

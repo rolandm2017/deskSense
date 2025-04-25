@@ -114,7 +114,7 @@ class ThreadedEngineContainer:
 
     def _iterate_loop(self):
         while not self.stop_event.is_set():
-            self.engine.iterate_loop()
+            self.engine.iterate_loop()  # Claude: this is line 117
             self.sleep_fn(self.interval)  # Sleep for 1 second
 
     def stop(self):

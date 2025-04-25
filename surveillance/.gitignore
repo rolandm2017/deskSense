@@ -1,6 +1,9 @@
 # virtual envs
 .venv-linux
 .venv
+.win-env
+.win-env2
+
 .idea
 # pycache
 **/__pycache__
@@ -12,7 +15,10 @@ productivity_data/*
 productivity_logs
 logs
 
+# Virtual envs
 .env
+
+
 deskSense.egg-info
 
 temp.py

@@ -13,7 +13,6 @@ from .session_heartbeat import KeepAliveEngine, ThreadedEngineContainer
 from surveillance.src.object.arbiter_classes import ChromeInternalState, ApplicationInternalState
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.copy_util import snapshot_obj_for_tests
-from surveillance.src.util.errors import ImpossibleToGetHereError
 
 
 class ActivityArbiter:
@@ -93,6 +92,7 @@ class ActivityArbiter:
             # ### & create the replacement state
 
             # end_time & duration is set inside the ASM
+            print(new_session, type(new_session.start_time), "96ru")
             self.state_machine.set_new_session(new_session)
 
             concluded_session = self.state_machine.get_concluded_session()

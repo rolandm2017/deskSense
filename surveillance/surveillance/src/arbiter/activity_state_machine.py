@@ -9,13 +9,6 @@ from surveillance.src.util.copy_util import snapshot_obj_for_tests
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 
-# class OverallState:
-#     def __init__(self):
-#         self.program_state = None
-#         self.chrome_state = None
-#         self.latest_update = None
-
-
 class ActivityStateMachine:
     def __init__(self, user_facing_clock):
         """
@@ -50,6 +43,8 @@ class ActivityStateMachine:
                 updated_state = self.transition_from_chrome.compute_next_state(
                     next_session)
             if next_session.start_time:
+                print(next_session.start_time, type(
+                    next_session.start_time), "53ru")
                 self._conclude_session(
                     self.current_state, next_session.start_time)
                 self.prior_state = self.current_state

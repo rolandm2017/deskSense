@@ -44,14 +44,11 @@ class ActivityRecorder:
                 return
             self.program_summary_dao.start_session(session, now)
         elif isinstance(session, ChromeSession):
-            print(f"FINDING {session.domain}")
             self.chrome_logging_dao.start_session(session)
             session_exists = self.chrome_summary_dao.find_todays_entry_for_domain(
                 session)
             if session_exists:
-                print(f"###\n### FOUND -> {session.domain}")
                 return
-            print(f"@ @ \n@ @ STARTING {session.domain}")
             self.chrome_summary_dao.start_session(session, now)
         else:
             raise TypeError("Session was not the right type")
