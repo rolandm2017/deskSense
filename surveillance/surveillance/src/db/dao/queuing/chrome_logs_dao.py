@@ -41,32 +41,7 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
         # super().__init__(async_session_maker=async_session_maker,
         #                  batch_size=batch_size, flush_interval=flush_interval, dao_name="ChromeLogging")
         self.regular_session = session_maker  # Do not delete. UtilityDao still uses it
-
-    def create_full_log(self, session: ChromeSession, right_now: UserLocalTime):
-        """
-        Log an update to a summary table.
-
-        So the end_time here is like, "when was that addition to the summary ended?"
-        """
-        if session.duration is None:
-            raise ValueError("Session duration was None")
-        if session.start_time is None or session.end_time is None:
-            raise ValueError("Start or end time was None")
-        start_end_time_duration_as_hours = convert_start_end_times_to_hours(
-            session)
-
-        duration_property_as_hours = convert_duration_to_hours(session)
-
-        log_entry = DomainSummaryLog(
-            domain_name=session.domain,
-            hours_spent=start_end_time_duration_as_hours,
-            start_time=session.start_time.get_dt_for_db(),
-            end_time=session.end_time.get_dt_for_db(),
-            duration=duration_property_as_hours,
-            gathering_date=right_now.date(),
-            created_at=right_now
-        )
-        self.add_new_item(log_entry)
+      
 
     def start_session(self, session: ChromeSession):
         """

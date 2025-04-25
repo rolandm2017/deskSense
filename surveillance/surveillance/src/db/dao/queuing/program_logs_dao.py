@@ -42,37 +42,7 @@ class ProgramLoggingDao(UtilityDaoMixin):
         self.regular_session = session_maker  # Do not delete. UtilityDao still uses it
         self.logger = ConsoleLogger()
 
-    def create_full_log(self, session: ProgramSession, right_now: datetime):
-        """
-        Log an update to a summary table.
-
-        So the end_time here is like, "when was that addition to the summary ended?"
-        """
-        if session.start_time is None:
-            raise ValueError("Start time was None")
-        if session.end_time is None:
-            raise ValueError("End time was None")
-        # ### Calculate time difference
-        start_end_time_duration_as_hours = convert_start_end_times_to_hours(
-            session)
-
-        duration_property_as_hours = convert_duration_to_hours(session)
-
-        # FIXME: do not need hours_spent AND duration?
-        print("creating ", session.start_time)
-        log_entry = ProgramSummaryLog(
-            exe_path_as_id=session.exe_path,
-            process_name=session.process_name,
-            program_name=session.window_title,
-            hours_spent=start_end_time_duration_as_hours,
-            start_time=session.start_time.get_dt_for_db(),
-            end_time=session.end_time.get_dt_for_db(),
-            duration=duration_property_as_hours,
-            gathering_date=right_now.date(),
-            created_at=right_now
-        )
-        # print("[pr] Creating ", log_entry)
-        self.add_new_item(log_entry)
+    
 
     def start_session(self, session: ProgramSession):
         """
@@ -87,8 +57,10 @@ class ProgramLoggingDao(UtilityDaoMixin):
         start_of_day = get_start_of_day(session.start_time.get_dt_for_db())
         start_of_day_as_utc = convert_to_utc(start_of_day)
         start_window_end = base_start_time + timedelta(seconds=10)
+        print("\n++\n\t++\n\t\t++CREATING ", session.exe_path)
+
         log_entry = ProgramSummaryLog(
-            exe_path_as_id=session.process_name,
+            exe_path_as_id=session.exe_path,
             process_name=session.process_name,
             program_name=session.window_title,
             # Assumes (10 - n) sec will be deducted later
@@ -228,7 +200,6 @@ class ProgramLoggingDao(UtilityDaoMixin):
         if not log:
             raise ImpossibleToGetHereError(
                 "Start of heartbeat didn't reach the db")
-        print(log, "231ru")
         log.end_time = log.end_time + timedelta(seconds=10)
         self.update_item(log)
 
