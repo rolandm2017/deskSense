@@ -84,8 +84,14 @@ class UserLocalTimeMockClock(ClockProtocol):
                 print(e)
                 raise
         except StopIteration:
-            raise RuntimeError(
-                f"MockClock ran out of times. It started with {self.count_of_times}")
+            if self._current_time is not None:
+                print(f"WARNING: MockClock ran out after {self.count_of_times} calls, reusing last time")
+                self.count_of_times += 1
+                return self._current_time
+            else:
+                raise RuntimeError(f"MockClock ran out of times and has no last time")
+            # raise RuntimeError(
+            #     f"MockClock ran out of times. It started with {self.count_of_times}")
 
     def seconds_have_elapsed(self, current_time: UserLocalTime, previous_time: UserLocalTime, seconds: int) -> bool:
         """Check if the specified number of seconds has elapsed between two times."""
