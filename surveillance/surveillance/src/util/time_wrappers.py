@@ -1,8 +1,5 @@
 from datetime import datetime
 
-from surveillance.src.util.time_formatting import get_start_of_day
-
-
 class TimeKeeper:
     """
     Exists to resolve painful problems dealing with converting
@@ -78,8 +75,11 @@ class UserLocalTime:
 
     def get_start_of_day(self):
         """Get the start of the day for this time"""
-        dt = get_start_of_day(self.dt)
+        dt = self.dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        # This .replace() MUST live here, regardless of the existing util func, 
+        # to avoid a circular import.
         return UserLocalTime(dt)
+    
 
     # Optional: Implement other datetime methods directly
     # This allows for direct calling like my_time.strftime()
