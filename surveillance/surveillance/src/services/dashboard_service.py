@@ -309,14 +309,3 @@ class DashboardService:
 
         return usage_from_days
 
-    def get_past_month_summaries_programs(self):
-        right_now = self.user_clock.now()
-
-        all = self.program_summary_dao.read_past_month(right_now)
-        return all
-
-    def get_past_month_summaries_chrome(self):
-        right_now = self.user_clock.now()
-
-        all = self.chrome_summary_dao.read_past_month(right_now)
-        return all

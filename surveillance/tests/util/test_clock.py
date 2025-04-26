@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 
-from surveillance.src.services.services import TimezoneService
+from surveillance.src.services.tiny_services import TimezoneService
 
 from surveillance.src.config.definitions import local_time_zone, regular_tz_offset, daylight_savings_tz_offset
 from surveillance.src.util.clock import UserFacingClock

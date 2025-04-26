@@ -8,7 +8,7 @@ import asyncio
 from .debug.ui_notifier import UINotifier
 
 from .services.chrome_service import ChromeService
-from .services.services import KeyboardService, MouseService, TimezoneService
+from .services.tiny_services import KeyboardService, MouseService, TimezoneService
 from .facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
 
 from .db.database import async_session_maker, regular_session_maker
@@ -85,24 +85,24 @@ async def get_frame_dao() -> FrameDao:
 
 
 async def get_timezone_service() -> TimezoneService:
-    from .services.services import TimezoneService
+    from .services.tiny_services import TimezoneService
     return TimezoneService()
 
 
 async def get_keyboard_service(dao: KeyboardDao = Depends(get_keyboard_dao)) -> KeyboardService:
-    from .services.services import KeyboardService
+    from .services.tiny_services import KeyboardService
     return KeyboardService(dao)
 
 
 async def get_mouse_service(dao: MouseDao = Depends(get_mouse_dao)) -> MouseService:
     # Lazy import to avoid circular dependency
-    from .services.services import MouseService
+    from .services.tiny_services import MouseService
     return MouseService(dao)
 
 
 # async def get_program_service() -> ProgramService:
 #     # Lazy import to avoid circular dependency
-#     from .services.services import ProgramService
+#     from .services.tiny_services import ProgramService
 #     return ProgramService(None)  # Under construction
 
 
@@ -188,5 +188,5 @@ async def get_chrome_service(arbiter: ActivityArbiter = Depends(get_activity_arb
 
 
 async def get_video_service(video_dao: VideoDao = Depends(get_video_dao), frame_dao: FrameDao = Depends(get_frame_dao)):
-    from .services.services import VideoService
+    from .services.tiny_services import VideoService
     return VideoService(video_dao, frame_dao)

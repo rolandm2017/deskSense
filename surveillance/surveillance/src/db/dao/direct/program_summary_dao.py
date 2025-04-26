@@ -53,7 +53,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         self._create(program_session, usage_duration_in_hours, today_start)
 
     def _create(self, session: ProgramSession, duration_in_hours: float, when_it_was_gathered: datetime):
-        self.logger.log_white("[debug] creating session: " + session.exe_path)
+        # self.logger.log_white("[debug] creating session: " + session.exe_path)
         self.throw_if_negative(session.process_name, duration_in_hours)
         new_entry = DailyProgramSummary(
             exe_path_as_id=session.exe_path,
@@ -93,16 +93,6 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
 
         query = select(DailyProgramSummary).where(
             func.date(DailyProgramSummary.gathering_date) >= last_sunday.date()
-        )
-
-        return self.execute_and_return_all(query)
-
-    async def read_past_month(self, right_now: UserLocalTime):
-        """Read all entries from the 1st of the current month through today."""
-        start_of_month = right_now.replace(day=1)  # First day of current month
-
-        query = select(DailyProgramSummary).where(
-            func.date(DailyProgramSummary.gathering_date) >= start_of_month.date()
         )
 
         return self.execute_and_return_all(query)

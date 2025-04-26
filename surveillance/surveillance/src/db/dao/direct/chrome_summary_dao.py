@@ -94,16 +94,6 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         )
         return self.execute_and_return_all(query)
 
-    def read_past_month(self, right_now: UserLocalTime):
-        """Read all entries from the 1st of the current month through today."""
-        start_of_month = right_now.dt.replace(
-            day=1)  # First day of current month
-
-        query = select(DailyDomainSummary).where(
-            func.date(DailyDomainSummary.gathering_date) >= start_of_month.date()
-        )
-
-        return self.execute_and_return_all(query)
 
     def read_day(self, day: UserLocalTime) -> List[DailyDomainSummary]:
         """Read all entries for the given day."""
@@ -135,13 +125,13 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             # Commit the changes
             session.commit()
 
-    def push_window_ahead_ten_sec(self, chrome_session: ChromeSession, right_now):
+    def push_window_ahead_ten_sec(self, chrome_session: ChromeSession, right_now: UserLocalTime):
         """Finds the given session and adds ten sec to its end_time
 
         NOTE: This only ever happens after start_session
         """
         target_domain = chrome_session.domain
-        today_start = get_start_of_day(right_now)
+        today_start = get_start_of_day(right_now.dt)
         tomorrow_start = today_start + timedelta(days=1)
 
         query = select(DailyDomainSummary).where(

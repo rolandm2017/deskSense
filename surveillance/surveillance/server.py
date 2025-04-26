@@ -43,7 +43,7 @@ from surveillance.src.facade.receive_messages import MessageReceiver
 
 
 
-from surveillance.src.services.services import TimezoneService
+from surveillance.src.services.tiny_services import TimezoneService
 
 from surveillance.src.service_dependencies import (
     get_keyboard_service, get_mouse_service,     get_dashboard_service, get_chrome_service, get_activity_arbiter, get_timezone_service,

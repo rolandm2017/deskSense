@@ -7,7 +7,7 @@ from surveillance.src.object.pydantic_dto import (
     ProgramActivityReport
 )
 
-from surveillance.src.services.services import (
+from surveillance.src.services.tiny_services import (
     KeyboardService, MouseService
 )
 
