@@ -1,6 +1,6 @@
 import psutil
 from Xlib import display, X
-
+import subprocess
 from typing import Dict, Optional, Generator, cast
 
 from .program_facade_base import ProgramFacadeInterface
@@ -12,28 +12,23 @@ from surveillance.src.object.classes import ProgramSessionDict
 class UbuntuProgramFacadeCore(ProgramFacadeInterface):
     def __init__(self):
         self.console_logger = ConsoleLogger()
-        self.Xlib = None
         self.display = display
         self.X = X
 
     def read_current_program_info(self) -> ProgramSessionDict:
-        return self._read_ubuntu()
-
-    def read_exe_path_for_pid(self, pid):
-        process = psutil.Process(pid)
-        exe_path = process.exe()  # works on Linux t
-        return exe_path
+        return self._read_focused_program()
 
     def listen_for_window_changes(self) -> Generator[ProgramSessionDict, None, None]:
-        if self.X is None or self.display is None:
-            raise AttributeError(
-                "Crucial component was not initialized")
+        """
+        Listens for window focus changes and yields window information when changes occur.
 
+        Yields:
+            Dict: Information about the new active window after each focus change.
+        """
         d = self.display.Display()
         root = d.screen().root
 
         # Listen for focus change events
-
         root.change_attributes(
             event_mask=self.X.FocusChangeMask | self.X.PropertyChangeMask)
 
@@ -42,70 +37,153 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
             if event.type == self.X.PropertyNotify:
                 if event.atom == d.intern_atom('_NET_ACTIVE_WINDOW'):
                     # Window focus changed - get new window info
-                    window_info = self._read_ubuntu()
+                    window_info = self._read_focused_program()
+                    self.console_logger.debug(
+                        f"Window changed: {window_info['window_title']} ({window_info['process_name']})")
                     yield window_info
 
-    def _read_ubuntu(self) -> ProgramSessionDict:
-        # Ubuntu implementation using wmctrl or xdotool could go here
-        # For now, returning active process info
-        active = self._get_active_window_ubuntu()
-        active_process_name = cast(
-            str, active["name"] if active else "Unknown")
-        active_process_pid = cast(int, active["pid"] if active else 9999)
-        exe_path = self.read_exe_path_for_pid(active_process_pid)
-        window_name = self._read_active_window_name_ubuntu()
-        # FIXME: "Program None - rlm@kingdom: ~/Code/deskSense/surveillance"
-        return {
-            "exe_path": exe_path,
-            "os": "Ubuntu",
-            "pid": active_process_pid,
-            "process_name": active_process_name,
-            "window_title": window_name  # window_title with the detail
-        }
+    def _read_focused_program(self) -> ProgramSessionDict:
+        """
+        Reads information about the currently active window on Ubuntu.
 
-    def _read_active_window_name_ubuntu(self):
+        Returns:
+            Dict: Window information including OS, PID, process name, executable path, and window title.
+        """
         try:
-            if self.X is None or self.display is None:
-                raise AttributeError(
-                    "Crucial component was not initialized")
+            # Get active window info
+            window_info = self._get_active_window_info()
 
-            # Connect to the X server
+            if window_info is None:
+                return {
+                    "os": "Ubuntu",
+                    "pid": None,
+                    "process_name": "Unknown",
+                    "exe_path": "Unknown",
+                    "window_title": "No active window"
+                }
+
+            pid = window_info["pid"]
+            process_name = window_info["name"]
+            window_title = window_info["title"]
+
+            # Get executable path
+            exe_path = "Unknown"
+            if pid is not None:
+                try:
+                    exe_path = self.read_exe_path_for_pid(pid)
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    self.console_logger.debug(
+                        f"Could not access process with PID {pid}")
+
+            return {
+                "os": "Ubuntu",
+                "pid": pid,
+                "process_name": process_name,
+                "exe_path": exe_path,
+                "window_title": window_title
+            }
+
+        except Exception as e:
+            self.console_logger.debug(f"Error in _read_ubuntu: {str(e)}")
+            return {
+                "os": "Ubuntu",
+                "pid": None,
+                "process_name": "Error",
+                "exe_path": "Error",
+                "window_title": f"Error: {str(e)}"
+            }
+
+    def _get_active_window_info(self) -> Optional[Dict]:
+        """
+        Gets detailed information about the active window including PID, 
+        window title, and process name using X11.
+
+        Returns:
+            Dict or None: Window information or None if no active window.
+        """
+        try:
             d = self.display.Display()
             root = d.screen().root
 
             # Get the active window ID
-            active_window_id = root.get_full_property(
+            active_window_property = root.get_full_property(
                 d.intern_atom('_NET_ACTIVE_WINDOW'), self.X.AnyPropertyType
-            ).value[0]
+            )
+
+            if not active_window_property:
+                return None
+
+            active_window_id = active_window_property.value[0]
+
+            # No active window
+            if active_window_id == 0:
+                return None
 
             # Get the window object
             window_obj = d.create_resource_object('window', active_window_id)
-            window_name = window_obj.get_full_property(
+
+            # Get window title
+            window_name_property = window_obj.get_full_property(
                 d.intern_atom('_NET_WM_NAME'), 0
             )
 
-            if window_name:
-                # convert bytestring -> plain string as soon as it enters the system. don't let it leave the facade
-                window_name_as_string = window_name.value.decode()
-                return window_name_as_string  # might need to specify encoding
-            else:
-                return "Unnamed window"
+            window_title = "Unnamed window"
+            if window_name_property:
+                window_title = window_name_property.value.decode()
+
+            # Get PID associated with window
+            pid_property = window_obj.get_full_property(
+                d.intern_atom('_NET_WM_PID'), 0
+            )
+
+            pid = None
+            process_name = "Unknown"
+
+            if pid_property:
+                pid = pid_property.value[0]
+                try:
+                    process = psutil.Process(pid)
+                    process_name = process.name()
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    self.console_logger.debug(
+                        f"Could not access process with PID {pid}")
+
+            return {
+                "pid": pid,
+                "name": process_name,
+                "title": window_title
+            }
+
         except Exception as e:
-            # Will always be:
-            # <class 'Xlib.error.BadWindow'>:
-            #     code = 3, resource_id = <Resource 0x00000000>,
-            #     sequence_number = 22, major_opcode = 20, minor_opcode = 0 []
-            # TODO: ensure it's alt tab window
-            return "Alt-tab window"  # "Alt-Tab Window (Most Likely)"
+            self.console_logger.debug(
+                f"Error getting active window info: {str(e)}")
+            return None
+
+    def read_exe_path_for_pid(self, pid):
+        process = psutil.Process(pid)
+        exe_path = process.exe()  # works on Linux t
+        return exe_path
+
+    def _read_active_window_name_ubuntu(self) -> str:
+        """
+        Legacy method for compatibility. Gets just the window title.
+
+        Returns:
+            str: The title of the active window or an error message.
+        """
+        window_info = self._get_active_window_info()
+        return window_info["title"] if window_info else "Unknown window"
 
     def _get_active_window_ubuntu(self) -> Optional[Dict]:
-        # Basic implementation - could be enhanced with window manager tools
-        for proc in psutil.process_iter(['pid', 'name']):
-            try:
-                if proc.status() == 'running':
-                    return {"pid": proc.pid, "name": proc.name()}
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                continue
+        """
+        Legacy method for compatibility. Gets basic window process info.
+
+        Returns:
+            Dict or None: Basic process information or None.
+        """
+        window_info = self._get_active_window_info()
+        if window_info:
+            return {"pid": window_info["pid"], "name": window_info["name"]}
         return None
 
     def setup_window_hook(self) -> Generator[ProgramSessionDict, None, None]:
