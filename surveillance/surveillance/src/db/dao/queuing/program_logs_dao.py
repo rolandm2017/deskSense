@@ -77,6 +77,19 @@ class ProgramLoggingDao(UtilityDaoMixin):
     def start_session(self, session: ProgramSession):
         """
         A session of using a domain. End_time here is like, "when did the user tab away from the program?"
+
+        This method ensures both the raw activity log(fine-grained timeline)
+        and the daily summary(aggregated time) are initialized correctly.
+
+        Why we always start a logging session:
+        - The logging DAO captures every 10-second activity window, even if it’s the first one today.
+
+        Why we * only * start a summary session if one doesn't exist:
+        - The summary DAO represents "total time spent today", and should not double-count.
+        - If a summary entry exists, we will *add to it later* (via `push_window_ahead_ten_sec`), not recreate it.
+
+        The log is the source of truth. The summary is derived.
+        But for performance and convenience, we update the summary in-place.
         """
         self.logger.log_white_multiple(
             "INFO: starting session for ", session.window_title)
