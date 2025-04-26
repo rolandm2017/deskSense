@@ -43,7 +43,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         self.async_session_maker = async_session_maker
         self.logger = ConsoleLogger()
 
-    def start_session(self, program_session: ProgramSession, right_now: UserLocalTime):
+    def initialize_summary_if_absent(self, program_session: ProgramSession, right_now: UserLocalTime):
         """Creating the initial session for the summary"""
         starting_window_amt = 10  # sec
         usage_duration_in_hours = starting_window_amt / SECONDS_PER_HOUR
@@ -63,20 +63,6 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             gathering_date=when_it_was_gathered
         )
         self.add_new_item(new_entry)
-
-    # class CreationContent(TypedDict):
-    #     exe_path: str
-    #     window_title: str
-    #     duration_in_hours: float
-    #     gathering_date: datetime
-
-    # def package_model_for_db(self, content: CreationContent):
-    #     return DailyProgramSummary(
-    #         exe_path_as_id=exe_path,
-    #         program_name=window_title,
-    #         hours_spent=duration_in_hours,
-    #         gathering_date=gathering_date
-    #     )
 
     def find_todays_entry_for_program(self, program_session: ProgramSession) -> DailyProgramSummary:
         """Find by process_name / exe_path"""

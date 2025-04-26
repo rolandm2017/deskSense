@@ -42,7 +42,7 @@ class ActivityRecorder:
                 session)
             if session_exists:
                 return
-            self.program_summary_dao.start_session(session, now)
+            self.program_summary_dao.initialize_summary_if_absent(session, now)
         elif isinstance(session, ChromeSession):
             self.chrome_logging_dao.start_session(session)
             session_exists = self.chrome_summary_dao.find_todays_entry_for_domain(
