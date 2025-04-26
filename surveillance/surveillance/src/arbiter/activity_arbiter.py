@@ -114,16 +114,6 @@ class ActivityArbiter:
             # ### Put outgoing state into the DAO
             self.notify_summary_dao(concluded_session)
         else:
-            if isinstance(new_session, ProgramSession):
-                updated_state = ApplicationInternalState(
-                    new_session.window_title, False,  new_session)
-            else:
-                updated_state = ChromeInternalState(
-                    active_application="Chrome",
-                    is_chrome=True,
-                    current_tab=new_session.detail,
-                    session=new_session
-                )
             start_of_loop = asyncio.new_event_loop()
             self.logger.log_white("in arbiter init")
 

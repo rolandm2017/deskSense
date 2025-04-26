@@ -67,6 +67,7 @@ class ActivityRecorder:
         if session is None:
             raise ValueError("Session was None in add_ten_sec")
         now: UserLocalTime = self.user_facing_clock.now()
+        print("getting time in add_ten_sec_to_end_time")
         if isinstance(session, ProgramSession):
             self.program_logging_dao.push_window_ahead_ten_sec(session)
             self.program_summary_dao.push_window_ahead_ten_sec(session, now)

@@ -1,4 +1,6 @@
 # mock_clock.py
+import inspect
+
 from datetime import datetime, timedelta, timezone
 from typing import Iterator
 
@@ -70,6 +72,17 @@ class UserLocalTimeMockClock(ClockProtocol):
 
     def now(self) -> UserLocalTime:
         try:
+            # Get the current stack frame information
+            stack = inspect.stack()
+
+            # The immediate caller is at index 1 (index 0 is this function)
+            caller_frame = stack[1]
+
+            # Get caller info
+            caller_function = caller_frame.function
+            caller_filename = caller_frame.filename.split('\\')[-1]  # Just the filename, not the full path
+            caller_line = caller_frame.lineno
+            print(f"[DEBUG] Clock call #{self.count_of_times+1} - Called by: {caller_filename}:{caller_function}:{caller_line}")
             next_val_from_iter = next(self.times)
             self._current_time = next_val_from_iter
             try:
@@ -84,14 +97,15 @@ class UserLocalTimeMockClock(ClockProtocol):
                 print(e)
                 raise
         except StopIteration:
-            if self._current_time is not None:
-                print(f"WARNING: MockClock ran out after {self.count_of_times} calls, reusing last time")
-                self.count_of_times += 1
-                return self._current_time
-            else:
-                raise RuntimeError(f"MockClock ran out of times and has no last time")
-            # raise RuntimeError(
-            #     f"MockClock ran out of times. It started with {self.count_of_times}")
+            # if self._current_time is not None:
+            #     print(f"WARNING: MockClock ran out after {self.count_of_times} calls, reusing last time:")
+            #     print("Reusing: ", self._current_time)
+            #     self.count_of_times += 1
+            #     return self._current_time
+            # else:
+            #     raise RuntimeError(f"MockClock ran out of times and has no last time")
+            raise RuntimeError(
+                f"MockClock ran out of times. It started with {self.count_of_times}")
 
     def seconds_have_elapsed(self, current_time: UserLocalTime, previous_time: UserLocalTime, seconds: int) -> bool:
         """Check if the specified number of seconds has elapsed between two times."""
@@ -115,6 +129,7 @@ class UserLocalTimeMockClock(ClockProtocol):
         if prev_current_time:
             return prev_current_time.replace(hour=0, minute=0, second=0, microsecond=0)
         else:
+
             new_time = self.now()
             return new_time.replace(hour=0, minute=0, second=0, microsecond=0)
         # return datetime.now(ZoneInfo(local_time_zone)).replace(

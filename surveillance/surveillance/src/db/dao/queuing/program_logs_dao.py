@@ -46,8 +46,8 @@ class ProgramLoggingDao(UtilityDaoMixin):
         """
         A session of using a domain. End_time here is like, "when did the user tab away from the program?"
         """
-        self.logger.log_white_multiple(
-            "INFO: starting session for ", session.window_title)
+        # self.logger.log_white_multiple(
+        #     "INFO: starting session for ", session.window_title)
         if session.start_time is None:
             raise ValueError("Start time was None")
         unknown = None
