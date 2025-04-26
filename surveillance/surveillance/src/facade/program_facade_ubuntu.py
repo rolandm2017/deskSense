@@ -1,6 +1,6 @@
+from curses import window
 import psutil
 from Xlib import display, X
-import subprocess
 from typing import Dict, Optional, Generator, cast
 
 from .program_facade_base import ProgramFacadeInterface
@@ -10,6 +10,12 @@ from surveillance.src.object.classes import ProgramSessionDict
 
 
 class UbuntuProgramFacadeCore(ProgramFacadeInterface):
+    """
+    Current implementation covers ONLY X11.
+
+    TODO: Separate x11 and Wayland facades into 
+    """
+
     def __init__(self):
         self.console_logger = ConsoleLogger()
         self.display = display
@@ -62,18 +68,19 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
                     "window_title": "No active window"
                 }
 
+            exe_path = window_info["exe_path"]
             pid = window_info["pid"]
             process_name = window_info["name"]
             window_title = window_info["title"]
 
-            # Get executable path
-            exe_path = "Unknown"
-            if pid is not None:
-                try:
-                    exe_path = self.read_exe_path_for_pid(pid)
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    self.console_logger.debug(
-                        f"Could not access process with PID {pid}")
+            # # Get executable path
+            # exe_path = "Unknown"
+            # if pid is not None:
+            #     try:
+            #         exe_path = self.read_exe_path_for_pid(pid)
+            #     except (psutil.NoSuchProcess, psutil.AccessDenied):
+            #         self.console_logger.debug(
+            #             f"Could not access process with PID {pid}")
 
             return {
                 "os": "Ubuntu",
@@ -144,11 +151,13 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
                 try:
                     process = psutil.Process(pid)
                     process_name = process.name()
+                    exe_path = process.exe()
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     self.console_logger.debug(
                         f"Could not access process with PID {pid}")
 
             return {
+                "exe_path": exe_path,
                 "pid": pid,
                 "name": process_name,
                 "title": window_title
@@ -161,7 +170,7 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
 
     def read_exe_path_for_pid(self, pid):
         process = psutil.Process(pid)
-        exe_path = process.exe()  # works on Linux t
+        exe_path = process.exe()
         return exe_path
 
     def _read_active_window_name_ubuntu(self) -> str:
@@ -194,21 +203,25 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
         Yields:
             Dict: Information about the new active window after each focus change.
         """
+
+        # Initialize display connection
+        d = self.display.Display()
+        root = d.screen().root
         # Select events on the root window
-        self.root.change_attributes(event_mask=X.PropertyChangeMask)
+        root.change_attributes(event_mask=X.PropertyChangeMask)
 
         # Get atoms we need to watch
-        net_active_window = self.display.intern_atom('_NET_ACTIVE_WINDOW')
+        net_active_window = d.intern_atom('_NET_ACTIVE_WINDOW')
 
         while True:
-            event = self.display.next_event()
+            event = d.next_event()
 
             # Check if it's a property change event on the root window
             if (event.type == X.PropertyNotify and
-                event.window == self.root and
+                event.window == root and
                     event.atom == net_active_window):
 
-                window_info = self._read_x11()
+                window_info = self._read_focused_program()
                 print(
                     f"Window changed: {window_info['window_title']} ({window_info['process_name']})")
                 yield window_info

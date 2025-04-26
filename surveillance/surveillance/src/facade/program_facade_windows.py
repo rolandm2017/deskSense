@@ -120,7 +120,6 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
         Yields:
             Dict: Information about the new active window after each focus change.
 
-
         """
         # Define callback function for window events
         def win_event_callback(hWinEventHook, event, hwnd, idObject, idChild, dwEventThread, dwmsEventTime):

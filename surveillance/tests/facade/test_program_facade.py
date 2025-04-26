@@ -14,12 +14,14 @@ def test_program_facade_on_ubuntu():
 
     facade = UbuntuProgramFacadeCore()
 
-    program_info = facade._read_ubuntu()
+    program_info = facade._read_focused_program()
 
     assert program_info["os"] == "Ubuntu"
     assert program_info["pid"] is not None
     assert program_info["process_name"] is not None
     assert program_info["window_title"] is not None
+
+    # TODO: Mock return values from libraries that interact with the OS, like psutil
 
 
 @pytest.mark.skipif(

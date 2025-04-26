@@ -63,6 +63,7 @@ class ProgramTrackerCore:
         for window_change in self.program_facade.listen_for_window_changes():
             # is_expected_shape_else_throw(window_change)
             # FIXME: "Running Server (WindowsTerminal.exe)" -> Terminal (Terminal)
+            # TODO: Change to process_name or the unique exe_path
             on_a_different_window_now = self.current_session and window_change[
                 "window_title"] != self.current_session.window_title
             if on_a_different_window_now and self.is_initialized():

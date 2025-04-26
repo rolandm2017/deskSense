@@ -19,6 +19,12 @@ load_dotenv()
 # Import project modules
 
 
+# TODO:
+# TODO: Change this absolute gong show into two separate files plus an entrypoint
+# TODO: The entrypoint detects, "Linux or windows?"
+# TODO: And chooses the entrypoint script for the correct OS. No more conditional imports
+# TODO:
+
 def on_hotkey():
     exit_all_monitors()
 
