@@ -5,6 +5,8 @@ from typing import List, Optional
 from surveillance.src.object.classes import ChromeSession, ProgramSession
 from surveillance.src.util.time_wrappers import UserLocalTime
 
+from surveillance.src.config.definitions import local_time_zone
+
 # Sample ProgramSession objects
 # 🖥️ Programs File 🖥️ Programs File 🖥️ Programs File 🖥️ Programs File 🖥️
 # 🖥️ Programs File 🖥️ Programs File 🖥️ Programs File 🖥️ Programs File 🖥️
@@ -68,8 +70,8 @@ def programs_feb_23() -> List:
 
     # Pycharm session
     pycharm_session = ProgramSession()
-    pycharm_session.exe_path = vscode_path
-    pycharm_session.process_name = vscode_process
+    pycharm_session.exe_path = pycharm_path
+    pycharm_session.process_name = pycharm_process
     pycharm_session.window_title = "Visual Studio CodeTEST"
     pycharm_session.detail = "Initial project setup"
     pycharm_session.start_time = UserLocalTime(
@@ -80,7 +82,6 @@ def programs_feb_23() -> List:
     program_sessions.append(pycharm_session)
 
     # Notion session
-    notion_session = ProgramSession()
     notion_session = ProgramSession()
     notion_session.exe_path = notion_path
     notion_session.process_name = notion_process
