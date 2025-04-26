@@ -44,7 +44,9 @@ class ActivityRecorder:
             self.program_logging_dao.start_session(session)
             session_exists_already = self.program_summary_dao.find_todays_entry_for_program(
                 session)
+            # TODO: After e2e tests, in assert phase, do an audit of logging time and summary time.
             if session_exists_already:
+                self.program_summary_dao.start_window_push_for_session(session, now)
                 return
             self.program_summary_dao.start_session(session, now)
         elif isinstance(session, ChromeSession):

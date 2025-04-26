@@ -163,7 +163,7 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
                 raise ImpossibleToGetHereError(
                     "A domain should already exist here, but was not found")
 
-    def deduct_remaining_duration(self, session: ChromeSession, duration_in_sec: int, today_start):
+    def deduct_remaining_duration(self, session: ChromeSession, duration_in_sec: int, today_start: UserLocalTime):
         """
         When a session is concluded, it was concluded partway thru the 10 sec window
 
@@ -171,7 +171,7 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         """
         target_domain = session.domain
 
-        tomorrow_start = today_start + timedelta(days=1)
+        tomorrow_start = today_start.dt + timedelta(days=1)
 
         query = select(DailyDomainSummary).where(
             DailyDomainSummary.domain_name == target_domain,

@@ -84,8 +84,13 @@ def test_running_for_three_sec():
 
 
     instance = KeepAliveEngine(session, dao_mock, start_of_loop)
+
+    conclude_spy = Mock(side_effect=instance.conclude)
+    instance.conclude = conclude_spy
+
     assert instance.elapsed == 0
 
+    # Act
     instance.iterate_loop()
     assert instance.elapsed == 1
 
@@ -93,8 +98,16 @@ def test_running_for_three_sec():
     instance.iterate_loop()
     assert instance.elapsed == 3
 
+    # Assert
     add_ten_mock.assert_not_called()
-    deduct_duration_mock.assert_not_called()    
+    deduct_duration_mock.assert_not_called()
+
+    # Act - Pretend the container called .stop()
+    instance.conclude()
+    # FIXME: It should be called! to deduct unused time from the recorder's window push
+    # deduct_duration_mock.assert_not_called()    
+    conclude_spy.assert_called_once()
+    deduct_duration_mock.assert_called_once_with(10 - 3, session)
 
 
 
@@ -123,7 +136,7 @@ def test_multiple_whole_loops():
 
     # Assert
     conclude_spy.assert_not_called
-    add_ten_mock.call_count == 2
+    assert add_ten_mock.call_count == 2
     assert instance.elapsed == total % 10  # 3
 
     # Act again

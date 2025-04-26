@@ -22,8 +22,8 @@ def program_session():
     return ProgramSession("C:/ProgramFiles/Code.exe", "Code.exe",
                           "Visual Studio Code",
                           "main.py",
-                          datetime(2023, 1, 1, 12, 0, 0),
-                          datetime(2023, 1, 1, 12, 10, 0),
+                          UserLocalTime(datetime(2023, 1, 1, 12, 0, 0)),
+                          UserLocalTime(datetime(2023, 1, 1, 12, 10, 0)),
                           True,
                           timedelta(minutes=10)
                           )
@@ -93,8 +93,10 @@ async def test_deduct_duration_program(activity_recorder, mock_daos, program_ses
 
     activity_recorder.deduct_duration(duration, program_session)
 
+    start_of_day = program_session.start_time.dt.replace(hour=0, minute=0, second=0)
+
     mock_daos['program_summary'].deduct_remaining_duration.assert_called_once_with(
-        program_session, duration, "2023-01-01"
+        program_session, duration, start_of_day
     )
 
 

@@ -31,7 +31,7 @@ class KeepAliveEngine:
         self.session = session
         if session is None:
             raise ValueError("Session should not be None in KeepAliveEngine")
-        self.dao = dao_connection
+        self.recorder = dao_connection
         self.max_interval = 10  # seconds
         self.elapsed = 0
         self.loop = loop
@@ -54,7 +54,7 @@ class KeepAliveEngine:
         """
         # current_end_time = self.dao.get_end_for_session(session)
         # updated_end_time = current_end_time + timedelta(seconds=10)
-        self.dao.add_ten_sec_to_end_time(self.session)
+        self.recorder.add_ten_sec_to_end_time(self.session)
         # async_task = self.dao.add_ten_sec_to_end_time(self.session)
         # # FIXME: this isn't reached
         # if asyncio.iscoroutine(async_task):
@@ -69,7 +69,7 @@ class KeepAliveEngine:
         "Here's how much time was left unfinished in that window. Please remove it."
         """
         duration = self.calculate_remaining_window(remainder)
-        self.dao.deduct_duration(duration, self.session)
+        self.recorder.deduct_duration(duration, self.session)
         # async_task = self.dao.deduct_duration(duration, self.session)
         # if asyncio.iscoroutine(async_task):
         #     self.loop.create_task(async_task)

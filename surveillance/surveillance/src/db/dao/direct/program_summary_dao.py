@@ -19,7 +19,7 @@ from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.errors import NegativeTimeError, ImpossibleToGetHereError
 from surveillance.src.util.debug_util import notice_suspicious_durations, log_if_needed
-from surveillance.src.util.time_formatting import get_start_of_day
+from surveillance.src.util.time_formatting import get_start_of_day, get_start_of_day_from_datetime
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 
@@ -48,7 +48,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         starting_window_amt = 10  # sec
         usage_duration_in_hours = starting_window_amt / SECONDS_PER_HOUR
 
-        today_start = get_start_of_day(right_now.dt)
+        today_start = get_start_of_day_from_datetime(right_now.dt)
 
         self._create(program_session, usage_duration_in_hours, today_start)
 
@@ -62,20 +62,6 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             gathering_date=when_it_was_gathered
         )
         self.add_new_item(new_entry)
-
-    # class CreationContent(TypedDict):
-    #     exe_path: str
-    #     window_title: str
-    #     duration_in_hours: float
-    #     gathering_date: datetime
-
-    # def package_model_for_db(self, content: CreationContent):
-    #     return DailyProgramSummary(
-    #         exe_path_as_id=exe_path,
-    #         program_name=window_title,
-    #         hours_spent=duration_in_hours,
-    #         gathering_date=gathering_date
-    #     )
 
     def find_todays_entry_for_program(self, program_session: ProgramSession) -> DailyProgramSummary:
         """Find by process_name / exe_path"""
@@ -166,6 +152,9 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             # Commit the changes
             session.commit()
 
+    def start_window_push_for_session(self, program_session: ProgramSession, now: UserLocalTime):
+        self.push_window_ahead_ten_sec(program_session, now)
+
     def push_window_ahead_ten_sec(self, program_session: ProgramSession, right_now: UserLocalTime):
         """
         Finds the given session and adds ten sec to its end_time
@@ -178,7 +167,6 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
 
         today_start = get_start_of_day(right_now.dt)
         tomorrow_start = today_start + timedelta(days=1)
-
 
         query = select(DailyProgramSummary).where(
             DailyProgramSummary.exe_path_as_id == program_session.exe_path,
@@ -199,7 +187,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
                 raise ImpossibleToGetHereError(
                     "A program should already exist here, but was not found: " + purpose)
 
-    def deduct_remaining_duration(self, session: ProgramSession, duration_in_sec: int, today_start):
+    def deduct_remaining_duration(self, session: ProgramSession, duration_in_sec: int, today_start: UserLocalTime):
         """
         When a session is concluded, it was concluded partway thru the 10 sec window
 
@@ -208,7 +196,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         if duration_in_sec > 10:
             raise ValueError("Duration was somehow greater than 10")
 
-        tomorrow_start = today_start + timedelta(days=1)
+        tomorrow_start = today_start.dt + timedelta(days=1)
 
         time_to_remove = duration_in_sec / SECONDS_PER_HOUR
         self.throw_if_negative(session.window_title, time_to_remove)
