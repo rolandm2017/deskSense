@@ -96,7 +96,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         )
 
         return self.execute_and_return_all(query)
-
+    
     def read_day(self, day: UserLocalTime) -> List[DailyProgramSummary]:
         """Read all entries for the given day."""
         today_start = get_start_of_day(day.dt)

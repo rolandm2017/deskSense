@@ -18,7 +18,7 @@ from surveillance.src.util.dao_wrapper import validate_start_end_and_duration, v
 from surveillance.src.util.errors import NegativeTimeError, ImpossibleToGetHereError
 from surveillance.src.util.debug_util import notice_suspicious_durations, log_if_needed
 from surveillance.src.util.const import SECONDS_PER_HOUR
-from surveillance.src.util.time_formatting import get_start_of_day
+from surveillance.src.util.time_formatting import get_start_of_day, convert_to_timezone
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 

@@ -9,22 +9,30 @@ from datetime import datetime, timedelta
 
 from typing import cast
 
+
+from surveillance.src.object.classes import TabChangeEventWithLtz
+
 from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
 from surveillance.src.arbiter.activity_recorder import ActivityRecorder
 from surveillance.src.surveillance_manager import FacadeInjector, SurveillanceManager
 
 from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from surveillance.src.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
 
 from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from surveillance.src.facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
 
+from surveillance.src.services.tiny_services import TimezoneService
+
+from surveillance.src.services.dashboard_service import DashboardService
 from surveillance.src.services.chrome_service import ChromeService
 
 from surveillance.src.object.classes import ChromeSession, ProgramSession
 from surveillance.src.util.program_tools import separate_window_name_and_detail
 from surveillance.src.util.clock import UserFacingClock
+from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.time_wrappers import UserLocalTime
 
@@ -502,20 +510,20 @@ chrome_events_from_prev_test = [
 imaginary_path_to_chrome = "imaginary/path/to/Chrome.exe"
 imaginary_chrome_processe = "Chrome.exe"
 
-pr_events_v2 = [ProgramSession(exe_path=imaginary_path_to_chrome, process_name=imaginary_chrome_processe, title='Google Chrome', detail="X. It’s what’s happening / X",
+pr_events_v2 = [ProgramSession(exe_path=imaginary_path_to_chrome, process_name=imaginary_chrome_processe, window_title='Google Chrome', detail="X. It’s what’s happening / X",
                                start_time=UserLocalTime(fmt_time_string(
                                    "2025-03-22 16:14:50.201399-07:00")),
                                end_time=None, duration_for_tests=None, productive=False),
-                ProgramSession(exe_path='C:/wherever/you/find/Postman.exe', process_name='Xorg', title='My Workspace', detail='dash | Overview',
+                ProgramSession(exe_path='C:/wherever/you/find/Postman.exe', process_name='Xorg', window_title='My Workspace', detail='dash | Overview',
                 start_time=UserLocalTime(fmt_time_string(
                     "2025-03-22 16:15:55.237392-07:00")),
                 end_time=None, duration_for_tests=None, productive=False),
-                ProgramSession(exe_path='C:/path/to/VSCode.exe', process_name='Code.exe', title='Visual Studio Code', detail='surveillance_manager.py - deskSense',
+                ProgramSession(exe_path='C:/path/to/VSCode.exe', process_name='Code.exe', window_title='Visual Studio Code', detail='surveillance_manager.py - deskSense',
                 start_time=UserLocalTime(fmt_time_string(
                     "2025-03-22 16:16:03.374304-07:00")),
                 end_time=None, duration_for_tests=None, productive=False),
                 # NOTE: Manual change from Gnome Shell to a second Chrome entry
-                ProgramSession(exe_path=imaginary_path_to_chrome, process_name=imaginary_chrome_processe, title='Google Chrome', detail='Google',
+                ProgramSession(exe_path=imaginary_path_to_chrome, process_name=imaginary_chrome_processe, window_title='Google Chrome', detail='Google',
                                start_time=UserLocalTime(fmt_time_string(
                                    "2025-03-22 16:16:17.480951-07:00")),
                                end_time=None, duration_for_tests=None, productive=False)]
