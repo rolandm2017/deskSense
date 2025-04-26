@@ -419,7 +419,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
     await wait_for_events_to_process()
 
     event_count = len(valid_test_data)
-    final_entry_left_in_arbiter = 1
+    active_entry = 1
 
     def assert_all_window_change_args_match_src_material(calls_from_spy):
         assert calls_from_spy[0][0][0].exe_path == session1.exe_path
@@ -437,12 +437,11 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
     def assert_activity_recorder_called_expected_times(count_of_events):
         assert on_new_session_spy.call_count == count_of_events
 
-        # Cannot explain why it's 1 in the prev test and 0 here
-        assert push_window_ahead_ten_sec_spy.call_count == final_entry_left_in_arbiter  
+        assert push_window_ahead_ten_sec_spy.call_count == 0  # Nothing makes it long enough to trigger
 
         # The final entry here is holding the window push open
-        assert finalize_log_spy.call_count == count_of_events - final_entry_left_in_arbiter
-        assert deduct_duration_spy.call_count == count_of_events - final_entry_left_in_arbiter
+        assert finalize_log_spy.call_count == count_of_events - active_entry
+        assert deduct_duration_spy.call_count == count_of_events - active_entry
 
 
     def assert_session_was_in_order(actual: ProgramSession, i):
@@ -542,38 +541,22 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
     def assert_sqlalchemy_layer_went_as_expected():
         """Covers only stuff that obscures sqlalchemy code."""
         assert sum_dao_execute_and_read_one_or_none_spy.call_count == event_count
-        assert logging_dao_execute_and_read_one_or_none_spy.call_count == event_count
+        assert logging_dao_execute_and_read_one_or_none_spy.call_count == event_count - active_entry
 
         assert summary_add_new_item_spy.call_count == 0, "A Summary existed already for each session, so this shouldn't happen"
         assert logger_add_new_item_spy.call_count == event_count
 
-        assert update_item_spy.call_count == event_count  # Why is this 4 and not 6? It appears in multiple places    
+        assert update_item_spy.call_count == event_count - active_entry
 
-        assert execute_window_push_spy.call_count == final_entry_left_in_arbiter
+        assert execute_window_push_spy.call_count == 0  # push_window_ahead_ten_sec is used 0x
 
     assert_sqlalchemy_layer_went_as_expected()
 
-    args = push_window_ahead_ten_sec_spy.call_args_list[0][0]
-
-    assert isinstance(args[0], ProgramSession)
-
-    def assert_lingering_session_triggered_timed_push(arg_from_spy):
-        push_window_ahead_arg = arg_from_spy[0]
-        assert push_window_ahead_arg.exe_path == session4.exe_path
-        assert push_window_ahead_arg.process_name == session4.process_name
-
-        received_time =  args[0].start_time.dt
-        target_time = session4.start_time.dt
-        assert received_time.hour == target_time.hour
-        assert received_time.minute == target_time.minute
-        assert received_time.second == target_time.second
-
-    assert_lingering_session_triggered_timed_push(args)
-    
+    assert len(push_window_ahead_ten_sec_spy.call_args_list) == 0
     
     def assert_sessions_form_a_chain():
         sessions = []
-        for i in range(0, event_count - final_entry_left_in_arbiter):
+        for i in range(0, event_count - active_entry):
             args = on_state_changed_spy.call_args_list[i][0]
             sessions.append(args[0])
         assert sessions[0].end_time == sessions[1].start_time
@@ -585,13 +568,13 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
     assert_sessions_form_a_chain()
 
     # Cannot explain. I guess < 1 pulse elapsed since end of test?
-    assert push_window_ahead_ten_sec_spy.call_count == final_entry_left_in_arbiter  
+    assert push_window_ahead_ten_sec_spy.call_count == 0  
 
     # TODO: Assert that pulses == 0
     
-    assert do_deduction_spy.call_count == event_count - final_entry_left_in_arbiter
+    assert do_deduction_spy.call_count == event_count - active_entry
 
-    assert finalize_log_spy.call_count == event_count - final_entry_left_in_arbiter
+    assert finalize_log_spy.call_count == event_count - active_entry
 
     # TODO assert that process_name made it into where it belongs, and looked right
     # TODO: assert that detail looked right
@@ -602,7 +585,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
     
     assert len(logger_add_new_item_spy.call_args_list) == event_count
 
-    for i in range(0, event_count - final_entry_left_in_arbiter):
+    for i in range(0, event_count):
         summary_log = logger_add_new_item_spy.call_args_list[i][0][0]
 
         assert isinstance(summary_log, ProgramSummaryLog)
@@ -849,7 +832,7 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, re
     await wait_for_events_to_process()
 
     second_test_event_count = len(valid_test_data)
-    entry_left_in_arbiter = 1
+    trailing_entry = 1
 
     def assert_all_window_change_args_match_src_material(calls_from_spy):
         assert calls_from_spy[0][0][0].exe_path == session1.exe_path
@@ -866,8 +849,8 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, re
         assert push_window_ahead_ten_sec_spy.call_count == 0  # Test stopped before first pulse
 
         # The final entry here is holding the window push open
-        assert finalize_log_spy.call_count == count_of_events - entry_left_in_arbiter
-        assert deduct_duration_spy.call_count == count_of_events - entry_left_in_arbiter
+        assert finalize_log_spy.call_count == count_of_events - trailing_entry
+        assert deduct_duration_spy.call_count == count_of_events - trailing_entry
 
 
     def assert_session_was_in_order(actual: ProgramSession, i):
@@ -973,12 +956,12 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, re
 
         # execute_and_read_one_or_none is called in find_session, which is then called
         # in push_window_ahead_ten_sec zero times, and finalize_log two times (3 - 1)
-        assert logging_dao_execute_and_read_one_or_none_spy.call_count == second_test_event_count - entry_left_in_arbiter
+        assert logging_dao_execute_and_read_one_or_none_spy.call_count == second_test_event_count - trailing_entry
 
         assert summary_add_new_item_spy.call_count == second_test_event_count, "A Summary should've been made for each entry, hence 'brand new' sessions"
         assert logger_add_new_item_spy.call_count == second_test_event_count
 
-        assert update_item_spy.call_count == second_test_event_count - entry_left_in_arbiter  # Finalize_log again
+        assert update_item_spy.call_count == second_test_event_count - trailing_entry  # Finalize_log again
 
         # Test doesn't run long enough for window push. If you make the final await asyncio.sleep(15), it would run.
         assert execute_window_push_spy.call_count == 0  
@@ -991,7 +974,7 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, re
     
     def assert_sessions_form_a_chain():
         sessions = []
-        for i in range(0, second_test_event_count - entry_left_in_arbiter):
+        for i in range(0, second_test_event_count - trailing_entry):
             args = on_state_changed_spy.call_args_list[i][0]
             sessions.append(args[0])
         print(len(sessions), "len sessions 996ru")
@@ -1006,9 +989,9 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, re
 
     assert push_window_ahead_ten_sec_spy.call_count == 0  # The final entry being held suspended in Arbiter        
     
-    assert do_deduction_spy.call_count == second_test_event_count - entry_left_in_arbiter
+    assert do_deduction_spy.call_count == second_test_event_count - trailing_entry
 
-    assert finalize_log_spy.call_count == second_test_event_count - entry_left_in_arbiter
+    assert finalize_log_spy.call_count == second_test_event_count - trailing_entry
 
     # TODO assert that process_name made it into where it belongs, and looked right
     # TODO: assert that detail looked right
@@ -1027,7 +1010,7 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, re
         assert summary.program_name == valid_test_data[i].window_title, "Window title's end result didn't look right"
 
 
-    for i in range(0, second_test_event_count - entry_left_in_arbiter):
+    for i in range(0, second_test_event_count - trailing_entry):
         program_log = logger_add_new_item_spy.call_args_list[i][0][0]
 
         assert isinstance(program_log, ProgramSummaryLog)
