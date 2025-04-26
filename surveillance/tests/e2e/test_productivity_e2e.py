@@ -18,25 +18,20 @@ from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 
 from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-from surveillance.src.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
 from surveillance.src.facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
 
 from surveillance.src.services.chrome_service import ChromeService
-from surveillance.src.services.dashboard_service import DashboardService
-from surveillance.src.services.services import TimezoneService
-from surveillance.src.service_dependencies import get_dashboard_service
-from surveillance.src.object.classes import TabChangeEventWithLtz
 
 from surveillance.src.object.classes import ChromeSession, ProgramSession
 from surveillance.src.util.program_tools import separate_window_name_and_detail
 from surveillance.src.util.clock import UserFacingClock
-from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 from surveillance.src.util.time_formatting import convert_to_utc
 
 from ..mocks.mock_clock import UserLocalTimeMockClock, MockClock
+from ..mocks.mock_message_receiver import MockMessageReceiver
 from ..data.captures_for_test_data_Chrome import chrome_data
 from ..data.captures_for_test_data_programs import program_data
 
@@ -204,9 +199,11 @@ async def test_tracker_to_arbiter(plain_asm, regular_session, times_from_test_da
         side_effect=activity_arbiter.set_tab_state)
     activity_arbiter.set_tab_state = spy_on_set_chrome_state
 
+    mock_message_receiver = MockMessageReceiver()
+
     chrome_svc = ChromeService(mock_user_facing_clock, activity_arbiter)
     surveillance_manager = SurveillanceManager(cast(UserFacingClock, mock_clock),
-                                               plain_asm, regular_session, chrome_svc, activity_arbiter, facades)
+                                               plain_asm, regular_session, chrome_svc, activity_arbiter, facades, mock_message_receiver)
 
     window_change_spy = Mock(
         side_effect=surveillance_manager.program_tracker.window_change_handler)

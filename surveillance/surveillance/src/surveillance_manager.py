@@ -26,8 +26,6 @@ from .db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from .db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from .db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
-from .object.classes import ProgramSession
-from .services.chrome_service import ChromeService
 from .trackers.mouse_tracker import MouseTrackerCore
 from .trackers.keyboard_tracker import KeyboardTrackerCore
 from .trackers.program_tracker import ProgramTrackerCore
@@ -45,7 +43,7 @@ class FacadeInjector:
 
 
 class SurveillanceManager:
-    def __init__(self, clock: UserFacingClock, async_session_maker: async_sessionmaker, regular_session_maker: sessionmaker, chrome_service, arbiter: ActivityArbiter, facades, shutdown_signal=None):
+    def __init__(self, clock: UserFacingClock, async_session_maker: async_sessionmaker, regular_session_maker: sessionmaker, chrome_service, arbiter: ActivityArbiter, facades, message_receiver: MessageReceiver):
         """
         Facades argument is DI for testability.
         """
@@ -60,7 +58,8 @@ class SurveillanceManager:
         self.start_time = None
         self.session_data = []
 
-        self.message_receiver = MessageReceiver("tcp://127.0.0.1:5555")
+        self.message_receiver = message_receiver
+        # self.message_receiver = MessageReceiver("tcp://127.0.0.1:5555")
 
         current_os = OperatingSystemInfo()
 

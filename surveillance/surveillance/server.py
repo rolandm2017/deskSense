@@ -39,6 +39,8 @@ from surveillance.src.surveillance_manager import FacadeInjector, SurveillanceMa
 
 from surveillance.src.services.dashboard_service import DashboardService
 from surveillance.src.services.chrome_service import ChromeService
+from surveillance.src.facade.receive_messages import MessageReceiver
+
 
 
 from surveillance.src.services.services import TimezoneService
@@ -105,8 +107,10 @@ async def lifespan(app: FastAPI):
 
     facades = FacadeInjector(get_keyboard_facade_instance,
                              get_mouse_facade_instance, choose_program_facade)
+    
+    message_receiver = MessageReceiver("tcp://127.0.0.1:5555")
     surveillance_state.manager = SurveillanceManager(user_facing_clock,
-                                                     async_session_maker, regular_session_maker, chrome_service, arbiter, facades)
+                                                     async_session_maker, regular_session_maker, chrome_service, arbiter, facades, message_receiver)
     surveillance_state.manager.start_trackers()
 
     try:

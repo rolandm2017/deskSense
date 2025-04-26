@@ -659,7 +659,7 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, re
             ]
     # fmt: on
     
-    mock_user_facing_clock = UserLocalTimeMockClock(times_for_test_two)
+    mock_user_facing_clock = UserLocalTimeMockClock(times_for_test_two)  # type: ignore
 
     v = UserLocalTime(datetime(2095, 2, 2, 2, 2, 2))
 

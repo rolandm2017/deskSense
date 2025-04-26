@@ -107,11 +107,6 @@ class TestProgramSummaryDao:
         t2 = UserLocalTime(t0 + timedelta(minutes=1))
         t3 = UserLocalTime(t0 + timedelta(minutes=5))
         t4 = UserLocalTime(t0 + timedelta(minutes=6))
-        session_data = ProgramSession(
-            "C:/imaginaryFolder/foo.exe", "foo.exe", "readDayTest", "", t1, t2)
-
-        second_usage_by_user = ProgramSession("path/to/bar.exe", "bar.exe",
-                                              "readDayTestMaterial", "", t3, t4)
 
         # Pretend this happened
         # program_summary_dao.start_session(session_data, t1)
