@@ -36,6 +36,7 @@ from surveillance.src.util.clock import UserFacingClock
 from surveillance.src.util.const import SECONDS_PER_HOUR, ten_sec_as_pct_of_hour
 from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day
 
+from ..mocks.mock_message_receiver import MockMessageReceiver
 
 from ..mocks.mock_clock import UserLocalTimeMockClock
 
@@ -252,9 +253,11 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
     chrome_sum_dao = ChromeSummaryDao(
         chrome_logging_dao, regular_session, mock_async_session_maker)
 
+    mock_message_receiver = MockMessageReceiver()
+
     chrome_svc = ChromeService(wont_be_used, activity_arbiter)
     surveillance_manager = SurveillanceManager(cast(UserFacingClock, mock_user_facing_clock),
-                                               mock_async_session_maker, regular_session, chrome_svc, activity_arbiter, facades)
+                                               mock_async_session_maker, regular_session, chrome_svc, activity_arbiter, facades, mock_message_receiver)
 
     window_change_spy = Mock(
         side_effect=surveillance_manager.program_tracker.window_change_handler)
@@ -682,9 +685,11 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, re
     chrome_sum_dao = ChromeSummaryDao(
         chrome_logging_dao, regular_session, mock_async_session_maker)
 
+    mock_message_receiver = MockMessageReceiver()
+
     chrome_svc = ChromeService(wont_be_used, activity_arbiter)
     surveillance_manager = SurveillanceManager(cast(UserFacingClock, mock_user_facing_clock),
-                                               mock_async_session_maker, regular_session, chrome_svc, activity_arbiter, facades)
+                                               mock_async_session_maker, regular_session, chrome_svc, activity_arbiter, facades, mock_message_receiver)
 
     window_change_spy = Mock(
         side_effect=surveillance_manager.program_tracker.window_change_handler)

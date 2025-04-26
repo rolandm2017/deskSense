@@ -43,12 +43,8 @@ def clock(times):
 
 @pytest.fixture
 def tracker(mock_facade, mock_event_handler, clock):
-    events = []
 
-    def handler(some_arg):
-        events.append(some_arg)
-
-    return ProgramTrackerCore(clock, mock_facade, mock_event_handler, handler)
+    return ProgramTrackerCore(clock, mock_facade, mock_event_handler)
 
 
 ex3 = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg', "exe_path": "C:/some/imaginary/path.exe",
@@ -69,7 +65,7 @@ def test_start_new_session():
     facade = Mock()
     handler = Mock()
 
-    tracker = ProgramTrackerCore(clock, facade, handler, Mock())
+    tracker = ProgramTrackerCore(clock, facade, handler)
 
     assert tracker.current_session is None, "Initialization condition wasn't met"
 
@@ -98,46 +94,6 @@ def test_start_new_session():
     assert new_session.start_time.dt is current_time
 
 
-def test_conclude_session():
-    t1_start = datetime(2024, 1, 1, 12, 2)
-    t2_end = datetime(2024, 1, 1, 12, 4)
-    t3_start = datetime(2024, 1, 1, 12, 7)
-    t4_end = datetime(2024, 1, 1, 12, 10)
-
-    start_time = t1_start
-    times = [start_time]
-    clock = MockClock(times)
-    # clock.now = MagicMock(wraps=clock.now)
-    facade = Mock()
-    handler = Mock()
-
-    tracker = ProgramTrackerCore(clock, facade, handler, Mock())
-
-    assert tracker.current_session is None, "Initialization condition wasn't met"
-    # assert tracker.current_session.window_title == "", "Initialization conditions weren't met"
-    # assert tracker.current_session.detail == "", "Initialization conditions weren't met"
-    # assert tracker.current_session.start_time is None, "Initialization conditions weren't met"
-
-    window_change = {'os': 'Ubuntu', 'pid': 4444216, 'process_name': 'Xorg', "exe_path": "C:/AwesomeFiles/file.exe",
-                     'window_title': 'program_tracker.py - deskSense - Visual Studio Code'}
-
-    started_session = tracker.start_new_session(
-        window_change, t1_start)
-
-    tracker.current_session = started_session
-
-    # Act
-    tracker.conclude_session(t2_end)
-
-    retrieved_session = tracker.current_session
-
-    # Assert
-    assert retrieved_session.end_time is not None
-    assert retrieved_session.duration is not None
-
-    assert retrieved_session.start_time == t1_start  # called start_time
-    assert retrieved_session.end_time == t2_end
-    assert retrieved_session.duration == (t2_end - t1_start)
 
 
 def test_window_change_triggers_handler():
@@ -156,7 +112,7 @@ def test_window_change_triggers_handler():
     facade = Mock()
     window_change_handler = Mock()
 
-    tracker = ProgramTrackerCore(clock, facade, window_change_handler, Mock())
+    tracker = ProgramTrackerCore(clock, facade, window_change_handler)
 
     # Set up facade to yield a window change
     first_test_item = {
@@ -234,7 +190,7 @@ def test_handle_alt_tab_window():
     """Test handling of 'Alt-tab window' title"""
     clock = MockClock([datetime.now()])
     facade = Mock()
-    tracker = ProgramTrackerCore(clock, facade, Mock(), Mock())
+    tracker = ProgramTrackerCore(clock, facade, Mock())
 
     example = {'os': 'Ubuntu', 'pid': 128216, "exe_path": "C:/Foo.exe",
                'process_name': 'Xorg', 'window_title': 'Alt-tab window'}
@@ -266,17 +222,8 @@ def test_a_series_of_programs():
     facade = Mock()
     handler = Mock()
 
-    handler1_calls = []
-    handler2_calls = []
 
-    def handler1(event):
-        print("handler called with", event)
-        handler1_calls.append(event)
-
-    def handler2(event):
-        handler2_calls.append(event)
-
-    tracker = ProgramTrackerCore(clock, facade, handler, [handler1, handler2])
+    tracker = ProgramTrackerCore(clock, facade, handler)
 
     assert tracker.current_session is None, "Initialization conditions not met"
 
@@ -293,7 +240,6 @@ def test_a_series_of_programs():
     assert tracker.current_session.window_title == program1["window_title"]
     assert tracker.current_session.detail == no_space_dash_space
     assert tracker.current_session.end_time is None
-    assert len(handler1_calls) == 0 and len(handler2_calls) == 0
 
     # More setup
     program2 = {"os": "some_val", 'process_name': 'Xorg', "exe_path": "C:/whatever5.exe",
@@ -308,8 +254,6 @@ def test_a_series_of_programs():
     assert tracker.current_session.start_time is not None
     assert tracker.current_session.end_time is None
     assert clock.now.call_count == 2
-    assert len(handler1_calls) == 1
-    assert len(handler2_calls) == 1
 
     # More setup
     program3 = {"os": "some_val", 'process_name': 'Xorg', "exe_path": "C:/whatever11.exe",
@@ -322,7 +266,6 @@ def test_a_series_of_programs():
     assert tracker.current_session.window_title == "Google Chrome"
     assert tracker.current_session.detail == "Vite + React + TS"
     assert clock.now.call_count == 3
-    assert len(handler1_calls) == 2
 
     # More setup
     program4 = {"os": "some_val", 'process_name': None, "exe_path": "C:/wherever.exe",
@@ -335,7 +278,6 @@ def test_a_series_of_programs():
     # Assert
     assert tracker.current_session.window_title == program4["window_title"]
     assert clock.now.call_count == 4
-    assert len(handler1_calls) == 3
 
     # More setup
     program5 = {"os": "some_val", 'process_name': 'Xorg', "exe_path": "C:/whatever25.exe",
@@ -349,7 +291,6 @@ def test_a_series_of_programs():
     assert tracker.current_session.window_title == "Visual Studio Code"
 
     # ### Final assertions
-    assert len(handler1_calls) == 4  # Not five: The fifth remains open
-    assert len(handler2_calls) == 4  # Not five: The fifth remains open
+
     assert tracker.current_session.end_time is None  # See?
     assert tracker.current_session.detail == "program_tracker.py - deskSense"
