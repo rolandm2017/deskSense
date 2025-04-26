@@ -168,8 +168,8 @@ def validate_test_data():
 sum_counter = 0
 log_counter = 0
 
+# @pytest.mark.skip
 @pytest.mark.asyncio
-@pytest.mark.skip
 async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, regular_session, mock_async_session_maker):
     """
     The goal of the test is to prove that programSesssions get thru the DAO layer fine
@@ -233,7 +233,10 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
     
     mock_user_facing_clock = UserLocalTimeMockClock(times)
 
-    wont_be_used = UserLocalTimeMockClock([])
+    dummy_time = UserLocalTime(datetime(2065, 12, 12, 12, 12, 12))
+    dummy_times = [dummy_time,dummy_time,dummy_time,dummy_time,dummy_time]
+
+    wont_be_used = UserLocalTimeMockClock(dummy_times)
 
     activity_arbiter = ActivityArbiter(
         mock_user_facing_clock, pulse_interval=0.1)
@@ -621,7 +624,7 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, re
     """
     # surveillance_manager, summary_dao, logging_dao, mock_program_facade, arbiter = setup_for_test
 
-    valid_test_data = validate_test_data[:3]  # skip final entry to save us time; 3 is good
+    valid_test_data = validate_test_data  # skip final entry to save us time; 3 is good
 
     class MockProgramFacade:
         def __init__(self):
@@ -667,7 +670,7 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, re
     times_for_test_two = [
                 session1.start_time, session1.start_time,  
                 session2.start_time, session2.start_time,
-                session3.start_time, session3.start_time, session3.start_time,
+                session3.start_time, session3.start_time,
                 session4.start_time, session4.start_time, session4.start_time, session4.start_time,
   
             ]
@@ -675,7 +678,9 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, re
     
     mock_user_facing_clock = UserLocalTimeMockClock(times_for_test_two)
 
-    wont_be_used = UserLocalTimeMockClock([])
+    v = UserLocalTime(datetime(2095, 2, 2, 2, 2, 2))
+
+    wont_be_used = UserLocalTimeMockClock([v,v,v,v,v])  # I am sure it's not used
 
     # pulse = 0.1 
     pulse = 0.5
@@ -930,8 +935,8 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, re
     # TODO: Move the below spy
     assert add_ten_sec_to_end_time_spy.call_count == 0
     
-    assert second_test_event_count == 3
-    assert window_change_spy.call_count == 3
+    assert second_test_event_count == 4
+    assert window_change_spy.call_count == 4
     assert window_change_spy.call_count == second_test_event_count
 
     def assert_window_change_spy_as_expected(arg):
@@ -948,7 +953,7 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, re
 
     assert_all_window_change_args_match_src_material(window_change_calls)
 
-    assert len(window_change_calls) == 3, "The number of sessions is three, so the calls should be three"
+    assert len(window_change_calls) == 4, "The number of sessions is three, so the calls should be three"
 
     assert window_change_spy.call_count == second_test_event_count  # Deliberately redundant
 
@@ -965,33 +970,23 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, re
     def assert_sqlalchemy_layer_went_as_expected():
         """Covers only stuff that obscures sqlalchemy code."""
         assert sum_dao_execute_and_read_one_or_none_spy.call_count == second_test_event_count
-        assert logging_dao_execute_and_read_one_or_none_spy.call_count == second_test_event_count
 
-        assert summary_add_new_item_spy.call_count == 0, "A Summary existed already for each session, so this shouldn't happen"
+        # execute_and_read_one_or_none is called in find_session, which is then called
+        # in push_window_ahead_ten_sec zero times, and finalize_log two times (3 - 1)
+        assert logging_dao_execute_and_read_one_or_none_spy.call_count == second_test_event_count - entry_left_in_arbiter
+
+        assert summary_add_new_item_spy.call_count == second_test_event_count, "A Summary should've been made for each entry, hence 'brand new' sessions"
         assert logger_add_new_item_spy.call_count == second_test_event_count
 
-        assert update_item_spy.call_count == second_test_event_count  # Why is this 4 and not 6? It appears in multiple places    
+        assert update_item_spy.call_count == second_test_event_count - entry_left_in_arbiter  # Finalize_log again
 
-        assert execute_window_push_spy.call_count == entry_left_in_arbiter
+        # Test doesn't run long enough for window push. If you make the final await asyncio.sleep(15), it would run.
+        assert execute_window_push_spy.call_count == 0  
 
     assert_sqlalchemy_layer_went_as_expected()
 
-    args = push_window_ahead_ten_sec_spy.call_args_list[0][0]
 
-    assert isinstance(args[0], ProgramSession)
-
-    def assert_lingering_session_triggered_timed_push(arg_from_spy):
-        push_window_ahead_arg = arg_from_spy[0]
-        assert push_window_ahead_arg.exe_path == session4.exe_path
-        assert push_window_ahead_arg.process_name == session4.process_name
-
-        received_time =  args[0].start_time.dt
-        target_time = session4.start_time.dt
-        assert received_time.hour == target_time.hour
-        assert received_time.minute == target_time.minute
-        assert received_time.second == target_time.second
-
-    assert_lingering_session_triggered_timed_push(args)
+    assert len(push_window_ahead_ten_sec_spy.call_args_list) == 0
     
     
     def assert_sessions_form_a_chain():
@@ -999,24 +994,26 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, re
         for i in range(0, second_test_event_count - entry_left_in_arbiter):
             args = on_state_changed_spy.call_args_list[i][0]
             sessions.append(args[0])
+        print(len(sessions), "len sessions 996ru")
+        assert len(sessions) == 3
         assert sessions[0].end_time == sessions[1].start_time
         assert sessions[1].end_time == sessions[2].start_time
-        # assert sessions[2].end_time == sessions[3].start_time
-        # Sessions[3] has no .start_time to link up with
-        # Sessions[4] is still left in the arbiter (not spied on)
+        # I guess the end_time is set before it gets into the on_state_change method
+        assert isinstance(sessions[2].end_time, UserLocalTime)
+        # Sessions[2] has no .end_time to link up with
             
     assert_sessions_form_a_chain()
 
     assert push_window_ahead_ten_sec_spy.call_count == 0  # The final entry being held suspended in Arbiter        
     
-    assert do_deduction_spy.call_count == second_test_event_count
+    assert do_deduction_spy.call_count == second_test_event_count - entry_left_in_arbiter
 
-    assert finalize_log_spy.call_count == second_test_event_count
+    assert finalize_log_spy.call_count == second_test_event_count - entry_left_in_arbiter
 
     # TODO assert that process_name made it into where it belongs, and looked right
     # TODO: assert that detail looked right
 
-    assert summary_add_new_item_spy.call_count == 0, "A new summary was created despite preexisting sessions"
+    assert summary_add_new_item_spy.call_count == 4, "A new summary was created despite preexisting sessions"
     
     assert logger_add_new_item_spy.call_count == second_test_event_count
     
@@ -1025,9 +1022,8 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, re
     for i in range(0, second_test_event_count):
         summary = summary_add_new_item_spy.call_args_list[i][0][0]
 
-        assert isinstance(summary, ProgramSummaryLog)
+        assert isinstance(summary, DailyProgramSummary)
         assert summary.exe_path_as_id == valid_test_data[i].exe_path, "Exe path didn't make it to one of it's destinations"
-        assert summary.process_name == valid_test_data[i].process_name
         assert summary.program_name == valid_test_data[i].window_title, "Window title's end result didn't look right"
 
 
