@@ -18,12 +18,17 @@ def convert_to_utc(dt: datetime):
 #     """Get the start of the day (midnight) for the given datetime"""
 #     return datetime(dt.year, dt.month, dt.day, tzinfo=dt.tzinfo)
 
+def get_start_of_day_from_ult(ult: UserLocalTime):
+    return UserLocalTime(ult.dt.replace(hour=0, minute=0, second=0, microsecond=0))
+
+def get_start_of_day_from_datetime(dt: datetime):
+    return dt.replace(hour=0, minute=0, second=0, microsecond=0)
 
 def get_start_of_day(some_time_obj: datetime | UserLocalTime):
     """If you put in March 3 3:00 PM PST, you will get out march 3 12:00 AM *PST*! """
     # Timezone stays attached.
     if isinstance(some_time_obj, UserLocalTime):
-        return some_time_obj.dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        return UserLocalTime(some_time_obj.dt.replace(hour=0, minute=0, second=0, microsecond=0))
     return some_time_obj.replace(hour=0, minute=0, second=0, microsecond=0)
 
 

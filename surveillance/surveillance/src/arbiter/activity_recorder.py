@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from surveillance.src.object.classes import ChromeSession, ProgramSession
 from surveillance.src.object.arbiter_classes import InternalState
 
@@ -8,7 +10,7 @@ from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
 from surveillance.src.util.clock import UserFacingClock
 from surveillance.src.util.time_wrappers import UserLocalTime
-from surveillance.src.util.time_formatting import get_start_of_day
+from surveillance.src.util.time_formatting import get_start_of_day_from_ult
 
 
 
@@ -99,7 +101,7 @@ class ActivityRecorder:
         """
         if session.start_time is None:
             raise ValueError("Session start time was not set")
-        today_start = get_start_of_day(session.start_time)
+        today_start: UserLocalTime = get_start_of_day_from_ult(session.start_time)
         if isinstance(session, ProgramSession):
             # print(
             #     f"deducting {duration_in_sec} from {session.window_title}")

@@ -45,6 +45,9 @@ class UserLocalTime:
     The utility happens mostly in the parameter type.
     Now the developer can at a glance see if s/he is dealing with
     the user's timezone or the system's.
+
+    That said: It is OK to unwrap the .dt object once it's into the DAO layer!
+    Since Postgres only understands datetime, and the purpose is only to clarify contents.
     """
 
     def __init__(self, dt):
