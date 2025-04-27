@@ -26,19 +26,11 @@ from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.errors import TimezoneUnawareError
 from surveillance.src.util.const import ten_sec_as_pct_of_hour
 
+from ..data.tzinfo_with_pg import create_notion_entry, create_pycharm_entry, create_zoom_entry
 
 def add_time(base_date, hours=0, minutes=0, seconds=0):
     """Helper function to add hours, minutes, seconds to a base date"""
     return base_date + timedelta(hours=hours, minutes=minutes, seconds=seconds)
-
-notion_path = "C:/Path/to/Notion.exe"
-notion_process = "Notion.exe"
-
-zoom_path = "C:/Program Files/Zoom/Zoom.exe"
-zoom_process = "Zoom.exe"
-
-pycharm_path = "C:/Path/to/PyCharm.exe"
-pycharm_process = "PyCharm.exe"
 
 
 base_day = datetime(2025, 3, 13)
@@ -69,97 +61,56 @@ def test_basic_setup():
     assert time_with_wrapper.dt.minute == time_for_test.minute
     assert time_with_wrapper.dt.second == time_for_test.second
 
-def truncate_test_tables(engine):
-    """Truncate all test tables directly"""
-    # NOTE: IF you run the tests in a broken manner,
-    # ####  the first run AFTER fixing the break
-    # ####  MAY still look broken.
-    # ####  Because the truncation happens *at the end of* a test.
+@pytest.fixture(autouse=True, scope="function")
+def clean_database(sync_engine):
+    """Ensure clean DB state before and after each test"""
+    with sync_engine.begin() as conn:
+        conn.execute(text("TRUNCATE daily_program_summaries RESTART IDENTITY CASCADE"))
+    yield
+    with sync_engine.begin() as conn:
+        conn.execute(text("TRUNCATE daily_program_summaries RESTART IDENTITY CASCADE"))
 
-    with engine.begin() as conn:
-        conn.execute(
-            text("TRUNCATE daily_program_summaries RESTART IDENTITY CASCADE"))
-        print("Tables truncated")
-
-
-def create_pycharm_entry(dt):
-    window_start = UserLocalTime(dt)
-    window_end = UserLocalTime(dt + timedelta(minutes=3))
-    pycharm_session = ProgramSession()
-    pycharm_session.exe_path = pycharm_path
-    pycharm_session.process_name = pycharm_process
-    pycharm_session.window_title = "PyCharmTEST"
-    pycharm_session.detail = "Refactoring database models"
-    pycharm_session.start_time = window_start
-    pycharm_session.end_time = window_end
-    pycharm_session.duration = pycharm_session.end_time - pycharm_session.start_time
-    pycharm_session.productive = True
-    return pycharm_session
-
-def create_zoom_entry(dt):
-    window_start = UserLocalTime(dt)
-    window_end = UserLocalTime(dt + timedelta(minutes=3))
-    zoom_session = ProgramSession()
-    zoom_session.exe_path = zoom_path
-    zoom_session.process_name = zoom_process
-    zoom_session.window_title = "ZoomTEST"
-    zoom_session.detail = "Weekly team sync"
-    zoom_session.start_time = window_start
-    zoom_session.end_time = window_end
-    zoom_session.duration = zoom_session.end_time - zoom_session.start_time
-    zoom_session.productive = True
-    return zoom_session
-
-
-def create_notion_entry(dt):
-    window_start = UserLocalTime(dt)
-    window_end = UserLocalTime(dt + timedelta(minutes=3))
-    notion_session = ProgramSession()
-    notion_session.exe_path = notion_path
-    notion_session.process_name = notion_process
-    notion_session.window_title = "NotionTEST"
-    notion_session.detail = "Sprint planning documentation"
-    notion_session.start_time = window_start
-    notion_session.end_time = window_end
-    notion_session.duration = notion_session.end_time - notion_session.start_time
-    notion_session.productive = True
-    return notion_session
 
 
 
 # Test day boundary cases specifically
 # Test entries at the edges of the day
 
+#
+# -- this is the pool of test data, please choose from it
+#
 noon = some_local_tz.localize(add_time(base_day, 12, 0, 0))
 
-late_night_entry = create_pycharm_entry(
-    some_local_tz.localize(add_time(base_day, 23, 59, 59)))  # Just before midnight
-midnight_entry = create_notion_entry(
-    some_local_tz.localize(add_time(base_day, 0, 0, 1)))  # Just after midnight
-abs_min_time = create_zoom_entry(
-    some_local_tz.localize(add_time(base_day, 0, 0, 0))) 
-very_early_morning_entry = create_zoom_entry(
-    some_local_tz.localize(add_time(base_day, 3, 0, 1))
+late_night_entry = create_pycharm_entry(some_local_tz.localize(add_time(base_day, 23, 59, 59)))  # Just before midnight
+midnight_entry = create_notion_entry(some_local_tz.localize(add_time(base_day, 0, 0, 1)))  # Just after midnight
+abs_min_time = create_zoom_entry(some_local_tz.localize(add_time(base_day, 0, 0, 0))) 
+very_early_morning_entry = create_zoom_entry(some_local_tz.localize(add_time(base_day, 3, 0, 1))
 )
 
-five_am_ish = create_notion_entry(some_local_tz.localize(datetime(2025, 3, 3, 5, 0, 0)))
-seven_am_ish = create_pycharm_entry(some_local_tz.localize(datetime(2025, 3, 3, 7, 0, 0)))
+five_am_ish = create_notion_entry(some_local_tz.localize(add_time(base_day, 5, 0, 0)))
 
-afternoon = create_pycharm_entry(some_local_tz.localize(datetime(2025, 3, 29, 15, 0, 15)))
+seven_am_ish = create_zoom_entry(some_local_tz.localize(add_time(base_day, 7, 0, 0)))
+
+afternoon = create_pycharm_entry(some_local_tz.localize(add_time(base_day, 15, 0, 15)))
+
+#
+# -- choose test data from the above pool!
+#
 
 
 @pytest_asyncio.fixture
-async def setup_parts(regular_session, mock_async_session_maker):
+async def setup_parts(db_session_in_mem, mock_async_session_maker):
     """
     Only the Program suite is required here, because it's so similar to Chrome.
     
     This connects to the test db, unless there is an unforseen problem.
     """
+    regular_maker = db_session_in_mem
     # Get all required DAOs
     program_logging_dao = ProgramLoggingDao(
-        regular_session)
+        regular_maker)
     program_summary_dao = ProgramSummaryDao(
-        program_logging_dao, regular_session, mock_async_session_maker)
+        program_logging_dao, regular_maker, mock_async_session_maker)
     
     return program_logging_dao, program_summary_dao
 
@@ -167,25 +118,43 @@ def test_away_from_edge_cases(setup_parts):
     """Away from edge cases, meaning, 11 am, 3 pm, 6 pm."""
     logging_dao, summary_dao = setup_parts
 
+    seven_am_ish = create_zoom_entry(some_local_tz.localize(add_time(base_day, 7, 0, 0)))
+    afternoon = create_pycharm_entry(some_local_tz.localize(add_time(base_day, 15, 0, 15)))
+
     test_inputs = [seven_am_ish, afternoon]
     
     paths_for_asserting = [x.exe_path for x in test_inputs]
-    # Write
-    summary_dao.start_session(seven_am_ish, seven_am_ish.start_time)
-    summary_dao.start_session(afternoon, afternoon.start_time)
-    # Gather by day
-    all_for_day: List[DailyProgramSummary] = summary_dao.read_day(five_am_ish.start_time)
+    try:
+        # Test setup conditions - all unique programs
+        assert len(set(paths_for_asserting)) == len(paths_for_asserting)
+        # Write
+        summary_dao.start_session(seven_am_ish, seven_am_ish.start_time)
+        summary_dao.start_session(afternoon, afternoon.start_time)
+        # Gather by day
+        print(f"reading values for day: {test_inputs[0].start_time}")
+        all_for_day: List[DailyProgramSummary] = summary_dao.read_day(test_inputs[0].start_time)
 
-    assert isinstance(all_for_day[0], DailyProgramSummary)
+        assert isinstance(all_for_day[0], DailyProgramSummary)
 
-    # Check the val came back out
-    for i in range(0, 3):
-        assert all_for_day[i].exe_path_as_id in paths_for_asserting
-        assert all_for_day[i].hours_spent == ten_sec_as_pct_of_hour
+        # Check the val came back out
+        assert len(all_for_day) == len(test_inputs)
 
-    assert len(all_for_day) == 3
+        for i in range(0, len(test_inputs)):
+            assert all_for_day[i].exe_path_as_id in paths_for_asserting
+            assert all_for_day[i].hours_spent == ten_sec_as_pct_of_hour
 
+        assert len(all_for_day) == len(test_inputs)
 
+    except AssertionError as e:
+        # Re-raise the assertion error after we finish our debugging
+        pytest.fail(str(e))
+    finally:
+        # This block will always run, whether there's an assertion error or not
+        # You can put your debugging code here
+        print("Debugging failure")
+        all_entries = summary_dao.read_all()
+        for entry in all_entries:
+            print(entry)
 
 
 def test_on_twelve_ish_am_boundary():

@@ -32,17 +32,6 @@ if sys.platform == 'win32':
 from surveillance.src.db.models import Base
 
 
-# FIXME: If this block below being commented out causes problems, then
-# do as Claude says here: https://claude.ai/chat/c87b680d-ca6a-4a78-a7bd-9f4b3a0a1387
-# @pytest.fixture(scope="session")
-# def event_loop():
-#     """Create an instance of the default event loop for each test session."""
-#     policy = asyncio.get_event_loop_policy()
-#     loop = policy.new_event_loop()
-#     yield loop
-#     loop.close()
-
-
 ####
 
 pytest_plugins = ["pytest_asyncio"]
@@ -159,9 +148,6 @@ load_dotenv()
 ASYNC_TEST_DB_URL = ASYNC_TEST_DB_URL = os.getenv(
     'ASYNC_TEST_DB_URL')
 
-# @pytest_asyncio.fixture(scope="session")
-# # TODO: if performaance on tests is terribad, figure out how to use one session scoped engine
-# @pytest.fixture(scope="session")
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -289,31 +275,23 @@ SYNC_TEST_DB_URL = os.getenv("SYNC_TEST_DB_URL")
 if SYNC_TEST_DB_URL is None:
     raise ValueError("SYNC_TEST_DB_URL environment variable is not set")
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def db_session_in_mem():
-    # Create a regular in-memory SQLite engine
+    # GPT recommended the name "regular_session, which was taken"
     engine = create_engine(
         "sqlite:///:memory:",
         echo=False,
         connect_args={"check_same_thread": False},
     )
-
-    # Create all tables
     Base.metadata.create_all(engine)
 
-    # Create sessionmaker
-    local_session = sessionmaker(
-        bind=engine,
-        expire_on_commit=False,
-    )
+    regular_maker = sessionmaker(bind=engine, expire_on_commit=False)
 
-    yield engine, local_session
-
-    # Teardown: drop all tables
-    Base.metadata.drop_all(engine)
-
-    # Dispose the engine
-    engine.dispose()
+    try:
+        yield regular_maker
+    finally:
+        # session.close()
+        engine.dispose()
 
 @pytest.fixture(scope="function")
 def sync_engine():
