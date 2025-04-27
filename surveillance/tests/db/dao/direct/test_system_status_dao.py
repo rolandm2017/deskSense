@@ -83,17 +83,6 @@ async def test_db_dao(mock_regular_session_maker, mock_async_session):
     await dao.async_session_maker().close()  # Close session explicitly
 
 
-# @pytest_asyncio.fixture(autouse=True)
-# async def setup_test_db(test_db_dao):
-#     """Runs before each test automatically"""
-#     dao, clock = test_db_dao
-
-#     async with dao.async_session_maker() as session:
-#         await session.execute(text("TRUNCATE TABLE system_change_log RESTART IDENTITY CASCADE"))
-#         await session.commit()
-
-#     return dao, clock
-
 
 @pytest.mark.asyncio
 async def test_read_latest_status(test_db_dao):

@@ -289,5 +289,3 @@ def test_finalize_log_error(prepare_daos, mock_regular_session_maker, mock_async
         program_dao.finalize_log(nonexistent_session)
     with pytest.raises(ImpossibleToGetHereError):
         chrome_dao.finalize_log(nonexistent_session)
-    # finally:
-    #     await truncate_test_tables(plain_asm)

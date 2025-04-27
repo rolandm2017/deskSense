@@ -39,13 +39,6 @@ def test_convert_tab_change_timezone():
 
 
 def test_real_scenario():
-    # from receive_chrome_tab:
-    #
-    # print(tab_change_event.startTime, "=== ===") => 2025-03-16 01: 27: 17.175000+00: 00 === ===
-    # print(tz_for_user) => America/Los_Angeles
-    # tabTitle = 'Timezone Conversion Issue' url = 'chatgpt.com' startTime = datetime.datetime(2025, 3, 15, 10, 27, 17, 175000, tzinfo= < DstTzInfo 'America/Los_Angeles' PDT-1 day, 17: 00: 00 DST > ) 386ru
-    # 2025-03-15 10: 27: 17.175000-07: 00 387ru
-    #
 
     # ### Cook start scenario:
     march_16_at_1_am = datetime(2025, 3, 16, 1, 27, 17)

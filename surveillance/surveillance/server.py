@@ -226,7 +226,6 @@ async def get_productivity_breakdown(week_of: date = Path(..., description="Week
 @app.get("/api/dashboard/program/summaries/week", response_model=WeeklyProgramContent)
 async def get_program_week_history(dashboard_service: DashboardService = Depends(get_dashboard_service)):
     week_of_data: List[DailyProgramSummary] = await dashboard_service.get_program_summary_weekly()
-    # TODO: Test on Tuesday, Wednesday to see that they each get their own day
     if not isinstance(week_of_data, list):
         raise HTTPException(
             status_code=500, detail="Failed to retrieve week of program chart info")
@@ -236,7 +235,6 @@ async def get_program_week_history(dashboard_service: DashboardService = Depends
 @app.get("/api/dashboard/chrome/summaries/week", response_model=WeeklyChromeContent)
 async def get_chrome_week_history(dashboard_service: DashboardService = Depends(get_dashboard_service)):
     week_of_unsorted_domain_summaries: List[DailyDomainSummary] = await dashboard_service.get_chrome_summary_weekly()
-    # TODO: Test on Tuesday, Wednesday to see that they each get their own day
 
     if not isinstance(week_of_unsorted_domain_summaries, list):
         raise HTTPException(
@@ -515,37 +513,3 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
-# FIXME Jan 28: Alt Tab Window has 2.2 hours, while Google Chrome has 0.9
-# FIXME: Which obviously can't be true
-
-
-# TODO Jan 28: When the computer shuts down, go to Chrome Summary, "end session"
-# TODO: When the computer shuts down, go to Program Summary, "end session"
-# TODO: Does Prgram Tracker need to know when shutdown occurs? Does it already kniw? Investigate
-
-# TODO Jan 28: When shut down detected, the Chrome Session, the final one, should be concluded
-
-# TODO Jan 28: When Chrome is exited, the final tab session should be concluded.
-# TODO: So if ProgramTracker detects closing Chrome,
-
-# FIXME Jan 28: At the end of every day, a new set of counters, per program, should be initialized
-# FIXME: In other words, the day goes from Jan 24 -> Jan 25, the db goes "new rows start here"
-
-# FIXME: Am getting values like 20, 12, 23, 20, 17, 19 from 'Alt-tab window' in the Daily Progrma Summary
-# Hypothesis: ...
-# FIXME: (1) One solution would be to only ever put in like 3 sec on alt tab. But that's crude.
-# FIXME: (2) Another option would be to spend a whole day or two observing the growth of Alt Tab time in DailyProgramSummaries
-# FIXME: Option (3): write a log file every time time is added to Alt-Tab Window
-
-
-# TODO: Need to write to power-on-off-times on startup
-# TODO: but how? the program legit isn't running yet
-
-    # TODO: Install debug overlay. It could be:
-    # Chrome & Programs -> CPU -> Overlay, DAOs.
-    # It could be that I use State to handle generating Summary changes.
-    # If state change, record summary of window.
-    # So CPU knows about Chrome & Program state, & every time something changes, it yields a conclusion.
-    # Then, neither the Chrome Service, nor Program Tracker, nor the DAOs, need to do any math. They're simple
-
-# TODO Feb 26:
