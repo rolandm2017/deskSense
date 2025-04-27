@@ -26,6 +26,8 @@ daylight_savings_tz_offset = int(local_tz_dst_offset)
 
 MAX_QUEUE_LENGTH = 40
 
+keep_alive_pulse_len = 10
+
 max_content_len = 120
 
 # Define productive applications
@@ -65,7 +67,7 @@ social_media = ['www.facebook.com', 'www.tiktok.com', 'x.com', ]
 
 misc_sites = ['newtab', 'chatgpt.com']
 
-# Keyboard tracker stuff (not used)
+# Keyboard tracker stuff (not used; just here to show the math)
 average_char_per_word = 5
 wpm = 90
 char_per_min = 540  # 5 char per word * 90 word per min -> 540 char per min

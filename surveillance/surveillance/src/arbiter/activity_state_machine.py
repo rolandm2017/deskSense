@@ -25,9 +25,6 @@ class ActivityStateMachine:
         self.logger = ConsoleLogger()
 
     def set_new_session(self, next_session: ProgramSession | ChromeSession):
-
-        if self.is_initialization_session(next_session):
-            raise ValueError("next_session cannot be an empty dictionary")
         next_session = snapshot_obj_for_tests(next_session)
         # TODO: It might be cleaner to say,
         # next_state = package_session_into_state(next_session)
@@ -63,26 +60,20 @@ class ActivityStateMachine:
                     "Chrome", True, next_session.domain, next_session)
             self.current_state = updated_state
 
-    @staticmethod
-    def is_initialization_session(some_dict):
-        """Asks 'is it an empty dict?'"""
-        return isinstance(some_dict, dict) and not some_dict
-
     def _conclude_session(self, state: InternalState, incoming_session_start: UserLocalTime):
         if not isinstance(incoming_session_start, UserLocalTime):
             raise ValueError("Expected a UserLocalTime")
-        if self.is_initialization_session(state.session):
-            return
-        duration = incoming_session_start - state.session.start_time
 
         session_copy = snapshot_obj_for_tests(state.session)
 
         if isinstance(state.session, ProgramSession):
+            # Duration is calculated in the class
             just_completed = CompletedProgramSession.from_program_session(
                 session=session_copy,
                 end_time=incoming_session_start
             )
         else:
+            # Duration is calculated in the class
             just_completed = CompletedChromeSession.from_chrome_session(
                 session=session_copy,
                 end_time=incoming_session_start

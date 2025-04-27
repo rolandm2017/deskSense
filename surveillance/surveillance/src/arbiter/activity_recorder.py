@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from surveillance.src.object.classes import ChromeSession, ProgramSession
+from surveillance.src.object.classes import ChromeSession, ProgramSession, CompletedChromeSession, CompletedProgramSession
 from surveillance.src.object.arbiter_classes import InternalState
 
 from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
@@ -37,7 +37,6 @@ class ActivityRecorder:
         This exists because some code I expected to start a log
         before any other code asked to update the log, did not create
         the log as expected. And so I am doing it manually.
-        In hindsight "add_ten_sec_to_end_time" doesn't really scream "creates the log file".
         """
         now = self.user_facing_clock.now()
         if isinstance(session, ProgramSession):
@@ -61,7 +60,7 @@ class ActivityRecorder:
         else:
             raise TypeError("Session was not the right type")
 
-    def add_ten_sec_to_end_time(self, session):
+    def add_ten_sec_to_end_time(self, session: ProgramSession | ChromeSession):
         """
         Pushes the end of the window forward ten sec so that, 
         when the computer shuts down, the end time was "about right" anyways.
@@ -71,7 +70,6 @@ class ActivityRecorder:
         if session is None:
             raise ValueError("Session was None in add_ten_sec")
         now: UserLocalTime = self.user_facing_clock.now()
-        print("getting time in add_ten_sec_to_end_time")
         if isinstance(session, ProgramSession):
             self.program_logging_dao.push_window_ahead_ten_sec(session)
             self.program_summary_dao.push_window_ahead_ten_sec(session, now)
@@ -81,7 +79,7 @@ class ActivityRecorder:
         else:
             raise TypeError("Session was not the right type")
 
-    def on_state_changed(self, session):
+    def on_state_changed(self, session: CompletedProgramSession | CompletedChromeSession):
         if isinstance(session, ProgramSession):
             self.validate_session(session)
             self.program_logging_dao.finalize_log(session)

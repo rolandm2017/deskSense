@@ -1,17 +1,13 @@
 
 from sqlalchemy import select, or_
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.asyncio import async_sessionmaker
-import asyncio
 from datetime import timedelta, datetime, date, timezone
-from typing import List
 
 from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 from surveillance.src.db.models import DomainSummaryLog, ProgramSummaryLog
-from surveillance.src.db.dao.base_dao import BaseQueueingDao
 from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 
-from surveillance.src.object.classes import ChromeSession, ProgramSession
+from surveillance.src.object.classes import ProgramSession, CompletedProgramSession
 
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.errors import ImpossibleToGetHereError
@@ -188,10 +184,8 @@ class ProgramLoggingDao(UtilityDaoMixin):
         log.end_time = log.end_time + timedelta(seconds=10)
         self.update_item(log)
 
-    def finalize_log(self, session: ProgramSession):
+    def finalize_log(self, session: CompletedProgramSession):
         """Overwrite value from the heartbeat. Expect something to ALWAYS be in the db already at this point."""
-        if session.end_time is None:
-            raise ValueError("End time was None")
         log: ProgramSummaryLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError(

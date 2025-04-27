@@ -7,16 +7,14 @@ import traceback
 from datetime import datetime, timedelta, time
 from typing import List
 
-from surveillance.src.config.definitions import power_on_off_debug_file
+from surveillance.src.config.definitions import keep_alive_pulse_len
 
 from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 from surveillance.src.db.models import DailyDomainSummary
 from surveillance.src.object.classes import ChromeSession
 
 from surveillance.src.util.console_logger import ConsoleLogger
-from surveillance.src.util.dao_wrapper import validate_start_end_and_duration, validate_start_and_end_times
 from surveillance.src.util.errors import NegativeTimeError, ImpossibleToGetHereError
-from surveillance.src.util.debug_util import notice_suspicious_durations, log_if_needed
 from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.time_formatting import get_start_of_day, convert_to_timezone
 from surveillance.src.util.time_wrappers import UserLocalTime
@@ -148,7 +146,10 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
 
         9 times out of 10. So we deduct the unfinished duration from its hours_spent.
         """
+        if duration_in_sec > keep_alive_pulse_len:
+            raise ValueError("Duration was somehow greater than 10")
         target_domain = session.domain
+        
 
         tomorrow_start = today_start.dt + timedelta(days=1)
 
