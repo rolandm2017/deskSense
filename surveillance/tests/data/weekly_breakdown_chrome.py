@@ -5,16 +5,12 @@ from typing import List, Optional
 from surveillance.src.object.classes import ChromeSession, ProgramSession
 from surveillance.src.util.time_wrappers import UserLocalTime
 
-from .weekly_breakdown_programs import march_2_2025, march_3_2025
+from .weekly_breakdown_programs import march_2_2025, march_3_2025, weekly_breakdown_tz
 
 # Sample ChromeSession objects
 # 🌐 Chrome File 🌐 Chrome File 🌐 Chrome File 🌐 Chrome File 🌐 Chrome File 🌐
 # 🌐 Chrome File 🌐 Chrome File 🌐 Chrome File 🌐 Chrome File 🌐 Chrome File 🌐
 # Sample ChromeSession objects
-
-TIMEZONE_FOR_TEST = "Asia/Tokyo"  #  UTC+9
-
-some_local_tz = pytz.timezone(TIMEZONE_FOR_TEST)
 
 
 def add_time_and_tz(base_date, hours=0, minutes=0, seconds=0):
@@ -24,7 +20,7 @@ def add_time_and_tz(base_date, hours=0, minutes=0, seconds=0):
     # Check if datetime is already timezone-aware
     if result_dt.tzinfo is None:
         # It's naive, so localize it with the specified timezone
-        result_dt = some_local_tz.localize(result_dt)
+        result_dt = weekly_breakdown_tz.localize(result_dt)
     
     return result_dt
 
@@ -64,7 +60,7 @@ def chrome_feb_23() -> List[ChromeSession]:
                                               add_time_and_tz(feb_23_2025, 16, 30, 0)),
                                           productive=True,
                                           duration_for_tests=UserLocalTime(add_time_and_tz(
-                                              feb_23_2025, 16, 30, 0) - UserLocalTime(add_time_and_tz(feb_23_2025, 15, 45, 0))))
+                                              feb_23_2025, 16, 30, 0)) - UserLocalTime(add_time_and_tz(feb_23_2025, 15, 45, 0)))
     chrome_sessions.append(stackoverflow_session)
 
     return chrome_sessions
@@ -348,27 +344,3 @@ march_2_chrome_count = len(chrome_march_2nd())
 march_3_chrome_count = len(chrome_march_3rd())
 
 
-# Example usage:
-#
-# chrome_sessions = create_chrome_session_test_data()
-# program_sessions = create_program_session_test_data()
-#
-# print(f"Generated {len(chrome_sessions)} Chrome sessions")
-# print(f"Generated {len(program_sessions)} Program sessions")
-#
-# # Example of how you might use these with your DAOs:
-# async def test_chrome_summary_dao():
-#     # Set up test dependencies like session_maker, logging_dao, etc.
-#     chrome_logging_dao = MockChromeLoggingDao()
-#     session_maker = get_test_session_maker()
-#     chrome_dao = ChromeSummaryDao(chrome_logging_dao, session_maker)
-#
-#     # Current test time - use a fixed time for deterministic tests
-#     now = datetime(2025, 3, 3, 19, 0, 0, tzinfo=timezone.utc)
-#
-#     # Process all test chrome sessions
-#     for session in chrome_sessions:
-#         await chrome_dao.create_if_new_else_update(session, now)
-#
-#     # Then assert expected state in database
-#     # ...

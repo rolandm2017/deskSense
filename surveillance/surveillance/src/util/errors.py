@@ -13,9 +13,9 @@ class SuspiciousDurationError(ValueError):
 class TimezoneUnawareError(ValueError):
     """Raised when a datetime object is missing timezone info. tzinfo=None -> Here"""
 
-    def __init__(self, source: str):
+    def __init__(self, source: str, dt):
         super().__init__(
-            f"Timezone-unaware datetime detected: {source}")
+            f"Timezone-unaware datetime detected: {source} with dt {str(dt)}")
 
 
 class MismatchedTimezonesError(ValueError):

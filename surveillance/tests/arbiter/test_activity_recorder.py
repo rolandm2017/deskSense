@@ -1,6 +1,9 @@
 import pytest
+
 from unittest.mock import AsyncMock, MagicMock
+
 from datetime import datetime, timedelta
+import pytz
 
 from surveillance.src.arbiter.activity_recorder import ActivityRecorder
 
@@ -13,6 +16,10 @@ from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from surveillance.src.object.classes import ProgramSession, ChromeSession
 from surveillance.src.util.time_wrappers import UserLocalTime
 
+TIMEZONE_FOR_TEST = "Asia/Tokyo"  #  UTC+9
+
+tokyo_tz = pytz.timezone(TIMEZONE_FOR_TEST)
+
 
 # Test implementations with proper session object instantiation
 
@@ -22,8 +29,8 @@ def program_session():
     return ProgramSession("C:/ProgramFiles/Code.exe", "Code.exe",
                           "Visual Studio Code",
                           "main.py",
-                          UserLocalTime(datetime(2023, 1, 1, 12, 0, 0)),
-                          UserLocalTime(datetime(2023, 1, 1, 12, 10, 0)),
+                          UserLocalTime(datetime(2023, 1, 1, 12, 0, 0, tzinfo=tokyo_tz)),
+                          UserLocalTime(datetime(2023, 1, 1, 12, 10, 0, tzinfo=tokyo_tz)),
                           True,
                           timedelta(minutes=10)
                           )
@@ -34,8 +41,8 @@ def chrome_session():
     return ChromeSession(
         "github.com",
         "DeepSeek Chat Repository",
-        datetime(2023, 1, 1, 12, 0, 0),
-        datetime(2023, 1, 1, 12, 5, 0),
+        datetime(2023, 1, 1, 12, 0, 0, tzinfo=tokyo_tz),
+        datetime(2023, 1, 1, 12, 5, 0, tzinfo=tokyo_tz),
         productive=True,
         duration_for_tests=timedelta(minutes=5)
     )
@@ -109,7 +116,7 @@ async def test_error_cases(activity_recorder):
     # Test missing end_time
     bad_session = ProgramSession()
     bad_session.window_title = "Bad Session"
-    bad_session.start_time = UserLocalTime(datetime.now())
+    bad_session.start_time = UserLocalTime(datetime.now(pytz.UTC).astimezone(tokyo_tz))
     bad_session.end_time = None
     bad_session.duration = timedelta(seconds=10)
 
@@ -117,7 +124,7 @@ async def test_error_cases(activity_recorder):
         await activity_recorder.on_state_changed(bad_session)
 
     # Test missing duration
-    bad_session.end_time = UserLocalTime(datetime.now())
+    bad_session.end_time = UserLocalTime(datetime.now(pytz.UTC).astimezone(tokyo_tz))
     bad_session.duration = None
 
     with pytest.raises(ValueError):

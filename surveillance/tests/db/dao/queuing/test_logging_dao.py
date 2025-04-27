@@ -34,7 +34,12 @@ from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 
-timezone_for_test_data = ZoneInfo('America/New_York')
+
+timezone_for_test_data = ZoneInfo("Asia/Tokyo")
+
+tokyo_tz = pytz.timezone("Asia/Tokyo")
+
+now_tokyo = datetime.now(pytz.UTC).astimezone(tokyo_tz)
 
 load_dotenv()
 
@@ -161,12 +166,12 @@ def test_push_window_ahead(prepare_daos):
     pretend_pr_log = ProgramSummaryLog(
         program_name="VSCode",
         hours_spent=120 / SECONDS_PER_HOUR,
-        start_time=datetime(2025, 4, 19, 9, 0, 0, tzinfo=timezone.utc),
+        start_time=datetime(2025, 4, 19, 9, 0, 0, tzinfo=tokyo_tz),
         end_time=datetime(2025, 4, 19, 17, 0,
-                          start_val_for_test, tzinfo=timezone.utc),
+                          start_val_for_test, tzinfo=tokyo_tz),
         duration=8.0,
-        created_at=datetime.now(timezone.utc),
-        gathering_date=datetime(2025, 4, 19, tzinfo=timezone.utc)
+        created_at=datetime.now(tokyo_tz),
+        gathering_date=datetime(2025, 4, 19, tzinfo=tokyo_tz)
     )
     program_find_session_mock.return_value = pretend_pr_log
     program_dao.find_session = program_find_session_mock
@@ -175,19 +180,19 @@ def test_push_window_ahead(prepare_daos):
     pretend_domain_log = DomainSummaryLog(
         domain_name="example.com",
         hours_spent=4.5,
-        start_time=datetime(2025, 4, 20, 10, 0, tzinfo=timezone.utc),
+        start_time=datetime(2025, 4, 20, 10, 0, tzinfo=tokyo_tz),
         end_time=datetime(2025, 4, 20, 14, 4, start_val_for_test,
-                          tzinfo=timezone.utc),
+                          tzinfo=tokyo_tz),
         duration=4.5,
-        gathering_date=datetime(2025, 4, 20, tzinfo=timezone.utc),
-        created_at=datetime.now(timezone.utc)
+        gathering_date=datetime(2025, 4, 20, tzinfo=tokyo_tz),
+        created_at=datetime.now(tokyo_tz)
     )
     chrome_find_session_mock.return_value = pretend_domain_log
     chrome_dao.find_session = chrome_find_session_mock
 
     initial_write_of_program = ProgramSession("path/to/foo.exe", "foo.exe",
 
-                                              "cat", "hat", datetime(2025, 4, 20, 2, 2, 2))
+                                              "cat", "hat", UserLocalTime(datetime(2025, 4, 20, 2, 2, 2, tzinfo=tokyo_tz)))
     initial_write_of_chrome = ChromeSession(
         "foo", "bar", datetime(2025, 4, 20, 1, 1, 1))
 
@@ -230,8 +235,8 @@ def test_finalize_log(prepare_daos, mock_regular_session_maker, nonexistent_sess
     chrome_dao = ChromeLoggingDao(
         mock_regular_session_maker)
 
-    t1 = datetime(2025, 1, 20, 12, 30, 0)
-    t2 = datetime(2025, 1, 30, 13, 40, 0)
+    t1 = datetime(2025, 1, 20, 12, 30, 0, tzinfo=tokyo_tz)
+    t2 = datetime(2025, 1, 30, 13, 40, 0, tzinfo=tokyo_tz)
     found_program_session = ProgramSummaryLog()
     found_program_session.end_time = t1
     found_domain_session = DomainSummaryLog()

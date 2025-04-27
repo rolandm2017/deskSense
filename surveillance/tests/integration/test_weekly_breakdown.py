@@ -16,6 +16,7 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy import text
 
+import pytz
 from datetime import datetime, timedelta
 
 
@@ -45,8 +46,9 @@ from ..data.weekly_breakdown_programs import (
     programs_march_2nd, programs_march_3rd,
     march_2_2025, march_3_2025, feb_23_2025, feb_24_2025, feb_26_2025,
     march_2_program_count, march_3_program_count, unique_programs, feb_program_count,
-    programs_feb_23, programs_feb_24, programs_feb_26
+    programs_feb_23, programs_feb_24, programs_feb_26, weekly_breakdown_tz
 )
+
 from ..data.weekly_breakdown_chrome import (
     duplicates_chrome_march_2, duplicates_chrome_march_3rd,
     chrome_march_2nd, chrome_march_3rd,
@@ -61,6 +63,7 @@ from ..mocks.mock_clock import MockClock
 load_dotenv()
 
 # FIXME: Turtle slow test: use in memory db?
+
 
 
 @pytest_asyncio.fixture
@@ -441,7 +444,7 @@ async def test_week_of_feb_23(setup_with_populated_db):
     service, _, _, _ = setup_with_populated_db
     dashboard_service = service
 
-    feb_23_2025_dt = datetime(2025, 2, 23)  # Year, Month, Day
+    feb_23_2025_dt =weekly_breakdown_tz.localize(datetime(2025, 2, 23))  # Year, Month, Day
     # ### ###
     # # Check the test data to see what's in here
     # ### ###
@@ -461,7 +464,7 @@ async def test_week_of_feb_23(setup_with_populated_db):
 @pytest.mark.asyncio
 async def test_week_of_march_2(setup_with_populated_db):
     dashboard_service = setup_with_populated_db[0]
-    march_2_2025_dt = datetime(2025, 3, 2)  # Year, Month, Day
+    march_2_2025_dt = weekly_breakdown_tz.localize(datetime(2025, 3, 2))  # Year, Month, Day
 
     weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(UserLocalTime(march_2_2025_dt))
 

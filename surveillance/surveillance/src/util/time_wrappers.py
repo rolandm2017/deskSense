@@ -58,7 +58,7 @@ class UserLocalTime:
             self.dt = dt.dt
         else:
             if dt.tzinfo is None:
-                raise TimezoneUnawareError("UserLocalTime")
+                raise TimezoneUnawareError("UserLocalTime", dt)
             self.dt = dt
         self.timezone = getattr(self.dt, 'tzinfo', None)
 

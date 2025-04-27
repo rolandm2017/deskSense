@@ -3,6 +3,7 @@ import pytest_asyncio
 from unittest.mock import Mock, patch, AsyncMock, MagicMock, patch
 import asyncio
 
+import pytz
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.sql.selectable import Select
@@ -18,6 +19,12 @@ from surveillance.src.util.clock import SystemClock
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 
+
+tokyo_tz = pytz.timezone("Asia/Tokyo")
+now_tokyo = datetime.now(pytz.UTC).astimezone(tokyo_tz)
+
+
+
 class TestMouseDao:
     @pytest_asyncio.fixture
     async def dao(self, mock_async_session_maker):
@@ -29,7 +36,7 @@ class TestMouseDao:
 
     @pytest.mark.asyncio
     async def test_create_from_window(self, dao):
-        start_time = UserLocalTime(datetime.now())
+        start_time = UserLocalTime(now_tokyo)
         end_time = start_time + timedelta(minutes=1)
         window = MouseMoveWindow(start_time, end_time)
 

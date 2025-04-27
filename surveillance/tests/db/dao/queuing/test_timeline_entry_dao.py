@@ -1,6 +1,9 @@
 import pytest
 from unittest.mock import AsyncMock, Mock, MagicMock, patch
+
 from datetime import datetime, timedelta
+import pytz
+
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.sql.selectable import Select
 from typing import cast
@@ -12,13 +15,12 @@ from surveillance.src.object.enums import ChartEventType
 from surveillance.src.util.clock import SystemClock
 from surveillance.src.util.time_wrappers import UserLocalTime
 
-
 import psutil
 
-process = psutil.Process()
-open_files = process.open_files()
-num_open_files = len(open_files)
-print(f"Num of open files: {num_open_files}")
+
+tokyo_tz = pytz.timezone("Asia/Tokyo")
+now_tokyo = datetime.now(pytz.UTC).astimezone(tokyo_tz)
+
 
 # FIXME: OSerror
 
@@ -31,7 +33,7 @@ class TestTimelineEntryDao:
     @pytest.mark.asyncio
     async def test_create_from_keyboard_aggregate(self, dao, mock_session):
         # Arrange
-        current_time = datetime.now()
+        current_time = now_tokyo
         keyboard_aggregate = KeyboardAggregate(
             start_time=UserLocalTime(current_time),
             end_time=UserLocalTime(current_time + timedelta(minutes=5))
@@ -56,7 +58,7 @@ class TestTimelineEntryDao:
     @pytest.mark.asyncio
     async def test_create_from_mouse_move_window(self, dao, mock_session):
         # Arrange
-        current_time = datetime.now()
+        current_time = now_tokyo
         mouse_window = MouseMoveWindow(
             UserLocalTime(current_time), UserLocalTime(current_time + timedelta(minutes=5)))
 
@@ -76,40 +78,10 @@ class TestTimelineEntryDao:
         assert isinstance(queued_item, TimelineEntryObj)
         assert cast(str, queued_item.group) == ChartEventType.MOUSE
 
-    # Write the test when you actually use the function
-
-    # @pytest.mark.asyncio
-    # async def test_read_highest_id(self, dao, mock_session):
-    #     # Arrange
-    #     mock_result = AsyncMock()
-    #     mock_result.scalar = Mock(return_value=5)  # Changed to regular Mock
-    #     mock_session.execute.return_value = mock_result
-
-    #     # Act
-    #     result = await dao.read_highest_id()
-
-    #     # Assert
-    #     assert result == 5
-    #     assert mock_session.execute.called
-
-    # @pytest.mark.asyncio
-    # async def test_read_highest_id_empty_table(self, dao, mock_session):
-    #     # Arrange
-    #     mock_result = AsyncMock()
-    #     mock_result.scalar = Mock(return_value=None)  # Changed to regular Mock
-    #     mock_session.execute.return_value = mock_result
-
-    #     # Act
-    #     result = await dao.read_highest_id()
-
-    #     # Assert
-    #     assert result == 0
-    #     assert mock_session.execute.called
-
     @pytest.mark.asyncio
     async def test_read_day(self, dao, mock_session):
         # Arrange
-        test_day = UserLocalTime(datetime.now())
+        test_day = UserLocalTime(now_tokyo)
         event_type = ChartEventType.KEYBOARD
         mock_entries = [
             Mock(spec=TimelineEntryObj),
@@ -150,7 +122,7 @@ class TestTimelineEntryDao:
 
         # Arrange
         clock = SystemClock()  # Could also be userFacingClock for this test
-        test_day = datetime.now()
+        test_day = now_tokyo
         test_day = test_day - timedelta(days=7)
 
         mock_entries = [Mock(spec=TimelineEntryObj),
@@ -197,7 +169,7 @@ class TestTimelineEntryDao:
         # Arrange
         clock = SystemClock()  # Could also be userFacingClock for this test
 
-        test_day_end = datetime.now()
+        test_day_end = now_tokyo
         test_day_start = test_day_end - timedelta(days=7)
 
         mock_entries = [Mock(spec=TimelineEntryObj),

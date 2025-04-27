@@ -1,5 +1,7 @@
 import pytest
 import pytest_asyncio
+import pytz
+
 import asyncio
 from unittest.mock import AsyncMock, patch, Mock, MagicMock
 from datetime import datetime, timedelta
@@ -14,6 +16,10 @@ from surveillance.src.util.clock import SystemClock
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 
+tokyo_tz = pytz.timezone("Asia/Tokyo")
+now_tokyo = datetime.now(pytz.UTC).astimezone(tokyo_tz)
+
+
 @pytest_asyncio.fixture
 async def dao(mock_async_session_maker):
     dao = KeyboardDao(mock_async_session_maker)
@@ -24,8 +30,8 @@ async def dao(mock_async_session_maker):
 async def test_create(dao):
     # Arrange
     session = KeyboardAggregate(
-        start_time=UserLocalTime(datetime.now()),
-        end_time=UserLocalTime(datetime.now())
+        start_time=UserLocalTime(now_tokyo),
+        end_time=UserLocalTime(now_tokyo)
     )
 
     queue_item_mock = AsyncMock()
@@ -46,12 +52,12 @@ async def test_read_all(dao):
 
     # Write two dummy results
     s = TypingSession(id=4999,
-                      start_time=datetime.now(),
-                      end_time=datetime.now()
+                      start_time=now_tokyo,
+                      end_time=now_tokyo
                       )
     s2 = TypingSession(id=5000,
-                       start_time=datetime.now(),
-                       end_time=datetime.now()
+                       start_time=now_tokyo,
+                       end_time=now_tokyo
                        )
     execute_and_return_all_mock = AsyncMock()
     execute_and_return_all_mock.return_value = [s, s2]
@@ -69,15 +75,15 @@ async def test_read_all(dao):
 @pytest.mark.asyncio
 async def test_read_past_24h_events(dao):
     # Arrange
-    current_time = UserLocalTime(datetime.now())
+    current_time = UserLocalTime(now_tokyo)
 
     s = TypingSession(id=5999,
-                      start_time=datetime.now(),
-                      end_time=datetime.now()
+                      start_time=now_tokyo,
+                      end_time=now_tokyo
                       )
     s2 = TypingSession(id=6000,
-                       start_time=datetime.now(),
-                       end_time=datetime.now()
+                       start_time=now_tokyo,
+                       end_time=now_tokyo
                        )
     execute_and_return_all_mock = AsyncMock()
     execute_and_return_all_mock.return_value = [s, s2]

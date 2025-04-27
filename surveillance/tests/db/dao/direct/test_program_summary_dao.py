@@ -5,6 +5,7 @@ import pytest_asyncio
 
 from unittest.mock import AsyncMock, Mock, MagicMock
 from datetime import datetime, date, timedelta, timezone
+import pytz
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy import text
@@ -28,11 +29,8 @@ from ....mocks.mock_clock import MockClock
 
 load_dotenv()
 
-
-process = psutil.Process()
-open_files = process.open_files()
-num_open_files = len(open_files)
-print(f"Num of open files: {num_open_files}")
+tokyo_tz = pytz.timezone("Asia/Tokyo")
+now_tokyo = datetime.now(pytz.UTC).astimezone(tokyo_tz)
 
 
 class TestProgramSummaryDao:
@@ -47,13 +45,13 @@ class TestProgramSummaryDao:
         yield program_summary_dao
 
     def test_start_session(self, program_summary_dao):
-        dt = datetime(2025, 1, 25, 15, 5)
+        dt = datetime(2025, 1, 25, 15, 5, tzinfo=tokyo_tz)
 
         chrome = "Chrome"
 
         dt2 = dt + timedelta(seconds=13)
         session_data_1 = ProgramSession(
-            "path/to/chrome.exe", "Chrome.exe", chrome, "Facebook.com", dt, dt2)
+            "path/to/chrome.exe", "Chrome.exe", chrome, "Facebook.com", UserLocalTime(dt), UserLocalTime(dt2))
         session_data_1.productive = False
 
         create_spy = Mock()
@@ -77,7 +75,7 @@ class TestProgramSummaryDao:
         assert args[2].minute == 0
 
     def test_create(self, program_summary_dao):
-        dt = datetime(2025, 1, 25, 15, 5)
+        dt = datetime(2025, 1, 25, 15, 5, tzinfo=tokyo_tz)
 
         add_new_item_spy = Mock()
         program_summary_dao.add_new_item = add_new_item_spy
@@ -85,8 +83,8 @@ class TestProgramSummaryDao:
         session_duration = 1 / 60
         window_title = "Foo!"
         dummy_session = ProgramSession(
-            "C:/foo.exe", "foo.exe", window_title, "detail of foo", dt)
-        program_summary_dao._create(dummy_session, session_duration, dt)
+            "C:/foo.exe", "foo.exe", window_title, "detail of foo", UserLocalTime(dt))
+        program_summary_dao._create(dummy_session, session_duration, UserLocalTime(dt))
 
         add_new_item_spy.assert_called_once()
 
@@ -101,7 +99,7 @@ class TestProgramSummaryDao:
 
     def test_read_day(self, program_summary_dao, mock_session):
         # Arrange
-        t0 = datetime(2025, 3, 23, 9, 25, 31)
+        t0 = datetime(2025, 3, 23, 9, 25, 31, tzinfo=tokyo_tz)
 
         t1 = UserLocalTime(t0 - timedelta(hours=1))
         t2 = UserLocalTime(t0 + timedelta(minutes=1))
@@ -162,27 +160,3 @@ class TestProgramSummaryDao:
         # Check that first argument is a Select object
         assert isinstance(args[0], Select)
         assert len(result) == 3
-
-    def test_read_row_for_program(self, program_summary_dao):
-        # Arrange
-        program_name = "TestProgram"
-
-        t0 = datetime(2025, 3, 23, 8, 25, 41)
-        # t0 = t0 - timedelta(hours=1)
-        # t1 = t0 + timedelta(minutes=1)
-        # session = ProgramSession(program_name, "", t0, t1)
-        # program_summary_dao.create_if_new_else_update(session, t0)
-
-        execute_and_one_or_none_spy = Mock()
-        program_summary_dao.execute_and_read_one_or_none = execute_and_one_or_none_spy
-
-        # Act
-        program_summary_dao.read_row_for_program(
-            program_name, UserLocalTime(t0))
-
-        # Assert
-        execute_and_one_or_none_spy.assert_called_once()
-
-        args, kwargs = execute_and_one_or_none_spy.call_args
-        # Check that first argument is a Select object
-        assert isinstance(args[0], Select)

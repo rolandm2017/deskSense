@@ -8,6 +8,7 @@ import pytest
 import asyncio
 from unittest.mock import Mock
 
+import pytz
 from datetime import datetime, timedelta
 from typing import Dict, List, cast
 
@@ -39,6 +40,10 @@ from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_d
 from ..mocks.mock_message_receiver import MockMessageReceiver
 
 from ..mocks.mock_clock import UserLocalTimeMockClock
+
+TIMEZONE_FOR_TEST = "Europe/Berlin"  # UTC +1 or UTC +2
+
+some_local_tz = pytz.timezone(TIMEZONE_FOR_TEST)
 
 
 def fmt_time_string(s):
@@ -131,34 +136,6 @@ def validate_test_data():
     return test_events
 
 
-# async def cleanup_test_resources(manager):
-#     print("Cleaning up test resources...")
-
-#     # Clean up surveillance manager (this should now properly clean up MessageReceiver)
-#     try:
-#         await manager.cleanup()
-#     except Exception as e:
-#         print(f"Error during surveillance_manager cleanup: {e}")
-#         traceback.print_exc()
-
-#     # Allow some time for all resources to be properly cleaned up
-#     await asyncio.sleep(0.5)
-
-#     # Ensure all asyncio tasks are properly awaited or cancelled
-#     tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
-#     if tasks:
-#         print(f"Cancelling {len(tasks)} remaining tasks...")
-#         for task in tasks:
-#             if not task.done():
-#                 task.cancel()
-
-#         try:
-#             await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=1.0)
-#         except asyncio.TimeoutError:
-#             print("Some tasks did not complete in time during test cleanup")
-
-#     print("Test resources cleanup completed")
-
 
 # @pytest.fixture
 # def setup_for_test(regular_session, mock_async_session_maker):
@@ -234,7 +211,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
     
     mock_user_facing_clock = UserLocalTimeMockClock(times)
 
-    dummy_time = UserLocalTime(datetime(2065, 12, 12, 12, 12, 12))
+    dummy_time = UserLocalTime(datetime(2065, 12, 12, 12, 12, 12, tzinfo=some_local_tz))
     dummy_times = [dummy_time,dummy_time,dummy_time,dummy_time,dummy_time]
 
     wont_be_used = UserLocalTimeMockClock(dummy_times)
@@ -664,7 +641,7 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, re
     
     mock_user_facing_clock = UserLocalTimeMockClock(times_for_test_two)  # type: ignore
 
-    v = UserLocalTime(datetime(2095, 2, 2, 2, 2, 2))
+    v = UserLocalTime(datetime(2095, 2, 2, 2, 2, 2, tzinfo=some_local_tz))
 
     wont_be_used = UserLocalTimeMockClock([v,v,v,v,v])  # I am sure it's not used
 

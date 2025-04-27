@@ -112,18 +112,6 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         query = select(DailyProgramSummary)
         return self.execute_and_return_all(query)
 
-    def read_row_for_program(self, target_program_name: str, right_now: UserLocalTime):
-        """Reads the row for the target program for today."""
-        today_start = get_start_of_day(right_now.dt)
-        tomorrow_start = today_start + timedelta(days=1)
-
-        query = select(DailyProgramSummary).where(
-            DailyProgramSummary.program_name == target_program_name,
-            DailyProgramSummary.gathering_date >= today_start,
-            DailyProgramSummary.gathering_date < tomorrow_start
-        )
-
-        return self.execute_and_read_one_or_none(query)
 
     # Updates section
 

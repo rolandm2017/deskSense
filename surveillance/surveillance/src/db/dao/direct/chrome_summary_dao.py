@@ -73,17 +73,6 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
 
         return self.execute_and_read_one_or_none(query)
 
-    def read_row_for_domain(self, target_domain_name, right_now):
-        today = right_now.replace(hour=0, minute=0, second=0,
-                                  microsecond=0)  # Still has tz attached
-        query = select(DailyDomainSummary).where(
-            DailyDomainSummary.domain_name == target_domain_name,
-            DailyDomainSummary.gathering_date >= today,
-            DailyDomainSummary.gathering_date < today + timedelta(days=1)
-        )
-        # TODO: replace.
-        return self.execute_and_read_one_or_none(query)
-
     def read_past_week(self, right_now: UserLocalTime):
 
         # +1 because weekday() counts from Monday=0
