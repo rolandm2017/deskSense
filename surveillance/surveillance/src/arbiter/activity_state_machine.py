@@ -63,9 +63,14 @@ class ActivityStateMachine:
     def _conclude_session(self, state: InternalState, incoming_session_start: UserLocalTime):
         if not isinstance(incoming_session_start, UserLocalTime):
             raise ValueError("Expected a UserLocalTime")
+        
+        # if state.session
 
         session_copy = snapshot_obj_for_tests(state.session)
 
+        if isinstance(session_copy, dict):
+            raise ValueError("Should not get a dict from a session anymore")
+        
         if isinstance(state.session, ProgramSession):
             # Duration is calculated in the class
             just_completed = CompletedProgramSession.from_program_session(

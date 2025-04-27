@@ -164,9 +164,8 @@ class SurveillanceManager:
             self.chrome_service.shutdown()  # works despite the lack of highlighting
             self.arbiter.shutdown()
         except Exception as e:
-            print(self.chrome_service,  " none?")
-            traceback.print_exc()
             print(f"Error during shutdown cleanup: {e}")
+            traceback.print_exc()
 
     async def cancel_pending_tasks(self):
         """Safely cancel all pending tasks created by this manager."""

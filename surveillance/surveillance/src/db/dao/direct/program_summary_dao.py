@@ -137,7 +137,6 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
 
         NOTE: This only ever happens after start_session
         """
-        print("PUSHING window for ", program_session.exe_path)
         if program_session is None:
             raise ValueError("Session should not be None")
 
@@ -152,7 +151,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         self.execute_window_push(query, program_session.exe_path, program_session.start_time.dt)
 
     def execute_window_push(self, query, purpose, identifier: datetime):
-        self.logger.log_white(f"[info] looking for {purpose} with {identifier}")
+        # self.logger.log_white(f"[info] looking for {purpose} with {identifier}")
         with self.regular_session() as db_session:
             program: DailyProgramSummary = db_session.scalars(query).first()
             # FIXME: Sometimes program is None
