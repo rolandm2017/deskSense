@@ -43,8 +43,11 @@ class DashboardService:
             # significant_programs = {}  # New dictionary to track programs with >1hr usage
 
             current_day = starting_sunday + timedelta(days=i)
+            
             date_as_datetime = datetime.combine(
-                current_day.dt, datetime.min.time())
+                current_day.dt, datetime.min.time())  # tz is stripped
+            date_as_datetime = current_day.dt.tzinfo.localize(date_as_datetime)
+            
             daily_chrome_summaries: List[DailyDomainSummary] = self.chrome_summary_dao.read_day(
                 UserLocalTime(date_as_datetime))
             daily_program_summaries: List[DailyProgramSummary] = self.program_summary_dao.read_day(

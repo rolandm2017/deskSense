@@ -5,12 +5,13 @@ from unittest.mock import Mock
 import traceback
 import asyncio
 
+import pytz
 from datetime import datetime, timedelta
 
 from typing import cast
 
 
-from surveillance.src.object.classes import TabChangeEventWithLtz
+from surveillance.src.config.definitions import imported_local_tz_str
 
 from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
 from surveillance.src.arbiter.activity_recorder import ActivityRecorder
@@ -29,7 +30,7 @@ from surveillance.src.services.tiny_services import TimezoneService
 from surveillance.src.services.dashboard_service import DashboardService
 from surveillance.src.services.chrome_service import ChromeService
 
-from surveillance.src.object.classes import ChromeSession, ProgramSession
+from surveillance.src.object.classes import ChromeSession, ProgramSession, TabChangeEventWithLtz
 from surveillance.src.util.program_tools import separate_window_name_and_detail
 from surveillance.src.util.clock import UserFacingClock
 from surveillance.src.util.const import SECONDS_PER_HOUR
@@ -59,6 +60,11 @@ The test must start from the facade.
 This e2e uses the test database, but the facade all the way to
 the dashboard service endpoint, should be very real data, no breaks except to assert midway through.
 """
+
+
+some_local_tz = pytz.timezone(imported_local_tz_str)
+
+
 
 
 @pytest.fixture
@@ -118,18 +124,17 @@ async def test_setup_conditions(regular_session, plain_asm):
 
     # vvvv = ChromeSummaryDao()
 
-#       oooox
-#     oox   oox
-#    ox       ox
-#   ox         ox
-#   ox         ox
-#   ox         ox
-#    ox       ox
-#     oox   oox
-#       oooox
-# First, events make their way from ProgramTracker to the Arbiter.
-# # # #
-# Trackers -> Arbiter
+# #       1111
+# #      11111
+# #         11
+# #         11
+# #         11
+# #         11
+# #         11
+# #     111111111
+# # First, events make their way from ProgramTracker to the Arbiter.
+# # # # #
+# # Trackers -> Arbiter
 
 
 @pytest.mark.asyncio
@@ -302,17 +307,17 @@ async def test_tracker_to_arbiter(plain_asm, regular_session, times_from_test_da
         # Run the cleanup
         await cleanup_test_resources(surveillance_manager)
 
-#       oooox
-#     oox   oox
-#    ox       ox
-#   ox         ox
-#   ox         ox
-#    ox       ox
-#     oox   oox
-#       oooox
-# Second, events make their way from ChromeService to the Arbiter.
-# # # #
-# Chrome Svc -> Arbiter
+# # #    222222
+# # #   22    22
+# # #        22
+# # #       22
+# # #      22
+# # #     22
+# # #    22
+# # #   2222222222
+# # Second, events make their way from ChromeService to the Arbiter.
+# # # # #
+# # Chrome Svc -> Arbiter
 
 
 @pytest.mark.asyncio
@@ -411,20 +416,19 @@ async def test_chrome_svc_to_arbiter_path(regular_session, plain_asm):
         assert args[0].duration is None
     # assert 1 == 2  # Uncomment to enable capturing test data
 
-    #   ox         ox
-    #    ox       ox
-    #     oox   oox
-    #       oooox
+
     # Then, we check that the events are there as planned.
 
 
-#  ___________
-# |___________| > > >
-# |___________|> > > >
-# |___________| > > >
-# |___________|> > > >
-# |___________| > > >
-#
+#    333333
+#   33    33
+#         33
+#      3333
+#         33
+#         33
+#   33    33
+#    333333
+
 # # # # # # # # #
 # Arbiter -> DAO Layer
 
@@ -771,7 +775,7 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
 
     num_of_events_to_enter_arbiter = count_of_programs + count_of_tabs
 
-    assert asm_spy.call_count == num_of_events_to_enter_arbiter - initialization_entry
+    assert asm_spy.call_count == num_of_events_to_enter_arbiter, "A session escaped asm.set_new_session"
     assert notify_of_new_session_spy.call_count == num_of_events_to_enter_arbiter
 
     for call in asm_spy.call_args_list:
@@ -896,14 +900,14 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     for i in range(len(pr_events_v2)):
         date_of_deduction = program_summary_deduct_spy.call_args_list[i][0][2]
 
-        assert isinstance(date_of_deduction, datetime)
+        assert isinstance(date_of_deduction, UserLocalTime)
         assert pr_events_v2[0].start_time is not None
         assert date_of_deduction.day == pr_events_v2[0].start_time.day
 
     for i in range(len(ch_events_v2) - one_left_in_arbiter):
         date_of_deduction = chrome_summary_deduct_spy.call_args_list[i][0][2]
 
-        assert isinstance(date_of_deduction, datetime)
+        assert isinstance(date_of_deduction, UserLocalTime)
         assert ch_events_v2[0].start_time is not None
         assert date_of_deduction.day == ch_events_v2[0].start_time.day
 
@@ -1015,8 +1019,12 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
 
     # # Events are from 03-22, a Saturday.
     # # So we need 03-16, the prior Sunday.
-    sunday_the_16th = UserLocalTime(datetime(2025, 3, 16))
+    the_16th_with_tz = some_local_tz.localize(datetime(2025, 3, 16))
+    print(the_16th_with_tz, "1023ru")
+    sunday_the_16th = UserLocalTime(the_16th_with_tz)
+
     time_for_week = await dashboard_service.get_weekly_productivity_overview(sunday_the_16th)
+    
     assert any(entry["productivity"] > 0 or entry["leisure"] > 0 for entry in
                time_for_week), "Dashboard Service should've retrieved the times created earlier, but it didn't"
 

@@ -161,7 +161,6 @@ def test_away_from_edge_cases(setup_parts):
     assert len(all_for_day) == len(test_inputs)
 
 
-
 def test_on_twelve_ish_am_boundary(setup_parts):
     logging_dao, summary_dao = setup_parts
 
@@ -196,8 +195,6 @@ def test_on_twelve_ish_am_boundary(setup_parts):
         assert all_for_day[i].hours_spent == ten_sec_as_pct_of_hour
 
     assert len(all_for_day) == len(test_inputs)
-
-
 
 
 def test_on_eleven_ish_pm_boundary(setup_parts):
