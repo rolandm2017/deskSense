@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from ..mocks.mock_clock import MockClock
 
 from surveillance.src.config.definitions import productive_apps, productive_sites
-from surveillance.src.object.classes import ProgramSession
+from surveillance.src.object.classes import ProgramSession, CompletedProgramSession
 from surveillance.src.trackers.program_tracker import ProgramTrackerCore
 from surveillance.src.util.strings import no_space_dash_space
 
@@ -86,8 +86,7 @@ def test_start_new_session():
     assert new_session.detail is not None
     assert new_session.start_time is not None
 
-    assert new_session.end_time is None
-    assert new_session.duration is None
+    assert not isinstance(new_session, CompletedProgramSession)
 
     assert new_session.window_title == "Visual Studio Code"
     assert new_session.detail == "program_tracker.py - deskSense"
@@ -154,10 +153,6 @@ def test_window_change_triggers_handler():
     print(deliverable.start_time)
     print(t1)
     assert deliverable.start_time == t1
-    # Because the window change handler reports the started sessions
-    assert deliverable.end_time is None
-    # Because it's only the start of a session
-    assert deliverable.duration is None
 
     # # Continue acting - Need to run the tracking loop again to close a session
 
@@ -180,10 +175,6 @@ def test_window_change_triggers_handler():
     assert deliverable.detail[0:5] == "H&M |"
     # The second time clock.now() is called, i.e. not 1st window, but the 2nd
     assert deliverable.start_time == t2
-    # Because the window change handler reports the started sessions
-    assert deliverable.end_time is None
-    # Because it's only the start of a session
-    assert deliverable.duration is None
 
 
 def test_handle_alt_tab_window():

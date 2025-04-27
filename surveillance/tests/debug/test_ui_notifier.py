@@ -43,7 +43,7 @@ def test_internal_state_change(ui_notifier, mock_overlay):
     """Test that internal state changes update the overlay with the right text and color"""
     # Create a test state
     program_session = ProgramSession("C:/TestFiles/Window.exe", "Window.exe",
-                                     "Test Window Title", "", datetime.now())
+                                     "Test Window Title", "", UserLocalTime(datetime.now()))
     test_state = ApplicationInternalState(
         "Test Window Title", False, program_session)
 
@@ -61,7 +61,7 @@ def test_other_state_change(ui_notifier, mock_overlay):
     """Test that other state changes update the overlay with domain and blue color"""
     # Create a test state
 
-    chrome_session = ChromeSession("example.com", "", datetime.now())
+    chrome_session = ChromeSession("example.com", "", UserLocalTime(datetime.now()))
     test_state = ChromeInternalState(
         "Chrome", True, "example.com", chrome_session)
 
@@ -79,8 +79,8 @@ def test_multiple_state_changes(ui_notifier, mock_overlay):
     """Test multiple state changes in sequence"""
     # Create test states
     program_session = ProgramSession(
-        "C:/InternalApp.exe", "InternalApp.exe", "Internal App", "", datetime.now())
-    chrome_session = ChromeSession("test-domain.org", "", datetime.now())
+        "C:/InternalApp.exe", "InternalApp.exe", "Internal App", "", UserLocalTime(datetime.now()))
+    chrome_session = ChromeSession("test-domain.org", "", UserLocalTime(datetime.now()))
     internal_state = ApplicationInternalState(
         "Internal App", True, program_session)
     other_state = ChromeInternalState(

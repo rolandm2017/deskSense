@@ -18,7 +18,7 @@ from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from surveillance.src.db.models import DailyProgramSummary, Base
-from surveillance.src.object.classes import ProgramSession
+from surveillance.src.object.classes import CompletedProgramSession
 
 from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.clock import SystemClock
@@ -50,7 +50,7 @@ class TestProgramSummaryDao:
         chrome = "Chrome"
 
         dt2 = dt + timedelta(seconds=13)
-        session_data_1 = ProgramSession(
+        session_data_1 = CompletedProgramSession(
             "path/to/chrome.exe", "Chrome.exe", chrome, "Facebook.com", UserLocalTime(dt), UserLocalTime(dt2))
         session_data_1.productive = False
 
@@ -65,7 +65,7 @@ class TestProgramSummaryDao:
 
         args, kwargs = create_spy.call_args
         # Check that first argument is a Select object
-        assert isinstance(args[0], ProgramSession)
+        assert isinstance(args[0], CompletedProgramSession)
         assert isinstance(args[1], float)
         assert isinstance(args[2], datetime)
         assert args[0].window_title == chrome
@@ -82,7 +82,7 @@ class TestProgramSummaryDao:
 
         session_duration = 1 / 60
         window_title = "Foo!"
-        dummy_session = ProgramSession(
+        dummy_session = CompletedProgramSession(
             "C:/foo.exe", "foo.exe", window_title, "detail of foo", UserLocalTime(dt))
         program_summary_dao._create(dummy_session, session_duration, UserLocalTime(dt))
 

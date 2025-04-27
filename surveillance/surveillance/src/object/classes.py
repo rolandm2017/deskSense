@@ -149,7 +149,10 @@ class CompletedChromeSession(ChromeSession):
     end_time: UserLocalTime
     duration: timedelta
 
-    def __init__(self, domain, detail, start_time, end_time, productive=False, duration_for_tests=None):
+    def __init__(self, domain, detail, 
+                 start_time=UserLocalTime(datetime(2000, 1, 1, tzinfo=timezone.utc)), 
+                end_time=UserLocalTime(datetime(2000, 1, 1, tzinfo=timezone.utc)),  
+                productive=False, duration_for_tests=None):
         # Initialize the base class first
         """Only use duration arg in testing. Don't use it otherwise. 'duration_for_tests' exists only for e2e tests thresholds"""
         super().__init__(

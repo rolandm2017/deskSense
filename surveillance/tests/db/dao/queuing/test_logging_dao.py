@@ -26,7 +26,7 @@ from surveillance.src.db.models import DomainSummaryLog, ProgramSummaryLog, Base
 from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
-from surveillance.src.object.classes import ProgramSession, ChromeSession
+from surveillance.src.object.classes import CompletedProgramSession, CompletedChromeSession, ProgramSession, ChromeSession
 
 from surveillance.src.util.time_formatting import convert_to_utc
 from surveillance.src.util.errors import ImpossibleToGetHereError
@@ -74,7 +74,6 @@ def mock_session_data():
         "gpt Chat Repository",
         UserLocalTime(datetime(2025, 2, 1, 1, 0, 5, 0,
                       tzinfo=timezone_for_test_data)),
-        duration_for_tests=timedelta(minutes=1),
         productive=True
     )
 
@@ -216,11 +215,11 @@ def test_push_window_ahead(prepare_daos):
 @pytest.fixture
 def nonexistent_session():
     # almost certainly doesn't exist
-    nonexistent_time = datetime(2025, 1, 1, 1, 0, 0, 0)
-    session = ChromeSession(domain="github.com",
+    nonexistent_time = UserLocalTime(datetime(2025, 1, 1, 1, 0, 0, 0))
+    session = CompletedChromeSession(domain="github.com",
                             detail="DeepSeek Chat Repository",
                             start_time=nonexistent_time,
-                            end_time=datetime(2025, 1, 1, 1, 0, 0, 1),
+                            end_time=UserLocalTime(datetime(2025, 1, 1, 1, 0, 0, 1)),
                             duration_for_tests=timedelta(minutes=1),
                             productive=True)
     return session
@@ -258,9 +257,9 @@ def test_finalize_log(prepare_daos, mock_regular_session_maker, nonexistent_sess
     chrome_dao.update_item = ch_update_item_spy
 
     # Act
-    delivers_end_time = ProgramSession()
+    delivers_end_time = CompletedProgramSession()
     delivers_end_time.end_time = UserLocalTime(t1 + timedelta(seconds=10))
-    ch_delivers_end_time = ChromeSession("yadda", "yadda", "yadda")
+    ch_delivers_end_time = CompletedChromeSession("yadda", "yadda")
     ch_delivers_end_time.end_time = UserLocalTime(t2 + timedelta(seconds=22))
     program_dao.finalize_log(delivers_end_time)
     chrome_dao.finalize_log(ch_delivers_end_time)

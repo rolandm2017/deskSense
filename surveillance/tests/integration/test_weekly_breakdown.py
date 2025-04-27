@@ -36,7 +36,7 @@ from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
 from surveillance.src.db.models import Base, DailyDomainSummary, DailyProgramSummary
-from surveillance.src.object.classes import ChromeSession, ProgramSession
+from surveillance.src.object.classes import CompletedChromeSession, CompletedProgramSession
 from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.time_wrappers import UserLocalTime
 
@@ -120,7 +120,7 @@ async def truncate_test_tables(session_maker_async):
 def setup_program_writes_for_group(group_of_test_data, program_summary_dao, must_be_from_month):
     """"""
     for dummy_program_session in group_of_test_data:
-        assert isinstance(dummy_program_session, ProgramSession)
+        assert isinstance(dummy_program_session, CompletedProgramSession)
         assert isinstance(
             dummy_program_session.end_time, UserLocalTime), "Setup conditions not met"
         assert must_be_from_month == dummy_program_session.end_time.dt.month
@@ -143,7 +143,7 @@ def setup_program_writes_for_group(group_of_test_data, program_summary_dao, must
 
 def setup_chrome_writes_for_group(group_of_test_data, chrome_summary_dao, must_be_from_month):
     for dummy_chrome_session in group_of_test_data:
-        assert isinstance(dummy_chrome_session, ChromeSession)
+        assert isinstance(dummy_chrome_session, CompletedChromeSession)
 
         session_from_today = chrome_summary_dao.find_todays_entry_for_domain(
             dummy_chrome_session)
@@ -198,9 +198,9 @@ async def setup_with_populated_db(setup_parts):
     setup_chrome_writes_for_group(
         test_data_feb_chrome, chrome_summary_dao, february)
 
-    assert all(isinstance(s, ProgramSession)
+    assert all(isinstance(s, CompletedProgramSession)
                for s in test_data_feb_programs), "There was a bug in setup"
-    assert all(isinstance(s, ChromeSession)
+    assert all(isinstance(s, CompletedChromeSession)
                for s in test_data_feb_chrome), "There was a bug in setup"
 
     programs_sum = timedelta()
