@@ -60,29 +60,28 @@ class ActivityStateMachine:
                     "Chrome", True, next_session.domain, next_session)
             self.current_state = updated_state
 
+    @staticmethod
+    def is_initialization_session(some_dict):
+        """Asks 'is it an empty dict?'"""
+        return isinstance(some_dict, dict) and not some_dict
+
     def _conclude_session(self, state: InternalState, incoming_session_start: UserLocalTime):
         if not isinstance(incoming_session_start, UserLocalTime):
             raise ValueError("Expected a UserLocalTime")
-        
+        if self.is_initialization_session(state.session):
+            return
+
+        duration = incoming_session_start - state.session.start_time
+
         session_copy = snapshot_obj_for_tests(state.session)
 
-        if isinstance(session_copy, dict):
-            raise ValueError("Should not get a dict from a session anymore")
-        
-        if isinstance(state.session, ProgramSession):
-            # Duration is calculated in the class
-            just_completed = CompletedProgramSession.from_program_session(
-                session=session_copy,
-                end_time=incoming_session_start
-            )
-        else:
-            # Duration is calculated in the class
-            just_completed = CompletedChromeSession.from_chrome_session(
-                session=session_copy,
-                end_time=incoming_session_start
-            )
+        completed = session_copy.to_completed(incoming_session_start)
+        completed.duration = duration
 
-        state.session = just_completed
+        state.session = completed
+
+  
+
 
     @staticmethod
     def _initialize(first_session):
@@ -95,6 +94,18 @@ class ActivityStateMachine:
             updated_state = ChromeInternalState(
                 "Chrome", True, first_session.domain, first_session)
         return updated_state
+    
+    @staticmethod
+    def _initialize_program_machine():
+        start_state = ApplicationInternalState("", "", {})
+        return TransitionFromProgramMachine(
+            start_state)
+
+    @staticmethod
+    def _initialize_chrome_machine():
+        start_state = ChromeInternalState("", "", "", {})
+        return TransitionFromChromeMachine(
+            start_state)
 
     def get_concluded_session(self) -> CompletedProgramSession | CompletedChromeSession | None:
         """Assumes the prior state is the updated transformation from set_new_session"""
@@ -114,18 +125,6 @@ class ActivityStateMachine:
         session_for_daos = self.current_state.session
         self.current_state = None  # Reset for power back on
         return session_for_daos
-    
-    @staticmethod
-    def _initialize_program_machine():
-        start_state = ApplicationInternalState("", "", {})
-        return TransitionFromProgramMachine(
-            start_state)
-
-    @staticmethod
-    def _initialize_chrome_machine():
-        start_state = ChromeInternalState("", "", "", {})
-        return TransitionFromChromeMachine(
-            start_state)
 
 
 class TransitionFromProgramMachine:

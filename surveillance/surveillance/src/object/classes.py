@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from typing import TypedDict, Optional
 
 from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.src.util.time_formatting import parse_time_string
 
 
 class ProgramSessionDict(TypedDict):
@@ -30,20 +31,21 @@ class ProgramSession:
         self.start_time = start_time
         self.productive = productive
 
-    def parse_time_string(self, time_str):
-        parts = time_str.split(':')
-        hours = int(parts[0])
-        minutes = int(parts[1])
-        seconds_parts = parts[2].split('.')
-        seconds = int(seconds_parts[0])
-        microseconds = int(seconds_parts[1]) if len(seconds_parts) > 1 else 0
-
-        return timedelta(
-            hours=hours,
-            minutes=minutes,
-            seconds=seconds,
-            microseconds=microseconds
+    def to_completed(self, end_time):
+        """Similar to to_completed in the other type"""
+        return CompletedProgramSession(
+            exe_path=self.exe_path,
+            process_name=self.process_name,
+            window_title=self.window_title,
+            detail=self.detail,
+            #
+            start_time=self.start_time,
+            end_time=end_time,
+            productive=self.productive
         )
+
+    def parse_time_string(self, time_str):
+        return parse_time_string(time_str)
 
     def __str__(self):
         return f"ProgramSession(exe_path='{self.exe_path}', process_name='{self.process_name}', \n\ttitle='{self.window_title}', detail='{self.detail}', \n\tstart_time='{self.start_time}', \n\tproductive='{self.productive}')"
@@ -86,19 +88,6 @@ class CompletedProgramSession(ProgramSession):
             self.duration = duration_for_tests
         else:
             self.duration = timedelta(seconds=0)
-
-    @classmethod
-    def from_program_session(cls, session, end_time, duration_for_tests=None):
-        return cls(
-            exe_path=session.exe_path,
-            process_name=session.process_name,
-            window_title=session.window_title,
-            detail=session.detail,
-            start_time=session.start_time,
-            end_time=end_time,
-            productive=session.productive,
-            duration_for_tests=duration_for_tests
-        )
     
     def __str__(self):
         return (f"CompletedProgramSession(exe_path='{self.exe_path}', process_name='{self.process_name}', \n\t"
@@ -121,21 +110,21 @@ class ChromeSession:
         self.start_time = start_time
         self.productive = productive
 
+    def to_completed(self, end_time):
+        """Similar to to_completed in the other type"""
+        return CompletedChromeSession(
+            domain=self.domain,
+            detail=self.detail,
+            #
+            start_time=self.start_time,
+            end_time=end_time,
+            productive=self.productive
+        )
+
     @staticmethod
     def parse_time_string(time_str):
-        parts = time_str.split(':')
-        hours = int(parts[0])
-        minutes = int(parts[1])
-        seconds_parts = parts[2].split('.')
-        seconds = int(seconds_parts[0])
-        microseconds = int(seconds_parts[1]) if len(seconds_parts) > 1 else 0
+        return parse_time_string(time_str)
 
-        return timedelta(
-            hours=hours,
-            minutes=minutes,
-            seconds=seconds,
-            microseconds=microseconds
-        )
 
     def __str__(self):
         return f"ChromeSession(domain='{self.domain}', detail='{self.detail}', \n\tstart_time='{self.start_time}', \n\tproductive='{self.productive}')"
@@ -168,21 +157,6 @@ class CompletedChromeSession(ChromeSession):
             self.duration = duration_for_tests
         else:
             self.duration = timedelta(seconds=0)
-
-    @classmethod
-    def from_chrome_session(cls, session, end_time, duration_for_tests=None):
-        """
-        Create a CompletedChromeSession from an existing ChromeSession.
-        This factory method makes it easy to convert a running session to a completed one.
-        """
-        return cls(
-            domain=session.domain,
-            detail=session.detail,
-            start_time=session.start_time,
-            end_time=end_time,
-            productive=session.productive,
-            duration_for_tests=duration_for_tests
-        )
 
     def __str__(self):
         return f"CompletedChromeSession(domain='{self.domain}', detail='{self.detail}', \n\tstart_time='{self.start_time}', \n\tend_time='{self.end_time}', duration='{self.duration}', \n\tproductive='{self.productive}')"

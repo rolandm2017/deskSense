@@ -105,9 +105,8 @@ class ActivityArbiter:
 
             self.current_heartbeat.start()
 
-            if concluded_session is None:
-                # On first loop, do not notify summary dao; there is no previous loop to report
-                return
+            if self.state_machine.is_initialization_session(concluded_session):
+                return  # It's just null state
             # -- Put outgoing state into the DAO
             self.notify_summary_dao(concluded_session)
         else:
