@@ -1,6 +1,6 @@
 # classes.py
 # For various classes
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import TypedDict, Optional
 
 from surveillance.src.util.time_wrappers import UserLocalTime
@@ -37,7 +37,7 @@ class ProgramSession:
     duration: Optional[timedelta]
     productive: bool
 
-    def __init__(self, exe_path="", process_name="", window_title="", detail="", start_time=UserLocalTime(datetime(2000, 1, 1)), end_time=None, productive=False, duration_for_tests=None):
+    def __init__(self, exe_path="", process_name="", window_title="", detail="", start_time=UserLocalTime(datetime(2000, 1, 1, tzinfo=timezone.utc)), end_time=None, productive=False, duration_for_tests=None):
         """Only use duration in testing. Don't use it otherwise. 'duration_for_tests' exists only for e2e tests thresholds"""
         # IF you remove the default args for this class, then you will have to do A LOT of cleanup in the test data.
         self.exe_path = exe_path
