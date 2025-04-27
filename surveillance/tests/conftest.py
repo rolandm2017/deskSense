@@ -3,10 +3,10 @@ import pytest
 import pytest_asyncio
 from unittest.mock import AsyncMock, MagicMock, Mock
 
+from sqlalchemy import create_engine, text
 
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy import text
 
 from collections import defaultdict
 
@@ -289,6 +289,31 @@ SYNC_TEST_DB_URL = os.getenv("SYNC_TEST_DB_URL")
 if SYNC_TEST_DB_URL is None:
     raise ValueError("SYNC_TEST_DB_URL environment variable is not set")
 
+@pytest.fixture
+def db_session_in_mem():
+    # Create a regular in-memory SQLite engine
+    engine = create_engine(
+        "sqlite:///:memory:",
+        echo=False,
+        connect_args={"check_same_thread": False},
+    )
+
+    # Create all tables
+    Base.metadata.create_all(engine)
+
+    # Create sessionmaker
+    local_session = sessionmaker(
+        bind=engine,
+        expire_on_commit=False,
+    )
+
+    yield engine, local_session
+
+    # Teardown: drop all tables
+    Base.metadata.drop_all(engine)
+
+    # Dispose the engine
+    engine.dispose()
 
 @pytest.fixture(scope="function")
 def sync_engine():
@@ -297,7 +322,6 @@ def sync_engine():
     if SYNC_TEST_DB_URL is None:
         raise ValueError("SYNC_TEST_DB_URL was None")
 
-    from sqlalchemy import create_engine, text
 
     # Extract the default postgres database URL
     default_url = SYNC_TEST_DB_URL.rsplit('/', 1)[0] + '/postgres'

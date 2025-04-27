@@ -41,32 +41,29 @@ async def test_plain_async_engine(regular_session, async_engine_and_asm):
     assert 1 == 1
     assert all_summaries is not None
     assert all_logs is not None
-    for v in all_logs:
-        print(v)
-    for v in all_summaries:
-        print(v)
+
     assert isinstance(all_summaries, list)
     assert isinstance(all_logs, list)
 
 
-# @pytest.mark.asyncio
-# async def test_sqlite(async_db_session_in_mem):
-#       # Try to use it
-#     eng, asm = async_db_session_in_mem
-#     assert isinstance(asm, async_sessionmaker)
-#     log_dao = ProgramLoggingDao(asm)
-#     sum_dao = ProgramSummaryDao(log_dao, asm)
+def test_sqlite(db_session_in_mem, async_db_session_in_mem):
+      # Try to use it
+    eng, session = db_session_in_mem
+    eng, asm = async_db_session_in_mem
+    assert isinstance(asm, async_sessionmaker)
+    log_dao = ProgramLoggingDao(session)
+    sum_dao = ProgramSummaryDao(log_dao, session, asm)
 
-#     all_summaries = await sum_dao.read_all()
-#     all_logs = await log_dao.read_all()
+    all_summaries = sum_dao.read_all()
+    all_logs = log_dao.read_all()
 
-#     assert all_summaries is not None
-#     assert all_logs is not None
+    assert all_summaries is not None
+    assert all_logs is not None
 
 
-#     for v in all_logs:
-#         print(v)
-#     for v in all_summaries:
-#         print(v)
-#     assert len(all_summaries) == 0
-#     assert len(all_logs) == 0
+    for v in all_logs:
+        print(v)
+    for v in all_summaries:
+        print(v)
+    assert len(all_summaries) == 0
+    assert len(all_logs) == 0
