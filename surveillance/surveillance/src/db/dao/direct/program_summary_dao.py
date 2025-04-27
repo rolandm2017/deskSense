@@ -193,7 +193,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
 
         query = select(DailyProgramSummary).where(
             DailyProgramSummary.exe_path_as_id == session.exe_path,
-            DailyProgramSummary.gathering_date >= today_start,
+            DailyProgramSummary.gathering_date >= today_start.dt,
             DailyProgramSummary.gathering_date < tomorrow_start
         )
         self.do_deduction(query, time_to_remove)
@@ -251,3 +251,9 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             )
             await session.commit()
             return result.rowcount
+
+    def close(self):
+        if hasattr(self, '_current_session') and self._current_session is not None:
+            self._current_session.close()
+            self._current_session = None
+    

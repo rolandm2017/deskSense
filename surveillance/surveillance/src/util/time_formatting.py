@@ -7,11 +7,17 @@ from surveillance.src.db.models import TimelineEntryObj
 
 from surveillance.src.config.definitions import local_time_zone, daylight_savings_tz_offset
 from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.src.util.errors import TimezoneUnawareError
+
 
 
 def convert_to_utc(dt: datetime):
     return dt.astimezone(timezone.utc)
 
+def require_tzinfo(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        raise TimezoneUnawareError(f"Expected timezone-aware datetime, got {dt} (naive).")
+    return dt
 
 # Alternate method for below code
 # def get_start_of_day(dt):

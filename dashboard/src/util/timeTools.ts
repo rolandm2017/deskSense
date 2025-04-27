@@ -9,7 +9,6 @@ export function formatDateForApi(date: Date): string {
 
 export function getIanaTimezone() {
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    console.log(timeZone); // e.g., "America/Los_Angeles"
     return timeZone;
 }
 

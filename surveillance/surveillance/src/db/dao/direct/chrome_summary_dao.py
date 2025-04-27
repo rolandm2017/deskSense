@@ -165,7 +165,7 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
 
         query = select(DailyDomainSummary).where(
             DailyDomainSummary.domain_name == target_domain,
-            DailyDomainSummary.gathering_date >= today_start,
+            DailyDomainSummary.gathering_date >= today_start.dt,
             DailyDomainSummary.gathering_date < tomorrow_start
         )
         # Update it if found

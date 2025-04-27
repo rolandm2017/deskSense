@@ -17,6 +17,8 @@ if LOCAL_TIME_ZONE is None or LOCAL_TIME_ZONE == "":
     raise ValueError(
         "LOCAL_TIME_ZONE environment variable is not set or is empty")
 
+imported_local_tz_str = LOCAL_TIME_ZONE
+
 
 local_time_zone = LOCAL_TIME_ZONE
 regular_tz_offset = int(local_tz_offset)

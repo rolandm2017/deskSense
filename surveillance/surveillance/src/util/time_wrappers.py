@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from surveillance.src.util.errors import TimezoneUnawareError
+
 class TimeKeeper:
     """
     Exists to resolve painful problems dealing with converting
@@ -55,6 +57,8 @@ class UserLocalTime:
             # Handle case where we wrap a UserLocalTime with another UserLocalTime
             self.dt = dt.dt
         else:
+            if dt.tzinfo is None:
+                raise TimezoneUnawareError("UserLocalTime")
             self.dt = dt
         self.timezone = getattr(self.dt, 'tzinfo', None)
 
