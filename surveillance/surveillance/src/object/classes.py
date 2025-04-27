@@ -89,10 +89,6 @@ class CompletedProgramSession(ProgramSession):
 
     @classmethod
     def from_program_session(cls, session, end_time, duration_for_tests=None):
-        """
-        Create a CompletedProgramSession from an existing ProgramSession.
-        This factory method makes it easy to convert a running session to a completed one.
-        """
         return cls(
             exe_path=session.exe_path,
             process_name=session.process_name,

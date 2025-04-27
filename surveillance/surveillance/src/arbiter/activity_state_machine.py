@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 
-from surveillance.src.object.classes import ChromeSession, ProgramSession
+from surveillance.src.object.classes import ChromeSession, ProgramSession, CompletedChromeSession, CompletedProgramSession
 from surveillance.src.object.arbiter_classes import ChromeInternalState, ApplicationInternalState, InternalState
 from surveillance.src.util.program_tools import window_is_chrome
 from surveillance.src.util.console_logger import ConsoleLogger
@@ -76,10 +76,19 @@ class ActivityStateMachine:
         duration = incoming_session_start - state.session.start_time
 
         session_copy = snapshot_obj_for_tests(state.session)
-        session_copy.duration = duration
-        session_copy.end_time = incoming_session_start
 
-        state.session = session_copy
+        if isinstance(state.session, ProgramSession):
+            just_completed = CompletedProgramSession.from_program_session(
+                session=session_copy,
+                end_time=incoming_session_start
+            )
+        else:
+            just_completed = CompletedChromeSession.from_chrome_session(
+                session=session_copy,
+                end_time=incoming_session_start
+            )
+
+        state.session = just_completed
 
     @staticmethod
     def _initialize(first_session):
@@ -93,19 +102,7 @@ class ActivityStateMachine:
                 "Chrome", True, first_session.domain, first_session)
         return updated_state
 
-    @staticmethod
-    def _initialize_program_machine():
-        start_state = ApplicationInternalState("", "", {})
-        return TransitionFromProgramMachine(
-            start_state)
-
-    @staticmethod
-    def _initialize_chrome_machine():
-        start_state = ChromeInternalState("", "", "", {})
-        return TransitionFromChromeMachine(
-            start_state)
-
-    def get_concluded_session(self) -> ProgramSession | ChromeSession | None:
+    def get_concluded_session(self) -> CompletedProgramSession | CompletedChromeSession | None:
         """Assumes the prior state is the updated transformation from set_new_session"""
         on_initialization = self.prior_state is None
         if on_initialization:
@@ -123,6 +120,18 @@ class ActivityStateMachine:
         session_for_daos = self.current_state.session
         self.current_state = None  # Reset for power back on
         return session_for_daos
+    
+    @staticmethod
+    def _initialize_program_machine():
+        start_state = ApplicationInternalState("", "", {})
+        return TransitionFromProgramMachine(
+            start_state)
+
+    @staticmethod
+    def _initialize_chrome_machine():
+        start_state = ChromeInternalState("", "", "", {})
+        return TransitionFromChromeMachine(
+            start_state)
 
 
 class TransitionFromProgramMachine:
