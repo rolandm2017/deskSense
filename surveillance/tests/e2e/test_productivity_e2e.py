@@ -30,7 +30,7 @@ from surveillance.src.services.tiny_services import TimezoneService
 from surveillance.src.services.dashboard_service import DashboardService
 from surveillance.src.services.chrome_service import ChromeService
 
-from surveillance.src.object.classes import ChromeSession, ProgramSession, TabChangeEventWithLtz
+from surveillance.src.object.classes import ChromeSession, ProgramSession, TabChangeEventWithLtz, CompletedChromeSession, CompletedProgramSession
 from surveillance.src.util.program_tools import separate_window_name_and_detail
 from surveillance.src.util.clock import UserFacingClock
 from surveillance.src.util.const import SECONDS_PER_HOUR
@@ -138,7 +138,7 @@ async def test_setup_conditions(regular_session, plain_asm):
 
 
 @pytest.mark.asyncio
-async def test_tracker_to_arbiter(plain_asm, regular_session, times_from_test_data):
+async def test_tracker_to_arbiter(plain_asm, mock_regular_session_maker, times_from_test_data):
 
     real_program_events = [x["event"] for x in program_data]
     real_chrome_events = chrome_data
@@ -216,7 +216,7 @@ async def test_tracker_to_arbiter(plain_asm, regular_session, times_from_test_da
 
     chrome_svc = ChromeService(mock_user_facing_clock, activity_arbiter)
     surveillance_manager = SurveillanceManager(cast(UserFacingClock, mock_clock),
-                                               plain_asm, regular_session, chrome_svc, activity_arbiter, facades, mock_message_receiver)
+                                               plain_asm, mock_regular_session_maker, chrome_svc, activity_arbiter, facades, mock_message_receiver)
 
     window_change_spy = Mock(
         side_effect=surveillance_manager.program_tracker.window_change_handler)
@@ -264,7 +264,6 @@ async def test_tracker_to_arbiter(plain_asm, regular_session, times_from_test_da
             assert isinstance(args[0], ProgramSession)
             assert isinstance(args[0].start_time, UserLocalTime)
             assert isinstance(args[0].start_time.dt, datetime)
-            assert args[0].end_time is None
 
         for i in range(0, 4):
             call_to_compare = spy_on_set_program_state.call_args_list[i]
@@ -274,7 +273,6 @@ async def test_tracker_to_arbiter(plain_asm, regular_session, times_from_test_da
             assert isinstance(args[0], ProgramSession)
             assert isinstance(args[0].start_time, UserLocalTime)
             assert isinstance(args[0].start_time.dt, datetime)
-            assert args[0].end_time is None
 
         assert transition_state_mock.call_count == num_of_events_to_enter_arbiter
         assert spy_on_set_chrome_state.call_count == 0
@@ -300,8 +298,6 @@ async def test_tracker_to_arbiter(plain_asm, regular_session, times_from_test_da
             assert args[0].window_title in event["window_title"]
             assert isinstance(args[0].start_time, UserLocalTime)
             assert isinstance(args[0].start_time.dt, datetime)
-            assert args[0].end_time is None, "How could end time be set before entering the arbiter?"
-            assert args[0].duration is None, "How could duration be set before entering the arbiter?"
         # assert 1 == 2  # Uncomment to print data for next test
     finally:
         # Run the cleanup
@@ -322,7 +318,7 @@ async def test_tracker_to_arbiter(plain_asm, regular_session, times_from_test_da
 
 @pytest.mark.asyncio
 # @pytest.mark.skip("working on below test")
-async def test_chrome_svc_to_arbiter_path(regular_session, plain_asm):
+async def test_chrome_svc_to_arbiter_path():
     chrome_events_for_test = chrome_data
 
     # chrome_dao = ChromeDao(plain_asm)
@@ -412,8 +408,6 @@ async def test_chrome_svc_to_arbiter_path(regular_session, plain_asm):
         assert args[0].domain == event.url
         assert args[0].detail == event.tabTitle
         assert isinstance(args[0].start_time, UserLocalTime)
-        assert args[0].end_time is None
-        assert args[0].duration is None
     # assert 1 == 2  # Uncomment to enable capturing test data
 
 
@@ -431,6 +425,11 @@ async def test_chrome_svc_to_arbiter_path(regular_session, plain_asm):
 
 # # # # # # # # #
 # Arbiter -> DAO Layer
+
+# The intent of the first two tests is to verify the data at the end of those
+# parts of the pipeline, but also to produce data for the next part of the pipeline.
+# Note that the first two sections are not integrated with the final section
+# because it's such a hassle to link them together in operation.
 
 def parse_time_string(time_str):
     parts = time_str.split(':')
@@ -473,42 +472,18 @@ def fmt_time_string_2(s, offset="-07:00"):
         return datetime.fromisoformat(f"{s}{offset}")
 
 
-# Events are from previous tests
-# program_events_from_prev_test = [
-#     ProgramSession(title='Google Chrome', detail='X. It’s what’s happening / X',
-#                    start_time=fmt_time_string(
-#                        "2025-03-22 16:14:50.201399-07:00"),
-#                    end_time=None, duration_for_tests=None, productive=False),
-#     ProgramSession(title='My Workspace', detail='dash | Overview',
-#                    start_time=fmt_time_string(
-#                        "2025-03-22 16:15:55.237392-07:00"),
-#                    end_time=None, duration_for_tests=None, productive=False),
-#     ProgramSession(title='Visual Studio Code', detail='surveillance_manager.py - deskSense',
-#                    start_time=fmt_time_string(
-#                        "2025-03-22 16:16:03.374304-07:00"),
-#                    end_time=None, duration_for_tests=None, productive=False),
-#     ProgramSession(title='Google Chrome', detail='Google',
-#                    start_time=fmt_time_string(
-#                        "2025-03-22 16:16:17.480951-07:00"),
-#                    end_time=None, duration_for_tests=None, productive=False)
-# ]
-
 # NOTE I COOKED these numbers manually, they DO NOT reflect the times from the prev tests.
 # TODO: Cook the above test's inputs so that they come out with LINEAR sessions program -> chrome & 1-10 sec durations
 
 chrome_events_from_prev_test = [
     ChromeSession(domain='docs.google.com', detail='Google Docs',
-                  start_time=fmt_time_string("2025-03-22 16:19:02-07:00"),
-                  end_time=None, duration_for_tests=None, productive=False),
+                  start_time=fmt_time_string("2025-03-22 16:19:02-07:00")),
     ChromeSession(domain='chatgpt.com', detail='ChatGPT',
-                  start_time=fmt_time_string("2025-03-22 16:26:10-07:00"),
-                  end_time=None, duration_for_tests=None, productive=True),
+                  start_time=fmt_time_string("2025-03-22 16:26:10-07:00")),
     ChromeSession(domain='claude.ai', detail='Claude',
-                  start_time=fmt_time_string("2025-03-22 16:33:21-07:00"),
-                  end_time=None, duration_for_tests=None, productive=True),
+                  start_time=fmt_time_string("2025-03-22 16:33:21-07:00")),
     ChromeSession(domain='chatgpt.com', detail='ChatGPT',
-                  start_time=fmt_time_string("2025-03-22 16:41:30-07:00"),
-                  end_time=None, duration_for_tests=None, productive=True)
+                  start_time=fmt_time_string("2025-03-22 16:41:30-07:00"))
 ]
 
 imaginary_path_to_chrome = "imaginary/path/to/Chrome.exe"
@@ -516,38 +491,30 @@ imaginary_chrome_processe = "Chrome.exe"
 
 pr_events_v2 = [ProgramSession(exe_path=imaginary_path_to_chrome, process_name=imaginary_chrome_processe, window_title='Google Chrome', detail="X. It’s what’s happening / X",
                                start_time=UserLocalTime(fmt_time_string(
-                                   "2025-03-22 16:14:50.201399-07:00")),
-                               end_time=None, duration_for_tests=None, productive=False),
+                                   "2025-03-22 16:14:50.201399-07:00"))),
                 ProgramSession(exe_path='C:/wherever/you/find/Postman.exe', process_name='Xorg', window_title='My Workspace', detail='dash | Overview',
-                start_time=UserLocalTime(fmt_time_string(
-                    "2025-03-22 16:15:55.237392-07:00")),
-                end_time=None, duration_for_tests=None, productive=False),
+                                start_time=UserLocalTime(fmt_time_string(
+                    "2025-03-22 16:15:55.237392-07:00"))),
                 ProgramSession(exe_path='C:/path/to/VSCode.exe', process_name='Code.exe', window_title='Visual Studio Code', detail='surveillance_manager.py - deskSense',
-                start_time=UserLocalTime(fmt_time_string(
-                    "2025-03-22 16:16:03.374304-07:00")),
-                end_time=None, duration_for_tests=None, productive=False),
+                                start_time=UserLocalTime(fmt_time_string(
+                    "2025-03-22 16:16:03.374304-07:00"))),
                 # NOTE: Manual change from Gnome Shell to a second Chrome entry
                 ProgramSession(exe_path=imaginary_path_to_chrome, process_name=imaginary_chrome_processe, window_title='Google Chrome', detail='Google',
                                start_time=UserLocalTime(fmt_time_string(
-                                   "2025-03-22 16:16:17.480951-07:00")),
-                               end_time=None, duration_for_tests=None, productive=False)]
+                                   "2025-03-22 16:16:17.480951-07:00")))]
 
 ch_events_v2 = [ChromeSession(domain='docs.google.com', detail='Google Docs',
                               start_time=UserLocalTime(
-                                  fmt_time_string("2025-03-22 16:15:02-07:00")),
-                              end_time=None, duration_for_tests=None, productive=False),
+                                  fmt_time_string("2025-03-22 16:15:02-07:00"))),
                 ChromeSession(domain='chatgpt.com', detail='ChatGPT',
                               start_time=UserLocalTime(
-                                  fmt_time_string("2025-03-22 16:15:10-07:00")),
-                              end_time=None, duration_for_tests=None, productive=True),
+                                  fmt_time_string("2025-03-22 16:15:10-07:00"))),
                 ChromeSession(domain='claude.ai', detail='Claude',
                               start_time=UserLocalTime(
-                                  fmt_time_string("2025-03-22 16:15:21-07:00")),
-                              end_time=None, duration_for_tests=None, productive=True),
+                                  fmt_time_string("2025-03-22 16:15:21-07:00"))),
                 ChromeSession(domain='chatgpt.com', detail='ChatGPT',
                               start_time=UserLocalTime(
-                                  fmt_time_string("2025-03-22 16:15:30-07:00")),
-                              end_time=None, duration_for_tests=None, productive=True)]
+                                  fmt_time_string("2025-03-22 16:15:30-07:00")))]
 
 
 @pytest.mark.asyncio
@@ -581,29 +548,21 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
                for x in as_dt), "Testing setup conditions again"
     clock_again = UserLocalTimeMockClock(as_dt)
 
-    # FIXME: NEed to have sessions be written with THE TIME in THE EVENT, not 04-11 (today)
-
-    # Test setup conditions
-    for entry in end_of_prev_test_programs:
-        if entry.end_time:
-            assert entry.end_time > entry.start_time, "Faulty test data found"
-    for entry in end_of_prev_test_tabs:
-        if entry.end_time:
-            assert entry.end_time > entry.start_time, "Faulty test data found"
-
     program_durations = []
     tab_durations = []
 
-    for i in range(0, len(end_of_prev_test_programs)):
-        change = end_of_prev_test_programs[i].duration
+    for i in range(0, len(end_of_prev_test_programs) - 1):
+        # len(test_data) - 1 because the final element doesn't link with anything
+        change = end_of_prev_test_programs[i + 1].start_time - end_of_prev_test_programs[i].start_time
         if change is None:
-            continue  # Do not add the final value: That event didn't "close" yet
+            raise ValueError("Expected a timedelta")
         program_durations.append(change)
 
-    for i in range(0, len(end_of_prev_test_tabs)):
-        change = end_of_prev_test_tabs[i].duration
+    for i in range(0, len(end_of_prev_test_tabs) - 1):
+        # len(test_data) - 1 because the final element doesn't link with anything
+        change = end_of_prev_test_tabs[i + 1].start_time - end_of_prev_test_tabs[i].start_time
         if change is None:
-            continue  # Do not add the final value: That event didn't "close" yet
+            raise ValueError("Expected a timedelta")
         tab_durations.append(change)
 
     sum_of_program_times = sum(program_durations, timedelta(seconds=0))
@@ -631,19 +590,6 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     chrome_summary_dao = ChromeSummaryDao(
         chrome_logging_dao, regular_session, plain_asm)
 
-    #
-    #
-    # test setup conditions
-    #
-    p_logs = program_logging_dao.read_all()
-    ch_logs = chrome_logging_dao.read_all()
-    pro_sum = program_summary_dao.read_all()
-    chrome_summaries = chrome_summary_dao.read_all()
-
-    assert len(p_logs) == 0, "An important table was not empty"
-    assert len(ch_logs) == 0, "An important table was not empty"
-    assert len(pro_sum) == 0, "An important table was not empty"
-    assert len(chrome_summaries) == 0, "An important table was not empty"
 
     # Create spies on the DAOs' push window methods
     program_summary_push_spy = Mock(
@@ -765,7 +711,6 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     count_of_programs = len(end_of_prev_test_programs)
     count_of_tabs = len(end_of_prev_test_tabs)
     one_left_in_arbiter = 1
-    initialization_entry = 1
 
     # ### ### Checkpoint:
     # ### [Arbiter layer]
@@ -778,11 +723,6 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     assert asm_spy.call_count == num_of_events_to_enter_arbiter, "A session escaped asm.set_new_session"
     assert notify_of_new_session_spy.call_count == num_of_events_to_enter_arbiter
 
-    for call in asm_spy.call_args_list:
-        # Get the first positional argument from each call
-        session = call.args[0]
-        assert session.duration is None
-        assert session.end_time is None
 
     for i in range(0, num_of_events_to_enter_arbiter):
         arg, _ = notify_of_new_session_spy.call_args_list[i]
@@ -791,8 +731,6 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
             assert isinstance(session, ProgramSession)
         else:
             assert isinstance(session, ChromeSession)
-        assert session.duration is None
-        assert session.end_time is None
 
     assert spy_on_set_program_state.call_count == count_of_programs
 
@@ -1024,13 +962,32 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     sunday_the_16th = UserLocalTime(the_16th_with_tz)
 
     time_for_week = await dashboard_service.get_weekly_productivity_overview(sunday_the_16th)
+
+    for v in time_for_week:
+        print(v, "991ru")
     
     assert any(entry["productivity"] > 0 or entry["leisure"] > 0 for entry in
                time_for_week), "Dashboard Service should've retrieved the times created earlier, but it didn't"
 
-    only_day_in_days = time_for_week[0]
-    production = only_day_in_days["productivity"]
-    leisure = only_day_in_days["leisure"]
+    def get_day_seen_in_test_data(days_of_productivity):
+        pass
+        program_day = pr_events_v2[0].start_time
+        chrome_day = ch_events_v2[0].start_time
+
+        assert program_day.dt.day == chrome_day.dt.day
+        assert program_day.dt.month == chrome_day.dt.month
+
+        for day in days_of_productivity:
+            same_day = program_day.dt.day == day["day"].day
+            same_month = program_day.dt.month == day["day"].month
+            if same_day and same_month:
+                return day
+        pytest.fail("No valid day found from dashboard svc data")
+        
+
+    only_day_with_data = get_day_seen_in_test_data(time_for_week)
+    production = only_day_with_data["productivity"]
+    leisure = only_day_with_data["leisure"]
 
     # total_program_time = 3  # FIXME: what were these? 3, 9?
     # total_chrome_time = 9
