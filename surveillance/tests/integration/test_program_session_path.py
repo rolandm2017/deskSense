@@ -314,6 +314,10 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
     #
     # Summary methods
     #
+    summary_start_session_spy = Mock(side_effect=p_summary_dao.start_session)
+    p_summary_dao.start_session = summary_start_session_spy
+
+
     summary_add_new_item_spy = Mock()
     p_summary_dao.add_new_item = summary_add_new_item_spy
 
@@ -417,7 +421,8 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
     def assert_activity_recorder_called_expected_times(count_of_events):
         assert on_new_session_spy.call_count == count_of_events
 
-        assert push_window_ahead_ten_sec_spy.call_count == 0  # Nothing makes it long enough to trigger
+        # Count is 4 here becasuse it's used in on_new_session as of 04/26
+        assert push_window_ahead_ten_sec_spy.call_count == count_of_events
 
         # The final entry here is holding the window push open
         assert finalize_log_spy.call_count == count_of_events - active_entry
@@ -518,6 +523,8 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
 
     assert find_todays_entry_for_program_mock.call_count == event_count
 
+    assert summary_start_session_spy.call_count == 0  # It's never used because preexisting sessions block the path
+
     def assert_sqlalchemy_layer_went_as_expected():
         """Covers only stuff that obscures sqlalchemy code."""
         assert sum_dao_execute_and_read_one_or_none_spy.call_count == event_count
@@ -528,11 +535,12 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
 
         assert update_item_spy.call_count == event_count - active_entry
 
-        assert execute_window_push_spy.call_count == 0  # push_window_ahead_ten_sec is used 0x
+        assert execute_window_push_spy.call_count == event_count  # push_window_ahead_ten_sec is used 0x
 
     assert_sqlalchemy_layer_went_as_expected()
 
-    assert len(push_window_ahead_ten_sec_spy.call_args_list) == 0
+    # Count is 4 here becasuse it's used in on_new_session as of 04/26
+    assert len(push_window_ahead_ten_sec_spy.call_args_list) == event_count
     
     def assert_sessions_form_a_chain():
         sessions = []
@@ -547,8 +555,8 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
             
     assert_sessions_form_a_chain()
 
-    # Cannot explain. I guess < 1 pulse elapsed since end of test?
-    assert push_window_ahead_ten_sec_spy.call_count == 0  
+    # Count is 4 here becasuse it's used in on_new_session as of 04/26
+    assert push_window_ahead_ten_sec_spy.call_count == event_count  
 
     # TODO: Assert that pulses == 0
     
@@ -727,6 +735,8 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, re
     def make_log_from_session(session):
         base_start_time = convert_to_utc(session.start_time.get_dt_for_db())
         start_of_day = get_start_of_day(session.start_time.get_dt_for_db())
+        if isinstance(start_of_day, UserLocalTime):
+            raise ValueError("Expected datetime")
         start_of_day_as_utc = convert_to_utc(start_of_day)
         start_window_end = base_start_time + timedelta(seconds=10)
         return ProgramSummaryLog(

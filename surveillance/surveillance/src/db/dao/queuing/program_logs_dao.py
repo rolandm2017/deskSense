@@ -105,18 +105,6 @@ class ProgramLoggingDao(UtilityDaoMixin):
             grouped_logs[log.program_name].append(log)
 
         return grouped_logs
-        #   async with self.async_session_maker() as session:
-        #     result = await session.execute(query)
-        #     logs = result.scalars().all()
-
-        #     # Group the results by program_name
-        #     grouped_logs = {}
-        #     for log in logs:
-        #         if log.program_name not in grouped_logs:
-        #             grouped_logs[log.program_name] = []
-        #         grouped_logs[log.program_name].append(log)
-
-        #     return grouped_logs
 
     def find_orphans(self,  latest_shutdown_time, startup_time):
         """

@@ -16,7 +16,7 @@ def convert_to_utc(dt: datetime):
 
 def require_tzinfo(dt: datetime) -> datetime:
     if dt.tzinfo is None:
-        raise TimezoneUnawareError(f"Expected timezone-aware datetime, got {dt} (naive).")
+        raise TimezoneUnawareError("require_tzinfo", dt)
     return dt
 
 # Alternate method for below code
