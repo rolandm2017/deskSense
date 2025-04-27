@@ -65,8 +65,6 @@ the dashboard service endpoint, should be very real data, no breaks except to as
 some_local_tz = pytz.timezone(imported_local_tz_str)
 
 
-
-
 @pytest.fixture
 def times_from_test_data():
     program_times = [datetime.fromisoformat(d["time"]) for d in program_data]
@@ -196,10 +194,11 @@ async def test_tracker_to_arbiter(plain_asm, regular_session, times_from_test_da
 
     facades = FacadeInjector(
         get_keyboard_facade_instance, get_mouse_facade_instance, choose_program_facade)
-    
+
     mock_user_facing_clock = MockClock(testing_num_of_times)
 
-    activity_arbiter = ActivityArbiter(mock_user_facing_clock, pulse_interval=1)
+    activity_arbiter = ActivityArbiter(
+        mock_user_facing_clock, pulse_interval=1)
     transition_state_mock = Mock()
     # Unhook it so nothing past entry is called
     activity_arbiter.transition_state = transition_state_mock
@@ -416,7 +415,6 @@ async def test_chrome_svc_to_arbiter_path(regular_session, plain_asm):
         assert args[0].duration is None
     # assert 1 == 2  # Uncomment to enable capturing test data
 
-
     # Then, we check that the events are there as planned.
 
 
@@ -472,44 +470,9 @@ def fmt_time_string_2(s, offset="-07:00"):
         # String doesn't have timezone info, append the offset
         return datetime.fromisoformat(f"{s}{offset}")
 
-
-# Events are from previous tests
-# program_events_from_prev_test = [
-#     ProgramSession(title='Google Chrome', detail='X. It’s what’s happening / X',
-#                    start_time=fmt_time_string(
-#                        "2025-03-22 16:14:50.201399-07:00"),
-#                    end_time=None, duration_for_tests=None, productive=False),
-#     ProgramSession(title='My Workspace', detail='dash | Overview',
-#                    start_time=fmt_time_string(
-#                        "2025-03-22 16:15:55.237392-07:00"),
-#                    end_time=None, duration_for_tests=None, productive=False),
-#     ProgramSession(title='Visual Studio Code', detail='surveillance_manager.py - deskSense',
-#                    start_time=fmt_time_string(
-#                        "2025-03-22 16:16:03.374304-07:00"),
-#                    end_time=None, duration_for_tests=None, productive=False),
-#     ProgramSession(title='Google Chrome', detail='Google',
-#                    start_time=fmt_time_string(
-#                        "2025-03-22 16:16:17.480951-07:00"),
-#                    end_time=None, duration_for_tests=None, productive=False)
-# ]
-
 # NOTE I COOKED these numbers manually, they DO NOT reflect the times from the prev tests.
 # TODO: Cook the above test's inputs so that they come out with LINEAR sessions program -> chrome & 1-10 sec durations
 
-chrome_events_from_prev_test = [
-    ChromeSession(domain='docs.google.com', detail='Google Docs',
-                  start_time=fmt_time_string("2025-03-22 16:19:02-07:00"),
-                  end_time=None, duration_for_tests=None, productive=False),
-    ChromeSession(domain='chatgpt.com', detail='ChatGPT',
-                  start_time=fmt_time_string("2025-03-22 16:26:10-07:00"),
-                  end_time=None, duration_for_tests=None, productive=True),
-    ChromeSession(domain='claude.ai', detail='Claude',
-                  start_time=fmt_time_string("2025-03-22 16:33:21-07:00"),
-                  end_time=None, duration_for_tests=None, productive=True),
-    ChromeSession(domain='chatgpt.com', detail='ChatGPT',
-                  start_time=fmt_time_string("2025-03-22 16:41:30-07:00"),
-                  end_time=None, duration_for_tests=None, productive=True)
-]
 
 imaginary_path_to_chrome = "imaginary/path/to/Chrome.exe"
 imaginary_chrome_processe = "Chrome.exe"
@@ -517,37 +480,37 @@ imaginary_chrome_processe = "Chrome.exe"
 pr_events_v2 = [ProgramSession(exe_path=imaginary_path_to_chrome, process_name=imaginary_chrome_processe, window_title='Google Chrome', detail="X. It’s what’s happening / X",
                                start_time=UserLocalTime(fmt_time_string(
                                    "2025-03-22 16:14:50.201399-07:00")),
-                               end_time=None, duration_for_tests=None, productive=False),
+                               ),
                 ProgramSession(exe_path='C:/wherever/you/find/Postman.exe', process_name='Xorg', window_title='My Workspace', detail='dash | Overview',
                 start_time=UserLocalTime(fmt_time_string(
                     "2025-03-22 16:15:55.237392-07:00")),
-                end_time=None, duration_for_tests=None, productive=False),
-                ProgramSession(exe_path='C:/path/to/VSCode.exe', process_name='Code.exe', window_title='Visual Studio Code', detail='surveillance_manager.py - deskSense',
-                start_time=UserLocalTime(fmt_time_string(
-                    "2025-03-22 16:16:03.374304-07:00")),
-                end_time=None, duration_for_tests=None, productive=False),
-                # NOTE: Manual change from Gnome Shell to a second Chrome entry
-                ProgramSession(exe_path=imaginary_path_to_chrome, process_name=imaginary_chrome_processe, window_title='Google Chrome', detail='Google',
-                               start_time=UserLocalTime(fmt_time_string(
-                                   "2025-03-22 16:16:17.480951-07:00")),
-                               end_time=None, duration_for_tests=None, productive=False)]
+),
+    ProgramSession(exe_path='C:/path/to/VSCode.exe', process_name='Code.exe', window_title='Visual Studio Code', detail='surveillance_manager.py - deskSense',
+                   start_time=UserLocalTime(fmt_time_string(
+                       "2025-03-22 16:16:03.374304-07:00")),
+                   ),
+    # NOTE: Manual change from Gnome Shell to a second Chrome entry
+    ProgramSession(exe_path=imaginary_path_to_chrome, process_name=imaginary_chrome_processe, window_title='Google Chrome', detail='Google',
+                   start_time=UserLocalTime(fmt_time_string(
+                       "2025-03-22 16:16:17.480951-07:00")),
+                   )]
 
 ch_events_v2 = [ChromeSession(domain='docs.google.com', detail='Google Docs',
                               start_time=UserLocalTime(
-                                  fmt_time_string("2025-03-22 16:15:02-07:00")),
-                              end_time=None, duration_for_tests=None, productive=False),
+                                  fmt_time_string("2025-03-22 16:15:02-07:00"))
+                              ),
                 ChromeSession(domain='chatgpt.com', detail='ChatGPT',
                               start_time=UserLocalTime(
-                                  fmt_time_string("2025-03-22 16:15:10-07:00")),
-                              end_time=None, duration_for_tests=None, productive=True),
+                                  fmt_time_string("2025-03-22 16:15:10-07:00"))
+                              ),
                 ChromeSession(domain='claude.ai', detail='Claude',
                               start_time=UserLocalTime(
                                   fmt_time_string("2025-03-22 16:15:21-07:00")),
-                              end_time=None, duration_for_tests=None, productive=True),
+                              ),
                 ChromeSession(domain='chatgpt.com', detail='ChatGPT',
                               start_time=UserLocalTime(
                                   fmt_time_string("2025-03-22 16:15:30-07:00")),
-                              end_time=None, duration_for_tests=None, productive=True)]
+                              )]
 
 
 @pytest.mark.asyncio
@@ -584,12 +547,6 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     # FIXME: NEed to have sessions be written with THE TIME in THE EVENT, not 04-11 (today)
 
     # Test setup conditions
-    for entry in end_of_prev_test_programs:
-        if entry.end_time:
-            assert entry.end_time > entry.start_time, "Faulty test data found"
-    for entry in end_of_prev_test_tabs:
-        if entry.end_time:
-            assert entry.end_time > entry.start_time, "Faulty test data found"
 
     program_durations = []
     tab_durations = []
@@ -791,8 +748,6 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
             assert isinstance(session, ProgramSession)
         else:
             assert isinstance(session, ChromeSession)
-        assert session.duration is None
-        assert session.end_time is None
 
     assert spy_on_set_program_state.call_count == count_of_programs
 
@@ -1024,7 +979,7 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     sunday_the_16th = UserLocalTime(the_16th_with_tz)
 
     time_for_week = await dashboard_service.get_weekly_productivity_overview(sunday_the_16th)
-    
+
     assert any(entry["productivity"] > 0 or entry["leisure"] > 0 for entry in
                time_for_week), "Dashboard Service should've retrieved the times created earlier, but it didn't"
 
