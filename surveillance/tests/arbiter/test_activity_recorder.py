@@ -16,9 +16,9 @@ from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from surveillance.src.object.classes import CompletedProgramSession, CompletedChromeSession
 from surveillance.src.util.time_wrappers import UserLocalTime
 
-TIMEZONE_FOR_TEST = "Asia/Tokyo"  #  UTC+9
+timezone_for_test = "Asia/Tokyo"  #  UTC+9
 
-tokyo_tz = pytz.timezone(TIMEZONE_FOR_TEST)
+tokyo_tz = pytz.timezone(timezone_for_test)
 
 
 # Test implementations with proper session object instantiation

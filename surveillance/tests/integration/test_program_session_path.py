@@ -41,9 +41,9 @@ from ..mocks.mock_message_receiver import MockMessageReceiver
 
 from ..mocks.mock_clock import UserLocalTimeMockClock
 
-TIMEZONE_FOR_TEST = "Europe/Berlin"  # UTC +1 or UTC +2
+timezone_for_test = "Europe/Berlin"  # UTC +1 or UTC +2
 
-some_local_tz = pytz.timezone(TIMEZONE_FOR_TEST)
+some_local_tz = pytz.timezone(timezone_for_test)
 
 
 def fmt_time_string(s):
@@ -126,13 +126,6 @@ def validate_test_data():
     # Return the data to the test
     return test_events
 
-
-
-# @pytest.fixture
-# def setup_for_test(regular_session, mock_async_session_maker):
-#     # TODO: refactor so that this class lives in one place (it's a duplicate)
-
-#     return surveillance_manager, program_sum_dao, program_logging_dao, mock_program_facade, activity_arbiter
 
 sum_counter = 0
 log_counter = 0

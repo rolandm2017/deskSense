@@ -215,11 +215,11 @@ def test_push_window_ahead(prepare_daos):
 @pytest.fixture
 def nonexistent_session():
     # almost certainly doesn't exist
-    nonexistent_time = UserLocalTime(datetime(2025, 1, 1, 1, 0, 0, 0))
+    nonexistent_time = UserLocalTime(tokyo_tz.localize(datetime(2025, 1, 1, 1, 0, 0, 0)))
     session = CompletedChromeSession(domain="github.com",
                             detail="DeepSeek Chat Repository",
                             start_time=nonexistent_time,
-                            end_time=UserLocalTime(datetime(2025, 1, 1, 1, 0, 0, 1)),
+                            end_time=UserLocalTime(tokyo_tz.localize(datetime(2025, 1, 1, 1, 0, 0, 1))),
                             duration_for_tests=timedelta(minutes=1),
                             productive=True)
     return session

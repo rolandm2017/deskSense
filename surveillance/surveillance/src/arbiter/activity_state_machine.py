@@ -64,8 +64,6 @@ class ActivityStateMachine:
         if not isinstance(incoming_session_start, UserLocalTime):
             raise ValueError("Expected a UserLocalTime")
         
-        # if state.session
-
         session_copy = snapshot_obj_for_tests(state.session)
 
         if isinstance(session_copy, dict):

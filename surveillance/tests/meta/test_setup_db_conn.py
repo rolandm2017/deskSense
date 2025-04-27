@@ -48,11 +48,11 @@ async def test_plain_async_engine(regular_session, async_engine_and_asm):
 
 def test_sqlite(db_session_in_mem, async_db_session_in_mem):
       # Try to use it
-    eng, session = db_session_in_mem
+    session_maker = db_session_in_mem
     eng, asm = async_db_session_in_mem
     assert isinstance(asm, async_sessionmaker)
-    log_dao = ProgramLoggingDao(session)
-    sum_dao = ProgramSummaryDao(log_dao, session, asm)
+    log_dao = ProgramLoggingDao(session_maker)
+    sum_dao = ProgramSummaryDao(log_dao, session_maker, asm)
 
     all_summaries = sum_dao.read_all()
     all_logs = log_dao.read_all()
