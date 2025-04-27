@@ -65,8 +65,6 @@ the dashboard service endpoint, should be very real data, no breaks except to as
 some_local_tz = pytz.timezone(imported_local_tz_str)
 
 
-
-
 @pytest.fixture
 def times_from_test_data():
     program_times = [datetime.fromisoformat(d["time"]) for d in program_data]
@@ -196,10 +194,11 @@ async def test_tracker_to_arbiter(plain_asm, mock_regular_session_maker, times_f
 
     facades = FacadeInjector(
         get_keyboard_facade_instance, get_mouse_facade_instance, choose_program_facade)
-    
+
     mock_user_facing_clock = MockClock(testing_num_of_times)
 
-    activity_arbiter = ActivityArbiter(mock_user_facing_clock, pulse_interval=1)
+    activity_arbiter = ActivityArbiter(
+        mock_user_facing_clock, pulse_interval=1)
     transition_state_mock = Mock()
     # Unhook it so nothing past entry is called
     activity_arbiter.transition_state = transition_state_mock
@@ -410,7 +409,6 @@ async def test_chrome_svc_to_arbiter_path():
         assert isinstance(args[0].start_time, UserLocalTime)
     # assert 1 == 2  # Uncomment to enable capturing test data
 
-
     # Then, we check that the events are there as planned.
 
 
@@ -493,11 +491,11 @@ pr_events_v2 = [ProgramSession(exe_path=imaginary_path_to_chrome, process_name=i
                                start_time=UserLocalTime(fmt_time_string(
                                    "2025-03-22 16:14:50.201399-07:00"))),
                 ProgramSession(exe_path='C:/wherever/you/find/Postman.exe', process_name='Xorg', window_title='My Workspace', detail='dash | Overview',
-                                start_time=UserLocalTime(fmt_time_string(
-                    "2025-03-22 16:15:55.237392-07:00"))),
+                               start_time=UserLocalTime(fmt_time_string(
+                                   "2025-03-22 16:15:55.237392-07:00"))),
                 ProgramSession(exe_path='C:/path/to/VSCode.exe', process_name='Code.exe', window_title='Visual Studio Code', detail='surveillance_manager.py - deskSense',
-                                start_time=UserLocalTime(fmt_time_string(
-                    "2025-03-22 16:16:03.374304-07:00"))),
+                               start_time=UserLocalTime(fmt_time_string(
+                                   "2025-03-22 16:16:03.374304-07:00"))),
                 # NOTE: Manual change from Gnome Shell to a second Chrome entry
                 ProgramSession(exe_path=imaginary_path_to_chrome, process_name=imaginary_chrome_processe, window_title='Google Chrome', detail='Google',
                                start_time=UserLocalTime(fmt_time_string(
@@ -526,6 +524,30 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     times_for_window_push = [x.start_time for x in pr_events_v2] + [
         x.start_time for x in ch_events_v2]
 
+    def get_time_from_chain(events_arr):
+        durations = []
+        for i in range(0, len(events_arr) - 1):
+            # len(test_data) - 1 because the final element doesn't link with anything
+            change = events_arr[i + 1].start_time - events_arr[i].start_time
+            if change is None:
+                raise ValueError("Expected a timedelta")
+            durations.append(change)
+        return sum(durations, timedelta(seconds=0))
+
+    def calculate_total_time_for_sessions(program_sessions, chrome_sessions):
+        """
+        Note that the calculation will be wrong if the events aren't sorted first.
+
+        Some Chrome events start in the midst of Program events.
+
+        i.e. ChromeSessions are from 16:15:02 to 16:15:21, 
+        but ProgramSessions are from 16:14:50 to 16:16:17
+        """
+        all = program_sessions + chrome_sessions
+        sorted_events = sorted(all, key=lambda event: event.start_time.dt)
+        calculation = get_time_from_chain(sorted_events).seconds / SECONDS_PER_HOUR
+        return calculation
+
     # see start_time_2 - start_time_1 in above events. The ints are durations from start_times
     durations_between_events = [5, 8, 4, 2, 7, 7, 8]
 
@@ -553,14 +575,16 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
 
     for i in range(0, len(end_of_prev_test_programs) - 1):
         # len(test_data) - 1 because the final element doesn't link with anything
-        change = end_of_prev_test_programs[i + 1].start_time - end_of_prev_test_programs[i].start_time
+        change = end_of_prev_test_programs[i + 1].start_time - \
+            end_of_prev_test_programs[i].start_time
         if change is None:
             raise ValueError("Expected a timedelta")
         program_durations.append(change)
 
     for i in range(0, len(end_of_prev_test_tabs) - 1):
         # len(test_data) - 1 because the final element doesn't link with anything
-        change = end_of_prev_test_tabs[i + 1].start_time - end_of_prev_test_tabs[i].start_time
+        change = end_of_prev_test_tabs[i + 1].start_time - \
+            end_of_prev_test_tabs[i].start_time
         if change is None:
             raise ValueError("Expected a timedelta")
         tab_durations.append(change)
@@ -589,7 +613,6 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
         program_logging_dao, regular_session, plain_asm)
     chrome_summary_dao = ChromeSummaryDao(
         chrome_logging_dao, regular_session, plain_asm)
-
 
     # Create spies on the DAOs' push window methods
     program_summary_push_spy = Mock(
@@ -722,7 +745,6 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
 
     assert asm_spy.call_count == num_of_events_to_enter_arbiter, "A session escaped asm.set_new_session"
     assert notify_of_new_session_spy.call_count == num_of_events_to_enter_arbiter
-
 
     for i in range(0, num_of_events_to_enter_arbiter):
         arg, _ = notify_of_new_session_spy.call_args_list[i]
@@ -965,7 +987,7 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
 
     for v in time_for_week:
         print(v, "991ru")
-    
+
     assert any(entry["productivity"] > 0 or entry["leisure"] > 0 for entry in
                time_for_week), "Dashboard Service should've retrieved the times created earlier, but it didn't"
 
@@ -983,7 +1005,6 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
             if same_day and same_month:
                 return day
         pytest.fail("No valid day found from dashboard svc data")
-        
 
     only_day_with_data = get_day_seen_in_test_data(time_for_week)
     production = only_day_with_data["productivity"]
@@ -994,9 +1015,28 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     dashboard_svc_total = production + \
         leisure
 
+    tally_from_start_data = calculate_total_time_for_sessions(
+        end_of_prev_test_programs, end_of_prev_test_tabs)
+    
+    # TODO: Audit with logs
+    # TODO: Check all read_alls show the full value being extracted and counted
+
+    all_programs = program_summary_dao.read_all()
+    all_domains = chrome_summary_dao.read_all()
+
+    yet_another_sum = 0
+    for v in all_programs:
+        print(v, "991ru")
+        yet_another_sum += v.hours_spent
+
+    for v in all_domains:
+        print(v, "991ru")
+        yet_another_sum += v.hours_spent
+
+
     manual_tally_from_start_of_test = (sum_of_program_times.seconds +
                                        sum_of_tab_times.seconds) / SECONDS_PER_HOUR
-    assert dashboard_svc_total == manual_tally_from_start_of_test, "By hand tally didn't exactly match dashboard service"
+    assert dashboard_svc_total == tally_from_start_data, "By hand tally didn't exactly match dashboard service"
     # 3600 is 60 * 60
 
 
