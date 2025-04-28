@@ -1,7 +1,7 @@
 import threading
 import time
 
-from surveillance.src.config.definitions import keep_alive_pulse_delay
+from surveillance.src.config.definitions import keep_alive_pulse_delay, window_push_length
 from surveillance.src.object.classes import ProgramSession, ChromeSession
 
 from surveillance.src.util.errors import MissingEngineError
@@ -38,28 +38,31 @@ class KeepAliveEngine:
             raise ValueError("Session should not be None in KeepAliveEngine")
         self.recorder = dao_connection
         self.max_interval = keep_alive_pulse_delay  # seconds
-        self.elapsed = 0
+        self.amount_used = 0
         self.zero_remainder = 0
 
     def iterate_loop(self):
-        self.elapsed += 1
+        self.amount_used += 1
         if self._hit_max_window():
-            print("looping ")
             self._pulse_add_ten()
-            self.elapsed = 0
+            self.amount_used = 0
 
     def conclude(self):
+        """
+        The "used amount" resets after it reaches a full window. 
+        So deducting the full 10 sec should never happen.
+        """
         # Skip deduction is it's going to be deducting 10 a fully used window
-        full_window_used = self.elapsed == self.max_interval
-        print(full_window_used, self.elapsed, keep_alive_pulse_delay, "52ru")
-        if full_window_used:
-            return
-        else:
-            print(f"trigger deduction, {self.elapsed}, 56ru")
-            self._deduct_remainder(self.elapsed)
+        amount_of_window_used = self.amount_used
+
+        if self.should_do_deduction(amount_of_window_used):
+            self._deduct_remainder(amount_of_window_used)
+
+    def should_do_deduction(self, used_amount):
+        return used_amount < window_push_length
 
     def _hit_max_window(self):
-        return self.max_interval <= self.elapsed
+        return self.max_interval <= self.amount_used
 
     def _pulse_add_ten(self):
         """
@@ -67,7 +70,7 @@ class KeepAliveEngine:
         """
         self.recorder.add_ten_sec_to_end_time(self.session)
 
-    def _deduct_remainder(self, remainder):
+    def _deduct_remainder(self, used_part_of_window):
         """
         The loop was t seconds into the 10 second window, and was ended early.
 
@@ -77,15 +80,14 @@ class KeepAliveEngine:
         """
         # If remainder == 10, do not deduct the fully used window
 
-        full_window_used = remainder == 0
+        full_window_used = used_part_of_window == window_push_length
         if full_window_used:
             # Nothing to deduct.
             return
-        duration = self.calculate_remaining_window(remainder)
-        print(f"{remainder}, doing deduction of {duration} for {self.session.get_name()}")
-        if duration == 10:
-            raise ValueError("Not supposed to be here")
-        self.recorder.deduct_duration(duration, self.session)
+        remainder = self.calculate_remaining_window(used_part_of_window)
+        if remainder == 0:
+            raise ValueError("Trying to deduct 0")
+        self.recorder.deduct_duration(remainder, self.session)
 
     def calculate_remaining_window(self, used_amount):
         window_length = self.max_interval  # 10

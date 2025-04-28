@@ -29,8 +29,8 @@ daylight_savings_tz_offset = int(local_tz_dst_offset)
 # -- general stuff
 # --
 
-keep_alive_pulse_delay = 10
-window_push_length = keep_alive_pulse_delay
+keep_alive_pulse_delay = 10  # Has to be the same value
+window_push_length = keep_alive_pulse_delay  # has to be the same value
 
 MAX_QUEUE_LENGTH = 40
 
