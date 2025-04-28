@@ -6,9 +6,9 @@ from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timedelta, time
 from typing import List
 
+from surveillance.src.config.definitions import keep_alive_pulse_delay, window_push_length 
 from surveillance.src.db.models import DailyProgramSummary
 from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
-
 
 from surveillance.src.object.classes import ProgramSession
 
@@ -41,7 +41,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
 
     def start_session(self, program_session: ProgramSession, right_now: UserLocalTime):
         """Creating the initial session for the summary"""
-        starting_window_amt = 10  # sec
+        starting_window_amt = window_push_length  # sec
         usage_duration_in_hours = starting_window_amt / SECONDS_PER_HOUR
 
         today_start = get_start_of_day_from_datetime(right_now.dt)
@@ -154,7 +154,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             program: DailyProgramSummary = db_session.scalars(query).first()
             # FIXME: Sometimes program is None
             if program:
-                program.hours_spent = program.hours_spent + 10 / SECONDS_PER_HOUR
+                program.hours_spent = program.hours_spent + window_push_length / SECONDS_PER_HOUR
                 db_session.commit()
             else:
                 raise ImpossibleToGetHereError(

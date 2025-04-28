@@ -55,7 +55,7 @@ class ActivityRecorder:
             session_exists_already = self.chrome_summary_dao.find_todays_entry_for_domain(
                 session)
             if session_exists_already:
-                return
+                return self.chrome_summary_dao.start_window_push_for_session
             self.chrome_summary_dao.start_session(session, session.start_time)
         else:
             raise TypeError("Session was not the right type")

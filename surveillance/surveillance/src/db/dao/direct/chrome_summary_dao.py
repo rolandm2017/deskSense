@@ -7,6 +7,7 @@ import traceback
 from datetime import datetime, timedelta, time
 from typing import List
 
+from surveillance.src.config.definitions import keep_alive_pulse_delay, window_push_length 
 from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 from surveillance.src.db.models import DailyDomainSummary
 from surveillance.src.object.classes import ChromeSession
@@ -34,7 +35,7 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
     def start_session(self, chrome_session: ChromeSession, right_now: UserLocalTime):
         target_domain_name = chrome_session.domain
 
-        starting_window_amt = 10  # sec
+        starting_window_amt = window_push_length  # sec
         usage_duration_in_hours = starting_window_amt / SECONDS_PER_HOUR
 
         today = get_start_of_day(right_now.dt)  # Still has tz attached
@@ -110,6 +111,10 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             # Commit the changes
             session.commit()
 
+    def start_window_push_for_session(self, chrome_session: ChromeSession, now: UserLocalTime):
+        self.push_window_ahead_ten_sec(chrome_session, now)
+
+
     def push_window_ahead_ten_sec(self, chrome_session: ChromeSession, right_now: UserLocalTime):
         """Finds the given session and adds ten sec to its end_time
 
@@ -132,7 +137,7 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             domain: DailyDomainSummary = db_session.scalars(query).first()
             # FIXME: Sometimes domain is none
             if domain:
-                domain.hours_spent = domain.hours_spent + 10 / SECONDS_PER_HOUR
+                domain.hours_spent = domain.hours_spent + window_push_length / SECONDS_PER_HOUR
                 db_session.commit()
             else:
                 raise ImpossibleToGetHereError(

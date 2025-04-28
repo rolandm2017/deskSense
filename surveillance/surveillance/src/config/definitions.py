@@ -21,8 +21,16 @@ imported_local_tz_str = LOCAL_TIME_ZONE
 
 
 local_time_zone = LOCAL_TIME_ZONE
+
 regular_tz_offset = int(local_tz_offset)
 daylight_savings_tz_offset = int(local_tz_dst_offset)
+
+# --
+# -- general stuff
+# --
+
+keep_alive_pulse_delay = 10
+window_push_length = keep_alive_pulse_delay
 
 MAX_QUEUE_LENGTH = 40
 
