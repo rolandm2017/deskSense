@@ -87,3 +87,18 @@ def format_for_local_time(events: List[TimelineEntryObj]) -> List[TimelineEntryO
         formatted_entries.append(entry_copy)
 
     return formatted_entries
+
+def parse_time_string(time_str):
+        parts = time_str.split(':')
+        hours = int(parts[0])
+        minutes = int(parts[1])
+        seconds_parts = parts[2].split('.')
+        seconds = int(seconds_parts[0])
+        microseconds = int(seconds_parts[1]) if len(seconds_parts) > 1 else 0
+
+        return timedelta(
+            hours=hours,
+            minutes=minutes,
+            seconds=seconds,
+            microseconds=microseconds
+        )

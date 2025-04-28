@@ -1,7 +1,6 @@
 # models.py
 from sqlalchemy import Enum as SQLAlchemyEnum
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float, Interval, Computed, ForeignKey
-from sqlalchemy.sql import func
+from sqlalchemy import Column, Integer, String, DateTime, Float, Computed, ForeignKey
 from sqlalchemy.orm import mapped_column, relationship, Mapped
 
 from sqlalchemy import Column as SQLAlchemyColumn
@@ -62,7 +61,7 @@ class DailyProgramSummary(DailySummaryBase):
     def __str__(self):
         formatted_date = self.gathering_date.strftime(
             "%Y-%m-%d") if self.gathering_date is not None else "No date"
-        return f"Program: {self.program_name}, \tHours: {self.hours_spent:.2f}, \tDate: {formatted_date}"
+        return f"Program: {self.program_name}, \tHours: {self.hours_spent}, \tDate: {formatted_date}"
 
 
 class DailyDomainSummary(DailySummaryBase):
@@ -76,7 +75,7 @@ class DailyDomainSummary(DailySummaryBase):
     def __str__(self):
         formatted_date = self.gathering_date.strftime(
             "%Y-%m-%d") if self.gathering_date is not None else "No date"
-        return f"Domain: {self.domain_name}, \tHours: {self.hours_spent:.2f}, \tDate: {formatted_date}"
+        return f"Domain: {self.domain_name}, \tHours: {self.hours_spent}, \tDate: {formatted_date}"
 
 
 class SummaryLogBase(Base):
@@ -141,12 +140,6 @@ class TimelineEntryObj(Base):
         # "Sqlalchemy db-agnostic language" - Claude
         Computed(
             "CASE WHEN \"group\" = 'MOUSE' THEN 'mouse-' || id ELSE 'keyboard-' || id END", persisted=True)
-
-        # Computed(
-        #     "CASE WHEN \"group\" = 'MOUSE' THEN 'mouse-' || id::TEXT ELSE 'keyboard-' || id::TEXT END",
-        #     # postgresql_persisted=True  # Add this back
-        #     persisted=True
-        # )
     )
 
     group = Column(SQLAlchemyEnum(ChartEventType))
@@ -156,12 +149,6 @@ class TimelineEntryObj(Base):
         # "Sqlalchemy db-agnostic language" - Claude
         Computed(
             "CASE WHEN \"group\" = 'MOUSE' THEN 'Mouse Event ' || id ELSE 'Typing Session ' || id END", persisted=True)
-        # Computed(
-        #     "CASE WHEN \"group\" = 'MOUSE' THEN 'Mouse Event ' || id::TEXT ELSE 'Typing Session ' || id::TEXT END",
-        #     # postgresql_persisted=True,  # Add this back
-        #     persisted=True
-
-        # )
     )
 
     start = Column(DateTime(timezone=True))
@@ -198,27 +185,10 @@ class PrecomputedTimelineEntry(Base):
     id = Column(Integer, primary_key=True, index=True)
 
     clientFacingId: Union[str, SQLAlchemyColumn[str]] = Column(String)
-    # clientFacingId = Column(
-    #     String,
-    #     Computed(
-    #         "CASE WHEN \"group\" = 'MOUSE' THEN 'mouse-' || id::TEXT ELSE 'keyboard-' || id::TEXT END",
-    #         # postgresql_persisted=True  # Add this back
-    #         persisted=True
-    #     )
-    # )
 
     group = Column(SQLAlchemyEnum(ChartEventType))
 
     content = Column(String)
-    # content = Column(
-    #     String,
-    #     Computed(
-    #         "CASE WHEN \"group\" = 'MOUSE' THEN 'Mouse Event ' || id::TEXT ELSE 'Typing Session ' || id::TEXT END",
-    #         # postgresql_persisted=True,  # Add this back
-    #         persisted=True
-
-    #     )
-    # )
 
     start = Column(DateTime(timezone=True))
     end = Column(DateTime(timezone=True))
