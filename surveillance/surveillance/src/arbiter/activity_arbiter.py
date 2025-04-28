@@ -2,8 +2,6 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 import copy
 
-import asyncio
-
 from surveillance.src.config.definitions import power_on_off_debug_file
 
 from surveillance.src.object.classes import ChromeSession, ProgramSession, CompletedChromeSession, CompletedProgramSession
@@ -98,11 +96,10 @@ class ActivityArbiter:
             # ### Start the first window
             self.notify_of_new_session(new_session)
 
-            engine_loop = self.current_heartbeat.engine.save_loop_for_reuse()
             self.current_heartbeat.stop()  # stop the old one from prev loop
 
             new_keep_alive_engine = self.engine_class(
-                new_session, self.activity_recorder, engine_loop)
+                new_session, self.activity_recorder)
             self.current_heartbeat = self.threaded_container_class(
                 new_keep_alive_engine,  self.pulse_interval)
 
@@ -113,14 +110,13 @@ class ActivityArbiter:
             # -- Put outgoing state into the DAO
             self.notify_summary_dao(concluded_session)
         else:
-            start_of_loop = asyncio.new_event_loop()
             self.logger.log_white("in arbiter init")
 
             self.notify_of_new_session(new_session)
             self.state_machine.set_new_session(new_session)
             
             new_keep_alive_engine = self.engine_class(
-                new_session, self.activity_recorder, start_of_loop)
+                new_session, self.activity_recorder)
             self.current_heartbeat = self.threaded_container_class(
                 new_keep_alive_engine, self.pulse_interval)
             self.current_heartbeat.start()

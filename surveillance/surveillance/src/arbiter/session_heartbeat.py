@@ -19,7 +19,7 @@ The concluding will occur by the Arbiter
 
 
 class KeepAliveEngine:
-    def __init__(self, session: ProgramSession | ChromeSession, dao_connection, loop):
+    def __init__(self, session: ProgramSession | ChromeSession, dao_connection):
         """
         This class is a loop. Each iteration of ten loops nudges 
         the end time of the current session forward ten sec.
@@ -38,7 +38,6 @@ class KeepAliveEngine:
         keep_alive_pulse_len = 10
         self.max_interval = keep_alive_pulse_len  # seconds
         self.elapsed = 0
-        self.loop = loop
 
     def iterate_loop(self):
         self.elapsed += 1
@@ -74,10 +73,6 @@ class KeepAliveEngine:
         remaining = window_length - used_amount
         return remaining
 
-    def save_loop_for_reuse(self):
-        """Less resources if you reuse a loop instead of making a new one"""
-        return self.loop
-
 
 class ThreadedEngineContainer:
     """
@@ -85,8 +80,8 @@ class ThreadedEngineContainer:
 
     Does this to keep the ActivityArbiter and the currently active session's window push
 
-    # TODO: Also keep the EngineContainer between engines. just change it out. Keep the thread alive.
     """
+    # TODO: Also keep the EngineContainer between engines. just change it out. Keep the thread alive.
 
     def __init__(self, engine: KeepAliveEngine, interval: int | float = 1, sleep_fn=time.sleep, timestamp=None):
         self.engine = engine

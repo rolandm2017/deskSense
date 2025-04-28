@@ -35,10 +35,10 @@ def test_hit_max_window():
     exactly_ten = 10
     less_than_ten = 9
 
-    start_of_loop = asyncio.new_event_loop()
+    
 
 
-    instance = KeepAliveEngine(session, dao_mock, start_of_loop)
+    instance = KeepAliveEngine(session, dao_mock)
 
     # Test the test conditions
     assert instance.max_interval == 10
@@ -58,10 +58,10 @@ def test_iterate_loop():
     dao_mock.add_ten_sec_to_end_time = add_ten_mock
     dao_mock.deduct_duration = deduct_duration_mock
     session = ProgramSession()
-    start_of_loop = asyncio.new_event_loop()
+    
 
 
-    instance = KeepAliveEngine(session, dao_mock, start_of_loop)
+    instance = KeepAliveEngine(session, dao_mock)
 
     pulse_add_ten_spy = Mock(side_effect=instance._pulse_add_ten)
     instance._pulse_add_ten = pulse_add_ten_spy
@@ -105,9 +105,9 @@ def test_running_for_three_sec():
     dao_mock.add_ten_sec_to_end_time = add_ten_mock
     dao_mock.deduct_duration = deduct_duration_mock
     session = ProgramSession()
-    start_of_loop = asyncio.new_event_loop()
+    
 
-    instance = KeepAliveEngine(session, dao_mock, start_of_loop)
+    instance = KeepAliveEngine(session, dao_mock)
 
     conclude_spy = Mock(side_effect=instance.conclude)
     instance.conclude = conclude_spy
@@ -141,10 +141,10 @@ def test_multiple_whole_loops():
     dao_mock.deduct_duration = deduct_duration_mock
     dao_mock.add_ten_sec_to_end_time = add_ten_mock
     session = ProgramSession()
-    start_of_loop = asyncio.new_event_loop()
+    
 
 
-    instance = KeepAliveEngine(session, dao_mock, start_of_loop)
+    instance = KeepAliveEngine(session, dao_mock)
 
     conclude_spy = Mock(side_effect=instance.conclude)
     instance.conclude = conclude_spy
@@ -177,9 +177,9 @@ def test_window_usage_calculation():
     dao_mock.deduct_duration = add_ten_mock
     session = ProgramSession()
 
-    start_of_loop = asyncio.new_event_loop()
+    
 
-    instance = KeepAliveEngine(session, dao_mock, start_of_loop)
+    instance = KeepAliveEngine(session, dao_mock)
 
     full_window = 10
     used_amt = 3
@@ -195,9 +195,9 @@ def test_conclude_calls_deduct_duration():
     dao_mock.deduct_duration = add_ten_mock
     session = ProgramSession()
 
-    start_of_loop = asyncio.new_event_loop()
+    
 
-    instance = KeepAliveEngine(session, dao_mock, start_of_loop)
+    instance = KeepAliveEngine(session, dao_mock)
     instance.iterate_loop()
     assert instance.elapsed == 1
 
