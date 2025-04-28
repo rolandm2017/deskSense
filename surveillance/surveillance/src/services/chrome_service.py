@@ -32,12 +32,6 @@ class TabQueue:
         self.log_tab_event = log_tab_event
 
     async def add_to_arrival_queue(self, tab_change_event: TabChangeEventWithLtz):
-
-        # FIXME:
-        # FIXME:
-        # FIXME: Chrome Service tabs do not get from here to the arbiter.
-        # FIXME: Suspect the problem is somethng to do with async/await here and debounce.
-        # FIXME:
         self.message_queue.append(tab_change_event)
         MAX_QUEUE_LEN = 40
 
@@ -144,7 +138,7 @@ class ChromeService:
         start_time = url_deliverable.start_time_with_tz
         end_time = None
         initialized: ChromeSession = ChromeSession(
-            url, title, start_time, end_time, is_productive)
+            url, title, start_time, is_productive)
 
         # NOTE: In the past, the intent was to keep everything in UTC.
         # Now, the intent is to do everything in the user's LTZ, local time zone.
