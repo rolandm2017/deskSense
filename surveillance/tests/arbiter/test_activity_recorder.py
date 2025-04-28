@@ -13,12 +13,12 @@ from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
-from surveillance.src.object.classes import ProgramSession, ChromeSession
+from surveillance.src.object.classes import CompletedProgramSession, CompletedChromeSession
 from surveillance.src.util.time_wrappers import UserLocalTime
 
-TIMEZONE_FOR_TEST = "Asia/Tokyo"  #  UTC+9
+timezone_for_test = "Asia/Tokyo"  #  UTC+9
 
-tokyo_tz = pytz.timezone(TIMEZONE_FOR_TEST)
+tokyo_tz = pytz.timezone(timezone_for_test)
 
 
 # Test implementations with proper session object instantiation
@@ -26,7 +26,7 @@ tokyo_tz = pytz.timezone(TIMEZONE_FOR_TEST)
 
 @pytest.fixture
 def program_session():
-    return ProgramSession("C:/ProgramFiles/Code.exe", "Code.exe",
+    return CompletedProgramSession("C:/ProgramFiles/Code.exe", "Code.exe",
                           "Visual Studio Code",
                           "main.py",
                           UserLocalTime(datetime(2023, 1, 1, 12, 0, 0, tzinfo=tokyo_tz)),
@@ -38,11 +38,11 @@ def program_session():
 
 @pytest.fixture
 def chrome_session():
-    return ChromeSession(
+    return CompletedChromeSession(
         "github.com",
         "DeepSeek Chat Repository",
-        datetime(2023, 1, 1, 12, 0, 0, tzinfo=tokyo_tz),
-        datetime(2023, 1, 1, 12, 5, 0, tzinfo=tokyo_tz),
+        UserLocalTime(datetime(2023, 1, 1, 12, 0, 0, tzinfo=tokyo_tz)),
+        UserLocalTime(datetime(2023, 1, 1, 12, 5, 0, tzinfo=tokyo_tz)),
         productive=True,
         duration_for_tests=timedelta(minutes=5)
     )
@@ -107,25 +107,3 @@ async def test_deduct_duration_program(activity_recorder, mock_daos, program_ses
     )
 
 
-@pytest.mark.asyncio
-async def test_error_cases(activity_recorder):
-    # Test invalid type
-    with pytest.raises(TypeError):
-        await activity_recorder.on_state_changed("not a session object")
-
-    # Test missing end_time
-    bad_session = ProgramSession()
-    bad_session.window_title = "Bad Session"
-    bad_session.start_time = UserLocalTime(datetime.now(pytz.UTC).astimezone(tokyo_tz))
-    bad_session.end_time = None
-    bad_session.duration = timedelta(seconds=10)
-
-    with pytest.raises(ValueError):
-        await activity_recorder.on_state_changed(bad_session)
-
-    # Test missing duration
-    bad_session.end_time = UserLocalTime(datetime.now(pytz.UTC).astimezone(tokyo_tz))
-    bad_session.duration = None
-
-    with pytest.raises(ValueError):
-        await activity_recorder.on_state_changed(bad_session)

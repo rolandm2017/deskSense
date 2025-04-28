@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from ..mocks.mock_clock import MockClock
 
 from surveillance.src.config.definitions import productive_apps, productive_sites
-from surveillance.src.object.classes import ProgramSession
+from surveillance.src.object.classes import ProgramSession, CompletedProgramSession
 from surveillance.src.trackers.program_tracker import ProgramTrackerCore
 from surveillance.src.util.strings import no_space_dash_space
 
@@ -86,8 +86,7 @@ def test_start_new_session():
     assert new_session.detail is not None
     assert new_session.start_time is not None
 
-    assert new_session.end_time is None
-    assert new_session.duration is None
+    assert not isinstance(new_session, CompletedProgramSession)
 
     assert new_session.window_title == "Visual Studio Code"
     assert new_session.detail == "program_tracker.py - deskSense"
@@ -137,14 +136,12 @@ def test_window_change_triggers_handler():
     # There was no session from a prev run so, on_a_different_window is false
     assert tracker.current_session is not None, "Program was still in its init condition"
     assert tracker.current_session.window_title == "Visual Studio Code"
-    assert tracker.current_session.end_time is None
     window_change_handler.assert_called_once()
 
     session_arg = window_change_handler.call_args[0][0]
     assert isinstance(session_arg, ProgramSession)
     assert hasattr(session_arg, 'window_title')
     assert hasattr(session_arg, 'productive')
-    assert hasattr(session_arg, 'duration')
 
     deliverable = session_arg
 
@@ -154,10 +151,6 @@ def test_window_change_triggers_handler():
     print(deliverable.start_time)
     print(t1)
     assert deliverable.start_time == t1
-    # Because the window change handler reports the started sessions
-    assert deliverable.end_time is None
-    # Because it's only the start of a session
-    assert deliverable.duration is None
 
     # # Continue acting - Need to run the tracking loop again to close a session
 
@@ -172,7 +165,6 @@ def test_window_change_triggers_handler():
     assert isinstance(session_arg, ProgramSession)
     assert hasattr(session_arg, 'window_title')
     assert hasattr(session_arg, 'productive')
-    assert hasattr(session_arg, 'duration')
 
     deliverable = session_arg
 
@@ -180,10 +172,6 @@ def test_window_change_triggers_handler():
     assert deliverable.detail[0:5] == "H&M |"
     # The second time clock.now() is called, i.e. not 1st window, but the 2nd
     assert deliverable.start_time == t2
-    # Because the window change handler reports the started sessions
-    assert deliverable.end_time is None
-    # Because it's only the start of a session
-    assert deliverable.duration is None
 
 
 def test_handle_alt_tab_window():
@@ -239,7 +227,6 @@ def test_a_series_of_programs():
     assert tracker.current_session is not None, "Tracker wasn't initialized when it should be"
     assert tracker.current_session.window_title == program1["window_title"]
     assert tracker.current_session.detail == no_space_dash_space
-    assert tracker.current_session.end_time is None
 
     # More setup
     program2 = {"os": "some_val", 'process_name': 'Xorg', "exe_path": "C:/whatever5.exe",
@@ -252,7 +239,6 @@ def test_a_series_of_programs():
     assert tracker.current_session.window_title == program2['window_title']
     assert tracker.current_session.detail == no_space_dash_space
     assert tracker.current_session.start_time is not None
-    assert tracker.current_session.end_time is None
     assert clock.now.call_count == 2
 
     # More setup
@@ -292,5 +278,4 @@ def test_a_series_of_programs():
 
     # ### Final assertions
 
-    assert tracker.current_session.end_time is None  # See?
     assert tracker.current_session.detail == "program_tracker.py - deskSense"

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 import pytz
 from typing import List, Optional
 
-from surveillance.src.object.classes import ChromeSession, ProgramSession
+from surveillance.src.object.classes import CompletedProgramSession
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 from surveillance.src.config.definitions import local_time_zone
@@ -88,7 +88,7 @@ def programs_feb_23() -> List:
     program_sessions = []
 
     # Pycharm session
-    pycharm_session = ProgramSession()
+    pycharm_session = CompletedProgramSession()
     pycharm_session.exe_path = pycharm_path
     pycharm_session.process_name = pycharm_process
     pycharm_session.window_title = "Visual Studio CodeTEST"
@@ -101,7 +101,7 @@ def programs_feb_23() -> List:
     program_sessions.append(pycharm_session)
 
     # Notion session
-    notion_session = ProgramSession()
+    notion_session = CompletedProgramSession()
     notion_session.exe_path = notion_path
     notion_session.process_name = notion_process
     notion_session.window_title = "NotionTEST"
@@ -119,7 +119,7 @@ def programs_feb_24() -> List:
     program_sessions = []
 
     # PyCharm session
-    pycharm_session = ProgramSession()
+    pycharm_session = CompletedProgramSession()
     pycharm_session.exe_path = pycharm_path
     pycharm_session.process_name = pycharm_process
     pycharm_session.window_title = "PyCharmTEST"
@@ -131,7 +131,7 @@ def programs_feb_24() -> List:
     program_sessions.append(pycharm_session)
 
     # Zoom session
-    zoom_session = ProgramSession()
+    zoom_session = CompletedProgramSession()
     zoom_session.exe_path = zoom_path
     zoom_session.process_name = zoom_process
     zoom_session.window_title = "ZoomTEST"
@@ -149,7 +149,7 @@ def programs_feb_26() -> List:
     program_sessions = []
 
     # Visual Studio Code session
-    pycharm_session = ProgramSession()
+    pycharm_session = CompletedProgramSession()
     pycharm_session.exe_path = vscode_path
     pycharm_session.process_name = vscode_process
     pycharm_session.window_title = "Visual Studio CodeTEST"
@@ -161,7 +161,7 @@ def programs_feb_26() -> List:
     program_sessions.append(pycharm_session)
 
     # Slack session
-    slack_session = ProgramSession()
+    slack_session = CompletedProgramSession()
     slack_session.exe_path = slack_path
     slack_session.process_name = slack_process
     slack_session.window_title = "SlackTEST"
@@ -193,7 +193,7 @@ def programs_march_2nd() -> List:
     program_sessions = []
 
     # Pycharm session
-    pycharm_session = ProgramSession()
+    pycharm_session = CompletedProgramSession()
     pycharm_session.exe_path = vscode_path
     pycharm_session.process_name = vscode_process
 
@@ -207,7 +207,7 @@ def programs_march_2nd() -> List:
     program_sessions.append(pycharm_session)
 
     # Excel session
-    excel_session = ProgramSession()
+    excel_session = CompletedProgramSession()
     excel_session.exe_path = excel_path
     excel_session.process_name = excel_process
     excel_session.window_title = "Microsoft ExcelTEST"
@@ -219,7 +219,7 @@ def programs_march_2nd() -> List:
     program_sessions.append(excel_session)
 
     # Slack session
-    slack_session = ProgramSession()
+    slack_session = CompletedProgramSession()
     slack_session.exe_path = slack_path
     slack_session.process_name = slack_process
     slack_session.window_title = "SlackTEST"
@@ -231,7 +231,7 @@ def programs_march_2nd() -> List:
     program_sessions.append(slack_session)
 
     # Alt-tab session
-    alt_tab_session = ProgramSession()
+    alt_tab_session = CompletedProgramSession()
     alt_tab_session.exe_path = "C:/wherever/altTab/lives.exe"
     alt_tab_session.process_name = "lives.exe"
     alt_tab_session.window_title = "Alt-tab windowTEST"
@@ -244,7 +244,7 @@ def programs_march_2nd() -> List:
     program_sessions.append(alt_tab_session)
 
     # PyCharm session
-    pycharm_session = ProgramSession()
+    pycharm_session = CompletedProgramSession()
     pycharm_session.exe_path = pycharm_path
     pycharm_session.process_name = pycharm_process
     pycharm_session.window_title = "PyCharmTEST"
@@ -257,7 +257,7 @@ def programs_march_2nd() -> List:
     program_sessions.append(pycharm_session)
 
     # Spotify session
-    spotify_session = ProgramSession()
+    spotify_session = CompletedProgramSession()
     spotify_session.exe_path = spotify_path
     spotify_session.process_name = spotify_process
     spotify_session.window_title = "SpotifyTEST"
@@ -277,7 +277,7 @@ def duplicate_programs_march_2() -> List:
     duplicate_program_sessions = []
 
     # Duplicate 1: Slack session (with slight time variation)
-    slack_session_dup = ProgramSession()
+    slack_session_dup = CompletedProgramSession()
     slack_session_dup.exe_path = slack_path
     slack_session_dup.process_name = slack_process
     slack_session_dup.window_title = "SlackTEST"
@@ -291,7 +291,7 @@ def duplicate_programs_march_2() -> List:
     duplicate_program_sessions.append(slack_session_dup)
 
     # Duplicate 2: PyCharm session (with slight time variation)
-    pycharm_session_dup = ProgramSession()
+    pycharm_session_dup = CompletedProgramSession()
     pycharm_session_dup.exe_path = pycharm_path
     pycharm_session_dup.process_name = pycharm_process
     pycharm_session_dup.window_title = "PyCharmTEST"
@@ -306,7 +306,7 @@ def duplicate_programs_march_2() -> List:
     duplicate_program_sessions.append(pycharm_session_dup)
 
     # Dupe 3: Spotify session
-    spotify_session = ProgramSession()
+    spotify_session = CompletedProgramSession()
     spotify_session.exe_path = spotify_path
     spotify_session.process_name = spotify_process
     spotify_session.window_title = "SpotifyTEST"
@@ -327,7 +327,7 @@ def programs_march_3rd() -> List:
     program_sessions = []
 
     # Pycharm session day 2
-    pycharm_session2 = ProgramSession()
+    pycharm_session2 = CompletedProgramSession()
     pycharm_session2.exe_path = vscode_path
     pycharm_session2.process_name = vscode_process
     pycharm_session2.window_title = "Visual Studio CodeTEST"
@@ -341,7 +341,7 @@ def programs_march_3rd() -> List:
     program_sessions.append(pycharm_session2)
 
     # Zoom session
-    zoom_session = ProgramSession()
+    zoom_session = CompletedProgramSession()
     zoom_session.exe_path = zoom_path
     zoom_session.process_name = zoom_process
     zoom_session.window_title = "ZoomTEST"
@@ -353,7 +353,7 @@ def programs_march_3rd() -> List:
     program_sessions.append(zoom_session)
 
     # Word session
-    word_session = ProgramSession()
+    word_session = CompletedProgramSession()
     word_session.exe_path = msword_path
     word_session.process_name = msword_process
     word_session.window_title = "Microsoft WordTEST"
@@ -365,7 +365,7 @@ def programs_march_3rd() -> List:
     program_sessions.append(word_session)
 
     # Chrome session
-    chrome_session = ProgramSession()
+    chrome_session = CompletedProgramSession()
     chrome_session.exe_path = chrome_path
     chrome_session.process_name = chrome_process
     chrome_session.window_title = "ChromeTEST"
@@ -378,7 +378,7 @@ def programs_march_3rd() -> List:
     program_sessions.append(chrome_session)
 
     # Notion session
-    notion_session = ProgramSession()
+    notion_session = CompletedProgramSession()
     notion_session.exe_path = notion_path
     notion_session.process_name = notion_process
     notion_session.window_title = "NotionTEST"
@@ -391,7 +391,7 @@ def programs_march_3rd() -> List:
     program_sessions.append(notion_session)
 
     # Slack session day 2
-    slack_session2 = ProgramSession()
+    slack_session2 = CompletedProgramSession()
     slack_session2.exe_path = slack_path
     slack_session2.process_name = slack_process
     slack_session2.window_title = "SlackTEST"
@@ -410,7 +410,7 @@ def duplicate_programs_march_3rd() -> List:
     duplicate_program_sessions = []
 
     # Duplicate 4: Chrome program session (with slight time variation)
-    chrome_session_dup = ProgramSession()
+    chrome_session_dup = CompletedProgramSession()
     chrome_session_dup.exe_path = chrome_path
     chrome_session_dup.process_name = chrome_process
     chrome_session_dup.window_title = "ChromeTEST"
@@ -425,7 +425,7 @@ def duplicate_programs_march_3rd() -> List:
     duplicate_program_sessions.append(chrome_session_dup)
 
     # Duplicate 5: Pycharm session (with slight time variation)
-    pycharm_session_dup = ProgramSession()
+    pycharm_session_dup = CompletedProgramSession()
     pycharm_session_dup.exe_path = vscode_path
     pycharm_session_dup.process_name = vscode_process
     pycharm_session_dup.window_title = "Visual Studio CodeTEST"
@@ -440,7 +440,7 @@ def duplicate_programs_march_3rd() -> List:
     duplicate_program_sessions.append(pycharm_session_dup)
 
     # Dupe 6: Notion session
-    notion_session = ProgramSession()
+    notion_session = CompletedProgramSession()
     notion_session.exe_path = notion_path
     notion_session.process_name = notion_process
     notion_session.window_title = "NotionTEST"

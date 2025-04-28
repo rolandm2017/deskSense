@@ -1,4 +1,5 @@
 import pytest
+import pytz
 from unittest.mock import Mock, MagicMock
 import asyncio
 
@@ -8,6 +9,12 @@ from surveillance.src.debug.ui_notifier import UINotifier
 from surveillance.src.object.arbiter_classes import ApplicationInternalState, ChromeInternalState
 from surveillance.src.object.classes import ProgramSession, ChromeSession
 from surveillance.src.util.time_wrappers import UserLocalTime
+
+
+timezone_for_test = "Asia/Tokyo"  #  UTC+9
+
+tokyo_tz = pytz.timezone(timezone_for_test)
+now_tokyo = datetime.now(pytz.UTC).astimezone(tokyo_tz)
 
 
 # Import or recreate your classes here
@@ -43,7 +50,7 @@ def test_internal_state_change(ui_notifier, mock_overlay):
     """Test that internal state changes update the overlay with the right text and color"""
     # Create a test state
     program_session = ProgramSession("C:/TestFiles/Window.exe", "Window.exe",
-                                     "Test Window Title", "", datetime.now())
+                                     "Test Window Title", "", UserLocalTime(now_tokyo))
     test_state = ApplicationInternalState(
         "Test Window Title", False, program_session)
 
@@ -61,7 +68,7 @@ def test_other_state_change(ui_notifier, mock_overlay):
     """Test that other state changes update the overlay with domain and blue color"""
     # Create a test state
 
-    chrome_session = ChromeSession("example.com", "", datetime.now())
+    chrome_session = ChromeSession("example.com", "", UserLocalTime(now_tokyo))
     test_state = ChromeInternalState(
         "Chrome", True, "example.com", chrome_session)
 
@@ -79,8 +86,8 @@ def test_multiple_state_changes(ui_notifier, mock_overlay):
     """Test multiple state changes in sequence"""
     # Create test states
     program_session = ProgramSession(
-        "C:/InternalApp.exe", "InternalApp.exe", "Internal App", "", datetime.now())
-    chrome_session = ChromeSession("test-domain.org", "", datetime.now())
+        "C:/InternalApp.exe", "InternalApp.exe", "Internal App", "", UserLocalTime(now_tokyo))
+    chrome_session = ChromeSession("test-domain.org", "", UserLocalTime(now_tokyo))
     internal_state = ApplicationInternalState(
         "Internal App", True, program_session)
     other_state = ChromeInternalState(

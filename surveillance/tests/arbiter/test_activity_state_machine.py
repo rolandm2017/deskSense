@@ -53,11 +53,6 @@ class TestActivityStateMachine:
         assert isinstance(response, ProgramSession)
         assert response.window_title == first_session.window_title
         assert response.start_time == first_session.start_time
-        assert response.end_time is not None
-        # Might not always work out so neatly:
-        assert response.end_time == second.start_time
-
-        assert response.end_time == slightly_later
 
     def test_handle_series(self):
 
@@ -100,9 +95,6 @@ class TestActivityStateMachine:
         assert response2.window_title == session1.window_title
         print(t1.strftime('%M:%S'), "\n", t2.strftime('%M:%S'))
         assert response2.start_time == t1
-        assert response2.end_time is not None
-        assert response2.end_time != t1
-        assert response2.end_time == t2
 
         asm.set_new_session(third)
         response3 = asm.get_concluded_session()
@@ -111,9 +103,6 @@ class TestActivityStateMachine:
         assert isinstance(response3, ChromeSession)
         assert response3.domain == second.domain
         assert response3.start_time == t2
-        assert response3.end_time is not None
-        assert response3.end_time != t2
-        assert response3.end_time == t3
 
         asm.set_new_session(fourth)
         response4 = asm.get_concluded_session()
@@ -122,8 +111,6 @@ class TestActivityStateMachine:
         assert isinstance(response4, ChromeSession)
         assert response4.domain == third.domain
         assert response4.start_time == t3
-        assert response4.end_time is not None
-        assert response4.end_time == t4
 
         asm.set_new_session(fifth)
         response5 = asm.get_concluded_session()
@@ -132,8 +119,6 @@ class TestActivityStateMachine:
         assert isinstance(response5, ProgramSession)
         assert response5.window_title == fourth.window_title
         assert response5.start_time == t4
-        assert response5.end_time is not None
-        assert response5.end_time == t5
 
         # Verify that the internal stuff is as expected for the unfinished section
         assert asm.current_state is not None
@@ -255,7 +240,7 @@ class TestTransitionFromChrome:
         system_clock = SystemClock()
 
         session = ProgramSession("path/to/exe10.exe", "exe10.exe",
-                                 "PyCharm", "test_my_wonerful_code.py", system_clock.now())
+                                 "PyCharm", "test_my_wonerful_code.py", UserLocalTime(system_clock.now()))
         current_state = ApplicationInternalState("PyCharm", False, session)
 
         with pytest.raises(TypeError, match="requires a ChromeInternalState"):

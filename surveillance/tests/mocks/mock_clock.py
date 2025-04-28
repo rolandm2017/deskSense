@@ -116,8 +116,8 @@ class UserLocalTimeMockClock(ClockProtocol):
                 self.count_of_times += 1
                 
                 # Debug output with thread info
-                print(f"[DEBUG] Clock call #{self.count_of_times} - Thread {thread_id} - "
-                      f"Called by: {caller_filename}:{caller_function}:{caller_line}")
+                # print(f"[DEBUG] Clock call #{self.count_of_times} - Thread {thread_id} - "
+                #       f"Called by: {caller_filename}:{caller_function}:{caller_line}")
                 
                 return self._current_time
                 
@@ -135,8 +135,8 @@ class UserLocalTimeMockClock(ClockProtocol):
                 
                 self.count_of_times += 1
                 
-                print(f"[DEBUG] Clock RESET - call #{self.count_of_times} - Thread {thread_id} - "
-                      f"Called by: {caller_filename}:{caller_function}:{caller_line}")
+                # print(f"[DEBUG] Clock RESET - call #{self.count_of_times} - Thread {thread_id} - "
+                #       f"Called by: {caller_filename}:{caller_function}:{caller_line}")
                 
                 return self._current_time
             #  raise RuntimeError(

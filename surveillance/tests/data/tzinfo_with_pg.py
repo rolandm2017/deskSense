@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import List
 
 
-from surveillance.src.object.classes import ProgramSession
+from surveillance.src.object.classes import CompletedProgramSession
 from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.errors import TimezoneUnawareError
 
@@ -20,7 +20,7 @@ pycharm_process = "PyCharm.exe"
 def create_pycharm_entry(dt):
     window_start = UserLocalTime(dt)
     window_end = UserLocalTime(dt + timedelta(minutes=3))
-    pycharm_session = ProgramSession()
+    pycharm_session = CompletedProgramSession()
     pycharm_session.exe_path = pycharm_path
     pycharm_session.process_name = pycharm_process
     pycharm_session.window_title = "PyCharmTEST"
@@ -34,7 +34,7 @@ def create_pycharm_entry(dt):
 def create_zoom_entry(dt):
     window_start = UserLocalTime(dt)
     window_end = UserLocalTime(dt + timedelta(minutes=3))
-    zoom_session = ProgramSession()
+    zoom_session = CompletedProgramSession()
     zoom_session.exe_path = zoom_path
     zoom_session.process_name = zoom_process
     zoom_session.window_title = "ZoomTEST"
@@ -49,7 +49,7 @@ def create_zoom_entry(dt):
 def create_notion_entry(dt):
     window_start = UserLocalTime(dt)
     window_end = UserLocalTime(dt + timedelta(minutes=3))
-    notion_session = ProgramSession()
+    notion_session = CompletedProgramSession()
     notion_session.exe_path = notion_path
     notion_session.process_name = notion_process
     notion_session.window_title = "NotionTEST"

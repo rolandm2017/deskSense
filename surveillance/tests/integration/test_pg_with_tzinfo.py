@@ -17,11 +17,8 @@ from typing import List
 
 from surveillance.src.db.models import DailyProgramSummary
 from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
-from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
-from surveillance.src.object.classes import ProgramSession
 from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.errors import TimezoneUnawareError
 from surveillance.src.util.const import ten_sec_as_pct_of_hour
@@ -37,9 +34,9 @@ one_day_before = datetime(2025, 3, 12)
 base_day = datetime(2025, 3, 13)
 one_day_later = datetime(2025, 3, 14)
 
-TIMEZONE_FOR_TEST = "Europe/Berlin"  # UTC +1 or UTC +2
+timezone_for_test = "Europe/Berlin"  # UTC +1 or UTC +2
 
-some_local_tz = pytz.timezone(TIMEZONE_FOR_TEST)
+some_local_tz = pytz.timezone(timezone_for_test)
 
 def test_basic_setup():
     """Assumes that even the testing setup will be broken unless tested"""
@@ -55,7 +52,7 @@ def test_basic_setup():
     assert success, f"Expected no exception but got {exception}"
     
     # Compare by string representation - should contain 'Europe/Berlin'
-    assert TIMEZONE_FOR_TEST in str(time_with_wrapper.dt.tzinfo)
+    assert timezone_for_test in str(time_with_wrapper.dt.tzinfo)
     # Compare timezone names instead of timezone objects
     assert str(time_with_wrapper.dt.tzinfo) == str(some_local_tz), f"Expected both to equal {str(some_local_tz)}"
 

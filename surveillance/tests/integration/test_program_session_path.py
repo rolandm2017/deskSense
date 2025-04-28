@@ -41,9 +41,9 @@ from ..mocks.mock_message_receiver import MockMessageReceiver
 
 from ..mocks.mock_clock import UserLocalTimeMockClock
 
-TIMEZONE_FOR_TEST = "Europe/Berlin"  # UTC +1 or UTC +2
+timezone_for_test = "Europe/Berlin"  # UTC +1 or UTC +2
 
-some_local_tz = pytz.timezone(TIMEZONE_FOR_TEST)
+some_local_tz = pytz.timezone(timezone_for_test)
 
 
 def fmt_time_string(s):
@@ -71,8 +71,6 @@ session1 = ProgramSession(
     detail="X. It's what's happening / X",
     start_time=UserLocalTime(fmt_time_string(
         "2025-03-22 16:14:50.201399-07:00")),
-    end_time=None,
-    duration_for_tests=None,
     productive=False
 )
 session2 = ProgramSession(
@@ -82,8 +80,6 @@ session2 = ProgramSession(
     detail='dash | Overview',
     start_time=UserLocalTime(fmt_time_string(
         "2025-03-22 16:15:55.237392-07:00")),
-    end_time=None,
-    duration_for_tests=None,
     productive=False
 )
 session3 = ProgramSession(
@@ -93,8 +89,6 @@ session3 = ProgramSession(
     detail='surveillance_manager.py - deskSense',
     start_time=UserLocalTime(fmt_time_string(
         "2025-03-22 16:16:03.374304-07:00")),
-    end_time=None,
-    duration_for_tests=None,
     productive=False
 )
 
@@ -106,8 +100,6 @@ session4 = ProgramSession(
     detail='TikTok: Waste Your Time Today!',
     start_time=UserLocalTime(fmt_time_string(
         "2025-03-22 16:16:17.480951-07:00")),
-    end_time=None,
-    duration_for_tests=None,
     productive=False
 )
 test_events = [
@@ -126,7 +118,6 @@ def validate_test_data():
         assert isinstance(test_events[i].start_time.dt, datetime)
         assert test_events[i].start_time.dt.tzinfo is not None
 
-        assert test_events[i].end_time is None
 
         if i == 3:
             break  # There is no 4th value
@@ -135,13 +126,6 @@ def validate_test_data():
     # Return the data to the test
     return test_events
 
-
-
-# @pytest.fixture
-# def setup_for_test(regular_session, mock_async_session_maker):
-#     # TODO: refactor so that this class lives in one place (it's a duplicate)
-
-#     return surveillance_manager, program_sum_dao, program_logging_dao, mock_program_facade, activity_arbiter
 
 sum_counter = 0
 log_counter = 0
