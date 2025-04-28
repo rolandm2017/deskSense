@@ -15,7 +15,9 @@ from surveillance.src.util.copy_util import snapshot_obj_for_tests
 
 
 class ActivityArbiter:
-    def __init__(self, user_facing_clock, pulse_interval: int | float = 1, loop=None):
+    def __init__(self, user_facing_clock, 
+                    engine_class=KeepAliveEngine, threaded_container_class=ThreadedEngineContainer,
+                  pulse_interval: int | float = 1):
         """
         This class exists to prevent the Chrome Service from doing ANYTHING but reporting which tab is active.
 
@@ -30,7 +32,8 @@ class ActivityArbiter:
         """
         self.state_machine = ActivityStateMachine(user_facing_clock)
         self.pulse_interval = pulse_interval
-        self.loop = loop or asyncio.get_event_loop()
+        self.engine_class = engine_class
+        self.threaded_container_class = threaded_container_class
 
         self.current_heartbeat = None
         self.ui_update_listener = None
@@ -98,9 +101,9 @@ class ActivityArbiter:
             engine_loop = self.current_heartbeat.engine.save_loop_for_reuse()
             self.current_heartbeat.stop()  # stop the old one from prev loop
 
-            new_keep_alive_engine = KeepAliveEngine(
+            new_keep_alive_engine = self.engine_class(
                 new_session, self.activity_recorder, engine_loop)
-            self.current_heartbeat = ThreadedEngineContainer(
+            self.current_heartbeat = self.threaded_container_class(
                 new_keep_alive_engine,  self.pulse_interval)
 
             self.current_heartbeat.start()
@@ -116,9 +119,9 @@ class ActivityArbiter:
             self.notify_of_new_session(new_session)
             self.state_machine.set_new_session(new_session)
             
-            new_keep_alive_engine = KeepAliveEngine(
+            new_keep_alive_engine = self.engine_class(
                 new_session, self.activity_recorder, start_of_loop)
-            self.current_heartbeat = ThreadedEngineContainer(
+            self.current_heartbeat = self.threaded_container_class(
                 new_keep_alive_engine, self.pulse_interval)
             self.current_heartbeat.start()
             # self.state_machine.current_state = updated_state
