@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from surveillance.src.object.classes import ChromeSession, ProgramSession
+from surveillance.src.object.classes import ChromeSession, CompletedChromeSession
 
 from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 from surveillance.src.db.models import DomainSummaryLog, ProgramSummaryLog
@@ -46,8 +46,6 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
         """
         A session of using a domain. End_time here is like, "when did the user tab away from the program?"
         """
-        if session.start_time is None:
-            raise ValueError("Start time was None")
         unknown = None
         base_start_time = convert_to_utc(session.start_time.get_dt_for_db())
         start_of_day = get_start_of_day(session.start_time.get_dt_for_db())
@@ -157,15 +155,11 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
         log.end_time = log.end_time + timedelta(seconds=10)
         self.update_item(log)
 
-    def finalize_log(self, session: ChromeSession):
+    def finalize_log(self, session: CompletedChromeSession):
         """
         Overwrite value from the heartbeat. Expect something to ALWAYS be in the db already at this point.
         Note that if the computer was shutdown, this method is never called, and the rough estimate is kept.
         """
-        if session.start_time is None:
-            raise ValueError("Start time was None")
-        if session.end_time is None:
-            raise ValueError("End time was None")
         log: DomainSummaryLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError(
