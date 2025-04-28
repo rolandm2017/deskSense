@@ -5,8 +5,8 @@ Proves that the ProgramSession and all relevant fields get where they're intende
 Using three sessions to notice edge cases and prove a chain is established.
 """
 import pytest
-import asyncio
 from unittest.mock import Mock
+import asyncio
 
 import pytz
 from datetime import datetime, timedelta
@@ -16,6 +16,7 @@ import traceback
 
 from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
 from surveillance.src.arbiter.activity_recorder import ActivityRecorder
+from surveillance.src.arbiter.session_heartbeat import KeepAliveEngine
 from surveillance.src.surveillance_manager import FacadeInjector, SurveillanceManager
 from surveillance.src.services.chrome_service import ChromeService
 from surveillance.src.trackers.program_tracker import ProgramTrackerCore
@@ -38,6 +39,7 @@ from surveillance.src.util.const import SECONDS_PER_HOUR, ten_sec_as_pct_of_hour
 from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day
 
 from ..mocks.mock_message_receiver import MockMessageReceiver
+from ..mocks.mock_engine_container import MockEngineContainer
 
 from ..mocks.mock_clock import UserLocalTimeMockClock
 
@@ -200,8 +202,11 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
 
     wont_be_used = UserLocalTimeMockClock(dummy_times)
 
+    engine_type = KeepAliveEngine
+    mock_container_type = MockEngineContainer
+
     activity_arbiter = ActivityArbiter(
-        mock_user_facing_clock, pulse_interval=0.1)
+        mock_user_facing_clock, engine_type, mock_container_type, pulse_interval=0.1)
     
     asm_set_new_session_spy = Mock(side_effect=activity_arbiter.state_machine.set_new_session)
     activity_arbiter.state_machine.set_new_session = asm_set_new_session_spy
