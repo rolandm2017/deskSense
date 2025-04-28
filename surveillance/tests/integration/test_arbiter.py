@@ -6,8 +6,9 @@ from datetime import datetime, date, timedelta, timezone
 
 from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
 from surveillance.src.arbiter.activity_recorder import ActivityRecorder
-from surveillance.src.arbiter.activity_state_machine import ActivityStateMachine
 from surveillance.src.object.classes import ProgramSession, ChromeSession
+
+from surveillance.src.arbiter.session_heartbeat import KeepAliveEngine, ThreadedEngineContainer
 
 from ..data.arbiter_events import test_sessions, times_for_system_clock, difference_between_start_and_2nd_to_last
 from ..mocks.mock_clock import MockClock
@@ -36,9 +37,8 @@ def activity_arbiter_and_setup():
 
     # Create a new arbiter instance for this test
     ultrafast_interval_for_testing = 0.025  # usually is 1.0
-    arbiter = ActivityArbiter(
-        user_facing_clock=clock, pulse_interval=ultrafast_interval_for_testing
-    )
+    threaded_container = ThreadedEngineContainer(ultrafast_interval_for_testing)
+    arbiter = ActivityArbiter(clock, threaded_container, KeepAliveEngine)
 
     # Add UI listener
     arbiter.add_ui_listener(ui_layer.on_state_changed)

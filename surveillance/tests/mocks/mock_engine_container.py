@@ -25,6 +25,8 @@ class MockEngineContainer(ThreadedEngineContainer):
     Is not threaded.
 
     This mock "just knows" how long the pulse will run for, because the duration is specified.
+
+    Hence the interval arg is just for consistency.
     """
 
     def __init__(self, session_durations: list[int], interval: int | float = 1, sleep_fn=time.sleep, timestamp=None):

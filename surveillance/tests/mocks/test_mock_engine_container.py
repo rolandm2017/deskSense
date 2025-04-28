@@ -20,7 +20,6 @@ from surveillance.src.arbiter.activity_recorder import ActivityRecorder
 from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.clock import UserFacingClock
 
-from .mock_clock import UserLocalTimeMockClock
 from .mock_engine_container import MockEngineContainer
 
 timezone_for_test = "Asia/Tokyo"  #  UTC+9
@@ -107,6 +106,13 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
     assert window_push_mock.call_count == 5  # (50 / 10 = 5)
     # assert deduct_duration happened 1x for 7 sec
     assert deduct_duration_mock.call_count == 1
+
+    first_arg = deduct_duration_mock.call_args_list[0][0][0]
+    second_arg = deduct_duration_mock.call_args_list[0][0][1]
+    assert isinstance(first_arg, int)
+    assert first_arg == remainder2
+    assert isinstance(second_arg, ChromeSession)
+    
     deduct_duration_mock.assert_called_once_with(remainder2, session2)
 
     window_push_mock.reset_mock()

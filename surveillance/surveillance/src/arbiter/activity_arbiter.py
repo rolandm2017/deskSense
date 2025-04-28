@@ -14,8 +14,7 @@ from surveillance.src.util.copy_util import snapshot_obj_for_tests
 
 class ActivityArbiter:
     def __init__(self, user_facing_clock, threaded_container,
-                    engine_class=KeepAliveEngine, 
-                  pulse_interval: int | float = 1):
+                    engine_class=KeepAliveEngine):
         """
         This class exists to prevent the Chrome Service from doing ANYTHING but reporting which tab is active.
 
@@ -29,7 +28,6 @@ class ActivityArbiter:
         i.e. "chrome_event_update" and "self.current_is_chrome" before e22d5badb15
         """
         self.state_machine = ActivityStateMachine(user_facing_clock)
-        self.pulse_interval = pulse_interval
         self.engine_class = engine_class
         # Threaded container must receive the pulse interval outside of here.
         # The engine is then set using the add and replace methods.
@@ -84,8 +82,6 @@ class ActivityArbiter:
         if self.state_machine.current_state:
             if self.current_heartbeat is None:
                 raise ValueError("First loop failed in Activity Arbiter")
-            # ### Calculate the duration that the current state has existed
-            # ### & create the replacement state
 
             # end_time & duration is set inside the ASM
 
@@ -119,10 +115,8 @@ class ActivityArbiter:
                 new_session, self.activity_recorder)
             
             self.current_heartbeat.add_first_engine(new_keep_alive_engine)
-            # self.current_heartbeat = self.threaded_container_class(
-            #     new_keep_alive_engine, self.pulse_interval)
+
             self.current_heartbeat.start()
-            # self.state_machine.current_state = updated_state
 
     def shutdown(self):
         """Concludes the current state/session without adding a new one"""
