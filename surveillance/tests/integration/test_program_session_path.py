@@ -19,7 +19,6 @@ from surveillance.src.arbiter.activity_recorder import ActivityRecorder
 from surveillance.src.arbiter.session_heartbeat import KeepAliveEngine
 from surveillance.src.surveillance_manager import FacadeInjector, SurveillanceManager
 from surveillance.src.services.chrome_service import ChromeService
-from surveillance.src.trackers.program_tracker import ProgramTrackerCore
 
 from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
@@ -81,7 +80,7 @@ session2 = ProgramSession(
     window_title='My Workspace',
     detail='dash | Overview',
     start_time=UserLocalTime(fmt_time_string(
-        "2025-03-22 16:15:55.237392-07:00")),
+        "2025-03-22 16:15:55.237392-07:00")),  # Roughly 65 sec difference
     productive=False
 )
 session3 = ProgramSession(
@@ -90,10 +89,9 @@ session3 = ProgramSession(
     window_title='Visual Studio Code',
     detail='surveillance_manager.py - deskSense',
     start_time=UserLocalTime(fmt_time_string(
-        "2025-03-22 16:16:03.374304-07:00")),
+        "2025-03-22 16:16:03.374304-07:00")),  # Roughly 8 sec difference
     productive=False
 )
-
 session4 = ProgramSession(
     # NOTE: Manual change from Gnome Shell to a second Chrome entry
     exe_path=imaginary_path_to_chrome,
@@ -101,7 +99,7 @@ session4 = ProgramSession(
     window_title='Google Chrome',
     detail='TikTok: Waste Your Time Today!',
     start_time=UserLocalTime(fmt_time_string(
-        "2025-03-22 16:16:17.480951-07:00")),
+        "2025-03-22 16:16:17.480951-07:00")),  # Roughly 14 sec difference
     productive=False
 )
 test_events = [
@@ -112,9 +110,10 @@ test_events = [
 ]
 
 @pytest.fixture(scope="module")
-def validate_test_data():
-    """Exists to ensure no PEBKAC. The data really does say what was intended."""
+def validate_test_data_and_get_durations():
+    """Exists to ensure no PEBKAC. 'The data really does say what was intended.'"""
     # Validate your dummy test data
+    durations_for_sessions = []
     for i in range(0, 4):
         assert isinstance(test_events[i].start_time, UserLocalTime)
         assert isinstance(test_events[i].start_time.dt, datetime)
@@ -124,9 +123,12 @@ def validate_test_data():
         if i == 3:
             break  # There is no 4th value
         assert test_events[i].start_time < test_events[i + 1].start_time, "Events must be chronological"
+
+        elapsed_between_sessions = test_events[i + 1].start_time - test_events[i].start_time
+        durations_for_sessions.append(elapsed_between_sessions)
     
     # Return the data to the test
-    return test_events
+    return test_events, durations_for_sessions
 
 
 sum_counter = 0
@@ -134,7 +136,7 @@ log_counter = 0
 
 # @pytest.mark.skip
 @pytest.mark.asyncio
-async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, db_session_in_mem, mock_async_session_maker):
+async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_and_get_durations, db_session_in_mem, mock_async_session_maker):
     """
     The goal of the test is to prove that programSesssions get thru the DAO layer fine
     
@@ -145,7 +147,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
     """
     # surveillance_manager, summary_dao, logging_dao, mock_program_facade, arbiter = setup_for_test
 
-    valid_test_data = validate_test_data
+    valid_test_data, durations_for_keep_alive = validate_test_data_and_get_durations
 
     class MockProgramFacade:
         def __init__(self):
@@ -203,10 +205,13 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
     wont_be_used = UserLocalTimeMockClock(dummy_times)
 
     engine_type = KeepAliveEngine
-    mock_container_type = MockEngineContainer
+
+    short_pulse_interval = 0.1
+
+    mock_container = MockEngineContainer(durations_for_keep_alive, short_pulse_interval)
 
     activity_arbiter = ActivityArbiter(
-        mock_user_facing_clock, engine_type, mock_container_type, pulse_interval=0.1)
+        mock_user_facing_clock, mock_container, engine_type)
     
     asm_set_new_session_spy = Mock(side_effect=activity_arbiter.state_machine.set_new_session)
     activity_arbiter.state_machine.set_new_session = asm_set_new_session_spy
@@ -553,9 +558,6 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
 
     assert finalize_log_spy.call_count == event_count - active_entry
 
-    # TODO assert that process_name made it into where it belongs, and looked right
-    # TODO: assert that detail looked right
-
     assert summary_add_new_item_spy.call_count == 0, "A new summary was created despite preexisting sessions"
     
     assert logger_add_new_item_spy.call_count == event_count
@@ -573,7 +575,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
 
 
 @pytest.mark.asyncio
-async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, db_session_in_mem, mock_async_session_maker):
+async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and_get_durations, db_session_in_mem, mock_async_session_maker):
     """
     The goal of the test is to prove that programSesssions get thru the DAO layer fine
     
@@ -584,7 +586,7 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, db
     """
     # surveillance_manager, summary_dao, logging_dao, mock_program_facade, arbiter = setup_for_test
 
-    valid_test_data = validate_test_data  # skip final entry to save us time; 3 is good
+    valid_test_data, durations_for_keep_alive = validate_test_data_and_get_durations  # skip final entry to save us time; 3 is good
 
     class MockProgramFacade:
         def __init__(self):
@@ -642,11 +644,15 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, db
 
     wont_be_used = UserLocalTimeMockClock([v,v,v,v,v])  # I am sure it's not used
 
-    # pulse = 0.1 
-    pulse = 0.5
+    durations_of_sessions = []
+
+    short_pulse_interval = 0.1
+
+    engine_type = KeepAliveEngine
+    mock_container = MockEngineContainer(durations_of_sessions, short_pulse_interval)
 
     activity_arbiter = ActivityArbiter(
-        mock_user_facing_clock, pulse_interval=pulse)
+        mock_user_facing_clock, mock_container, engine_type)
     
     asm_set_new_session_spy = Mock(side_effect=activity_arbiter.state_machine.set_new_session)
     activity_arbiter.state_machine.set_new_session = asm_set_new_session_spy

@@ -119,6 +119,9 @@ class ThreadedEngineContainer:
         if self.engine is None:
             # Expect that add_first_engine is used to initialize.
             raise MissingEngineError()
+        
+        # NOTE: If you have some sort of off by 1 error, it could be because
+        # the current .sleep() hasn't flushed yet, i.e. the prev iteration is still going
         if self.is_running:
             # Stop the current engine's work gracefully
             self.engine.conclude()
