@@ -6,8 +6,6 @@ from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timedelta, time
 from typing import List
 
-from surveillance.src.config.definitions import keep_alive_pulse_len
-
 from surveillance.src.db.models import DailyProgramSummary
 from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 
@@ -168,8 +166,6 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
 
         9 times out of 10. So we deduct the unfinished duration from its hours_spent.
         """
-        if duration_in_sec > keep_alive_pulse_len:
-            raise ValueError("Duration was somehow greater than 10")
 
         tomorrow_start = today_start.dt + timedelta(days=1)
 

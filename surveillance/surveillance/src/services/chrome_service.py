@@ -32,6 +32,7 @@ class TabQueue:
         self.log_tab_event = log_tab_event
 
     async def add_to_arrival_queue(self, tab_change_event: TabChangeEventWithLtz):
+
         self.message_queue.append(tab_change_event)
         MAX_QUEUE_LEN = 40
 
@@ -118,7 +119,6 @@ class ChromeService:
         asyncio.set_event_loop(self.loop)
         self.logger = ConsoleLogger()
 
-    # TODO: Log a bunch of real chrome tab submissions, use them in a test
 
     def log_tab_event(self, url_deliverable: TabChangeEventWithLtz):
         """Occurs whenever the user tabs through Chrome tabs.
@@ -130,13 +130,12 @@ class ChromeService:
 
         Then, before Bar replaces Foo, Foo has its duration added. Foo is then logged. Cycle repeats.
         """
-        # TODO: Write tests for this function
 
         url = url_deliverable.url
         title = url_deliverable.tab_title
         is_productive = url_deliverable.url in productive_sites
         start_time = url_deliverable.start_time_with_tz
-        end_time = None
+
         initialized: ChromeSession = ChromeSession(
             url, title, start_time, is_productive)
 
@@ -147,7 +146,6 @@ class ChromeService:
         self.handle_session_ready_for_arbiter(initialized)
 
         if self.last_entry:
-            concluding_session: ChromeSession = self.last_entry
             # ### Ensure both datetimes are timezone-naive
             # Must be utc already since it is set up there
             if self.last_entry.start_time is None:
@@ -165,18 +163,12 @@ class ChromeService:
             if duration > timedelta(hours=1):
                 self.logger.log_red("## ## ## problem in chrome service")
                 raise SuspiciousDurationError("duration")
-            concluding_session.duration = duration
-            concluding_session.end_time = next_session_start_time
-            # self.write_completed_session_to_chrome_dao(concluding_session)
         self.last_entry = initialized
 
     def handle_session_ready_for_arbiter(self, session):
         session_copy = copy.deepcopy(session)
         # Leads to activityArbiter.set_tab_state
         self.event_emitter.emit('tab_change', session_copy)
-
-    # FIXME: When Chrome is active, recording time should take place.
-    # FIXME: When Chrome goes inactive, recording active time should cease.
 
     def shutdown(self):
         """Mostly just logs the final chrome session to the db"""
