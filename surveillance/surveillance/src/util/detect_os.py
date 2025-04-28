@@ -1,5 +1,4 @@
 import platform
-import distro
 
 
 class OperatingSystemInfo:
@@ -24,6 +23,9 @@ class OperatingSystemInfo:
             else:
                 return f"Windows {version}"
         elif system == "Linux":
+            # Cannot import Distro on Windows machines so must import it here
+            import distro
+
             # For Linux, we can get the distribution details
             try:
                 # This works for most Linux distributions

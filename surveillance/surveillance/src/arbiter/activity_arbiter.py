@@ -50,7 +50,7 @@ class ActivityArbiter:
         else:
             raise AttributeError("Listener method was missing")
 
-    def notify_summary_dao(self, session: CompletedProgramSession | CompletedChromeSession):
+    def notify_summary_dao(self, session: CompletedProgramSession | CompletedChromeSession | None):
         if self.activity_recorder:
             self.activity_recorder.on_state_changed(session)
 

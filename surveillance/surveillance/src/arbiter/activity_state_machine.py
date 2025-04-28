@@ -80,9 +80,6 @@ class ActivityStateMachine:
 
         state.session = completed
 
-  
-
-
     @staticmethod
     def _initialize(first_session):
         if isinstance(first_session, ProgramSession):

@@ -79,7 +79,7 @@ class ActivityRecorder:
         else:
             raise TypeError("Session was not the right type")
 
-    def on_state_changed(self, session: CompletedProgramSession | CompletedChromeSession):
+    def on_state_changed(self, session: CompletedProgramSession | CompletedChromeSession | None):
         if isinstance(session, ProgramSession):
             self.validate_session(session)
             self.program_logging_dao.finalize_log(session)
@@ -87,6 +87,8 @@ class ActivityRecorder:
             self.validate_session(session)
             self.chrome_logging_dao.finalize_log(session)
         else:
+            if session is None:
+                return
             if isinstance(session, InternalState):
                 raise TypeError(
                     "Argument was an InternalState when it should be a Session")
