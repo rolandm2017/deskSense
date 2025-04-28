@@ -58,15 +58,25 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
     
     pulse_interval = 0.1
  
-    start_of_loop = asyncio.new_event_loop()
     an_engine = KeepAliveEngine(session1, recorder)
 
-    # Time.sleep isn't used
-    engine_container = MockEngineContainer(an_engine, pulse_interval)
+    duration_in_sec_1 = 33
+    remainder1 = 40 - 33
 
-    duration_in_sec = 33
-    remainder = 40 - 33
-    engine_container.start(duration_in_sec)
+    duration_in_sec_2 = 56
+    remainder2 = 60 - 56
+
+    duration_in_sec_3 = 7
+    remainder3 = 10 - 7
+
+    run_durations = [duration_in_sec_1, duration_in_sec_2, duration_in_sec_3]
+
+    # Time.sleep isn't used
+    engine_container = MockEngineContainer(run_durations, pulse_interval)
+
+    engine_container.add_first_engine(an_engine)
+
+    engine_container.start()
 
     # An arbiter loop passes, and then:
 
@@ -76,7 +86,7 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
     assert window_push_mock.call_count == 3
     # assert deduct_duration happened 1x for 7 sec
     assert deduct_duration_mock.call_count == 1
-    deduct_duration_mock.assert_called_once_with(remainder, session1)
+    deduct_duration_mock.assert_called_once_with(remainder1, session1)
 
     window_push_mock.reset_mock()
     deduct_duration_mock.reset_mock()
@@ -85,14 +95,10 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
     # -- Run #2
     # --
 
-    duration_in_sec = 56
-    remainder = 60 - 56
-
     an_engine = KeepAliveEngine(session2, recorder)
+    engine_container.replace_engine(an_engine)
 
-    engine_container = MockEngineContainer(an_engine, pulse_interval)
-
-    engine_container.start(duration_in_sec)
+    engine_container.start()
 
     # An arbiter loop passes, and then:
 
@@ -101,7 +107,7 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
     assert window_push_mock.call_count == 5  # (50 / 10 = 5)
     # assert deduct_duration happened 1x for 7 sec
     assert deduct_duration_mock.call_count == 1
-    deduct_duration_mock.assert_called_once_with(remainder, session2)
+    deduct_duration_mock.assert_called_once_with(remainder2, session2)
 
     window_push_mock.reset_mock()
     deduct_duration_mock.reset_mock()
@@ -110,16 +116,13 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
     # -- Run #3
     # --
 
-    duration_in_sec = 7
-    remainder = 10 - 7
 
     session3 = ProgramSession()
 
     an_engine = KeepAliveEngine(session3, recorder)
+    engine_container.replace_engine(an_engine)
 
-    engine_container = MockEngineContainer(an_engine, pulse_interval)
-
-    engine_container.start(duration_in_sec)
+    engine_container.start()
 
     # An arbiter loop passes, and then:
 
@@ -127,4 +130,4 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
 
     window_push_mock.assert_not_called()
     assert deduct_duration_mock.call_count == 1
-    deduct_duration_mock.assert_called_once_with(remainder, session3)
+    deduct_duration_mock.assert_called_once_with(remainder3, session3)

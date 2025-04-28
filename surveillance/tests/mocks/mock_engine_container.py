@@ -3,6 +3,8 @@ import time
 from surveillance.src.arbiter.session_heartbeat import ThreadedEngineContainer
 from surveillance.src.arbiter.session_heartbeat import KeepAliveEngine
 
+from surveillance.src.util.errors import MissingEngineError
+
 
 
 # TODO:
@@ -25,16 +27,33 @@ class MockEngineContainer(ThreadedEngineContainer):
     This mock "just knows" how long the pulse will run for, because the duration is specified.
     """
 
-    def __init__(self, engine: KeepAliveEngine, interval: int | float = 1, sleep_fn=time.sleep, timestamp=None):
-        # Time.sleep isn't used
-        super().__init__(engine, interval, sleep_fn, timestamp)
+    def __init__(self, session_durations: list[int], interval: int | float = 1, sleep_fn=time.sleep, timestamp=None):
+        """
+        If you submit an inaccurate session_durations here, your test won't work. Be sure it's right!
 
-    def start(self, duration):
-        for i in range(0, duration):
+        duration n = t2 - t1
+        duration n + 1 = t3 - t2
+        """
+        # Time.sleep isn't used
+        super().__init__(interval, sleep_fn, timestamp)
+        self.session_durations = session_durations or []
+        self.duration_iter = iter(self.session_durations)
+
+    def add_first_engine(self, engine):
+        return super().add_first_engine(engine)
+
+    def start(self):
+        if self.engine is None:
+            raise MissingEngineError()
+        # Get the duration for the nth run from the iter
+        duration_for_run = next(self.duration_iter)
+        for i in range(0, duration_for_run):
             self.engine.iterate_loop()
         
     def _iterate_loop(self):
         pass
 
     def stop(self):
+        if self.engine is None:
+            raise MissingEngineError()
         self.engine.conclude()

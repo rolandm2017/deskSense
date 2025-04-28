@@ -1,9 +1,10 @@
 import threading
-import asyncio
 import time
 
-
 from surveillance.src.object.classes import ProgramSession, ChromeSession
+
+from surveillance.src.util.errors import MissingEngineError
+
 
 """
 A class responsible for updating the end_time value of the latest Program or Chrome session.
@@ -46,6 +47,7 @@ class KeepAliveEngine:
             self.elapsed = 0
 
     def conclude(self):
+        print(self.elapsed, "concluding 50ru")
         self._deduct_remainder(self.elapsed)
 
     def _hit_max_window(self):
@@ -83,14 +85,17 @@ class ThreadedEngineContainer:
     """
     # TODO: Also keep the EngineContainer between engines. just change it out. Keep the thread alive.
 
-    def __init__(self, engine: KeepAliveEngine, interval: int | float = 1, sleep_fn=time.sleep, timestamp=None):
-        self.engine = engine
+    def __init__(self, interval: int | float = 1, sleep_fn=time.sleep, timestamp=None):
+        self.engine = None
         self.sleep_fn = sleep_fn  # More testable
         self.stop_event = threading.Event()
         self.interval = interval  # seconds - delay between loops
         self.hook_thread = None
         self.is_running = False
         self.timestamp = timestamp
+
+    def add_first_engine(self, engine):
+        self.engine = engine
 
     def start(self):
         """
@@ -103,18 +108,32 @@ class ThreadedEngineContainer:
             self.is_running = True
 
     def _iterate_loop(self):
+        if self.engine is None:
+            raise MissingEngineError()
         while not self.stop_event.is_set():
             self.engine.iterate_loop()
             self.sleep_fn(self.interval)  # Sleep for 1 second
     
     def replace_engine(self, new_engine):
         """Used to maintain container objects between sessions"""
-        pass
+        if self.engine is None:
+            # Expect that add_first_engine is used to initialize.
+            raise MissingEngineError()
+        if self.is_running:
+            # Stop the current engine's work gracefully
+            self.engine.conclude()
+            # Swap the engine
+            self.engine = new_engine
+        else:
+            # If the thread isn't running, just set the new engine
+            self.engine = new_engine
 
     def stop(self):
         """
         Stop the current session from receiving anymore updates
         """
+        if self.engine is None:
+            raise MissingEngineError()
         if self.is_running:
             self.engine.conclude()
             self.stop_event.set()

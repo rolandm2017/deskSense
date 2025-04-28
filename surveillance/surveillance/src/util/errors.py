@@ -49,3 +49,13 @@ class NegativeTimeError(ValueError):
     def __init__(self, activity, time, *args):
         message = f"The DAO claims {activity} had {time} seconds spent on it"
         super().__init__(message, *args)
+
+class MissingEngineError(ValueError):
+    """
+    For when the summary DAO claims a negative amount of time 
+    was spent using a program or website
+    """
+
+    def __init__(self, *args):
+        message = f"The KeepAliveEngine was missing"
+        super().__init__(message, *args)
