@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 
-from surveillance.src.object.classes import ChromeSession, ProgramSession
+from surveillance.src.object.classes import ChromeSession, ProgramSession, CompletedChromeSession, CompletedProgramSession
 from surveillance.src.object.arbiter_classes import ChromeInternalState, ApplicationInternalState, InternalState
 from surveillance.src.util.program_tools import window_is_chrome
 from surveillance.src.util.console_logger import ConsoleLogger
@@ -25,9 +25,6 @@ class ActivityStateMachine:
         self.logger = ConsoleLogger()
 
     def set_new_session(self, next_session: ProgramSession | ChromeSession):
-
-        if self.is_initialization_session(next_session):
-            raise ValueError("next_session cannot be an empty dictionary")
         next_session = snapshot_obj_for_tests(next_session)
         # TODO: It might be cleaner to say,
         # next_state = package_session_into_state(next_session)
@@ -73,13 +70,18 @@ class ActivityStateMachine:
             raise ValueError("Expected a UserLocalTime")
         if self.is_initialization_session(state.session):
             return
+
         duration = incoming_session_start - state.session.start_time
 
         session_copy = snapshot_obj_for_tests(state.session)
-        session_copy.duration = duration
-        session_copy.end_time = incoming_session_start
 
-        state.session = session_copy
+        completed = session_copy.to_completed(incoming_session_start)
+        completed.duration = duration
+
+        state.session = completed
+
+  
+
 
     @staticmethod
     def _initialize(first_session):
@@ -92,7 +94,7 @@ class ActivityStateMachine:
             updated_state = ChromeInternalState(
                 "Chrome", True, first_session.domain, first_session)
         return updated_state
-
+    
     @staticmethod
     def _initialize_program_machine():
         start_state = ApplicationInternalState("", "", {})
@@ -105,7 +107,7 @@ class ActivityStateMachine:
         return TransitionFromChromeMachine(
             start_state)
 
-    def get_concluded_session(self) -> ProgramSession | ChromeSession | None:
+    def get_concluded_session(self) -> CompletedProgramSession | CompletedChromeSession | None:
         """Assumes the prior state is the updated transformation from set_new_session"""
         on_initialization = self.prior_state is None
         if on_initialization:

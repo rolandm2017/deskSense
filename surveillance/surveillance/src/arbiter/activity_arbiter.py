@@ -6,11 +6,10 @@ import asyncio
 
 from surveillance.src.config.definitions import power_on_off_debug_file
 
-from surveillance.src.object.classes import ChromeSession, ProgramSession
+from surveillance.src.object.classes import ChromeSession, ProgramSession, CompletedChromeSession, CompletedProgramSession
 
 from .activity_state_machine import ActivityStateMachine
 from .session_heartbeat import KeepAliveEngine, ThreadedEngineContainer
-from surveillance.src.object.arbiter_classes import ChromeInternalState, ApplicationInternalState
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.copy_util import snapshot_obj_for_tests
 
@@ -51,11 +50,11 @@ class ActivityArbiter:
         else:
             raise AttributeError("Listener method was missing")
 
-    def notify_summary_dao(self, session):
+    def notify_summary_dao(self, session: CompletedProgramSession | CompletedChromeSession):
         if self.activity_recorder:
             self.activity_recorder.on_state_changed(session)
 
-    def notify_of_new_session(self, session):
+    def notify_of_new_session(self, session: ProgramSession | ChromeSession):
         if self.activity_recorder:
             # Prevent mutations from ruining test data
             session_copy = snapshot_obj_for_tests(session)
@@ -74,7 +73,6 @@ class ActivityArbiter:
 
         When a program is opened, start a session for the program. And vice versa when it closes.
         """
-        # print("\n" + "✦★✦" * 6 + " DEBUG " + "✦★✦" * 6 + "\n")
         if isinstance(new_session, ProgramSession):
             self.logger.log_white("[Arb]", new_session.window_title)
         else:
@@ -82,9 +80,6 @@ class ActivityArbiter:
         assert not isinstance(
             new_session, dict), "Found an empty dictionary as session"
         self.notify_display_update(new_session)
-        # print(self.state_machine.current_state, "86ru")
-        # print(self.state_machine.current_state, "86ru")
-        # print(self.state_machine.current_state, "86ru")
         if self.state_machine.current_state:
             if self.current_heartbeat is None:
                 raise ValueError("First loop failed in Activity Arbiter")
@@ -92,6 +87,7 @@ class ActivityArbiter:
             # ### & create the replacement state
 
             # end_time & duration is set inside the ASM
+
             self.state_machine.set_new_session(new_session)
 
             concluded_session = self.state_machine.get_concluded_session()
@@ -111,7 +107,7 @@ class ActivityArbiter:
 
             if self.state_machine.is_initialization_session(concluded_session):
                 return  # It's just null state
-            # ### Put outgoing state into the DAO
+            # -- Put outgoing state into the DAO
             self.notify_summary_dao(concluded_session)
         else:
             start_of_loop = asyncio.new_event_loop()
@@ -131,6 +127,7 @@ class ActivityArbiter:
         """Concludes the current state/session without adding a new one"""
         if self.state_machine.current_state:
             concluded_session = self.state_machine.conclude_without_replacement()
-            self.notify_summary_dao(concluded_session)
+            if concluded_session:
+                self.notify_summary_dao(concluded_session)
             with open(power_on_off_debug_file, "a") as f:
                 f.write("Shutdown Activity Arbiter\n")

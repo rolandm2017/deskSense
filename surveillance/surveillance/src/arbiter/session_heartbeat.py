@@ -2,8 +2,8 @@ import threading
 import asyncio
 import time
 
-from datetime import timedelta
 
+from surveillance.src.object.classes import ProgramSession, ChromeSession
 
 """
 A class responsible for updating the end_time value of the latest Program or Chrome session.
@@ -19,7 +19,7 @@ The concluding will occur by the Arbiter
 
 
 class KeepAliveEngine:
-    def __init__(self, session, dao_connection, loop):
+    def __init__(self, session: ProgramSession | ChromeSession, dao_connection, loop):
         """
         This class is a loop. Each iteration of ten loops nudges 
         the end time of the current session forward ten sec.
@@ -32,7 +32,8 @@ class KeepAliveEngine:
         if session is None:
             raise ValueError("Session should not be None in KeepAliveEngine")
         self.recorder = dao_connection
-        self.max_interval = 10  # seconds
+        keep_alive_pulse_len = 10
+        self.max_interval = keep_alive_pulse_len  # seconds
         self.elapsed = 0
         self.loop = loop
 

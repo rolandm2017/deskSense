@@ -7,13 +7,6 @@ from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.time_formatting import parse_time_string
 
 
-class ProgramSessionDict(TypedDict):
-    os: str
-    pid: int | None
-    process_name: str
-    exe_path: str
-    window_title: str
-
 class ProgramSession:
     exe_path: str
     process_name: str
@@ -170,6 +163,15 @@ class CompletedChromeSession(ChromeSession):
         return f"CompletedChromeSession(domain='{self.domain}', detail='{self.detail}', \n\tstart_time='{self.start_time}', \n\tend_time='{self.end_time}', duration='{self.duration}', \n\tproductive='{self.productive}')"
 
 # TODO: Convert to use CompletedChromeSession to avoid that gross "start_time is not None" bs
+
+
+class ProgramSessionDict(TypedDict):
+    os: str
+    pid: int | None
+    process_name: str
+    exe_path: str
+    window_title: str
+
 
 class TabChangeEventWithLtz:
     tab_title: str
