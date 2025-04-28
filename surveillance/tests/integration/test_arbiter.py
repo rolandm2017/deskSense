@@ -12,6 +12,9 @@ from surveillance.src.arbiter.session_heartbeat import KeepAliveEngine, Threaded
 
 from ..data.arbiter_events import test_sessions, times_for_system_clock, difference_between_start_and_2nd_to_last
 from ..mocks.mock_clock import MockClock
+from ..mocks.mock_engine_container import MockEngineContainer
+
+from ..helper.confirm_chronology import assert_test_data_is_chronological_with_tz, get_durations_from_test_data
 
 # ###
 # ##
@@ -19,7 +22,6 @@ from ..mocks.mock_clock import MockClock
 # ##
 # ###
 
-# FIXME: that test takes 13.17s   # Ben says 10ms for a full db setup and teardown
 
 
 @pytest.fixture
@@ -28,6 +30,11 @@ def activity_arbiter_and_setup():
     Pytest fixture that returns a fresh ActivityArbiter instance for each test.
     Mocks the dependencies to avoid actual database or system interactions.
     """
+
+    assert_test_data_is_chronological_with_tz(test_sessions)
+
+    durations = get_durations_from_test_data(test_sessions)
+
     # Mock dependencies
     clock = MockClock(times=times_for_system_clock)
 
@@ -37,7 +44,7 @@ def activity_arbiter_and_setup():
 
     # Create a new arbiter instance for this test
     ultrafast_interval_for_testing = 0.025  # usually is 1.0
-    threaded_container = ThreadedEngineContainer(ultrafast_interval_for_testing)
+    threaded_container = MockEngineContainer([int(x) for x in durations], ultrafast_interval_for_testing)
     arbiter = ActivityArbiter(clock, threaded_container, KeepAliveEngine)
 
     # Add UI listener
@@ -54,24 +61,21 @@ def activity_arbiter_and_setup():
     # Use this pretty darn cool MagicMock(spec_set=whatever) thing
     recorder_spy = MagicMock(spec_set=ActivityRecorder)
     recorder_spy.on_state_changed.side_effect = event_handler
-    # STILL HAS all the methods attached, as mocks
-    # mock_activity_recorder = Mock()?
-    # mock_activity_recorder.on_state_changed = Mock(
-    #     side_effect=event_handler)
 
     arbiter.add_recorder_listener(recorder_spy)
 
     assert arbiter.activity_recorder == recorder_spy, "Test setup conditions failed"
 
-    # Optionally mock the chrome service integration
-    # mock_chrome_service = MagicMock()
-    # mock_chrome_service.event_emitter.on = MagicMock()
-
-    return arbiter, events, ui_layer, recorder_spy, ultrafast_interval_for_testing
+    return arbiter, events, ui_layer, recorder_spy, ultrafast_interval_for_testing, durations
 
 
 def test_activity_arbiter(activity_arbiter_and_setup):
-    arbiter, events_from_on_state_changed_handler, ui_layer, mock_activity_recorder, pulse_interval = activity_arbiter_and_setup
+    arbiter = activity_arbiter_and_setup[0]
+    events_from_on_state_changed_handler = activity_arbiter_and_setup[1]
+    ui_layer = activity_arbiter_and_setup[2]
+    mock_activity_recorder = activity_arbiter_and_setup[3]
+    pulse_interval = activity_arbiter_and_setup[4]
+    durations_between_events = activity_arbiter_and_setup[5]
 
     # Setup: How much time should pass?
     expected_sum_of_time = 45 * 60  # 45 minutes, as per the arbiter_events.py file
@@ -80,6 +84,8 @@ def test_activity_arbiter(activity_arbiter_and_setup):
 
     chrome_sessions_in_test = [
         item for item in test_sessions if isinstance(item, ChromeSession)]
+    
+    # TODO: Get the test data durations and use it with a MockEngineContainer
 
     assert len(test_sessions) > 0, "Test setup failed"
 
@@ -92,36 +98,66 @@ def test_activity_arbiter(activity_arbiter_and_setup):
         counter = counter + 1
         arbiter.transition_state(session)
 
-    assert 1 == 1
     # ### ### Assert
     remaining_open_session_offset = 1
 
     # ### Test some basic assumptions
 
-    assert len(
-        events_from_on_state_changed_handler) > 0, "Not even one event made it"
-
     program_events = [
-        e for e in events_from_on_state_changed_handler if isinstance(e, ProgramSession)]
+            e for e in events_from_on_state_changed_handler if isinstance(e, ProgramSession)]
     chrome_events = [
-        e for e in events_from_on_state_changed_handler if isinstance(e, ChromeSession)]
+            e for e in events_from_on_state_changed_handler if isinstance(e, ChromeSession)]
 
-    assert all(isinstance(log, ProgramSession)
-               for log in program_events), "A program event wasn't a program session"
-    assert all(isinstance(log, ChromeSession)
-               for log in chrome_events), "A Chrome event wasn't a Chrome session"
+    def assert_basic_expectations_met():
+        assert len(
+            events_from_on_state_changed_handler) > 0, "Not even one event made it"
 
-    assert any(isinstance(obj.duration, int)
-               for obj in events_from_on_state_changed_handler) is False
-    assert all(isinstance(obj.duration, timedelta)
-               for obj in events_from_on_state_changed_handler)
+        assert all(isinstance(log, ProgramSession)
+                for log in program_events), "A program event wasn't a program session"
+        assert all(isinstance(log, ChromeSession)
+                for log in chrome_events), "A Chrome event wasn't a Chrome session"
+
+        # Because .duration is set in the ASM before on_state_changed:
+        assert all(isinstance(obj.duration, timedelta)
+                for obj in events_from_on_state_changed_handler)
+        
+    assert_basic_expectations_met()
+    
 
     # ### Test DAO notifications
-    assert mock_activity_recorder.on_state_changed.call_count == len(
-        # NOTE: Would be "- 1" if the final input was a ProgramSession
-        program_sessions_in_test) + len(chrome_sessions_in_test) - remaining_open_session_offset
-    # assert mock_activity_recorder.on_state_changed.call_count == len(
-    # chrome_sessions_in_test) - remaining_open_session_offsetz
+    def assert_recorder_worked_as_intended():
+        assert mock_activity_recorder.on_state_changed.call_count == len(
+            # NOTE: Would be "- 1" if the final input was a ProgramSession
+            program_sessions_in_test) + len(chrome_sessions_in_test) - remaining_open_session_offset
+
+    assert_recorder_worked_as_intended()
+
+    def assert_keep_alive_worked_as_intended():
+        """
+        Part of the challenge of these tests is confirming that 
+        the KeepAlive DAO funcs were called as expected.
+        The order depends greatly on what the test data says.
+        """
+        for i in range(0, len(test_sessions)):
+            session = test_sessions[i]
+            duration = durations_between_events[i]
+
+            corresponding_num_of_pushes = duration // 10
+            # Check that the window push spy saw that event that many times
+            for j in range(0, corresponding_num_of_pushes):
+                session = mock_activity_recorder.add_ten_sec_to_end_time[j][0][0]
+                assert session.start_time == test_sessions[i]
+
+            # Check that the duration deductions were as intended
+            corresponding_deduction = 10 - (duration % 10)
+            args, _ = mock_activity_recorder.deduct_duration[i][0]
+            assert corresponding_deduction == args[0]
+            assert session.start_time.dt == args[1].start_time.dt
+
+
+    assert_keep_alive_worked_as_intended()
+
+
 
     # Total number of recorded Program DAO entries was as expected
     assert len(program_events) == len(
@@ -143,6 +179,7 @@ def test_activity_arbiter(activity_arbiter_and_setup):
     total_duration = total.total_seconds()
 
     assert expected_sum_of_time == total_duration
+    assert durations_between_events == total_duration
 
     # ### Check that sessions all received durations and end times
     assert all(
@@ -170,7 +207,7 @@ def test_activity_arbiter(activity_arbiter_and_setup):
     # change the amount of time
     # in the sessions
     zero_index = 1
-    one_still_in_arb = 1
+    
     events_from_handler_len = len(test_sessions) - zero_index
 
     final_event_index = events_from_handler_len - 1

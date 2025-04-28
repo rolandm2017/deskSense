@@ -39,7 +39,9 @@ class MockEngineContainer(ThreadedEngineContainer):
         # Time.sleep isn't used
         super().__init__(interval, sleep_fn, timestamp)
         self.session_durations = session_durations or []
+        print(self.session_durations, "42ru")
         self.duration_iter = iter(self.session_durations)
+        self.count = 0
 
     def add_first_engine(self, engine):
         return super().add_first_engine(engine)
@@ -49,6 +51,8 @@ class MockEngineContainer(ThreadedEngineContainer):
             raise MissingEngineError()
         # Get the duration for the nth run from the iter
         duration_for_run = next(self.duration_iter)
+        self.count = 1
+        print(f"duration for run: {duration_for_run} in run {self.count}")
         for i in range(0, duration_for_run):
             self.engine.iterate_loop()
         
