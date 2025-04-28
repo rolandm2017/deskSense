@@ -4,6 +4,7 @@ from unittest.mock import  Mock, MagicMock
 from datetime import  timedelta, datetime
 import math
 
+from surveillance.src.config.definitions import keep_alive_pulse_delay
 from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
 from surveillance.src.arbiter.activity_recorder import ActivityRecorder
 from surveillance.src.object.classes import ProgramSession, ChromeSession
@@ -12,7 +13,7 @@ from surveillance.src.arbiter.session_heartbeat import KeepAliveEngine
 
 from surveillance.src.util.time_wrappers import UserLocalTime
 
-from ..data.arbiter_events import test_sessions, times_for_system_clock, difference_between_start_and_2nd_to_last, test_evenbts_elapsed_time_in_sec
+from ..data.arbiter_events import test_sessions, times_for_system_clock, minutes_between_start_and_2nd_to_last, test_evenbts_elapsed_time_in_sec
 from ..mocks.mock_clock import MockClock
 from ..mocks.mock_engine_container import MockEngineContainer
 
@@ -82,7 +83,7 @@ def test_activity_arbiter(activity_arbiter_and_setup):
     ui_layer = activity_arbiter_and_setup[2]
     mock_activity_recorder = activity_arbiter_and_setup[3]
     pulse_interval = activity_arbiter_and_setup[4]
-    durations_between_events = activity_arbiter_and_setup[5]
+    durations_between_events_from_setup = activity_arbiter_and_setup[5]
 
     # Setup: How much time should pass?
     expected_sum_of_time_in_sec = test_evenbts_elapsed_time_in_sec
@@ -155,7 +156,7 @@ def test_activity_arbiter(activity_arbiter_and_setup):
             print(session2)
             raise
 
-    total_expected_calls = sum(math.floor(duration // 10) for duration in durations_between_events)
+    total_expected_calls = sum(math.floor(duration // 10) for duration in durations_between_events_from_setup)
     assert len(mock_activity_recorder.add_ten_sec_to_end_time.call_args_list) == total_expected_calls
 
     # assert number of conclude calls equals the num of sessions
@@ -169,16 +170,16 @@ def test_activity_arbiter(activity_arbiter_and_setup):
         """
         # Tally up the arguments from 
         end_of_prev_calls = 0
-        print(durations_between_events, len(durations_between_events), "172ru")
+        print(durations_between_events_from_setup, len(durations_between_events_from_setup), "172ru")
         for i in range(0, len(test_sessions)):
             target_session = test_sessions[i]
-            final_duration = len(durations_between_events) - 1
+            final_duration = len(durations_between_events_from_setup) - 1
             if i > final_duration:
                 # The session is never closed.
                 session_from_spy = mock_activity_recorder.add_ten_sec_to_end_time.call_args_list[0][0][0]
                 assert_names_match(session_from_spy, target_session)
                 return  # Done
-            duration = durations_between_events[i]
+            duration = durations_between_events_from_setup[i]
 
             corresponding_num_of_pushes = math.floor(duration // 10)
             # print(f"{i}, {end_of_prev_calls}\n== == \n == == 178ru")
@@ -192,6 +193,7 @@ def test_activity_arbiter(activity_arbiter_and_setup):
             # Check that the duration deductions were as intended
 
             corresponding_deduction = 10 - (duration % 10)
+            
             args = mock_activity_recorder.deduct_duration.call_args_list[i].args
 
             corresponding_deduction_arg = args[0]  # First argument
@@ -230,16 +232,19 @@ def test_activity_arbiter(activity_arbiter_and_setup):
     # UI notifier was called the expected number of times
     assert ui_layer.on_state_changed.call_count == len(test_sessions)
 
-    # ### The total time elapsed is what was expected
+    # To get the total time elapsed, you can go thru the on_state_changed args
+    # and sum up the start-to-start-to-start chain.
+    # It's really just the final one's start time, versus the first one's start time.
+
     def assert_on_state_changed_recorded_correct_time():
         total = timedelta()
         for e in events_from_on_state_changed_handler:
-            total = total + e.duration
+            total = total + e.duration  # Counting the duration works too
 
         total_duration = total.total_seconds()
 
         assert expected_sum_of_time_in_sec == total_duration
-        assert durations_between_events == total_duration
+        assert sum(durations_between_events_from_setup) == total_duration
 
     assert_on_state_changed_recorded_correct_time()
 
@@ -284,19 +289,44 @@ def test_activity_arbiter(activity_arbiter_and_setup):
     assert arbiter.state_machine.current_state.session.start_time == test_sessions[
         len(test_sessions) - 1].start_time
     
-    # To get the total time elapsed, you can go thru the on_state_changed args
-    # and sum up the start-to-start-to-start chain.
-    # It's really just the final one's start time, versus the first one's start time.
 
-    # You can also count the number of window pushes,
+    # To get the total time elapsed, you can also count the number of window pushes,
     # minus all the deductions made. The number should be the same.
 
-    t0 = events_from_on_state_changed_handler[0].start_time
-    t13 = events_from_on_state_changed_handler[final_event_index].start_time
-
-    print("t0:", t0)
-    print("t13:", t13)
-
     sec_per_min = 60
-    elapsed_time_in_test = (t13 - t0).total_seconds() / sec_per_min
-    assert elapsed_time_in_test == difference_between_start_and_2nd_to_last, f"The elapsed time was not as expected, perhaps due to {pulse_interval} interval pulse"
+    def assert_time_matches_in_on_state_changed():
+        t0 = events_from_on_state_changed_handler[0].start_time
+        t13 = events_from_on_state_changed_handler[final_event_index].start_time
+
+        elapsed_time_in_test = (t13 - t0).total_seconds() / sec_per_min
+        assert elapsed_time_in_test == minutes_between_start_and_2nd_to_last, f"The elapsed time was not as expected, perhaps due to {pulse_interval} interval pulse"
+
+    assert_time_matches_in_on_state_changed()
+
+    def assert_time_matches_in_keep_alive():
+        num_of_window_pushes = len(mock_activity_recorder.add_ten_sec_to_end_time.call_args_list)
+        num_of_deductions = len(mock_activity_recorder.deduct_duration.call_args_list)
+
+        keep_alive_tally_in_sec = 0
+        for i in range(0, num_of_window_pushes):
+            # Don't bother with what went in there, just add the window duration
+            keep_alive_tally_in_sec += keep_alive_pulse_delay
+            # Verify there is something in it
+            session = mock_activity_recorder.add_ten_sec_to_end_time.call_args_list[i][0][0]
+            assert isinstance(session, ProgramSession) or isinstance(session, ChromeSession)
+
+        for j in range(0, num_of_deductions):
+            # get deduction amt
+            duration = mock_activity_recorder.deduct_duration.call_args_list[j].args[0]        
+            if duration == 0 or duration == 10:
+                print("unwanted duration:", duration, "323ru")
+                
+            # assert duration > 0 and duration < 10
+            # tally deduction
+            keep_alive_tally_in_sec -= duration
+
+        keep_alive_tally_in_minutes = keep_alive_tally_in_sec / sec_per_min
+
+        assert keep_alive_tally_in_minutes == minutes_between_start_and_2nd_to_last
+
+    assert_time_matches_in_keep_alive()

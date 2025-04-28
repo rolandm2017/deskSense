@@ -69,7 +69,7 @@ t13 = early_morning + timedelta(minutes=second_to_last_time_change)
 t14 = early_morning + timedelta(minutes=final_time_change)
 
 # see t1 vs t13. t14 is left in the Arbiter, unfinished
-difference_between_start_and_2nd_to_last = second_to_last_time_change
+minutes_between_start_and_2nd_to_last = second_to_last_time_change
 
 times_for_system_clock = [t2, t3, t4, t5,
                           t6, t7, t8, t9, t10, t11, t12, t13, t14]

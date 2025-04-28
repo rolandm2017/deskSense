@@ -1,6 +1,7 @@
 import threading
 import time
 
+from surveillance.src.config.definitions import keep_alive_pulse_delay
 from surveillance.src.object.classes import ProgramSession, ChromeSession
 
 from surveillance.src.util.errors import MissingEngineError
@@ -36,18 +37,26 @@ class KeepAliveEngine:
         if session is None:
             raise ValueError("Session should not be None in KeepAliveEngine")
         self.recorder = dao_connection
-        keep_alive_pulse_len = 10
-        self.max_interval = keep_alive_pulse_len  # seconds
+        self.max_interval = keep_alive_pulse_delay  # seconds
         self.elapsed = 0
+        self.zero_remainder = 0
 
     def iterate_loop(self):
         self.elapsed += 1
         if self._hit_max_window():
+            print("looping ")
             self._pulse_add_ten()
             self.elapsed = 0
 
     def conclude(self):
-        self._deduct_remainder(self.elapsed)
+        # Skip deduction is it's going to be deducting 10 a fully used window
+        full_window_used = self.elapsed == self.max_interval
+        print(full_window_used, self.elapsed, keep_alive_pulse_delay, "52ru")
+        if full_window_used:
+            return
+        else:
+            print(f"trigger deduction, {self.elapsed}, 56ru")
+            self._deduct_remainder(self.elapsed)
 
     def _hit_max_window(self):
         return self.max_interval <= self.elapsed
@@ -66,14 +75,16 @@ class KeepAliveEngine:
 
         "Here's how much time was left unfinished in that window. Please remove it."
         """
-        # TODO: Skip deduction is it's going to be deducting 10 or 0. both are wrong
-        # If remainder = 0, do not do a deduction. The window was fully used!
-        # If remainder == 10, do not deduct a full window
-        # if remainder == 0:
-            # return
-            # nothing to deduct
+        # If remainder == 10, do not deduct the fully used window
+
+        full_window_used = remainder == 0
+        if full_window_used:
+            # Nothing to deduct.
+            return
         duration = self.calculate_remaining_window(remainder)
         print(f"{remainder}, doing deduction of {duration} for {self.session.get_name()}")
+        if duration == 10:
+            raise ValueError("Not supposed to be here")
         self.recorder.deduct_duration(duration, self.session)
 
     def calculate_remaining_window(self, used_amount):
