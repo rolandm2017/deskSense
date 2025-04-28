@@ -1,9 +1,15 @@
 from datetime import datetime, timedelta
+import pytz
 
 from surveillance.src.object.classes import ProgramSession, ChromeSession
 
-from surveillance.src.util.clock import SystemClock
+
 from surveillance.src.util.time_wrappers import UserLocalTime
+
+timezone_for_test = "Asia/Tokyo"  # UTC +9
+
+tokyo_tz = pytz.timezone(timezone_for_test)
+
 
 # ## Order:
 # Chrome - Claude
@@ -29,7 +35,6 @@ from surveillance.src.util.time_wrappers import UserLocalTime
 # (2) Chrome - Twitter.com
 # (1) Postman
 
-system_clock = SystemClock()
 
 # ## Chrome
 chrome = "Chrome"
@@ -43,33 +48,35 @@ postman = "Postman"
 pycharm = "PyCharm"
 ventrilo = "Ventrilo"
 
-dt = datetime(2025, 1, 25, 15, 5)
-
-now = system_clock.now()
+early_morning = tokyo_tz.localize(datetime(2025, 4, 1, 0, 0, 0))
 
 zero = 0
-second_to_last_time_change = 41
-final_time_change = 41 + 4
-t1 = now + timedelta(minutes=zero)
-t2 = now + timedelta(minutes=3)
-t3 = now + timedelta(minutes=8)
-t4 = now + timedelta(minutes=10)
-t5 = now + timedelta(minutes=14)
-t6 = now + timedelta(minutes=20)
-t7 = now + timedelta(minutes=25)
-t8 = now + timedelta(minutes=31)
-t9 = now + timedelta(minutes=32)
-t10 = now + timedelta(minutes=33)
-t11 = now + timedelta(minutes=36)
-t12 = now + timedelta(minutes=38)
-t13 = now + timedelta(minutes=second_to_last_time_change)
-t14 = now + timedelta(minutes=final_time_change)
+second_to_last_time_change = 8
+final_time_change = second_to_last_time_change + 1
+t1 = early_morning + timedelta(minutes=zero)
+t2 = early_morning + timedelta(minutes=1)
+t3 = early_morning + timedelta(minutes=2)
+t4 = early_morning + timedelta(minutes=2, seconds=30)
+t5 = early_morning + timedelta(minutes=3)
+t6 = early_morning + timedelta(minutes=3, seconds=35)
+t7 = early_morning + timedelta(minutes=4)
+t8 = early_morning + timedelta(minutes=4, seconds=40)
+t9 = early_morning + timedelta(minutes=5)
+t10 = early_morning + timedelta(minutes=5, seconds=50)
+t11 = early_morning + timedelta(minutes=6, seconds=55)
+t12 = early_morning + timedelta(minutes=7)
+t13 = early_morning + timedelta(minutes=second_to_last_time_change)
+t14 = early_morning + timedelta(minutes=final_time_change)
 
 # see t1 vs t13. t14 is left in the Arbiter, unfinished
 difference_between_start_and_2nd_to_last = second_to_last_time_change
 
 times_for_system_clock = [t2, t3, t4, t5,
                           t6, t7, t8, t9, t10, t11, t12, t13, t14]
+
+test_evenbts_elapsed_time_in_sec = (t14 - t1).total_seconds()
+
+
 
 # times_for_system_clock = [UserLocalTime(t2), UserLocalTime(t3), UserLocalTime(t4), UserLocalTime(t5),
 #                           UserLocalTime(t6), UserLocalTime(
@@ -154,5 +161,5 @@ test_sessions = [session1,
                  session11,
                  session12,
                  session13,
-                 session14,
+                 session14
                  ]
