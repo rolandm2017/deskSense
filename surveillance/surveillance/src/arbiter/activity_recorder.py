@@ -103,12 +103,12 @@ class ActivityRecorder:
             raise ValueError("Session start time was not set")
         today_start: UserLocalTime = get_start_of_day_from_ult(session.start_time)
         if isinstance(session, ProgramSession):
-            # print(
-            #     f"deducting {duration_in_sec} from {session.window_title}")
+            print(
+                f"deducting {duration_in_sec} from {session.window_title}")
             self.program_summary_dao.deduct_remaining_duration(
                 session, duration_in_sec, today_start)
         elif isinstance(session, ChromeSession):
-            # print(f"deducting {duration_in_sec} from {session.domain}")
+            print(f"deducting {duration_in_sec} from {session.domain}")
             self.chrome_summary_dao.deduct_remaining_duration(
                 session, duration_in_sec, today_start)
         else:

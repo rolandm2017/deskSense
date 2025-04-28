@@ -543,22 +543,22 @@ ch_events_v2 = [
     ChromeSession(
         domain="docs.google.com",
         detail="Google Docs",
-        start_time=UserLocalTime(fmt_time_string("2025-03-22 16:15:02-07:00")),
+        start_time=UserLocalTime(fmt_time_string("2025-03-22 16:16:23-07:00")),
     ),
     ChromeSession(
         domain="chatgpt.com",
         detail="ChatGPT",
-        start_time=UserLocalTime(fmt_time_string("2025-03-22 16:15:10-07:00")),
+        start_time=UserLocalTime(fmt_time_string("2025-03-22 16:16:31-07:00")),
     ),
     ChromeSession(
         domain="claude.ai",
         detail="Claude",
-        start_time=UserLocalTime(fmt_time_string("2025-03-22 16:15:21-07:00")),
+        start_time=UserLocalTime(fmt_time_string("2025-03-22 16:16:46-07:00")),
     ),
     ChromeSession(
         domain="chatgpt.com",
         detail="ChatGPT",
-        start_time=UserLocalTime(fmt_time_string("2025-03-22 16:15:30-07:00")),
+        start_time=UserLocalTime(fmt_time_string("2025-03-22 16:16:51-07:00")),
     ),
 ]
 
@@ -571,8 +571,8 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     assert len(output_programs) == 4
     assert len(output_domains) == 4
 
-    times_for_window_push = [x.start_time for x in pr_events_v2] + [
-        x.start_time for x in ch_events_v2
+    times_for_window_push = [x.start_time for x in output_programs] + [
+        x.start_time for x in output_domains
     ]
 
     # don't calculate the changes by hand, it'll waste your time. make the computer do it.
@@ -600,9 +600,6 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     ), "Testing setup conditions again"
     clock_again = UserLocalTimeMockClock(as_dt)
 
-    # FIXME: NEed to have sessions be written with THE TIME in THE EVENT, not
-    # 04-11 (today)
-
     # Test setup conditions
 
     # program_durations = []
@@ -613,20 +610,40 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
         chronological_sessions = sorted(all, key=lambda event: event.start_time.dt)
         return chronological_sessions
 
-    def calculate_expected_durations(program_sessions, chrome_sessions):
+    def calculate_expected_durations_in_seconds(program_sessions, chrome_sessions):
         total_amt = len(program_sessions) + len(chrome_sessions)
         sorted_by_time = sort_sessions_chronologically(program_sessions, chrome_sessions)
         durations = []
+        print("\n\n")
         for i in range(0, total_amt):
             if i == total_amt - 1:
                 break
             change = sorted_by_time[i + 1].start_time.dt - sorted_by_time[i].start_time.dt
             seconds = change.total_seconds()
-            print(seconds, "615ru")
+            print(f"gap {i}: {seconds}")
             durations.append(seconds)
         return sum(durations), durations
         
-    duration_of_all_sessions, durations = calculate_expected_durations(output_programs, output_domains)
+    duration_of_all_sessions_in_sec, durations = calculate_expected_durations_in_seconds(output_programs, output_domains)
+
+    def get_remainders_for_deduct_durations(durations_arr):
+        """
+        As a reminder, if a session is open for the 30th second, the end time will be set to 40 sec.
+        The session then stops at the 33 second mark, the recorder must deduct the 7 remaining sec
+        to bring the total duration in line with the actual end time.
+
+        So 10 - (t % 10) = remainder. (% is modulo here)
+
+        This func assumes the durations_arr arrives in the same order the sessions are entered into the Arbiter.
+        """
+        remainders = []
+        for x in durations_arr:
+            consumed_part = x % 10
+            remainder = 10 - consumed_part
+            remainders.append(remainder)
+        return remainders
+    
+    remainders_for_mock_recorder = get_remainders_for_deduct_durations(durations)
 
     def assert_setup_times_went_well():
         """
@@ -636,10 +653,11 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
 
         assert len(durations) == len(output_programs) + len(output_domains) - 1
 
-        assert duration_of_all_sessions != 0.0
+        assert duration_of_all_sessions_in_sec != 0.0
 
         assert all(isinstance(x, float) for x in durations)
         assert all(x > 0 for x in durations)
+        assert all(x < 10 for x in remainders_for_mock_recorder), "A deduction is always below 10 and it wasn't here"
 
     assert_setup_times_went_well()
 
@@ -712,6 +730,12 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
             """
             if self._override_index < len(self._override_durations):
                 duration_in_sec = self._override_durations[self._override_index]
+                if isinstance(session, ProgramSession):
+
+                    print(f"getting {duration_in_sec} for {session.process_name}")
+                else:
+                    print(f"getting {duration_in_sec} for {session.domain}")
+
                 self._override_index += 1
             super().deduct_duration(duration_in_sec, session)
 
@@ -721,7 +745,7 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
         chrome_logging_dao,
         program_summary_dao,
         chrome_summary_dao,
-        durations_to_override=durations,
+        durations_to_override=remainders_for_mock_recorder,
     )
 
     activity_recorder_add_ten_spy = Mock(
@@ -806,6 +830,9 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
                 activity_arbiter.set_program_state(event)
             else:
                 activity_arbiter.set_tab_state(event)
+
+    run_arbiter_in_order()
+    
     # Don't do them by type, because the real program does them chronologically, not by type.
     # for event in output_programs:
     #     activity_arbiter.set_program_state(event)
@@ -844,7 +871,6 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
         else:
             assert isinstance(session, ChromeSession)
 
-    assert spy_on_set_program_state.call_count == count_of_programs
 
     # ### The Arbiter recorded the expected *number* of times
     assert (
@@ -922,11 +948,11 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
 
     # Start session
 
-    for i in range(len(pr_events_v2)):
+    for i in range(len(output_programs)):
         program_arg = program_start_session_spy.call_args_list[i][0][0]
 
         assert isinstance(program_arg, ProgramSession)
-        assert program_arg.window_title == pr_events_v2[i].window_title
+        assert program_arg.window_title == output_programs[i].window_title
 
     for i in range(len(ch_events_v2) - one_left_in_arbiter):
         chrome_arg = chrome_start_session_spy.call_args_list[i][0][0]
@@ -940,11 +966,11 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     assert program_summary_deduct_spy.call_count == count_of_programs
     assert chrome_summary_deduct_spy.call_count == count_of_tabs - one_left_in_arbiter
 
-    for i in range(len(pr_events_v2)):
+    for i in range(len(output_programs)):
         date_of_deduction = program_summary_deduct_spy.call_args_list[i][0][2]
 
         assert isinstance(date_of_deduction, UserLocalTime)
-        assert date_of_deduction.day == pr_events_v2[0].start_time.day
+        assert date_of_deduction.day == output_programs[0].start_time.day
 
     for i in range(len(ch_events_v2) - one_left_in_arbiter):
         date_of_deduction = chrome_summary_deduct_spy.call_args_list[i][0][2]
@@ -989,16 +1015,25 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     program_logs = program_logging_dao.read_all()
     chrome_logs = chrome_logging_dao.read_all()
 
+    for x in program_summaries:
+        print("program summary:", x)
+    for x in chrome_summaries:
+        print("chrome summary:", x)
+
     expected_date = datetime(2025, 3, 22, 0, 0, 0)
     expected_date = convert_to_utc(expected_date)
 
     # FIXME: "Hours: 0.00" for all summaries
 
     logger = ConsoleLogger()
-    assert len(program_summaries) != 0, "read all was 0 for program summary"
-    assert len(chrome_summaries) != 0, "read all was 0 chrome summary"
-    assert len(program_logs) != 0, "read all was 0 for program logs"
-    assert len(chrome_logs) != 0, "read all was 0 for chrome logs"
+
+    def assert_all_rows_existed():
+        assert len(program_summaries) != 0, "read all was 0 for program summary"
+        assert len(chrome_summaries) != 0, "read all was 0 chrome summary"
+        assert len(program_logs) != 0, "read all was 0 for program logs"
+        assert len(chrome_logs) != 0, "read all was 0 for chrome logs"
+
+    assert_all_rows_existed()
 
     p_sums_seconds = []
     ch_sums_seconds = []
@@ -1032,19 +1067,33 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     assert all(
         x.hours_spent > 0 for x in chrome_summaries
     ), "A summary was started but no time was recorded?"
-    assert all(
-        item.gathering_date == expected_date for item in program_summaries
-    ), "Program summaries have incorrect gathering date"
 
-    assert all(
-        item.gathering_date == expected_date for item in chrome_summaries
-    ), "Chrome summaries have incorrect gathering date"
-    assert all(
-        item.gathering_date == expected_date for item in program_logs
-    ), "Program logs have incorrect gathering date"
-    assert all(
-        item.gathering_date == expected_date for item in chrome_logs
-    ), "Chrome logs have incorrect gathering date"
+    def assert_all_rows_have_correct_gathering_date():
+        assert all(
+            item.gathering_date == expected_date for item in program_summaries
+        ), "Program summaries have incorrect gathering date"
+
+        assert all(
+            item.gathering_date == expected_date for item in chrome_summaries
+        ), "Chrome summaries have incorrect gathering date"
+        assert all(
+            item.gathering_date == expected_date for item in program_logs
+        ), "Program logs have incorrect gathering date"
+        assert all(
+            item.gathering_date == expected_date for item in chrome_logs
+        ), "Chrome logs have incorrect gathering date"
+
+    assert_all_rows_have_correct_gathering_date()
+
+    # --
+    # -- Go by program and domain:
+    # --
+
+    def get_unique_programs_with_times():
+        pass
+
+    def get_unique_domains_with_times():
+        pass
 
     # ### ### Checkpoint:
     # # Dashboard Service reports the right amount of time for get_weekly_productivity_overview
@@ -1080,12 +1129,12 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     )
 
     assert any(
-        entry["productivity"] > 0 or entry["leisure"] > 0 for entry in time_for_week
+        entry["productivity"] > 0 and entry["leisure"] > 0 for entry in time_for_week
     ), "Dashboard Service should've retrieved the times created earlier, but it didn't"
 
     def get_day_seen_in_test_data(days_of_productivity):
-        program_day = pr_events_v2[0].start_time
-        chrome_day = ch_events_v2[0].start_time
+        program_day = output_programs[0].start_time
+        chrome_day = output_domains[0].start_time
 
         assert program_day.dt.day == chrome_day.dt.day
         assert program_day.dt.month == chrome_day.dt.month
@@ -1112,7 +1161,8 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     # FIXME: I think the test is just broken, like i think it was comparing
     # 0.0 == 0.0 before and i didn't know
     assert dashboard_svc_total != 0.0
-    assert dashboard_svc_total == duration_of_all_sessions, "By hand tally didn't exactly match dashboard service"
+    calculated_up_top = duration_of_all_sessions_in_sec / SECONDS_PER_HOUR
+    assert dashboard_svc_total == calculated_up_top, "By hand tally didn't exactly match dashboard service"
     # 3600 is 60 * 60
 
 

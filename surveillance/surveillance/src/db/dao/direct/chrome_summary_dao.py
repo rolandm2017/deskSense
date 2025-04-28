@@ -165,6 +165,8 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
                 raise ImpossibleToGetHereError(
                     "Session should exist before deduct_remaining_duration occurs")
             new_duration = domain.hours_spent - duration_in_sec / SECONDS_PER_HOUR
+
+            print(duration_in_sec, domain, "169ru")
             self.throw_if_negative(domain.domain_name, new_duration)
             domain.hours_spent = new_duration
             db_session.commit()
