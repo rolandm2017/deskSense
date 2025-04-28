@@ -614,17 +614,27 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
         total_amt = len(program_sessions) + len(chrome_sessions)
         sorted_by_time = sort_sessions_chronologically(program_sessions, chrome_sessions)
         durations = []
+
+        time_tally_in_sec = {}
         print("\n\n")
         for i in range(0, total_amt):
             if i == total_amt - 1:
                 break
             change = sorted_by_time[i + 1].start_time.dt - sorted_by_time[i].start_time.dt
             seconds = change.total_seconds()
+            if isinstance(sorted_by_time[i], ProgramSession):
+                tally_key = sorted_by_time[i].exe_path
+            else:
+                tally_key = sorted_by_time[i].domain
+            if tally_key in time_tally_in_sec:
+                time_tally_in_sec[tally_key] += seconds
+            else:
+                time_tally_in_sec[tally_key] = seconds
             print(f"gap {i}: {seconds}")
             durations.append(seconds)
-        return sum(durations), durations
+        return sum(durations), durations, time_tally_in_sec
         
-    duration_of_all_sessions_in_sec, durations = calculate_expected_durations_in_seconds(output_programs, output_domains)
+    duration_of_all_sessions_in_sec, durations, inputs_with_sums_in_sec = calculate_expected_durations_in_seconds(output_programs, output_domains)
 
     def get_remainders_for_deduct_durations(durations_arr):
         """
@@ -664,15 +674,19 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     program_logging_dao = ProgramLoggingDao(regular_session)
     chrome_logging_dao = ChromeLoggingDao(regular_session)
 
-    program_push_spy = Mock(side_effect=program_logging_dao.push_window_ahead_ten_sec)
-    program_start_session_spy = Mock(side_effect=program_logging_dao.start_session)
-    chrome_push_spy = Mock(side_effect=chrome_logging_dao.push_window_ahead_ten_sec)
-    chrome_start_session_spy = Mock(side_effect=chrome_logging_dao.start_session)
+    program_logging_push_spy = Mock(side_effect=program_logging_dao.push_window_ahead_ten_sec)
 
-    program_logging_dao.push_window_ahead_ten_sec = program_push_spy
-    program_logging_dao.start_session = program_start_session_spy
-    chrome_logging_dao.push_window_ahead_ten_sec = chrome_push_spy
-    chrome_logging_dao.start_session = chrome_start_session_spy
+    program_logging_start_session_spy = Mock(side_effect=program_logging_dao.start_session)
+
+    chrome_logging_push_spy = Mock(side_effect=chrome_logging_dao.push_window_ahead_ten_sec)
+
+    chrome_logging_start_session_spy = Mock(side_effect=chrome_logging_dao.start_session)
+
+    program_logging_dao.start_session = program_logging_start_session_spy
+    chrome_logging_dao.start_session = chrome_logging_start_session_spy
+
+    program_logging_dao.push_window_ahead_ten_sec = program_logging_push_spy
+    chrome_logging_dao.push_window_ahead_ten_sec = chrome_logging_push_spy
 
     program_summary_dao = ProgramSummaryDao(
         program_logging_dao, regular_session, plain_asm
@@ -681,9 +695,15 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
         chrome_logging_dao, regular_session, plain_asm
     )
 
-   
+
 
     # Create spies on the DAOs' push window methods
+    program_sum_start_session_spy = Mock(side_effect=program_summary_dao.start_session)
+    program_summary_dao.start_session = program_sum_start_session_spy
+
+    chrome_sum_start_session_spy = Mock(side_effect=chrome_summary_dao.start_session)
+    chrome_summary_dao.start_session = chrome_sum_start_session_spy
+
     program_summary_push_spy = Mock(
         side_effect=program_summary_dao.push_window_ahead_ten_sec
     )
@@ -882,7 +902,7 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     # #
     # ### [Recorder layer]
     # #
-    assert program_start_session_spy.call_count == len(
+    assert program_logging_start_session_spy.call_count == len(
         output_programs
     ), "Expected each session to make it through one time"
 
@@ -907,6 +927,43 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     #
     # The DAOs were called in the expected order with the expected args
     #
+
+    def assert_start_sessions_were_normal():
+        program_sum_start_session_spy
+        chrome_sum_start_session_spy
+        program_logging_start_session_spy
+        chrome_logging_start_session_spy
+        pass
+
+    def assert_window_push_was_normal():
+        program_summary_push_spy
+        chrome_summary_push_spy
+        program_logging_push_spy
+        chrome_logging_push_spy
+        pass
+
+    def assert_finalize_logs_was_normal():
+        pr_finalize_spy
+        ch_finalize_spy
+        pass
+
+    def assert_deduct_remaining_duration_worked():
+        program_summary_deduct_spy
+        chrome_summary_deduct_spy
+        pass
+
+    def assert_dao_layer_went_as_expected():
+        pass
+        
+
+
+        # On state changed
+
+        # Window push
+
+        # Finalize logs
+
+        pass
 
     def assert_all_start_sessions_were_proper():
         for x in range(0, len(output_programs)):
@@ -943,19 +1000,19 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     # # Summary DAO tests
     # #
 
-    assert program_start_session_spy.call_count == count_of_programs
-    assert chrome_start_session_spy.call_count == count_of_tabs
+    assert program_sum_start_session_spy.call_count == count_of_programs
+    assert chrome_sum_start_session_spy.call_count == count_of_tabs
 
     # Start session
 
     for i in range(len(output_programs)):
-        program_arg = program_start_session_spy.call_args_list[i][0][0]
+        program_arg = program_logging_start_session_spy.call_args_list[i][0][0]
 
         assert isinstance(program_arg, ProgramSession)
         assert program_arg.window_title == output_programs[i].window_title
 
     for i in range(len(ch_events_v2) - one_left_in_arbiter):
-        chrome_arg = chrome_start_session_spy.call_args_list[i][0][0]
+        chrome_arg = program_logging_start_session_spy.call_args_list[i][0][0]
         # right_now_arg = chrome_summary_push_spy.call_args_list[i][0][1]
 
         assert isinstance(chrome_arg, ChromeSession)
@@ -1089,10 +1146,44 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     # -- Go by program and domain:
     # --
 
-    def get_unique_programs_with_times():
-        pass
+    def get_unique_programs_with_times(program_summaries):
+        tally_dict = {}
+        for program in program_summaries:
+            if program.exe_path_as_id in tally_dict:
+                tally_dict[program.exe_path_as_id] += program.hours_spent
+            else:
+                tally_dict[program.exe_path_as_id] = program.hours_spent
+        return tally_dict
 
-    def get_unique_domains_with_times():
+    def get_unique_domains_with_times(chrome_summaries):
+        tally_dict = {}
+        for domain in chrome_summaries:
+            if domain.domain_name in tally_dict:
+                tally_dict[domain.domain_name] += domain.hours_spent
+            else:
+                tally_dict[domain.domain_name] = domain.hours_spent
+        return tally_dict
+    
+    program_tally = get_unique_programs_with_times(program_summaries)
+    chrome_tally = get_unique_domains_with_times(chrome_summaries)
+
+    program_keys = program_tally.keys()
+    chrome_keys = chrome_tally.keys()
+
+    for key, dao_tally in program_tally.items():
+        converted = inputs_with_sums_in_sec[key] / SECONDS_PER_HOUR
+        assert converted == dao_tally
+    for key, dao_tally in chrome_tally.items():
+        converted = inputs_with_sums_in_sec[key] / SECONDS_PER_HOUR
+        assert converted == dao_tally
+
+    # for key, tally in inputs_with_sums.items():
+    #     assert key in program_keys or key in chrome_keys
+    #     assert
+
+    # Check that the DAO's tally matches the hand made one at the top of the file
+
+    def assert_all_programs_had_expected_times():
         pass
 
     # ### ### Checkpoint:

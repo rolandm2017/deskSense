@@ -49,14 +49,14 @@ class ActivityRecorder:
             if session_exists_already:
                 self.program_summary_dao.start_window_push_for_session(session, now)
                 return
-            self.program_summary_dao.start_session(session, now)
+            self.program_summary_dao.start_session(session, session.start_time)
         elif isinstance(session, ChromeSession):
             self.chrome_logging_dao.start_session(session)
             session_exists_already = self.chrome_summary_dao.find_todays_entry_for_domain(
                 session)
             if session_exists_already:
                 return
-            self.chrome_summary_dao.start_session(session, now)
+            self.chrome_summary_dao.start_session(session, session.start_time)
         else:
             raise TypeError("Session was not the right type")
 
@@ -64,8 +64,6 @@ class ActivityRecorder:
         """
         Pushes the end of the window forward ten sec so that, 
         when the computer shuts down, the end time was "about right" anyways.
-
-        The session.start_time cannot serve as the source of time here, so the clock is used.
         """
         if session is None:
             raise ValueError("Session was None in add_ten_sec")
