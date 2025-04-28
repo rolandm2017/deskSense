@@ -27,6 +27,9 @@ class KeepAliveEngine:
         The benefit is that the program can shutdown ~whenever~ and
         the end time of the final program will be pretty much accurate,
         while every other program will be bang on.
+
+        The meaning of the interval between iterate_loop() calls is 
+        agnostic, dependent on the delay between calls in the container.
         """
         self.session = session
         if session is None:
@@ -53,13 +56,7 @@ class KeepAliveEngine:
         """
         Go into the session's Summary DAO entry and add ten sec.
         """
-        # current_end_time = self.dao.get_end_for_session(session)
-        # updated_end_time = current_end_time + timedelta(seconds=10)
         self.recorder.add_ten_sec_to_end_time(self.session)
-        # async_task = self.dao.add_ten_sec_to_end_time(self.session)
-        # # FIXME: this isn't reached
-        # if asyncio.iscoroutine(async_task):
-        #     self.loop.create_task(async_task)
 
     def _deduct_remainder(self, remainder):
         """
@@ -71,9 +68,6 @@ class KeepAliveEngine:
         """
         duration = self.calculate_remaining_window(remainder)
         self.recorder.deduct_duration(duration, self.session)
-        # async_task = self.dao.deduct_duration(duration, self.session)
-        # if asyncio.iscoroutine(async_task):
-        #     self.loop.create_task(async_task)
 
     def calculate_remaining_window(self, used_amount):
         window_length = self.max_interval  # 10
@@ -115,8 +109,12 @@ class ThreadedEngineContainer:
 
     def _iterate_loop(self):
         while not self.stop_event.is_set():
-            self.engine.iterate_loop()  # Claude: this is line 117
+            self.engine.iterate_loop()
             self.sleep_fn(self.interval)  # Sleep for 1 second
+    
+    def replace_engine(self, new_engine):
+        """Used to maintain container objects between sessions"""
+        pass
 
     def stop(self):
         """
