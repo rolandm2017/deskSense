@@ -13,7 +13,7 @@ from surveillance.src.util.copy_util import snapshot_obj_for_tests
 
 
 class ActivityArbiter:
-    def __init__(self, user_facing_clock, threaded_container,
+    def __init__(self, user_facing_clock, threaded_container: ThreadedEngineContainer,
                     engine_class=KeepAliveEngine):
         """
         This class exists to prevent the Chrome Service from doing ANYTHING but reporting which tab is active.

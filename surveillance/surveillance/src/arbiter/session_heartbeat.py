@@ -47,7 +47,6 @@ class KeepAliveEngine:
             self.elapsed = 0
 
     def conclude(self):
-        print(self.elapsed, "concluding 50ru")
         self._deduct_remainder(self.elapsed)
 
     def _hit_max_window(self):
@@ -67,7 +66,14 @@ class KeepAliveEngine:
 
         "Here's how much time was left unfinished in that window. Please remove it."
         """
+        # TODO: Skip deduction is it's going to be deducting 10 or 0. both are wrong
+        # If remainder = 0, do not do a deduction. The window was fully used!
+        # If remainder == 10, do not deduct a full window
+        # if remainder == 0:
+            # return
+            # nothing to deduct
         duration = self.calculate_remaining_window(remainder)
+        print(f"{remainder}, doing deduction of {duration} for {self.session.get_name()}")
         self.recorder.deduct_duration(duration, self.session)
 
     def calculate_remaining_window(self, used_amount):

@@ -144,8 +144,10 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
 
         9 times out of 10. So we deduct the unfinished duration from its hours_spent.
         """
+        if duration_in_sec == 0:
+            return  # No work to do here
+
         target_domain = session.domain
-        
 
         tomorrow_start = today_start.dt + timedelta(days=1)
 

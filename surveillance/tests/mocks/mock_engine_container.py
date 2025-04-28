@@ -50,11 +50,14 @@ class MockEngineContainer(ThreadedEngineContainer):
         if self.engine is None:
             raise MissingEngineError()
         # Get the duration for the nth run from the iter
-        duration_for_run = next(self.duration_iter)
-        self.count = 1
-        print(f"duration for run: {duration_for_run} in run {self.count}")
-        for i in range(0, duration_for_run):
-            self.engine.iterate_loop()
+        try:
+            duration_for_run = next(self.duration_iter)
+            self.count += 1  # Increment the count here
+            print(f"duration for run: {duration_for_run} in run {self.count}")
+            for i in range(0, duration_for_run):
+                self.engine.iterate_loop()
+        except StopIteration:
+            print("No more durations available in the iterator")
         
     def _iterate_loop(self):
         pass

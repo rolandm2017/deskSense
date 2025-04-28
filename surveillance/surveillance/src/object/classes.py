@@ -41,6 +41,10 @@ class ProgramSession:
             productive=self.productive
         )
 
+    def get_name(self):
+        """Useful because a string id property isn't common across both classes"""
+        return self.process_name
+
     def parse_time_string(self, time_str):
         return parse_time_string(time_str)
 
@@ -121,6 +125,10 @@ class ChromeSession:
             end_time=end_time,
             productive=self.productive
         )
+    
+    def get_name(self):
+        """Useful because a string id property isn't common across both classes"""
+        return self.domain
 
     @staticmethod
     def parse_time_string(time_str):
