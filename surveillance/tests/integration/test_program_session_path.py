@@ -132,7 +132,7 @@ log_counter = 0
 
 # @pytest.mark.skip
 @pytest.mark.asyncio
-async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, regular_session, mock_async_session_maker):
+async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, db_session_in_mem, mock_async_session_maker):
     """
     The goal of the test is to prove that programSesssions get thru the DAO layer fine
     
@@ -206,19 +206,19 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
     asm_set_new_session_spy = Mock(side_effect=activity_arbiter.state_machine.set_new_session)
     activity_arbiter.state_machine.set_new_session = asm_set_new_session_spy
 
-    p_logging_dao = ProgramLoggingDao(regular_session)
-    chrome_logging_dao = ChromeLoggingDao(regular_session)
+    p_logging_dao = ProgramLoggingDao(db_session_in_mem)
+    chrome_logging_dao = ChromeLoggingDao(db_session_in_mem)
 
     p_summary_dao = ProgramSummaryDao(
-        p_logging_dao, regular_session, mock_async_session_maker)
+        p_logging_dao, db_session_in_mem, mock_async_session_maker)
     chrome_sum_dao = ChromeSummaryDao(
-        chrome_logging_dao, regular_session, mock_async_session_maker)
+        chrome_logging_dao, db_session_in_mem, mock_async_session_maker)
 
     mock_message_receiver = MockMessageReceiver()
 
     chrome_svc = ChromeService(wont_be_used, activity_arbiter)
     surveillance_manager = SurveillanceManager(cast(UserFacingClock, mock_user_facing_clock),
-                                               mock_async_session_maker, regular_session, chrome_svc, activity_arbiter, facades, mock_message_receiver)
+                                               mock_async_session_maker, db_session_in_mem, chrome_svc, activity_arbiter, facades, mock_message_receiver)
 
     window_change_spy = Mock(
         side_effect=surveillance_manager.program_tracker.window_change_handler)
@@ -568,7 +568,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data, 
 
 
 @pytest.mark.asyncio
-async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, regular_session, mock_async_session_maker):
+async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, db_session_in_mem, mock_async_session_maker):
     """
     The goal of the test is to prove that programSesssions get thru the DAO layer fine
     
@@ -646,19 +646,19 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data, re
     asm_set_new_session_spy = Mock(side_effect=activity_arbiter.state_machine.set_new_session)
     activity_arbiter.state_machine.set_new_session = asm_set_new_session_spy
 
-    p_logging_dao = ProgramLoggingDao(regular_session)
-    chrome_logging_dao = ChromeLoggingDao(regular_session)
+    p_logging_dao = ProgramLoggingDao(db_session_in_mem)
+    chrome_logging_dao = ChromeLoggingDao(db_session_in_mem)
 
     p_summary_dao = ProgramSummaryDao(
-        p_logging_dao, regular_session, mock_async_session_maker)
+        p_logging_dao, db_session_in_mem, mock_async_session_maker)
     chrome_sum_dao = ChromeSummaryDao(
-        chrome_logging_dao, regular_session, mock_async_session_maker)
+        chrome_logging_dao, db_session_in_mem, mock_async_session_maker)
 
     mock_message_receiver = MockMessageReceiver()
 
     chrome_svc = ChromeService(wont_be_used, activity_arbiter)
     surveillance_manager = SurveillanceManager(cast(UserFacingClock, mock_user_facing_clock),
-                                               mock_async_session_maker, regular_session, chrome_svc, activity_arbiter, facades, mock_message_receiver)
+                                               mock_async_session_maker, db_session_in_mem, chrome_svc, activity_arbiter, facades, mock_message_receiver)
 
     window_change_spy = Mock(
         side_effect=surveillance_manager.program_tracker.window_change_handler)

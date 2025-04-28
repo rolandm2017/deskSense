@@ -355,7 +355,7 @@ def sync_engine():
 
 @pytest.fixture(scope="function")
 def regular_session(sync_engine):
-    """Create a synchronous session maker. So-called because it *only* goes into a SystemStatusDAO."""
+    """Create a synchronous session maker."""
     from sqlalchemy.orm import sessionmaker
 
     session_maker = sessionmaker(
