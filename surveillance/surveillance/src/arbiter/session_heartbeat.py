@@ -38,11 +38,12 @@ class KeepAliveEngine:
             raise ValueError("Session should not be None in KeepAliveEngine")
         self.recorder = dao_connection
         self.max_interval = keep_alive_pulse_delay  # seconds
+        # starts at 1 because the end of the container's sleep triggers the loop, so 1 is "1 sec used"
         self.amount_used = 0
         self.zero_remainder = 0
 
     def iterate_loop(self):
-        self.amount_used += 1
+        self.amount_used += 1  # not
         if self._hit_max_window():
             self._pulse_add_ten()
             self.amount_used = 0
@@ -54,9 +55,13 @@ class KeepAliveEngine:
         """
         # Skip deduction is it's going to be deducting 10 a fully used window
         amount_of_window_used = self.amount_used
-
-        if self.should_do_deduction(amount_of_window_used):
-            self._deduct_remainder(amount_of_window_used)
+        # Note that if it gets to
+        # self.amount_used = 10, that becomes self.amount_used = 0.
+        # So if the amount used is 0 (really 10), there really should be 10 units withdrawn, since
+        # a brand new window push just happened. Said another way, the counter getting to 10 (0) consumed
+        # the final bit of that counter's window. The brand new window that was just opened
+        # in pulse_add_ten must therefore be deleted.
+        self._deduct_remainder(amount_of_window_used)
 
     def should_do_deduction(self, used_amount):
         return used_amount < window_push_length
@@ -78,15 +83,12 @@ class KeepAliveEngine:
 
         "Here's how much time was left unfinished in that window. Please remove it."
         """
-        # If remainder == 10, do not deduct the fully used window
-
         full_window_used = used_part_of_window == window_push_length
         if full_window_used:
-            # Nothing to deduct.
-            return
+            raise ValueError("Looks like trying to deduct a full window")
         remainder = self.calculate_remaining_window(used_part_of_window)
         if remainder == 0:
-            raise ValueError("Trying to deduct 0")
+            raise ValueError("Looks like trying to deduct a full window")
         self.recorder.deduct_duration(remainder, self.session)
 
     def calculate_remaining_window(self, used_amount):
@@ -130,7 +132,7 @@ class ThreadedEngineContainer:
         if self.engine is None:
             raise MissingEngineError()
         while not self.stop_event.is_set():
-            self.engine.iterate_loop()
+            self.engine.iterate_loop()  # a second has been used
             self.sleep_fn(self.interval)  # Sleep for 1 second
     
     def replace_engine(self, new_engine):

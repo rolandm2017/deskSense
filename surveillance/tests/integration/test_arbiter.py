@@ -308,6 +308,13 @@ def test_activity_arbiter(activity_arbiter_and_setup):
         num_of_deductions = len(mock_activity_recorder.deduct_duration.call_args_list)
 
         keep_alive_tally_in_sec = 0
+
+        # For each session, if the session made it to
+        # the session would have on_new_session either window push, or add ten sec in start_session.
+        # So we have to add ten sec per entry.
+        from_on_new_session = 10
+        for i in range(0, len(test_sessions)):
+            keep_alive_tally_in_sec += from_on_new_session
         for i in range(0, num_of_window_pushes):
             # Don't bother with what went in there, just add the window duration
             keep_alive_tally_in_sec += keep_alive_pulse_delay
@@ -317,13 +324,15 @@ def test_activity_arbiter(activity_arbiter_and_setup):
 
         for j in range(0, num_of_deductions):
             # get deduction amt
-            duration = mock_activity_recorder.deduct_duration.call_args_list[j].args[0]        
-            if duration == 0 or duration == 10:
-                print("unwanted duration:", duration, "323ru")
+            deduction = mock_activity_recorder.deduct_duration.call_args_list[j].args[0]        
+            if deduction == 0:
+                raise ValueError("Zero deduction")
+            if deduction == 10:
+                print("unwanted duration:", deduction, "323ru")
                 
             # assert duration > 0 and duration < 10
             # tally deduction
-            keep_alive_tally_in_sec -= duration
+            keep_alive_tally_in_sec -= deduction
 
         keep_alive_tally_in_minutes = keep_alive_tally_in_sec / sec_per_min
 
