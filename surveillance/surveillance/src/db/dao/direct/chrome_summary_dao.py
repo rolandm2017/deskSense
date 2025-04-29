@@ -15,7 +15,7 @@ from surveillance.src.object.classes import ChromeSession
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.errors import NegativeTimeError, ImpossibleToGetHereError
 from surveillance.src.util.const import SECONDS_PER_HOUR
-from surveillance.src.util.time_formatting import get_start_of_day, convert_to_timezone
+from surveillance.src.util.time_formatting import get_start_of_day, get_start_of_day_from_datetime
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 
@@ -117,7 +117,7 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         NOTE: This only ever happens after start_session
         """
         target_domain = chrome_session.domain
-        today_start = get_start_of_day(right_now.dt)
+        today_start = get_start_of_day_from_datetime(right_now.dt)
         tomorrow_start = today_start + timedelta(days=1)
 
         query = select(DailyDomainSummary).where(

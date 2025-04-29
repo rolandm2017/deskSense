@@ -7,6 +7,8 @@ def test_whole_tens():
     b = 40
     c = 90
 
+    assert isinstance(count_full_loops(a), int)
+
     assert count_full_loops(a) == 1
     assert count_full_loops(b) == 4
     assert count_full_loops(c) == 9
@@ -22,6 +24,8 @@ def test_uneven_loops():
     a = 33
     b = 99
     c = 14
+
+    assert isinstance(count_full_loops(a), int)
 
     assert count_full_loops(a) == 3
     assert count_full_loops(b) == 9

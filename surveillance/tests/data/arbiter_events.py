@@ -78,12 +78,12 @@ test_evenbts_elapsed_time_in_sec = (t14 - t1).total_seconds()
 
 
 
-# times_for_system_clock = [UserLocalTime(t2), UserLocalTime(t3), UserLocalTime(t4), UserLocalTime(t5),
-#                           UserLocalTime(t6), UserLocalTime(
-#                               t7), UserLocalTime(t8), UserLocalTime(t9),
-#                           UserLocalTime(t10), UserLocalTime(
-#                               t11), UserLocalTime(t12), UserLocalTime(t13),
-#                           UserLocalTime(t14)]
+times_for_system_clock_as_ult = [UserLocalTime(t2), UserLocalTime(t3), UserLocalTime(t4), UserLocalTime(t5),
+                          UserLocalTime(t6), UserLocalTime(
+                              t7), UserLocalTime(t8), UserLocalTime(t9),
+                          UserLocalTime(t10), UserLocalTime(
+                              t11), UserLocalTime(t12), UserLocalTime(t13),
+                          UserLocalTime(t14)]
 
 
 pycharm_path = "C:/pycharm.exe"

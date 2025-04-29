@@ -12,28 +12,6 @@ from surveillance.src.object.enums import ChartEventType, SystemStatusType
 from surveillance.src.config.definitions import max_content_len
 
 
-class TypingSession(Base):
-    __tablename__ = "typing_sessions"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-
-    def __repr__(self):
-        return f"TypingSession(id={self.id}, start_time={self.start_time}, end_time={self.end_time})"
-
-
-class MouseMove(Base):
-    __tablename__ = "mouse_moves"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-
-    def __repr__(self):
-        return f"MouseMove(id={self.id}, start_time={self.start_time})"
-
-
 class DailySummaryBase(Base):
     """
     Base class for summary models with common fields
@@ -56,7 +34,12 @@ class DailyProgramSummary(DailySummaryBase):
     __tablename__ = "daily_program_summaries"
 
     exe_path_as_id: Mapped[str] = mapped_column(String)  # unique identifier
+    process_name: Mapped[str] = mapped_column(String)
     program_name: Mapped[str] = mapped_column(String)
+
+    def get_name(self):
+        return self.process_name
+
 
     def __str__(self):
         formatted_date = self.gathering_date.strftime(
@@ -71,6 +54,10 @@ class DailyDomainSummary(DailySummaryBase):
     __tablename__ = "daily_chrome_summaries"
 
     domain_name = Column(String)
+
+    def get_name(self):
+        return self.domain_name
+
 
     def __str__(self):
         formatted_date = self.gathering_date.strftime(
@@ -89,7 +76,7 @@ class SummaryLogBase(Base):
     # time stuff
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    duration = Column(Float, nullable=True)
+    duration = Column(Float, nullable=True)  # FIXME: duration is not being set in the DAOs. Also, duration in what, hours? years?
     # The date on which the data was gathered
     gathering_date = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True))
@@ -105,6 +92,9 @@ class ProgramSummaryLog(SummaryLogBase):
     process_name: Mapped[str] = mapped_column(String)
     program_name: Mapped[str] = mapped_column(String)
 
+    def get_name(self):
+        return self.process_name
+
     def __str__(self):
         return f"ProgramSummaryLog(program_name={self.program_name}, hours_spent={self.hours_spent}, " \
             f"start_time={self.start_time}, end_time={self.end_time}, " \
@@ -116,10 +106,36 @@ class DomainSummaryLog(SummaryLogBase):
 
     domain_name: Mapped[str] = mapped_column(String)
 
+    def get_name(self):
+        return self.domain_name
+
     def __str__(self):
         return f"DomainSummaryLog(domain_name={self.domain_name}, hours_spent={self.hours_spent}, " \
             f"start_time={self.start_time}, end_time={self.end_time}, " \
             f"gathering_date={self.gathering_date}, created_at={self.created_at})"
+
+
+class TypingSession(Base):
+    __tablename__ = "typing_sessions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    def __repr__(self):
+        return f"TypingSession(id={self.id}, start_time={self.start_time}, end_time={self.end_time})"
+
+
+class MouseMove(Base):
+    __tablename__ = "mouse_moves"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    def __repr__(self):
+        return f"MouseMove(id={self.id}, start_time={self.start_time})"
+
 
 
 class TimelineEntryObj(Base):
