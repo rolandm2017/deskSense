@@ -35,8 +35,7 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
     def start_session(self, chrome_session: ChromeSession, right_now: UserLocalTime):
         target_domain_name = chrome_session.domain
 
-        starting_window_amt = window_push_length  # sec
-        usage_duration_in_hours = starting_window_amt / SECONDS_PER_HOUR
+        usage_duration_in_hours = 0  # start_session no longer adds time. It's all add_ten_sec
 
         today = get_start_of_day(right_now.dt)  # Still has tz attached
         self._create(target_domain_name, usage_duration_in_hours, today)
@@ -111,9 +110,6 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             # Commit the changes
             session.commit()
 
-    def start_window_push_for_session(self, chrome_session: ChromeSession, now: UserLocalTime):
-        self.push_window_ahead_ten_sec(chrome_session, now)
-
 
     def push_window_ahead_ten_sec(self, chrome_session: ChromeSession, right_now: UserLocalTime):
         """Finds the given session and adds ten sec to its end_time
@@ -143,7 +139,7 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
                 raise ImpossibleToGetHereError(
                     "A domain should already exist here, but was not found")
 
-    def deduct_remaining_duration(self, session: ChromeSession, duration_in_sec: int, today_start: UserLocalTime):
+    def add_used_time(self, session: ChromeSession, duration_in_sec: int, today_start: UserLocalTime):
         """
         When a session is concluded, it was concluded partway thru the 10 sec window
 
@@ -151,31 +147,30 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         """
         if duration_in_sec == 0:
             return  # No work to do here
-
-        target_domain = session.domain
-
         tomorrow_start = today_start.dt + timedelta(days=1)
 
+        time_to_add = duration_in_sec / SECONDS_PER_HOUR
+        self.throw_if_negative(session.domain, time_to_add)
+
         query = select(DailyDomainSummary).where(
-            DailyDomainSummary.domain_name == target_domain,
+            DailyDomainSummary.domain_name == session.domain,
             DailyDomainSummary.gathering_date >= today_start.dt,
             DailyDomainSummary.gathering_date < tomorrow_start
         )
-        # Update it if found
-        self.do_deduction(query, duration_in_sec)
+        self.do_addition(query, time_to_add)
 
-    def do_deduction(self, query, duration_in_sec):
+    def do_addition(self, query, time_to_add):
         with self.regular_session() as db_session:
             domain: DailyDomainSummary = db_session.scalars(query).first()
 
             if domain is None:
                 raise ImpossibleToGetHereError(
-                    "Session should exist before deduct_remaining_duration occurs")
-            new_duration = domain.hours_spent - duration_in_sec / SECONDS_PER_HOUR
+                    "Session should exist before do_addition occurs")
 
-            print(duration_in_sec, domain, "169ru")
-            self.throw_if_negative(domain.domain_name, new_duration)
-            domain.hours_spent = new_duration
+            # FIXME: Must test this method
+            new_duration = domain.hours_spent + time_to_add
+
+            domain.hours_spent = new_duration  # Error is here GPT
             db_session.commit()
 
     def throw_if_negative(self, activity, value):

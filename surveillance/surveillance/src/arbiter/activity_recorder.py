@@ -25,24 +25,20 @@ class ActivityRecorder:
 
         # For testing: collect session activity history
         self.pulse_history = []  # List of (session, timestamp) tuples for each pulse
-        self.deduction_history = []  # List of (session, amount, timestamp) tuples for each deduction
+        self.remainder_history = []  # List of (session, amount, timestamp) tuples for each deduction
 
     def on_new_session(self, session: ProgramSession | ChromeSession):
-        """
-        This exists because some code I expected to start a log
-        before any other code asked to update the log, did not create
-        the log as expected. And so I am doing it manually.
-        """
-        now = self.user_facing_clock.now()
+        # TODO: do an audit of logging time and summary time.
         if isinstance(session, ProgramSession):
-            # Must start a new logging session, to note the time being added to the summary. 
-            # This addition happens whether the program is brand new today or was seen before
+            # Regardless of the session being brand new today or a repeat,
+            # must start a new logging session, to note the time being added to the summary. 
             self.program_logging_dao.start_session(session)
             session_exists_already = self.program_summary_dao.find_todays_entry_for_program(
                 session)
-            # TODO: After e2e tests, in assert phase, do an audit of logging time and summary time.
             if session_exists_already:
-                self.program_summary_dao.start_window_push_for_session(session, now)
+                # After thinking about it longer, it makes much more sense for all additions of time
+                # to flow through the KeepAliveEngine. That way, there's only one place to look for time being added.
+                # self.program_summary_dao.start_window_push_for_session(session, now)
                 return
             self.program_summary_dao.start_session(session, session.start_time)
         elif isinstance(session, ChromeSession):
@@ -50,7 +46,8 @@ class ActivityRecorder:
             session_exists_already = self.chrome_summary_dao.find_todays_entry_for_domain(
                 session)
             if session_exists_already:
-                return self.chrome_summary_dao.start_window_push_for_session
+                # self.chrome_summary_dao.start_window_push_for_session(session, now)
+                return 
             self.chrome_summary_dao.start_session(session, session.start_time)
         else:
             raise TypeError("Session was not the right type")
@@ -76,18 +73,8 @@ class ActivityRecorder:
             self.chrome_summary_dao.push_window_ahead_ten_sec(session, now)
         else:
             raise TypeError("Session was not the right type")
-
-    def on_state_changed(self, session: CompletedProgramSession | CompletedChromeSession | None):
-        if isinstance(session, ProgramSession):
-            self.program_logging_dao.finalize_log(session)
-        elif isinstance(session, ChromeSession):
-            self.chrome_logging_dao.finalize_log(session)
-        else:
-            if session is None:
-                return
-            raise TypeError("Session was not the right type")
-
-    def deduct_duration(self, duration_in_sec: int, session: ProgramSession | ChromeSession):
+    
+    def add_used_time(self, duration_in_sec: int, session: ProgramSession | ChromeSession):
         """
         Deducts t seconds from the duration of a session. 
         Here, the session's current window was cut short by a new session taking it's place.
@@ -97,17 +84,27 @@ class ActivityRecorder:
         today_start: UserLocalTime = get_start_of_day_from_ult(session.start_time)
 
         # For testing: record this deduction
-        self.deduction_history.append((session, duration_in_sec, session.start_time))
-        session.ledger.deduct_amount(duration_in_sec)
+        self.remainder_history.append((session, duration_in_sec, session.start_time))
+        session.ledger.add_used_time(duration_in_sec)
 
         if isinstance(session, ProgramSession):
             print(
-                f"deducting {duration_in_sec} from {session.window_title}")
-            self.program_summary_dao.deduct_remaining_duration(
+                f"adding {duration_in_sec} to {session.window_title}")
+            self.program_summary_dao.add_used_time(
                 session, duration_in_sec, today_start)
         elif isinstance(session, ChromeSession):
-            print(f"deducting {duration_in_sec} from {session.domain}")
-            self.chrome_summary_dao.deduct_remaining_duration(
+            print(f"adding {duration_in_sec} to {session.domain}")
+            self.chrome_summary_dao.add_used_time(
                 session, duration_in_sec, today_start)
         else:
+            raise TypeError("Session was not the right type")
+
+    def on_state_changed(self, session: CompletedProgramSession | CompletedChromeSession | None):
+        if isinstance(session, ProgramSession):
+            self.program_logging_dao.finalize_log(session)
+        elif isinstance(session, ChromeSession):
+            self.chrome_logging_dao.finalize_log(session)
+        else:
+            if session is None:
+                return
             raise TypeError("Session was not the right type")

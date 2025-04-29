@@ -28,10 +28,10 @@ class SessionLedger:
         else:
             raise SessionClosedError("Tried to push window after deduction")
 
-    def deduct_amount(self, amount):
+    def add_used_time(self, amount):
         """Proof that the deduct_duration method was called with a value."""
         self.open = False  # Cannot window push after deduct_duration
-        self.total -= amount
+        self.total += amount
 
     def get_total(self):
         return self.total

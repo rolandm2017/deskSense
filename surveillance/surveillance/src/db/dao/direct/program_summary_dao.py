@@ -41,8 +41,9 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
 
     def start_session(self, program_session: ProgramSession, right_now: UserLocalTime):
         """Creating the initial session for the summary"""
-        starting_window_amt = window_push_length  # sec
-        usage_duration_in_hours = starting_window_amt / SECONDS_PER_HOUR
+        # starting_window_amt = window_push_length  # sec
+        # usage_duration_in_hours = starting_window_amt / SECONDS_PER_HOUR
+        usage_duration_in_hours = 0  # start_session no longer adds time. It's all add_ten_sec
 
         today_start = get_start_of_day_from_datetime(right_now.dt)
 
@@ -126,8 +127,6 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             # Commit the changes
             session.commit()
 
-    def start_window_push_for_session(self, program_session: ProgramSession, now: UserLocalTime):
-        self.push_window_ahead_ten_sec(program_session, now)
 
     def push_window_ahead_ten_sec(self, program_session: ProgramSession, right_now: UserLocalTime):
         """
@@ -160,7 +159,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
                 raise ImpossibleToGetHereError(
                     "A program should already exist here, but was not found: " + purpose)
 
-    def deduct_remaining_duration(self, session: ProgramSession, duration_in_sec: int, today_start: UserLocalTime):
+    def add_used_time(self, session: ProgramSession, duration_in_sec: int, today_start: UserLocalTime):
         """
         When a session is concluded, it was concluded partway thru the 10 sec window
 
@@ -170,28 +169,26 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             return  # No work to do here
         tomorrow_start = today_start.dt + timedelta(days=1)
 
-        time_to_remove = duration_in_sec / SECONDS_PER_HOUR
-        self.throw_if_negative(session.window_title, time_to_remove)
+        time_to_add = duration_in_sec / SECONDS_PER_HOUR
+        self.throw_if_negative(session.window_title, time_to_add)
 
         query = select(DailyProgramSummary).where(
             DailyProgramSummary.exe_path_as_id == session.exe_path,
             DailyProgramSummary.gathering_date >= today_start.dt,
             DailyProgramSummary.gathering_date < tomorrow_start
         )
-        self.do_deduction(query, time_to_remove)
+        self.do_addition(query, time_to_add)
 
-    def do_deduction(self, query, time_to_remove):
+    def do_addition(self, query, time_to_add):
         with self.regular_session() as db_session:
             program: DailyProgramSummary = db_session.scalars(query).first()
 
             if program is None:
                 raise ImpossibleToGetHereError(
-                    "Session should exist before deduct_remaining_duration occurs")
+                    "Session should exist before do_addition occurs")
 
-            # FIXME: so, hours_spent is not set properly when the
-            # new session is created, i think. so when the program
-            # comes in here to deduct 5 seconds, there's only 0 seconds existing
-            new_duration = program.hours_spent - time_to_remove
+            # FIXME: Must test this method
+            new_duration = program.hours_spent + time_to_add
 
             program.hours_spent = new_duration  # Error is here GPT
             db_session.commit()
