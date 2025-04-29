@@ -13,9 +13,7 @@ from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.time_formatting import get_start_of_day_from_ult
 
 
-
 # Persistence component
-
 
 class ActivityRecorder:
     def __init__(self, user_facing_clock: UserFacingClock, program_logging_dao: ProgramLoggingDao, chrome_logging_dao: ChromeLoggingDao, program_summary_dao: ProgramSummaryDao, chrome_summary_dao: ChromeSummaryDao):
@@ -24,13 +22,6 @@ class ActivityRecorder:
         self.chrome_logging_dao = chrome_logging_dao
         self.program_summary_dao = program_summary_dao
         self.chrome_summary_dao = chrome_summary_dao
-
-    @staticmethod
-    def validate_session(session):
-        if session.end_time is None:
-            raise ValueError("Session end time was not set")
-        if session.duration is None:
-            raise ValueError("Session duration was not set")
 
     def on_new_session(self, session: ProgramSession | ChromeSession):
         """
@@ -79,10 +70,8 @@ class ActivityRecorder:
 
     def on_state_changed(self, session: CompletedProgramSession | CompletedChromeSession | None):
         if isinstance(session, ProgramSession):
-            self.validate_session(session)
             self.program_logging_dao.finalize_log(session)
         elif isinstance(session, ChromeSession):
-            self.validate_session(session)
             self.chrome_logging_dao.finalize_log(session)
         else:
             if session is None:

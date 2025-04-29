@@ -25,10 +25,11 @@ class ActivityStateMachine:
         self.logger = ConsoleLogger()
 
     def set_new_session(self, next_session: ProgramSession | ChromeSession):
+        # FIXME:
+        # FIXME: Isn't this JUST handing off one session to the other now?
+        # FIXME: Existing just to do, "end_time - start_time" and such
+        # FIXME:
         next_session = snapshot_obj_for_tests(next_session)
-        # TODO: It might be cleaner to say,
-        # next_state = package_session_into_state(next_session)
-        # and then use next_state in the compute_next_state func.
         if self.current_state:
             prior_update_was_program = isinstance(
                 self.current_state, ApplicationInternalState)

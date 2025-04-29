@@ -187,6 +187,10 @@ def test_full_test_sessions(dao_connection, activity_arbiter_and_setup):
     last = None
     success = 0
 
+    def get_all_indexes_for_session(session):
+        """Get all the add_ten_sec call indexes, so you can easily test them."""
+        
+
     print(f"going for {window_pushes} in a row")
     # GPT: This is my second attempt at asserting
     for i in range(0, dao_connection.add_ten_sec_to_end_time.call_count):
