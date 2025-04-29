@@ -2,7 +2,6 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 import copy
 
-from surveillance.src.config.definitions import power_on_off_debug_file
 
 from surveillance.src.object.classes import ChromeSession, ProgramSession, CompletedChromeSession, CompletedProgramSession
 
@@ -124,5 +123,3 @@ class ActivityArbiter:
             concluded_session = self.state_machine.conclude_without_replacement()
             if concluded_session:
                 self.notify_summary_dao(concluded_session)
-            with open(power_on_off_debug_file, "a") as f:
-                f.write("Shutdown Activity Arbiter\n")

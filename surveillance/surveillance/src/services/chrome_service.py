@@ -10,7 +10,6 @@ from operator import attrgetter
 import copy
 
 
-from surveillance.src.config.definitions import power_on_off_debug_file
 
 from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from surveillance.src.object.classes import ChromeSession, TabChangeEventWithLtz
@@ -174,5 +173,3 @@ class ChromeService:
         """Mostly just logs the final chrome session to the db"""
         # Also do stuff like, trigger the Arbiter to shutdown the current state w/o replacement, in other funcs
         self.tab_queue.empty_queue_as_sessions()
-        with open(power_on_off_debug_file, "a") as f:
-            f.write("Shutdown Chrome Service\n")

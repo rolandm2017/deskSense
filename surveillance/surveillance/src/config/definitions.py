@@ -11,7 +11,6 @@ local_tz_dst_offset = os.getenv("LOCAL_TIME_OFFSET_DST")
 if local_tz_dst_offset is None or local_tz_offset is None:
     raise ValueError("Failed to load timezone offsets")
 
-power_on_off_debug_file = "march10_on_off_times.txt"
 
 if LOCAL_TIME_ZONE is None or LOCAL_TIME_ZONE == "":
     raise ValueError(
