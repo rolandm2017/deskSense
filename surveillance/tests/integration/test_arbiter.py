@@ -4,7 +4,7 @@ from unittest.mock import  Mock, MagicMock
 from datetime import  timedelta, datetime
 import math
 
-from surveillance.src.config.definitions import keep_alive_pulse_delay
+from surveillance.src.config.definitions import keep_alive_cycle_length
 from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
 from surveillance.src.arbiter.activity_recorder import ActivityRecorder
 from surveillance.src.object.classes import ProgramSession, ChromeSession
@@ -21,7 +21,9 @@ from ..helper.confirm_chronology import assert_test_data_is_chronological_with_t
 
 # ###
 # ##
-# #  # Test the integrated arbiter with a series of somewhat realistic data
+# #  -- Test the integrated arbiter with a series of somewhat realistic data.
+# #  -- A series of test sessions is inserted. 
+# #  -- The Arbiter yields the expected time.
 # ##
 # ###
 
@@ -317,7 +319,7 @@ def test_activity_arbiter(activity_arbiter_and_setup):
         #     keep_alive_tally_in_sec += from_on_new_session
         for i in range(0, num_of_window_pushes):
             # Don't bother with what went in there, just add the window duration
-            keep_alive_tally_in_sec += keep_alive_pulse_delay
+            keep_alive_tally_in_sec += keep_alive_cycle_length
             # Verify there is something in it
             session = mock_activity_recorder.add_ten_sec_to_end_time.call_args_list[i][0][0]
             assert isinstance(session, ProgramSession) or isinstance(session, ChromeSession)

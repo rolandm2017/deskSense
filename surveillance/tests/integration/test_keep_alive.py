@@ -5,7 +5,7 @@ from unittest.mock import  Mock, MagicMock
 from datetime import  timedelta, datetime
 import math
 
-from surveillance.src.config.definitions import keep_alive_pulse_delay
+from surveillance.src.config.definitions import keep_alive_cycle_length, window_push_length
 from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
 from surveillance.src.arbiter.activity_recorder import ActivityRecorder
 from surveillance.src.object.classes import ProgramSession, ChromeSession
@@ -32,7 +32,7 @@ class MockActivityRecorder:
     def __init__(self):
         # Initialize lists to track calls
         self.pulse_history = []
-        self.deduction_history = []
+        self.partial_window_history = []
         
         # Create the mock objects with proper side effects
         self.on_new_session = Mock()
@@ -42,9 +42,9 @@ class MockActivityRecorder:
         self.add_ten_sec_to_end_time = Mock()
         self.add_ten_sec_to_end_time.side_effect = self._record_pulse
         
-        # Create deduct_duration with side effect to record the deduction
-        self.deduct_duration = Mock()
-        self.deduct_duration.side_effect = self._record_deduction
+        # Create add_used_time with side effect to record the partial window
+        self.add_used_time = Mock()
+        self.add_used_time.side_effect = self._record_addition
     
     def _record_pulse(self, session):
         """Side effect function that records each pulse"""
@@ -52,9 +52,9 @@ class MockActivityRecorder:
         # Side effects in unittest.mock should return None by default
         return None
     
-    def _record_deduction(self, duration, session):
-        """Side effect function that records each deduction"""
-        self.deduction_history.append((session, duration))
+    def _record_addition(self, duration, session):
+        """Side effect function that records each partial window"""
+        self.partial_window_history.append((session, duration))
         # Side effects in unittest.mock should return None by default
         return None
     
@@ -75,17 +75,17 @@ class MockActivityRecorder:
         """Return the sequence of session names that received pulses"""
         return [session.get_name() for session in self.pulse_history]
     
-    def get_deduction_for_session(self, session):
-        """Return the deduction amount for a specific session"""
+    def get_addition_for_session(self, session):
+        """Return the partial window amount for a specific session"""
         session_key = self.get_session_key(session)
-        for recorded_session, duration in self.deduction_history:
+        for recorded_session, duration in self.partial_window_history:
             if self.get_session_key(recorded_session) == session_key:
                 return duration
         return None
     
-    def get_deduction_history(self):
-        """Return all deductions in order with unique session identifiers"""
-        return [(self.get_session_key(session), duration) for session, duration in self.deduction_history]
+    def get_partial_window_history(self):
+        """Return all partial windows in order with unique session identifiers"""
+        return [(self.get_session_key(session), duration) for session, duration in self.partial_window_history]
     
     def get_pulse_counts_by_session(self):
         """Return a dictionary of session names to pulse counts"""
@@ -148,8 +148,8 @@ def activity_arbiter_and_setup():
     ultrafast_interval_for_testing = 0.025  # usually is 1.0
     durations_as_int = [int(x) for x in durations]
     
-    final_loop = 7  # keep it under 10 so there isn't a final pulse
-    durations_as_int.append(final_loop)
+    # final_loop = 7  # keep it under 10 so there isn't a final pulse
+    # durations_as_int.append(final_loop)
 
     return test_sessions, durations_as_int
 
@@ -157,7 +157,9 @@ def test_one_complete_run(dao_connection):
     session = ProgramSession("Foo")
 
     engine = KeepAliveEngine(session, dao_connection)
-    durations_for_test = [63]
+
+    only_length = 63
+    durations_for_test = [only_length]
     engine_container = MockEngineContainer(durations_for_test)
 
     engine_container.add_first_engine(engine)
@@ -168,10 +170,10 @@ def test_one_complete_run(dao_connection):
     # -- assert
 
     assert dao_connection.add_ten_sec_to_end_time.call_count == 6
-    assert dao_connection.deduct_duration.call_count == 1
+    assert dao_connection.add_used_time.call_count == 1
 
-    duration = dao_connection.deduct_duration.call_args_list[0][0][0]
-    assert duration == 70 - 63
+    duration = dao_connection.add_used_time.call_args_list[0][0][0]
+    assert duration == only_length % keep_alive_cycle_length == 3
 
 
 def test_five_runs(dao_connection):
@@ -200,7 +202,7 @@ def test_five_runs(dao_connection):
     # 23 -> 2
     full_windows_per_session = [6, 0, 1, 0, 2]
     count_of_full_windows = sum(full_windows_per_session)
-    count_of_deductions = [1, 1, 1, 1, 1]  # 9 is not deducted
+    count_of_additions = [1, 1, 1, 1, 1]  # FIXME
 
     # Remember that, if this were development, on_new_session would add 10 sec
     # before any of this happened. So there's a free +10 per session before this occurs.
@@ -214,7 +216,7 @@ def test_five_runs(dao_connection):
     assert count_full_loops(durations_for_test[0]) == 6
     assert dao_connection.add_ten_sec_to_end_time.call_count == 6
 
-    assert dao_connection.deduct_duration.call_count == 1
+    assert dao_connection.add_used_time.call_count == 1
 
     for i in durations_for_test[1:]:
         engine = KeepAliveEngine(session, dao_connection)
@@ -226,11 +228,11 @@ def test_five_runs(dao_connection):
     # -- assert
 
     for i in range(0, len(durations_for_test)):
-        deductions = dao_connection.deduct_duration.call_args_list[i][0][0]
-        # 10 - (x % 10) = deduction_amt
-        assert deductions == 10 - (durations_for_test[i] % 10)
+        partials = dao_connection.add_used_time.call_args_list[i][0][0]
+        # 10 - (x % 10) = partial_amt
+        assert partials == durations_for_test[i] % window_push_length
 
-    assert dao_connection.deduct_duration.call_count == len(count_of_deductions)
+    assert dao_connection.add_used_time.call_count == len(count_of_additions)
 
     assert dao_connection.add_ten_sec_to_end_time.call_count == count_of_full_windows
     
@@ -240,7 +242,7 @@ def test_full_test_sessions(dao_connection, activity_arbiter_and_setup, mock_rec
 
     window_pushes = 0
     pushes_by_index = {}
-    deductions = []
+    partials = []
 
 
     for index, duration in enumerate(durations_between_sessions):
@@ -248,13 +250,13 @@ def test_full_test_sessions(dao_connection, activity_arbiter_and_setup, mock_rec
         window_pushes += full_windows
         pushes_by_index[index] = full_windows
 
-        deductions.append(duration % keep_alive_pulse_delay)
+        partials.append(duration % keep_alive_cycle_length)
 
-    expected_time = sum(durations_between_sessions)  # Remember 7 was added in setup
+    expected_time = sum(durations_between_sessions) 
 
     # Calculate expected results
     expected_pulses_by_session = {}
-    expected_deductions = {}
+    expected_partials = {}
 
     def get_session_key(session):
         """Create a unique key for each session based on name and start time"""
@@ -268,9 +270,9 @@ def test_full_test_sessions(dao_connection, activity_arbiter_and_setup, mock_rec
             full_windows = count_full_loops(durations_between_sessions[index])
             expected_pulses_by_session[session_key] = full_windows
             
-            # Calculate expected deduction (remainder of window)
-            remainder = durations_between_sessions[index] % keep_alive_pulse_delay
-            expected_deductions[session_key] = remainder if remainder > 0 else None
+            # Calculate expected partial (used bit of window)
+            used_amount = durations_between_sessions[index] % keep_alive_cycle_length
+            expected_partials[session_key] = used_amount if used_amount > 0 else None
 
     engine = KeepAliveEngine(tested_sessions[0], mock_recorder)
     
@@ -283,7 +285,10 @@ def test_full_test_sessions(dao_connection, activity_arbiter_and_setup, mock_rec
     engine_container.start()
     engine_container.stop()
 
+    i = 0
     for session in tested_sessions[1:]:
+        print(f"using session {session.get_name()} in index {i}")
+        i += 1
         engine = KeepAliveEngine(session, mock_recorder)
         
         engine_container.replace_engine(engine)
@@ -291,6 +296,10 @@ def test_full_test_sessions(dao_connection, activity_arbiter_and_setup, mock_rec
         engine_container.start()
         engine_container.stop()
 
+        if engine_container.engine:
+            print(engine_container.engine.amount_used, "299ru")
+
+    assert engine_container.count == window_pushes
     assert dao_connection.add_ten_sec_to_end_time.call_count == window_pushes
 
     # Debugging information
@@ -312,26 +321,26 @@ def test_full_test_sessions(dao_connection, activity_arbiter_and_setup, mock_rec
             assert actual == expected, \
                 f"Session {session.get_name()} (start: {session.start_time.dt.isoformat()}) expected {expected} pulses but got {actual}"
     
-    # Total deduction count
-    expected_deduction_count = sum(1 for v in expected_deductions.values() if v is not None)
-    actual_deduction_count = len(mock_recorder.deduction_history)
-    assert actual_deduction_count == expected_deduction_count, \
-        f"Expected {expected_deduction_count} deductions but got {actual_deduction_count}"
+    # Total partials count
+    expected_partial_count = sum(1 for v in expected_partials.values() if v is not None)
+    actual_partial_count = len(mock_recorder.partial_history)
+    assert actual_partial_count == expected_partial_count, \
+        f"Expected {expected_partial_count} partials but got {actual_partial_count}"
     
-    # Verify deductions for each session by unique key
+    # Verify partials for each session by unique key
     for session in tested_sessions:
         session_key = get_session_key(session)
-        expected = expected_deductions.get(session_key)
+        expected = expected_partials.get(session_key)
         if expected is not None:
-            actual = mock_recorder.get_deduction_for_session(session)
+            actual = mock_recorder.get_partial_for_session(session)
             assert actual == expected, \
-                f"Session {session.get_name()} (start: {session.start_time.dt.isoformat()}) expected deduction of {expected} but got {actual}"
+                f"Session {session.get_name()} (start: {session.start_time.dt.isoformat()}) expected partial addition of {expected} but got {actual}"
         
 
 def test_session_sequences_with_explicit_expectations():
     """
     Test a sequence of sessions with explicit expectations for
-    pulses and deductions, handling repeated application names.
+    pulses and partials, handling repeated application names.
     """
     # Create the mock recorder with side effects
     mock_recorder = MockActivityRecorder()
@@ -359,15 +368,15 @@ def test_session_sequences_with_explicit_expectations():
     # Define explicit durations between sessions
     durations = [
         30,  # App1 runs for 30 seconds (3 full pulses)
-        45,  # App2 runs for 45 seconds (4 full pulses, 5 sec deduction)
+        45,  # App2 runs for 45 seconds (4 full pulses, 5 sec partial)
         30,  # App1 runs for 30 seconds (3 full pulses)
-        25,  # App3 runs for 25 seconds (2 full pulses, 5 sec deduction)
+        25,  # App3 runs for 25 seconds (2 full pulses, 5 sec partial)
         20,  # App2 runs for 20 seconds (2 full pulses)
     ]
     
-    # Calculate expected pulses and deductions
+    # Calculate expected pulses and partials
     expected_pulses = {}
-    expected_deductions = {}
+    expected_partials = {}
     
     for i, session in enumerate(sessions):
         session_key = get_session_key(session)
@@ -375,9 +384,9 @@ def test_session_sequences_with_explicit_expectations():
         full_windows = count_full_loops(durations[i])
         expected_pulses[session_key] = full_windows
         
-        # Calculate expected deduction (remainder of window)
-        remainder = durations[i] % 10
-        expected_deductions[session_key] = remainder if remainder > 0 else None
+        # Calculate expected partial (used_amount of window)
+        used_amount = durations[i] % 10
+        expected_partials[session_key] = used_amount if used_amount > 0 else None
     
     # Run the test with the mock container
     engine_container = MockEngineContainer(durations)
@@ -415,14 +424,14 @@ def test_session_sequences_with_explicit_expectations():
     
     assert_each_session_had_expected_pulse_count()
         
-    # Verify deductions
-    def assert_each_session_had_expected_deduction():
+    # Verify partials
+    def assert_each_session_had_expected_partials():
         for i, session in enumerate(sessions):
             session_key = get_session_key(session)
-            expected_deduction = expected_deductions.get(session_key)
-            if expected_deduction is not None:
-                actual_deduction = mock_recorder.get_deduction_for_session(session)
-                assert actual_deduction == expected_deduction, \
-                    f"Session {session.get_name()} (start: {session.start_time.dt.isoformat()}) expected deduction of {expected_deduction} but got {actual_deduction}"
+            expected_partial = expected_partials.get(session_key)
+            if expected_partial is not None:
+                actual_partial = mock_recorder.get_addition_for_session(session)
+                assert actual_partial == expected_partial, \
+                    f"Session {session.get_name()} (start: {session.start_time.dt.isoformat()}) expected partial of {expected_partial} but got {actual_partial}"
     
-    assert_each_session_had_expected_deduction()
+    assert_each_session_had_expected_partials()

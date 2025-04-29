@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timedelta, time
 from typing import List
 
-from surveillance.src.config.definitions import keep_alive_pulse_delay, window_push_length 
+from surveillance.src.config.definitions import keep_alive_cycle_length, window_push_length 
 from surveillance.src.db.models import DailyProgramSummary
 from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 

@@ -1,7 +1,7 @@
 import threading
 import time
 
-from surveillance.src.config.definitions import keep_alive_pulse_delay, window_push_length
+from surveillance.src.config.definitions import keep_alive_cycle_length, window_push_length
 from surveillance.src.object.classes import ProgramSession, ChromeSession
 
 from surveillance.src.util.errors import MissingEngineError
@@ -44,7 +44,7 @@ class KeepAliveEngine:
         if session is None:
             raise ValueError("Session should not be None in KeepAliveEngine")
         self.recorder = dao_connection
-        self.max_interval = keep_alive_pulse_delay  # seconds
+        self.max_interval = keep_alive_cycle_length  # seconds
         self.amount_used = 0
         self.zero_remainder = 0
 
@@ -64,7 +64,7 @@ class KeepAliveEngine:
         amount_of_window_used = self.amount_used
 
         # self._deduct_remainder(amount_of_window_used)
-        self._add_used_time(amount_of_window_used)
+        self._add_partial_window(amount_of_window_used)
 
     def _hit_max_window(self):
         return self.max_interval <= self.amount_used
@@ -75,7 +75,10 @@ class KeepAliveEngine:
         """
         self.recorder.add_ten_sec_to_end_time(self.session)
     
-    def _add_used_time(self, amount_used):
+    def _add_partial_window(self, amount_used):
+        """
+        Used to add amounts between 0 and 9. Incomplete windows.
+        """
         self.recorder.add_used_time(amount_used, self.session)
 
      # For testing: methods to expose internal state

@@ -7,7 +7,7 @@ import asyncio
 import threading
 import time
 
-from surveillance.src.config.definitions import keep_alive_pulse_delay, window_push_length
+from surveillance.src.config.definitions import keep_alive_cycle_length, window_push_length
 from surveillance.src.object.classes import ProgramSession
 from surveillance.src.arbiter.session_polling import KeepAliveEngine
 
@@ -30,6 +30,9 @@ def fast_sleep(_):
 
 
 def test_window_addition_math():
+    """
+    
+    """
     dao_mock = Mock()
     
     add_ten_mock = Mock() 
@@ -74,7 +77,7 @@ def test_window_addition_math():
     instance = KeepAliveEngine(session, dao_mock)
     
     used_amount = 7
-    one_full_cycyle = window_push_length
+    one_full_cycyle = window_push_length  # 10
 
     total_loops = used_amount + one_full_cycyle
 
@@ -101,7 +104,7 @@ def test_hit_max_window():
     instance = KeepAliveEngine(session, dao_mock)
 
     # Test the test conditions
-    assert instance.max_interval == keep_alive_pulse_delay
+    assert instance.max_interval == keep_alive_cycle_length
 
     instance.amount_used = less_than_ten
     assert instance._hit_max_window() is False
@@ -249,7 +252,7 @@ def test_multiple_whole_loops():
     # Assert
     conclude_spy.assert_not_called
     assert add_ten_mock.call_count == 2
-    assert instance.amount_used == total % keep_alive_pulse_delay  # 3
+    assert instance.amount_used == total % keep_alive_cycle_length  # 3
 
     # Act again
     instance.conclude()
@@ -327,8 +330,8 @@ def test_full_window_is_used():
     instance = KeepAliveEngine(session, dao_mock)
 
 
-    internal_add_spy = Mock(side_effect=instance._add_used_time)
-    instance._add_used_time = internal_add_spy
+    internal_add_spy = Mock(side_effect=instance._add_partial_window)
+    instance._add_partial_window = internal_add_spy
 
     #  Loop ten times
     assert window_push_length == 10
@@ -342,4 +345,26 @@ def test_full_window_is_used():
 
     internal_add_spy.assert_called_once_with(partial_cycle)
 
+def test_numerous_full_cycles():
+    dao_mock = Mock()
 
+    add_ten_sec_to_end_time_mock = Mock()
+    dao_mock.add_ten_sec_to_end_time = add_ten_sec_to_end_time_mock
+
+    add_partial_window_mock = Mock()
+    dao_mock.add_used_time = add_partial_window_mock
+    session = ProgramSession()
+
+    iteration_count = 63
+
+    instance = KeepAliveEngine(session, dao_mock)
+
+    for _ in range(0, iteration_count):
+        instance.iterate_loop()
+
+    instance.conclude()
+
+    assert add_ten_sec_to_end_time_mock.call_count == 6  # 60 / 10
+
+    time_arg = add_partial_window_mock.call_args_list[0][0][0]
+    assert time_arg == 3
