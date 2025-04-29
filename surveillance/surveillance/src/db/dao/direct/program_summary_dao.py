@@ -55,6 +55,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         new_entry = DailyProgramSummary(
             exe_path_as_id=session.exe_path,
             program_name=session.window_title,
+            process_name=session.process_name,
             hours_spent=duration_in_hours,
             gathering_date=when_it_was_gathered
         )
@@ -96,7 +97,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
     
     def read_day(self, day: UserLocalTime) -> List[DailyProgramSummary]:
         """Read all entries for the given day."""
-        today_start = get_start_of_day(day.dt)
+        today_start = get_start_of_day_from_datetime(day.dt)
         tomorrow_start = today_start + timedelta(days=1)
         query: Select = select(DailyProgramSummary).where(
             DailyProgramSummary.gathering_date >= today_start,

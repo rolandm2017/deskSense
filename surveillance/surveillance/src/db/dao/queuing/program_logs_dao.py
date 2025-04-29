@@ -60,7 +60,7 @@ class ProgramLoggingDao(UtilityDaoMixin):
             hours_spent=ten_sec_as_pct_of_hour,
             start_time=base_start_time,
             end_time=start_window_end,
-            duration=unknown,
+            duration_in_sec=unknown,
             gathering_date=start_of_day_as_utc,
             created_at=base_start_time
         )

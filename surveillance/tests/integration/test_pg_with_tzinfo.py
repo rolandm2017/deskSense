@@ -101,7 +101,6 @@ just_after_boundary = create_notion_entry(some_local_tz.localize(add_time(one_da
 #
 
 
-
 def write_before_and_after_base_day(summary_dao):
     """Ensures that read_day is more specific than just 'read_all' with an arg."""
     summary_dao.start_session(just_before_boundary, just_before_boundary.start_time)
@@ -200,7 +199,7 @@ def test_on_eleven_ish_pm_boundary(setup_parts):
     latenight1 =  create_zoom_entry(some_local_tz.localize(add_time(base_day, 23, 59, 59)))
     latenight2 =  create_pycharm_entry(some_local_tz.localize(add_time(base_day, 23, 59, 59)))
 
-    edge_case_micros = 999999  # HEY, LISTEN!
+    edge_case_micros = 999999  # HEY, LISTEN! Max value possible.
     latenight2.start_time.dt.replace(microsecond=edge_case_micros)
 
     test_inputs = [latenight1, latenight2]

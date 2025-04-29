@@ -53,7 +53,7 @@ class DailyDomainSummary(DailySummaryBase):
     """
     __tablename__ = "daily_chrome_summaries"
 
-    domain_name = Column(String)
+    domain_name: Mapped[str] = mapped_column(String)
 
     def get_name(self):
         return self.domain_name
@@ -76,7 +76,7 @@ class SummaryLogBase(Base):
     # time stuff
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    duration = Column(Float, nullable=True)  # FIXME: duration is not being set in the DAOs. Also, duration in what, hours? years?
+    duration_in_sec = Column(Float, nullable=True)
     # The date on which the data was gathered
     gathering_date = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True))
@@ -86,7 +86,7 @@ class ProgramSummaryLog(SummaryLogBase):
     """
     Logs a singular addition to the ProgramSummary table
     """
-    __tablename__ = "program_summary_logs"
+    __tablename__ = "program_logs"
 
     exe_path_as_id: Mapped[str] = mapped_column(String)  # unique identifier
     process_name: Mapped[str] = mapped_column(String)
@@ -102,7 +102,7 @@ class ProgramSummaryLog(SummaryLogBase):
 
 
 class DomainSummaryLog(SummaryLogBase):
-    __tablename__ = "domain_summary_logs"
+    __tablename__ = "domain_logs"
 
     domain_name: Mapped[str] = mapped_column(String)
 
