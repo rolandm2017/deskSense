@@ -5,8 +5,10 @@ from typing import TypedDict, Optional
 
 from abc import ABC, abstractmethod
 
+from surveillance.src.config.definitions import window_push_length
 from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.time_formatting import parse_time_string
+from surveillance.src.util.errors import SessionClosedError
 
 class SessionLedger:
     """
@@ -17,18 +19,18 @@ class SessionLedger:
 
     def __init__(self):
         self.total = 0
-        self.extendable = True
+        self.open = True
 
     def add_ten_sec(self):
         """Proof that the add_ten_sec Recorder method occurred."""
-        if self.extendable:
-            self.total += 10
+        if self.open:
+            self.total += window_push_length
         else:
-            raise ValueError("Tried to push window after deduction")
+            raise SessionClosedError("Tried to push window after deduction")
 
     def deduct_amount(self, amount):
         """Proof that the deduct_duration method was called with a value."""
-        self.extendable = False  # Cannot window push after deduct_duration
+        self.open = False  # Cannot window push after deduct_duration
         self.total -= amount
 
     def get_total(self):
@@ -110,7 +112,10 @@ class CompletedProgramSession(ProgramSession):
         duration_for_tests=None
     ):
         """Only use duration arg in testing. Don't use it otherwise. 'duration_for_tests' exists only for e2e tests thresholds"""
-        
+        # TODO: Reorder it so productive is further up in the constructor.
+        # Problem statement: I have to write the end time before the productive bool. 
+        # That's out of order. Sometimes there's no end time; there's always productive.
+
         # Initialize the base class first
         super().__init__(
             exe_path=exe_path,

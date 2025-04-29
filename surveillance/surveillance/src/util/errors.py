@@ -59,3 +59,7 @@ class MissingEngineError(ValueError):
     def __init__(self, *args):
         message = f"The KeepAliveEngine was missing"
         super().__init__(message, *args)
+
+class SessionClosedError(Exception):
+    """Raised when operations are attempted on a closed session."""
+    pass
