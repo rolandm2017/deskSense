@@ -17,7 +17,7 @@ from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.errors import ImpossibleToGetHereError
 from surveillance.src.util.dao_wrapper import validate_session, guarantee_start_time
 from surveillance.src.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
-from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day
+from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day, get_start_of_day_from_datetime
 from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.const import ten_sec_as_pct_of_hour
 
@@ -48,7 +48,7 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
         """
         unknown = None
         base_start_time = convert_to_utc(session.start_time.get_dt_for_db())
-        start_of_day = get_start_of_day(session.start_time.get_dt_for_db())
+        start_of_day = get_start_of_day_from_datetime(session.start_time.get_dt_for_db())
         start_of_day_as_utc = convert_to_utc(start_of_day)
         start_window_end = base_start_time + timedelta(seconds=10)
         log_entry = DomainSummaryLog(
