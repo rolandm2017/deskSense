@@ -18,6 +18,7 @@ from ..data.arbiter_events import test_sessions, minutes_between_start_and_2nd_t
 from ..mocks.mock_clock import MockClock
 from ..mocks.mock_engine_container import MockEngineContainer
 
+from ..helper.polling_util import count_full_loops
 from ..helper.confirm_chronology import assert_test_data_is_chronological_with_tz, get_durations_from_test_data
 
 
@@ -210,7 +211,7 @@ def test_five_runs(dao_connection):
     engine_container.start()
     engine_container.stop()
 
-    assert durations_for_test[0] // 10 == 6
+    assert count_full_loops(durations_for_test[0]) == 6
     assert dao_connection.add_ten_sec_to_end_time.call_count == 6
 
     assert dao_connection.deduct_duration.call_count == 1
@@ -243,7 +244,7 @@ def test_full_test_sessions(dao_connection, activity_arbiter_and_setup, mock_rec
 
 
     for index, duration in enumerate(durations_between_sessions):
-        full_windows = duration // keep_alive_pulse_delay
+        full_windows = count_full_loops(duration)
         window_pushes += full_windows
         pushes_by_index[index] = full_windows
 
@@ -264,7 +265,7 @@ def test_full_test_sessions(dao_connection, activity_arbiter_and_setup, mock_rec
             session_key = get_session_key(session)
             
             # Calculate full windows (each window is 10 seconds)
-            full_windows = durations_between_sessions[index] // keep_alive_pulse_delay
+            full_windows = count_full_loops(durations_between_sessions[index])
             expected_pulses_by_session[session_key] = full_windows
             
             # Calculate expected deduction (remainder of window)
@@ -371,7 +372,7 @@ def test_session_sequences_with_explicit_expectations():
     for i, session in enumerate(sessions):
         session_key = get_session_key(session)
         # Calculate full windows (each window is 10 seconds)
-        full_windows = durations[i] // 10
+        full_windows = count_full_loops(durations[i])
         expected_pulses[session_key] = full_windows
         
         # Calculate expected deduction (remainder of window)
