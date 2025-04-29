@@ -23,6 +23,10 @@ class ActivityRecorder:
         self.program_summary_dao = program_summary_dao
         self.chrome_summary_dao = chrome_summary_dao
 
+        # For testing: collect session activity history
+        self.pulse_history = []  # List of (session, timestamp) tuples for each pulse
+        self.deduction_history = []  # List of (session, amount, timestamp) tuples for each deduction
+
     def on_new_session(self, session: ProgramSession | ChromeSession):
         """
         This exists because some code I expected to start a log
@@ -59,6 +63,10 @@ class ActivityRecorder:
         if session is None:
             raise ValueError("Session was None in add_ten_sec")
         now: UserLocalTime = self.user_facing_clock.now()
+
+        # For testing
+        self.pulse_history.append((session, session.start_time))
+
         if isinstance(session, ProgramSession):
             self.program_logging_dao.push_window_ahead_ten_sec(session)
             self.program_summary_dao.push_window_ahead_ten_sec(session, now)
@@ -76,9 +84,6 @@ class ActivityRecorder:
         else:
             if session is None:
                 return
-            if isinstance(session, InternalState):
-                raise TypeError(
-                    "Argument was an InternalState when it should be a Session")
             raise TypeError("Session was not the right type")
 
     def deduct_duration(self, duration_in_sec: int, session: ProgramSession | ChromeSession):
@@ -89,6 +94,10 @@ class ActivityRecorder:
         if session.start_time is None:
             raise ValueError("Session start time was not set")
         today_start: UserLocalTime = get_start_of_day_from_ult(session.start_time)
+
+        # For testing: record this deduction
+        self.deduction_history.append((session, duration_in_sec, session.start_time))
+
         if isinstance(session, ProgramSession):
             print(
                 f"deducting {duration_in_sec} from {session.window_title}")

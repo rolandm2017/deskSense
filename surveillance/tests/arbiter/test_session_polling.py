@@ -41,6 +41,12 @@ def test_window_deduction_math():
     remaining_sec = 10 
     instance = KeepAliveEngine(session, dao_mock)
 
+    assert instance.calculate_remaining_window(0) == 10
+    assert instance.calculate_remaining_window(1) == 9
+    assert instance.calculate_remaining_window(5) == 5
+    assert instance.calculate_remaining_window(9) == 1
+    assert instance.calculate_remaining_window(10) == 0
+
     # Loops twice, using 2 sec
     used_amount = 2
     remainder = 10 - 2  # 8 remains.
@@ -109,6 +115,33 @@ def test_hit_max_window():
     assert instance._hit_max_window() is True
     instance.amount_used = greater_than_ten
     assert instance._hit_max_window() is True
+
+
+def test_keep_alive_pulse_timing():
+    """Test the timing of pulses"""
+    mock_recorder = Mock()
+    session = ProgramSession("TestApp")
+    engine = KeepAliveEngine(session, mock_recorder)
+    
+    # No pulses at start
+    assert mock_recorder.add_ten_sec_to_end_time.call_count == 0
+    
+    # Iterate 9 times (not enough for pulse)
+    for _ in range(9):
+        engine.iterate_loop()
+    assert mock_recorder.add_ten_sec_to_end_time.call_count == 0
+    
+    # One more iteration should trigger a pulse
+    engine.iterate_loop()
+    assert mock_recorder.add_ten_sec_to_end_time.call_count == 1
+    
+    # Counter should reset
+    assert engine.get_amount_used() == 0
+    
+    # 10 more iterations should trigger another pulse
+    for _ in range(10):
+        engine.iterate_loop()
+    assert mock_recorder.add_ten_sec_to_end_time.call_count == 2
 
 
 def test_iterate_loop():

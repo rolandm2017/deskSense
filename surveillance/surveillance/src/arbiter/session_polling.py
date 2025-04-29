@@ -96,6 +96,15 @@ class KeepAliveEngine:
         window_length = self.max_interval  # 10
         remaining = window_length - used_amount
         return remaining
+    
+     # For testing: methods to expose internal state
+    def get_amount_used(self):
+        """Get the current amount used (for testing)"""
+        return self.amount_used
+    
+    def get_session(self):
+        """Get the current session (for testing)"""
+        return self.session
 
 
 class ThreadedEngineContainer:
