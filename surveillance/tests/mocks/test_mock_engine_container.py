@@ -7,8 +7,8 @@ from datetime import datetime
 import pytz
 
 
-from surveillance.src.arbiter.session_heartbeat import ThreadedEngineContainer
-from surveillance.src.arbiter.session_heartbeat import KeepAliveEngine
+from surveillance.src.arbiter.session_polling import ThreadedEngineContainer
+from surveillance.src.arbiter.session_polling import KeepAliveEngine
 
 from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao

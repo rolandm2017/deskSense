@@ -9,7 +9,7 @@ from surveillance.src.debug.ui_notifier import UINotifier
 
 from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
 from surveillance.src.arbiter.activity_recorder import ActivityRecorder
-from surveillance.src.arbiter.session_heartbeat import ThreadedEngineContainer
+from surveillance.src.arbiter.session_polling import ThreadedEngineContainer
 
 
 from surveillance.src.services.chrome_service import ChromeService

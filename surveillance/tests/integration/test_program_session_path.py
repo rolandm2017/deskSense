@@ -16,7 +16,7 @@ import traceback
 
 from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
 from surveillance.src.arbiter.activity_recorder import ActivityRecorder
-from surveillance.src.arbiter.session_heartbeat import KeepAliveEngine
+from surveillance.src.arbiter.session_polling import KeepAliveEngine
 from surveillance.src.surveillance_manager import FacadeInjector, SurveillanceManager
 from surveillance.src.services.chrome_service import ChromeService
 

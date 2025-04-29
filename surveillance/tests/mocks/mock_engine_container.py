@@ -1,7 +1,7 @@
 import time
 
-from surveillance.src.arbiter.session_heartbeat import ThreadedEngineContainer
-from surveillance.src.arbiter.session_heartbeat import KeepAliveEngine
+from surveillance.src.arbiter.session_polling import ThreadedEngineContainer
+from surveillance.src.arbiter.session_polling import KeepAliveEngine
 
 from surveillance.src.util.errors import MissingEngineError
 

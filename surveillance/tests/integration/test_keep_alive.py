@@ -9,7 +9,7 @@ from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
 from surveillance.src.arbiter.activity_recorder import ActivityRecorder
 from surveillance.src.object.classes import ProgramSession, ChromeSession
 
-from surveillance.src.arbiter.session_heartbeat import KeepAliveEngine
+from surveillance.src.arbiter.session_polling import KeepAliveEngine
 
 from surveillance.src.util.time_wrappers import UserLocalTime
 

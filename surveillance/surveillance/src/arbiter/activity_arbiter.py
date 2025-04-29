@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from surveillance.src.object.classes import ChromeSession, ProgramSession, CompletedChromeSession, CompletedProgramSession
 
 from .activity_state_machine import ActivityStateMachine
-from .session_heartbeat import KeepAliveEngine, ThreadedEngineContainer
+from .session_polling import KeepAliveEngine, ThreadedEngineContainer
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.copy_util import snapshot_obj_for_tests
 
@@ -28,7 +28,7 @@ class ActivityArbiter:
         self.engine_class = engine_class
         # Threaded container must receive the pulse interval outside of here.
         # The engine is then set using the add and replace methods.
-        self.current_heartbeat = threaded_container
+        self.current_pulse = threaded_container
         self.ui_update_listener = None
         self.activity_recorder = None
         self.logger = ConsoleLogger()
@@ -77,7 +77,7 @@ class ActivityArbiter:
             new_session, dict), "Found an empty dictionary as session"
         self.notify_display_update(new_session)
         if self.state_machine.current_state:
-            if self.current_heartbeat is None:
+            if self.current_pulse is None:
                 raise ValueError("First loop failed in Activity Arbiter")
 
             # end_time & duration is set inside the ASM
@@ -89,14 +89,14 @@ class ActivityArbiter:
             # ### Start the first window
             self.notify_of_new_session(new_session)
 
-            self.current_heartbeat.stop()  # stop the old one from prev loop
+            self.current_pulse.stop()  # stop the old one from prev loop
 
             new_keep_alive_engine = self.engine_class(
                 new_session, self.activity_recorder)
             
-            self.current_heartbeat.replace_engine(new_keep_alive_engine)
+            self.current_pulse.replace_engine(new_keep_alive_engine)
 
-            self.current_heartbeat.start()
+            self.current_pulse.start()
 
             if self.state_machine.is_initialization_session(concluded_session):
                 return  # It's just null state
@@ -111,9 +111,9 @@ class ActivityArbiter:
             new_keep_alive_engine = self.engine_class(
                 new_session, self.activity_recorder)
             
-            self.current_heartbeat.add_first_engine(new_keep_alive_engine)
+            self.current_pulse.add_first_engine(new_keep_alive_engine)
 
-            self.current_heartbeat.start()
+            self.current_pulse.start()
 
     def shutdown(self):
         """Concludes the current state/session without adding a new one"""

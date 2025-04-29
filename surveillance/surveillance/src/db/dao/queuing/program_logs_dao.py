@@ -180,15 +180,15 @@ class ProgramLoggingDao(UtilityDaoMixin):
         log: ProgramSummaryLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError(
-                "Start of heartbeat didn't reach the db")
+                "Start of pulse didn't reach the db")
         log.end_time = log.end_time + timedelta(seconds=10)
         self.update_item(log)
 
     def finalize_log(self, session: CompletedProgramSession):
-        """Overwrite value from the heartbeat. Expect something to ALWAYS be in the db already at this point."""
+        """Overwrite value from the pulse. Expect something to ALWAYS be in the db already at this point."""
         log: ProgramSummaryLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError(
-                "Start of heartbeat didn't reach the db")
+                "Start of pulse didn't reach the db")
         log.end_time = session.end_time.get_dt_for_db()
         self.update_item(log)

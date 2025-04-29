@@ -151,19 +151,19 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
         log: DomainSummaryLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError(
-                "Start of heartbeat didn't reach the db")
+                "Start of pulse didn't reach the db")
         log.end_time = log.end_time + timedelta(seconds=10)
         self.update_item(log)
 
     def finalize_log(self, session: CompletedChromeSession):
         """
-        Overwrite value from the heartbeat. Expect something to ALWAYS be in the db already at this point.
+        Overwrite value from the pulse. Expect something to ALWAYS be in the db already at this point.
         Note that if the computer was shutdown, this method is never called, and the rough estimate is kept.
         """
         log: DomainSummaryLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError(
-                "Start of heartbeat didn't reach the db")
+                "Start of pulse didn't reach the db")
         log.end_time = session.end_time.get_dt_for_db()
         # TODO: Decide whether to store duration as duration, or as just a on the fly calculation from end - start
         # log.duration = session.end_time.dt - session.start_time.dt

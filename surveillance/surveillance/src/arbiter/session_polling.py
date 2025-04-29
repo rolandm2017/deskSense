@@ -15,7 +15,7 @@ NOTE that the Arbiter will start recording the current session as soon as it bec
 The Arbiter will then conclude the session when the state is replaced by a new current session.
 
 The concluding will occur by the Arbiter 
-(a) not sending more heartbeats and 
+(a) not sending more pulses and 
 (b) passing the finished session to the Summary DAOs to make the end_time precise.
 """
 

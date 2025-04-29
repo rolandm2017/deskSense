@@ -9,7 +9,7 @@ import time
 
 from surveillance.src.config.definitions import keep_alive_pulse_delay, window_push_length
 from surveillance.src.object.classes import ProgramSession
-from surveillance.src.arbiter.session_heartbeat import KeepAliveEngine
+from surveillance.src.arbiter.session_polling import KeepAliveEngine
 
 class MockDaoConn:
     def __init__(self):
