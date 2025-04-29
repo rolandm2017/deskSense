@@ -4,7 +4,7 @@ import time
 from surveillance.src.config.definitions import keep_alive_cycle_length, window_push_length
 from surveillance.src.object.classes import ProgramSession, ChromeSession
 
-from surveillance.src.util.errors import MissingEngineError
+from surveillance.src.util.errors import MissingEngineError, FullWindowError
 
 
 """
@@ -59,12 +59,13 @@ class KeepAliveEngine:
         """
         The "used amount" resets after it reaches a full window. 
         So deducting the full 10 sec should never happen.
-        """
-        # Skip deduction is it's going to be deducting 10 a fully used window
-        amount_of_window_used = self.amount_used
 
-        # self._deduct_remainder(amount_of_window_used)
-        self._add_partial_window(amount_of_window_used)
+        Said another way, the addition of the full 10 sec
+        happens in _pulse_add_ten.
+        """
+        if self.amount_used == window_push_length:
+            raise FullWindowError("Used the wrong method to add ten sec")
+        self._add_partial_window(self.amount_used)
 
     def _hit_max_window(self):
         return self.max_interval <= self.amount_used
@@ -73,13 +74,16 @@ class KeepAliveEngine:
         """
         Go into the session's Summary DAO entry and add ten sec.
         """
+        print("-- pulse add ten -- 76ru")
         self.recorder.add_ten_sec_to_end_time(self.session)
     
     def _add_partial_window(self, amount_used):
         """
-        Used to add amounts between 0 and 9. Incomplete windows.
+        Used to add amounts between 0 and 9 inclusive. Incomplete windows.
+
+        Note that the Recorder will just do nothing if 0 is sent. This keeps testing simple.
         """
-        self.recorder.add_used_time(amount_used, self.session)
+        self.recorder.add_partial_window(amount_used, self.session)
 
      # For testing: methods to expose internal state
     def get_amount_used(self):

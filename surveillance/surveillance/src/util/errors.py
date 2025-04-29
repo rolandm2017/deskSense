@@ -63,3 +63,10 @@ class MissingEngineError(ValueError):
 class SessionClosedError(Exception):
     """Raised when operations are attempted on a closed session."""
     pass
+
+
+class FullWindowError(Exception):
+    """
+    Raised when the KeepAliveEngine tries to add a full window.
+    Full windows should be added by the other DAO method.
+    """

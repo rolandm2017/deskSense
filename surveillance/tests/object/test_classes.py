@@ -30,7 +30,7 @@ def test_ledger_deduct_time():
     ledger.add_ten_sec()
     assert ledger.get_total() == 20
 
-    ledger.add_used_time(4)
+    ledger.extend_by_n(4)
 
     assert ledger.open is False
 
@@ -42,7 +42,7 @@ def test_cant_add_time_after_ledger_closure():
     ledger.add_ten_sec()
     ledger.add_ten_sec()
 
-    ledger.add_used_time(8)
+    ledger.extend_by_n(8)
 
     assert ledger.open is False
 

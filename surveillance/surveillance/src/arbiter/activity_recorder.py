@@ -74,7 +74,7 @@ class ActivityRecorder:
         else:
             raise TypeError("Session was not the right type")
     
-    def add_used_time(self, duration_in_sec: int, session: ProgramSession | ChromeSession):
+    def add_partial_window(self, duration_in_sec: int, session: ProgramSession | ChromeSession):
         """
         Deducts t seconds from the duration of a session. 
         Here, the session's current window was cut short by a new session taking it's place.
@@ -85,7 +85,10 @@ class ActivityRecorder:
 
         # For testing: record this deduction
         self.remainder_history.append((session, duration_in_sec, session.start_time))
-        session.ledger.add_used_time(duration_in_sec)
+        session.ledger.extend_by_n(duration_in_sec)
+
+        if duration_in_sec == 0:
+            return  # Nothing to add
 
         if isinstance(session, ProgramSession):
             print(

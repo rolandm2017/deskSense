@@ -21,7 +21,7 @@ class MockDaoConn:
     def add_ten_sec_to_end_time(self):
         pass
 
-    def add_used_time(self):
+    def add_partial_window(self):
         pass
 
 # Custom sleep function that does nothing
@@ -38,10 +38,13 @@ def test_window_addition_math():
     add_ten_mock = Mock() 
     dao_mock.add_ten_sec_to_end_time = add_ten_mock
     
-    add_used_time_spy = Mock()
-    dao_mock.add_used_time = add_used_time_spy
+    add_partial_window_spy = Mock()
+    dao_mock.add_partial_window = add_partial_window_spy
     
     session = ProgramSession()
+    # --
+    # -- instance 1
+    # --
 
     # The program opens a new window. Ten sec remain
     instance = KeepAliveEngine(session, dao_mock)
@@ -55,11 +58,14 @@ def test_window_addition_math():
     # The Engine concludes:
     instance.conclude()
 
-    # So add_used_time was called with the remainder:
-    add_used_time_spy.assert_called_once_with(partial_cycle_loops, session)
+    # So add_partial_window was called with the remainder:
+    add_partial_window_spy.assert_called_once_with(partial_cycle_loops, session)
 
-    add_used_time_spy.reset_mock()
+    add_partial_window_spy.reset_mock()
 
+    # --
+    # -- instance 2
+    # --
     # The program opens a new window. Ten sec remain
     used_amount = 0
     instance = KeepAliveEngine(session, dao_mock)
@@ -68,10 +74,14 @@ def test_window_addition_math():
     instance.conclude()
 
     # Used time is added to duration
-    add_used_time_spy.assert_called_once_with(used_amount, session)
+    add_ten_mock.assert_not_called()
+    add_partial_window_spy.assert_called_once_with(used_amount, session) 
 
-    add_used_time_spy.reset_mock()
+    add_partial_window_spy.reset_mock()
 
+    # --
+    # -- instance 3
+    # --
     # The program opens a new window. Ten sec remain
     used_amount = 0
     instance = KeepAliveEngine(session, dao_mock)
@@ -86,8 +96,8 @@ def test_window_addition_math():
 
     instance.conclude()
 
-    add_used_time_spy.assert_called_once()
-    assert add_used_time_spy.call_args_list[0][0][0] == used_amount
+    add_partial_window_spy.assert_called_once()
+    assert add_partial_window_spy.call_args_list[0][0][0] == used_amount
 
 
 
@@ -192,8 +202,8 @@ def test_running_for_three_sec():
     add_ten_mock = Mock()
     dao_mock.add_ten_sec_to_end_time = add_ten_mock
 
-    add_used_time_mock = Mock()
-    dao_mock.add_used_time = add_used_time_mock
+    add_partial_window_mock = Mock()
+    dao_mock.add_partial_window = add_partial_window_mock
     
     session = ProgramSession()
     
@@ -217,21 +227,21 @@ def test_running_for_three_sec():
 
     # Assert
     add_ten_mock.assert_not_called()
-    add_used_time_mock.assert_not_called()
+    add_partial_window_mock.assert_not_called()
 
     # Act - Pretend the container called .stop()
     instance.conclude()
 
     conclude_spy.assert_called_once()
-    add_used_time_mock.assert_called_once_with(final_loop_amt, session)
+    add_partial_window_mock.assert_called_once_with(final_loop_amt, session)
 
 
 
 def test_multiple_whole_loops():
     dao_mock = Mock()
     add_ten_mock = Mock()
-    add_used_time_mock = Mock()
-    dao_mock.add_used_time = add_used_time_mock
+    add_partial_window_mock = Mock()
+    dao_mock.add_partial_window = add_partial_window_mock
     dao_mock.add_ten_sec_to_end_time = add_ten_mock
     session = ProgramSession()
     
@@ -258,13 +268,13 @@ def test_multiple_whole_loops():
     instance.conclude()
 
     # Assert
-    add_used_time_mock.assert_called_with(partial_incomplete_cycle, session)  
+    add_partial_window_mock.assert_called_with(partial_incomplete_cycle, session)  
 
 
-def test_conclude_calls_add_used_time():
+def test_conclude_calls_add_partial_window():
     dao_mock = Mock()
-    add_used_time_mock = Mock()
-    dao_mock.add_used_time = add_used_time_mock
+    add_partial_window_mock = Mock()
+    dao_mock.add_partial_window = add_partial_window_mock
     session = ProgramSession()
 
     instance = KeepAliveEngine(session, dao_mock)
@@ -278,12 +288,17 @@ def test_conclude_calls_add_used_time():
     # Act
     instance.conclude()
 
-    assert dao_mock.add_used_time.call_count == 1
+    assert dao_mock.add_partial_window.call_count == 1
     
 def test_window_isnt_used_at_all():
     dao_mock = Mock()
-    add_used_time_mock = Mock()
-    dao_mock.add_used_time = add_used_time_mock
+
+    add_ten_sec_to_end_time_mock = Mock()
+    dao_mock.add_ten_sec_to_end_time = add_ten_sec_to_end_time_mock
+    
+    add_partial_window_mock = Mock()
+    dao_mock.add_partial_window = add_partial_window_mock
+
     session = ProgramSession()
 
     instance = KeepAliveEngine(session, dao_mock)
@@ -291,11 +306,11 @@ def test_window_isnt_used_at_all():
     assert instance.amount_used == 0
     instance.conclude()
     
-    add_used_time_mock.assert_called_once_with(0, session)
+    add_ten_sec_to_end_time_mock.assert_not_called()
+    add_partial_window_mock.assert_called_once_with(0, session)
 
-    final_addition = add_used_time_mock.call_args_list[0][0][0]
-    assert final_addition == 0
-
+    final_addition = add_partial_window_mock.call_args_list[0][0][0]
+    assert final_addition == 0      
 def test_used_amount_resets_after_full_window():
     dao_mock = Mock()
     session = ProgramSession()
@@ -323,12 +338,16 @@ def test_used_amount_resets_after_full_window():
 
 def test_full_window_is_used():
     dao_mock = Mock()
-    add_used_time_mock = Mock()
-    dao_mock.add_used_time = add_used_time_mock
+
+    add_ten_sec_to_end_time_mock = Mock()
+    dao_mock.add_ten_sec_to_end_time = add_ten_sec_to_end_time_mock
+    
+    add_partial_window_mock = Mock()
+    dao_mock.add_partial_window = add_partial_window_mock
+    
     session = ProgramSession()
 
     instance = KeepAliveEngine(session, dao_mock)
-
 
     internal_add_spy = Mock(side_effect=instance._add_partial_window)
     instance._add_partial_window = internal_add_spy
@@ -352,7 +371,7 @@ def test_numerous_full_cycles():
     dao_mock.add_ten_sec_to_end_time = add_ten_sec_to_end_time_mock
 
     add_partial_window_mock = Mock()
-    dao_mock.add_used_time = add_partial_window_mock
+    dao_mock.add_partial_window = add_partial_window_mock
     session = ProgramSession()
 
     iteration_count = 63
