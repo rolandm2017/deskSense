@@ -13,7 +13,7 @@ from surveillance.src.arbiter.session_heartbeat import KeepAliveEngine
 
 from surveillance.src.util.time_wrappers import UserLocalTime
 
-from ..data.arbiter_events import test_sessions, times_for_system_clock, minutes_between_start_and_2nd_to_last, test_evenbts_elapsed_time_in_sec
+from ..data.arbiter_events import test_sessions, minutes_between_start_and_2nd_to_last, test_evenbts_elapsed_time_in_sec, times_for_system_clock
 from ..mocks.mock_clock import MockClock
 from ..mocks.mock_engine_container import MockEngineContainer
 
@@ -313,8 +313,8 @@ def test_activity_arbiter(activity_arbiter_and_setup):
         # the session would have on_new_session either window push, or add ten sec in start_session.
         # So we have to add ten sec per entry.
         from_on_new_session = 10
-        for i in range(0, len(test_sessions)):
-            keep_alive_tally_in_sec += from_on_new_session
+        # for i in range(0, len(test_sessions)):
+        #     keep_alive_tally_in_sec += from_on_new_session
         for i in range(0, num_of_window_pushes):
             # Don't bother with what went in there, just add the window duration
             keep_alive_tally_in_sec += keep_alive_pulse_delay

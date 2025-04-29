@@ -1,7 +1,5 @@
 from __future__ import annotations
 from datetime import datetime, timedelta, timezone
-import copy
-
 
 from surveillance.src.object.classes import ChromeSession, ProgramSession, CompletedChromeSession, CompletedProgramSession
 

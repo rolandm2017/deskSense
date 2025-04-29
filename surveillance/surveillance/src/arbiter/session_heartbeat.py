@@ -43,6 +43,7 @@ class KeepAliveEngine:
         self.zero_remainder = 0
 
     def iterate_loop(self):
+        # TODO: Change so that it relies on datetime.now() having 10 sec elapsed.
         self.amount_used += 1  # not
         if self._hit_max_window():
             self._pulse_add_ten()

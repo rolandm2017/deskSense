@@ -13,7 +13,7 @@ from surveillance.src.arbiter.session_heartbeat import KeepAliveEngine
 
 from surveillance.src.util.time_wrappers import UserLocalTime
 
-from ..data.arbiter_events import test_sessions, times_for_system_clock, minutes_between_start_and_2nd_to_last, test_evenbts_elapsed_time_in_sec
+from ..data.arbiter_events import test_sessions, minutes_between_start_and_2nd_to_last, test_evenbts_elapsed_time_in_sec
 from ..mocks.mock_clock import MockClock
 from ..mocks.mock_engine_container import MockEngineContainer
 
@@ -49,8 +49,6 @@ def activity_arbiter_and_setup():
 
     durations = get_durations_from_test_data(test_sessions)
 
-    # Mock dependencies
-    clock = MockClock(times=times_for_system_clock)
 
     # Create mock UI components
     ui_layer = MagicMock()
@@ -63,19 +61,19 @@ def activity_arbiter_and_setup():
     final_loop = 7  # keep it under 10 so there isn't a final pulse
     durations_as_int.append(final_loop)
 
-    threaded_container = MockEngineContainer(durations_as_int, ultrafast_interval_for_testing)
+    return test_sessions, durations_as_int
 
 def test_one_complete_run(dao_connection):
     session = ProgramSession("Foo")
 
     engine = KeepAliveEngine(session, dao_connection)
     durations_for_test = [63]
-    threaded_container = MockEngineContainer(durations_for_test)
+    engine_container = MockEngineContainer(durations_for_test)
 
-    threaded_container.add_first_engine(engine)
+    engine_container.add_first_engine(engine)
 
-    threaded_container.start()
-    threaded_container.stop()
+    engine_container.start()
+    engine_container.stop()
 
     # -- assert
 
@@ -116,12 +114,12 @@ def test_five_runs(dao_connection):
 
     # Remember that, if this were development, on_new_session would add 10 sec
     # before any of this happened. So there's a free +10 per session before this occurs.
-    threaded_container = MockEngineContainer(durations_for_test)
+    engine_container = MockEngineContainer(durations_for_test)
 
-    threaded_container.add_first_engine(engine)
+    engine_container.add_first_engine(engine)
 
-    threaded_container.start()
-    threaded_container.stop()
+    engine_container.start()
+    engine_container.stop()
 
     assert durations_for_test[0] // 10 == 6
     assert dao_connection.add_ten_sec_to_end_time.call_count == 6
@@ -130,10 +128,10 @@ def test_five_runs(dao_connection):
 
     for i in durations_for_test[1:]:
         engine = KeepAliveEngine(session, dao_connection)
-        threaded_container.replace_engine(engine)
+        engine_container.replace_engine(engine)
     
-        threaded_container.start()
-        threaded_container.stop()
+        engine_container.start()
+        engine_container.stop()
 
     # -- assert
 
@@ -146,3 +144,91 @@ def test_five_runs(dao_connection):
 
     assert dao_connection.add_ten_sec_to_end_time.call_count == count_of_full_windows
     
+
+def test_full_test_sessions(dao_connection, activity_arbiter_and_setup):
+    tested_sessions, durations_between_sessions = activity_arbiter_and_setup
+
+    window_pushes = 0
+    pushes_by_index = {}
+    deductions = []
+
+    for index, duration in enumerate(durations_between_sessions):
+        full_windows = duration // keep_alive_pulse_delay
+        window_pushes += full_windows
+        pushes_by_index[index] = full_windows
+
+        deductions.append(duration % keep_alive_pulse_delay)
+
+
+    expected_time = sum(durations_between_sessions)  # Remember 7 was added in setup
+
+    engine = KeepAliveEngine(tested_sessions[0], dao_connection)
+    
+    # Remember that, if this were development, on_new_session would add 10 sec
+    # before any of this happened. So there's a free +10 per session before this occurs.
+    engine_container = MockEngineContainer(durations_between_sessions)
+    
+    engine_container.add_first_engine(engine)
+
+    engine_container.start()
+    engine_container.stop()
+
+    for session in tested_sessions[1:]:
+        engine = KeepAliveEngine(session, dao_connection)
+        
+        engine_container.replace_engine(engine)
+
+        engine_container.start()
+        engine_container.stop()
+
+    assert dao_connection.add_ten_sec_to_end_time.call_count == window_pushes
+
+    current_test_session_index = 0
+    last = None
+    success = 0
+
+    print(f"going for {window_pushes} in a row")
+    # GPT: This is my second attempt at asserting
+    for i in range(0, dao_connection.add_ten_sec_to_end_time.call_count):
+        if last is None:
+            # First iteration
+            add_ten_sec_session = dao_connection.add_ten_sec_to_end_time.call_args_list[i][0][0]
+            assert add_ten_sec_session.get_name() == tested_sessions[0].get_name()
+            last = add_ten_sec_session
+            success += 1
+            continue
+        # Section starts at i == 1
+        add_ten_sec_session = dao_connection.add_ten_sec_to_end_time.call_args_list[i][0][0]
+        session_hasnt_changed_yet = add_ten_sec_session.get_name() == last.get_name()
+        if session_hasnt_changed_yet:
+            print(f"asserting against {add_ten_sec_session.get_name()}")
+            assert add_ten_sec_session.get_name() == tested_sessions[current_test_session_index].get_name()
+            assert add_ten_sec_session.start_time.dt == tested_sessions[current_test_session_index].start_time.dt
+            success += 1
+            print(f"success: {success}")
+            last = add_ten_sec_session
+        else:
+            print("Session changed")
+            print(f"asserting against {add_ten_sec_session.get_name()}")
+            current_test_session_index += 1
+            assert add_ten_sec_session.get_name() == tested_sessions[current_test_session_index].get_name()
+            assert add_ten_sec_session.start_time.dt == tested_sessions[current_test_session_index].start_time.dt
+            success += 1
+            last = add_ten_sec_session
+            print(f"success: {success}")
+
+        
+    # GPT: This was my first attempt at asserting
+    end_of_last_segment = 0
+    for i in range(0, len(tested_sessions)):
+        expected_windows = pushes_by_index[i]
+        # Step through the expected windows in chunks
+        for i in range(end_of_last_segment, expected_windows):
+            add_ten_sec_session = dao_connection.add_ten_sec_to_end_time.call_args_list[i][0][0]
+            assert add_ten_sec_session.get_name() == tested_sessions[i].get_name()
+            assert add_ten_sec_session.start_time.dt == tested_sessions[i].start_time.dt
+        end_of_last_segment = end_of_last_segment + expected_windows
+
+        assert deductions[i] == dao_connection.deduct_duration.call_args_list[i][0][0]
+        
+
