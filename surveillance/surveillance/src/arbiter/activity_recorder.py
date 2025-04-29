@@ -66,6 +66,7 @@ class ActivityRecorder:
 
         # For testing
         self.pulse_history.append((session, session.start_time))
+        session.ledger.add_ten_sec()
 
         if isinstance(session, ProgramSession):
             self.program_logging_dao.push_window_ahead_ten_sec(session)
@@ -97,6 +98,7 @@ class ActivityRecorder:
 
         # For testing: record this deduction
         self.deduction_history.append((session, duration_in_sec, session.start_time))
+        session.ledger.deduct_amount(duration_in_sec)
 
         if isinstance(session, ProgramSession):
             print(

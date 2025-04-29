@@ -3,30 +3,72 @@
 from datetime import datetime, timedelta, timezone
 from typing import TypedDict, Optional
 
+from abc import ABC, abstractmethod
+
 from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.time_formatting import parse_time_string
 
+class SessionLedger:
+    """
+    A testing helper.
 
-class ProgramSession:
+    Records the changes in time that reach the ActivityRecorder layer.
+    """
+
+    def __init__(self):
+        self.total = 0
+        self.extendable = True
+
+    def add_ten_sec(self):
+        """Proof that the add_ten_sec Recorder method occurred."""
+        if self.extendable:
+            self.total += 10
+        else:
+            raise ValueError("Tried to push window after deduction")
+
+    def deduct_amount(self, amount):
+        """Proof that the deduct_duration method was called with a value."""
+        self.extendable = False  # Cannot window push after deduct_duration
+        self.total -= amount
+
+    def get_total(self):
+        return self.total
+    
+class ActivitySession(ABC):
+    """Base class for all activity sessions that should never be instantiated directly."""
+    start_time: UserLocalTime
+    productive: bool
+    ledger: SessionLedger
+    
+    def __init__(self, start_time, productive=False):
+        self.start_time = start_time
+        self.productive = productive
+        self.ledger = SessionLedger()
+    
+    @abstractmethod
+    def to_completed(self, end_time):
+        """Convert to a completed session."""
+        pass
+
+class ProgramSession(ActivitySession):
     exe_path: str
     process_name: str
     window_title: str
     detail: str
-    start_time: UserLocalTime
+    # start_time: UserLocalTime  # exists in ActivitySession
     end_time: Optional[UserLocalTime]
     duration: Optional[timedelta]
-    productive: bool
+    # productive: bool  # exists in ActivitySession
 
     def __init__(self, exe_path="", process_name="", window_title="", detail="", start_time=UserLocalTime(datetime(2000, 1, 1, tzinfo=timezone.utc)), productive=False):
         # IF you remove the default args for this class, then you will have to do A LOT of cleanup in the test data.
+        super().__init__(start_time, productive)
         self.exe_path = exe_path
         self.process_name = process_name
         self.window_title = window_title
         self.detail = detail
-        self.start_time = start_time
         self.end_time = None
         self.duration = None
-        self.productive = productive
 
     def to_completed(self, end_time):
         """Similar to to_completed in the other type"""
@@ -99,21 +141,20 @@ class CompletedProgramSession(ProgramSession):
     # TODO: Transfer whole codebase to use 2-3 vers of the program session.
 
 
-class ChromeSession:
+class ChromeSession(ActivitySession):
     domain: str
     detail: str
-    start_time: UserLocalTime
+    # start_time: UserLocalTime  # exists in ActivitySession
     end_time: Optional[UserLocalTime]
     duration: Optional[timedelta]
-    productive: bool
+    # productive: bool  # exists in ActivitySession
 
     def __init__(self, domain, detail, start_time, productive=False):
+        super().__init__(start_time, productive)
         self.domain = domain
         self.detail = detail
-        self.start_time = start_time
         self.end_time = None
         self.duration = None
-        self.productive = productive
 
     def to_completed(self, end_time):
         """Similar to to_completed in the other type"""
