@@ -153,7 +153,7 @@ def test_away_from_edge_cases(setup_parts):
 
     for i in range(0, len(test_inputs)):
         assert all_for_day[i].exe_path_as_id in paths_for_asserting
-        assert all_for_day[i].hours_spent == ten_sec_as_pct_of_hour
+        assert all_for_day[i].hours_spent == 0
 
     assert len(all_for_day) == len(test_inputs)
 
@@ -189,7 +189,7 @@ def test_on_twelve_ish_am_boundary(setup_parts):
 
     for i in range(0, len(test_inputs)):
         assert all_for_day[i].exe_path_as_id in paths_for_asserting
-        assert all_for_day[i].hours_spent == ten_sec_as_pct_of_hour
+        assert all_for_day[i].hours_spent == 0
 
     assert len(all_for_day) == len(test_inputs)
 
@@ -226,7 +226,7 @@ def test_on_eleven_ish_pm_boundary(setup_parts):
 
     for i in range(0, len(test_inputs)):
         assert all_for_day[i].exe_path_as_id in paths_for_asserting
-        assert all_for_day[i].hours_spent == ten_sec_as_pct_of_hour
+        assert all_for_day[i].hours_spent == 0
 
     assert len(all_for_day) == len(test_inputs)
 

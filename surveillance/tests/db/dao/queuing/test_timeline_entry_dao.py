@@ -19,7 +19,8 @@ import psutil
 
 
 tokyo_tz = pytz.timezone("Asia/Tokyo")
-now_tokyo = datetime.now(pytz.UTC).astimezone(tokyo_tz)
+
+test_time = tokyo_tz.localize(datetime(2025, 4, 25, 12, 12, 12))
 
 
 # FIXME: OSerror
@@ -33,7 +34,7 @@ class TestTimelineEntryDao:
     @pytest.mark.asyncio
     async def test_create_from_keyboard_aggregate(self, dao, mock_session):
         # Arrange
-        current_time = now_tokyo
+        current_time = test_time
         keyboard_aggregate = KeyboardAggregate(
             start_time=UserLocalTime(current_time),
             end_time=UserLocalTime(current_time + timedelta(minutes=5))
@@ -58,7 +59,7 @@ class TestTimelineEntryDao:
     @pytest.mark.asyncio
     async def test_create_from_mouse_move_window(self, dao, mock_session):
         # Arrange
-        current_time = now_tokyo
+        current_time = test_time
         mouse_window = MouseMoveWindow(
             UserLocalTime(current_time), UserLocalTime(current_time + timedelta(minutes=5)))
 
@@ -81,7 +82,7 @@ class TestTimelineEntryDao:
     @pytest.mark.asyncio
     async def test_read_day(self, dao, mock_session):
         # Arrange
-        test_day = UserLocalTime(now_tokyo)
+        test_day = UserLocalTime(test_time)
         event_type = ChartEventType.KEYBOARD
         mock_entries = [
             Mock(spec=TimelineEntryObj),
@@ -110,8 +111,7 @@ class TestTimelineEntryDao:
         assert args[0].hour == 0 and args[0].minute == 0 and args[0].second == 0
         assert args[1].hour == 0 and args[1].minute == 0 and args[1].second == 0
 
-        assert args[0].day + \
-            1 == args[1].day, "Expected arg1 to be a day later than arg0"
+        assert args[0].day + 1 == args[1].day, "Expected arg1 to be a day later than arg0"
 
         args, _ = execute_and_return_mock.call_args
 
@@ -122,7 +122,7 @@ class TestTimelineEntryDao:
 
         # Arrange
         clock = SystemClock()  # Could also be userFacingClock for this test
-        test_day = now_tokyo
+        test_day = test_time
         test_day = test_day - timedelta(days=7)
 
         mock_entries = [Mock(spec=TimelineEntryObj),
@@ -169,7 +169,7 @@ class TestTimelineEntryDao:
         # Arrange
         clock = SystemClock()  # Could also be userFacingClock for this test
 
-        test_day_end = now_tokyo
+        test_day_end = test_time
         test_day_start = test_day_end - timedelta(days=7)
 
         mock_entries = [Mock(spec=TimelineEntryObj),

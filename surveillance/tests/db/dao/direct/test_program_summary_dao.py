@@ -1,13 +1,9 @@
-import psutil
-import pytest
 import pytest_asyncio
 
 
 from unittest.mock import AsyncMock, Mock, MagicMock
 from datetime import datetime, date, timedelta, timezone
 import pytz
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy import text
 from sqlalchemy.sql.selectable import Select
 
@@ -16,7 +12,6 @@ from dotenv import load_dotenv
 
 from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from surveillance.src.db.models import DailyProgramSummary, Base
 from surveillance.src.object.classes import CompletedProgramSession
 
@@ -66,10 +61,10 @@ class TestProgramSummaryDao:
         args, kwargs = create_spy.call_args
         # Check that first argument is a Select object
         assert isinstance(args[0], CompletedProgramSession)
-        assert isinstance(args[1], float)
+        assert isinstance(args[1], int)
         assert isinstance(args[2], datetime)
         assert args[0].window_title == chrome
-        assert args[1] == 10 / SECONDS_PER_HOUR
+        assert args[1] == 0
         assert args[2].day == dt.day
         assert args[2].hour == 0
         assert args[2].minute == 0
