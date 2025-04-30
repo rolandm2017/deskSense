@@ -30,12 +30,12 @@ now_tokyo = datetime.now(pytz.UTC).astimezone(tokyo_tz)
 
 class TestChromeSummaryDao:
     @pytest_asyncio.fixture
-    async def chrome_summary_dao(self, mock_regular_session_maker, mock_async_session_maker):
+    async def chrome_summary_dao(self, mock_regular_session_maker):
 
         logging_dao = ChromeLoggingDao(
             mock_regular_session_maker)
         chrome_summary_dao = ChromeSummaryDao(
-            logging_dao, mock_regular_session_maker, mock_async_session_maker)
+            logging_dao, mock_regular_session_maker)
         yield chrome_summary_dao
 
     def test_start_session(self, chrome_summary_dao):

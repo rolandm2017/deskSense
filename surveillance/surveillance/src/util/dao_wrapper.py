@@ -1,5 +1,7 @@
 from functools import wraps
 
+from surveillance.src.util.time_formatting import convert_to_timezone
+
 def validate_start_end_and_duration(func):
     @wraps(func)
     def wrapper(self, session, *args, **kwargs):

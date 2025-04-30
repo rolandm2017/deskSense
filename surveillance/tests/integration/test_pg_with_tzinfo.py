@@ -44,6 +44,7 @@ timezone_for_test = "Europe/Berlin"  # UTC +1 or UTC +2
 
 some_local_tz = pytz.timezone(timezone_for_test)
 
+
 def test_basic_setup():
     """Assumes that even the testing setup will be broken unless tested"""
     time_for_test = add_time(base_day, 5, 6, 7)
@@ -109,8 +110,8 @@ just_after_boundary = create_notion_entry(some_local_tz.localize(add_time(one_da
 
 def write_before_and_after_base_day(summary_dao):
     """Ensures that read_day is more specific than just 'read_all' with an arg."""
-    summary_dao.start_session(just_before_boundary, just_before_boundary.start_time)
-    summary_dao.start_session(just_after_boundary, just_after_boundary.start_time)
+    summary_dao.start_session(just_before_boundary)
+    summary_dao.start_session(just_after_boundary)
 
 
 """
@@ -151,8 +152,8 @@ class TestSummaryDaoWithTzInfo:
         assert len(set(paths_for_asserting)) == len(paths_for_asserting)
         try:
             # Write
-            summary_dao.start_session(seven_am_ish, seven_am_ish.start_time)
-            summary_dao.start_session(afternoon, afternoon.start_time)
+            summary_dao.start_session(seven_am_ish)
+            summary_dao.start_session(afternoon)
 
             write_before_and_after_base_day(summary_dao)
             
@@ -189,9 +190,9 @@ class TestSummaryDaoWithTzInfo:
         assert len(set(paths_for_asserting)) == len(paths_for_asserting)
         try:
             # Write
-            summary_dao.start_session(late_night_entry, late_night_entry.start_time)
-            summary_dao.start_session(midnight_entry, midnight_entry.start_time)
-            summary_dao.start_session(abs_min_time, abs_min_time.start_time)
+            summary_dao.start_session(late_night_entry)
+            summary_dao.start_session(midnight_entry)
+            summary_dao.start_session(abs_min_time)
 
             write_before_and_after_base_day(summary_dao)
 
@@ -230,8 +231,8 @@ class TestSummaryDaoWithTzInfo:
         
         try:
             # Write
-            summary_dao.start_session(latenight1, latenight1.start_time)
-            summary_dao.start_session(latenight2, latenight2.start_time)
+            summary_dao.start_session(latenight1)
+            summary_dao.start_session(latenight2)
 
             write_before_and_after_base_day(summary_dao)
 
@@ -252,3 +253,97 @@ class TestSummaryDaoWithTzInfo:
         finally:
             truncate_summaries_and_logs_tables_via_session(session_maker)
 
+    def test_EST_tz(self, setup_parts):
+        logging_dao, summary_dao, _, session_maker = setup_parts
+        # Cook the test data so that 2 will be in the read_day func, and 2 won't be.
+        # Assert that the retrieved values match in all two of day and hour.
+
+        # Eastern Standard Time (EST)
+        est_tz = pytz.timezone("America/New_York")  # UTC -4 or -5 depending on month
+
+        test_day = 24
+        invalid1 = datetime(2025, 4, test_day - 1, 23, 55, 55)
+        t1 = datetime(2025, 4, test_day, 0, 0, 1)
+        t2 = datetime(2025, 4, test_day, 23, 59, 55)
+        invalid2 = datetime(2025, 4, test_day + 1, 0, 3, 0)
+
+        outside_of_range_1 = est_tz.localize(invalid1)
+        outside_of_range_2 = est_tz.localize(invalid2)
+        very_start_of_day = est_tz.localize(t1)
+        just_before_end_of_day = est_tz.localize(t2)
+
+        # Test setup conditions
+        assert very_start_of_day.hour == t1.hour
+        assert just_before_end_of_day.hour == t2.hour
+        
+        # Check the timezone name
+        assert str(very_start_of_day.tzinfo) == "America/New_York"
+        assert str(just_before_end_of_day.tzinfo) == "America/New_York"
+
+        assert very_start_of_day.utcoffset() == timedelta(hours=9)
+        assert just_before_end_of_day.utcoffset() == timedelta(hours=9)
+
+    def test_asia_tokyo_tz(self, setup_parts):
+        logging_dao, summary_dao, _, session_maker = setup_parts
+        # Cook the test data so that 2 will be in the read_day func, and 2 won't be.
+        # Assert that the retrieved values match in all two of day and hour.
+
+        # Asia/Tokyo
+        tokyo_tz = pytz.timezone("Asia/Tokyo")  # UTC +9
+
+        test_day = 24
+        invalid1 = datetime(2025, 4, test_day - 1, 23, 55, 55)
+        t1 = datetime(2025, 4, test_day, 0, 0, 1)
+        t2 = datetime(2025, 4, test_day, 23, 59, 55)
+        invalid2 = datetime(2025, 4, test_day + 1, 0, 3, 0)
+
+        outside_of_range_1 = tokyo_tz.localize(invalid1)
+        outside_of_range_2 = tokyo_tz.localize(invalid2)
+        very_start_of_day = tokyo_tz.localize(t1)
+        just_before_end_of_day = tokyo_tz.localize(t2)
+
+        # Test setup conditions
+        assert very_start_of_day.hour == t1.hour
+        assert just_before_end_of_day.hour == t2.hour
+        
+        # Check the timezone name
+        assert str(very_start_of_day.tzinfo) == 'Asia/Tokyo'
+        assert str(just_before_end_of_day.tzinfo) == 'Asia/Tokyo'
+
+        assert very_start_of_day.utcoffset() == timedelta(hours=9)
+        assert just_before_end_of_day.utcoffset() == timedelta(hours=9)
+
+        invalid_exe = "C:/Adobe/Photoshop.exe"
+        invalid_process = "Photoshop.exe"
+        invalid_session1 = ProgramSession(invalid_exe, invalid_process, "", "", UserLocalTime(outside_of_range_1))
+        invalid_session2 = ProgramSession(invalid_exe, invalid_process, "", "", UserLocalTime(outside_of_range_2))
+
+        session1_dt_as_ult = UserLocalTime(very_start_of_day)
+        session2_dt_as_ult = UserLocalTime(just_before_end_of_day)
+        target_exe_path = "C:/ProgramFiles/pour.exe"
+        target_process_name = "pour.exe"
+        session1 = ProgramSession(target_exe_path, target_process_name, "", "", session1_dt_as_ult)
+        session2 = ProgramSession(target_exe_path, target_process_name, "", "", session2_dt_as_ult)
+
+        # Do the writes
+        summary_dao.start_session(invalid_session1)
+        summary_dao.start_session(invalid_session2)
+
+        summary_dao.start_session(session1)
+        summary_dao.push_window_ahead_ten_sec(session1)
+        summary_dao.push_window_ahead_ten_sec(session2)
+
+        # Read by day
+        days_entries = summary_dao.read_day(session1_dt_as_ult)
+
+        # Check that you got the intended valuesa
+        assert len(days_entries) == 1  # They were the same program
+        entry_one = days_entries[0]
+
+        assert entry_one.exe_path_as_id == target_exe_path
+        assert entry_one.process_name == target_process_name
+
+        # Check that they match the original datetime's day. (hh:mm:ss isn't saved)
+        assert entry_one.gathering_date.day == very_start_of_day.day
+        assert entry_one.gathering_date.day == just_before_end_of_day.day
+        

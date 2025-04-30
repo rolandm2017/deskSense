@@ -39,7 +39,7 @@ class ActivityRecorder:
                 # to flow through the KeepAliveEngine. That way, there's only one place to look for time being added.
                 # self.program_summary_dao.start_window_push_for_session(session, now)
                 return
-            self.program_summary_dao.start_session(session, session.start_time)
+            self.program_summary_dao.start_session(session)
         elif isinstance(session, ChromeSession):
             self.chrome_logging_dao.start_session(session)
             session_exists_already = self.chrome_summary_dao.find_todays_entry_for_domain(
@@ -47,7 +47,7 @@ class ActivityRecorder:
             if session_exists_already:
                 # self.chrome_summary_dao.start_window_push_for_session(session, now)
                 return 
-            self.chrome_summary_dao.start_session(session, session.start_time)
+            self.chrome_summary_dao.start_session(session)
         else:
             raise TypeError("Session was not the right type")
 

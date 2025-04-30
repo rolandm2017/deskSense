@@ -38,13 +38,13 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         self.regular_session = reg_session
         self.logger = ConsoleLogger()
 
-    def start_session(self, program_session: ProgramSession, right_now: UserLocalTime):
+    def start_session(self, program_session: ProgramSession):
         """Creating the initial session for the summary"""
         # starting_window_amt = window_push_length  # sec
         # usage_duration_in_hours = starting_window_amt / SECONDS_PER_HOUR
         usage_duration_in_hours = 0  # start_session no longer adds time. It's all add_ten_sec
 
-        today_start = get_start_of_day_from_datetime(right_now.dt)
+        today_start = get_start_of_day_from_datetime(program_session.start_time.dt)
 
         self._create(program_session, usage_duration_in_hours, today_start)
 
@@ -104,7 +104,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         )
         return self.execute_and_return_all(query)
 
-    def read_all(self):
+    def read_all(self) -> List[DailyProgramSummary]:
         """Read all entries."""
         query = select(DailyProgramSummary)
         return self.execute_and_return_all(query)

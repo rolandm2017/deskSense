@@ -89,6 +89,7 @@ class DashboardService:
 
         return usage_from_days
 
+    # FIXME: Need this method and all it's friends to distinguish between Peripherals and Program timelines
     async def get_timeline_for_today(self):
         today = self.user_clock.now()
         all_mouse_events = await self.timeline_dao.read_day_mice(today, self.user_clock)

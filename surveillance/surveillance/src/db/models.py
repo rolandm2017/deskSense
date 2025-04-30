@@ -1,13 +1,14 @@
 # models.py
 from sqlalchemy import Enum as SQLAlchemyEnum
-from sqlalchemy import Column, Integer, String, DateTime, Float, Computed, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Float, Computed, ForeignKey, func, text
 from sqlalchemy.orm import mapped_column, relationship, Mapped
 
 from sqlalchemy import Column as SQLAlchemyColumn
 
 from typing import Union, Any, Optional
 from datetime import datetime
-from .database import Base
+from surveillance.src.db.database import Base
+
 from surveillance.src.object.enums import ChartEventType, SystemStatusType
 from surveillance.src.config.definitions import max_content_len
 
@@ -24,6 +25,7 @@ class DailySummaryBase(Base):
     # The date on which the program data was gathered, without hh:mm:ss
     # MUST be the date FOR THE USER. Otherwise, the program doesn't make sense
     gathering_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    gathering_date_local: Mapped[datetime] = mapped_column(DateTime(timezone=False))
     # TODO: Try gathering_date not as .date() but the full hh:mm:ss thing. Until you figure out why it isn't like that already
 
 
@@ -76,9 +78,14 @@ class SummaryLogBase(Base):
     # time stuff
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    start_time_local: Mapped[datetime] = mapped_column(DateTime(timezone=False))
+    end_time_local: Mapped[datetime] = mapped_column(DateTime(timezone=False))
+
     duration_in_sec: Mapped[float] = mapped_column(Float, nullable=True)
     # The date on which the data was gathered
     gathering_date = Column(DateTime(timezone=True))
+    gathering_date_local: Mapped[datetime] = mapped_column(DateTime(timezone=False))
+
     created_at = Column(DateTime(timezone=True))
 
 
@@ -117,7 +124,7 @@ class DomainSummaryLog(SummaryLogBase):
 
 class TypingSession(Base):
     __tablename__ = "typing_sessions"
-
+    # It is unclear if this model needs a start_time_local, end_time_local, so I'm leaving it
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -128,7 +135,7 @@ class TypingSession(Base):
 
 class MouseMove(Base):
     __tablename__ = "mouse_moves"
-
+    # It is unclear if this model needs a start_time_local, end_time_local, so I'm leaving it
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -166,7 +173,7 @@ class TimelineEntryObj(Base):
         Computed(
             "CASE WHEN \"group\" = 'MOUSE' THEN 'Mouse Event ' || id ELSE 'Typing Session ' || id END", persisted=True)
     )
-
+    # It is unclear if this model needs a start_time_local, end_time_local, so I'm leaving it
     start = Column(DateTime(timezone=True))
     end = Column(DateTime(timezone=True))
 

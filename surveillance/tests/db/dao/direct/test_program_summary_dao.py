@@ -30,13 +30,13 @@ now_tokyo = datetime.now(pytz.UTC).astimezone(tokyo_tz)
 
 class TestProgramSummaryDao:
     @pytest_asyncio.fixture
-    async def program_summary_dao(self, mock_regular_session_maker, mock_async_session_maker):
+    async def program_summary_dao(self, mock_regular_session_maker):
         clock = SystemClock()
 
         logging_dao = ProgramLoggingDao(
             mock_regular_session_maker)
         program_summary_dao = ProgramSummaryDao(
-            logging_dao, mock_regular_session_maker, mock_async_session_maker)
+            logging_dao, mock_regular_session_maker)
         yield program_summary_dao
 
     def test_start_session(self, program_summary_dao):

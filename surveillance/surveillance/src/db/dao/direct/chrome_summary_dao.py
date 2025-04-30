@@ -31,12 +31,12 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         self.regular_session = regular_session
         self.logger = ConsoleLogger()
 
-    def start_session(self, chrome_session: ChromeSession, right_now: UserLocalTime):
+    def start_session(self, chrome_session: ChromeSession):
         target_domain_name = chrome_session.domain
 
         usage_duration_in_hours = 0  # start_session no longer adds time. It's all add_ten_sec
 
-        today = get_start_of_day_from_datetime(right_now.dt)  # Still has tz attached
+        today = get_start_of_day_from_datetime(chrome_session.start_time.dt)  # Still has tz attached
         self._create(target_domain_name, usage_duration_in_hours, today)
 
     def _create(self, target_domain_name, duration_in_hours, when_it_was_gathered):

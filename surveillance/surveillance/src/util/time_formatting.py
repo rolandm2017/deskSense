@@ -3,13 +3,24 @@ import pytz
 
 from typing import List, cast
 
-from surveillance.src.db.models import TimelineEntryObj
+from surveillance.src.db.models import TimelineEntryObj, DailySummaryBase, SummaryLogBase
 
 from surveillance.src.config.definitions import local_time_zone, daylight_savings_tz_offset
 from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.errors import TimezoneUnawareError
 
-
+def convert_all_to_tz(obj_list, target_tz):
+    # Func assumes the obj list will all be of the same type
+    if isinstance(obj_list[0], DailySummaryBase):
+        # The gathering date is either the same day, or the previous day.
+        # 00:00:00-04:00 -> 20:00:00 UTC -1 day.
+        # The hours reveal the original tz. 19:00:00 -> UTC -5
+        converted = [obj for obj in obj_list]
+        return
+    elif isinstance(obj_list[0], SummaryLogBase):
+        return
+    else:
+        pass
 
 def convert_to_utc(dt: datetime):
     return dt.astimezone(timezone.utc)
