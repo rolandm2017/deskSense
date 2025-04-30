@@ -15,15 +15,19 @@ from datetime import datetime, timedelta
 
 from typing import List
 
-from surveillance.src.db.models import DailyProgramSummary
-from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from surveillance.src.db.models import DailyProgramSummary, ProgramSummaryLog, DomainSummaryLog
 from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from surveillance.src.object.classes import ProgramSession, ChromeSession
 
 from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.errors import TimezoneUnawareError
 from surveillance.src.util.const import ten_sec_as_pct_of_hour
+from surveillance.src.util.time_formatting import get_start_of_day_from_ult
 
 from ..data.tzinfo_with_pg import create_notion_entry, create_pycharm_entry, create_zoom_entry
+from ..data.arbiter_events import session1, session2
 
 def add_time(base_date, hours=0, minutes=0, seconds=0):
     """Helper function to add hours, minutes, seconds to a base date"""
@@ -114,118 +118,121 @@ async def setup_parts(db_session_in_mem, mock_async_session_maker):
     
     This connects to the test db, unless there is an unforseen problem.
     """
-    regular_maker = db_session_in_mem
+  
     # Get all required DAOs
     program_logging_dao = ProgramLoggingDao(
-        regular_maker)
+        db_session_in_mem)
+    chrome_logging_dao = ChromeLoggingDao(db_session_in_mem)
     program_summary_dao = ProgramSummaryDao(
-        program_logging_dao, regular_maker, mock_async_session_maker)
+        program_logging_dao, db_session_in_mem, mock_async_session_maker)
     
-    return program_logging_dao, program_summary_dao
+    return program_logging_dao, program_summary_dao, chrome_logging_dao
 
-def test_away_from_edge_cases(setup_parts):
-    """Away from edge cases, meaning, 11 am, 3 pm, 6 pm."""
-    logging_dao, summary_dao = setup_parts
+class TestSummaryDaoWithTzInfo:
 
-    seven_am_ish = create_zoom_entry(some_local_tz.localize(add_time(base_day, 7, 0, 0)))
-    afternoon = create_pycharm_entry(some_local_tz.localize(add_time(base_day, 15, 0, 15)))
+    def test_away_from_edge_cases(self, setup_parts):
+        """Away from edge cases, meaning, 11 am, 3 pm, 6 pm."""
+        logging_dao, summary_dao, _ = setup_parts
 
-    test_inputs = [seven_am_ish, afternoon]
-    
-    paths_for_asserting = [x.exe_path for x in test_inputs]
-    # Test setup conditions - all unique programs
-    assert len(set(paths_for_asserting)) == len(paths_for_asserting)
-    # Write
-    summary_dao.start_session(seven_am_ish, seven_am_ish.start_time)
-    summary_dao.start_session(afternoon, afternoon.start_time)
+        seven_am_ish = create_zoom_entry(some_local_tz.localize(add_time(base_day, 7, 0, 0)))
+        afternoon = create_pycharm_entry(some_local_tz.localize(add_time(base_day, 15, 0, 15)))
 
-    write_before_and_after_base_day(summary_dao)
-    
-    # Gather by day
-    print(f"reading values for day: {test_inputs[0].start_time}")
-    all_for_day: List[DailyProgramSummary] = summary_dao.read_day(test_inputs[0].start_time)
+        test_inputs = [seven_am_ish, afternoon]
+        
+        paths_for_asserting = [x.exe_path for x in test_inputs]
+        # Test setup conditions - all unique programs
+        assert len(set(paths_for_asserting)) == len(paths_for_asserting)
+        # Write
+        summary_dao.start_session(seven_am_ish, seven_am_ish.start_time)
+        summary_dao.start_session(afternoon, afternoon.start_time)
 
-    assert isinstance(all_for_day[0], DailyProgramSummary)
+        write_before_and_after_base_day(summary_dao)
+        
+        # Gather by day
+        print(f"reading values for day: {test_inputs[0].start_time}")
+        all_for_day: List[DailyProgramSummary] = summary_dao.read_day(test_inputs[0].start_time)
 
-    # Check the val came back out
-    assert len(all_for_day) == len(test_inputs)
+        assert isinstance(all_for_day[0], DailyProgramSummary)
 
-    for i in range(0, len(test_inputs)):
-        assert all_for_day[i].exe_path_as_id in paths_for_asserting
-        assert all_for_day[i].hours_spent == 0
+        # Check the val came back out
+        assert len(all_for_day) == len(test_inputs)
 
-    assert len(all_for_day) == len(test_inputs)
+        for i in range(0, len(test_inputs)):
+            assert all_for_day[i].exe_path_as_id in paths_for_asserting
+            assert all_for_day[i].hours_spent == 0
 
-
-def test_on_twelve_ish_am_boundary(setup_parts):
-    logging_dao, summary_dao = setup_parts
-
-    late_night_entry = create_pycharm_entry(some_local_tz.localize(add_time(base_day, 23, 59, 59)))  # Just before midnight
-    midnight_entry = create_notion_entry(some_local_tz.localize(add_time(base_day, 0, 0, 1)))  # Just after midnight
-    abs_min_time = create_zoom_entry(some_local_tz.localize(add_time(base_day, 0, 0, 0))) 
-
-    test_inputs = [late_night_entry, midnight_entry, abs_min_time]
-    
-    paths_for_asserting = [x.exe_path for x in test_inputs]
-
-    # Test setup conditions - all unique programs
-    assert len(set(paths_for_asserting)) == len(paths_for_asserting)
-    # Write
-    summary_dao.start_session(late_night_entry, late_night_entry.start_time)
-    summary_dao.start_session(midnight_entry, midnight_entry.start_time)
-    summary_dao.start_session(abs_min_time, abs_min_time.start_time)
-
-    write_before_and_after_base_day(summary_dao)
-
-    # Gather by day
-    print(f"reading values for day: {test_inputs[0].start_time}")
-    all_for_day: List[DailyProgramSummary] = summary_dao.read_day(test_inputs[0].start_time)
-
-    assert isinstance(all_for_day[0], DailyProgramSummary)
-
-    # Check the val came back out
-    assert len(all_for_day) == len(test_inputs)
-
-    for i in range(0, len(test_inputs)):
-        assert all_for_day[i].exe_path_as_id in paths_for_asserting
-        assert all_for_day[i].hours_spent == 0
-
-    assert len(all_for_day) == len(test_inputs)
+        assert len(all_for_day) == len(test_inputs)
 
 
-def test_on_eleven_ish_pm_boundary(setup_parts):
-    logging_dao, summary_dao = setup_parts
+    def test_on_twelve_ish_am_boundary(self, setup_parts):
+        logging_dao, summary_dao, _ = setup_parts
 
-    latenight1 =  create_zoom_entry(some_local_tz.localize(add_time(base_day, 23, 59, 59)))
-    latenight2 =  create_pycharm_entry(some_local_tz.localize(add_time(base_day, 23, 59, 59)))
+        late_night_entry = create_pycharm_entry(some_local_tz.localize(add_time(base_day, 23, 59, 59)))  # Just before midnight
+        midnight_entry = create_notion_entry(some_local_tz.localize(add_time(base_day, 0, 0, 1)))  # Just after midnight
+        abs_min_time = create_zoom_entry(some_local_tz.localize(add_time(base_day, 0, 0, 0))) 
 
-    edge_case_micros = 999999  # HEY, LISTEN! Max value possible.
-    latenight2.start_time.dt.replace(microsecond=edge_case_micros)
+        test_inputs = [late_night_entry, midnight_entry, abs_min_time]
+        
+        paths_for_asserting = [x.exe_path for x in test_inputs]
 
-    test_inputs = [latenight1, latenight2]
-    
-    paths_for_asserting = [x.exe_path for x in test_inputs]
-    # Test setup conditions - all unique programs
-    assert len(set(paths_for_asserting)) == len(paths_for_asserting)
-    
-    # Write
-    summary_dao.start_session(latenight1, latenight1.start_time)
-    summary_dao.start_session(latenight2, latenight2.start_time)
+        # Test setup conditions - all unique programs
+        assert len(set(paths_for_asserting)) == len(paths_for_asserting)
+        # Write
+        summary_dao.start_session(late_night_entry, late_night_entry.start_time)
+        summary_dao.start_session(midnight_entry, midnight_entry.start_time)
+        summary_dao.start_session(abs_min_time, abs_min_time.start_time)
 
-    write_before_and_after_base_day(summary_dao)
+        write_before_and_after_base_day(summary_dao)
 
-    # Gather by day
-    print(f"reading values for day: {test_inputs[0].start_time}")
-    all_for_day: List[DailyProgramSummary] = summary_dao.read_day(test_inputs[0].start_time)
+        # Gather by day
+        print(f"reading values for day: {test_inputs[0].start_time}")
+        all_for_day: List[DailyProgramSummary] = summary_dao.read_day(test_inputs[0].start_time)
 
-    assert isinstance(all_for_day[0], DailyProgramSummary)
+        assert isinstance(all_for_day[0], DailyProgramSummary)
 
-    # Check the val came back out
-    assert len(all_for_day) == len(test_inputs)
+        # Check the val came back out
+        assert len(all_for_day) == len(test_inputs)
 
-    for i in range(0, len(test_inputs)):
-        assert all_for_day[i].exe_path_as_id in paths_for_asserting
-        assert all_for_day[i].hours_spent == 0
+        for i in range(0, len(test_inputs)):
+            assert all_for_day[i].exe_path_as_id in paths_for_asserting
+            assert all_for_day[i].hours_spent == 0
 
-    assert len(all_for_day) == len(test_inputs)
+        assert len(all_for_day) == len(test_inputs)
+
+
+    def test_on_eleven_ish_pm_boundary(self, setup_parts):
+        logging_dao, summary_dao, _ = setup_parts
+
+        latenight1 =  create_zoom_entry(some_local_tz.localize(add_time(base_day, 23, 59, 59)))
+        latenight2 =  create_pycharm_entry(some_local_tz.localize(add_time(base_day, 23, 59, 59)))
+
+        edge_case_micros = 999999  # HEY, LISTEN! Max value possible.
+        latenight2.start_time.dt.replace(microsecond=edge_case_micros)
+
+        test_inputs = [latenight1, latenight2]
+        
+        paths_for_asserting = [x.exe_path for x in test_inputs]
+        # Test setup conditions - all unique programs
+        assert len(set(paths_for_asserting)) == len(paths_for_asserting)
+        
+        # Write
+        summary_dao.start_session(latenight1, latenight1.start_time)
+        summary_dao.start_session(latenight2, latenight2.start_time)
+
+        write_before_and_after_base_day(summary_dao)
+
+        # Gather by day
+        print(f"reading values for day: {test_inputs[0].start_time}")
+        all_for_day: List[DailyProgramSummary] = summary_dao.read_day(test_inputs[0].start_time)
+
+        assert isinstance(all_for_day[0], DailyProgramSummary)
+
+        # Check the val came back out
+        assert len(all_for_day) == len(test_inputs)
+
+        for i in range(0, len(test_inputs)):
+            assert all_for_day[i].exe_path_as_id in paths_for_asserting
+            assert all_for_day[i].hours_spent == 0
+
+        assert len(all_for_day) == len(test_inputs)
 

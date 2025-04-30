@@ -100,67 +100,66 @@ def test_simple_round_trip_for_chrome(setup_daos):
     assert entry.domain_name == selection_for_test.domain
     assert entry.hours_spent == 38 / SECONDS_PER_HOUR
 
-
 def test_simple_logging_activity_for_program(setup_daos):
     """Test does the logging for the above changes"""
+    program_logging = setup_daos["program_logging"]
     program_session = session2
     assert isinstance(program_session, ProgramSession)
 
     # Assume program session is 34 sec, chrome session is 38 sec
     program_duration = 34
     
-    setup_daos["program_logging"].start_session(program_session)
-
-    setup_daos["program_logging"].push_window_ahead_ten_sec(program_session)
-    setup_daos["program_logging"].push_window_ahead_ten_sec(program_session)
-    setup_daos["program_logging"].push_window_ahead_ten_sec(program_session)
+    print("starting sesssion at ", program_session.start_time)
+    program_logging.start_session(program_session)
+    program_logging.push_window_ahead_ten_sec(program_session)
+    program_logging.push_window_ahead_ten_sec(program_session)
+    program_logging.push_window_ahead_ten_sec(program_session)
 
     program_end_time = program_session.start_time.dt + timedelta(seconds=program_duration)
-
     program_session = program_session.to_completed(UserLocalTime(program_end_time))
-
-    setup_daos["program_logging"].finalize_log(program_session)
+    program_logging.finalize_log(program_session)
 
     # Now take it all back out
     start_of_day = get_start_of_day_from_ult(program_session.start_time)
-    entries = setup_daos["program_logging"].read_day_as_sorted(start_of_day)
-    all = setup_daos["program_logging"].read_all()
-    for v in all:
-        print(v)
+    entries = program_logging.read_day_as_sorted(start_of_day)
+    
     assert len(entries) == 1
-    assert isinstance(entries[0], ProgramSummaryLog)
+    assert isinstance(entries, dict)
+    assert isinstance(entries[program_session.get_name()], list)
 
-    assert entries[0].process_name == program_session.process_name
-    assert entries[0].duration_in_sec == program_duration
+    list_of_logs = entries[program_session.get_name()]
+
+    assert list_of_logs[0].process_name == program_session.process_name
+    assert list_of_logs[0].duration_in_sec == program_duration
 
 def test_simple_logging_activity_for_chrome(setup_daos):
     """Test does the logging for the above changes"""
+    chrome_logging = setup_daos["chrome_logging"]
     chrome_session = session1
     assert isinstance(chrome_session, ChromeSession)
 
     # Assume program session is 34 sec, chrome session is 38 sec
     chrome_duration = 38
+    print("starting sesssion at ", chrome_session.start_time)
     
-    setup_daos["chrome_logging"].start_session(chrome_session)
-
-    setup_daos["chrome_logging"].push_window_ahead_ten_sec(chrome_session)
-    setup_daos["chrome_logging"].push_window_ahead_ten_sec(chrome_session)
-    setup_daos["chrome_logging"].push_window_ahead_ten_sec(chrome_session)
+    chrome_logging.start_session(chrome_session)
+    chrome_logging.push_window_ahead_ten_sec(chrome_session)
+    chrome_logging.push_window_ahead_ten_sec(chrome_session)
+    chrome_logging.push_window_ahead_ten_sec(chrome_session)
 
     chrome_end_time = chrome_session.start_time.dt + timedelta(seconds=chrome_duration)
-
     chrome_session = chrome_session.to_completed(UserLocalTime(chrome_end_time))
-
-    setup_daos["chrome_logging"].finalize_log(chrome_session)
+    chrome_logging.finalize_log(chrome_session)
 
     # Now take it all back out
     start_of_day = get_start_of_day_from_ult(chrome_session.start_time)
-    entries = setup_daos["chrome_logging"].read_day_as_sorted(start_of_day)
-    all = setup_daos["chrome_logging"].read_all()
-    for v in all:
-        print(v)
-    assert len(entries) == 1
-    assert isinstance(entries[0], DomainSummaryLog)
+    entries = chrome_logging.read_day_as_sorted(start_of_day)
 
-    assert entries[0].domain_name == chrome_session.domain
-    assert entries[0].duration_in_sec == chrome_duration
+    assert len(entries) == 1
+    assert isinstance(entries, dict)
+    assert isinstance(entries[chrome_session.get_name()], list)
+
+    list_of_logs = entries[chrome_session.get_name()]
+
+    assert list_of_logs[0].domain_name == chrome_session.domain
+    assert list_of_logs[0].duration_in_sec == chrome_duration

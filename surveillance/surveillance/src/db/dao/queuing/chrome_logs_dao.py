@@ -17,7 +17,7 @@ from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.errors import ImpossibleToGetHereError
 from surveillance.src.util.dao_wrapper import validate_session, guarantee_start_time
 from surveillance.src.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
-from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day, get_start_of_day_from_datetime
+from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day, get_start_of_day_from_datetime, get_start_of_day_from_ult
 from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.const import ten_sec_as_pct_of_hour
 
@@ -41,23 +41,26 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
         """ Exists mostly for debugging. """
 
         self.regular_session = session_maker  # Do not delete. UtilityDao still uses it
+        self.logger = ConsoleLogger()
       
     def start_session(self, session: ChromeSession):
         """
         A session of using a domain. End_time here is like, "when did the user tab away from the program?"
         """
-        unknown = None
         base_start_time = convert_to_utc(session.start_time.get_dt_for_db())
         start_of_day = get_start_of_day_from_datetime(session.start_time.get_dt_for_db())
         start_of_day_as_utc = convert_to_utc(start_of_day)
         start_window_end = base_start_time + timedelta(seconds=10)
+
+        self.logger.log_white(f"INFO: querying start_of_day: {start_of_day_as_utc}\n\t for {session.get_name()}")
+
         log_entry = DomainSummaryLog(
             domain_name=session.domain,
             # Assumes (10 - n) sec will be deducted later
             hours_spent=ten_sec_as_pct_of_hour,
             start_time=base_start_time,
             end_time=start_window_end,
-            duration_in_sec=unknown,
+            duration_in_sec=0,
             gathering_date=start_of_day_as_utc,
             created_at=session.start_time.get_dt_for_db()
         )
@@ -77,11 +80,11 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
             DomainSummaryLog.start_time.op('=')(some_time)
         )
 
-    def read_day_as_sorted(self, day):
-        start_of_day = day.replace(hour=0, minute=0, second=0,
-                                   microsecond=0)  # Still has tz attached
+    def read_day_as_sorted(self, day: UserLocalTime) -> dict[str, DomainSummaryLog]:
+        start_of_day = get_start_of_day_from_datetime(day.get_dt_for_db())
+        start_of_day = convert_to_utc(start_of_day)
         end_of_day = start_of_day + timedelta(days=1)
-
+        self.logger.log_white(f"INFO: querying start_of_day: {start_of_day}\n\tto end_of_day: {end_of_day}")
         query = select(DomainSummaryLog).where(
             DomainSummaryLog.gathering_date >= start_of_day,
             DomainSummaryLog.gathering_date < end_of_day
@@ -91,9 +94,10 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
 
         grouped_logs = {}
         for log in logs:
-            if log.domain_name not in grouped_logs:
-                grouped_logs[log.domain_name] = []
-            grouped_logs[log.domain_name].append(log)
+            name = log.get_name()
+            if name not in grouped_logs:
+                grouped_logs[name] = []
+            grouped_logs[name].append(log)
 
         return grouped_logs
 
@@ -164,7 +168,10 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
         if not log:
             raise ImpossibleToGetHereError(
                 "Start of pulse didn't reach the db")
-        log.end_time = session.end_time.get_dt_for_db()
-        # TODO: Decide whether to store duration as duration, or as just a on the fly calculation from end - start
-        # log.duration = session.end_time.dt - session.start_time.dt
+        finalized_duration = (session.end_time.dt - session.start_time.dt).total_seconds()        
+        discovered_final_val = convert_to_utc(session.end_time.get_dt_for_db()).replace(tzinfo=None)
+
+        # Replace whatever used to be there
+        log.duration_in_sec = finalized_duration
+        log.end_time = discovered_final_val
         self.update_item(log)

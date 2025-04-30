@@ -15,6 +15,7 @@ from surveillance.src.util.dao_wrapper import validate_session, guarantee_start_
 from surveillance.src.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
 from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day, get_start_of_day_from_datetime
 from surveillance.src.util.const import ten_sec_as_pct_of_hour
+from surveillance.src.util.time_wrappers import UserLocalTime
 
 
 #
@@ -46,11 +47,12 @@ class ProgramLoggingDao(UtilityDaoMixin):
         #     "INFO: starting session for ", session.window_title)
         if session.start_time is None:
             raise ValueError("Start time was None")
-        unknown = None
         base_start_time = convert_to_utc(session.start_time.get_dt_for_db())
         start_of_day = get_start_of_day_from_datetime(session.start_time.get_dt_for_db())
         start_of_day_as_utc = convert_to_utc(start_of_day)
         start_window_end = base_start_time + timedelta(seconds=10)
+        
+        self.logger.log_white(f"INFO: starting session at start_of_day: {start_of_day_as_utc}\n\t for {session.process_name}")
 
         log_entry = ProgramSummaryLog(
             exe_path_as_id=session.exe_path,
@@ -60,7 +62,7 @@ class ProgramLoggingDao(UtilityDaoMixin):
             hours_spent=ten_sec_as_pct_of_hour,
             start_time=base_start_time,
             end_time=start_window_end,
-            duration_in_sec=unknown,
+            duration_in_sec=0,
             gathering_date=start_of_day_as_utc,
             created_at=base_start_time
         )
@@ -81,12 +83,12 @@ class ProgramLoggingDao(UtilityDaoMixin):
             ProgramSummaryLog.start_time.op('=')(some_time)
         )
 
-    def read_day_as_sorted(self, day) -> dict[str, ProgramSummaryLog]:
+    def read_day_as_sorted(self, day: UserLocalTime) -> dict[str, ProgramSummaryLog]:
         # NOTE: the database is storing and returning times in UTC
-        start_of_day = day.replace(hour=0, minute=0, second=0,
-                                   microsecond=0)  # Still has tz attached
+        start_of_day = get_start_of_day_from_datetime(day.get_dt_for_db())
+        start_of_day = convert_to_utc(start_of_day)
         end_of_day = start_of_day + timedelta(days=1)
-
+        self.logger.log_white(f"INFO: querying start_of_day: {start_of_day}\n\tto end_of_day: {end_of_day}")
         query = select(ProgramSummaryLog).where(
             ProgramSummaryLog.start_time >= start_of_day,
             ProgramSummaryLog.end_time < end_of_day
@@ -96,9 +98,10 @@ class ProgramLoggingDao(UtilityDaoMixin):
         # Group the results by program_name
         grouped_logs = {}
         for log in logs:
-            if log.program_name not in grouped_logs:
-                grouped_logs[log.program_name] = []
-            grouped_logs[log.program_name].append(log)
+            name = log.get_name()
+            if name not in grouped_logs:
+                grouped_logs[name] = []
+            grouped_logs[name].append(log)
 
         return grouped_logs
 
@@ -181,6 +184,7 @@ class ProgramLoggingDao(UtilityDaoMixin):
         if not log:
             raise ImpossibleToGetHereError(
                 "Start of pulse didn't reach the db")
+        log.duration_in_sec = log.duration_in_sec + 10
         log.end_time = log.end_time + timedelta(seconds=10)
         self.update_item(log)
 
@@ -190,5 +194,10 @@ class ProgramLoggingDao(UtilityDaoMixin):
         if not log:
             raise ImpossibleToGetHereError(
                 "Start of pulse didn't reach the db")
-        log.end_time = session.end_time.get_dt_for_db()
+        finalized_duration = (session.end_time.dt - session.start_time.dt).total_seconds()
+        discovered_final_val = convert_to_utc(session.end_time.get_dt_for_db()).replace(tzinfo=None)
+        
+        # Erase whatever was there before
+        log.duration_in_sec = finalized_duration
+        log.end_time = discovered_final_val
         self.update_item(log)

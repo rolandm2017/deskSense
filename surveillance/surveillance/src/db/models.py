@@ -76,7 +76,7 @@ class SummaryLogBase(Base):
     # time stuff
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    duration_in_sec = Column(Float, nullable=True)
+    duration_in_sec: Mapped[float] = mapped_column(Float, nullable=True)
     # The date on which the data was gathered
     gathering_date = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True))
