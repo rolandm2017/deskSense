@@ -77,6 +77,9 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
 
     durations_per_session_dict = {}
 
+    # TODO: Verify each one using it's ledger.
+    # TODO: Verify the test's expected summary is what you think. full cycles + partials
+
     def get_session_key(session):
         """Create a unique key for each session based on name and start time"""
         return f"{session.get_name()}_{session.start_time.dt.isoformat()}"
@@ -101,6 +104,7 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
         actual_on_new_sessions += 1
         setup_recorder_etc["recorder"].on_new_session(verified_sessions[i])
 
+    recorded_times = []
     # Write all the sessions with their expected times
     for i in range(0, len(verified_sessions)):
         if i == len(verified_sessions) - 2:
@@ -108,6 +112,8 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
         duration = expected_durations[i]
         total_cycles = count_full_loops(duration)
         partial_window_time = duration - (total_cycles * 10)
+
+        recorded_time = 0
 
         current_session = verified_sessions[i]
 
@@ -119,10 +125,12 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
         for i in range(0, total_cycles):
             actual_add_ten_count += 1
             calls_dict["add_ten"] += 1
+            recorded_time += 10
             setup_recorder_etc["recorder"].add_ten_sec_to_end_time(current_session)
         # Add in the partial window
         actual_partial_windows += 1
         calls_dict["add_partial"] += 1
+        recorded_time += partial_window_time
         setup_recorder_etc["recorder"].add_partial_window(partial_window_time, current_session)
 
         # Finalize session
@@ -133,6 +141,11 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
         calls_dict["state_changed"] += 1
         setup_recorder_etc["recorder"].on_state_changed(completed_session)
         actual_calls_dict[session_key] = calls_dict
+
+    # For each session, verify that it had the expected amount of time recorded
+    for i in range(0, len(verified_sessions)):
+        # check that the ledger says what you expect
+        assert verified_sessions[i].ledger.get_total() == expected_durations[i]
         
     def assert_that_writes_had_exact_expected_count():
         assert actual_on_new_sessions == expected_on_new_sessions

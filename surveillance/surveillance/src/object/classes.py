@@ -72,7 +72,7 @@ class ProgramSession(ActivitySession):
         self.end_time = None
         self.duration = None
 
-    def to_completed(self, end_time):
+    def to_completed(self, end_time: UserLocalTime):
         """Similar to to_completed in the other type"""
         return CompletedProgramSession(
             exe_path=self.exe_path,
@@ -161,7 +161,7 @@ class ChromeSession(ActivitySession):
         self.end_time = None
         self.duration = None
 
-    def to_completed(self, end_time):
+    def to_completed(self, end_time: UserLocalTime):
         """Similar to to_completed in the other type"""
         return CompletedChromeSession(
             domain=self.domain,
