@@ -16,6 +16,8 @@ from surveillance.src.db.dao.direct.session_integrity_dao import SessionIntegrit
 from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
+from ....helper.truncation import truncate_logs_tables_via_engine
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -275,21 +277,7 @@ async def full_test_environment(
 # Create a function that directly cleans up tables - this is simpler and more reliable
 
 
-def truncate_test_tables(engine):
-    """Truncate all test tables directly"""
-    # NOTE: IF you run the tests in a broken manner,
-    # ####  the first run AFTER fixing the break
-    # ####  MAY still look broken.
-    # ####  Because the truncation happens *at the end of* a test.
 
-    with engine.begin() as conn:
-        conn.execute(
-            text("TRUNCATE program_logs RESTART IDENTITY CASCADE"))
-        conn.execute(
-            text("TRUNCATE domain_logs RESTART IDENTITY CASCADE"))
-        conn.execute(
-            text("TRUNCATE system_change_log RESTART IDENTITY CASCADE"))
-        print("Tables truncated")
 
 
 # Modify your test functions to call the cleanup explicitly
@@ -323,7 +311,7 @@ async def test_find_orphans(full_test_environment):
 
     finally:
         # Clean up after test, regardless of whether it passed or failed
-        truncate_test_tables(engine)
+        truncate_logs_tables_via_engine(engine)
 
 
 @pytest.mark.asyncio
@@ -351,7 +339,7 @@ async def test_find_phantoms(full_test_environment):
 
     finally:
         # Clean up after test, regardless of whether it passed or failed
-        truncate_test_tables(engine)
+        truncate_logs_tables_via_engine(engine)
 
 
 # @pytest.mark.asyncio

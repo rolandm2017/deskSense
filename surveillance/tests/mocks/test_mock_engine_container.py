@@ -41,7 +41,7 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
 
     clock = UserFacingClock()
 
-    recorder = ActivityRecorder(clock,  p_logging_dao, chrome_logging_dao, p_summary_dao, chrome_sum_dao)
+    recorder = ActivityRecorder(p_logging_dao, chrome_logging_dao, p_summary_dao, chrome_sum_dao)
     
     window_push_mock = Mock()
     add_partial_window_mock = Mock()

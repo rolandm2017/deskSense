@@ -30,13 +30,12 @@ class DatabaseProtectionError(RuntimeError):
 
 
 class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
-    def __init__(self, program_logging_dao, reg_session: sessionmaker, async_session_maker: async_sessionmaker):
+    def __init__(self, program_logging_dao, reg_session: sessionmaker):
         # if not callable(session_maker):
         # raise TypeError("session_maker must be callable")
         self.program_logging_dao = program_logging_dao
         self.debug = False
         self.regular_session = reg_session
-        self.async_session_maker = async_session_maker
         self.logger = ConsoleLogger()
 
     def start_session(self, program_session: ProgramSession, right_now: UserLocalTime):
@@ -211,7 +210,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
                 session.commit()
             return entry
 
-    async def delete_all_rows(self, safety_switch=None) -> int:
+    def delete_all_rows(self, safety_switch=None) -> int:
         """
         Delete all rows from the DailyProgramSummary table.
 
@@ -224,11 +223,11 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
                 "Set safety_switch=True to confirm this action."
             )
 
-        async with self.async_session_maker() as session:
-            result = await session.execute(
+        with self.regular_session() as session:
+            result = session.execute(
                 text("DELETE FROM daily_program_summary")
             )
-            await session.commit()
+            session.commit()
             return result.rowcount
 
     def close(self):

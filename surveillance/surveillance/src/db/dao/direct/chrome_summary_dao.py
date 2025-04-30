@@ -25,11 +25,10 @@ from surveillance.src.util.time_wrappers import UserLocalTime
 
 
 class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
-    def __init__(self,  chrome_logging_dao, regular_session: sessionmaker, async_session_maker: async_sessionmaker):
+    def __init__(self,  chrome_logging_dao, regular_session: sessionmaker):
         self.chrome_logging_dao = chrome_logging_dao
         self.debug = False
         self.regular_session = regular_session
-        self.async_session_maker = async_session_maker
         self.logger = ConsoleLogger()
 
     def start_session(self, chrome_session: ChromeSession, right_now: UserLocalTime):
@@ -178,16 +177,15 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         if value < 0:
             raise NegativeTimeError(activity, value)
 
-    async def shutdown(self):
+    def shutdown(self):
         """Closes the open session without opening a new one"""
-
         pass
 
-    async def delete(self, id: int):
+    def delete(self, id: int):
         """Delete an entry by ID"""
-        async with self.regular_session() as session:
-            entry = await session.get(DailyDomainSummary, id)
+        with self.regular_session() as session:
+            entry = session.get(DailyDomainSummary, id)
             if entry:
-                await session.delete(entry)
-                await session.commit()
+                session.delete(entry)
+                session.commit()
             return entry

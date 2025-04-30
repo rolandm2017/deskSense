@@ -35,7 +35,7 @@ from surveillance.src.object.classes import ProgramSessionDict
 from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.clock import UserFacingClock
 from surveillance.src.util.const import SECONDS_PER_HOUR, ten_sec_as_pct_of_hour
-from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day
+from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day_from_datetime
 
 from ..mocks.mock_message_receiver import MockMessageReceiver
 from ..mocks.mock_engine_container import MockEngineContainer
@@ -136,7 +136,7 @@ log_counter = 0
 
 # @pytest.mark.skip
 @pytest.mark.asyncio
-async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_and_get_durations, db_session_in_mem, mock_async_session_maker):
+async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_and_get_durations, regular_session_maker, mock_async_session_maker):
     """
     The goal of the test is to prove that programSesssions get thru the DAO layer fine
     
@@ -216,27 +216,26 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
     asm_set_new_session_spy = Mock(side_effect=activity_arbiter.state_machine.set_new_session)
     activity_arbiter.state_machine.set_new_session = asm_set_new_session_spy
 
-    p_logging_dao = ProgramLoggingDao(db_session_in_mem)
-    chrome_logging_dao = ChromeLoggingDao(db_session_in_mem)
+    p_logging_dao = ProgramLoggingDao(regular_session_maker)
+    chrome_logging_dao = ChromeLoggingDao(regular_session_maker)
 
     p_summary_dao = ProgramSummaryDao(
-        p_logging_dao, db_session_in_mem, mock_async_session_maker)
+        p_logging_dao, regular_session_maker)
     chrome_sum_dao = ChromeSummaryDao(
-        chrome_logging_dao, db_session_in_mem, mock_async_session_maker)
+        chrome_logging_dao, regular_session_maker)
 
     mock_message_receiver = MockMessageReceiver()
 
     chrome_svc = ChromeService(wont_be_used, activity_arbiter)
     surveillance_manager = SurveillanceManager(cast(UserFacingClock, mock_user_facing_clock),
-                                               mock_async_session_maker, db_session_in_mem, chrome_svc, activity_arbiter, facades, mock_message_receiver)
+                                               mock_async_session_maker, regular_session_maker, chrome_svc, activity_arbiter, facades, mock_message_receiver)
 
     window_change_spy = Mock(
         side_effect=surveillance_manager.program_tracker.window_change_handler)
     surveillance_manager.program_tracker.window_change_handler = window_change_spy
 
 
-    activity_recorder = ActivityRecorder(
-        cast(UserFacingClock, mock_user_facing_clock), p_logging_dao, chrome_logging_dao, p_summary_dao, chrome_sum_dao)
+    activity_recorder = ActivityRecorder(p_logging_dao, chrome_logging_dao, p_summary_dao, chrome_sum_dao)
 
     #
     # # Activity Recorder spies
@@ -251,8 +250,8 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
     on_state_changed_spy = Mock(side_effect=activity_recorder.on_state_changed)
     activity_recorder.on_state_changed = on_state_changed_spy
 
-    deduct_duration_spy = Mock(side_effect=activity_recorder.deduct_duration)
-    activity_recorder.deduct_duration = deduct_duration_spy
+    add_partial_window_spy = Mock(side_effect=activity_recorder.add_partial_window)
+    activity_recorder.add_partial_window = add_partial_window_spy
     
     activity_arbiter.add_recorder_listener(activity_recorder)
 
@@ -288,7 +287,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
             hours_spent=sixty_sec / SECONDS_PER_HOUR,
             start_time=very_early_morning,
             end_time=very_early_morning + timedelta(minutes=5),
-            duration=timedelta(seconds=60),
+            duration_in_sec=timedelta(seconds=60),
             gathering_date=very_early_morning.date(),
             created_at=very_early_morning
         )
@@ -335,8 +334,8 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
     execute_window_push_spy = Mock()
     p_summary_dao.execute_window_push = execute_window_push_spy
 
-    do_deduction_spy = Mock()
-    p_summary_dao.do_deduction = do_deduction_spy
+    do_addition_spy = Mock()
+    p_summary_dao.do_addition = do_addition_spy
 
     #
     # Logger methods
@@ -420,7 +419,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
 
         # The final entry here is holding the window push open
         assert finalize_log_spy.call_count == count_of_events - active_entry
-        assert deduct_duration_spy.call_count == count_of_events - active_entry
+        assert add_partial_window_spy.call_count == count_of_events - active_entry
 
 
     def assert_session_was_in_order(actual: ProgramSession, i):
@@ -454,7 +453,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
         one_left_in_arb = 1
         assert_all_spy_args_were_sessions(on_state_changed_spy, event_count - one_left_in_arb, "on_state_changed_spy")
 
-    def assert_deduct_duration_happened_as_expected():
+    def assert_add_partial_window_happened_as_expected():
         """
         Deduct duration might happen 3x b/c of the final val staying in the Arbiter.
         """
@@ -463,21 +462,21 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
         one_left_in_arb = 1
         total_loops = event_count - one_left_in_arb
         for i in range(0, total_loops):
-            some_duration = deduct_duration_spy.call_args_list[i][0][0]
+            some_duration = add_partial_window_spy.call_args_list[i][0][0]
             assert isinstance(some_duration, int)
 
-            some_session = deduct_duration_spy.call_args_list[i][0][1]
+            some_session = add_partial_window_spy.call_args_list[i][0][1]
             assert isinstance(some_session, ProgramSession)
             assert_session_was_in_order(some_session, i)
 
-        call_count = len(deduct_duration_spy.call_args_list)
+        call_count = len(add_partial_window_spy.call_args_list)
         assert call_count == total_loops, f"Expected exactly {total_loops} calls"
 
     def assert_activity_recorder_saw_expected_vals():
         """Asserts that the recorder spies all saw, in general, what was expected."""
         assert_all_on_new_sessions_received_sessions()
         assert_all_on_state_changes_received_sessions()
-        assert_deduct_duration_happened_as_expected()
+        assert_add_partial_window_happened_as_expected()
 
     # ## Assert that each session showed up as specified above, in the correct place
     
@@ -554,7 +553,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
 
     # TODO: Assert that pulses == 0
     
-    assert do_deduction_spy.call_count == event_count - active_entry
+    assert do_addition_spy.call_count == event_count - active_entry
 
     assert finalize_log_spy.call_count == event_count - active_entry
 
@@ -575,7 +574,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
 
 
 @pytest.mark.asyncio
-async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and_get_durations, db_session_in_mem, mock_async_session_maker):
+async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and_get_durations, regular_session_maker, mock_async_session_maker):
     """
     The goal of the test is to prove that programSesssions get thru the DAO layer fine
     
@@ -657,27 +656,26 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
     asm_set_new_session_spy = Mock(side_effect=activity_arbiter.state_machine.set_new_session)
     activity_arbiter.state_machine.set_new_session = asm_set_new_session_spy
 
-    p_logging_dao = ProgramLoggingDao(db_session_in_mem)
-    chrome_logging_dao = ChromeLoggingDao(db_session_in_mem)
+    p_logging_dao = ProgramLoggingDao(regular_session_maker)
+    chrome_logging_dao = ChromeLoggingDao(regular_session_maker)
 
     p_summary_dao = ProgramSummaryDao(
-        p_logging_dao, db_session_in_mem, mock_async_session_maker)
+        p_logging_dao, regular_session_maker)
     chrome_sum_dao = ChromeSummaryDao(
-        chrome_logging_dao, db_session_in_mem, mock_async_session_maker)
+        chrome_logging_dao, regular_session_maker)
 
     mock_message_receiver = MockMessageReceiver()
 
     chrome_svc = ChromeService(wont_be_used, activity_arbiter)
     surveillance_manager = SurveillanceManager(cast(UserFacingClock, mock_user_facing_clock),
-                                               mock_async_session_maker, db_session_in_mem, chrome_svc, activity_arbiter, facades, mock_message_receiver)
+                                               mock_async_session_maker, regular_session_maker, chrome_svc, activity_arbiter, facades, mock_message_receiver)
 
     window_change_spy = Mock(
         side_effect=surveillance_manager.program_tracker.window_change_handler)
     surveillance_manager.program_tracker.window_change_handler = window_change_spy
 
 
-    activity_recorder = ActivityRecorder(
-        cast(UserFacingClock, mock_user_facing_clock), p_logging_dao, chrome_logging_dao, p_summary_dao, chrome_sum_dao)
+    activity_recorder = ActivityRecorder(p_logging_dao, chrome_logging_dao, p_summary_dao, chrome_sum_dao)
 
     #
     # # Activity Recorder spies
@@ -692,8 +690,8 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
     on_state_changed_spy = Mock(side_effect=activity_recorder.on_state_changed)
     activity_recorder.on_state_changed = on_state_changed_spy
 
-    deduct_duration_spy = Mock(side_effect=activity_recorder.deduct_duration)
-    activity_recorder.deduct_duration = deduct_duration_spy
+    add_partial_window_spy = Mock(side_effect=activity_recorder.add_partial_window)
+    activity_recorder.add_partial_window = add_partial_window_spy
     
     activity_arbiter.add_recorder_listener(activity_recorder)
 
@@ -724,12 +722,12 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
     execute_window_push_spy = Mock()
     p_summary_dao.execute_window_push = execute_window_push_spy
 
-    do_deduction_spy = Mock()
-    p_summary_dao.do_deduction = do_deduction_spy
+    do_addition_spy = Mock()
+    p_summary_dao.do_addition = do_addition_spy
 
     def make_log_from_session(session):
         base_start_time = convert_to_utc(session.start_time.get_dt_for_db())
-        start_of_day = get_start_of_day(session.start_time.get_dt_for_db())
+        start_of_day = get_start_of_day_from_datetime(session.start_time.get_dt_for_db())
         if isinstance(start_of_day, UserLocalTime):
             raise ValueError("Expected datetime")
         start_of_day_as_utc = convert_to_utc(start_of_day)
@@ -742,7 +740,7 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
             hours_spent=ten_sec_as_pct_of_hour,
             start_time=base_start_time,
             end_time=start_window_end,
-            duration=None,
+            duration_in_sec=None,
             gathering_date=start_of_day_as_utc,
             created_at=base_start_time
         )
@@ -837,7 +835,7 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
 
         # The final entry here is holding the window push open
         assert finalize_log_spy.call_count == count_of_events - trailing_entry
-        assert deduct_duration_spy.call_count == count_of_events - trailing_entry
+        assert add_partial_window_spy.call_count == count_of_events - trailing_entry
 
 
     def assert_session_was_in_order(actual: ProgramSession, i):
@@ -871,7 +869,7 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
         one_left_in_arb = 1
         assert_all_spy_args_were_sessions(on_state_changed_spy, second_test_event_count - one_left_in_arb, "on_state_changed_spy")
 
-    def assert_deduct_duration_happened_as_expected():
+    def assert_add_partial_window_happened_as_expected():
         """
         Deduct duration might happen 3x b/c of the final val staying in the Arbiter.
         """
@@ -880,21 +878,21 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
         one_left_in_arb = 1
         total_loops = second_test_event_count - one_left_in_arb
         for i in range(0, total_loops):
-            some_duration = deduct_duration_spy.call_args_list[i][0][0]
+            some_duration = add_partial_window_spy.call_args_list[i][0][0]
             assert isinstance(some_duration, int)
 
-            some_session = deduct_duration_spy.call_args_list[i][0][1]
+            some_session = add_partial_window_spy.call_args_list[i][0][1]
             assert isinstance(some_session, ProgramSession)
             assert_session_was_in_order(some_session, i)
 
-        call_count = len(deduct_duration_spy.call_args_list)
+        call_count = len(add_partial_window_spy.call_args_list)
         assert call_count == total_loops, f"Expected exactly {total_loops} calls"
 
     def assert_activity_recorder_saw_expected_vals():
         """Asserts that the recorder spies all saw, in general, what was expected."""
         assert_all_on_new_sessions_received_sessions()
         assert_all_on_state_changes_received_sessions()
-        assert_deduct_duration_happened_as_expected()
+        assert_add_partial_window_happened_as_expected()
 
     # ## Assert that each session showed up as specified above, in the correct place
     
@@ -976,7 +974,7 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
 
     assert push_window_ahead_ten_sec_spy.call_count == 0  # The final entry being held suspended in Arbiter        
     
-    assert do_deduction_spy.call_count == second_test_event_count - trailing_entry
+    assert do_addition_spy.call_count == second_test_event_count - trailing_entry
 
     assert finalize_log_spy.call_count == second_test_event_count - trailing_entry
 

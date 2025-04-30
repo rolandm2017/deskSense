@@ -56,13 +56,11 @@ async def get_timeline_dao() -> TimelineEntryDao:
 
 
 async def get_program_summary_dao() -> ProgramSummaryDao:
-    # program_logging_dao = ProgramLoggingDao(async_session_maker)
-    return ProgramSummaryDao(_program_logging_dao, regular_session_maker, async_session_maker)
+    return ProgramSummaryDao(_program_logging_dao, regular_session_maker)
 
 
 async def get_chrome_summary_dao() -> ChromeSummaryDao:
-    # chrome_logging_dao = ChromeLoggingDao(async_session_maker)
-    return ChromeSummaryDao(_chrome_logging_dao, regular_session_maker, async_session_maker)
+    return ChromeSummaryDao(_chrome_logging_dao, regular_session_maker)
 
 
 async def get_program_logging_dao() -> ProgramLoggingDao:
@@ -142,9 +140,9 @@ async def get_activity_arbiter():
         regular_session_maker)
 
     program_summary_dao = ProgramSummaryDao(
-        program_logging_dao, regular_session_maker, async_session_maker)
+        program_logging_dao, regular_session_maker)
     chrome_summary_dao = ChromeSummaryDao(
-        chrome_logging_dao, regular_session_maker, async_session_maker)
+        chrome_logging_dao, regular_session_maker)
     
     container = ThreadedEngineContainer(1)
 
@@ -153,7 +151,7 @@ async def get_activity_arbiter():
         print("Creating new Overlay")
         overlay = Overlay()
         ui_layer = UINotifier(overlay)
-        activity_recorder = ActivityRecorder(user_facing_clock, program_logging_dao, chrome_logging_dao,
+        activity_recorder = ActivityRecorder(program_logging_dao, chrome_logging_dao,
                                              program_summary_dao, chrome_summary_dao)
         print("Creating new ActivityArbiter")
         chrome_service = await get_chrome_service()

@@ -23,10 +23,6 @@ from datetime import datetime, timedelta
 from typing import List
 
 
-import os
-from dotenv import load_dotenv
-
-
 from surveillance.src.services.dashboard_service import DashboardService
 
 from surveillance.src.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
@@ -40,6 +36,7 @@ from surveillance.src.object.classes import CompletedChromeSession, CompletedPro
 from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.time_wrappers import UserLocalTime
 
+from ..helper.truncation import truncate_summaries_and_logs_tables_via_session
 
 from ..data.weekly_breakdown_programs import (
     duplicate_programs_march_2, duplicate_programs_march_3rd,
@@ -59,11 +56,8 @@ from ..data.weekly_breakdown_chrome import (
 
 from ..mocks.mock_clock import MockClock
 
-# Load environment variables from .env file
-load_dotenv()
 
 # FIXME: Turtle slow test: use in memory db?
-
 
 
 @pytest_asyncio.fixture
@@ -82,9 +76,9 @@ async def setup_parts(regular_session, async_engine_and_asm):
         regular_session)
     chrome_logging_dao = ChromeLoggingDao(regular_session)
     program_summary_dao = ProgramSummaryDao(
-        program_logging_dao, regular_session, session_maker_async)
+        program_logging_dao, regular_session)
     chrome_summary_dao = ChromeSummaryDao(
-        chrome_logging_dao, regular_session, session_maker_async)
+        chrome_logging_dao, regular_session)
 
     # Create and return the dashboard service
     service = DashboardService(
@@ -95,26 +89,9 @@ async def setup_parts(regular_session, async_engine_and_asm):
         chrome_logging_dao=chrome_logging_dao
     )
 
-    yield service, program_summary_dao, chrome_summary_dao, session_maker_async
+    yield service, program_summary_dao, chrome_summary_dao, regular_session
     # Clean up if needed
     # If your DAOs have close methods, you could call them here
-
-
-async def truncate_test_tables(session_maker_async):
-    """Truncate all test tables directly"""
-    # NOTE: IF you run the tests in a broken manner,
-    # ####  the first run AFTER fixing the break
-    # ####  MAY still look broken.
-    # ####  Because the truncation happens *at the end of* a test.
-
-    async with session_maker_async() as session:
-        await session.execute(text("TRUNCATE daily_program_summaries RESTART IDENTITY CASCADE"))
-        await session.execute(text("TRUNCATE daily_chrome_summaries RESTART IDENTITY CASCADE"))
-        await session.execute(text("TRUNCATE program_logs RESTART IDENTITY CASCADE"))
-        await session.execute(text("TRUNCATE domain_logs RESTART IDENTITY CASCADE"))
-        await session.execute(text("TRUNCATE system_change_log RESTART IDENTITY CASCADE"))
-        await session.commit()
-        print("Super truncated tables")
 
 
 def setup_program_writes_for_group(group_of_test_data, program_summary_dao, must_be_from_month):
@@ -134,8 +111,7 @@ def setup_program_writes_for_group(group_of_test_data, program_summary_dao, must
             dummy_program_session)
         if session_from_today:
             # A program exists in the db already, so, extend its time
-            program_summary_dao.push_window_ahead_ten_sec(
-                dummy_program_session, dummy_program_session.start_time)
+            program_summary_dao.push_window_ahead_ten_sec(dummy_program_session)
         else:
             program_summary_dao.start_session(
                 dummy_program_session, dummy_program_session.end_time)
@@ -149,8 +125,7 @@ def setup_chrome_writes_for_group(group_of_test_data, chrome_summary_dao, must_b
             dummy_chrome_session)
         if session_from_today:
             print(f"Already added: ", dummy_chrome_session.domain)
-            chrome_summary_dao.push_window_ahead_ten_sec(
-                dummy_chrome_session, dummy_chrome_session.start_time)
+            chrome_summary_dao.push_window_ahead_ten_sec(dummy_chrome_session)
         else:
             chrome_summary_dao.start_session(
                 dummy_chrome_session, dummy_chrome_session.end_time)
@@ -165,9 +140,9 @@ async def setup_with_populated_db(setup_parts):
     # Write test data and populate the test db. DO NOT use the real db. You will mess it up.
     # Write test data and populate the test db. DO NOT use the real db. You will mess it up.
     # Write test data and populate the test db. DO NOT use the real db. You will mess it up.
-    service, program_summary_dao, chrome_summary_dao, session_maker_async = setup_parts
+    service, program_summary_dao, chrome_summary_dao, session_maker = setup_parts
 
-    await truncate_test_tables(session_maker_async)
+    truncate_summaries_and_logs_tables_via_session(session_maker)
 
     test_data_feb_programs = programs_feb_23() + programs_feb_24() + \
         programs_feb_26()

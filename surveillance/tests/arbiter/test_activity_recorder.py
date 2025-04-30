@@ -68,7 +68,6 @@ def mock_clock():
 @pytest.fixture
 def activity_recorder(mock_daos, mock_clock):
     return ActivityRecorder(
-        user_facing_clock=mock_clock,
         program_logging_dao=mock_daos['program_logging'],
         chrome_logging_dao=mock_daos['chrome_logging'],
         program_summary_dao=mock_daos['program_summary'],

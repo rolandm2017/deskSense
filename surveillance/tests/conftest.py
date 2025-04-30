@@ -354,7 +354,7 @@ def sync_engine():
 
 
 @pytest.fixture(scope="function")
-def regular_session(sync_engine):
+def regular_session_maker(sync_engine):
     """Create a synchronous session maker."""
     from sqlalchemy.orm import sessionmaker
 

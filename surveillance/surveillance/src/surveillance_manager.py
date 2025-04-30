@@ -87,9 +87,9 @@ class SurveillanceManager:
         # self.chrome_dao = ChromeDao(self.async_session_maker)
 
         self.program_summary_dao = ProgramSummaryDao(
-            program_summary_logger, self.regular_session, self.async_session_maker)
+            program_summary_logger, self.regular_session)
         self.chrome_summary_dao = ChromeSummaryDao(
-            chrome_summary_logger, self.regular_session, self.async_session_maker)
+            chrome_summary_logger, self.regular_session)
 
         self.timeline_dao = TimelineEntryDao(self.async_session_maker)
 

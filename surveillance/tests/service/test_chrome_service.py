@@ -62,31 +62,30 @@ def reconstructed_tab_changes():
     return reconstructed
 
 
-@pytest.fixture
-def chrome_service_fixture_with_arbiter():
-    # Initialize ChromeService with the mocked DAOs
-    overlay = Overlay()
-    ui_layer = UINotifier(overlay)
+# @pytest.fixture
+# def chrome_service_fixture_with_arbiter():
+#     # Initialize ChromeService with the mocked DAOs
+#     overlay = Overlay()
+#     ui_layer = UINotifier(overlay)
 
-    # recorder = ActivityRecorder(program_summary_dao, chrome_summary_dao)
-    clock = SystemClock()
-    arbiter = ActivityArbiter(
-        clock)
-    arbiter.add_ui_listener(ui_layer.on_state_changed)
+#     # recorder = ActivityRecorder(program_summary_dao, chrome_summary_dao)
+#     clock = SystemClock()
+#     arbiter = ActivityArbiter(clock)
+#     arbiter.add_ui_listener(ui_layer.on_state_changed)
 
-    program_events = []
-    chrome_events = []
+#     program_events = []
+#     chrome_events = []
 
-    # Create mock listeners with side effects to record calls
-    mock_program_listener = MagicMock()
-    mock_program_listener.on_state_changed = None  # Isn't used?
+#     # Create mock listeners with side effects to record calls
+#     mock_program_listener = MagicMock()
+#     mock_program_listener.on_state_changed = None  # Isn't used?
 
-    arbiter.add_recorder_listener(mock_program_listener)
+#     arbiter.add_recorder_listener(mock_program_listener)
 
-    chrome_service = ChromeService(clock, arbiter, shorter_debounce)
+#     chrome_service = ChromeService(clock, arbiter, shorter_debounce)
 
-    # Return the initialized ChromeService instance
-    return chrome_service
+#     # Return the initialized ChromeService instance
+#     return chrome_service
 
 
 @pytest.fixture

@@ -196,28 +196,28 @@ def test_activity_arbiter(activity_arbiter_and_setup):
 
             corresponding_deduction = 10 - (duration % 10)
             
-            args = mock_activity_recorder.deduct_duration.call_args_list[i].args
+            args = mock_activity_recorder.add_partial_window.call_args_list[i].args
 
             corresponding_deduction_arg = args[0]  # First argument
-            deduct_duration_session_arg = args[1]  # Second argument
+            add_partial_window_session_arg = args[1]  # Second argument
 
-            assert_names_match(deduct_duration_session_arg, target_session)
+            assert_names_match(add_partial_window_session_arg, target_session)
         
             # assert the sessions are actually the same
         
             assert corresponding_deduction == corresponding_deduction_arg
             assert isinstance(session.start_time.dt, datetime)
-            assert isinstance(deduct_duration_session_arg.start_time.dt, datetime)
+            assert isinstance(add_partial_window_session_arg.start_time.dt, datetime)
             # print(target_session, "from test data 197ru")
-            # print(deduct_duration_session_arg, "from spy, 198ru")
+            # print(add_partial_window_session_arg, "from spy, 198ru")
 
             t1 = target_session.start_time.dt
-            t2 = deduct_duration_session_arg.start_time.dt
+            t2 = add_partial_window_session_arg.start_time.dt
             assert t1.hour == t2.hour
             assert t1.minute == t2.minute
             assert t1.second == t2.second
 
-            assert target_session.start_time.dt == deduct_duration_session_arg.start_time.dt
+            assert target_session.start_time.dt == add_partial_window_session_arg.start_time.dt
 
     assert_keep_alive_worked_as_intended()
 
@@ -307,7 +307,7 @@ def test_activity_arbiter(activity_arbiter_and_setup):
 
     def assert_time_matches_in_keep_alive():
         num_of_window_pushes = len(mock_activity_recorder.add_ten_sec_to_end_time.call_args_list)
-        num_of_deductions = len(mock_activity_recorder.deduct_duration.call_args_list)
+        num_of_deductions = len(mock_activity_recorder.add_partial_window.call_args_list)
 
         keep_alive_tally_in_sec = 0
 
@@ -326,7 +326,7 @@ def test_activity_arbiter(activity_arbiter_and_setup):
 
         for j in range(0, num_of_deductions):
             # get deduction amt
-            deduction = mock_activity_recorder.deduct_duration.call_args_list[j].args[0]        
+            deduction = mock_activity_recorder.add_partial_window.call_args_list[j].args[0]        
             if deduction == 0:
                 raise ValueError("Zero deduction")
             if deduction == 10:

@@ -32,15 +32,15 @@ from ..mocks.mock_clock import MockClock, UserLocalTimeMockClock
 
 
 @pytest.fixture
-def setup_daos(db_session_in_mem, mock_async_session_maker):
+def setup_daos(db_session_in_mem):
     
     program_logging_dao = ProgramLoggingDao(db_session_in_mem)
     chrome_logging_dao = ChromeLoggingDao(db_session_in_mem)
 
     program_summary_dao = ProgramSummaryDao(
-        program_logging_dao, db_session_in_mem, mock_async_session_maker)
+        program_logging_dao, db_session_in_mem)
     chrome_summary_dao = ChromeSummaryDao(
-        chrome_logging_dao, db_session_in_mem, mock_async_session_maker)
+        chrome_logging_dao, db_session_in_mem)
     
     clock = UserLocalTimeMockClock(times_for_system_clock_as_ult)
 
@@ -59,9 +59,9 @@ def test_simple_round_trip_for_programs(setup_daos):
     first_write_time = selection_for_test.start_time.dt
     second_write_time = first_write_time + timedelta(seconds=10)
     third_write_time = first_write_time + timedelta(seconds=20)
-    setup_daos["program_summary"].push_window_ahead_ten_sec(selection_for_test, UserLocalTime(first_write_time))
-    setup_daos["program_summary"].push_window_ahead_ten_sec(selection_for_test, UserLocalTime(second_write_time))
-    setup_daos["program_summary"].push_window_ahead_ten_sec(selection_for_test, UserLocalTime(third_write_time))
+    setup_daos["program_summary"].push_window_ahead_ten_sec(selection_for_test)
+    setup_daos["program_summary"].push_window_ahead_ten_sec(selection_for_test)
+    setup_daos["program_summary"].push_window_ahead_ten_sec(selection_for_test)
     start_of_day = get_start_of_day_from_ult(selection_for_test.start_time)
     setup_daos["program_summary"].add_used_time(selection_for_test, 4, start_of_day)
 
@@ -86,9 +86,9 @@ def test_simple_round_trip_for_chrome(setup_daos):
     first_write_time = selection_for_test.start_time.dt
     second_write_time = first_write_time + timedelta(seconds=10)
     third_write_time = first_write_time + timedelta(seconds=20)
-    setup_daos["chrome_summary"].push_window_ahead_ten_sec(selection_for_test, UserLocalTime(first_write_time))
-    setup_daos["chrome_summary"].push_window_ahead_ten_sec(selection_for_test, UserLocalTime(second_write_time))
-    setup_daos["chrome_summary"].push_window_ahead_ten_sec(selection_for_test, UserLocalTime(third_write_time))
+    setup_daos["chrome_summary"].push_window_ahead_ten_sec(selection_for_test)
+    setup_daos["chrome_summary"].push_window_ahead_ten_sec(selection_for_test)
+    setup_daos["chrome_summary"].push_window_ahead_ten_sec(selection_for_test)
     start_of_day = get_start_of_day_from_ult(selection_for_test.start_time)
     setup_daos["chrome_summary"].add_used_time(selection_for_test, 8, start_of_day)
 
