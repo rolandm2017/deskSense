@@ -35,7 +35,7 @@ class SystemClock(ClockProtocol):
 
 class UserFacingClock(ClockProtocol):
     def __init__(self):
-        self.today = get_start_of_day_from_ult(self.now())
+        pass
 
     def now(self) -> UserLocalTime:
         # utc_now = datetime.now(timezone.utc)

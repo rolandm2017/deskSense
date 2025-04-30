@@ -13,8 +13,8 @@ from surveillance.src.util.clock import UserFacingClock
 from surveillance.src.util.const import SECONDS_PER_HOUR
 
 from ..helper.confirm_chronology import (
-    assert_test_data_is_chronological_with_tz,
-    get_durations_from_test_data,
+    assert_test_data_is_chronological_with_tz, assert_start_times_are_chronological,
+    get_durations_from_test_data, assert_all_start_times_precede_end_times
 )
 
 from ..helper.polling_util import count_full_loops
@@ -45,9 +45,7 @@ def setup_recorder_etc(db_session_in_mem, mock_async_session_maker):
     chrome_summary_dao = ChromeSummaryDao(
         chrome_logging_dao, db_session_in_mem, mock_async_session_maker)
     
-    clock = UserLocalTimeMockClock(times_for_system_clock_as_ult)
-
-    recorder = ActivityRecorder(cast(UserFacingClock, clock), program_logging_dao, chrome_logging_dao, program_summary_dao, chrome_summary_dao)
+    recorder = ActivityRecorder(program_logging_dao, chrome_logging_dao, program_summary_dao, chrome_summary_dao)
     
     return {"program_logging": program_logging_dao, "chrome_logging": chrome_logging_dao,
             "program_summary": program_summary_dao, "chrome_summary": chrome_summary_dao,
@@ -57,6 +55,8 @@ def setup_recorder_etc(db_session_in_mem, mock_async_session_maker):
 @pytest.fixture
 def verified_data_with_durations():
     assert_test_data_is_chronological_with_tz(test_sessions)
+    assert_all_start_times_precede_end_times(test_sessions)
+    assert_start_times_are_chronological(test_sessions)
 
     durations = get_durations_from_test_data(test_sessions)
 
@@ -77,7 +77,6 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
 
     durations_per_session_dict = {}
 
-    
 
     # TODO: Verify the test's expected summary is what you think. full cycles + partials
 
@@ -108,7 +107,9 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
     recorded_times = []
     # Write all the sessions with their expected times
     for i in range(0, len(verified_sessions)):
-        if i == len(verified_sessions) - 2:
+        current_session = verified_sessions[i]
+        if i == len(verified_sessions) - 1:
+            print(f"breaking on {current_session.get_name()}")
             break  # Do nothing with final session
         duration = expected_durations[i]
         total_cycles = count_full_loops(duration)
@@ -116,14 +117,12 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
 
         recorded_time = 0
 
-        current_session = verified_sessions[i]
-
         session_key = get_session_key(session)
         calls_dict = {"add_ten": 0,
                       "add_partial": 0,
                       "state_changed": 0}
 
-        for i in range(0, total_cycles):
+        for _ in range(0, total_cycles):
             actual_add_ten_count += 1
             calls_dict["add_ten"] += 1
             recorded_time += 10
@@ -136,12 +135,17 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
 
         # Finalize session
         next_session_start_time = verified_sessions[i + 1].start_time
+        # print("current:",current_session)
+        # print("next:",verified_sessions[i + 1])
+        assert next_session_start_time.dt > current_session.start_time.dt
         completed_session = current_session.to_completed(next_session_start_time)
 
         actual_on_state_changed += 1
         calls_dict["state_changed"] += 1
         setup_recorder_etc["recorder"].on_state_changed(completed_session)
         actual_calls_dict[session_key] = calls_dict
+
+        recorded_times.append(recorded_time)
 
 
     logs = []
@@ -153,18 +157,51 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
             log = setup_recorder_etc["chrome_logging"].find_session(session)
             logs.append(log)
 
-    actual_durations = [log.duration_in_sec for log in logs]
+    actual_durations_in_logs = [log.duration_in_sec for log in logs]
 
-    def assert_recorded_values_match_ledger():
+    count = []
+    v = 0
+    for i in actual_durations_in_logs:
+        if i > 0:
+            v += 1
+            count.append(i)
+        else:
+            print(i)
+    
+    print(count, v, "162ru")
+
+    def assert_expected_values_match_ledger():
         """Verify each one using it's ledger."""
         for i in range(0, len(verified_sessions)):
             # check that the ledger says what you expect
-            assert verified_sessions[i].ledger.get_total() == expected_durations[i]
-            # assert verified_sessions[i].ledger.get_total() == actual_durations[i]
+            if i == len(verified_sessions) - 1:
+                assert verified_sessions[i].ledger.get_total() == 0  # Claude, final session
+                break
+            ledger_total = verified_sessions[i].ledger.get_total()
+            assert ledger_total == expected_durations[i]
+            # assert verified_sessions[i].ledger.get_total() == actual_durations_in_logs[i]
 
-    assert_recorded_values_match_ledger()
+    assert_expected_values_match_ledger()
 
-    assert 2 == 3
+    zips = []
+    for i in range(0, len(verified_sessions)):
+        zip = (actual_durations_in_logs[i], verified_sessions[i].ledger.get_total())
+        zips.append(zip)
+
+
+
+    print("-- comparing zips -- ")
+
+    for log_and_ledger in zips:
+        print(log_and_ledger)
+        assert log_and_ledger[0] == log_and_ledger[1]
+
+    def assert_actual_logs_match_expected_durations():
+        for i in range(0, len(verified_sessions)):
+            current = verified_sessions[i]
+            assert current.ledger.get_total() == actual_durations_in_logs[i]
+
+    assert_actual_logs_match_expected_durations()
 
     # For each session, verify that it had the expected amount of time recorded
         

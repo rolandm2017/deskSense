@@ -16,8 +16,7 @@ from surveillance.src.util.time_formatting import get_start_of_day_from_ult
 # Persistence component
 
 class ActivityRecorder:
-    def __init__(self, user_facing_clock: UserFacingClock, program_logging_dao: ProgramLoggingDao, chrome_logging_dao: ChromeLoggingDao, program_summary_dao: ProgramSummaryDao, chrome_summary_dao: ChromeSummaryDao):
-        self.user_facing_clock = user_facing_clock
+    def __init__(self, program_logging_dao: ProgramLoggingDao, chrome_logging_dao: ChromeLoggingDao, program_summary_dao: ProgramSummaryDao, chrome_summary_dao: ChromeSummaryDao):
         self.program_logging_dao = program_logging_dao
         self.chrome_logging_dao = chrome_logging_dao
         self.program_summary_dao = program_summary_dao
@@ -59,18 +58,18 @@ class ActivityRecorder:
         """
         if session is None:
             raise ValueError("Session was None in add_ten_sec")
-        now: UserLocalTime = self.user_facing_clock.now()
-
         # For testing
         self.pulse_history.append((session, session.start_time))
         session.ledger.add_ten_sec()
 
+        # Window push now finds session based on start_time
+
         if isinstance(session, ProgramSession):
             self.program_logging_dao.push_window_ahead_ten_sec(session)
-            self.program_summary_dao.push_window_ahead_ten_sec(session, now)
+            self.program_summary_dao.push_window_ahead_ten_sec(session)
         elif isinstance(session, ChromeSession):
             self.chrome_logging_dao.push_window_ahead_ten_sec(session)
-            self.chrome_summary_dao.push_window_ahead_ten_sec(session, now)
+            self.chrome_summary_dao.push_window_ahead_ten_sec(session)
         else:
             raise TypeError("Session was not the right type")
     

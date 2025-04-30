@@ -133,7 +133,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             session.commit()
 
 
-    def push_window_ahead_ten_sec(self, program_session: ProgramSession, right_now: UserLocalTime):
+    def push_window_ahead_ten_sec(self, program_session: ProgramSession):
         """
         Finds the given session and adds ten sec to its end_time
 
@@ -142,7 +142,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         if program_session is None:
             raise ValueError("Session should not be None")
 
-        today_start = get_start_of_day_from_datetime(right_now.dt)
+        today_start = get_start_of_day_from_datetime(program_session.start_time.dt)
         query = self.select_where_time_equals(today_start)
 
         self.execute_window_push(query, program_session.exe_path, program_session.start_time.dt)

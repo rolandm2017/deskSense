@@ -13,7 +13,7 @@ from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.errors import ImpossibleToGetHereError
 from surveillance.src.util.dao_wrapper import validate_session, guarantee_start_time
 from surveillance.src.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
-from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day, get_start_of_day_from_datetime
+from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day_from_datetime
 from surveillance.src.util.const import ten_sec_as_pct_of_hour
 from surveillance.src.util.time_wrappers import UserLocalTime
 
@@ -195,6 +195,9 @@ class ProgramLoggingDao(UtilityDaoMixin):
             raise ImpossibleToGetHereError(
                 "Start of pulse didn't reach the db")
         finalized_duration = (session.end_time.dt - session.start_time.dt).total_seconds()
+        if finalized_duration < 0:
+            print(session, "199ru")
+            raise ImpossibleToGetHereError("A negative duration is impossible")
         discovered_final_val = convert_to_utc(session.end_time.get_dt_for_db()).replace(tzinfo=None)
         
         # Erase whatever was there before

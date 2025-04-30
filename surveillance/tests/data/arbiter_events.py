@@ -65,8 +65,8 @@ t9 = early_morning + timedelta(minutes=5, seconds=7)
 t10 = early_morning + timedelta(minutes=5, seconds=50)
 t11 = early_morning + timedelta(minutes=6, seconds=55)
 t12 = early_morning + timedelta(minutes=7)
-t13 = early_morning + timedelta(minutes=second_to_last_time_change)
-t14 = early_morning + timedelta(minutes=final_time_change)
+t13 = early_morning + timedelta(minutes=8)
+t14 = early_morning + timedelta(minutes=9)
 
 # see t1 vs t13. t14 is left in the Arbiter, unfinished
 minutes_between_start_and_2nd_to_last = second_to_last_time_change
