@@ -42,21 +42,21 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         """Creating the initial session for the summary"""
         # starting_window_amt = window_push_length  # sec
         # usage_duration_in_hours = starting_window_amt / SECONDS_PER_HOUR
-        usage_duration_in_hours = 0  # start_session no longer adds time. It's all add_ten_sec
 
-        today_start = get_start_of_day_from_datetime(program_session.start_time.dt)
 
-        self._create(program_session, usage_duration_in_hours, today_start)
+        self._create(program_session, program_session.start_time.dt)
 
-    def _create(self, session: ProgramSession, duration_in_hours: float, when_it_was_gathered: datetime):
-        # self.logger.log_white("[debug] creating session: " + session.exe_path)
-        self.throw_if_negative(session.process_name, duration_in_hours)
+    def _create(self, session: ProgramSession, start_time: datetime):
+        # self.logger.log_white("[debug] creating session: " + session.exe_path
+        today_start = get_start_of_day_from_datetime(start_time)
+        
         new_entry = DailyProgramSummary(
             exe_path_as_id=session.exe_path,
             program_name=session.window_title,
             process_name=session.process_name,
-            hours_spent=duration_in_hours,
-            gathering_date=when_it_was_gathered
+            hours_spent=0,
+            gathering_date=today_start,
+            gathering_date_local = today_start.replace(tzinfo=None)
         )
         self.add_new_item(new_entry)
 

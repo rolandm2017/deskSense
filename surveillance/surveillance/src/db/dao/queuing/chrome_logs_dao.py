@@ -62,6 +62,7 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
             end_time=start_window_end,
             duration_in_sec=0,
             gathering_date=start_of_day_as_utc,
+            gathering_date_local=start_of_day_as_utc.replace(tzinfo=None),
             created_at=session.start_time.get_dt_for_db()
         )
         self.add_new_item(log_entry)
@@ -100,43 +101,6 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
             grouped_logs[name].append(log)
 
         return grouped_logs
-
-    def find_orphans(self,  latest_shutdown_time, startup_time):
-        """
-        Finds orphaned sessions that:
-        1. Started before shutdown but never ended (end_time is None)
-        2. Started before shutdown but ended after next startup (impossible)
-
-        Args:
-            latest_shutdown_time: Timestamp when system shut down
-            startup_time: Timestamp when system started up again
-        """
-        query = select(DomainSummaryLog).where(
-            # Started before shutdown
-            DomainSummaryLog.start_time <= latest_shutdown_time,
-            # AND (end_time is None OR end_time is after next startup)
-            or_(
-                DomainSummaryLog.end_time == None,  # Sessions never closed
-                DomainSummaryLog.end_time >= startup_time  # End time after startup
-            )
-        ).order_by(DomainSummaryLog.start_time)
-        return self.execute_and_return_all(query)
-
-    def find_phantoms(self, latest_shutdown_time, startup_time):
-        """
-        Finds phantom sessions that impossibly started while the system was off.
-
-        Args:
-            latest_shutdown_time: Timestamp when system shut down
-            startup_time: Timestamp when system started up again
-        """
-        query = select(DomainSummaryLog).where(
-            # Started after shutdown
-            DomainSummaryLog.start_time > latest_shutdown_time,
-            # But before startup
-            DomainSummaryLog.start_time < startup_time
-        ).order_by(DomainSummaryLog.start_time)
-        return self.execute_and_return_all(query)
 
     def read_all(self):
         """Fetch all domain log entries"""
@@ -177,4 +141,42 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
         # Replace whatever used to be there
         log.duration_in_sec = finalized_duration
         log.end_time = discovered_final_val
+        log.end_time_local = session.end_time.dt
         self.update_item(log)
+
+    def find_orphans(self,  latest_shutdown_time, startup_time):
+        """
+        Finds orphaned sessions that:
+        1. Started before shutdown but never ended (end_time is None)
+        2. Started before shutdown but ended after next startup (impossible)
+
+        Args:
+            latest_shutdown_time: Timestamp when system shut down
+            startup_time: Timestamp when system started up again
+        """
+        query = select(DomainSummaryLog).where(
+            # Started before shutdown
+            DomainSummaryLog.start_time <= latest_shutdown_time,
+            # AND (end_time is None OR end_time is after next startup)
+            or_(
+                DomainSummaryLog.end_time == None,  # Sessions never closed
+                DomainSummaryLog.end_time >= startup_time  # End time after startup
+            )
+        ).order_by(DomainSummaryLog.start_time)
+        return self.execute_and_return_all(query)
+
+    def find_phantoms(self, latest_shutdown_time, startup_time):
+        """
+        Finds phantom sessions that impossibly started while the system was off.
+
+        Args:
+            latest_shutdown_time: Timestamp when system shut down
+            startup_time: Timestamp when system started up again
+        """
+        query = select(DomainSummaryLog).where(
+            # Started after shutdown
+            DomainSummaryLog.start_time > latest_shutdown_time,
+            # But before startup
+            DomainSummaryLog.start_time < startup_time
+        ).order_by(DomainSummaryLog.start_time)
+        return self.execute_and_return_all(query)

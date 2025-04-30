@@ -36,17 +36,18 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
 
         usage_duration_in_hours = 0  # start_session no longer adds time. It's all add_ten_sec
 
-        today = get_start_of_day_from_datetime(chrome_session.start_time.dt)  # Still has tz attached
-        self._create(target_domain_name, usage_duration_in_hours, today)
+        self._create(target_domain_name, chrome_session.start_time.dt)
 
-    def _create(self, target_domain_name, duration_in_hours, when_it_was_gathered):
+    def _create(self, target_domain_name, start_time_dt: datetime):
         # self.logger.log_white(
         #     f"[info] creating for {target_domain_name} with duration {duration_in_hours * SECONDS_PER_HOUR}")
-        self.throw_if_negative(target_domain_name, duration_in_hours)
+        today = get_start_of_day_from_datetime(start_time_dt)  # Still has tz attached
+        
         new_entry = DailyDomainSummary(
             domain_name=target_domain_name,
-            hours_spent=duration_in_hours,
-            gathering_date=when_it_was_gathered
+            hours_spent=0,
+            gathering_date=today,
+            gathering_date_local = start_time_dt.replace(tzinfo=None)
         )
         self.add_new_item(new_entry)
 
