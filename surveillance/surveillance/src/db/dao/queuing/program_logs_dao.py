@@ -52,7 +52,7 @@ class ProgramLoggingDao(UtilityDaoMixin):
         start_of_day_as_utc = convert_to_utc(start_of_day)
         start_window_end = base_start_time + timedelta(seconds=10)
         
-        self.logger.log_white(f"INFO: starting session at start_of_day: {start_of_day_as_utc}\n\t for {session.process_name}")
+        # self.logger.log_white(f"INFO: starting session at start_of_day: {start_of_day_as_utc}\n\t for {session.process_name}")
 
         log_entry = ProgramSummaryLog(
             exe_path_as_id=session.exe_path,

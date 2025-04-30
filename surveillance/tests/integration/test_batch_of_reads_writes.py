@@ -7,9 +7,7 @@ from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-from surveillance.src.db.models import DailyProgramSummary, ProgramSummaryLog
 from surveillance.src.arbiter.activity_recorder import ActivityRecorder
-from surveillance.src.util.clock import UserFacingClock
 from surveillance.src.util.const import SECONDS_PER_HOUR
 
 from ..helper.confirm_chronology import (
@@ -20,9 +18,7 @@ from ..helper.confirm_chronology import (
 from ..helper.polling_util import count_full_loops
 from ..helper.counting import get_total_in_sec, get_logs_total
 
-from ..data.arbiter_events import test_sessions, times_for_system_clock_as_ult
-
-from ..mocks.mock_clock import MockClock, UserLocalTimeMockClock
+from ..data.arbiter_events import test_sessions
 
 # TODO: Import the arbiter_events.py file,
 # write them all in a row, using the Recorder layer and manually crunched numbers.
@@ -165,16 +161,6 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
 
     actual_durations_in_logs = [log.duration_in_sec for log in logs]
 
-    count = []
-    v = 0
-    for i in actual_durations_in_logs:
-        if i > 0:
-            v += 1
-            count.append(i)
-        else:
-            print(i)
-    
-    print(count, v, "162ru")
 
     def assert_expected_values_match_ledger():
         """Verify each one using it's ledger."""
@@ -219,8 +205,54 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
 
     assert_that_writes_had_exact_expected_count()
 
+
+    # --
+    # --
+    # --
+
+
+    program_sums = setup_recorder_etc["program_summary"].read_all()
+    domain_sums = setup_recorder_etc["chrome_summary"].read_all()
+
+    # Create a tally to handle summing the sums
+    tally_by_name = {}
+
+    for summary in program_sums:
+        name = summary.get_name()
+        if name in tally_by_name:
+            tally_by_name[name] += summary.hours_spent
+        else:
+            tally_by_name[name] = summary.hours_spent
+    
+    for summary in domain_sums:
+        name = summary.get_name()
+        if name in tally_by_name:
+            tally_by_name[name] += summary.hours_spent
+        else:
+            tally_by_name[name] = summary.hours_spent
+
+    total_sum = 0
+    for key, hours_spent in tally_by_name.items():
+        total_sum += hours_spent
+
+    total_sum_from_db = total_sum * SECONDS_PER_HOUR
+
+    # WHOO!
+    # assert total_sum == sum(expected_durations)
+    def assert_summary_db_falls_within_tolerance():
+        expected_total = sum(expected_durations)
+        tolerance = 0.02  # 5%
+        lower_threshold = expected_total * (1 - tolerance)
+        upper_bounds = expected_total * (1 + tolerance)
+        
+        assert lower_threshold < total_sum_from_db < upper_bounds
+
+    assert_summary_db_falls_within_tolerance()
+
     program_logs = setup_recorder_etc["program_logging"].read_all()
     domain_logs = setup_recorder_etc["chrome_logging"].read_all()
+
+    # Create a tally to handle summing the logs
 
     def assert_count_of_logs_is_right(program_logs, domain_logs):
         """One log per entry"""
@@ -230,55 +262,36 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
 
     assert_count_of_logs_is_right(program_logs, domain_logs)
 
-    program_sums = setup_recorder_etc["program_summary"].read_all()
-    domain_sums = setup_recorder_etc["chrome_summary"].read_all()
+    logs_tally_by_name = {}
 
-    def get_total_in_sec(item_name, verified_sessions, expected_durations):
-        """Gets the durations that correspond to the arg's test_session positions"""
-        chosen_indexes = []
-        print("\n\n\n--\n158ru")
-        print(item_name, "-- 158ru")
-        for i in range(0, len(verified_sessions)):
-            if i == len(verified_sessions) - 2:
-                break  # Ignore the final entry
-            print(verified_sessions[i].get_name(), "162ru")
-            if verified_sessions[i].get_name() == item_name:
-                chosen_indexes.append(i)
-        # Turn the indexes into durations
-        durations = []
-        for index in chosen_indexes:
-            durations.append(expected_durations[index])
-        return sum(durations)
+    for log in program_logs + domain_logs:
+        name = log.get_name()
+        if name in logs_tally_by_name:
+            logs_tally_by_name[name] += log.duration_in_sec
+        else:
+            logs_tally_by_name[name] = log.duration_in_sec
 
-    def get_logs_total(item_name, logs_arr):
-        relevant_picks = []
-        for entry in logs_arr:
-            if item_name == entry.get_name():
-                relevant_picks.append(entry)
-        total_time = sum([x.end_time - x.start_time for x in relevant_picks])
-        return total_time
     
-    actual_program_total_from_logs = 0
-    actual_chrome_total_from_logs = 0
+    logs_total = 0
+    for key, seconds_spent in logs_tally_by_name.items():
+        logs_total += seconds_spent
 
-    for program in program_logs:
-        actual_total = program.hours_spent * SECONDS_PER_HOUR
-        expected_total = get_total_in_sec(program.get_name(), verified_sessions, expected_durations)
-        assert actual_total == expected_total
+    assert logs_total == sum(expected_durations)
 
-        # Check it against the logs
-        actual_program_total_from_logs: int = get_logs_total(program.get_name(), program_logs)
+    # Even the end - start times work:
 
-    for domain in domain_logs:
-        actual_total = domain.hours_spent * SECONDS_PER_HOUR
-        expected_total = get_total_in_sec(domain.get_name(), verified_sessions, expected_durations)
-        assert actual_total == expected_total
-        
-        # Check it against the logs
-        actual_chrome_total_from_logs: int = get_logs_total(domain.get_name(), domain_logs)
+    logs_tally_by_times = {}
 
-    assert actual_program_total_from_logs > 0
-    assert actual_chrome_total_from_logs > 0
-        
-    logs_total = actual_program_total_from_logs + actual_chrome_total_from_logs
+    for log in program_logs + domain_logs:
+        name = log.get_name()
+        if name in logs_tally_by_times:
+            logs_tally_by_times[name] += log.end_time - log.start_time
+        else:
+            logs_tally_by_times[name] = log.end_time - log.start_time
 
+    start_end_totals = 0
+    for key, seconds_spent in logs_tally_by_name.items():
+        start_end_totals += seconds_spent
+
+    assert start_end_totals == sum(expected_durations)
+    

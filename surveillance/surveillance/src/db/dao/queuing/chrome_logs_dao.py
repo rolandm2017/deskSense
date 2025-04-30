@@ -52,7 +52,7 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
         start_of_day_as_utc = convert_to_utc(start_of_day)
         start_window_end = base_start_time + timedelta(seconds=10)
 
-        self.logger.log_white(f"INFO: querying start_of_day: {start_of_day_as_utc}\n\t for {session.get_name()}")
+        # self.logger.log_white(f"INFO: querying start_of_day: {start_of_day_as_utc}\n\t for {session.get_name()}")
 
         log_entry = DomainSummaryLog(
             domain_name=session.domain,
