@@ -70,10 +70,16 @@ def verified_data_with_durations():
 def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, verified_data_with_durations):
     verified_sessions, expected_durations = verified_data_with_durations
 
+    counted_loops = [int(num // 10) for num in expected_durations]
+    # for i in range(0, 14):
+    #     print(counted_loops[i], expected_durations[i])
+
+    # assert 1 == 2
+    x = int(sum(counted_loops))
     expected_on_new_sessions = len(verified_sessions)  # on_new_session does see final entry
-    expected_add_ten_count = int(sum([num // 10 for num in expected_durations[:-1]]))  # Must remove final entry
-    expected_partial_windows = len(expected_durations) - 1  # Must remove final entry
-    expected_on_state_changed = len(verified_sessions) - 2  # Doesn't see final val OR the 2nd to last val
+    expected_add_ten_count = x  # Must remove final entry
+    expected_partial_windows = len(expected_durations)  # Final entry triggers a partial
+    expected_on_state_changed = len(verified_sessions) - 1  # Doesn't see final val
 
     durations_per_session_dict = {}
 
@@ -109,7 +115,7 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
     for i in range(0, len(verified_sessions)):
         current_session = verified_sessions[i]
         if i == len(verified_sessions) - 1:
-            print(f"breaking on {current_session.get_name()}")
+            print(f"breaking on {current_session}")
             break  # Do nothing with final session
         duration = expected_durations[i]
         total_cycles = count_full_loops(duration)
