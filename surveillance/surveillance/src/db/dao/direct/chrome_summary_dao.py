@@ -15,7 +15,7 @@ from surveillance.src.object.classes import ChromeSession
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.errors import NegativeTimeError, ImpossibleToGetHereError
 from surveillance.src.util.const import SECONDS_PER_HOUR
-from surveillance.src.util.time_formatting import get_start_of_day, get_start_of_day_from_datetime
+from surveillance.src.util.time_formatting import get_start_of_day_from_datetime
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 
@@ -37,7 +37,7 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
 
         usage_duration_in_hours = 0  # start_session no longer adds time. It's all add_ten_sec
 
-        today = get_start_of_day(right_now.dt)  # Still has tz attached
+        today = get_start_of_day_from_datetime(right_now.dt)  # Still has tz attached
         self._create(target_domain_name, usage_duration_in_hours, today)
 
     def _create(self, target_domain_name, duration_in_hours, when_it_was_gathered):
@@ -82,7 +82,7 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
 
     def read_day(self, day: UserLocalTime) -> List[DailyDomainSummary]:
         """Read all entries for the given day."""
-        today_start = get_start_of_day(day.dt)
+        today_start = get_start_of_day_from_datetime(day.dt)
         tomorrow_start = today_start + timedelta(days=1)
 
         query = select(DailyDomainSummary).where(
@@ -95,6 +95,12 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         """Read all entries."""
         query = select(DailyDomainSummary)
         return self.execute_and_return_all(query)
+    
+    def select_where_time_equals(self, some_time):
+        return select(DailyDomainSummary).where(
+            DailyDomainSummary.gathering_date.op('=')(some_time)
+        )
+
 
     def update_hours(self, existing_entry, usage_duration_in_hours):
         with self.regular_session() as session:
@@ -111,20 +117,15 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             session.commit()
 
 
-    def push_window_ahead_ten_sec(self, chrome_session: ChromeSession, right_now: UserLocalTime):
+    def push_window_ahead_ten_sec(self, chrome_session: ChromeSession):
         """Finds the given session and adds ten sec to its end_time
 
         NOTE: This only ever happens after start_session
         """
         target_domain = chrome_session.domain
-        today_start = get_start_of_day_from_datetime(right_now.dt)
-        tomorrow_start = today_start + timedelta(days=1)
+        today_start = get_start_of_day_from_datetime(chrome_session.start_time.dt)
 
-        query = select(DailyDomainSummary).where(
-            DailyDomainSummary.domain_name == target_domain,
-            DailyDomainSummary.gathering_date >= today_start,
-            DailyDomainSummary.gathering_date < tomorrow_start
-        )
+        query = self.select_where_time_equals(today_start)
         self.execute_window_push(query)
 
     def execute_window_push(self, query):

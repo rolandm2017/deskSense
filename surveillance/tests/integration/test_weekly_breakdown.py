@@ -110,8 +110,8 @@ async def truncate_test_tables(session_maker_async):
     async with session_maker_async() as session:
         await session.execute(text("TRUNCATE daily_program_summaries RESTART IDENTITY CASCADE"))
         await session.execute(text("TRUNCATE daily_chrome_summaries RESTART IDENTITY CASCADE"))
-        await session.execute(text("TRUNCATE program_summary_logs RESTART IDENTITY CASCADE"))
-        await session.execute(text("TRUNCATE domain_summary_logs RESTART IDENTITY CASCADE"))
+        await session.execute(text("TRUNCATE program_logs RESTART IDENTITY CASCADE"))
+        await session.execute(text("TRUNCATE domain_logs RESTART IDENTITY CASCADE"))
         await session.execute(text("TRUNCATE system_change_log RESTART IDENTITY CASCADE"))
         await session.commit()
         print("Super truncated tables")

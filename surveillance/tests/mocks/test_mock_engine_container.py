@@ -44,10 +44,10 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
     recorder = ActivityRecorder(clock,  p_logging_dao, chrome_logging_dao, p_summary_dao, chrome_sum_dao)
     
     window_push_mock = Mock()
-    deduct_duration_mock = Mock()
+    add_partial_window_mock = Mock()
 
     recorder.add_ten_sec_to_end_time = window_push_mock
-    recorder.deduct_duration = deduct_duration_mock
+    recorder.add_partial_window = add_partial_window_mock
 
     t1 = UserLocalTime(tokyo_tz.localize(datetime(2025, 4, 24, 1, 1, 1)))
     t2 = UserLocalTime(tokyo_tz.localize(datetime(2025, 4, 24, 2, 2, 2)))
@@ -60,13 +60,13 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
     an_engine = KeepAliveEngine(session1, recorder)
 
     duration_in_sec_1 = 33
-    remainder1 = 40 - 33
+    partial1 = 3
 
     duration_in_sec_2 = 56
-    remainder2 = 60 - 56
+    partial2 = 6
 
     duration_in_sec_3 = 7
-    remainder3 = 10 - 7
+    partial3 = 7
 
     run_durations = [duration_in_sec_1, duration_in_sec_2, duration_in_sec_3]
 
@@ -83,12 +83,12 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
 
     # assert window push happened 3x
     assert window_push_mock.call_count == 3
-    # assert deduct_duration happened 1x for 7 sec
-    assert deduct_duration_mock.call_count == 1
-    deduct_duration_mock.assert_called_once_with(remainder1, session1)
+    # assert add_partial_window happened 1x for 7 sec
+    assert add_partial_window_mock.call_count == 1
+    add_partial_window_mock.assert_called_once_with(partial1, session1)
 
     window_push_mock.reset_mock()
-    deduct_duration_mock.reset_mock()
+    add_partial_window_mock.reset_mock()
 
     # --
     # -- Run #2
@@ -104,19 +104,19 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
     engine_container.stop()
 
     assert window_push_mock.call_count == 5  # (50 / 10 = 5)
-    # assert deduct_duration happened 1x for 7 sec
-    assert deduct_duration_mock.call_count == 1
+    # assert add_partial_window happened 1x for 7 sec
+    assert add_partial_window_mock.call_count == 1
 
-    first_arg = deduct_duration_mock.call_args_list[0][0][0]
-    second_arg = deduct_duration_mock.call_args_list[0][0][1]
+    first_arg = add_partial_window_mock.call_args_list[0][0][0]
+    second_arg = add_partial_window_mock.call_args_list[0][0][1]
     assert isinstance(first_arg, int)
-    assert first_arg == remainder2
+    assert first_arg == partial2
     assert isinstance(second_arg, ChromeSession)
     
-    deduct_duration_mock.assert_called_once_with(remainder2, session2)
+    add_partial_window_mock.assert_called_once_with(partial2, session2)
 
     window_push_mock.reset_mock()
-    deduct_duration_mock.reset_mock()
+    add_partial_window_mock.reset_mock()
 
     # --
     # -- Run #3
@@ -135,5 +135,5 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
     engine_container.stop()
 
     window_push_mock.assert_not_called()
-    assert deduct_duration_mock.call_count == 1
-    deduct_duration_mock.assert_called_once_with(remainder3, session3)
+    assert add_partial_window_mock.call_count == 1
+    add_partial_window_mock.assert_called_once_with(partial3, session3)

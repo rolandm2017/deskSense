@@ -15,7 +15,7 @@ from surveillance.src.object.classes import ProgramSession
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.errors import NegativeTimeError, ImpossibleToGetHereError
-from surveillance.src.util.time_formatting import get_start_of_day, get_start_of_day_from_datetime
+from surveillance.src.util.time_formatting import get_start_of_day_from_datetime
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 
@@ -109,7 +109,11 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         """Read all entries."""
         query = select(DailyProgramSummary)
         return self.execute_and_return_all(query)
-
+    
+    def select_where_time_equals(self, some_time):
+        return select(DailyProgramSummary).where(
+            DailyProgramSummary.gathering_date.op('=')(some_time)
+        )
 
     # Updates section
 
@@ -138,14 +142,9 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         if program_session is None:
             raise ValueError("Session should not be None")
 
-        today_start = get_start_of_day(right_now.dt)
-        tomorrow_start = today_start + timedelta(days=1)
+        today_start = get_start_of_day_from_datetime(right_now.dt)
+        query = self.select_where_time_equals(today_start)
 
-        query = select(DailyProgramSummary).where(
-            DailyProgramSummary.exe_path_as_id == program_session.exe_path,
-            DailyProgramSummary.gathering_date >= today_start,
-            DailyProgramSummary.gathering_date < tomorrow_start
-        )
         self.execute_window_push(query, program_session.exe_path, program_session.start_time.dt)
 
     def execute_window_push(self, query, purpose, identifier: datetime):

@@ -77,7 +77,8 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
 
     durations_per_session_dict = {}
 
-    # TODO: Verify each one using it's ledger.
+    
+
     # TODO: Verify the test's expected summary is what you think. full cycles + partials
 
     def get_session_key(session):
@@ -142,10 +143,30 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
         setup_recorder_etc["recorder"].on_state_changed(completed_session)
         actual_calls_dict[session_key] = calls_dict
 
+
+    logs = []
+    for session in verified_sessions:
+        if isinstance(session, ProgramSession):
+            log = setup_recorder_etc["program_logging"].find_session(session)
+            logs.append(log)
+        else:
+            log = setup_recorder_etc["chrome_logging"].find_session(session)
+            logs.append(log)
+
+    actual_durations = [log.duration_in_sec for log in logs]
+
+    def assert_recorded_values_match_ledger():
+        """Verify each one using it's ledger."""
+        for i in range(0, len(verified_sessions)):
+            # check that the ledger says what you expect
+            assert verified_sessions[i].ledger.get_total() == expected_durations[i]
+            # assert verified_sessions[i].ledger.get_total() == actual_durations[i]
+
+    assert_recorded_values_match_ledger()
+
+    assert 2 == 3
+
     # For each session, verify that it had the expected amount of time recorded
-    for i in range(0, len(verified_sessions)):
-        # check that the ledger says what you expect
-        assert verified_sessions[i].ledger.get_total() == expected_durations[i]
         
     def assert_that_writes_had_exact_expected_count():
         assert actual_on_new_sessions == expected_on_new_sessions

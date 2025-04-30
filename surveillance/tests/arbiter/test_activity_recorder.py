@@ -95,10 +95,10 @@ async def test_on_state_changed_chrome(activity_recorder, mock_daos, chrome_sess
 
 
 @pytest.mark.asyncio
-async def test_add_used_time_program(activity_recorder, mock_daos, program_session):
+async def test_add_partial_window_program(activity_recorder, mock_daos, program_session):
     duration = 6  # seconds
 
-    activity_recorder.add_used_time(duration, program_session)
+    activity_recorder.add_partial_window(duration, program_session)
 
     start_of_day = program_session.start_time.dt.replace(hour=0, minute=0, second=0)
 

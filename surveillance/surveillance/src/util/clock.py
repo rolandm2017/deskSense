@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Iterator
 
 from surveillance.src.config.definitions import local_time_zone
-from surveillance.src.util.time_formatting import get_start_of_day
+from surveillance.src.util.time_formatting import get_start_of_day_from_datetime, get_start_of_day_from_ult
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 
@@ -35,7 +35,7 @@ class SystemClock(ClockProtocol):
 
 class UserFacingClock(ClockProtocol):
     def __init__(self):
-        self.today = get_start_of_day(self.now())
+        self.today = get_start_of_day_from_ult(self.now())
 
     def now(self) -> UserLocalTime:
         # utc_now = datetime.now(timezone.utc)
@@ -56,7 +56,7 @@ class UserFacingClock(ClockProtocol):
         return self.today
 
     def today_start(self):
-        return get_start_of_day(datetime.now(ZoneInfo(local_time_zone)))
+        return get_start_of_day_from_datetime(datetime.now(ZoneInfo(local_time_zone)))
 
     def seconds_have_elapsed(self, current_time: datetime, previous_time: datetime, seconds: int) -> bool:
         """

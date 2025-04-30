@@ -284,9 +284,9 @@ def truncate_test_tables(engine):
 
     with engine.begin() as conn:
         conn.execute(
-            text("TRUNCATE program_summary_logs RESTART IDENTITY CASCADE"))
+            text("TRUNCATE program_logs RESTART IDENTITY CASCADE"))
         conn.execute(
-            text("TRUNCATE domain_summary_logs RESTART IDENTITY CASCADE"))
+            text("TRUNCATE domain_logs RESTART IDENTITY CASCADE"))
         conn.execute(
             text("TRUNCATE system_change_log RESTART IDENTITY CASCADE"))
         print("Tables truncated")

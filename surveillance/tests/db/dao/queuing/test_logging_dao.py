@@ -168,7 +168,7 @@ def test_push_window_ahead(prepare_daos):
         start_time=datetime(2025, 4, 19, 9, 0, 0, tzinfo=tokyo_tz),
         end_time=datetime(2025, 4, 19, 17, 0,
                           start_val_for_test, tzinfo=tokyo_tz),
-        duration=8.0,
+        duration_in_sec=8.0,
         created_at=datetime.now(tokyo_tz),
         gathering_date=datetime(2025, 4, 19, tzinfo=tokyo_tz)
     )
@@ -182,7 +182,7 @@ def test_push_window_ahead(prepare_daos):
         start_time=datetime(2025, 4, 20, 10, 0, tzinfo=tokyo_tz),
         end_time=datetime(2025, 4, 20, 14, 4, start_val_for_test,
                           tzinfo=tokyo_tz),
-        duration=4.5,
+        duration_in_sec=4.5,
         gathering_date=datetime(2025, 4, 20, tzinfo=tokyo_tz),
         created_at=datetime.now(tokyo_tz)
     )

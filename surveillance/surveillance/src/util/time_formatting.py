@@ -30,12 +30,6 @@ def get_start_of_day_from_ult(ult: UserLocalTime):
 def get_start_of_day_from_datetime(dt: datetime):
     return dt.replace(hour=0, minute=0, second=0, microsecond=0)
 
-def get_start_of_day(some_time_obj: datetime | UserLocalTime):
-    """If you put in March 3 3:00 PM PST, you will get out march 3 12:00 AM *PST*! """
-    # Timezone stays attached.
-    if isinstance(some_time_obj, UserLocalTime):
-        return UserLocalTime(some_time_obj.dt.replace(hour=0, minute=0, second=0, microsecond=0))
-    return some_time_obj.replace(hour=0, minute=0, second=0, microsecond=0)
 
 
 def account_for_timezone_offset(dt, users_local_tz_offset):
