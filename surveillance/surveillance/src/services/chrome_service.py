@@ -18,21 +18,23 @@ from surveillance.src.config.definitions import productive_sites
 from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.errors import SuspiciousDurationError
+from surveillance.src.util.time_wrappers import UserLocalTime
 
 
 class TabQueue:
-    def __init__(self, log_tab_event, debounce_delay=0.5):
+    def __init__(self, log_tab_event, debounce_delay=0.5, transience_time_in_ms=300):
         self.last_entry = None
         self.message_queue: list[TabChangeEventWithLtz] = []
         self.ordered_messages: list[TabChangeEventWithLtz] = []
         self.ready_queue: list[TabChangeEventWithLtz] = []
         self.debounce_delay = debounce_delay  # One full sec was too long.
+        self.transience_time_in_ms = transience_time_in_ms
         self.debounce_timer = None
         self.log_tab_event = log_tab_event
 
     def add_to_arrival_queue(self, tab_change_event: TabChangeEventWithLtz):
 
-        self.message_queue.append(tab_change_event)
+        self.append_to_queue(tab_change_event)
         MAX_QUEUE_LEN = 40
 
         if len(self.message_queue) >= MAX_QUEUE_LEN:
@@ -45,6 +47,10 @@ class TabQueue:
             self.debounce_timer.cancel()
 
         self.debounce_timer = asyncio.create_task(self.debounced_process())
+
+    def append_to_queue(self, tab_event):
+        """Here to enhance testability"""
+        self.message_queue.append(tab_event)
 
     async def debounced_process(self):
         await asyncio.sleep(self.debounce_delay)
@@ -63,9 +69,8 @@ class TabQueue:
         self.message_queue = []
 
     def tab_is_transient(self, current: TabChangeEventWithLtz, next: TabChangeEventWithLtz):
-        transience_time_in_ms = 300
         tab_duration = next.start_time_with_tz - current.start_time_with_tz
-        return tab_duration < timedelta(milliseconds=transience_time_in_ms)
+        return tab_duration < timedelta(milliseconds=self.transience_time_in_ms)
 
     def remove_transient_tabs(self):
         current_queue = self.ordered_messages
@@ -133,7 +138,7 @@ class ChromeService:
         url = url_deliverable.url
         title = url_deliverable.tab_title
         is_productive = url_deliverable.url in productive_sites
-        start_time = url_deliverable.start_time_with_tz
+        start_time = UserLocalTime(url_deliverable.start_time_with_tz)
 
         initialized: ChromeSession = ChromeSession(
             url, title, start_time, is_productive)
