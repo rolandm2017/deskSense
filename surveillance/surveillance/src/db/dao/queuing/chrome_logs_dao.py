@@ -8,11 +8,16 @@ from sqlalchemy.orm import sessionmaker
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from surveillance.src.object.classes import ChromeSession, CompletedChromeSession
 
 from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
+from surveillance.src.db.dao.logging_dao_mixin import LoggingDaoMixin
+
 from surveillance.src.db.models import DomainSummaryLog, ProgramSummaryLog
 from surveillance.src.db.dao.base_dao import BaseQueueingDao
+
+from surveillance.src.object.classes import ChromeSession, CompletedChromeSession
+from surveillance.src.object.dao_util import LogTimeInitializer
+
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.errors import ImpossibleToGetHereError
 from surveillance.src.util.dao_wrapper import validate_session, guarantee_start_time
@@ -20,6 +25,7 @@ from surveillance.src.util.log_dao_helper import convert_start_end_times_to_hour
 from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day_from_datetime, get_start_of_day_from_ult, attach_tz_to_all
 from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.const import ten_sec_as_pct_of_hour
+from surveillance.src.util.log_dao_helper import group_logs_by_name
 
 
 #
@@ -29,7 +35,7 @@ from surveillance.src.util.const import ten_sec_as_pct_of_hour
 #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #
 #
 
-class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
+class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
     """DAO for program activity logging. 
     TIMEZONE HANDLING:
     - All datetimes are stored in UTC by PostgreSQL
@@ -47,25 +53,23 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
         """
         A session of using a domain. End_time here is like, "when did the user tab away from the program?"
         """
-        base_start_time = convert_to_utc(session.start_time.get_dt_for_db())
-        start_of_day = get_start_of_day_from_datetime(session.start_time.get_dt_for_db())
-        start_of_day_as_utc = convert_to_utc(start_of_day)
-        start_window_end = base_start_time + timedelta(seconds=10)
+
+        time_initializer = LogTimeInitializer(session.start_time)
 
         # self.logger.log_white(f"INFO: querying start_of_day: {start_of_day_as_utc}\n\t for {session.get_name()}")
 
         log_entry = DomainSummaryLog(
             domain_name=session.domain,
             # Assumes (10 - n) sec will be deducted later
-            hours_spent=ten_sec_as_pct_of_hour,
-            start_time=base_start_time,
+            hours_spent=ten_sec_as_pct_of_hour,  # FIXME: all time additions should happen thru KeepAlive
+            start_time=time_initializer.base_start_time,
             start_time_local=session.start_time.dt,
-            end_time=start_window_end,
-            end_time_local=start_window_end.replace(tzinfo=None),
+            end_time=time_initializer.start_window_end,
+            end_time_local=time_initializer.start_window_end.replace(tzinfo=None),
             duration_in_sec=0,
-            gathering_date=start_of_day_as_utc,
-            gathering_date_local=start_of_day_as_utc.replace(tzinfo=None),
-            created_at=session.start_time.get_dt_for_db()
+            gathering_date=time_initializer.start_of_day_as_utc,
+            gathering_date_local=time_initializer.start_of_day_as_utc.replace(tzinfo=None),
+            created_at=time_initializer.base_start_time
         )
         self.add_new_item(log_entry)
 
@@ -93,16 +97,13 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
             DomainSummaryLog.gathering_date < end_of_day
         ).order_by(DomainSummaryLog.domain_name)
 
+        query = self.create_read_day_query()
+
         logs = self.execute_and_return_all(query)
 
         logs = attach_tz_to_all(logs, day.dt.tzinfo)
 
-        grouped_logs = {}
-        for log in logs:
-            name = log.get_name()
-            if name not in grouped_logs:
-                grouped_logs[name] = []
-            grouped_logs[name].append(log)
+        grouped_logs = group_logs_by_name(logs)
 
         return grouped_logs
 
@@ -139,17 +140,7 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
         if not log:
             raise ImpossibleToGetHereError(
                 "Start of pulse didn't reach the db")
-        finalized_duration = (session.end_time.dt - session.start_time.dt).total_seconds()        
-        if finalized_duration < 0:
-            print(session, "199ru")
-            raise ImpossibleToGetHereError("A negative duration is impossible")
-        discovered_final_val = convert_to_utc(session.end_time.get_dt_for_db()).replace(tzinfo=None)
-
-        # Replace whatever used to be there
-        log.duration_in_sec = finalized_duration
-        log.end_time = discovered_final_val
-        log.end_time_local = session.end_time.dt
-        self.update_item(log)
+        self.attach_final_values_and_update(session, log)
 
     def find_orphans(self,  latest_shutdown_time, startup_time):
         """

@@ -274,7 +274,7 @@ def test_finalize_log(prepare_daos, mock_regular_session_maker, nonexistent_sess
     assert isinstance(args[0], DomainSummaryLog)
 
 
-def test_finalize_log_error(prepare_daos, mock_regular_session_maker, mock_async_session, nonexistent_session):
+def test_finalize_log_error(prepare_daos, mock_regular_session_maker, nonexistent_session):
     program_dao, chrome_dao = prepare_daos
 
     # try:

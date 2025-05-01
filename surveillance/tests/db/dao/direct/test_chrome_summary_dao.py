@@ -155,3 +155,9 @@ class TestChromeSummaryDao:
         # Check that first argument is a Select object
         assert isinstance(args[0], Select)
         assert len(result) == 3
+
+    # TODO: Test for window push => check push works, and also check it finds the right session.
+    # TODO: Add partial window
+
+    # TODO: Window pushes find the right session for all methods
+    #           - the find item query accepts the right args
