@@ -15,7 +15,6 @@ from surveillance.src.util.clock import SystemClock
 from surveillance.src.util.threaded_tracker import ThreadedTracker
 from surveillance.src.util.program_tools import separate_window_name_and_detail,   contains_space_dash_space
 from surveillance.src.util.strings import no_space_dash_space
-from surveillance.src.util.copy_util import snapshot_obj_for_tests
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 

@@ -59,7 +59,9 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
             # Assumes (10 - n) sec will be deducted later
             hours_spent=ten_sec_as_pct_of_hour,
             start_time=base_start_time,
+            start_time_local=session.start_time.dt,
             end_time=start_window_end,
+            end_time_local=start_window_end.replace(tzinfo=None),
             duration_in_sec=0,
             gathering_date=start_of_day_as_utc,
             gathering_date_local=start_of_day_as_utc.replace(tzinfo=None),

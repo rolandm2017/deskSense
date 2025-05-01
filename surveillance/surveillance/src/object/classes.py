@@ -17,13 +17,17 @@ class SessionLedger:
     Records the changes in time that reach the ActivityRecorder layer.
     """
 
-    def __init__(self):
+    def __init__(self, name):
         self.total = 0
+        self.name = name
         self.open = True
+        self.DEBUG = False
 
     def add_ten_sec(self):
         """Proof that the add_ten_sec Recorder method occurred."""
         if self.open:
+            if self.DEBUG:
+                print(f"Ledger for {self.name}: Adding ten sec for total {self.total}")
             self.total += window_push_length
         else:
             raise SessionClosedError("Tried to push window after deduction")
@@ -31,6 +35,8 @@ class SessionLedger:
     def extend_by_n(self, amount):
         """Proof that the deduct_duration method was called with a value."""
         self.open = False  # Cannot window push after deduct_duration
+        if self.DEBUG:
+            print(f"Ledger for {self.name}: Extend by n for total {self.total}")
         self.total += amount
 
     def get_total(self):
@@ -42,10 +48,10 @@ class ActivitySession(ABC):
     productive: bool
     ledger: SessionLedger
     
-    def __init__(self, start_time, productive=False):
+    def __init__(self, start_time, productive, name):
         self.start_time = start_time
         self.productive = productive
-        self.ledger = SessionLedger()
+        self.ledger = SessionLedger(name)
     
     @abstractmethod
     def to_completed(self, end_time):
@@ -64,7 +70,7 @@ class ProgramSession(ActivitySession):
 
     def __init__(self, exe_path="", process_name="", window_title="", detail="", start_time=UserLocalTime(datetime(2000, 1, 1, tzinfo=timezone.utc)), productive=False):
         # IF you remove the default args for this class, then you will have to do A LOT of cleanup in the test data.
-        super().__init__(start_time, productive)
+        super().__init__(start_time, productive, process_name)
         self.exe_path = exe_path
         self.process_name = process_name
         self.window_title = window_title
@@ -74,7 +80,7 @@ class ProgramSession(ActivitySession):
 
     def to_completed(self, end_time: UserLocalTime):
         """Similar to to_completed in the other type"""
-        return CompletedProgramSession(
+        completed = CompletedProgramSession(
             exe_path=self.exe_path,
             process_name=self.process_name,
             window_title=self.window_title,
@@ -84,6 +90,8 @@ class ProgramSession(ActivitySession):
             end_time=end_time,
             productive=self.productive
         )
+        completed.ledger = self.ledger
+        return completed
 
     def get_name(self):
         """Useful because a string id property isn't common across both classes"""
@@ -93,7 +101,7 @@ class ProgramSession(ActivitySession):
         return parse_time_string(time_str)
 
     def __str__(self):
-        return f"ProgramSession(exe_path='{self.exe_path}', process_name='{self.process_name}', \n\ttitle='{self.window_title}', detail='{self.detail}', \n\tstart_time='{self.start_time}', \n\tproductive='{self.productive}')"
+        return f"ProgramSession(exe_path='{self.exe_path}', process_name='{self.process_name}', \n\ttitle='{self.window_title}', detail='{self.detail}', \n\tstart_time='{self.start_time}', \n\tproductive='{self.productive}',\n\tledger='{self.ledger.get_total()}')"
 
 
 class CompletedProgramSession(ProgramSession):
@@ -141,7 +149,7 @@ class CompletedProgramSession(ProgramSession):
         return (f"CompletedProgramSession(exe_path='{self.exe_path}', process_name='{self.process_name}', \n\t"
                 f"title='{self.window_title}', detail='{self.detail}', \n\t"
                 f"start_time='{self.start_time}', \n\t"
-                f"end_time='{self.end_time}', duration='{self.duration}', productive='{self.productive}')")
+                f"end_time='{self.end_time}', duration='{self.duration}', productive='{self.productive}', \n\tledger='{self.ledger.get_total()}')")
 
     # TODO: Transfer whole codebase to use 2-3 vers of the program session.
 
@@ -155,7 +163,7 @@ class ChromeSession(ActivitySession):
     # productive: bool  # exists in ActivitySession
 
     def __init__(self, domain, detail, start_time, productive=False):
-        super().__init__(start_time, productive)
+        super().__init__(start_time, productive, domain)
         self.domain = domain
         self.detail = detail
         self.end_time = None
@@ -163,7 +171,7 @@ class ChromeSession(ActivitySession):
 
     def to_completed(self, end_time: UserLocalTime):
         """Similar to to_completed in the other type"""
-        return CompletedChromeSession(
+        completed = CompletedChromeSession(
             domain=self.domain,
             detail=self.detail,
             #
@@ -171,6 +179,8 @@ class ChromeSession(ActivitySession):
             end_time=end_time,
             productive=self.productive
         )
+        completed.ledger = self.ledger
+        return completed
     
     def get_name(self):
         """Useful because a string id property isn't common across both classes"""
@@ -182,7 +192,7 @@ class ChromeSession(ActivitySession):
 
 
     def __str__(self):
-        return f"ChromeSession(domain='{self.domain}', detail='{self.detail}', \n\tstart_time='{self.start_time}', \n\tproductive='{self.productive}')"
+        return f"ChromeSession(domain='{self.domain}', detail='{self.detail}', \n\tstart_time='{self.start_time}', \n\tproductive='{self.productive}', \n\tledger='{self.ledger.get_total()}')"
 
 
 class CompletedChromeSession(ChromeSession):
@@ -214,7 +224,7 @@ class CompletedChromeSession(ChromeSession):
             self.duration = timedelta(seconds=0)
 
     def __str__(self):
-        return f"CompletedChromeSession(domain='{self.domain}', detail='{self.detail}', \n\tstart_time='{self.start_time}', \n\tend_time='{self.end_time}', duration='{self.duration}', \n\tproductive='{self.productive}')"
+        return f"CompletedChromeSession(domain='{self.domain}', detail='{self.detail}', \n\tstart_time='{self.start_time}', \n\tend_time='{self.end_time}', duration='{self.duration}', \n\tproductive='{self.productive}', \n\tledger='{self.ledger.get_total()}')"
 
 # TODO: Convert to use CompletedChromeSession to avoid that gross "start_time is not None" bs
 

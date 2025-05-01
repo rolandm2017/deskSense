@@ -11,12 +11,12 @@ tz_for_test = "Asia/Tokyo"
 tokyo_tz = pytz.timezone(tz_for_test)
 
 def test_ledger_init():
-    ledger = SessionLedger()
+    ledger = SessionLedger("test_ledger")
     assert ledger.get_total() == 0
     assert ledger.open is True
 
 def test_ledger_add_ten_sec():
-    ledger = SessionLedger()
+    ledger = SessionLedger("test_ledger")
 
     ledger.add_ten_sec()
     assert ledger.get_total() == 10
@@ -24,7 +24,7 @@ def test_ledger_add_ten_sec():
     assert ledger.get_total() == 20
 
 def test_ledger_deduct_time():
-    ledger = SessionLedger()
+    ledger = SessionLedger("test_ledger")
 
     ledger.add_ten_sec()
     ledger.add_ten_sec()
@@ -37,7 +37,7 @@ def test_ledger_deduct_time():
     assert ledger.get_total() == 20 + 4
 
 def test_cant_add_time_after_ledger_closure():
-    ledger = SessionLedger()
+    ledger = SessionLedger("test_ledger")
 
     ledger.add_ten_sec()
     ledger.add_ten_sec()
@@ -76,6 +76,11 @@ def test_to_completed():
     start_time = UserLocalTime(tokyo_tz.localize(datetime(2025, 4, 29, 10, 23, 0)))
     session = ProgramSession(path, process, window_title, detail, start_time)
 
+    # Give the session ledger some time
+    session.ledger.add_ten_sec()
+    session.ledger.add_ten_sec()
+    session.ledger.add_ten_sec()
+
     end_time =  UserLocalTime(tokyo_tz.localize(datetime(2025, 4, 29, 10, 25, 25)))
     completed = session.to_completed(end_time)
 
@@ -86,6 +91,13 @@ def test_to_completed():
     assert completed.start_time.dt == start_time.dt
     assert completed.end_time.dt == end_time.dt
     assert completed.duration.total_seconds() == (end_time.dt - start_time.dt).total_seconds()
+
+    # Test the ledger
+    assert completed.ledger.get_total() == 30
+
+    # It still works
+    completed.ledger.add_ten_sec()
+    assert completed.ledger.get_total() == 40
 
 def test_add_duration_for_tests():
     path = "C:/ProgramFiles/foo.exe"

@@ -61,7 +61,7 @@ from ..mocks.mock_clock import MockClock
 
 
 @pytest_asyncio.fixture
-async def setup_parts(regular_session, async_engine_and_asm):
+async def setup_parts(regular_session_maker, async_engine_and_asm):
     """
     Fixture that initializes a DashboardService instance for testing.
     This connects to the test db, unless there is an unforseen problem.
@@ -73,12 +73,12 @@ async def setup_parts(regular_session, async_engine_and_asm):
     # Get all required DAOs
     timeline_dao = TimelineEntryDao(session_maker_async)
     program_logging_dao = ProgramLoggingDao(
-        regular_session)
-    chrome_logging_dao = ChromeLoggingDao(regular_session)
+        regular_session_maker)
+    chrome_logging_dao = ChromeLoggingDao(regular_session_maker)
     program_summary_dao = ProgramSummaryDao(
-        program_logging_dao, regular_session)
+        program_logging_dao, regular_session_maker)
     chrome_summary_dao = ChromeSummaryDao(
-        chrome_logging_dao, regular_session)
+        chrome_logging_dao, regular_session_maker)
 
     # Create and return the dashboard service
     service = DashboardService(
@@ -89,7 +89,7 @@ async def setup_parts(regular_session, async_engine_and_asm):
         chrome_logging_dao=chrome_logging_dao
     )
 
-    yield service, program_summary_dao, chrome_summary_dao, regular_session
+    yield service, program_summary_dao, chrome_summary_dao, regular_session_maker
     # Clean up if needed
     # If your DAOs have close methods, you could call them here
 
@@ -114,12 +114,14 @@ def setup_program_writes_for_group(group_of_test_data, program_summary_dao, must
             program_summary_dao.push_window_ahead_ten_sec(dummy_program_session)
         else:
             program_summary_dao.start_session(
-                dummy_program_session, dummy_program_session.end_time)
+                dummy_program_session)
 
 
 def setup_chrome_writes_for_group(group_of_test_data, chrome_summary_dao, must_be_from_month):
     for dummy_chrome_session in group_of_test_data:
         assert isinstance(dummy_chrome_session, CompletedChromeSession)
+        assert must_be_from_month == dummy_chrome_session.end_time.dt.month
+
 
         session_from_today = chrome_summary_dao.find_todays_entry_for_domain(
             dummy_chrome_session)
@@ -128,7 +130,7 @@ def setup_chrome_writes_for_group(group_of_test_data, chrome_summary_dao, must_b
             chrome_summary_dao.push_window_ahead_ten_sec(dummy_chrome_session)
         else:
             chrome_summary_dao.start_session(
-                dummy_chrome_session, dummy_chrome_session.end_time)
+                dummy_chrome_session)
 
         # chrome_summary_dao.create_if_new_else_update(session, right_now_arg)
 

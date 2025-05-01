@@ -26,10 +26,11 @@ from surveillance.src.util.errors import TimezoneUnawareError
 from surveillance.src.util.const import ten_sec_as_pct_of_hour
 from surveillance.src.util.time_formatting import get_start_of_day_from_ult
 
+
 from ..helper.truncation import truncate_summaries_and_logs_tables_via_session
 
 from ..data.tzinfo_with_pg import create_notion_entry, create_pycharm_entry, create_zoom_entry
-from ..data.arbiter_events import session1, session2
+
 
 def add_time(base_date, hours=0, minutes=0, seconds=0):
     """Helper function to add hours, minutes, seconds to a base date"""
@@ -280,8 +281,9 @@ class TestSummaryDaoWithTzInfo:
         assert str(very_start_of_day.tzinfo) == "America/New_York"
         assert str(just_before_end_of_day.tzinfo) == "America/New_York"
 
-        assert very_start_of_day.utcoffset() == timedelta(hours=9)
-        assert just_before_end_of_day.utcoffset() == timedelta(hours=9)
+        # Don't want the test to depend on what time of year it is. EST has Daylight Savings
+        assert very_start_of_day.utcoffset() == timedelta(hours=-4) or very_start_of_day.utcoffset() == timedelta(hours=-5)
+        assert just_before_end_of_day.utcoffset() == timedelta(hours=-4) or just_before_end_of_day.utcoffset() == timedelta(hours=-5)
 
     def test_asia_tokyo_tz(self, setup_parts):
         logging_dao, summary_dao, _, session_maker = setup_parts
@@ -344,6 +346,6 @@ class TestSummaryDaoWithTzInfo:
         assert entry_one.process_name == target_process_name
 
         # Check that they match the original datetime's day. (hh:mm:ss isn't saved)
-        assert entry_one.gathering_date.day == very_start_of_day.day
-        assert entry_one.gathering_date.day == just_before_end_of_day.day
+        assert entry_one.gathering_date_local.day == very_start_of_day.day
+        assert entry_one.gathering_date_local.day == just_before_end_of_day.day
         

@@ -74,7 +74,6 @@ class KeepAliveEngine:
         """
         Go into the session's Summary DAO entry and add ten sec.
         """
-        print("-- pulse add ten -- 76ru")
         self.recorder.add_ten_sec_to_end_time(self.session)
     
     def _add_partial_window(self, amount_used):

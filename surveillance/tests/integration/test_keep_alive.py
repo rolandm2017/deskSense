@@ -20,7 +20,7 @@ from surveillance.src.util.time_wrappers import UserLocalTime
 from ..data.arbiter_events import (
     test_sessions,
     minutes_between_start_and_2nd_to_last,
-    test_evenbts_elapsed_time_in_sec,
+    test_events_elapsed_time_in_sec,
 )
 from ..mocks.mock_clock import MockClock
 from ..mocks.mock_engine_container import MockEngineContainer

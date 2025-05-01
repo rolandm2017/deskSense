@@ -10,11 +10,13 @@ from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from surveillance.src.arbiter.activity_recorder import ActivityRecorder
 from surveillance.src.util.const import SECONDS_PER_HOUR
 
+
 from ..helper.confirm_chronology import (
     assert_test_data_is_chronological_with_tz, assert_start_times_are_chronological,
     get_durations_from_test_data, assert_all_start_times_precede_end_times
 )
 
+from ..helper.copy_util import snapshot_obj_for_tests_with_ledger
 from ..helper.polling_util import count_full_loops
 from ..helper.counting import get_total_in_sec, get_logs_total
 from ..helper.truncation import truncate_summaries_and_logs_tables_via_session
@@ -51,16 +53,20 @@ def setup_recorder_etc(regular_session_maker):
             "program_summary": program_summary_dao, "chrome_summary": chrome_summary_dao,
             "recorder": recorder, "session_maker": regular_session_maker
             }
-    
+
+
 @pytest.fixture
 def verified_data_with_durations():
     assert_test_data_is_chronological_with_tz(test_sessions)
     assert_all_start_times_precede_end_times(test_sessions)
     assert_start_times_are_chronological(test_sessions)
 
+    # Start by doing a deepcopy so integration test A doesn't influence integration test B
+    copied_test_data = [snapshot_obj_for_tests_with_ledger(x) for x in test_sessions]
+
     durations = get_durations_from_test_data(test_sessions)
 
-    return test_sessions, durations
+    return copied_test_data, durations
 
 
 # TODO: Migrate alembic
@@ -109,6 +115,7 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
         # Open all the sessions
         for i in range(0, len(verified_sessions)):
             actual_on_new_sessions += 1
+            print(verified_sessions[i], "112ru")
             setup_recorder_etc["recorder"].on_new_session(verified_sessions[i])
 
         recorded_times = []

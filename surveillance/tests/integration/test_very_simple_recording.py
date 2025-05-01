@@ -53,7 +53,7 @@ def test_simple_round_trip_for_programs(setup_daos):
     selection_for_test = session2
     assert isinstance(selection_for_test, ProgramSession)
     # Enters into KeepAlive
-    setup_daos["program_summary"].start_session(selection_for_test, selection_for_test.start_time)
+    setup_daos["program_summary"].start_session(selection_for_test)
     # Suppose the session lasts 34 sec
     session_duration = 34
     first_write_time = selection_for_test.start_time.dt
@@ -80,7 +80,7 @@ def test_simple_round_trip_for_chrome(setup_daos):
     selection_for_test = session1
     assert isinstance(selection_for_test, ChromeSession)
     # Enters into KeepAlive
-    setup_daos["chrome_summary"].start_session(selection_for_test, selection_for_test.start_time)
+    setup_daos["chrome_summary"].start_session(selection_for_test)
     # Suppose the session lasts 38 sec
     session_duration = 38
     first_write_time = selection_for_test.start_time.dt

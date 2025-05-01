@@ -15,12 +15,18 @@ def convert_all_to_tz(obj_list, target_tz):
         # The gathering date is either the same day, or the previous day.
         # 00:00:00-04:00 -> 20:00:00 UTC -1 day.
         # The hours reveal the original tz. 19:00:00 -> UTC -5
-        converted = [obj for obj in obj_list]
-        return
+        converted = [obj.gathering_date_local.replace(tzinfo=target_tz) for obj in obj_list]
+        return converted
     elif isinstance(obj_list[0], SummaryLogBase):
-        return
+        converted = []
+        for obj in obj_list:
+            obj.gathering_date_local = obj.gathering_date_local.replace(tzinfo=target_tz)
+            obj.start_time_local = obj.start_time_local.replace(tzinfo=target_tz)
+            obj.end_time_local = obj.end_time_local.replace(tzinfo=target_tz)
+            converted.append(obj)
+        return converted
     else:
-        pass
+        raise NotImplementedError("Summaries and Logs are convereted so far")
 
 def convert_to_utc(dt: datetime):
     return dt.astimezone(timezone.utc)

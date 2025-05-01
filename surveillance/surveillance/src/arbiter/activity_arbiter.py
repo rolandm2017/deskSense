@@ -84,8 +84,8 @@ class ActivityArbiter:
 
             self.state_machine.set_new_session(new_session)
 
+            # FIXME: the sessions are unlinked by deepcopy so one session's ledger != the copy's ledger
             concluded_session = self.state_machine.get_concluded_session()
-
             # ### Start the first window
             self.notify_of_new_session(new_session)
 
