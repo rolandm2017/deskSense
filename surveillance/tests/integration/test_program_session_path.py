@@ -14,6 +14,7 @@ from typing import Dict, List, cast
 
 import traceback
 
+from surveillance.src.config.definitions import window_push_length
 from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
 from surveillance.src.arbiter.activity_recorder import ActivityRecorder
 from surveillance.src.arbiter.session_polling import KeepAliveEngine
@@ -124,7 +125,7 @@ def validate_test_data_and_get_durations():
             break  # There is no 4th value
         assert test_events[i].start_time < test_events[i + 1].start_time, "Events must be chronological"
 
-        elapsed_between_sessions = test_events[i + 1].start_time - test_events[i].start_time
+        elapsed_between_sessions = int((test_events[i + 1].start_time - test_events[i].start_time).total_seconds())
         durations_for_sessions.append(elapsed_between_sessions)
     
     # Return the data to the test
@@ -190,9 +191,9 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
     3. ActivityRecorder.add_ten_sec_to_end_time - whenever it's called
     """
     # fmt: off
-    times = [session1.start_time, session1.start_time, 
-             session2.start_time, session2.start_time,
-             session3.start_time, session3.start_time,
+    times = [session1.start_time,  
+             session2.start_time, 
+             session3.start_time, 
              session4.start_time, session4.start_time, session4.start_time, session4.start_time
              ]
     # fmt: on
@@ -229,6 +230,9 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
     chrome_svc = ChromeService(wont_be_used, activity_arbiter)
     surveillance_manager = SurveillanceManager(cast(UserFacingClock, mock_user_facing_clock),
                                                mock_async_session_maker, regular_session_maker, chrome_svc, activity_arbiter, facades, mock_message_receiver)
+
+    start_new_session_spy = Mock(side_effect=surveillance_manager.program_tracker.start_new_session)
+    surveillance_manager.program_tracker.start_new_session = start_new_session_spy
 
     window_change_spy = Mock(
         side_effect=surveillance_manager.program_tracker.window_change_handler)
@@ -287,7 +291,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
             hours_spent=sixty_sec / SECONDS_PER_HOUR,
             start_time=very_early_morning,
             end_time=very_early_morning + timedelta(minutes=5),
-            duration_in_sec=timedelta(seconds=60),
+            duration_in_sec=60.0,
             gathering_date=very_early_morning.date(),
             created_at=very_early_morning
         )
@@ -415,7 +419,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
         assert on_new_session_spy.call_count == count_of_events
 
         # Count is 4 here becasuse it's used in on_new_session as of 04/26
-        assert push_window_ahead_ten_sec_spy.call_count == count_of_events
+        assert push_window_ahead_ten_sec_spy.call_count == sum([x // window_push_length for x in durations_for_keep_alive])
 
         # The final entry here is holding the window push open
         assert finalize_log_spy.call_count == count_of_events - active_entry
@@ -485,6 +489,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
     # --
     
     assert event_count == 4
+    assert start_new_session_spy.call_count == event_count
     assert window_change_spy.call_count == 4
     assert window_change_spy.call_count == event_count
 
@@ -497,6 +502,25 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
         assert_window_change_spy_as_expected(arg)
 
     window_change_calls = window_change_spy.call_args_list
+
+    def assert_all_spy_args_were_dicts(spy_from_mock, expected_loops: int, spy_name: str):
+        print(f"Asserting against {spy_name} with count {len(spy_from_mock.call_args_list)}")
+        for i in range(0, expected_loops):
+            actual_dict = spy_from_mock.call_args_list[i][0][0]
+            actual_start = spy_from_mock.call_args_list[i][0][1]
+            assert isinstance(actual_dict, dict)
+            expected = test_events[i]
+            print("Loop: ", i)
+            print("Expected:", expected)
+            print("Actual:", actual_dict)
+            assert actual_dict["exe_path"] == expected.exe_path
+            assert actual_dict["process_name"] == expected.process_name
+            assert actual_start == expected.start_time
+        call_count = len(spy_from_mock.call_args_list)
+        assert call_count == expected_loops, f"Expected exactly {expected_loops} calls"
+
+
+    assert_all_spy_args_were_dicts(start_new_session_spy, event_count, "Start new session spy")
 
     assert_all_spy_args_were_sessions(window_change_spy, event_count, "Window change spy")
 
@@ -518,22 +542,33 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
 
     assert summary_start_session_spy.call_count == 0  # It's never used because preexisting sessions block the path
 
+    # --
+    # -- A much needed value: The count of window pushes
+    # --
+    total_pushes = sum([x // window_push_length for x in durations_for_keep_alive])
+
     def assert_sqlalchemy_layer_went_as_expected():
         """Covers only stuff that obscures sqlalchemy code."""
         assert sum_dao_execute_and_read_one_or_none_spy.call_count == event_count
-        assert logging_dao_execute_and_read_one_or_none_spy.call_count == event_count - active_entry
+        # FIXME:L assert 10 == (4 - 1)
+        # execute_and_read_one_or_none is used in find_session, which
+        # is used in window push and finalize log
+        
+        concluded_sessions = event_count - active_entry
+
+        assert logging_dao_execute_and_read_one_or_none_spy.call_count == total_pushes + concluded_sessions
 
         assert summary_add_new_item_spy.call_count == 0, "A Summary existed already for each session, so this shouldn't happen"
         assert logger_add_new_item_spy.call_count == event_count
 
-        assert update_item_spy.call_count == event_count - active_entry
+        assert update_item_spy.call_count == total_pushes + concluded_sessions
 
-        assert execute_window_push_spy.call_count == event_count  # push_window_ahead_ten_sec is used 0x
+        assert execute_window_push_spy.call_count == total_pushes
 
     assert_sqlalchemy_layer_went_as_expected()
 
     # Count is 4 here becasuse it's used in on_new_session as of 04/26
-    assert len(push_window_ahead_ten_sec_spy.call_args_list) == event_count
+    assert len(push_window_ahead_ten_sec_spy.call_args_list) == total_pushes
     
     def assert_sessions_form_a_chain():
         sessions = []
@@ -548,11 +583,8 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
             
     assert_sessions_form_a_chain()
 
-    # Count is 4 here becasuse it's used in on_new_session as of 04/26
-    assert push_window_ahead_ten_sec_spy.call_count == event_count  
+    assert push_window_ahead_ten_sec_spy.call_count == total_pushes  
 
-    # TODO: Assert that pulses == 0
-    
     assert do_addition_spy.call_count == event_count - active_entry
 
     assert finalize_log_spy.call_count == event_count - active_entry
@@ -629,9 +661,9 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
     """
     # fmt: off
     times_for_test_two = [
-                session1.start_time, session1.start_time,  
-                session2.start_time, session2.start_time,
-                session3.start_time, session3.start_time,
+                session1.start_time,  
+                session2.start_time,
+                session3.start_time,
                 session4.start_time, session4.start_time, session4.start_time, session4.start_time,
   
             ]
@@ -648,7 +680,8 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
     short_pulse_interval = 0.1
 
     engine_type = KeepAliveEngine
-    mock_container = MockEngineContainer(durations_of_sessions, short_pulse_interval)
+
+    mock_container = MockEngineContainer(durations_for_keep_alive, short_pulse_interval)
 
     activity_arbiter = ActivityArbiter(
         mock_user_facing_clock, mock_container, engine_type)
@@ -738,9 +771,9 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
             program_name=session.window_title,
             # Assumes (10 - n) sec will be deducted later
             hours_spent=ten_sec_as_pct_of_hour,
-            start_time=base_start_time,
-            end_time=start_window_end,
-            duration_in_sec=None,
+            start_time=base_start_time, # FIXME: start_time_local is missing
+            end_time=start_window_end, # FIXME: _local mia
+            duration_in_sec=0,
             gathering_date=start_of_day_as_utc,
             created_at=base_start_time
         )
@@ -794,6 +827,7 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
     mock_program_facade.listen_for_window_changes = spy_on_listen_for_window
 
      # ### Act
+    print(durations_for_keep_alive, "829ru")
     surveillance_manager.start_trackers()
 
     async def wait_for_events_to_process():
@@ -831,7 +865,7 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
     def assert_activity_recorder_called_expected_times(count_of_events):
         assert on_new_session_spy.call_count == count_of_events
 
-        assert push_window_ahead_ten_sec_spy.call_count == 0  # Test stopped before first pulse
+        assert push_window_ahead_ten_sec_spy.call_count == total_pushes  # Test stopped before first pulse
 
         # The final entry here is holding the window push open
         assert finalize_log_spy.call_count == count_of_events - trailing_entry
@@ -901,7 +935,9 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
     # --
 
     # TODO: Move the below spy
-    assert add_ten_sec_to_end_time_spy.call_count == 0
+    total_pushes = sum([x // window_push_length for x in durations_for_keep_alive])
+
+    assert add_ten_sec_to_end_time_spy.call_count == total_pushes
     
     assert second_test_event_count == 4
     assert window_change_spy.call_count == 4
@@ -939,22 +975,21 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
         """Covers only stuff that obscures sqlalchemy code."""
         assert sum_dao_execute_and_read_one_or_none_spy.call_count == second_test_event_count
 
-        # execute_and_read_one_or_none is called in find_session, which is then called
-        # in push_window_ahead_ten_sec zero times, and finalize_log two times (3 - 1)
-        assert logging_dao_execute_and_read_one_or_none_spy.call_count == second_test_event_count - trailing_entry
+        concluded_sessions = second_test_event_count - trailing_entry
+
+        assert logging_dao_execute_and_read_one_or_none_spy.call_count == total_pushes + concluded_sessions
 
         assert summary_add_new_item_spy.call_count == second_test_event_count, "A Summary should've been made for each entry, hence 'brand new' sessions"
         assert logger_add_new_item_spy.call_count == second_test_event_count
 
-        assert update_item_spy.call_count == second_test_event_count - trailing_entry  # Finalize_log again
+        assert update_item_spy.call_count == total_pushes + concluded_sessions
 
-        # Test doesn't run long enough for window push. If you make the final await asyncio.sleep(15), it would run.
-        assert execute_window_push_spy.call_count == 0  
+        assert execute_window_push_spy.call_count == total_pushes 
 
     assert_sqlalchemy_layer_went_as_expected()
 
 
-    assert len(push_window_ahead_ten_sec_spy.call_args_list) == 0
+    assert len(push_window_ahead_ten_sec_spy.call_args_list) == total_pushes
     
     
     def assert_sessions_form_a_chain():
@@ -962,7 +997,6 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
         for i in range(0, second_test_event_count - trailing_entry):
             args = on_state_changed_spy.call_args_list[i][0]
             sessions.append(args[0])
-        print(len(sessions), "len sessions 996ru")
         assert len(sessions) == 3
         assert sessions[0].end_time == sessions[1].start_time
         assert sessions[1].end_time == sessions[2].start_time
@@ -972,7 +1006,9 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
             
     assert_sessions_form_a_chain()
 
-    assert push_window_ahead_ten_sec_spy.call_count == 0  # The final entry being held suspended in Arbiter        
+    
+
+    assert push_window_ahead_ten_sec_spy.call_count == total_pushes  # The final entry being held suspended in Arbiter        
     
     assert do_addition_spy.call_count == second_test_event_count - trailing_entry
 

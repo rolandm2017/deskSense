@@ -126,7 +126,7 @@ class SurveillanceManager:
 
     def check_session_integrity(self, latest_shutdown_time: datetime | None, latest_startup_time: datetime):
         # FIXME:
-        # FIXME: This function isn't being used anywhere!
+        # FIXME: This function isn't being used anywhere! And it still should be
         # FIXME:
         # FIXME: get latest times from system status dao
         if latest_shutdown_time is None:
@@ -153,7 +153,7 @@ class SurveillanceManager:
     def handle_window_change(self, event):
         # Deep copy to enable testing of object state before/after this line
         copy_of_event = snapshot_obj_for_tests(event)
-        self.arbiter.set_program_state(copy_of_event)
+        self.arbiter.set_program_state(copy_of_event)  # type: ignore
 
     def handle_program_ready_for_db(self, event):
         pass

@@ -85,7 +85,6 @@ class ActivityRecorder:
         # For testing: record this deduction
         self.remainder_history.append((session, duration_in_sec, session.start_time))
         session.ledger.extend_by_n(duration_in_sec)
-
         if duration_in_sec == 0:
             return  # Nothing to add
 
