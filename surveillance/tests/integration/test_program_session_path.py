@@ -239,7 +239,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
     surveillance_manager.program_tracker.window_change_handler = window_change_spy
 
 
-    activity_recorder = ActivityRecorder(p_logging_dao, chrome_logging_dao, p_summary_dao, chrome_sum_dao)
+    activity_recorder = ActivityRecorder(p_logging_dao, chrome_logging_dao, p_summary_dao, chrome_sum_dao, True)
 
     #
     # # Activity Recorder spies
@@ -711,7 +711,7 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
     surveillance_manager.program_tracker.window_change_handler = window_change_spy
 
 
-    activity_recorder = ActivityRecorder(p_logging_dao, chrome_logging_dao, p_summary_dao, chrome_sum_dao)
+    activity_recorder = ActivityRecorder(p_logging_dao, chrome_logging_dao, p_summary_dao, chrome_sum_dao, True)
 
     #
     # # Activity Recorder spies

@@ -726,16 +726,16 @@ async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
     chrome_create_spy = Mock(side_effect=chrome_summary_dao._create)
     chrome_summary_dao._create = chrome_create_spy
 
-    # Create spies on the DAOs' deduct_remaining_duration methods
+    # Create spies on the DAOs' add_used_time methods
     program_summary_deduct_spy = Mock(
-        side_effect=program_summary_dao.deduct_remaining_duration
+        side_effect=program_summary_dao.add_used_time
     )
-    program_summary_dao.deduct_remaining_duration = program_summary_deduct_spy
+    program_summary_dao.add_used_time = program_summary_deduct_spy
 
     chrome_summary_deduct_spy = Mock(
-        side_effect=chrome_summary_dao.deduct_remaining_duration
+        side_effect=chrome_summary_dao.add_used_time
     )
-    chrome_summary_dao.deduct_remaining_duration = chrome_summary_deduct_spy
+    chrome_summary_dao.add_used_time = chrome_summary_deduct_spy
 
     # activity_recorder = ActivityRecorder(
     # clock_again, program_logging_dao, chrome_logging_dao,
@@ -952,7 +952,7 @@ async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
         ch_finalize_spy
         pass
 
-    def assert_deduct_remaining_duration_worked():
+    def assert_add_used_time_worked():
         program_summary_deduct_spy
         chrome_summary_deduct_spy
         pass

@@ -16,11 +16,16 @@ from surveillance.src.util.time_formatting import get_start_of_day_from_ult
 # Persistence component
 
 class ActivityRecorder:
-    def __init__(self, program_logging_dao: ProgramLoggingDao, chrome_logging_dao: ChromeLoggingDao, program_summary_dao: ProgramSummaryDao, chrome_summary_dao: ChromeSummaryDao):
+    def __init__(self, program_logging_dao: ProgramLoggingDao, 
+                 chrome_logging_dao: ChromeLoggingDao, 
+                 program_summary_dao: 
+                 ProgramSummaryDao, 
+                 chrome_summary_dao: ChromeSummaryDao, DEBUG=False):
         self.program_logging_dao = program_logging_dao
         self.chrome_logging_dao = chrome_logging_dao
         self.program_summary_dao = program_summary_dao
         self.chrome_summary_dao = chrome_summary_dao
+        self.DEBUG = DEBUG
 
         # For testing: collect session activity history
         self.pulse_history = []  # List of (session, timestamp) tuples for each pulse
@@ -59,8 +64,9 @@ class ActivityRecorder:
         if session is None:
             raise ValueError("Session was None in add_ten_sec")
         # For testing
-        self.pulse_history.append((session, session.start_time))
-        session.ledger.add_ten_sec()
+        if self.DEBUG:
+            self.pulse_history.append((session, session.start_time))
+            session.ledger.add_ten_sec()
 
         # Window push now finds session based on start_time
 
@@ -83,8 +89,9 @@ class ActivityRecorder:
         today_start: UserLocalTime = get_start_of_day_from_ult(session.start_time)
 
         # For testing: record this deduction
-        self.remainder_history.append((session, duration_in_sec, session.start_time))
-        session.ledger.extend_by_n(duration_in_sec)
+        if self.DEBUG:
+            self.remainder_history.append((session, duration_in_sec, session.start_time))
+            session.ledger.extend_by_n(duration_in_sec)
         if duration_in_sec == 0:
             return  # Nothing to add
 

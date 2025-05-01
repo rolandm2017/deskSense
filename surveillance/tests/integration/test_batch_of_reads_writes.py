@@ -47,7 +47,7 @@ def setup_recorder_etc(regular_session_maker):
     chrome_summary_dao = ChromeSummaryDao(
         chrome_logging_dao, regular_session_maker)
     
-    recorder = ActivityRecorder(program_logging_dao, chrome_logging_dao, program_summary_dao, chrome_summary_dao)
+    recorder = ActivityRecorder(program_logging_dao, chrome_logging_dao, program_summary_dao, chrome_summary_dao, True)
     
     return {"program_logging": program_logging_dao, "chrome_logging": chrome_logging_dao,
             "program_summary": program_summary_dao, "chrome_summary": chrome_summary_dao,
