@@ -15,7 +15,7 @@ from surveillance.src.object.classes import ChromeSession
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.errors import NegativeTimeError, ImpossibleToGetHereError
 from surveillance.src.util.const import SECONDS_PER_HOUR
-from surveillance.src.util.time_formatting import get_start_of_day_from_datetime
+from surveillance.src.util.time_formatting import get_start_of_day_from_datetime, attach_tz_to_all, attach_tz_to_obj
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 
@@ -51,7 +51,7 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         )
         self.add_new_item(new_entry)
 
-    def find_todays_entry_for_domain(self, chrome_session: ChromeSession):
+    def find_todays_entry_for_domain(self, chrome_session: ChromeSession) -> DailyDomainSummary | None:
         if chrome_session.start_time is None:
             raise ValueError("start_time was not set")
 
@@ -67,7 +67,12 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             DailyDomainSummary.gathering_date < end_of_day
         )
 
-        return self.execute_and_read_one_or_none(query)
+        result = self.execute_and_read_one_or_none(query)
+
+        if result is None:
+            return None  # Or create a default
+            
+        return attach_tz_to_obj(result, chrome_session.start_time.dt.tzinfo)
 
     def read_past_week(self, right_now: UserLocalTime):
 
@@ -77,7 +82,8 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         query = select(DailyDomainSummary).where(
             func.date(DailyDomainSummary.gathering_date) >= last_sunday.date()
         )
-        return self.execute_and_return_all(query)
+        result = self.execute_and_return_all(query)
+        return attach_tz_to_all(result, right_now.dt.tzinfo)
 
 
     def read_day(self, day: UserLocalTime) -> List[DailyDomainSummary]:
@@ -89,11 +95,13 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             DailyDomainSummary.gathering_date >= today_start,
             DailyDomainSummary.gathering_date < tomorrow_start
         )
-        return self.execute_and_return_all(query)
+        result = self.execute_and_return_all(query)
+        return attach_tz_to_all(result, day.dt.tzinfo)
 
     def read_all(self):
         """Read all entries."""
         query = select(DailyDomainSummary)
+        # Developer handles it manually
         return self.execute_and_return_all(query)
     
     def select_where_time_equals(self, some_time):

@@ -17,7 +17,7 @@ from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.errors import ImpossibleToGetHereError
 from surveillance.src.util.dao_wrapper import validate_session, guarantee_start_time
 from surveillance.src.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
-from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day_from_datetime, get_start_of_day_from_ult
+from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day_from_datetime, get_start_of_day_from_ult, attach_tz_to_all
 from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.const import ten_sec_as_pct_of_hour
 
@@ -95,6 +95,8 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
 
         logs = self.execute_and_return_all(query)
 
+        logs = attach_tz_to_all(logs, day.dt.tzinfo)
+
         grouped_logs = {}
         for log in logs:
             name = log.get_name()
@@ -107,7 +109,9 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
     def read_all(self):
         """Fetch all domain log entries"""
         query = select(DomainSummaryLog)
-        return self.execute_and_return_all(query)
+        results = self.execute_and_return_all(query)
+        return results  # Developer is trusted to attach tz manually where relevant
+        # return self.execute_and_return_all(query)
 
     def read_last_24_hrs(self, right_now: UserLocalTime):
         """Fetch all domain log entries from the last 24 hours"""
@@ -115,7 +119,8 @@ class ChromeLoggingDao(UtilityDaoMixin, BaseQueueingDao):
         query = select(DomainSummaryLog).where(
             DomainSummaryLog.created_at >= cutoff_time
         ).order_by(DomainSummaryLog.created_at.desc())
-        return self.execute_and_return_all(query)
+        results = self.execute_and_return_all(query)
+        return attach_tz_to_all(results, right_now.dt.tzinfo)
 
     def push_window_ahead_ten_sec(self, session: ChromeSession):
         log: DomainSummaryLog = self.find_session(session)

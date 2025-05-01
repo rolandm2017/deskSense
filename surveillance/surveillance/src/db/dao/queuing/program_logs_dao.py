@@ -13,7 +13,7 @@ from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.errors import ImpossibleToGetHereError
 from surveillance.src.util.dao_wrapper import validate_session, guarantee_start_time
 from surveillance.src.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
-from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day_from_datetime
+from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day_from_datetime, attach_tz_to_all
 from surveillance.src.util.const import ten_sec_as_pct_of_hour
 from surveillance.src.util.time_wrappers import UserLocalTime
 
@@ -98,6 +98,9 @@ class ProgramLoggingDao(UtilityDaoMixin):
         ).order_by(ProgramSummaryLog.program_name)
 
         logs = self.execute_and_return_all(query)
+
+        logs = attach_tz_to_all(logs, day.dt.tzinfo)
+
         # Group the results by program_name
         grouped_logs = {}
         for log in logs:
@@ -111,18 +114,20 @@ class ProgramLoggingDao(UtilityDaoMixin):
     def read_all(self):
         """Fetch all program log entries"""
         query = select(ProgramSummaryLog)
-        return self.execute_and_return_all(query)
+        # Developer is trusted to attach tz info manually
+        return self.execute_and_return_all(query)  
 
-    def read_last_24_hrs(self, right_now: datetime):
+    def read_last_24_hrs(self, right_now: UserLocalTime):
         """Fetch all program log entries from the last 24 hours
 
         NOTE: the database is storing and returning times in UTC
         """
-        cutoff_time = right_now - timedelta(hours=24)
+        cutoff_time = right_now.dt - timedelta(hours=24)
         query = select(ProgramSummaryLog).where(
             ProgramSummaryLog.created_at >= cutoff_time
         ).order_by(ProgramSummaryLog.created_at.desc())
-        return self.execute_and_return_all(query)
+        results = self.execute_and_return_all(query)
+        return attach_tz_to_all(results, right_now.dt.tzinfo)
 
     def read_suspicious_entries(self):
         """Get entries with durations longer than 20 minutes"""

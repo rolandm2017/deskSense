@@ -491,7 +491,7 @@ async def receive_ignored_tab(
         updated_tab_change_event: TabChangeEventWithLtz = timezone_service.convert_tab_change_timezone(
             tab_change_event, tz_for_user)
 
-        await chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
+        chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
         return  # Returns 204 No Content
     except AssertionError as e:
         print(f"Raw tzinfo: {tab_change_event.startTime.tzinfo}")

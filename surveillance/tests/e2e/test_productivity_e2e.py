@@ -46,6 +46,7 @@ from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.time_formatting import convert_to_utc
 
 from ..mocks.mock_clock import UserLocalTimeMockClock, MockClock
+from ..mocks.mock_engine_container import MockEngineContainer
 from ..mocks.mock_message_receiver import MockMessageReceiver
 from ..data.captures_for_test_data_Chrome import chrome_data
 from ..data.captures_for_test_data_programs import program_data
@@ -111,13 +112,13 @@ async def cleanup_test_resources(manager):
 
 
 @pytest_asyncio.fixture
-async def test_setup_conditions(regular_session, plain_asm):
-    program_logging = ProgramLoggingDao(regular_session)
-    chrome_logging = ChromeLoggingDao(regular_session)
+async def test_setup_conditions(regular_session_maker, plain_asm):
+    program_logging = ProgramLoggingDao(regular_session_maker)
+    chrome_logging = ChromeLoggingDao(regular_session_maker)
     program_summaries_dao = ProgramSummaryDao(
-        program_logging, regular_session, plain_asm
+        program_logging, regular_session_maker
     )
-    chrome_summaries_dao = ChromeSummaryDao(chrome_logging, regular_session, plain_asm)
+    chrome_summaries_dao = ChromeSummaryDao(chrome_logging, regular_session_maker)
 
     p_logs = program_logging.read_all()
     ch_logs = chrome_logging.read_all()
@@ -212,7 +213,9 @@ async def test_tracker_to_arbiter(plain_asm, regular_session, times_from_test_da
 
     mock_user_facing_clock = MockClock(testing_num_of_times)
 
-    activity_arbiter = ActivityArbiter(mock_user_facing_clock, pulse_interval=1)
+    container = MockEngineContainer()
+
+    activity_arbiter = ActivityArbiter(mock_user_facing_clock, container, pulse_interval=1)
     transition_state_mock = Mock()
     # Unhook it so nothing past entry is called
     activity_arbiter.transition_state = transition_state_mock
@@ -364,7 +367,9 @@ async def test_chrome_svc_to_arbiter_path(regular_session, plain_asm):
     t1 = datetime.now()
     irrelevant_clock = MockClock([t1, t1, t1, t1, t1, t1, t1, t1, t1])
 
-    activity_arbiter = ActivityArbiter(irrelevant_clock, pulse_interval=1)
+    container = MockEngineContainer([])
+
+    activity_arbiter = ActivityArbiter(irrelevant_clock, container)
 
     chrome_service = ChromeService(irrelevant_clock, arbiter=activity_arbiter)
 
@@ -565,7 +570,7 @@ ch_events_v2 = [
 
 @pytest.mark.asyncio
 # @pytest.mark.skip
-async def test_arbiter_to_dao_layer(regular_session, plain_asm):
+async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
     output_programs = pr_events_v2  # Values from the end of the previous tests
     output_domains = ch_events_v2  # Values from the end of the previous tests
     assert len(output_programs) == 4
@@ -671,8 +676,8 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
 
     assert_setup_times_went_well()
 
-    program_logging_dao = ProgramLoggingDao(regular_session)
-    chrome_logging_dao = ChromeLoggingDao(regular_session)
+    program_logging_dao = ProgramLoggingDao(regular_session_maker)
+    chrome_logging_dao = ChromeLoggingDao(regular_session_maker)
 
     program_logging_push_spy = Mock(side_effect=program_logging_dao.push_window_ahead_ten_sec)
 
@@ -689,10 +694,10 @@ async def test_arbiter_to_dao_layer(regular_session, plain_asm):
     chrome_logging_dao.push_window_ahead_ten_sec = chrome_logging_push_spy
 
     program_summary_dao = ProgramSummaryDao(
-        program_logging_dao, regular_session, plain_asm
+        program_logging_dao, regular_session_maker, plain_asm
     )
     chrome_summary_dao = ChromeSummaryDao(
-        chrome_logging_dao, regular_session, plain_asm
+        chrome_logging_dao, regular_session_maker, plain_asm
     )
 
 

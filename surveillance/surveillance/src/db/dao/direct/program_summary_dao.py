@@ -15,7 +15,7 @@ from surveillance.src.object.classes import ProgramSession
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.errors import NegativeTimeError, ImpossibleToGetHereError
-from surveillance.src.util.time_formatting import get_start_of_day_from_datetime
+from surveillance.src.util.time_formatting import get_start_of_day_from_datetime, attach_tz_to_all, attach_tz_to_obj
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 
@@ -60,7 +60,7 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         )
         self.add_new_item(new_entry)
 
-    def find_todays_entry_for_program(self, program_session: ProgramSession) -> DailyProgramSummary:
+    def find_todays_entry_for_program(self, program_session: ProgramSession) -> DailyProgramSummary | None:
         """Find by process_name / exe_path"""
         if program_session.start_time is None:
             raise ValueError("start_time was not set")
@@ -74,7 +74,12 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         query = self.create_find_all_from_day_query(
             program_session.exe_path, start_of_day, end_of_day)
 
-        return self.execute_and_read_one_or_none(query)
+        result = self.execute_and_read_one_or_none(query)
+
+        if result is None:
+            return None  # Or create a default DailyProgramSummary
+            
+        return attach_tz_to_obj(result, program_session.start_time.dt.tzinfo)
 
     def create_find_all_from_day_query(self, exe_path, start_of_day, end_of_day):
         return select(DailyProgramSummary).where(
@@ -92,7 +97,8 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             func.date(DailyProgramSummary.gathering_date) >= last_sunday.date()
         )
 
-        return self.execute_and_return_all(query)
+        result = self.execute_and_return_all(query)
+        return attach_tz_to_all(result, right_now.dt.tzinfo)
     
     def read_day(self, day: UserLocalTime) -> List[DailyProgramSummary]:
         """Read all entries for the given day."""
@@ -102,7 +108,8 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.gathering_date >= today_start,
             DailyProgramSummary.gathering_date < tomorrow_start
         )
-        return self.execute_and_return_all(query)
+        result = self.execute_and_return_all(query)
+        return attach_tz_to_all(result, day.dt.tzinfo)
 
     def read_all(self) -> List[DailyProgramSummary]:
         """Read all entries."""
