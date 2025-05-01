@@ -33,7 +33,7 @@ class TabQueue:
         self.log_tab_event = log_tab_event
 
     def add_to_arrival_queue(self, tab_change_event: TabChangeEventWithLtz):
-
+        print("HERE")
         self.append_to_queue(tab_change_event)
         MAX_QUEUE_LEN = 40
 
@@ -99,7 +99,7 @@ class TabQueue:
 
 
 class ChromeService:
-    def __init__(self, user_facing_clock, arbiter: ActivityArbiter, debounce_delay=0.5):
+    def __init__(self, user_facing_clock, arbiter: ActivityArbiter, debounce_delay=0.5, transience_msa=300):
         print("╠════════╣")
         print("║ ****** ║ Starting Chrome Service")
         print("╚════════╝")
@@ -110,7 +110,7 @@ class ChromeService:
         self.elapsed_alt_tab = None
         # self.summary_dao = summary_dao
 
-        self.tab_queue = TabQueue(self.log_tab_event, debounce_delay)
+        self.tab_queue = TabQueue(self.log_tab_event, debounce_delay, transience_msa)
         self.arbiter = arbiter  # Replace direct arbiter calls
 
         self.event_emitter = EventEmitter()

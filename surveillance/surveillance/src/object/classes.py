@@ -240,7 +240,7 @@ class ProgramSessionDict(TypedDict):
 class TabChangeEventWithLtz:
     tab_title: str
     url: str
-    start_time_with_tz: datetime
+    start_time_with_tz: UserLocalTime
 
     def __init__(self, tab_title, url, start_time_with_tz):
         self.tab_title = tab_title
@@ -249,7 +249,7 @@ class TabChangeEventWithLtz:
 
     def __str__(self) -> str:
         """Custom string representation of the TabChangeEvent."""
-        formatted_time = self.start_time_with_tz.strftime("%Y-%m-%d %H:%M:%S")
+        formatted_time = self.start_time_with_tz.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]  # Truncate to milliseconds
         return f"TabChangeEvent(tabTitle='{self.tab_title}', url='{self.url}', startTime='{formatted_time}')"
 
 
