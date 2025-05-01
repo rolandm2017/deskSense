@@ -24,7 +24,6 @@ tokyo_tz = pytz.timezone("Asia/Tokyo")
 now_tokyo = datetime.now(pytz.UTC).astimezone(tokyo_tz)
 
 
-
 class TestMouseDao:
     @pytest_asyncio.fixture
     async def dao(self, mock_async_session_maker):
@@ -57,7 +56,8 @@ class TestMouseDao:
     async def test_read_all(self, dao):
         # Test reading all moves
 
-        t0 = datetime.now(timezone.utc)
+        t0 = tokyo_tz.localize(datetime(2025, 4, 15, 15, 15, 15))
+
         t1 = t0 - timedelta(seconds=10)
         t2 = t0 - timedelta(seconds=8)
         t3 = t0 - timedelta(seconds=6)
@@ -85,7 +85,8 @@ class TestMouseDao:
 
     @pytest.mark.asyncio
     async def test_read_past_24h_events(self, dao):
-        t0 = datetime.now(timezone.utc)
+        t0 = tokyo_tz.localize(datetime(2025, 4, 15, 15, 15, 15))
+
 
         # Today:
         t1 = UserLocalTime(t0 - timedelta(seconds=10))

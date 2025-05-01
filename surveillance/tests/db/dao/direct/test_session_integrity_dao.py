@@ -1,7 +1,10 @@
 import psutil
 import pytest
 import pytest_asyncio
+
 import asyncio
+
+import pytz
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, Mock, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -15,6 +18,7 @@ from surveillance.src.db.models import Base, SystemStatus, ProgramSummaryLog, Do
 from surveillance.src.db.dao.direct.session_integrity_dao import SessionIntegrityDao
 from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.src.util.time_formatting import get_start_of_day_from_datetime
 
 from ....helper.truncation import truncate_logs_tables_via_engine
 
@@ -51,10 +55,12 @@ if SYNC_TEST_DB_URL is None:
 def test_power_events():
     """Define test shutdown and startup times for session integrity testing"""
     # Define timezone to ensure consistency
-    tz = timezone.utc
+    tokyo_tz = pytz.timezone("Asia/Tokyo")
+
+    test_time = tokyo_tz.localize(datetime(2025, 4, 15, 15, 15, 15))
 
     # Base time to work from (one day ago)
-    base_time = datetime.now(tz) - timedelta(days=1)
+    base_time = test_time - timedelta(days=1)
 
     # System shutdown at 10 PM yesterday
     shutdown_time = base_time.replace(
@@ -89,7 +95,7 @@ async def test_program_logs(plain_asm, test_power_events):
         #     hours_spent=1.0,
         #     start_time=shutdown_time - timedelta(minutes=30),
         #     end_time=None,  # Never ended
-        #     gathering_date=base_time.date(),
+        #     gathering_date=get_start_of_day_from_datetime(base_time),
         #     created_at=base_time
         # )
         # Orphan type 2: started before shutdown, ended after startup (impossible)
@@ -99,8 +105,11 @@ async def test_program_logs(plain_asm, test_power_events):
             program_name="Outlook",
             hours_spent=12.0,  # Impossibly long session
             start_time=shutdown_time - timedelta(minutes=45),
+            start_time_local=shutdown_time.replace(tzinfo=None) - timedelta(minutes=45),
             end_time=startup_time + timedelta(minutes=15),
-            gathering_date=base_time.date(),
+            end_time_local=startup_time.replace(tzinfo=None) + timedelta(minutes=15),
+            gathering_date=get_start_of_day_from_datetime(base_time),
+            gathering_date_local=get_start_of_day_from_datetime(base_time).replace(tzinfo=None),
             created_at=base_time
         )
         # Phantom: impossibly started during system off time
@@ -113,7 +122,10 @@ async def test_program_logs(plain_asm, test_power_events):
             start_time=shutdown_time + timedelta(hours=2),
             # Ended before startup
             end_time=startup_time - timedelta(hours=2),
-            gathering_date=base_time.date(),
+            start_time_local=shutdown_time.replace(tzinfo=None),
+            end_time_local=startup_time.replace(tzinfo=None),
+            gathering_date=get_start_of_day_from_datetime(base_time),
+            gathering_date_local=get_start_of_day_from_datetime(base_time).replace(tzinfo=None),
             created_at=base_time
         )
 
@@ -127,7 +139,10 @@ async def test_program_logs(plain_asm, test_power_events):
                 hours_spent=2.0,
                 start_time=shutdown_time - timedelta(hours=3),
                 end_time=shutdown_time - timedelta(hours=1),
-                gathering_date=base_time.date(),
+                start_time_local=shutdown_time.replace(tzinfo=None)  - timedelta(hours=3),
+                end_time_local=shutdown_time.replace(tzinfo=None) - timedelta(hours=1),
+                gathering_date=get_start_of_day_from_datetime(base_time),
+                gathering_date_local=get_start_of_day_from_datetime(base_time).replace(tzinfo=None),
                 created_at=base_time
             ),
 
@@ -142,7 +157,10 @@ async def test_program_logs(plain_asm, test_power_events):
                 hours_spent=1.5,
                 start_time=startup_time + timedelta(minutes=5),
                 end_time=startup_time + timedelta(hours=1, minutes=35),
-                gathering_date=(base_time + timedelta(days=1)).date(),
+                start_time_local=startup_time.replace(tzinfo=None),
+                end_time_local=startup_time.replace(tzinfo=None) + timedelta(hours=1, minutes=35),
+                gathering_date=get_start_of_day_from_datetime(base_time + timedelta(days=1)),
+                gathering_date_local=get_start_of_day_from_datetime(base_time + timedelta(days=1)).replace(tzinfo=None),
                 created_at=base_time + timedelta(days=1)
             )
         ]
@@ -153,6 +171,7 @@ async def test_program_logs(plain_asm, test_power_events):
 
         await session.commit()
 
+            
         return program_logs
 
 
@@ -173,15 +192,19 @@ async def test_domain_logs(plain_asm, test_power_events):
         #     hours_spent=0.5,
         #     start_time=shutdown_time - timedelta(minutes=40),
         #     end_time=None,  # Never ended
-        #     gathering_date=base_time.date(),
+        #     gathering_date=get_start_of_day_from_datetime(base_time),
         #     created_at=base_time
         # Orphan type 2: started before shutdown, ended after startup (impossible)
+         # Orphan type 2: started before shutdown, ended after startup (impossible)
         orphan_2 = DomainSummaryLog(
             domain_name="youtube.com",
             hours_spent=10.0,  # Impossibly long session
             start_time=shutdown_time - timedelta(minutes=20),
+            start_time_local=(shutdown_time - timedelta(minutes=20)).replace(tzinfo=None),
             end_time=startup_time + timedelta(minutes=10),
-            gathering_date=base_time.date(),
+            end_time_local=(startup_time + timedelta(minutes=10)).replace(tzinfo=None),
+            gathering_date=get_start_of_day_from_datetime(base_time),
+            gathering_date_local=get_start_of_day_from_datetime(base_time).replace(tzinfo=None),
             created_at=base_time
         )
         # Phantom: impossibly started during system off time
@@ -190,9 +213,12 @@ async def test_domain_logs(plain_asm, test_power_events):
             hours_spent=0.3,
             # Started after shutdown
             start_time=shutdown_time + timedelta(hours=3),
+            start_time_local=(shutdown_time + timedelta(hours=3)).replace(tzinfo=None),
             # Ended before startup
             end_time=startup_time - timedelta(hours=1),
-            gathering_date=base_time.date(),
+            end_time_local=(startup_time - timedelta(hours=1)).replace(tzinfo=None),
+            gathering_date=get_start_of_day_from_datetime(base_time),
+            gathering_date_local=get_start_of_day_from_datetime(base_time).replace(tzinfo=None),
             created_at=base_time
         )
 
@@ -203,8 +229,11 @@ async def test_domain_logs(plain_asm, test_power_events):
                 domain_name="github.com",
                 hours_spent=1.0,
                 start_time=shutdown_time - timedelta(hours=2),
+                start_time_local=(shutdown_time - timedelta(hours=2)).replace(tzinfo=None),
                 end_time=shutdown_time - timedelta(hours=1),
-                gathering_date=base_time.date(),
+                end_time_local=(shutdown_time - timedelta(hours=1)).replace(tzinfo=None),
+                gathering_date=get_start_of_day_from_datetime(base_time),
+                gathering_date_local=get_start_of_day_from_datetime(base_time).replace(tzinfo=None),
                 created_at=base_time
             ),
             orphan_2,
@@ -216,8 +245,11 @@ async def test_domain_logs(plain_asm, test_power_events):
                 domain_name="google.com",
                 hours_spent=0.8,
                 start_time=startup_time + timedelta(minutes=10),
+                start_time_local=(startup_time + timedelta(minutes=10)).replace(tzinfo=None),
                 end_time=startup_time + timedelta(minutes=58),
-                gathering_date=(base_time + timedelta(days=1)).date(),
+                end_time_local=(startup_time + timedelta(minutes=58)).replace(tzinfo=None),
+                gathering_date=get_start_of_day_from_datetime(base_time + timedelta(days=1)),
+                gathering_date_local=get_start_of_day_from_datetime(base_time + timedelta(days=1)).replace(tzinfo=None),
                 created_at=base_time + timedelta(days=1)
             )
         ]
@@ -232,11 +264,11 @@ async def test_domain_logs(plain_asm, test_power_events):
 
 
 @pytest_asyncio.fixture(scope="function")
-def test_dao_instances(regular_session, plain_asm):
+def test_dao_instances(regular_session_maker, plain_asm):
     """Create the necessary DAO instances for session integrity testing"""
     # Create the DAOs
-    program_logging_dao = ProgramLoggingDao(regular_session)
-    chrome_logging_dao = ChromeLoggingDao(regular_session)
+    program_logging_dao = ProgramLoggingDao(regular_session_maker)
+    chrome_logging_dao = ChromeLoggingDao(regular_session_maker)
 
     # Create the session integrity dao
     session_integrity_dao = SessionIntegrityDao(

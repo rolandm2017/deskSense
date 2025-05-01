@@ -269,7 +269,8 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
             exe_path_as_id=session.exe_path, 
             program_name=session.window_title, 
             hours_spent=starting_hours_spent_in_db, 
-            gathering_date=session.start_time.date())
+            gathering_date=get_start_of_day_from_datetime(session.start_time)
+        )
 
     def group_of_preexisting_summaries():
         yield make_preexisting_summary(session1, made_up_pids[0])
@@ -292,7 +293,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
             start_time=very_early_morning,
             end_time=very_early_morning + timedelta(minutes=5),
             duration_in_sec=60.0,
-            gathering_date=very_early_morning.date(),
+            gathering_date=get_start_of_day_from_datetime(very_early_morning),
             created_at=very_early_morning
         )
     

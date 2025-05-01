@@ -53,7 +53,7 @@ class TestProgramSummaryDao:
         program_summary_dao._create = create_spy
 
         # Act
-        program_summary_dao.start_session(session_data_1, UserLocalTime(dt))
+        program_summary_dao.start_session(session_data_1)
 
         # Assert
         create_spy.assert_called_once()
@@ -61,13 +61,11 @@ class TestProgramSummaryDao:
         args, kwargs = create_spy.call_args
         # Check that first argument is a Select object
         assert isinstance(args[0], CompletedProgramSession)
-        assert isinstance(args[1], int)
-        assert isinstance(args[2], datetime)
+        assert isinstance(args[1], datetime)
         assert args[0].window_title == chrome
-        assert args[1] == 0
-        assert args[2].day == dt.day
-        assert args[2].hour == 0
-        assert args[2].minute == 0
+        assert args[1].day == dt.day
+        assert args[1].hour == dt.hour
+        assert args[1].minute == dt.minute
 
     def test_create(self, program_summary_dao):
         dt = datetime(2025, 1, 25, 15, 5, tzinfo=tokyo_tz)
@@ -79,7 +77,7 @@ class TestProgramSummaryDao:
         window_title = "Foo!"
         dummy_session = CompletedProgramSession(
             "C:/foo.exe", "foo.exe", window_title, "detail of foo", UserLocalTime(dt))
-        program_summary_dao._create(dummy_session, session_duration, UserLocalTime(dt))
+        program_summary_dao._create(dummy_session, dt)
 
         add_new_item_spy.assert_called_once()
 
@@ -88,9 +86,9 @@ class TestProgramSummaryDao:
         assert isinstance(args[0], DailyProgramSummary)
 
         assert args[0].program_name == window_title
-        assert args[0].hours_spent == session_duration
+        assert args[0].hours_spent == 0
         assert args[0].gathering_date.day == dt.day
-        assert args[0].gathering_date.hour == dt.hour
+        assert args[0].gathering_date.hour == 0
 
     def test_read_day(self, program_summary_dao, mock_session):
         # Arrange
