@@ -70,3 +70,7 @@ class FullWindowError(Exception):
     Raised when the KeepAliveEngine tries to add a full window.
     Full windows should be added by the other DAO method.
     """
+
+class DatabaseProtectionError(RuntimeError):
+    """Custom exception for database protection violations."""
+    pass

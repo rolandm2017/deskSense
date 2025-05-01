@@ -6,29 +6,26 @@ from datetime import datetime, timedelta, time
 from typing import List
 
 from surveillance.src.config.definitions import keep_alive_cycle_length, window_push_length 
+
 from surveillance.src.db.models import DailyProgramSummary
 from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
+from surveillance.src.db.dao.summary_dao_mixin import SummaryDaoMixin
 
+
+from surveillance.src.object.dao_objects import FindTodaysEntryInitializer
 from surveillance.src.object.classes import ProgramSession
 
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.errors import NegativeTimeError, ImpossibleToGetHereError
-from surveillance.src.util.time_formatting import get_start_of_day_from_datetime, attach_tz_to_all, attach_tz_to_obj
+from surveillance.src.util.time_formatting import get_start_of_day_from_datetime, attach_tz_to_all, attach_tz_to_obj, get_start_of_day_from_ult
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 
-class DatabaseProtectionError(RuntimeError):
-    """Custom exception for database protection violations."""
-    pass
 
 
-# @@@@ @@@@ @@@@ @@@@ @@@@
-# NOTE: Does not use BaseQueueDao - Because ... <insert reason here when recalled>
-# @@@@ @@@@ @@@@ @@@@ @@@@
 
-
-class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
+class ProgramSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
     def __init__(self, program_logging_dao, reg_session: sessionmaker):
         # if not callable(session_maker):
         # raise TypeError("session_maker must be callable")
@@ -36,12 +33,10 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         self.debug = False
         self.regular_session = reg_session
         self.logger = ConsoleLogger()
+        self.model = DailyProgramSummary
 
     def start_session(self, program_session: ProgramSession):
         """Creating the initial session for the summary"""
-        # starting_window_amt = window_push_length  # sec
-        # usage_duration_in_hours = starting_window_amt / SECONDS_PER_HOUR
-
         self._create(program_session, program_session.start_time.dt)
 
     def _create(self, session: ProgramSession, start_time: datetime):
@@ -59,27 +54,16 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         self.add_new_item(new_entry)
 
     def find_todays_entry_for_program(self, program_session: ProgramSession) -> DailyProgramSummary | None:
-        """Find by process_name / exe_path"""
-        if program_session.start_time is None:
-            raise ValueError("start_time was not set")
-
-        start_time = program_session.start_time.dt
-        start_of_day = datetime.combine(
-            start_time.date(), time.min, tzinfo=start_time.tzinfo)
-        end_of_day = datetime.combine(
-            start_time.date(), time.max, tzinfo=start_time.tzinfo)
+        """Find by exe_path"""
+        initializer = FindTodaysEntryInitializer(program_session.start_time)
 
         query = self.create_find_all_from_day_query(
-            program_session.exe_path, start_of_day, end_of_day)
+            program_session.exe_path, initializer.start_of_day_with_tz, initializer.end_of_day_with_tz)
 
-        result = self.execute_and_read_one_or_none(query)
-
-        if result is None:
-            return None  # Or create a default DailyProgramSummary
-            
-        return attach_tz_to_obj(result, program_session.start_time.dt.tzinfo)
+        return self._execute_read_with_restored_tz(query, program_session.start_time)
 
     def create_find_all_from_day_query(self, exe_path, start_of_day, end_of_day):
+        # Use LTZ
         return select(DailyProgramSummary).where(
             DailyProgramSummary.exe_path_as_id == exe_path,
             DailyProgramSummary.gathering_date >= start_of_day,
@@ -116,21 +100,6 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
 
     # Updates section
 
-    def update_hours(self, existing_entry: DailyProgramSummary, usage_duration_in_hours: float):
-        """Update hours spent for an existing program entry."""
-        with self.regular_session() as session:
-            # Reattach the entity to the current session if it's detached
-            if existing_entry not in session:
-                existing_entry = session.merge(existing_entry)
-
-            # Update the hours
-            new_duration = existing_entry.hours_spent + usage_duration_in_hours
-            self.throw_if_negative(existing_entry.program_name, new_duration)
-            existing_entry.hours_spent = new_duration
-
-            # Commit the changes
-            session.commit()
-
 
     def push_window_ahead_ten_sec(self, program_session: ProgramSession):
         """
@@ -152,37 +121,13 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             DailyProgramSummary.gathering_date.op('=')(some_time)
         )
 
-    def execute_window_push(self, query, purpose, identifier: datetime):
-        # self.logger.log_white(f"[info] looking for {purpose} with {identifier}")
-        with self.regular_session() as db_session:
-            program: DailyProgramSummary = db_session.scalars(query).first()
-            # FIXME: Sometimes program is None
-            if program:
-                program.hours_spent = program.hours_spent + window_push_length / SECONDS_PER_HOUR
-                db_session.commit()
-            else:
-                raise ImpossibleToGetHereError(
-                    "A program should already exist here, but was not found: " + purpose)
-
-    def add_used_time(self, session: ProgramSession, duration_in_sec: int, today_start: UserLocalTime):
+    def add_used_time(self, session: ProgramSession, duration_in_sec: int):
         """
         When a session is concluded, it was concluded partway thru the 10 sec window
 
         9 times out of 10. So we deduct the unfinished duration from its hours_spent.
         """
-        if duration_in_sec == 0:
-            return  # No work to do here
-        tomorrow_start = today_start.dt + timedelta(days=1)
-
-        time_to_add = duration_in_sec / SECONDS_PER_HOUR
-        self.throw_if_negative(session.window_title, time_to_add)
-
-        query = select(DailyProgramSummary).where(
-            DailyProgramSummary.exe_path_as_id == session.exe_path,
-            DailyProgramSummary.gathering_date >= today_start.dt,
-            DailyProgramSummary.gathering_date < tomorrow_start
-        )
-        self.do_addition(query, time_to_add)
+        self.add_partial_window(session, duration_in_sec, DailyProgramSummary.domain_name == session.exe_path)
 
     def do_addition(self, query, time_to_add):
         with self.regular_session() as db_session:
@@ -198,43 +143,10 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             program.hours_spent = new_duration  # Error is here GPT
             db_session.commit()
 
-    def throw_if_negative(self, activity: str, value: int | float):
-        if value < 0:
-            raise NegativeTimeError(activity, value)
-
     async def shutdown(self):
         """Closes the open session without opening a new one"""
 
         pass
-
-    def delete(self, id: int):
-        """Delete an entry by ID"""
-        with self.regular_session() as session:
-            entry = session.get(DailyProgramSummary, id)
-            if entry:
-                session.delete(entry)
-                session.commit()
-            return entry
-
-    def delete_all_rows(self, safety_switch=None) -> int:
-        """
-        Delete all rows from the DailyProgramSummary table.
-
-        Returns:
-            int: The number of rows deleted
-        """
-        if not safety_switch:
-            raise DatabaseProtectionError(
-                "Cannot delete all rows without safety switch enabled. "
-                "Set safety_switch=True to confirm this action."
-            )
-
-        with self.regular_session() as session:
-            result = session.execute(
-                text("DELETE FROM daily_program_summary")
-            )
-            session.commit()
-            return result.rowcount
 
     def close(self):
         if hasattr(self, '_current_session') and self._current_session is not None:

@@ -105,11 +105,11 @@ class ActivityRecorder:
             print(
                 f"adding {duration_in_sec} to {session.window_title}")
             self.program_summary_dao.add_used_time(
-                session, duration_in_sec, today_start)
+                session, duration_in_sec)
         elif isinstance(session, ChromeSession):
             print(f"adding {duration_in_sec} to {session.domain}")
             self.chrome_summary_dao.add_used_time(
-                session, duration_in_sec, today_start)
+                session, duration_in_sec)
         else:
             raise TypeError("Session was not the right type")
 

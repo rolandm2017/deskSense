@@ -7,7 +7,7 @@ from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 from surveillance.src.db.dao.logging_dao_mixin import LoggingDaoMixin
 from surveillance.src.db.models import DomainSummaryLog, ProgramSummaryLog
 
-from surveillance.src.object.dao_util import LogTimeInitializer
+from surveillance.src.object.dao_objects import LogTimeInitializer
 from surveillance.src.object.classes import ProgramSession, CompletedProgramSession
 
 from surveillance.src.util.console_logger import ConsoleLogger
@@ -87,23 +87,7 @@ class ProgramLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
 
     def read_day_as_sorted(self, day: UserLocalTime) -> dict[str, ProgramSummaryLog]:
         # NOTE: the database is storing and returning times in UTC
-        start_of_day = get_start_of_day_from_datetime(day.get_dt_for_db())
-        start_of_day = convert_to_utc(start_of_day)
-        end_of_day = start_of_day + timedelta(days=1)
-        self.logger.log_white(f"INFO: querying start_of_day: {start_of_day}\n\tto end_of_day: {end_of_day}")
-        query = select(ProgramSummaryLog).where(
-            ProgramSummaryLog.start_time >= start_of_day,
-            ProgramSummaryLog.end_time < end_of_day
-        ).order_by(ProgramSummaryLog.program_name)
-
-        logs = self.execute_and_return_all(query)
-
-        logs = attach_tz_to_all(logs, day.dt.tzinfo)
-
-        # Group the results by program_name
-        grouped_logs = group_logs_by_name(logs)
-
-        return grouped_logs
+        return self._read_day_as_sorted(day, ProgramSummaryLog, ProgramSummaryLog.program_name)
 
     def read_all(self):
         """Fetch all program log entries"""

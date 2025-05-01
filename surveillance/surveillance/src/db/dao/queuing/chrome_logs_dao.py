@@ -16,11 +16,10 @@ from surveillance.src.db.models import DomainSummaryLog, ProgramSummaryLog
 from surveillance.src.db.dao.base_dao import BaseQueueingDao
 
 from surveillance.src.object.classes import ChromeSession, CompletedChromeSession
-from surveillance.src.object.dao_util import LogTimeInitializer
+from surveillance.src.object.dao_objects import LogTimeInitializer
 
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.errors import ImpossibleToGetHereError
-from surveillance.src.util.dao_wrapper import validate_session, guarantee_start_time
 from surveillance.src.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
 from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day_from_datetime, get_start_of_day_from_ult, attach_tz_to_all
 from surveillance.src.util.time_wrappers import UserLocalTime
@@ -88,24 +87,8 @@ class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         )
 
     def read_day_as_sorted(self, day: UserLocalTime) -> dict[str, DomainSummaryLog]:
-        start_of_day = get_start_of_day_from_datetime(day.get_dt_for_db())
-        start_of_day = convert_to_utc(start_of_day)
-        end_of_day = start_of_day + timedelta(days=1)
-        self.logger.log_white(f"INFO: querying start_of_day: {start_of_day}\n\tto end_of_day: {end_of_day}")
-        query = select(DomainSummaryLog).where(
-            DomainSummaryLog.gathering_date >= start_of_day,
-            DomainSummaryLog.gathering_date < end_of_day
-        ).order_by(DomainSummaryLog.domain_name)
-
-        query = self.create_read_day_query()
-
-        logs = self.execute_and_return_all(query)
-
-        logs = attach_tz_to_all(logs, day.dt.tzinfo)
-
-        grouped_logs = group_logs_by_name(logs)
-
-        return grouped_logs
+        # NOTE: the database is storing and returning times in UTC
+        return self._read_day_as_sorted(day, DomainSummaryLog, DomainSummaryLog.domain_name)
 
     def read_all(self):
         """Fetch all domain log entries"""
