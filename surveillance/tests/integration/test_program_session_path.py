@@ -269,7 +269,8 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
             exe_path_as_id=session.exe_path, 
             program_name=session.window_title, 
             hours_spent=starting_hours_spent_in_db, 
-            gathering_date=get_start_of_day_from_datetime(session.start_time)
+            gathering_date=get_start_of_day_from_datetime(session.start_time),
+            gathering_date_local=get_start_of_day_from_datetime(session.start_time).replace(tzinfo=None)
         )
 
     def group_of_preexisting_summaries():
@@ -294,6 +295,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(validate_test_data_a
             end_time=very_early_morning + timedelta(minutes=5),
             duration_in_sec=60.0,
             gathering_date=get_start_of_day_from_datetime(very_early_morning),
+            gathering_date_local=get_start_of_day_from_datetime(very_early_morning).replace(tzinfo=None),
             created_at=very_early_morning
         )
     
@@ -776,6 +778,7 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
             end_time=start_window_end, # FIXME: _local mia
             duration_in_sec=0,
             gathering_date=start_of_day_as_utc,
+            gathering_date_local=start_of_day_as_utc.replace(tzinfo=None),
             created_at=base_start_time
         )
 
