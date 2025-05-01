@@ -104,11 +104,6 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         # Developer handles it manually
         return self.execute_and_return_all(query)
     
-    def select_where_time_equals(self, some_time):
-        return select(DailyDomainSummary).where(
-            DailyDomainSummary.gathering_date.op('=')(some_time)
-        )
-
 
     def update_hours(self, existing_entry, usage_duration_in_hours):
         with self.regular_session() as session:
@@ -130,11 +125,15 @@ class ChromeSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
 
         NOTE: This only ever happens after start_session
         """
-        target_domain = chrome_session.domain
         today_start = get_start_of_day_from_datetime(chrome_session.start_time.dt)
-
-        query = self.select_where_time_equals(today_start)
+        query = self.select_where_time_equals_for_session(today_start, chrome_session.domain)
         self.execute_window_push(query)
+
+    def select_where_time_equals_for_session(self, some_time, target_domain):
+        return select(DailyDomainSummary).where(
+            DailyDomainSummary.gathering_date.op('=')(some_time),
+            DailyDomainSummary.domain_name == target_domain
+        )
 
     def execute_window_push(self, query):
         with self.regular_session() as db_session:

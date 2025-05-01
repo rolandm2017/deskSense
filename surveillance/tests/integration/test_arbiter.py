@@ -322,7 +322,10 @@ def test_activity_arbiter(activity_arbiter_and_setup):
 
 
     def assert_expected_values_match_ledger():
-        """Verify each one using it's ledger."""
+        """
+        Verify each one using it's ledger. This is testing that 
+        the session ledgers recorded the amount expected at the top of the test
+        """
         for i in range(0, len(copied_test_data)):
             # check that the ledger says what you expect
             if i == len(copied_test_data) - 1:

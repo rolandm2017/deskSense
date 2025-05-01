@@ -11,6 +11,7 @@ from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from surveillance.src.util.clock import UserFacingClock
 from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.time_formatting import get_start_of_day_from_ult
+from surveillance.src.util.console_logger import ConsoleLogger
 
 
 # Persistence component
@@ -18,14 +19,17 @@ from surveillance.src.util.time_formatting import get_start_of_day_from_ult
 class ActivityRecorder:
     def __init__(self, program_logging_dao: ProgramLoggingDao, 
                  chrome_logging_dao: ChromeLoggingDao, 
-                 program_summary_dao: 
-                 ProgramSummaryDao, 
+                 program_summary_dao: ProgramSummaryDao, 
                  chrome_summary_dao: ChromeSummaryDao, DEBUG=False):
         self.program_logging_dao = program_logging_dao
         self.chrome_logging_dao = chrome_logging_dao
         self.program_summary_dao = program_summary_dao
         self.chrome_summary_dao = chrome_summary_dao
         self.DEBUG = DEBUG
+        self.logger = ConsoleLogger()
+        if not DEBUG:
+            self.logger.log_yellow("Recorder logs are off")
+
 
         # For testing: collect session activity history
         self.pulse_history = []  # List of (session, timestamp) tuples for each pulse
@@ -34,6 +38,7 @@ class ActivityRecorder:
     def on_new_session(self, session: ProgramSession | ChromeSession):
         # TODO: do an audit of logging time and summary time.
         if isinstance(session, ProgramSession):
+            print("Starting session for Program: ", session.get_name(), "36ru")
             # Regardless of the session being brand new today or a repeat,
             # must start a new logging session, to note the time being added to the summary. 
             self.program_logging_dao.start_session(session)
@@ -46,6 +51,7 @@ class ActivityRecorder:
                 return
             self.program_summary_dao.start_session(session)
         elif isinstance(session, ChromeSession):
+            print("Starting session for Domain: ", session.get_name(), "36ru")
             self.chrome_logging_dao.start_session(session)
             session_exists_already = self.chrome_summary_dao.find_todays_entry_for_domain(
                 session)

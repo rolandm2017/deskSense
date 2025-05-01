@@ -1,6 +1,5 @@
 # daily_summary_dao.py
 from sqlalchemy import select, func, text
-from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.sql.selectable import Select
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timedelta, time
@@ -42,7 +41,6 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         """Creating the initial session for the summary"""
         # starting_window_amt = window_push_length  # sec
         # usage_duration_in_hours = starting_window_amt / SECONDS_PER_HOUR
-
 
         self._create(program_session, program_session.start_time.dt)
 
@@ -115,11 +113,6 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
         """Read all entries."""
         query = select(DailyProgramSummary)
         return self.execute_and_return_all(query)
-    
-    def select_where_time_equals(self, some_time):
-        return select(DailyProgramSummary).where(
-            DailyProgramSummary.gathering_date.op('=')(some_time)
-        )
 
     # Updates section
 
@@ -149,9 +142,15 @@ class ProgramSummaryDao(UtilityDaoMixin):  # NOTE: Does not use BaseQueueDao
             raise ValueError("Session should not be None")
 
         today_start = get_start_of_day_from_datetime(program_session.start_time.dt)
-        query = self.select_where_time_equals(today_start)
+        query = self.select_where_time_equals_for_session(today_start, program_session.exe_path)
 
         self.execute_window_push(query, program_session.exe_path, program_session.start_time.dt)
+
+    def select_where_time_equals_for_session(self, some_time, target_exe_path):
+        return select(DailyProgramSummary).where(
+            DailyProgramSummary.exe_path_as_id == target_exe_path,
+            DailyProgramSummary.gathering_date.op('=')(some_time)
+        )
 
     def execute_window_push(self, query, purpose, identifier: datetime):
         # self.logger.log_white(f"[info] looking for {purpose} with {identifier}")
