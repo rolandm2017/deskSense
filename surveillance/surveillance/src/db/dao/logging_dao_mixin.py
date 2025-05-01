@@ -53,3 +53,55 @@ class LoggingDaoMixin:
         grouped_logs = group_logs_by_name(logs)
 
         return grouped_logs
+    
+    def do_read_last_24_hrs(self, right_now: UserLocalTime):
+        """Fetch all program log entries from the last 24 hours
+
+        NOTE: the database is storing and returning times in UTC
+        """
+        cutoff_time = right_now.dt - timedelta(hours=24)
+        query = select(self.model).where(
+            self.model.created_at >= cutoff_time
+        ).order_by(self.model.created_at.desc())
+        results = self.execute_and_return_all(query)
+        return attach_tz_to_all(results, right_now.dt.tzinfo)
+
+
+    def find_orphans(self,  latest_shutdown_time, startup_time):
+        """
+        Finds orphaned sessions that:
+        1. Started before shutdown but never ended (end_time is None)
+        2. Started before shutdown but ended after next startup (impossible)
+
+        Args:
+            latest_shutdown_time: Timestamp when system shut down
+            startup_time: Timestamp when system started up again
+        """
+        query = select(self.model).where(
+            # Started before shutdown
+            self.model.start_time <= latest_shutdown_time,
+            # AND (end_time is None OR end_time is after next startup)
+            or_(
+                self.model.end_time == None,  # Sessions never closed
+                self.model.end_time >= startup_time  # End time after startup
+            )
+        ).order_by(self.model.start_time)
+        # the database is storing and returning times in UTC
+        return self.execute_and_return_all(query)
+
+    def find_phantoms(self, latest_shutdown_time, startup_time):
+        """
+        Finds phantom sessions that impossibly started while the system was off.
+
+        Args:
+            latest_shutdown_time: Timestamp when system shut down
+            startup_time: Timestamp when system started up again
+        """
+        query = select(self.model).where(
+            # Started after shutdown
+            self.model.start_time > latest_shutdown_time,
+            # But before startup
+            self.model.start_time < startup_time
+        ).order_by(self.model.start_time)
+        # the database is storing and returning times in UTC
+        return self.execute_and_return_all(query)

@@ -5,7 +5,7 @@ from datetime import timedelta, datetime, date, timezone
 
 from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 from surveillance.src.db.dao.logging_dao_mixin import LoggingDaoMixin
-from surveillance.src.db.models import DomainSummaryLog, ProgramSummaryLog
+from surveillance.src.db.models import  ProgramSummaryLog
 
 from surveillance.src.object.dao_objects import LogTimeInitializer
 from surveillance.src.object.classes import ProgramSession, CompletedProgramSession
@@ -40,6 +40,7 @@ class ProgramLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         """ Exists mostly for debugging. """
         self.regular_session = session_maker  # Do not delete. UtilityDao still uses it
         self.logger = ConsoleLogger()
+        self.model = ProgramSummaryLog
 
     def start_session(self, session: ProgramSession):
         """
@@ -98,14 +99,9 @@ class ProgramLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
     def read_last_24_hrs(self, right_now: UserLocalTime):
         """Fetch all program log entries from the last 24 hours
 
-        NOTE: the database is storing and returning times in UTC
+        The database is storing and returning times in UTC btw
         """
-        cutoff_time = right_now.dt - timedelta(hours=24)
-        query = select(ProgramSummaryLog).where(
-            ProgramSummaryLog.created_at >= cutoff_time
-        ).order_by(ProgramSummaryLog.created_at.desc())
-        results = self.execute_and_return_all(query)
-        return attach_tz_to_all(results, right_now.dt.tzinfo)
+        return self.do_read_last_24_hrs(right_now)
 
     def read_suspicious_entries(self):
         """Get entries with durations longer than 20 minutes"""
@@ -143,41 +139,4 @@ class ProgramLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
                 "Start of pulse didn't reach the db")
         self.attach_final_values_and_update(session, log)
 
-    def find_orphans(self,  latest_shutdown_time, startup_time):
-        """
-        Finds orphaned sessions that:
-        1. Started before shutdown but never ended (end_time is None)
-        2. Started before shutdown but ended after next startup (impossible)
-
-        Args:
-            latest_shutdown_time: Timestamp when system shut down
-            startup_time: Timestamp when system started up again
-        """
-        query = select(ProgramSummaryLog).where(
-            # Started before shutdown
-            ProgramSummaryLog.start_time <= latest_shutdown_time,
-            # AND (end_time is None OR end_time is after next startup)
-            or_(
-                ProgramSummaryLog.end_time == None,  # Sessions never closed
-                ProgramSummaryLog.end_time >= startup_time  # End time after startup
-            )
-        ).order_by(ProgramSummaryLog.start_time)
-        # the database is storing and returning times in UTC
-        return self.execute_and_return_all(query)
-
-    def find_phantoms(self, latest_shutdown_time, startup_time):
-        """
-        Finds phantom sessions that impossibly started while the system was off.
-
-        Args:
-            latest_shutdown_time: Timestamp when system shut down
-            startup_time: Timestamp when system started up again
-        """
-        query = select(ProgramSummaryLog).where(
-            # Started after shutdown
-            ProgramSummaryLog.start_time > latest_shutdown_time,
-            # But before startup
-            ProgramSummaryLog.start_time < startup_time
-        ).order_by(ProgramSummaryLog.start_time)
-        # the database is storing and returning times in UTC
-        return self.execute_and_return_all(query)
+   

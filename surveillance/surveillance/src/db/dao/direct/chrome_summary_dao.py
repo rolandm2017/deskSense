@@ -66,28 +66,11 @@ class ChromeSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
         )
 
     def read_past_week(self, right_now: UserLocalTime):
-
-        # +1 because weekday() counts from Monday=0
-        days_since_sunday = right_now.dt.weekday() + 1
-        last_sunday = right_now.dt - timedelta(days=days_since_sunday)
-        query = select(DailyDomainSummary).where(
-            func.date(DailyDomainSummary.gathering_date) >= last_sunday.date()
-        )
-        result = self.execute_and_return_all(query)
-        return attach_tz_to_all(result, right_now.dt.tzinfo)
-
+        return self.do_read_past_week(right_now)
 
     def read_day(self, day: UserLocalTime) -> List[DailyDomainSummary]:
         """Read all entries for the given day."""
-        today_start = get_start_of_day_from_datetime(day.dt)
-        tomorrow_start = today_start + timedelta(days=1)
-
-        query = select(DailyDomainSummary).where(
-            DailyDomainSummary.gathering_date >= today_start,
-            DailyDomainSummary.gathering_date < tomorrow_start
-        )
-        result = self.execute_and_return_all(query)
-        return attach_tz_to_all(result, day.dt.tzinfo)
+        return self.do_read_day(day)
 
     def read_all(self):
         """Read all entries."""
@@ -115,24 +98,10 @@ class ChromeSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
         """
         When a session is concluded, it was concluded partway thru the 10 sec window
 
-        9 times out of 10. So we deduct the unfinished duration from its hours_spent.
+        9 times out of 10. So we add  the used  duration from its hours_spent.
         """
         self.add_partial_window(session, duration_in_sec, DailyDomainSummary.domain_name == session.domain)
 
-
-    def do_addition(self, query, time_to_add):
-        with self.regular_session() as db_session:
-            domain: DailyDomainSummary = db_session.scalars(query).first()
-
-            if domain is None:
-                raise ImpossibleToGetHereError(
-                    "Session should exist before do_addition occurs")
-
-            # FIXME: Must test this method
-            new_duration = domain.hours_spent + time_to_add
-
-            domain.hours_spent = new_duration  # Error is here GPT
-            db_session.commit()
 
     def shutdown(self):
         """Closes the open session without opening a new one"""

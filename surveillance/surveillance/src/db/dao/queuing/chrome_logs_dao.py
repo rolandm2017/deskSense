@@ -13,7 +13,6 @@ from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 from surveillance.src.db.dao.logging_dao_mixin import LoggingDaoMixin
 
 from surveillance.src.db.models import DomainSummaryLog, ProgramSummaryLog
-from surveillance.src.db.dao.base_dao import BaseQueueingDao
 
 from surveillance.src.object.classes import ChromeSession, CompletedChromeSession
 from surveillance.src.object.dao_objects import LogTimeInitializer
@@ -47,6 +46,7 @@ class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
 
         self.regular_session = session_maker  # Do not delete. UtilityDao still uses it
         self.logger = ConsoleLogger()
+        self.model = DomainSummaryLog
       
     def start_session(self, session: ChromeSession):
         """
@@ -99,12 +99,7 @@ class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
 
     def read_last_24_hrs(self, right_now: UserLocalTime):
         """Fetch all domain log entries from the last 24 hours"""
-        cutoff_time = right_now.dt - timedelta(hours=24)
-        query = select(DomainSummaryLog).where(
-            DomainSummaryLog.created_at >= cutoff_time
-        ).order_by(DomainSummaryLog.created_at.desc())
-        results = self.execute_and_return_all(query)
-        return attach_tz_to_all(results, right_now.dt.tzinfo)
+        return self.do_read_last_24_hrs(right_now)
 
     def push_window_ahead_ten_sec(self, session: ChromeSession):
         log: DomainSummaryLog = self.find_session(session)
@@ -125,39 +120,4 @@ class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
                 "Start of pulse didn't reach the db")
         self.attach_final_values_and_update(session, log)
 
-    def find_orphans(self,  latest_shutdown_time, startup_time):
-        """
-        Finds orphaned sessions that:
-        1. Started before shutdown but never ended (end_time is None)
-        2. Started before shutdown but ended after next startup (impossible)
-
-        Args:
-            latest_shutdown_time: Timestamp when system shut down
-            startup_time: Timestamp when system started up again
-        """
-        query = select(DomainSummaryLog).where(
-            # Started before shutdown
-            DomainSummaryLog.start_time <= latest_shutdown_time,
-            # AND (end_time is None OR end_time is after next startup)
-            or_(
-                DomainSummaryLog.end_time == None,  # Sessions never closed
-                DomainSummaryLog.end_time >= startup_time  # End time after startup
-            )
-        ).order_by(DomainSummaryLog.start_time)
-        return self.execute_and_return_all(query)
-
-    def find_phantoms(self, latest_shutdown_time, startup_time):
-        """
-        Finds phantom sessions that impossibly started while the system was off.
-
-        Args:
-            latest_shutdown_time: Timestamp when system shut down
-            startup_time: Timestamp when system started up again
-        """
-        query = select(DomainSummaryLog).where(
-            # Started after shutdown
-            DomainSummaryLog.start_time > latest_shutdown_time,
-            # But before startup
-            DomainSummaryLog.start_time < startup_time
-        ).order_by(DomainSummaryLog.start_time)
-        return self.execute_and_return_all(query)
+   

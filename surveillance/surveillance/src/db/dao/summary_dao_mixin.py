@@ -1,4 +1,4 @@
-from sqlalchemy import select, or_, text
+from sqlalchemy import select, or_, text, func
 from sqlalchemy.orm import DeclarativeMeta
 
 from typing import TypeVar, Callable, Type
@@ -7,12 +7,10 @@ from datetime import timedelta, datetime
 
 from surveillance.src.config.definitions import window_push_length
 
-from surveillance.src.db.models import DailyProgramSummary, DailyDomainSummary
-
 from surveillance.src.object.classes import ProgramSession, ChromeSession
 from surveillance.src.object.dao_objects import FindTodaysEntryInitializer
 
-from surveillance.src.util.time_formatting import attach_tz_to_obj, get_start_of_day_from_ult
+from surveillance.src.util.time_formatting import attach_tz_to_obj, get_start_of_day_from_ult, get_start_of_day_from_datetime, attach_tz_to_all
 from surveillance.src.util.log_dao_helper import group_logs_by_name
 from surveillance.src.util.errors import ImpossibleToGetHereError
 from surveillance.src.util.time_wrappers import UserLocalTime
@@ -50,6 +48,28 @@ class SummaryDaoMixin:
 
         return attach_tz_to_obj(result, session_time.dt.tzinfo)
     
+    def do_read_past_week(self, right_now: UserLocalTime):
+        days_since_sunday = right_now.weekday() + 1
+        last_sunday = right_now.dt - timedelta(days=days_since_sunday)
+
+        query = select(self.model).where(
+            func.date(self.model.gathering_date) >= last_sunday.date()
+        )
+
+        result = self.execute_and_return_all(query)
+        return attach_tz_to_all(result, right_now.dt.tzinfo)
+    
+    def do_read_day(self, day: UserLocalTime):
+        today_start = get_start_of_day_from_datetime(day.dt)
+        tomorrow_start = today_start + timedelta(days=1)
+
+        query = select(self.model).where(
+            self.model.gathering_date >= today_start,
+            self.model.gathering_date < tomorrow_start
+        )
+        result = self.execute_and_return_all(query)
+        return attach_tz_to_all(result, day.dt.tzinfo)
+    
     def add_partial_window(self, session: ProgramSession | ChromeSession, duration_in_sec: int, name_filter):
         if duration_in_sec == 0:
             return  # No work to do here
@@ -66,6 +86,20 @@ class SummaryDaoMixin:
             self.model.gathering_date < tomorrow_start
         )
         self.do_addition(query, time_to_add)
+
+    def do_addition(self, query, time_to_add):
+        with self.regular_session() as db_session:
+            summary = db_session.scalars(query).first()
+
+            if summary is None:
+                raise ImpossibleToGetHereError(
+                    "Session should exist before do_addition occurs")
+
+            # FIXME: Must test this method
+            new_duration = summary.hours_spent + time_to_add
+
+            summary.hours_spent = new_duration  # Error is here GPT
+            db_session.commit()
 
             
     def execute_window_push(self, query, purpose, identifier: datetime):

@@ -72,26 +72,11 @@ class ProgramSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
 
     def read_past_week(self, right_now: UserLocalTime):
         # +1 because weekday() counts from Monday=0
-        days_since_sunday = right_now.weekday() + 1
-        last_sunday = right_now.dt - timedelta(days=days_since_sunday)
-
-        query = select(DailyProgramSummary).where(
-            func.date(DailyProgramSummary.gathering_date) >= last_sunday.date()
-        )
-
-        result = self.execute_and_return_all(query)
-        return attach_tz_to_all(result, right_now.dt.tzinfo)
+        return self.do_read_past_week(right_now)
     
     def read_day(self, day: UserLocalTime) -> List[DailyProgramSummary]:
         """Read all entries for the given day."""
-        today_start = get_start_of_day_from_datetime(day.dt)
-        tomorrow_start = today_start + timedelta(days=1)
-        query: Select = select(DailyProgramSummary).where(
-            DailyProgramSummary.gathering_date >= today_start,
-            DailyProgramSummary.gathering_date < tomorrow_start
-        )
-        result = self.execute_and_return_all(query)
-        return attach_tz_to_all(result, day.dt.tzinfo)
+        return self.do_read_day(day)
 
     def read_all(self) -> List[DailyProgramSummary]:
         """Read all entries."""
@@ -99,7 +84,6 @@ class ProgramSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
         return self.execute_and_return_all(query)
 
     # Updates section
-
 
     def push_window_ahead_ten_sec(self, program_session: ProgramSession):
         """
@@ -125,23 +109,9 @@ class ProgramSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
         """
         When a session is concluded, it was concluded partway thru the 10 sec window
 
-        9 times out of 10. So we deduct the unfinished duration from its hours_spent.
+        9 times out of 10. So we add  the used  duration from its hours_spent.
         """
         self.add_partial_window(session, duration_in_sec, DailyProgramSummary.domain_name == session.exe_path)
-
-    def do_addition(self, query, time_to_add):
-        with self.regular_session() as db_session:
-            program: DailyProgramSummary = db_session.scalars(query).first()
-
-            if program is None:
-                raise ImpossibleToGetHereError(
-                    "Session should exist before do_addition occurs")
-
-            # FIXME: Must test this method
-            new_duration = program.hours_spent + time_to_add
-
-            program.hours_spent = new_duration  # Error is here GPT
-            db_session.commit()
 
     async def shutdown(self):
         """Closes the open session without opening a new one"""
