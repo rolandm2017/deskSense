@@ -90,10 +90,13 @@ class TestChromeSummaryDao:
     def test_read_day(self, chrome_summary_dao, mock_session):
         # Arrange
         t0 = datetime(2025, 3, 23, 9, 25, 31, tzinfo=tokyo_tz)
+        t0_no_tz = datetime(2025, 3, 23, 9, 25, 31)
 
         t1 = UserLocalTime(t0 - timedelta(hours=1))
+        t1_no_tz = t0 - timedelta(hours=1)
         t2 = UserLocalTime(t0 + timedelta(minutes=1))
         t3 = UserLocalTime(t0 + timedelta(minutes=5))
+        t3_no_tz = t0 + timedelta(minutes=5)
         t4 = UserLocalTime(t0 + timedelta(minutes=6))
 
         # Pretend this happened
@@ -104,9 +107,11 @@ class TestChromeSummaryDao:
         first_session_out = DailyDomainSummary()
         first_session_out.Chrome_name = "readDayTest"
         first_session_out.gathering_date = t1.dt
+        first_session_out.gathering_date_local = t1_no_tz
         second_usage_out = DailyDomainSummary()
         second_usage_out.Chrome_name = "readDayTestMaterial"
         second_usage_out.gathering_date = t3.dt
+        second_usage_out.gathering_date_local = t3_no_tz
 
         pretend_result = [first_session_out, second_usage_out]
 
