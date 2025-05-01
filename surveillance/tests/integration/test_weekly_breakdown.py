@@ -243,6 +243,7 @@ async def test_read_all(setup_with_populated_db):
         for v in all_programs_for_verification:
             if v.gathering_date.month == 2:
                 feb_vals_from_db.append(v)
+            # FIXME: Test that the gathering_date_local reflects the written material
             elif v.gathering_date.month == 3 and v.gathering_date.day == march_1:
                 march_2_vals_from_db.append(v)
             elif v.gathering_date.month == 3 and v.gathering_date.day == march_2:
@@ -347,6 +348,8 @@ async def test_read_all(setup_with_populated_db):
         for v in all_domains_for_verify:
             if v.gathering_date.month == 2:
                 feb_vals_chrome.append(v)
+            # FIXME: Test that the gathering_date_local reflects the written material
+
             elif v.gathering_date.month == 3 and v.gathering_date.day == march_1:
                 chrome_march2_vals.append(v)
             elif v.gathering_date.month == 3 and v.gathering_date.day == march_2:
