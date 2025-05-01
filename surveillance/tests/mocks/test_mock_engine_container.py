@@ -34,9 +34,9 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
     chrome_logging_dao = ChromeLoggingDao(mock_regular_session_maker)
 
     p_summary_dao = ProgramSummaryDao(
-        p_logging_dao, mock_regular_session_maker, mock_async_session)
+        p_logging_dao, mock_regular_session_maker)
     chrome_sum_dao = ChromeSummaryDao(
-        chrome_logging_dao, mock_regular_session_maker, mock_async_session)
+        chrome_logging_dao, mock_regular_session_maker)
 
 
     clock = UserFacingClock()

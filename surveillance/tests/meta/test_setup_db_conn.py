@@ -25,15 +25,12 @@ Offenders:
 
 
 @pytest.mark.asyncio
-async def test_plain_async_engine(regular_session, async_engine_and_asm):
-    engine, asm = async_engine_and_asm
+async def test_plain_async_engine(regular_session_maker, async_engine_and_asm):
 
-    assert isinstance(
-        asm, async_sessionmaker), "You need to mark @pytest_asyncio.fixture somewhere if you see this error"
 
     # Try to use it
-    log_dao = ProgramLoggingDao(regular_session)
-    sum_dao = ProgramSummaryDao(log_dao, regular_session, asm)
+    log_dao = ProgramLoggingDao(regular_session_maker)
+    sum_dao = ProgramSummaryDao(log_dao, regular_session_maker)
 
     all_summaries = sum_dao.read_all()
     all_logs = log_dao.read_all()
@@ -49,10 +46,8 @@ async def test_plain_async_engine(regular_session, async_engine_and_asm):
 def test_sqlite(db_session_in_mem, async_db_session_in_mem):
       # Try to use it
     session_maker = db_session_in_mem
-    eng, asm = async_db_session_in_mem
-    assert isinstance(asm, async_sessionmaker)
     log_dao = ProgramLoggingDao(session_maker)
-    sum_dao = ProgramSummaryDao(log_dao, session_maker, asm)
+    sum_dao = ProgramSummaryDao(log_dao, session_maker)
 
     all_summaries = sum_dao.read_all()
     all_logs = log_dao.read_all()

@@ -30,7 +30,7 @@ class TabQueue:
         self.debounce_timer = None
         self.log_tab_event = log_tab_event
 
-    async def add_to_arrival_queue(self, tab_change_event: TabChangeEventWithLtz):
+    def add_to_arrival_queue(self, tab_change_event: TabChangeEventWithLtz):
 
         self.message_queue.append(tab_change_event)
         MAX_QUEUE_LEN = 40
