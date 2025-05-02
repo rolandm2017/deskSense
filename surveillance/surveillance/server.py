@@ -123,15 +123,20 @@ async def lifespan(app: FastAPI):
         if surveillance_state.manager:
             try:
                 # Use a timeout to ensure cleanup doesn't hang
-                await asyncio.wait_for(surveillance_state.manager.cleanup(), timeout=5.0)
+                cancelled_tasks = await asyncio.wait_for(
+                    surveillance_state.manager.cleanup(), 
+                    timeout=5.0
+                )
+                print(f"Cleanup complete. Total tasks cancelled: {cancelled_tasks}")
 
                 # Also ensure the shutdown handler runs
                 surveillance_state.manager.shutdown_handler()
-                # await asyncio.wait_for(surveillance_state.manager.shutdown_handler(), timeout=5.0)
             except asyncio.TimeoutError:
                 print("Cleanup timed out, forcing shutdown")
+            except asyncio.CancelledError as e:
+                print(f"[137] Cleanup was cancelled after cancelling {surveillance_state.manager.cancelled_tasks} tasks")
             except Exception as e:
-                print(f"Error during cleanup: {e}")
+                print(f"[139] Error during cleanup: {e}")
                 import traceback
                 traceback.print_exc()
 
@@ -415,7 +420,7 @@ async def receive_chrome_tab(
         updated_tab_change_event = timezone_service.convert_tab_change_timezone(
             tab_change_event, tz_for_user)
 
-        await chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
+        chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
         return  # Returns 204 No Content
     except AssertionError as e:
         print(f"Raw tzinfo: {tab_change_event.startTime.tzinfo}")
@@ -425,7 +430,7 @@ async def receive_chrome_tab(
             detail="Expected a UTC-timezoned datetime"
         )
     except Exception as e:
-        # print(e)
+        print(e)
         # raise
         raise HTTPException(
             status_code=500,
@@ -452,7 +457,7 @@ async def receive_youtube_event(
         updated_tab_change_event = timezone_service.convert_tab_change_timezone(
             tab_change_event, tz_for_user)
 
-        await chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
+        chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
         return  # Returns 204 No Content
     except AssertionError as e:
         print(f"Raw tzinfo: {tab_change_event.startTime.tzinfo}")
@@ -462,7 +467,7 @@ async def receive_youtube_event(
             detail="Expected a UTC-timezoned datetime"
         )
     except Exception as e:
-        # print(e)
+        print(e)
         # raise
         raise HTTPException(
             status_code=500,

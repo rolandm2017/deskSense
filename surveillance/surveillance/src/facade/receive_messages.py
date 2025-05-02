@@ -94,8 +94,8 @@ class MessageReceiver:
         # Define the coroutines to run
         async def run_tasks():
             self.tasks = [
-                asyncio.create_task(self.zmq_listener()),
-                asyncio.create_task(self.process_events())
+                asyncio.create_task(self.zmq_listener(), name="MessageReceiver-zmq_listener"),
+                asyncio.create_task(self.process_events(), name="MessageReceiver-process_events")
             ]
             await asyncio.gather(*self.tasks)
 
@@ -129,28 +129,29 @@ class MessageReceiver:
 
     async def async_stop(self):
         """Stop the message receiver asynchronously."""
-        # self.stop()
-        # # Give time for tasks to be cancelled
-        # await asyncio.sleep(0.5)
+        print(f"MessageReceiver: Stopping {len(self.tasks)} tasks")
+        self.is_running = False  # First mark as not running to exit loops
+        
         # Cancel all tasks and await their cancellation
         tasks_to_cancel = []
         for task in self.tasks:
             if not task.done():
+                print(f"MessageReceiver: Cancelling task {task.get_name()}")
                 task.cancel()
                 tasks_to_cancel.append(task)
         
         if tasks_to_cancel:
             try:
                 # Wait for all tasks to complete with a timeout
-                # Shield is used to prevent the wait itself from being cancelled
+                # Don't use shield here - it can interfere with proper cancellation
                 await asyncio.wait_for(
-                    asyncio.shield(asyncio.gather(*tasks_to_cancel, return_exceptions=True)), 
-                    timeout=1.0
+                    asyncio.gather(*tasks_to_cancel, return_exceptions=True), 
+                    timeout=2.0
                 )
             except asyncio.TimeoutError:
-                print("Some tasks did not complete in time during MessageReceiver shutdown")
+                print(f"MessageReceiver: {len(tasks_to_cancel)} tasks did not complete in time during shutdown")
             except Exception as e:
-                print(f"Error awaiting tasks during MessageReceiver shutdown: {e}")
+                print(f"MessageReceiver: Error awaiting tasks during shutdown: {e}")
         
         # Close ZMQ socket and context if not already closed
         try:
@@ -158,5 +159,6 @@ class MessageReceiver:
                 self.socket.close()
             if hasattr(self, 'context') and self.context:
                 self.context.term()
+            print("MessageReceiver: ZMQ resources closed")
         except Exception as e:
-            print(f"Error closing ZMQ resources: {e}")
+            print(f"MessageReceiver: Error closing ZMQ resources: {e}")

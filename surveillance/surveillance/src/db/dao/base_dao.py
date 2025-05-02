@@ -59,7 +59,6 @@ class BaseQueueingDao:
         # Only start a new task if no task is running or the previous one is done
         no_queue_running = self._queue_task is None or self._queue_task.done()
         if no_queue_running:
-            # print("Starting new queue processing task")
             self.processing = True
             # Create a new task and store a strong reference to it
             # self._queue_task = asyncio.create_task(self._wrapped_process_queue())

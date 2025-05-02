@@ -112,6 +112,8 @@ class SurveillanceManager:
         self.mouse_thread = ThreadedTracker(self.mouse_tracker)
         self.program_thread = ThreadedTracker(self.program_tracker)
 
+        self.cancelled_tasks = 0
+
     def start_trackers(self):
         self.is_running = True
         print("Running trackers")
@@ -169,43 +171,53 @@ class SurveillanceManager:
 
     async def cancel_pending_tasks(self):
         """Safely cancel all pending tasks created by this manager."""
-        # # Get all tasks from the event loop
-        # tasks = [task for task in asyncio.all_tasks(self.loop)
-        #          if task is not asyncio.current_task(self.loop)]
-
-        # Create a set of tasks we know are created by this manager
-        manager_tasks = set()
-
-        # Track tasks from different components
-        for attr_name in ['keyboard_dao', 'mouse_dao', 'timeline_dao',
-                          'program_summary_dao', 'chrome_summary_dao',
-                          'session_integrity_dao']:
-            if hasattr(self, attr_name):
-                component = getattr(self, attr_name)
-                # Look for any attributes that might be tasks
-                for name in dir(component):
-                    if name.startswith('_task_') or name.endswith('_task'):
-                        task = getattr(component, name, None)
-                        if task and isinstance(task, asyncio.Task) and not task.done():
-                            manager_tasks.add(task)
-
+        # Get all tasks from the event loop except the current one
+        current_task = asyncio.current_task()
+        all_tasks = [task for task in asyncio.all_tasks() 
+                    if task is not current_task]
+        
+        # Filter to only tasks that might belong to our manager
+        manager_tasks = []
+        for task in all_tasks:
+            task_name = task.get_name()
+            # Get task source location if possible
+            task_frame = None
+            try:
+                # Get the frame where this task was created
+                task_frame = task.get_stack()[0] if task.get_stack() else None
+                frame_info = f"File: {task_frame.f_code.co_filename}, Line: {task_frame.f_lineno}" if task_frame else "Unknown"
+            except Exception:
+                frame_info = "Not available"
+            
+            # Print info about each task
+            task_status = "DONE" if task.done() else "PENDING"
+            print(f"Cancelling task: {task_name} | Status: {task_status} | Source: {frame_info}")
+            # Check if the task name contains indicators it's from our manager
+            if any(indicator in task_name for indicator in 
+                ['mouse', 'keyboard', 'program', 'timeline', 'chrome', 'dao']):
+                manager_tasks.append(task)
+        
         # Cancel all identified tasks
+        cancelled_count = 0
         if manager_tasks:
             print(f"Cancelling {len(manager_tasks)} pending tasks...")
             for task in manager_tasks:
-                task.cancel()
+                if not task.done():
+                    task.cancel()
+                    cancelled_count += 1
 
             # Wait for all tasks to complete with a timeout
             try:
                 await asyncio.wait_for(
                     asyncio.gather(*manager_tasks, return_exceptions=True),
-                    timeout=2.0
+                    timeout=3.0
                 )
             except asyncio.TimeoutError:
-                print("Some tasks didn't complete within timeout")
+                print("[204] Some tasks didn't complete within timeout")
 
-        return len(manager_tasks)
-
+        print(f"Cancelled {cancelled_count} tasks")
+        return cancelled_count
+    
     async def cleanup(self):
         """Clean up resources before exit."""
         print("cleaning up")
@@ -213,17 +225,27 @@ class SurveillanceManager:
         self.mouse_thread.stop()
         self.program_thread.stop()
 
-        # Cancel any pending database tasks first
-        await self.cancel_pending_tasks()
+        # Store the count of canceled tasks
+        cancelled_tasks = 0
+        
+        # Cancel any pending database tasks
+        try:
+            cancelled_tasks = await self.cancel_pending_tasks()
+        except Exception as e:
+            print(f"Error canceling tasks: {e}")
+            traceback.print_exc()
 
         # Then stop the message receiver
         if hasattr(self, 'message_receiver') and self.message_receiver:
             try:
                 await self.message_receiver.async_stop()
             except Exception as e:
-                print(f"Error during MessageReceiver cleanup: {e}")
+                print(f"[231] Error during MessageReceiver cleanup: {e}")
                 traceback.print_exc()
 
         self.is_running = False
         # Add any async cleanup operations here
-        await asyncio.sleep(0.5)  # Give threads time to clean up
+        await asyncio.sleep(1.5)  # Give threads time to clean up
+        
+        # Return the count for the caller
+        return cancelled_tasks
