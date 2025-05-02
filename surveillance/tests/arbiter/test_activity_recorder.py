@@ -102,7 +102,7 @@ async def test_add_partial_window_program(activity_recorder, mock_daos, program_
     start_of_day = program_session.start_time.dt.replace(hour=0, minute=0, second=0)
 
     mock_daos['program_summary'].add_used_time.assert_called_once_with(
-        program_session, duration, start_of_day
+        program_session, duration
     )
 
 
