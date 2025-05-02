@@ -23,15 +23,6 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
         self.win32process = win32process
         self.previous_window = None
 
-    def read_current_program_info(self) -> ProgramSessionDict:
-        """
-        Gets information about the currently active window.
-
-        Returns:
-            Dict: Information about the active window including OS, PID, process name, and window title.
-        """
-        return self._read_windows()
-
     def _read_windows(self) -> ProgramSessionDict:
         """
         Reads information about the currently active window on Windows.
@@ -54,7 +45,7 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
         # pid = self.win32process.GetWindowThreadProcessId(window)[1]
 
         try:
-            thread_id, pid = self.win32process.GetWindowThreadProcessId(window)
+            _, pid = self.win32process.GetWindowThreadProcessId(window)
 
             # Sanity check on the PID
             if pid <= 0:
@@ -96,18 +87,22 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
         # We'll use polling to detect window changes since it's simpler than
         # setting up a Windows event hook
         self.previous_window = self.win32gui.GetForegroundWindow()
+        # print("99ru")
 
         while True:
             time.sleep(0.5)  # Check every half second
+            # print("103ru")
 
             current_window = self.win32gui.GetForegroundWindow()
 
             # If the window has changed
             if current_window != self.previous_window:
+                # print("yielding window 109ru")
                 self.previous_window = current_window
                 window_info = self._read_windows()
                 self.console_logger.debug(
                     f"Window changed: {window_info['window_title']} ({window_info['process_name']})")
+                print(window_info, "to be yielded 114ru")
                 yield window_info
 
     def setup_window_hook(self) -> Generator[Dict, None, None]:

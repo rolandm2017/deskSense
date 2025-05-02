@@ -15,9 +15,6 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
         self.display = display
         self.X = X
 
-    def read_current_program_info(self) -> Dict:
-        return self._read_ubuntu()
-    
 
     def listen_for_window_changes(self):
         if self.X is None or self.display is None:

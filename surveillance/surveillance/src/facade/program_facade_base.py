@@ -7,17 +7,6 @@ class ProgramFacadeInterface(ABC):
     Interface class that defines the contract for program facades.
     This class should be inherited by both UbuntuProgramFacade and WindowsProgramFacade.
     """
-
-    @abstractmethod
-    def read_current_program_info(self) -> Dict:
-        """
-        Gets information about the currently active window.
-        
-        Returns:
-            Dict: Information about the active window including OS, PID, 
-            process name, and window title.
-        """
-        pass
     
     @abstractmethod
     def listen_for_window_changes(self) -> Generator[Dict, None, None]:
