@@ -21,7 +21,7 @@ from surveillance.src.facade.program_facade_windows import WindowsProgramFacadeC
 # psutil.Process takes an int and gives an obj with an exe() and a name()
 # win32gui.GetWindowText(window) -> gives a string
 class TestProgramFacadeIntegration:
-    def setUp(self):
+    def setup_method(self, method):
         self.facade = WindowsProgramFacadeCore()
         
         # Load the sample data
@@ -52,9 +52,16 @@ class TestProgramFacadeIntegration:
             mock_get_title.side_effect = [s['window_title'] for s in self.samples[:3]]
             mock_get_pid.side_effect = [(0, s.get('pid', 1000)) for s in self.samples[:3]]
 
+            for s in self.samples:
+                print("samples:", s)
+
             # Run the generator for 3 iterations
             generator = self.facade.listen_for_window_changes()
-            results = [next(generator) for _ in range(3)]
+            results = []
+            for i in range(0, 3):
+                print(i)
+                result = next(generator)
+                results.append(result)
 
             # Verify results match our samples
             for i, result in enumerate(results):
@@ -62,7 +69,20 @@ class TestProgramFacadeIntegration:
                 assert result['window_title'] == self.samples[i]['window_title']
             
             # -- 
-            # -- Act
+            # -- Act: Run the facade
             # -- 
-            for window_change in self.facade.listen_for_window_changes():
-                pass
+            result1 = self.facade._read_windows()
+            result2 = self.facade._read_windows()
+            result3 = self.facade._read_windows()
+            # --
+            # -- Assert
+            # --
+            def assert_correct_result(result, sample):
+                assert result["os"] == "Windows"
+                assert result["pid"] == sample["pid"]
+                assert result["exe_path"] == sample["exe_path"]
+                assert result["process_name"] == sample["process_name"]
+            
+            assert_correct_result(result1, self.samples[0])
+            assert_correct_result(result2, self.samples[1])
+            assert_correct_result(result3, self.samples[2])

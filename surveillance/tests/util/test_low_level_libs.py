@@ -1,11 +1,18 @@
+import pytest
 import unittest
 import platform
 import psutil
 
 import os
 
-@unittest.skipIf(platform.system() != "Windows", "Windows-only tests")
-class TestWindowsPsutilValidation(unittest.TestCase):
+"""
+Intends to prove that the understanding of psutil is accurate.
+
+A similar tool is used to check psutil's output.
+"""
+
+@pytest.mark.skipif(platform.system() != "Windows", reason="Windows-only tests")
+class TestWindowsPsutilValidation:
     def test_compare_psutil_with_win32(self):
         import win32gui
         import win32api
@@ -28,16 +35,12 @@ class TestWindowsPsutilValidation(unittest.TestCase):
         psutil_name = psutil_process.name()
         
         # Compare
-        self.assertEqual(
-            psutil_name.lower(), 
-            win32_process_name.lower(),
-            f"Process name mismatch: psutil={psutil_name}, win32={win32_process_name}"
-        )
+        assert psutil_name.lower() == win32_process_name.lower(),f"Process name mismatch: psutil={psutil_name}, win32={win32_process_name}"
 
 
 
-@unittest.skipIf(platform.system() != "Linux", "Linux-only tests")
-class TestLinuxPsutilValidation(unittest.TestCase):
+@pytest.mark.skipif(platform.system() != "Linux", "Linux-only tests")
+class TestLinuxPsutilValidation:
     def test_compare_psutil_with_proc(self):
         """Compare psutil process info with /proc filesystem results."""
         import subprocess
@@ -55,8 +58,5 @@ class TestLinuxPsutilValidation(unittest.TestCase):
         ).decode().strip()
         
         # Compare
-        self.assertEqual(
-            psutil_name.lower(), 
-            proc_name.lower(),
-            f"Process name mismatch: psutil={psutil_name}, proc={proc_name}"
-        )
+        assert psutil_name.lower() == proc_name.lower(), f"Process name mismatch: psutil={psutil_name}, proc={proc_name}"
+        
