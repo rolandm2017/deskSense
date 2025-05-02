@@ -80,12 +80,10 @@ class MessageReceiver:
 
     def start(self):
         """Start the message receiver in a way that doesn't require async/await."""
-        # Create a new event loop if one doesn't exist
-
         try:
             loop = asyncio.get_event_loop()
         except RuntimeError:
-            # No event loop in current thread
+            # No event loop in current thread, so make one
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
 
@@ -93,17 +91,18 @@ class MessageReceiver:
 
         # Define the coroutines to run
         async def run_tasks():
-            self.tasks = [
-                asyncio.create_task(self.zmq_listener(), name="MessageReceiver-zmq_listener"),
-                asyncio.create_task(self.process_events(), name="MessageReceiver-process_events")
-            ]
+            listener_task = asyncio.create_task(self.zmq_listener(), name="MessageReceiver-zmq_listener")
+            processor_task = asyncio.create_task(self.process_events(), name="MessageReceiver-process_events")
+            self.tasks = [listener_task, processor_task]
             await asyncio.gather(*self.tasks)
 
         # Run the coroutines in the event loop
         if loop.is_running():
             # If the loop is already running (we're in an async context),
-            # create a task
-            future = asyncio.ensure_future(run_tasks(), loop=loop)
+            # create a task with a specific name
+            future = asyncio.create_task(run_tasks(), name="MessageReceiver-main_task")
+            # Store this task in our tasks list too
+            self.tasks.append(future)
             return future
         else:
             # If the loop is not running, run it until complete

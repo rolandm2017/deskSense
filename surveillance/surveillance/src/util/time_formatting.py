@@ -16,10 +16,13 @@ def attach_tz_to_obj(obj, target_tz):
         # The gathering date is either the same day, or the previous day.
         # 00:00:00-04:00 -> 20:00:00 UTC -1 day.
         # The hours reveal the original tz. 19:00:00 -> UTC -5
+        # FIXME: If _local fields are None, convert the gathering_date
+
         obj.gathering_date_local = obj.gathering_date_local.replace(tzinfo=target_tz)
         return obj
     elif isinstance(obj, SummaryLogBase):
         # Properly assign the new datetime objects back to the attributes
+        # FIXME: If _local fields are None, convert the gathering_date
         obj.gathering_date_local = obj.gathering_date_local.replace(tzinfo=target_tz)
         obj.start_time_local = obj.start_time_local.replace(tzinfo=target_tz)
         obj.end_time_local = obj.end_time_local.replace(tzinfo=target_tz)
@@ -41,6 +44,8 @@ def attach_tz_to_all(obj_list, target_tz):
         return obj_list
     elif isinstance(obj_list[0], SummaryLogBase):
         for obj in obj_list:
+        # FIXME: If _local fields are None, convert the gathering_date
+
             obj.gathering_date_local = obj.gathering_date_local.replace(tzinfo=target_tz)
             obj.start_time_local = obj.start_time_local.replace(tzinfo=target_tz)
             obj.end_time_local = obj.end_time_local.replace(tzinfo=target_tz)

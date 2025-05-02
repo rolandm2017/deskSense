@@ -123,20 +123,25 @@ async def lifespan(app: FastAPI):
         if surveillance_state.manager:
             try:
                 # Use a timeout to ensure cleanup doesn't hang
-                cancelled_tasks = await asyncio.wait_for(
+                cancelled_count = await asyncio.wait_for(
                     surveillance_state.manager.cleanup(), 
                     timeout=5.0
                 )
-                print(f"Cleanup complete. Total tasks cancelled: {cancelled_tasks}")
+                print(f"Cleanup complete. Total tasks cancelled: {cancelled_count}")
 
                 # Also ensure the shutdown handler runs
                 surveillance_state.manager.shutdown_handler()
+            except asyncio.CancelledError as ce:
+                print("Cleanup itself was cancelled - this is likely from the web server shutting down")
+                # Still try to run the shutdown handler
+                try:
+                    surveillance_state.manager.shutdown_handler()
+                except Exception:
+                    pass
             except asyncio.TimeoutError:
                 print("Cleanup timed out, forcing shutdown")
-            except asyncio.CancelledError as e:
-                print(f"[137] Cleanup was cancelled after cancelling {surveillance_state.manager.cancelled_tasks} tasks")
             except Exception as e:
-                print(f"[139] Error during cleanup: {e}")
+                print(f"Error during cleanup: {e}")
                 import traceback
                 traceback.print_exc()
 
