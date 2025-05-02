@@ -111,7 +111,7 @@ class ProgramSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
 
         9 times out of 10. So we add  the used  duration from its hours_spent.
         """
-        self.add_partial_window(session, duration_in_sec, DailyProgramSummary.domain_name == session.exe_path)
+        self.add_partial_window(session, duration_in_sec, DailyProgramSummary.exe_path_as_id == session.exe_path)
 
     async def shutdown(self):
         """Closes the open session without opening a new one"""

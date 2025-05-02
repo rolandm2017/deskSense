@@ -73,7 +73,7 @@ class SummaryDaoMixin:
     def add_partial_window(self, session: ProgramSession | ChromeSession, duration_in_sec: int, name_filter):
         if duration_in_sec == 0:
             return  # No work to do here
-        self.throw_if_negative(session.domain, duration_in_sec)
+        self.throw_if_negative(session.get_name(), duration_in_sec)
 
         today_start: UserLocalTime = get_start_of_day_from_ult(session.start_time)
         tomorrow_start = today_start.dt + timedelta(days=1)

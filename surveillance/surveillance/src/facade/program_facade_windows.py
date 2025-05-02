@@ -30,11 +30,9 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
         # We'll use polling to detect window changes since it's simpler than
         # setting up a Windows event hook
         self.previous_window = self.win32gui.GetForegroundWindow()
-        print("-- before the while loop")
 
         while True:
             time.sleep(0.5)  # Check every half second
-            print("-- after the half sec check")
 
             current_window = self.win32gui.GetForegroundWindow()
 
@@ -45,7 +43,6 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
                 window_info = self._read_windows()  # It does call getForegroundWindow a second time. that's OK
                 self.console_logger.debug(
                     f"Window changed: {window_info['window_title']} ({window_info['process_name']})")
-                print(window_info, "-- to be yielded")
                 yield window_info
 
     def _read_windows(self) -> ProgramSessionDict:
