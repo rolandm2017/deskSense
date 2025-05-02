@@ -23,12 +23,34 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
         self.win32process = win32process
         self.previous_window = None
 
+    def listen_for_window_changes(self) -> Generator[ProgramSessionDict, None, None]:
+        """
+        Listens for window focus changes and yields window information when changes occur.
+        """
+        # We'll use polling to detect window changes since it's simpler than
+        # setting up a Windows event hook
+        self.previous_window = self.win32gui.GetForegroundWindow()
+        print("-- before the while loop")
+
+        while True:
+            time.sleep(0.5)  # Check every half second
+            print("-- after the half sec check")
+
+            current_window = self.win32gui.GetForegroundWindow()
+
+            # If the window has changed
+            if current_window != self.previous_window:
+                # print("yielding window 109ru")
+                self.previous_window = current_window
+                window_info = self._read_windows()
+                self.console_logger.debug(
+                    f"Window changed: {window_info['window_title']} ({window_info['process_name']})")
+                print(window_info, "-- to be yielded")
+                yield window_info
+
     def _read_windows(self) -> ProgramSessionDict:
         """
         Reads information about the currently active window on Windows.
-
-        Returns:
-            Dict: Window information including OS, PID, process name, and window title.
         """
         window = self.win32gui.GetForegroundWindow()
 
@@ -77,44 +99,12 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
             "window_title": self.win32gui.GetWindowText(window)
         }
 
-    def listen_for_window_changes(self) -> Generator[ProgramSessionDict, None, None]:
-        """
-        Listens for window focus changes and yields window information when changes occur.
-
-        Yields:
-            Dict: Information about the new active window after each focus change.
-        """
-        # We'll use polling to detect window changes since it's simpler than
-        # setting up a Windows event hook
-        self.previous_window = self.win32gui.GetForegroundWindow()
-        # print("99ru")
-
-        while True:
-            time.sleep(0.5)  # Check every half second
-            # print("103ru")
-
-            current_window = self.win32gui.GetForegroundWindow()
-
-            # If the window has changed
-            if current_window != self.previous_window:
-                # print("yielding window 109ru")
-                self.previous_window = current_window
-                window_info = self._read_windows()
-                self.console_logger.debug(
-                    f"Window changed: {window_info['window_title']} ({window_info['process_name']})")
-                print(window_info, "to be yielded 114ru")
-                yield window_info
-
-    def setup_window_hook(self) -> Generator[Dict, None, None]:
+    def setup_window_hook(self) -> Generator[ProgramSessionDict, None, None]:
         """
         Alternative implementation using Windows hooks for more efficient window change detection.
         This method sets up a Windows hook that triggers on window focus changes.
 
         The hook will run only when my operating system tells my program that the window changed focus.
-
-        Yields:
-            Dict: Information about the new active window after each focus change.
-
 
         """
         # Define callback function for window events
