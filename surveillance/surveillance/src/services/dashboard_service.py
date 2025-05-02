@@ -265,7 +265,7 @@ class DashboardService:
                 continue  # avoid reading future dates from db
 
             program_usage_timeline: dict[str, ProgramSummaryLog] = self.program_logging_dao.read_day_as_sorted(
-                current_day)
+                UserLocalTime(current_day))
 
             self.logger.log_days_retrieval(
                 "[get_program_usage_timeline]", current_day, len(program_usage_timeline))

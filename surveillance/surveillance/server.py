@@ -317,6 +317,9 @@ async def get_previous_week_of_timeline(week_of: date = Path(..., description="W
                                         dashboard_service: DashboardService = Depends(get_dashboard_service)):
     days, start_of_week = await dashboard_service.get_specific_week_timeline(UserLocalTime(week_of))
 
+    if not isinstance(start_of_week.dt, datetime):
+        raise ValueError("start_of_week.dt was expected to be a datetime")
+
     rows: List[DayOfTimelineRows] = []
     for day in days:
         assert isinstance(day, dict)
@@ -333,6 +336,9 @@ async def get_previous_week_of_timeline(week_of: date = Path(..., description="W
         rows.append(row)
 
     # TODO: Convert from UTC to PST for the client
+    appeasement_of_type_checker = datetime.combine(start_of_week.dt.date(), 
+                                                               start_of_week.dt.time(),
+                                                               start_of_week.dt.tzinfo)
 
     response = WeeklyTimeline(days=rows, start_date=start_of_week.dt)
 
