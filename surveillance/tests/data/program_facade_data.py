@@ -2,6 +2,7 @@
 
 def make_os_output(exe_path, process_name, pid, window_title):
     return {
+        "os": "Windows",
         "exe_path": exe_path,
         "process_name": process_name,
         "pid": pid,

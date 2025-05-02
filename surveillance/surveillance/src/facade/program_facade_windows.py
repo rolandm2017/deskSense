@@ -42,7 +42,7 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
             if current_window != self.previous_window:
                 # print("yielding window 109ru")
                 self.previous_window = current_window
-                window_info = self._read_windows()
+                window_info = self._read_windows()  # It does call getForegroundWindow a second time. that's OK
                 self.console_logger.debug(
                     f"Window changed: {window_info['window_title']} ({window_info['process_name']})")
                 print(window_info, "-- to be yielded")

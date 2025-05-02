@@ -39,7 +39,7 @@ class TestWindowsPsutilValidation:
 
 
 
-@pytest.mark.skipif(platform.system() != "Linux", "Linux-only tests")
+@pytest.mark.skipif(platform.system() != "Linux", reason="Linux-only tests")
 class TestLinuxPsutilValidation:
     def test_compare_psutil_with_proc(self):
         """Compare psutil process info with /proc filesystem results."""
