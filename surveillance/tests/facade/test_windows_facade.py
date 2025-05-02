@@ -22,8 +22,6 @@ from surveillance.src.facade.program_facade_windows import WindowsProgramFacadeC
 # win32gui.GetWindowText(window) -> gives a string
 
 def assert_correct_result(result, sample):
-    print(result)
-    print(sample, "58ru")
     assert result["os"] == "Windows"
     assert result["pid"] == sample["pid"]
     assert result["exe_path"] == sample["exe_path"]
@@ -144,7 +142,6 @@ class TestProgramFacadeIntegration:
             for _ in range(min(3, len(self.samples))):
                 try:
                     result = next(generator)
-                    print(result, "146ru")
                     results.append(result)
                 except StopIteration:
                     pytest.fail("Generator stopped too early")

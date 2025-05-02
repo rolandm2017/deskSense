@@ -320,7 +320,6 @@ def test_full_test_sessions(activity_arbiter_and_setup, mock_recorder):
                 assert engine.amount_used == 0
             else:
                 assert engine.amount_used == expected_partials[session_key]
-            print(engine_container.engine.amount_used, "299ru")
 
     assert engine_container.count == len(tested_sessions) - 1   
     assert mock_recorder.add_ten_sec_to_end_time.call_count == window_pushes

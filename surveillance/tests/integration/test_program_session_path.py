@@ -831,7 +831,6 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
     mock_program_facade.listen_for_window_changes = spy_on_listen_for_window
 
      # ### Act
-    print(durations_for_keep_alive, "829ru")
     surveillance_manager.start_trackers()
 
     async def wait_for_events_to_process():

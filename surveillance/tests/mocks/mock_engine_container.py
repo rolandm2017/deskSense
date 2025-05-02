@@ -39,7 +39,6 @@ class MockEngineContainer(ThreadedEngineContainer):
         # Time.sleep isn't used
         super().__init__(interval, sleep_fn, timestamp)
         self.session_durations = session_durations or []
-        print(self.session_durations, "42ru")
         self.duration_iter = iter(self.session_durations)
         self.count = 0
 

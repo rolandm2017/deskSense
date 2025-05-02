@@ -69,7 +69,6 @@ def activity_arbiter_and_setup():
     events = []
 
     def event_handler(session):
-        print(session.ledger.get_total(), "67ru")
         events.append(session)
 
     # Create mock listeners with side effects to record calls
@@ -186,7 +185,6 @@ def test_activity_arbiter(activity_arbiter_and_setup):
         """
         # Tally up the arguments from 
         end_of_prev_calls = 0
-        print(durations_between_events_from_setup, len(durations_between_events_from_setup), "172ru")
         for i in range(0, len(copied_test_data)):
             target_session = copied_test_data[i]
             final_duration = len(durations_between_events_from_setup) - 1
@@ -198,7 +196,6 @@ def test_activity_arbiter(activity_arbiter_and_setup):
             expected_duration = durations_between_events_from_setup[i]
 
             corresponding_num_of_pushes = math.floor(expected_duration // 10)
-            # print(f"{i}, {end_of_prev_calls}\n== == \n == == 178ru")
             # Check that the window push spy saw that event that many times
             for j in range(end_of_prev_calls, corresponding_num_of_pushes + end_of_prev_calls):
                 end_of_prev_calls += 1
@@ -222,8 +219,6 @@ def test_activity_arbiter(activity_arbiter_and_setup):
             assert corresponding_addition == corresponding_addition_arg
             assert isinstance(session.start_time.dt, datetime)
             assert isinstance(add_partial_window_session_arg.start_time.dt, datetime)
-            # print(target_session, "from test data 197ru")
-            # print(add_partial_window_session_arg, "from spy, 198ru")
 
             t1 = target_session.start_time.dt
             t2 = add_partial_window_session_arg.start_time.dt
@@ -337,9 +332,6 @@ def test_activity_arbiter(activity_arbiter_and_setup):
 
     assert_expected_values_match_ledger()
     
-    print(len(events_from_on_state_changed_handler), "329ru")
-    for i in range(0, len(events_from_on_state_changed_handler)):
-        print(events_from_on_state_changed_handler[i].ledger.get_total(), "330ru")
 
     def assert_actual_values_match_ledger():
         """Verify each one using it's ledger."""
@@ -425,7 +417,6 @@ def test_activity_arbiter(activity_arbiter_and_setup):
             if addition == 0:
                 print("Zero addition")
             if addition == 10:
-                print("unwanted duration:", addition, "323ru")
                 raise ValueError("Addition of ten found")
                 
             # assert duration > 0 and duration < 10

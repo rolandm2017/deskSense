@@ -159,7 +159,6 @@ async def test_add_arrival_to_queue(reconstructed_tab_changes, chrome_service_fi
         
         # Add events one by one and confirm they're added to the queue
         for index, event in enumerate(test_events):
-            print(f"{index} {event} 174ru")
             chrome_service_fixture_with_arbiter.tab_queue.add_to_arrival_queue(event)
             # Either the event is in the queue OR the queue was processed
             

@@ -38,7 +38,6 @@ class ActivityRecorder:
     def on_new_session(self, session: ProgramSession | ChromeSession):
         # TODO: do an audit of logging time and summary time.
         if isinstance(session, ProgramSession):
-            print("Starting session for Program: ", session.get_name(), "36ru")
             # Regardless of the session being brand new today or a repeat,
             # must start a new logging session, to note the time being added to the summary. 
             self.program_logging_dao.start_session(session)
@@ -51,7 +50,6 @@ class ActivityRecorder:
                 return
             self.program_summary_dao.start_session(session)
         elif isinstance(session, ChromeSession):
-            print("Starting session for Domain: ", session.get_name(), "36ru")
             self.chrome_logging_dao.start_session(session)
             session_exists_already = self.chrome_summary_dao.find_todays_entry_for_domain(
                 session)

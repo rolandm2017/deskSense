@@ -69,7 +69,6 @@ class KeyboardDao(AsyncUtilityDaoMixin, BaseQueueingDao):
         """Return all keystrokes."""
         query = select(TypingSession)
         all_results = await self.execute_and_return_all_rows(query)
-        print(all_results, "72ru")
         dtos = self.package_dtos(all_results)
 
         return dtos

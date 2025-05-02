@@ -115,7 +115,6 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
         # Open all the sessions
         for i in range(0, len(verified_sessions)):
             actual_on_new_sessions += 1
-            print(verified_sessions[i], "112ru")
             setup_recorder_etc["recorder"].on_new_session(verified_sessions[i])
 
         recorded_times = []
