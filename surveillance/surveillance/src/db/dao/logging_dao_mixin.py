@@ -18,10 +18,11 @@ T = TypeVar('T', bound=DeclarativeMeta)
 # pyright: reportAttributeAccessIssue=false
 
 class LoggingDaoMixin:
-
     def attach_final_values_and_update(self, session, log):
         finalized_duration = (session.end_time.dt - session.start_time.dt).total_seconds()        
         if finalized_duration < 0:
+            print("session:", session)
+            print("log", log)
             raise ImpossibleToGetHereError("A negative duration is impossible")
         discovered_final_val = convert_to_utc(session.end_time.get_dt_for_db()).replace(tzinfo=None)
 

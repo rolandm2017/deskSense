@@ -61,7 +61,7 @@ def test_simple_round_trip_for_programs(setup_daos):
     setup_daos["program_summary"].push_window_ahead_ten_sec(selection_for_test)
     setup_daos["program_summary"].push_window_ahead_ten_sec(selection_for_test)
     start_of_day = get_start_of_day_from_ult(selection_for_test.start_time)
-    setup_daos["program_summary"].add_used_time(selection_for_test, 4, start_of_day)
+    setup_daos["program_summary"].add_used_time(selection_for_test, 4)
 
     # Should now have 34 sec in the db
     entry = setup_daos["program_summary"].read_day(start_of_day)
@@ -88,7 +88,7 @@ def test_simple_round_trip_for_chrome(setup_daos):
     setup_daos["chrome_summary"].push_window_ahead_ten_sec(selection_for_test)
     setup_daos["chrome_summary"].push_window_ahead_ten_sec(selection_for_test)
     start_of_day = get_start_of_day_from_ult(selection_for_test.start_time)
-    setup_daos["chrome_summary"].add_used_time(selection_for_test, 8, start_of_day)
+    setup_daos["chrome_summary"].add_used_time(selection_for_test, 8)
 
     # Should now have 38 sec in the db
     entry = setup_daos["chrome_summary"].read_day(start_of_day)

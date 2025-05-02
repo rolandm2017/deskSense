@@ -33,7 +33,6 @@ class TabQueue:
         self.log_tab_event = log_tab_event
 
     def add_to_arrival_queue(self, tab_change_event: TabChangeEventWithLtz):
-        print("HERE")
         self.append_to_queue(tab_change_event)
         MAX_QUEUE_LEN = 40
 

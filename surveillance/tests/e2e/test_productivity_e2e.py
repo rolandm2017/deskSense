@@ -1085,17 +1085,6 @@ async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
     assert program_summary_add_used_time_spy.call_count == count_of_programs
     assert chrome_summary_add_used_time_spy.call_count == count_of_tabs - one_left_in_arbiter
 
-    for i in range(len(output_programs)):
-        date_of_add_partial = program_summary_add_used_time_spy.call_args_list[i][0][2]
-
-        assert isinstance(date_of_add_partial, UserLocalTime)
-        assert date_of_add_partial.day == output_programs[0].start_time.day
-
-    for i in range(len(ch_events_v2) - one_left_in_arbiter):
-        date_of_add_partial = chrome_summary_add_used_time_spy.call_args_list[i][0][2]
-
-        assert isinstance(date_of_add_partial, UserLocalTime)
-        assert date_of_add_partial.day == ch_events_v2[0].start_time.day
 
     num_of_unique_programs = 3
     num_of_unique_domains = 3
