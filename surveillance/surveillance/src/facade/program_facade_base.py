@@ -7,15 +7,15 @@ class ProgramFacadeInterface(ABC):
     Interface class that defines the contract for program facades.
     This class should be inherited by both UbuntuProgramFacade and WindowsProgramFacade.
     """
-    
+
     @abstractmethod
-    def setup_window_hook(self) -> Generator[Dict, None, None]:
+    def read_current_program_info(self) -> Dict:
         """
-        Sets up a hook to detect window focus changes.
+        Gets information about the currently active window.
         
         Returns:
-            Generator[Dict, None, None]: A generator that yields information about
-            the active window when focus changes.
+            Dict: Information about the active window including OS, PID, 
+            process name, and window title.
         """
         pass
     
@@ -28,14 +28,15 @@ class ProgramFacadeInterface(ABC):
             Dict: Information about the new active window after each focus change.
         """
         pass
-    
+
     @abstractmethod
-    def read_current_program_info(self) -> Dict:
+    def setup_window_hook(self) -> Generator[Dict, None, None]:
         """
-        Gets information about the currently active window.
+        Sets up a hook to detect window focus changes.
         
         Returns:
-            Dict: Information about the active window including OS, PID, 
-            process name, and window title.
+            Generator[Dict, None, None]: A generator that yields information about
+            the active window when focus changes.
         """
         pass
+    

@@ -17,17 +17,7 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
 
     def read_current_program_info(self) -> Dict:
         return self._read_ubuntu()
-
-    # def _read_windows(self) -> Dict:
-    #     window = self.win32gui.GetForegroundWindow()
-    #     pid = self.win32process.GetWindowThreadProcessId(window)[1]
-    #     process = psutil.Process(pid)
-    #     return {
-    #         "os": "Windows",
-    #         "pid": pid,
-    #         "process_name": process.name(),
-    #         "window_title": self.win32gui.GetWindowText(window)
-    #     }
+    
 
     def listen_for_window_changes(self):
         if self.X is None or self.display is None:
@@ -116,6 +106,12 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
             Dict: Information about the new active window after each focus change.
         """
         # Select events on the root window
+        d = self.display.Display()
+        root = d.screen().root
+
+        self.display = self.display.Display()
+
+        self.root = root
         self.root.change_attributes(event_mask=X.PropertyChangeMask)
 
         # Get atoms we need to watch
@@ -129,7 +125,7 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
                 event.window == self.root and
                     event.atom == net_active_window):
 
-                window_info = self._read_x11()
+                window_info = self._read_ubuntu()
                 print(
                     f"Window changed: {window_info['window_title']} ({window_info['process_name']})")
                 yield window_info
