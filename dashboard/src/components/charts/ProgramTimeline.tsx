@@ -239,36 +239,36 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
                     // Aggregate events before visualization
                     // FIXME: they're strings before this, but the type says Date, fix the lie
                     const eventsButTheyreRealDates: ProgramTimelineEvent[] =
-                        program.events
-                            .map((event: ProgramTimelineEvent) => {
-                                return {
-                                    startTime: new Date(event.startTime),
-                                    endTime: new Date(event.endTime),
-                                };
-                            })
-                            .filter((event: ProgramTimelineEvent) => {
-                                // remove events that clearly are bad data
-                                const endTime = event.endTime.getHours();
-                                const earliestEverUsage = 6;
-                                const latestEverUsage = 22;
-                                if (
-                                    endTime < earliestEverUsage ||
-                                    endTime > latestEverUsage
-                                ) {
-                                    return;
-                                }
-                                const startTime = event.startTime.getHours();
-                                if (
-                                    startTime < earliestEverUsage ||
-                                    startTime > latestEverUsage
-                                ) {
-                                    console.log(
-                                        `Eliminated because it was at ${startTime}`
-                                    );
-                                    return;
-                                }
-                                return event;
-                            });
+                        program.events.map((event: ProgramTimelineEvent) => {
+                            return {
+                                logId: event.logId,
+                                startTime: new Date(event.startTime),
+                                endTime: new Date(event.endTime),
+                            };
+                        });
+                    // .filter((event: ProgramTimelineEvent) => {
+                    //     // remove events that clearly are bad data
+                    //     const endTime = event.endTime.getHours();
+                    //     const earliestEverUsage = 6;
+                    //     const latestEverUsage = 22;
+                    //     if (
+                    //         endTime < earliestEverUsage ||
+                    //         endTime > latestEverUsage
+                    //     ) {
+                    //         return;
+                    //     }
+                    //     const startTime = event.startTime.getHours();
+                    //     if (
+                    //         startTime < earliestEverUsage ||
+                    //         startTime > latestEverUsage
+                    //     ) {
+                    //         console.log(
+                    //             `Eliminated because it was at ${startTime}`
+                    //         );
+                    //         return;
+                    //     }
+                    //     return event;
+                    // });
 
                     const aggregatedEvents = eventsButTheyreRealDates;
                     // const aggregatedEvents = aggregateEventsProgram(
@@ -307,15 +307,18 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
 
                         durationArr.push(durationMs);
                         if (durationMs < 0) {
-                            console.log("HERE");
-                            console.log(program.programName);
+                            console.log("Sub 0 duration");
+                            console.log(program.programName, event.logId);
                             console.log(event.startTime, "start");
                             console.log(event.endTime, "end");
                             console.log(event, durationMs);
                             const msPerSec = 1000;
                             const twentySec = -20000; // -20 * 1000
                             if (durationMs < twentySec) {
-                                throw new Error("Negative duration error");
+                                console.warn(
+                                    "Negative duration was ",
+                                    durationMs
+                                );
                             }
                             return; // do not add this event
                         }

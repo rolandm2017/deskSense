@@ -105,7 +105,7 @@ class ProgramSummaryLog(SummaryLogBase):
         return self.process_name
 
     def __str__(self):
-        return f"ProgramSummaryLog(program_name={self.program_name}, hours_spent={self.hours_spent}, " \
+        return f"ProgramSummaryLog(id={self.id}, program_name={self.program_name}, hours_spent={self.hours_spent}, " \
             f"start_time={self.start_time}, end_time={self.end_time}, " \
             f"gathering_date={self.gathering_date}, created_at={self.created_at})"
 

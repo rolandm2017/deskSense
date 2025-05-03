@@ -365,7 +365,9 @@ async def get_program_usage_timeline_for_present_week(
             timeline_events = []
             for program_log in value_list:
                 # Assuming ProgramSummaryLog has startTime and endTime attributes
+                print(f"id: {program_log.id}")
                 timeline_event = TimelineEvent(
+                    logId=program_log.id,
                     startTime=program_log.start_time,
                     endTime=program_log.end_time
                 )

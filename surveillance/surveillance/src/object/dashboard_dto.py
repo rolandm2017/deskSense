@@ -122,6 +122,7 @@ class PartiallyPrecomputedWeeklyTimeline(BaseModel):
 
 
 class TimelineEvent(BaseModel):
+    logId: int
     startTime: datetime
     endTime: datetime
 

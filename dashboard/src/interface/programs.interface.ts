@@ -23,6 +23,8 @@ export interface ProgramTimelineContent {
 }
 
 export interface ProgramTimelineEvent {
+    logId: number;
+
     startTime: Date;
     endTime: Date;
 }

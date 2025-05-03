@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import "../App.css";
 
-import ProgramUsageChart from "../components/charts/ProgramUsageChart";
+import ProgramBarChart from "../components/charts/ProgramBarChart";
 
 import { DailyChromeSummaries } from "../interface/chrome.interface";
 import { DailyProgramSummaries } from "../interface/programs.interface";
@@ -13,7 +13,7 @@ import {
     getTimelineForPresentWeek,
 } from "../api/weekly.api";
 
-import ChromeUsageChart from "../components/charts/ChromeUsageChart";
+import ChromeBarChart from "../components/charts/ChromeBarChart";
 import PeripheralsTimeline from "../components/charts/PeripheralsTimeline";
 import ProgramTimeline from "../components/charts/ProgramTimeline";
 import { DayOfAggregatedRows } from "../interface/misc.interface";
@@ -155,9 +155,7 @@ function Home() {
                 <div>
                     <h2 style={{ margin: "0px" }}>Chrome</h2>
                     {chromeSummaries ? (
-                        // FIXME: make it say bar chart
-
-                        <ChromeUsageChart barsInput={chromeSummaries} />
+                        <ChromeBarChart barsInput={chromeSummaries} />
                     ) : (
                         // <p>foo</p>
                         <p>Loading...</p>
@@ -168,8 +166,7 @@ function Home() {
                         Programs {programSummaries?.columns.length}
                     </h2>
                     {programSummaries ? (
-                        // FIXME: make it say bar chart
-                        <ProgramUsageChart barsInput={programSummaries} />
+                        <ProgramBarChart barsInput={programSummaries} />
                     ) : (
                         // <p>bar</p>
                         <p>Loading...</p>

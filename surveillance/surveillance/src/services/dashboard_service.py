@@ -223,14 +223,15 @@ class DashboardService:
             # - if it's still occurring, how to stop it from happening again?
             # - perhaps there can be an auditor dao with some hardcoded values
 
-            def find_malformed_data(logs_by_name: dict):
-                start_of_typical_day = 8
-                end_of_typical_day = 23
-                for name, logs in logs_by_name.items():
-                    for log in logs:
-                        log: ProgramSummaryLog  # Type annotation for the loop variable
-                        start_time = log.start_time
-                        end_time = log.end_time
+            i = 0
+            for _, value in program_usage_timeline.items():
+                for log in value:
+
+                    print(log)
+                    i += 1
+                    if i > 4:
+                        break
+                break
 
             self.logger.log_days_retrieval(
                 "[get_current_week_program_usage_timeline]", current_day.dt, len(program_usage_timeline))
