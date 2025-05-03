@@ -12,26 +12,26 @@ from surveillance.src.util.errors import TimezoneUnawareError
 def attach_tz_to_obj(obj, target_tz):
     """Used to attach tz info after DAOs read data"""
     # Func assumes the obj will be of a specific type
+    return obj
     if isinstance(obj, DailySummaryBase):
         # The gathering date is either the same day, or the previous day.
         # 00:00:00-04:00 -> 20:00:00 UTC -1 day.
         # The hours reveal the original tz. 19:00:00 -> UTC -5
         # FIXME: If _local fields are None, convert the gathering_date
+        attach_tz_to_local_fields_for_summary(obj, target_tz)
 
-        obj.gathering_date_local = obj.gathering_date_local.replace(tzinfo=target_tz)
         return obj
     elif isinstance(obj, SummaryLogBase):
         # Properly assign the new datetime objects back to the attributes
         # FIXME: If _local fields are None, convert the gathering_date
-        obj.gathering_date_local = obj.gathering_date_local.replace(tzinfo=target_tz)
-        obj.start_time_local = obj.start_time_local.replace(tzinfo=target_tz)
-        obj.end_time_local = obj.end_time_local.replace(tzinfo=target_tz)
+        attach_tz_to_local_fields_for_logs(obj, target_tz)
         return obj
     else:
         raise NotImplementedError("Summaries and Logs are converted so far")
 
 def attach_tz_to_all(obj_list, target_tz):
     """Used to attach tz info after DAOs read data"""
+    return obj_list
     if not obj_list:
         return obj_list  # Return empty list if input is empty
     # Func assumes the obj list will all be of the same type
@@ -40,18 +40,23 @@ def attach_tz_to_all(obj_list, target_tz):
         # 00:00:00-04:00 -> 20:00:00 UTC -1 day.
         # The hours reveal the original tz. 19:00:00 -> UTC -5
         for obj in obj_list:
-            obj.gathering_date_local = obj.gathering_date_local.replace(tzinfo=target_tz)
+            attach_tz_to_local_fields_for_summary(obj, target_tz)
         return obj_list
     elif isinstance(obj_list[0], SummaryLogBase):
-        for obj in obj_list:
+        for log_obj in obj_list:
         # FIXME: If _local fields are None, convert the gathering_date
-
-            obj.gathering_date_local = obj.gathering_date_local.replace(tzinfo=target_tz)
-            obj.start_time_local = obj.start_time_local.replace(tzinfo=target_tz)
-            obj.end_time_local = obj.end_time_local.replace(tzinfo=target_tz)
+            attach_tz_to_local_fields_for_logs(log_obj, target_tz)
         return obj_list
     else:
         raise NotImplementedError("Summaries and Logs are converted so far")
+    
+def attach_tz_to_local_fields_for_summary(summary_obj: DailySummaryBase, tz):
+    summary_obj.gathering_date_local = summary_obj.gathering_date_local.replace(tzinfo=tz)
+    
+def attach_tz_to_local_fields_for_logs(log_obj: SummaryLogBase, tz):
+    log_obj.gathering_date_local = log_obj.gathering_date_local.replace(tzinfo=tz)
+    log_obj.start_time_local = log_obj.start_time_local.replace(tzinfo=tz)
+    log_obj.end_time_local = log_obj.end_time_local.replace(tzinfo=tz)
 
 def convert_to_utc(dt: datetime):
     return dt.astimezone(timezone.utc)

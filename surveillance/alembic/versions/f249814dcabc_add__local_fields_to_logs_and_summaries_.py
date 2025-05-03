@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy import Column, DateTime
+from sqlalchemy import Column, DateTime, text
 
 
 # revision identifiers, used by Alembic.
@@ -18,20 +18,41 @@ down_revision: Union[str, None] = '16c7d3706d57'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
+# ⚠️ Set this to your local timezone before running!
+TIMEZONE = None  # e.g., 'Asia/Tokyo'
+
 
 def upgrade():
-    # Add gathering_date_local to DailySummaryBase derived tables
-    op.add_column('daily_program_summaries', Column('gathering_date_local', DateTime(timezone=False)))
-    op.add_column('daily_chrome_summaries', Column('gathering_date_local', DateTime(timezone=False)))
-    
-    # Add local timezone fields to models inheriting from SummaryLogBase
-    op.add_column('program_logs', Column('start_time_local', DateTime(timezone=False)))
-    op.add_column('program_logs', Column('end_time_local', DateTime(timezone=False)))
-    op.add_column('program_logs', Column('gathering_date_local', DateTime(timezone=False)))
-    
-    op.add_column('domain_logs', Column('start_time_local', DateTime(timezone=False)))
-    op.add_column('domain_logs', Column('end_time_local', DateTime(timezone=False)))
-    op.add_column('domain_logs', Column('gathering_date_local', DateTime(timezone=False)))
+    if TIMEZONE is None:
+        raise RuntimeError("Set the TIMEZONE variable in this migration before running it.")
+
+    # Add columns
+    op.add_column('daily_program_summaries', sa.Column('gathering_date_local', sa.DateTime(timezone=False)))
+    op.add_column('daily_chrome_summaries', sa.Column('gathering_date_local', sa.DateTime(timezone=False)))
+
+    op.add_column('program_logs', sa.Column('start_time_local', sa.DateTime(timezone=False)))
+    op.add_column('program_logs', sa.Column('end_time_local', sa.DateTime(timezone=False)))
+    op.add_column('program_logs', sa.Column('gathering_date_local', sa.DateTime(timezone=False)))
+
+    op.add_column('domain_logs', sa.Column('start_time_local', sa.DateTime(timezone=False)))
+    op.add_column('domain_logs', sa.Column('end_time_local', sa.DateTime(timezone=False)))
+    op.add_column('domain_logs', sa.Column('gathering_date_local', sa.DateTime(timezone=False)))
+
+    # Fill new _local fields from existing UTC fields
+    for table_name, time_fields in [
+        ('program_logs', ['start_time', 'end_time', 'gathering_date']),
+        ('domain_logs', ['start_time', 'end_time', 'gathering_date']),
+        ('daily_program_summaries', ['gathering_date']),
+        ('daily_chrome_summaries', ['gathering_date']),
+    ]:
+        for field in time_fields:
+            op.execute(
+                text(f"""
+                    UPDATE {table_name}
+                    SET {field}_local = ({field} AT TIME ZONE 'UTC') AT TIME ZONE :tz
+                """).bindparams(tz=TIMEZONE)
+            )
+
 
 
 def downgrade():
