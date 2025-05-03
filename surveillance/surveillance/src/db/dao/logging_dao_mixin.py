@@ -29,9 +29,6 @@ class LoggingDaoMixin:
         start_of_day = convert_to_utc(start_of_day)
         end_of_day = start_of_day + timedelta(days=1)
 
-        self.logger.log_white(
-            f"INFO: querying start_of_day: {start_of_day}\n\tto end_of_day: {end_of_day}")
-
         query = select(model).where(
             model.gathering_date >= start_of_day,
             model.gathering_date < end_of_day
@@ -44,7 +41,6 @@ class LoggingDaoMixin:
         return grouped_logs
 
     def attach_final_values_and_update(self, session, log: ProgramSummaryLog | DomainSummaryLog):
-        print(session, "47ru")
         finalized_duration = (session.end_time.dt -
                               session.start_time.dt).total_seconds()
         if finalized_duration < 0:

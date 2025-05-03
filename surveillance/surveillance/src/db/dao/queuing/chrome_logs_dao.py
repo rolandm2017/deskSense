@@ -55,8 +55,6 @@ class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
 
         initializer = LogTimeConverter(session.start_time)
 
-        # self.logger.log_white(f"INFO: querying start_of_day: {start_of_day_as_utc}\n\t for {session.get_name()}")
-
         log_entry = DomainSummaryLog(
             domain_name=session.domain,
             # Assumes (10 - n) sec will be deducted later

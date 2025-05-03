@@ -1,24 +1,24 @@
 import axios, { AxiosError, AxiosResponse } from "axios";
 import {
-    TypingSessionsReport,
-    MouseReport,
-    ProgramActivityReport,
     DailyChromeSummaries,
     DailyProgramSummaries,
+    MouseReport,
+    ProgramActivityReport,
     TimelineRows,
-} from "../interface/api.interface";
+    TypingSessionsReport,
+} from "../interface/peripherals.interface";
 import {
-    DayOfChromeUsage,
-    WeeklyBreakdown,
     BreakdownByDay,
+    DayOfChromeUsage,
+    PartiallyAggregatedWeeklyTimeline,
+    WeeklyBreakdown,
     WeeklyChromeUsage,
+    WeeklyProgramTimelines,
     WeeklyProgramUsage,
     WeeklyTimeline,
-    PartiallyAggregatedWeeklyTimeline,
-    WeeklyProgramTimelines,
 } from "../interface/weekly.interface";
-import { formatDateForApi, getTimezone } from "../util/timeTools";
 import { ensureSunday } from "../util/apiUtil";
+import { formatDateForApi, getTimezone } from "../util/timeTools";
 
 const baseRoute = import.meta.env.VITE_API_URL + "/api";
 
@@ -247,19 +247,19 @@ const getEnhancedWeeklyBreakdown = withDateConversion<
 >(getWeeklyBreakdown);
 
 export {
+    getChromeSummaries,
+    getEnhancedChromeUsageForPastWeek,
+    getEnhancedWeeklyBreakdown,
     getKeyboardReport,
     getMouseReport,
-    getProgramReport,
-    getTodaysTimelineData,
-    getProgramSummaries,
-    getChromeSummaries,
-    getTimelineForPresentWeek,
+    getPresentWeekChromeUsage,
+    getPresentWeekProgramTimeline,
     // getWeeklyClicking,
     // getWeeklyTyping,
     getPresentWeekProgramUsage,
-    getPresentWeekChromeUsage,
+    getProgramReport,
+    getProgramSummaries,
     getTimelineForPastWeek,
-    getEnhancedChromeUsageForPastWeek,
-    getEnhancedWeeklyBreakdown,
-    getPresentWeekProgramTimeline,
+    getTimelineForPresentWeek,
+    getTodaysTimelineData,
 };

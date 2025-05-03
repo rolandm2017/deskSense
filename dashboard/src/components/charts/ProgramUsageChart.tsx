@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
 import * as d3 from "d3";
+import React, { useEffect, useRef, useState } from "react";
 import {
     DailyProgramSummaries,
     DailyProgramSummary,
-} from "../../interface/api.interface";
+} from "../../interface/peripherals.interface";
 
 import { chooseTickValuesSpacing } from "../../util/tickValueSpacing";
 

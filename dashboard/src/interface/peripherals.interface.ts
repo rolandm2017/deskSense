@@ -1,3 +1,41 @@
+export interface DayOfTyping {
+    date: Date;
+    usage: TypingSessionsReport;
+}
+
+export interface DayOfClicking {
+    date: Date;
+    usage: MouseReport;
+}
+
+export interface DayOfTimelineRows {
+    date: Date;
+    row: TimelineRows;
+}
+
+/*
+ * Weekly
+ * Weekly
+ */
+
+export interface WeeklyTyping {
+    days: DayOfTyping[];
+}
+
+export interface WeeklyClicking {
+    days: DayOfClicking[];
+}
+
+export interface WeeklyTimeline {
+    days: DayOfTimelineRows[]; // between 1 and 7 entries long
+}
+
+export interface PartiallyAggregatedWeeklyTimeline {
+    beforeToday: DayOfTimelineRows[]; // between 0 and 6 entries long
+    today: DayOfTimelineRows;
+    startDate: string;
+}
+
 export interface TypingSessionLog {
     keyboardEventId: number;
     startTime: string; // ISO 8601 datetime string
@@ -20,19 +58,6 @@ export interface MouseReport {
     mouseLogs: MouseLog[];
 }
 
-export interface ProgramActivityLog {
-    programEventId: number;
-    window: string;
-    startTime: string; // ISO 8601 datetime string
-    endTime: string; // ISO 8601 datetime string
-    productive: boolean;
-}
-
-export interface ProgramActivityReport {
-    count: number;
-    programLogs: ProgramActivityLog[]; //
-}
-
 /*
  *
  * Daily section
@@ -41,28 +66,6 @@ export interface ProgramActivityReport {
  * Daily section
  *
  */
-
-export interface DailyProgramSummary {
-    id: number;
-    programName: string;
-    hoursSpent: number;
-    gatheringDate: Date;
-}
-
-export interface DailyProgramSummaries {
-    columns: DailyProgramSummary[];
-}
-
-export interface DailyDomainSummary {
-    id: number;
-    domainName: string;
-    hoursSpent: number;
-    gatheringDate: Date;
-}
-
-export interface DailyChromeSummaries {
-    columns: DailyDomainSummary[];
-}
 
 export interface TimelineEntrySchema {
     id: string;

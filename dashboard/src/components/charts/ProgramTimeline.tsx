@@ -1,15 +1,12 @@
-import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
-import { AggregatedTimelineEntry } from "../../interface/misc.interface";
+import React, { useEffect, useRef } from "react";
 
 import {
     ProgamUsageTimeline,
     ProgramTimelineContent,
     TimelineEvent,
-} from "../../interface/weekly.interface";
+} from "../../interface/programs.interface";
 import { addEventLinesForPrograms } from "../../util/addEventLines";
-
-import { aggregateEventsProgram } from "../../util/aggregateEvents";
 
 // https://observablehq.com/@d3/normal-quantile-plot
 // https://observablehq.com/@d3/line-chart-missing-data/2
@@ -52,7 +49,7 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
      * the threshold for, for aggregation.
      *
      */
-
+    console.log("TOP OF PROGRAM TIMELOINE TSX");
     const svgRef = useRef<SVGSVGElement | null>(null);
 
     function addXAxis(
@@ -216,8 +213,16 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
 
         const startHourCounts = new Map();
         const endHourCounts = new Map();
+        let longestDuration = 0;
+        let longestDurationProgram = null;
+        let longestDurationEvent = null;
+        const durationArr: number[] = [];
+        const windowsTerminalByDuration: any[] = [];
         days.forEach((day: ProgamUsageTimeline) => {
             const dayName = daysOfWeek[new Date(day.date).getDay()];
+            if ("Monday" != dayName) {
+                return;
+            }
 
             // Get the center of the band for the current day
             const yPosition = y(dayName)! + y.bandwidth() / 2;
@@ -231,6 +236,9 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
             // Add program events and labels
             topFive.forEach(
                 (program: ProgramTimelineContent, programIndex: number) => {
+                    // if (!program.programName.includes("Windows")) {
+                    //     return;
+                    // }
                     // Aggregate events before visualization
                     // FIXME: they're strings before this, but the type says Date, fix the lie
                     const eventsButTheyreRealDates: TimelineEvent[] =
@@ -264,20 +272,20 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
                                 }
                                 return event;
                             });
-                    const eventsToProcess =
-                        eventsButTheyreRealDates.length > 100
-                            ? eventsButTheyreRealDates.filter(
-                                  (_, i) => i % 2 === 0
-                              ) // Take every 5th event
-                            : eventsButTheyreRealDates;
-                    const aggregatedEvents = eventsToProcess;
+                    // const eventsToProcess =
+                    //     eventsButTheyreRealDates.length > 100
+                    //         ? eventsButTheyreRealDates.filter(
+                    //               (_, i) => i % 2 === 0
+                    //           ) // Take every 5th event
+                    //         : eventsButTheyreRealDates;
+                    const aggregatedEvents = eventsButTheyreRealDates;
                     // const aggregatedEvents = aggregateEventsProgram(
                     //     eventsToProcess,
                     //     2000
                     // ); // You might need to adjust the threshold
 
                     // Count hours for aggregated events
-                    aggregatedEvents.forEach((event) => {
+                    aggregatedEvents.forEach((event: TimelineEvent) => {
                         const date = event.startTime;
                         const startHour = date.getHours();
 
@@ -289,37 +297,51 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
                         const currentEndCount = endHourCounts.get(endHour) || 0;
                         endHourCounts.set(endHour, currentEndCount + 1);
 
-                        if (endHour < 8) {
-                            console.log(
-                                `start: ${startHour}, end: ${event.endTime.getHours()}, 258ru`
-                            );
+                        // Get duration in milliseconds
+                        const durationMs =
+                            event.endTime.getTime() - event.startTime.getTime();
+
+                        if (durationMs > longestDuration) {
+                            longestDuration = durationMs;
+                            longestDurationProgram = program;
+                            longestDurationEvent = event;
                         }
                     });
 
                     // Draw program events
                     aggregatedEvents.forEach((event: TimelineEvent) => {
-                        if (dayName.includes("Sat")) {
-                            console.log(event, "302ru");
+                        // if (dayName.includes("Sat")) {
+                        //     console.log(event, "302ru");
+                        // }
+                        // if (
+                        //     event.startTime.getHours() < 11 ||
+                        //     event.startTime.getHours() > 16 ||
+                        //     event.endTime.getHours() > 16
+                        // ) {
+                        //     return;
+                        // }
+                        const durationMs =
+                            event.endTime.getTime() - event.startTime.getTime();
+
+                        durationArr.push(durationMs);
+                        if (durationMs < 0) {
+                            console.log(program.programName);
+                            console.log(event, durationMs);
+                            if (durationMs < 2000) {
+                                throw new Error("Negative duration error");
+                            }
                         }
-                        // const endTime = event.startTime.getHours()
-                        // if (endTime )
-                        // if (event.startTime.getHours() < 11) {
-                        //     // no events before 11. the odd times remain
-                        //     return;
-                        // }
-                        // if (event.startTime.getHours() < 17) {
-                        //     return; // before 5 pm, we return. odd times remain
-                        // }
-                        // if (event.startTime.getHours() < 18) {
-                        //     return; // before 6 pm, return. odd times remain
-                        // }
-                        // if (event.startTime.getHours() < 19) {
-                        //     return; // SOME went away at 19 and 20
-                        // }
-                        // if (event.endTime.getHours() > 8) {
-                        //     return;
-                        // }
-                        // console.log(event, "280ru");
+
+                        if (durationMs > longestDuration) {
+                            longestDuration = durationMs;
+                            longestDurationProgram = program;
+                            longestDurationEvent = event;
+                        }
+                        windowsTerminalByDuration.push({
+                            duration: durationMs,
+                            event,
+                        });
+
                         // // if (event.endTime.getHours() < 19) {  // odd times gone
                         // console.log(event.startTime.getHours(), "265ru");
                         addEventLinesForPrograms(
@@ -346,17 +368,29 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
             );
         });
         // Output the results in order from 0 to 23
-        console.log("START TIME MAP:");
-        for (let hour = 0; hour < 24; hour++) {
-            const count = startHourCounts.get(hour) || 0;
-            const formattedHour = hour.toString().padStart(2, "0");
-            console.log(`${formattedHour}:00 - ${count} events`);
-        }
+        // console.log("START TIME MAP:");
+        // for (let hour = 0; hour < 24; hour++) {
+        //     const count = startHourCounts.get(hour) || 0;
+        //     const formattedHour = hour.toString().padStart(2, "0");
+        //     console.log(`${formattedHour}:00 - ${count} events`);
+        // }
         console.log("END TIME MAP:");
         for (let hour = 0; hour < 24; hour++) {
             const count = endHourCounts.get(hour) || 0;
             const formattedHour = hour.toString().padStart(2, "0");
             console.log(`${formattedHour}:00 - ${count} events`);
+        }
+        console.log("longest duration:", longestDuration);
+        console.log(longestDurationProgram);
+        console.log(longestDurationEvent);
+        windowsTerminalByDuration.sort((a, b) => b.duration - a.duration);
+        let i = 0;
+        for (const event of windowsTerminalByDuration) {
+            console.log(event);
+            i++;
+            if (i > 10) {
+                break;
+            }
         }
     }, [width, height, margins, days]);
 

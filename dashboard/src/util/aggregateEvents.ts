@@ -1,4 +1,4 @@
-import { TimelineEntrySchema } from "../interface/api.interface";
+import { TimelineEntrySchema } from "../interface/peripherals.interface";
 
 import { TimelineEvent } from "../interface/weekly.interface";
 
