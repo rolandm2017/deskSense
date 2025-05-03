@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from "react";
 import {
     ProgamUsageTimeline,
     ProgramTimelineContent,
-    TimelineEvent,
+    ProgramTimelineEvent,
 } from "../../interface/programs.interface";
 import { addEventLinesForPrograms } from "../../util/addEventLines";
 
@@ -220,9 +220,6 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
         const windowsTerminalByDuration: any[] = [];
         days.forEach((day: ProgamUsageTimeline) => {
             const dayName = daysOfWeek[new Date(day.date).getDay()];
-            if ("Monday" != dayName) {
-                return;
-            }
 
             // Get the center of the band for the current day
             const yPosition = y(dayName)! + y.bandwidth() / 2;
@@ -241,15 +238,15 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
                     // }
                     // Aggregate events before visualization
                     // FIXME: they're strings before this, but the type says Date, fix the lie
-                    const eventsButTheyreRealDates: TimelineEvent[] =
+                    const eventsButTheyreRealDates: ProgramTimelineEvent[] =
                         program.events
-                            .map((event: TimelineEvent) => {
+                            .map((event: ProgramTimelineEvent) => {
                                 return {
                                     startTime: new Date(event.startTime),
                                     endTime: new Date(event.endTime),
                                 };
                             })
-                            .filter((event: TimelineEvent) => {
+                            .filter((event: ProgramTimelineEvent) => {
                                 // remove events that clearly are bad data
                                 const endTime = event.endTime.getHours();
                                 const earliestEverUsage = 6;
@@ -272,12 +269,7 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
                                 }
                                 return event;
                             });
-                    // const eventsToProcess =
-                    //     eventsButTheyreRealDates.length > 100
-                    //         ? eventsButTheyreRealDates.filter(
-                    //               (_, i) => i % 2 === 0
-                    //           ) // Take every 5th event
-                    //         : eventsButTheyreRealDates;
+
                     const aggregatedEvents = eventsButTheyreRealDates;
                     // const aggregatedEvents = aggregateEventsProgram(
                     //     eventsToProcess,
@@ -285,7 +277,7 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
                     // ); // You might need to adjust the threshold
 
                     // Count hours for aggregated events
-                    aggregatedEvents.forEach((event: TimelineEvent) => {
+                    aggregatedEvents.forEach((event: ProgramTimelineEvent) => {
                         const date = event.startTime;
                         const startHour = date.getHours();
 
@@ -309,27 +301,23 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
                     });
 
                     // Draw program events
-                    aggregatedEvents.forEach((event: TimelineEvent) => {
-                        // if (dayName.includes("Sat")) {
-                        //     console.log(event, "302ru");
-                        // }
-                        // if (
-                        //     event.startTime.getHours() < 11 ||
-                        //     event.startTime.getHours() > 16 ||
-                        //     event.endTime.getHours() > 16
-                        // ) {
-                        //     return;
-                        // }
+                    aggregatedEvents.forEach((event: ProgramTimelineEvent) => {
                         const durationMs =
                             event.endTime.getTime() - event.startTime.getTime();
 
                         durationArr.push(durationMs);
                         if (durationMs < 0) {
+                            console.log("HERE");
                             console.log(program.programName);
+                            console.log(event.startTime, "start");
+                            console.log(event.endTime, "end");
                             console.log(event, durationMs);
-                            if (durationMs < 2000) {
+                            const msPerSec = 1000;
+                            const twentySec = -20000; // -20 * 1000
+                            if (durationMs < twentySec) {
                                 throw new Error("Negative duration error");
                             }
+                            return; // do not add this event
                         }
 
                         if (durationMs > longestDuration) {
