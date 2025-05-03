@@ -298,6 +298,9 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
 
                     // Draw program events
                     aggregatedEvents.forEach((event: TimelineEvent) => {
+                        if (dayName.includes("Sat")) {
+                            console.log(event, "302ru");
+                        }
                         // const endTime = event.startTime.getHours()
                         // if (endTime )
                         // if (event.startTime.getHours() < 11) {
