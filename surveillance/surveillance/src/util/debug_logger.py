@@ -1,9 +1,18 @@
+from datetime import timedelta
+from .errors import SuspiciousDurationError
+from .debug_logger import write_to_debug_log, write_to_large_usage_log
+from .console_logger import ConsoleLogger
+import json
 from datetime import datetime
 from sqlite3 import TimestampFromTicks
 from typing import List
-import json
 
-from surveillance.src.db.models import DailyDomainSummary, DailyProgramSummary, DomainSummaryLog, ProgramSummaryLog
+from surveillance.src.db.models import (
+    DailyDomainSummary,
+    DailyProgramSummary,
+    DomainSummaryLog,
+    ProgramSummaryLog,
+)
 from surveillance.src.object.classes import ProgramSession
 from surveillance.src.object.pydantic_dto import UtcDtTabChange
 
@@ -97,3 +106,28 @@ def capture_chrome_data_for_tests(tab_event):
     with open("captures_for_test_data_-_Chrome.txt", "a") as f:
         f.write(str(tab_event))
         f.write("\n")
+
+
+logger = ConsoleLogger()
+
+
+def notice_suspicious_durations(existing_entry, program_session):
+
+    impossibly_long_day = existing_entry.hours_spent > 24
+    if impossibly_long_day:
+        logger.log_red(
+            "[critical] " + str(existing_entry.hours_spent) + " for " + existing_entry.program_name)
+        raise SuspiciousDurationError("long day")
+    if program_session.duration and program_session.duration > timedelta(hours=1):
+        logger.log_red(
+            "[critical] " + str(program_session.duration) + " for " + existing_entry.program_name)
+        raise SuspiciousDurationError("duration")
+
+
+def log_if_needed(program_session, target_program_name, usage_duration_in_hours, right_now):
+    if program_session.window_title == "Alt-tab window":
+        write_to_debug_log(target_program_name, usage_duration_in_hours,
+                           right_now.strftime("%m-%d %H:%M:%S"))
+    if usage_duration_in_hours > 0.333:
+        write_to_large_usage_log(program_session,
+                                 usage_duration_in_hours, right_now.strftime("%m-%d %H:%M:%S"))

@@ -31,6 +31,9 @@ daylight_savings_tz_offset = int(local_tz_dst_offset)
 keep_alive_cycle_length = 10  # Has to be the same value
 window_push_length = keep_alive_cycle_length  # has to be the same value
 
+no_space_dash_space = "No space-dash-space combo found"
+
+
 MAX_QUEUE_LENGTH = 40
 
 max_content_len = 120

@@ -19,19 +19,15 @@ not 1.25:1 but 4:1, which is impossible.
 
 from datetime import datetime, timedelta
 
+from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.src.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
 from surveillance.src.db.database import async_session_maker, regular_session_maker
-
 from surveillance.src.object.dashboard_dto import WeeklyProgramContent
 from surveillance.src.object.enums import ChartEventType
 from surveillance.src.services.dashboard_service import DashboardService
-from surveillance.src.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
-from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
-from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-
-from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-
-
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.time_wrappers import UserLocalTime
@@ -42,9 +38,9 @@ logger = ConsoleLogger()
 program_logging_dao = ProgramLoggingDao(regular_session_maker)
 chrome_logging_dao = ChromeLoggingDao(regular_session_maker)
 program_summary_dao = ProgramSummaryDao(
-    program_logging_dao, regular_session_maker, async_session_maker)
+    program_logging_dao, regular_session_maker)
 chrome_summary_dao = ChromeSummaryDao(
-    chrome_logging_dao, regular_session_maker, async_session_maker)
+    chrome_logging_dao, regular_session_maker)
 timeline_entry_dao = TimelineEntryDao(async_session_maker)
 
 
@@ -258,33 +254,5 @@ if __name__ == "__main__":
     import asyncio
     asyncio.run(main())
 
-# week_of_march_2 = datetime(2025, 3, 2)
-# week_of_feb_23 = datetime(2025, 2, 23)
-
-
-# week_of_productivity = get_productivity_for_week(week_of_march_2)
-
-# daily_packages = []
-
-# for i in range(7):
-#     current_day = week_of_march_2 + timedelta(days=i)
-#     date_as_datetime = datetime.combine(
-#         current_day, datetime.min.time())
-#     keyboard, mouse = await get_peripherals_for_day(date_as_datetime)
-#     keyboard_sum = sum_hours_for_peripheral(keyboard)
-#     mouse_sum = sum_hours_for_peripheral(mouse)
-#     productivity = get_productive_hours_for_day(
-#         date_as_datetime, week_of_productivity)
-#     assert productivity is not None
-#     package = {
-#         "day": date_as_datetime,
-#         "keyboard": keyboard,
-#         "mouse": mouse,
-#         "total_peripherals": mouse_sum + keyboard_sum,
-#         "productivity": productivity["productivity"],
-#         "leisure":  productivity["leisure"],
-#         "total_hours": productivity["productivity"] + productivity["leisure"]
-
-#     }
 
 # TODO: Go day by day for the past two weeks.
