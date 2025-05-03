@@ -71,7 +71,6 @@ def verified_data_with_durations():
 
     return copied_test_data, durations
 
-
 # TODO: Migrate alembic
 # TODO: Write very simple integration tests for DAOs confirming the name fields work and are the same across all models, equally present
 
@@ -83,11 +82,9 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
     # for i in range(0, 14):
     #     print(counted_loops[i], expected_durations[i])
 
-    # assert 1 == 2
-    x = int(sum(counted_loops))
     # on_new_session does see final entry
     expected_on_new_sessions = len(verified_sessions)
-    expected_add_ten_count = x  # Must remove final entry
+    expected_add_ten_count = int(sum(counted_loops))
     # Final entry triggers a partial
     expected_partial_windows = len(expected_durations)
     expected_on_state_changed = len(
@@ -103,7 +100,7 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
 
     for i, session in enumerate(verified_sessions):
         session_key = get_session_key(session)
-        if i == len(verified_sessions) - 2:
+        if i == len(verified_sessions) - 2:  # Final entry has no duration
             durations_per_session_dict[session_key] = None
             break  # The duration doesn't exist
         durations_per_session_dict[session_key] = expected_durations[i]
@@ -257,28 +254,29 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
 
         # WHOO!
         # assert total_sum == sum(expected_durations)
-        def assert_summary_db_falls_within_tolerance():
-            expected_total = sum(expected_durations)
+        def assert_summary_db_falls_within_tolerance(expected_durations_arr):
+            expected_total = sum(expected_durations_arr)
             tolerance = 0.02  # 5%
             lower_threshold = expected_total * (1 - tolerance)
             upper_bounds = expected_total * (1 + tolerance)
 
             assert lower_threshold < total_sum_from_db < upper_bounds
 
-        assert_summary_db_falls_within_tolerance()
+        assert_summary_db_falls_within_tolerance(expected_durations)
 
         program_logs = setup_recorder_etc["program_logging"].read_all()
         domain_logs = setup_recorder_etc["chrome_logging"].read_all()
 
         # Create a tally to handle summing the logs
 
-        def assert_count_of_logs_is_right(program_logs, domain_logs):
-            """One log per entry"""
+        def assert_count_of_logs_is_right(program_logs, domain_logs, test_data_arr):
+            """One log per test session"""
             # It isn't - 1 because the final test session is seen by on_new_session
-            seen_session_count = len(verified_sessions)
+            seen_session_count = len(test_data_arr)
             assert len(program_logs) + len(domain_logs) == seen_session_count
 
-        assert_count_of_logs_is_right(program_logs, domain_logs)
+        assert_count_of_logs_is_right(
+            program_logs, domain_logs, verified_sessions)
 
         logs_durations_tally_by_name = {}
 
@@ -301,15 +299,26 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
         logs_tally_start_end_times = {}
         v = 0
 
+        max_duration_from_expectations = max(expected_durations)
+
+        session_count = len(verified_sessions)
+        bad_log_count = 0
+
         for log in program_logs + domain_logs:
             v += 1
             name = log.get_name()
+            duration = (log.end_time - log.start_time).total_seconds()
+            if duration > max_duration_from_expectations:
+                bad_log_count += 1
+                s = log.start_time.strftime("%H:%M")
+                e = log.end_time.strftime("%H:%M")
+                print(f"Start: {s}, End: {e}")
             if name in logs_tally_start_end_times:
-                logs_tally_start_end_times[name] += log.end_time - \
-                    log.start_time
+                logs_tally_start_end_times[name] += duration
             else:
-                logs_tally_start_end_times[name] = log.end_time - \
-                    log.start_time
+                logs_tally_start_end_times[name] = duration
+
+        print(f"{session_count}, {bad_log_count}")
 
         start_end_totals = 0
         # FIXME:   assert start_end_totals == sum(expected_durations)

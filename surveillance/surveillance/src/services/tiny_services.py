@@ -6,12 +6,10 @@ from datetime import datetime
 
 
 from surveillance.src.object.pydantic_dto import UtcDtTabChange
-from surveillance.surveillance.src.tz_handling.time_formatting import convert_to_timezone
+from surveillance.src.tz_handling.time_formatting import convert_to_timezone
 
 from surveillance.src.db.dao.queuing.mouse_dao import MouseDao
 from surveillance.src.db.dao.queuing.keyboard_dao import KeyboardDao
-from surveillance.src.db.dao.queuing.video_dao import VideoDao
-from surveillance.src.db.dao.direct.frame_dao import FrameDao
 from surveillance.src.db.models import MouseMove
 from surveillance.src.object.dto import TypingSessionDto
 from surveillance.src.object.classes import TabChangeEventWithLtz

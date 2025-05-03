@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 
 from surveillance.src.config.definitions import window_push_length
 from surveillance.src.util.time_wrappers import UserLocalTime
-from surveillance.surveillance.src.tz_handling.time_formatting import parse_time_string
+from surveillance.src.tz_handling.time_formatting import parse_time_string
 from surveillance.src.util.errors import SessionClosedError
 
 

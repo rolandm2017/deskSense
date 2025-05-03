@@ -36,7 +36,7 @@ from surveillance.src.object.classes import ProgramSessionDict
 from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.clock import UserFacingClock
 from surveillance.src.util.const import SECONDS_PER_HOUR, ten_sec_as_pct_of_hour
-from surveillance.surveillance.src.tz_handling.time_formatting import convert_to_utc, get_start_of_day_from_datetime
+from surveillance.src.tz_handling.time_formatting import convert_to_utc, get_start_of_day_from_datetime
 
 from ..mocks.mock_message_receiver import MockMessageReceiver
 from ..mocks.mock_engine_container import MockEngineContainer

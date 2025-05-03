@@ -113,6 +113,7 @@ def mock_async_session():
 
 @pytest.fixture
 def mock_regular_session_maker(mock_session):
+    print("WARNING: Mock session makers don't do anything")
     session_cm = AsyncMock()
     session_cm.__aenter__.return_value = mock_session
     session_cm.__aexit__.return_value = None
@@ -147,7 +148,6 @@ load_dotenv()
 
 ASYNC_TEST_DB_URL = ASYNC_TEST_DB_URL = os.getenv(
     'ASYNC_TEST_DB_URL')
-
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -275,6 +275,7 @@ SYNC_TEST_DB_URL = os.getenv("SYNC_TEST_DB_URL")
 if SYNC_TEST_DB_URL is None:
     raise ValueError("SYNC_TEST_DB_URL environment variable is not set")
 
+
 @pytest.fixture(scope="function")
 def db_session_in_mem():
     # GPT recommended the name "regular_session, which was taken"
@@ -293,13 +294,13 @@ def db_session_in_mem():
         # session.close()
         engine.dispose()
 
+
 @pytest.fixture(scope="function")
 def sync_engine():
     """Create a synchronous PostgreSQL engine for testing"""
     # Create engine that connects to default postgres database
     if SYNC_TEST_DB_URL is None:
         raise ValueError("SYNC_TEST_DB_URL was None")
-
 
     # Extract the default postgres database URL
     default_url = SYNC_TEST_DB_URL.rsplit('/', 1)[0] + '/postgres'
@@ -364,4 +365,3 @@ def regular_session_maker(sync_engine):
     )
 
     return session_maker
-

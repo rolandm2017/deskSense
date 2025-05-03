@@ -18,7 +18,7 @@ from surveillance.src.db.models import Base, SystemStatus, ProgramSummaryLog, Do
 from surveillance.src.db.dao.direct.session_integrity_dao import SessionIntegrityDao
 from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-from surveillance.surveillance.src.tz_handling.time_formatting import get_start_of_day_from_datetime
+from surveillance.src.tz_handling.time_formatting import get_start_of_day_from_datetime
 
 from ....helper.truncation import truncate_logs_tables_via_engine
 

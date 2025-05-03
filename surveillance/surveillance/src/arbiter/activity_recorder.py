@@ -10,7 +10,7 @@ from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
 from surveillance.src.util.clock import UserFacingClock
 from surveillance.src.util.time_wrappers import UserLocalTime
-from surveillance.surveillance.src.tz_handling.time_formatting import get_start_of_day_from_ult
+from surveillance.src.tz_handling.time_formatting import get_start_of_day_from_ult
 from surveillance.src.util.console_logger import ConsoleLogger
 
 

@@ -24,7 +24,7 @@ from surveillance.src.object.classes import ProgramSession, ChromeSession
 from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.errors import TimezoneUnawareError
 from surveillance.src.util.const import ten_sec_as_pct_of_hour
-from surveillance.surveillance.src.tz_handling.time_formatting import get_start_of_day_from_ult
+from surveillance.src.tz_handling.time_formatting import get_start_of_day_from_ult
 
 
 from ..helper.truncation import truncate_summaries_and_logs_tables_via_session
@@ -414,3 +414,9 @@ class TestSummaryDaoWithTzInfo:
         # Check that they match the original datetime's day. (hh:mm:ss isn't saved)
         assert entry_one.gathering_date_local.day == very_start_of_day.day
         assert entry_one.gathering_date_local.day == just_before_end_of_day.day
+
+
+class TestLoggingDaoWithTzInfo:
+    # TODO
+    def test_foo(self):
+        pass

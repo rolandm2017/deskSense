@@ -43,7 +43,7 @@ from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.time_wrappers import UserLocalTime
 
-from surveillance.surveillance.src.tz_handling.time_formatting import convert_to_utc
+from surveillance.src.tz_handling.time_formatting import convert_to_utc
 
 from ..mocks.mock_clock import UserLocalTimeMockClock, MockClock
 from ..mocks.mock_engine_container import MockEngineContainer

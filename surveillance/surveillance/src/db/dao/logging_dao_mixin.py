@@ -7,7 +7,7 @@ from datetime import timedelta
 
 from surveillance.src.db.models import DomainSummaryLog, ProgramSummaryLog
 
-from surveillance.surveillance.src.tz_handling.time_formatting import convert_to_utc, get_start_of_day_from_datetime, get_start_of_day_from_ult, attach_tz_to_all
+from surveillance.src.tz_handling.time_formatting import convert_to_utc, get_start_of_day_from_datetime, get_start_of_day_from_ult, attach_tz_to_all
 from surveillance.src.util.log_dao_helper import group_logs_by_name
 from surveillance.src.util.errors import ImpossibleToGetHereError
 from surveillance.src.util.time_wrappers import UserLocalTime
@@ -19,22 +19,6 @@ T = TypeVar('T', bound=DeclarativeMeta)
 
 
 class LoggingDaoMixin:
-    def attach_final_values_and_update(self, session, log):
-        finalized_duration = (session.end_time.dt -
-                              session.start_time.dt).total_seconds()
-        if finalized_duration < 0:
-            print("session:", session)
-            print("log", log)
-            raise ImpossibleToGetHereError("A negative duration is impossible")
-        discovered_final_val = convert_to_utc(
-            session.end_time.get_dt_for_db()).replace(tzinfo=None)
-
-        # Replace whatever used to be there
-        log.duration_in_sec = finalized_duration
-        log.end_time = discovered_final_val
-        log.end_time_local = session.end_time.dt
-        self.update_item(log)
-
     def _read_day_as_sorted(
         self,
         day: UserLocalTime,
@@ -58,6 +42,21 @@ class LoggingDaoMixin:
         grouped_logs = group_logs_by_name(logs)
 
         return grouped_logs
+
+    def attach_final_values_and_update(self, session, log: ProgramSummaryLog | DomainSummaryLog):
+        finalized_duration = (session.end_time.dt -
+                              session.start_time.dt).total_seconds()
+        if finalized_duration < 0:
+            print("session:", session)
+            print("log", log)
+            raise ImpossibleToGetHereError("A negative duration is impossible")
+        discovered_final_val = convert_to_utc(session.end_time.get_dt_for_db())
+
+        # Replace whatever used to be there
+        log.duration_in_sec = finalized_duration
+        log.end_time = discovered_final_val
+        log.end_time_local = session.end_time.dt
+        self.update_item(log)
 
     def do_read_last_24_hrs(self, right_now: UserLocalTime):
         """Fetch all program log entries from the last 24 hours

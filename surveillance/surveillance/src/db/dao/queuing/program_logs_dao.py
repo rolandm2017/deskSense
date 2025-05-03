@@ -8,14 +8,14 @@ from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 from surveillance.src.db.dao.logging_dao_mixin import LoggingDaoMixin
 from surveillance.src.db.models import ProgramSummaryLog
 
-from surveillance.surveillance.src.tz_handling.dao_objects import LogTimeConverter
+from surveillance.src.tz_handling.dao_objects import LogTimeConverter
 from surveillance.src.object.classes import ProgramSession, CompletedProgramSession
 
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.errors import ImpossibleToGetHereError
 from surveillance.src.util.dao_wrapper import validate_session, guarantee_start_time
 from surveillance.src.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
-from surveillance.surveillance.src.tz_handling.time_formatting import convert_to_utc, get_start_of_day_from_datetime, attach_tz_to_all
+from surveillance.src.tz_handling.time_formatting import convert_to_utc, get_start_of_day_from_datetime, attach_tz_to_all
 from surveillance.src.util.const import ten_sec_as_pct_of_hour
 from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.log_dao_helper import group_logs_by_name

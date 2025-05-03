@@ -12,14 +12,6 @@ from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta, timezone
 
 
-from dotenv import load_dotenv
-import os
-
-# FIXME:
-# FIXME: Task was destroyed but it is pending! ``
-# FIXME: Task was destroyed but it is pending!
-# FIXME:
-
 from surveillance.src.db.models import DomainSummaryLog, ProgramSummaryLog, Base
 
 
@@ -28,7 +20,7 @@ from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
 from surveillance.src.object.classes import CompletedProgramSession, CompletedChromeSession, ProgramSession, ChromeSession
 
-from surveillance.surveillance.src.tz_handling.time_formatting import convert_to_utc
+from surveillance.src.tz_handling.time_formatting import convert_to_utc
 from surveillance.src.util.errors import ImpossibleToGetHereError
 from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.time_wrappers import UserLocalTime
@@ -39,23 +31,6 @@ timezone_for_test_data = ZoneInfo("Asia/Tokyo")
 tokyo_tz = pytz.timezone("Asia/Tokyo")
 
 now_tokyo = datetime.now(pytz.UTC).astimezone(tokyo_tz)
-
-load_dotenv()
-
-
-@pytest_asyncio.fixture(scope="function")
-async def test_dao_instances(mock_regular_session_maker, mock_async_session):
-    """Create the necessary DAO instances for session integrity testing"""
-    # Create the DAOs
-    program_logging_dao = ProgramLoggingDao(
-        mock_regular_session_maker)
-    chrome_logging_dao = ChromeLoggingDao(
-        mock_regular_session_maker)
-
-    return {
-        "program_logging_dao": program_logging_dao,
-        "chrome_logging_dao": chrome_logging_dao,
-    }
 
 
 @pytest.fixture

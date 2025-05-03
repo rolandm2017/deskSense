@@ -14,7 +14,7 @@ from surveillance.src.config.definitions import productive_sites, productive_app
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.clock import UserFacingClock
 from surveillance.src.util.time_wrappers import UserLocalTime
-from surveillance.surveillance.src.tz_handling.time_formatting import format_for_local_time
+from surveillance.src.tz_handling.time_formatting import format_for_local_time
 
 
 class DashboardService:

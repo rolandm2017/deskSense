@@ -12,7 +12,7 @@ from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from surveillance.src.db.models import DailyProgramSummary, ProgramSummaryLog, DailyDomainSummary, DomainSummaryLog
 from surveillance.src.util.const import SECONDS_PER_HOUR
-from surveillance.surveillance.src.tz_handling.time_formatting import get_start_of_day_from_ult
+from surveillance.src.tz_handling.time_formatting import get_start_of_day_from_ult
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 

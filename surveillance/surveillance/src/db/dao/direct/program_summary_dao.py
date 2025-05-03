@@ -12,13 +12,13 @@ from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 from surveillance.src.db.dao.summary_dao_mixin import SummaryDaoMixin
 
 
-from surveillance.surveillance.src.tz_handling.dao_objects import FindTodaysEntryConverter
+from surveillance.src.tz_handling.dao_objects import FindTodaysEntryConverter
 from surveillance.src.object.classes import ProgramSession
 
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.errors import NegativeTimeError, ImpossibleToGetHereError
-from surveillance.surveillance.src.tz_handling.time_formatting import get_start_of_day_from_datetime, attach_tz_to_all, attach_tz_to_obj, get_start_of_day_from_ult
+from surveillance.src.tz_handling.time_formatting import get_start_of_day_from_datetime, attach_tz_to_all, attach_tz_to_obj, get_start_of_day_from_ult
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 

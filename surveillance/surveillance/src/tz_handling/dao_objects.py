@@ -2,7 +2,7 @@ from datetime import timedelta, datetime, time
 
 from surveillance.src.util.dao_wrapper import validate_session, guarantee_start_time
 from surveillance.src.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
-from surveillance.surveillance.src.tz_handling.time_formatting import (
+from surveillance.src.tz_handling.time_formatting import (
     convert_to_utc,
     get_start_of_day_from_ult, attach_tz_to_all,
     get_start_of_day_from_datetime)
