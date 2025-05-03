@@ -157,6 +157,8 @@ function Home() {
                 <div>
                     <h2 style={{ margin: "0px" }}>Chrome</h2>
                     {chromeSummaries ? (
+                        // FIXME: make it say bar chart
+
                         <ChromeUsageChart barsInput={chromeSummaries} />
                     ) : (
                         // <p>foo</p>
@@ -168,6 +170,7 @@ function Home() {
                         Programs {programSummaries?.columns.length}
                     </h2>
                     {programSummaries ? (
+                        // FIXME: make it say bar chart
                         <ProgramUsageChart barsInput={programSummaries} />
                     ) : (
                         // <p>bar</p>

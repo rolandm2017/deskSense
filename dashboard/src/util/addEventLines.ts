@@ -68,6 +68,11 @@ export function addEventLinesForPrograms(
     const startX = x(startTime);
     const endX = x(endTime);
 
+    if (startTime.getHours() < 5 || startTime.getHours() >= 24) {
+        console.warn("Skipping ", startTime.getHours(), "73ru");
+        return; // Skip events outside the defined time range
+    }
+
     const colorForApp = getColorFromAppName(programName);
 
     // Add the line for the event

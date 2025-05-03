@@ -42,14 +42,6 @@ export interface ProgramActivityReport {
  *
  */
 
-// export interface DailyTypingSummary {
-//     // what goes in here
-// }
-
-// export interface DailyClickingSummary {
-//     // what to do ?
-// }
-
 export interface DailyProgramSummary {
     id: number;
     programName: string;
@@ -83,4 +75,13 @@ export interface TimelineEntrySchema {
 export interface TimelineRows {
     mouseRows: TimelineEntrySchema[];
     keyboardRows: TimelineEntrySchema[];
+}
+
+export interface AggregatedTimelineEntry {
+    id: string;
+    group: string;
+    content: string;
+    start: Date;
+    end: Date;
+    eventCount?: number;
 }

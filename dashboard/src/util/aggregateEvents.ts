@@ -1,5 +1,7 @@
 import { TimelineEntrySchema } from "../interface/api.interface";
 
+import { TimelineEvent } from "../interface/weekly.interface";
+
 import { AggregatedTimelineEntry } from "../interface/misc.interface";
 /*
  * Aggregates mouse and keyboard windows, in close proximity, into one event.
@@ -40,4 +42,35 @@ export const aggregateEvents = (
         },
         []
     );
+};
+
+export const aggregateEventsProgram = (
+    events: TimelineEvent[],
+    threshold: number = 1000
+): TimelineEvent[] => {
+    return events.reduce((acc: TimelineEvent[], curr: TimelineEvent, idx) => {
+        const lastEvent = acc[acc.length - 1];
+        const currStart = new Date(curr.startTime);
+        // Handle first entry separately
+        if (idx === 0) {
+            acc.push({
+                ...curr,
+            });
+            return acc;
+        }
+        const lastEnd = new Date(lastEvent.endTime);
+        const timeBetweenEventsIsSmall =
+            currStart.getTime() - lastEnd.getTime() < threshold;
+        if (lastEvent && timeBetweenEventsIsSmall) {
+            // Merge events that are close together
+            lastEvent.endTime = curr.endTime;
+        } else {
+            // Create new aggregated event
+            acc.push({
+                ...curr,
+            });
+        }
+
+        return acc;
+    }, []);
 };

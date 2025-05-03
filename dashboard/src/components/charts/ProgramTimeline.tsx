@@ -9,6 +9,8 @@ import {
 } from "../../interface/weekly.interface";
 import { addEventLinesForPrograms } from "../../util/addEventLines";
 
+import { aggregateEventsProgram } from "../../util/aggregateEvents";
+
 // https://observablehq.com/@d3/normal-quantile-plot
 // https://observablehq.com/@d3/line-chart-missing-data/2
 /* ** ** */
@@ -212,6 +214,7 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
         // TODO: Group days.events by ProgramName, and then for each program, ... draw the line
         // TODO: Draw a highlight for lines that show double counting.
 
+        const hourCounts = new Map();
         days.forEach((day: ProgamUsageTimeline) => {
             const dayName = daysOfWeek[new Date(day.date).getDay()];
 
@@ -227,8 +230,30 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
             // Add program events and labels
             topFive.forEach(
                 (program: ProgramTimelineContent, programIndex: number) => {
+                    // Aggregate events before visualization
+                    // FIXME: they're strings before this, but the type says Date, fix the lie
+                    const eventsButTheyreRealDates: TimelineEvent[] =
+                        program.events.map((event: TimelineEvent) => {
+                            return {
+                                startTime: new Date(event.startTime),
+                                endTime: new Date(event.endTime),
+                            };
+                        });
+                    const aggregatedEvents = aggregateEventsProgram(
+                        eventsButTheyreRealDates,
+                        10000
+                    ); // You might need to adjust the threshold
+
+                    // Count hours for aggregated events
+                    aggregatedEvents.forEach((event) => {
+                        const date = event.startTime;
+                        const hour = date.getHours();
+                        const currentCount = hourCounts.get(hour) || 0;
+                        hourCounts.set(hour, currentCount + 1);
+                    });
+
                     // Draw program events
-                    program.events.forEach((event: TimelineEvent) => {
+                    aggregatedEvents.forEach((event: TimelineEvent) => {
                         addEventLinesForPrograms(
                             yPosition + programIndex * 10,
                             program.programName,
@@ -252,6 +277,12 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
                 }
             );
         });
+        // Output the results in order from 0 to 23
+        for (let hour = 0; hour < 24; hour++) {
+            const count = hourCounts.get(hour) || 0;
+            const formattedHour = hour.toString().padStart(2, "0");
+            console.log(`${formattedHour}:00 - ${count} events`);
+        }
     }, [width, height, margins, days]);
 
     return (
