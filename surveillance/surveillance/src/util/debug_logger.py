@@ -1,11 +1,12 @@
 from datetime import timedelta
-from .errors import SuspiciousDurationError
-from .debug_logger import write_to_debug_log, write_to_large_usage_log
-from .console_logger import ConsoleLogger
+
 import json
 from datetime import datetime
 from sqlite3 import TimestampFromTicks
 from typing import List
+
+from .errors import SuspiciousDurationError
+from .console_logger import ConsoleLogger
 
 from surveillance.src.db.models import (
     DailyDomainSummary,

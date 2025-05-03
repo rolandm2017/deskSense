@@ -12,7 +12,7 @@ from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 from surveillance.src.db.dao.summary_dao_mixin import SummaryDaoMixin
 from surveillance.src.db.models import DailyDomainSummary
 
-from surveillance.src.object.dao_objects import FindTodaysEntryInitializer
+from surveillance.surveillance.src.tz_handling.dao_objects import FindTodaysEntryInitializer
 from surveillance.src.object.classes import ChromeSession
 
 from surveillance.src.util.console_logger import ConsoleLogger

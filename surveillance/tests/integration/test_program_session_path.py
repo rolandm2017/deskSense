@@ -799,7 +799,8 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
     p_summary_dao.do_addition = do_addition_spy
 
     def make_log_from_session(session):
-        base_start_time = convert_to_utc(session.start_time.get_dt_for_db())
+        base_start_time = convert_to_utc(
+            session.start_time.get_dt_for_db())
         start_of_day = get_start_of_day_from_datetime(
             session.start_time.get_dt_for_db())
         if isinstance(start_of_day, UserLocalTime):

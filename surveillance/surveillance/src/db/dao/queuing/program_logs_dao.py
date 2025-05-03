@@ -8,7 +8,7 @@ from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 from surveillance.src.db.dao.logging_dao_mixin import LoggingDaoMixin
 from surveillance.src.db.models import ProgramSummaryLog
 
-from surveillance.src.object.dao_objects import LogTimeInitializer
+from surveillance.surveillance.src.tz_handling.dao_objects import LogTimeInitializer
 from surveillance.src.object.classes import ProgramSession, CompletedProgramSession
 
 from surveillance.src.util.console_logger import ConsoleLogger
@@ -51,7 +51,7 @@ class ProgramLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         #     "INFO: starting session for ", session.window_title)
         if session.start_time is None:
             raise ValueError("Start time was None")
-        time_initializer = LogTimeInitializer(session.start_time)
+        initializer = LogTimeInitializer(session.start_time)
 
         # self.logger.log_white(f"INFO: starting session at start_of_day: {start_of_day_as_utc}\n\t for {session.process_name}")
 
@@ -62,16 +62,16 @@ class ProgramLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
             # Assumes (10 - n) sec will be deducted later
             # FIXME: all time additions should happen thru KeepAlive
             hours_spent=ten_sec_as_pct_of_hour,
-            start_time=time_initializer.base_start_time,
+            start_time=initializer.base_start_time,
             start_time_local=session.start_time.dt,
-            end_time=time_initializer.start_window_end,
-            end_time_local=time_initializer.start_window_end.replace(
+            end_time=initializer.start_window_end,
+            end_time_local=initializer.start_window_end.replace(
                 tzinfo=None),
             duration_in_sec=0,
-            gathering_date=time_initializer.start_of_day_as_utc,
-            gathering_date_local=time_initializer.start_of_day_as_utc.replace(
+            gathering_date=initializer.start_of_day_as_utc,
+            gathering_date_local=initializer.start_of_day_as_utc.replace(
                 tzinfo=None),
-            created_at=time_initializer.base_start_time
+            created_at=initializer.base_start_time
         )
         # self.do_add_entry(log_entry)
         self.add_new_item(log_entry)
@@ -81,7 +81,8 @@ class ProgramLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         # the database is storing and returning times in UTC
         if session.start_time is None:
             raise ValueError("Start time was None")
-        start_time_as_utc = convert_to_utc(session.start_time.get_dt_for_db())
+        start_time_as_utc = convert_to_utc(
+            session.start_time.get_dt_for_db())
         query = self.select_where_time_equals(start_time_as_utc)
         return self.execute_and_read_one_or_none(query)
 

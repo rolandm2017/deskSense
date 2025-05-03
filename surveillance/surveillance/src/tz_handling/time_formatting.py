@@ -29,6 +29,9 @@ def convert_all_to_tz(obj_list, target_tz):
 
 
 def convert_summary_to_tz(summary_obj: DailySummaryBase, tz):
+    """
+    Modifies the object in place! Mutates the reference.
+    """
     utc = pytz.UTC
 
     # Check if gathering_date already has timezone info
@@ -45,6 +48,9 @@ def convert_summary_to_tz(summary_obj: DailySummaryBase, tz):
 
 
 def convert_log_to_tz(log_obj: SummaryLogBase, tz):
+    """
+    Modifies the object in place! Mutates the reference.
+    """
     # For local times (timezone=False in your model)
     # First, determine the original timezone (if known)
     original_tz = pytz.timezone('UTC')  # Assuming they were originally UTC
@@ -53,14 +59,23 @@ def convert_log_to_tz(log_obj: SummaryLogBase, tz):
     if log_obj.gathering_date.tzinfo is None:
         temp_time = original_tz.localize(log_obj.gathering_date)
         log_obj.gathering_date = temp_time.astimezone(tz)
+    elif log_obj.gathering_date.tzinfo == timezone.utc or str(log_obj.gathering_date.tzinfo) == 'UTC':
+        # Already UTC-aware - just convert to target timezone
+        log_obj.gathering_date = log_obj.gathering_date.astimezone(tz)
 
     if log_obj.start_time.tzinfo is None:
         temp_time = original_tz.localize(log_obj.start_time)
         log_obj.start_time = temp_time.astimezone(tz)
+    elif log_obj.start_time.tzinfo == timezone.utc or str(log_obj.start_time.tzinfo) == 'UTC':
+        # Already UTC-aware - just convert to target timezone
+        log_obj.start_time = log_obj.start_time.astimezone(tz)
 
     if log_obj.end_time.tzinfo is None:
         temp_time = original_tz.localize(log_obj.end_time)
         log_obj.end_time = temp_time.astimezone(tz)
+    elif log_obj.end_time.tzinfo == timezone.utc or str(log_obj.end_time.tzinfo) == 'UTC':
+        # Already UTC-aware - just convert to target timezone
+        log_obj.end_time = log_obj.end_time.astimezone(tz)
 
 
 def attach_tz_to_obj(obj, target_tz):
@@ -119,31 +134,24 @@ def attach_tz_to_local_fields_for_logs(log_obj: SummaryLogBase, tz):
 
 
 def convert_to_utc(dt: datetime):
-    return dt.astimezone(timezone.utc)
+    """
+    Convert a timezone-aware datetime to UTC.
 
+    This preserves the absolute moment in time but changes the representation
+    to UTC timezone, adjusting the hour value accordingly.
 
-def require_tzinfo(dt: datetime) -> datetime:
+    Parameters:
+    - dt: The datetime object to convert (must be timezone-aware)
+
+    Returns:
+    - A datetime object representing the same moment in UTC
+
+    So 9 pm Asia/Tokyo will be returned as 9 pm UTC.
+    """
     if dt.tzinfo is None:
-        raise TimezoneUnawareError("require_tzinfo", dt)
-    return dt
-
-# Alternate method for below code
-# def get_start_of_day(dt):
-#     """Get the start of the day (midnight) for the given datetime"""
-#     return datetime(dt.year, dt.month, dt.day, tzinfo=dt.tzinfo)
-
-
-def get_start_of_day_from_ult(ult: UserLocalTime):
-    return UserLocalTime(ult.dt.replace(hour=0, minute=0, second=0, microsecond=0))
-
-
-def get_start_of_day_from_datetime(dt: datetime):
-    return dt.replace(hour=0, minute=0, second=0, microsecond=0)
-
-
-def account_for_timezone_offset(dt, users_local_tz_offset):
-
-    return dt + timedelta(hours=users_local_tz_offset)
+        raise ValueError("Input datetime must be timezone-aware")
+    # preserves the absolute moment in time while changing the timezone representation
+    return dt.astimezone(timezone.utc)
 
 
 def convert_to_timezone(dt, timezone_str):
@@ -168,6 +176,30 @@ def convert_to_timezone(dt, timezone_str):
     #     with_updated_tz, daylight_savings_tz_offset)
     # return with_updated_time
     return with_updated_tz
+
+
+def require_tzinfo(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        raise TimezoneUnawareError("require_tzinfo", dt)
+    return dt
+
+# Alternate method for below code
+# def get_start_of_day(dt):
+#     """Get the start of the day (midnight) for the given datetime"""
+#     return datetime(dt.year, dt.month, dt.day, tzinfo=dt.tzinfo)
+
+
+def get_start_of_day_from_ult(ult: UserLocalTime):
+    return UserLocalTime(ult.dt.replace(hour=0, minute=0, second=0, microsecond=0))
+
+
+def get_start_of_day_from_datetime(dt: datetime):
+    return dt.replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+def account_for_timezone_offset(dt, users_local_tz_offset):
+
+    return dt + timedelta(hours=users_local_tz_offset)
 
 
 def format_for_local_time(events: List[TimelineEntryObj]) -> List[TimelineEntryObj]:
