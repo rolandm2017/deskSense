@@ -1,6 +1,6 @@
 import { TimelineEntrySchema } from "../interface/peripherals.interface";
 
-import { TimelineEvent } from "../interface/weekly.interface";
+import { ProgramTimelineEvent } from "../interface/programs.interface";
 
 import { AggregatedTimelineEntry } from "../interface/misc.interface";
 /*
@@ -45,32 +45,35 @@ export const aggregateEvents = (
 };
 
 export const aggregateEventsProgram = (
-    events: TimelineEvent[],
+    events: ProgramTimelineEvent[],
     threshold: number = 1000
-): TimelineEvent[] => {
-    return events.reduce((acc: TimelineEvent[], curr: TimelineEvent, idx) => {
-        const lastEvent = acc[acc.length - 1];
-        const currStart = new Date(curr.startTime);
-        // Handle first entry separately
-        if (idx === 0) {
-            acc.push({
-                ...curr,
-            });
-            return acc;
-        }
-        const lastEnd = new Date(lastEvent.endTime);
-        const timeBetweenEventsIsSmall =
-            currStart.getTime() - lastEnd.getTime() < threshold;
-        if (lastEvent && timeBetweenEventsIsSmall) {
-            // Merge events that are close together
-            lastEvent.endTime = curr.endTime;
-        } else {
-            // Create new aggregated event
-            acc.push({
-                ...curr,
-            });
-        }
+): ProgramTimelineEvent[] => {
+    return events.reduce(
+        (acc: ProgramTimelineEvent[], curr: ProgramTimelineEvent, idx) => {
+            const lastEvent = acc[acc.length - 1];
+            const currStart = new Date(curr.startTime);
+            // Handle first entry separately
+            if (idx === 0) {
+                acc.push({
+                    ...curr,
+                });
+                return acc;
+            }
+            const lastEnd = new Date(lastEvent.endTime);
+            const timeBetweenEventsIsSmall =
+                currStart.getTime() - lastEnd.getTime() < threshold;
+            if (lastEvent && timeBetweenEventsIsSmall) {
+                // Merge events that are close together
+                lastEvent.endTime = curr.endTime;
+            } else {
+                // Create new aggregated event
+                acc.push({
+                    ...curr,
+                });
+            }
 
-        return acc;
-    }, []);
+            return acc;
+        },
+        []
+    );
 };

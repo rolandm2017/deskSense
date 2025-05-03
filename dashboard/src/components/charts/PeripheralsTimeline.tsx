@@ -1,11 +1,10 @@
-import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
+import React, { useEffect, useRef } from "react";
 import {
     AggregatedTimelineEntry,
     DayOfAggregatedRows,
 } from "../../interface/misc.interface";
 
-import { DayOfChromeUsage } from "../../interface/weekly.interface";
 import { addEventLinesForPeripherals } from "../../util/addEventLines";
 
 // https://observablehq.com/@d3/normal-quantile-plot

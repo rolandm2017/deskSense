@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
-import { BreakdownByDay } from "../../interface/weekly.interface";
+import React, { useEffect, useRef } from "react";
+import { BreakdownByDay } from "../../interface/overview.interface";
 
 interface StackedBarChartProps {
     dayByDayBreakdown: BreakdownByDay[];

@@ -19,10 +19,10 @@ export interface ProgamUsageTimeline {
 
 export interface ProgramTimelineContent {
     programName: string;
-    events: TimelineEvent[];
+    events: ProgramTimelineEvent[];
 }
 
-export interface TimelineEvent {
+export interface ProgramTimelineEvent {
     startTime: Date;
     endTime: Date;
 }

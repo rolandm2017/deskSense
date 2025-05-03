@@ -4,43 +4,46 @@ import { useSearchParams } from "react-router-dom";
 import "../App.css";
 
 import {
-    getPresentWeekProgramUsage,
-    getPresentWeekChromeUsage,
     getEnhancedChromeUsageForPastWeek,
-    getTimelineForPresentWeek,
-    getTimelineForPastWeek,
     getEnhancedWeeklyBreakdown,
-} from "../api/getData.api";
+    getPresentWeekChromeUsage,
+    getPresentWeekProgramUsage,
+    getTimelineForPastWeek,
+    getTimelineForPresentWeek,
+} from "../api/weekly.api";
+import { WeeklyBreakdown } from "../interface/overview.interface";
+
 import {
     DayOfChromeUsage,
+    WeeklyChromeUsage,
+} from "../interface/chrome.interface";
+import {
     DayOfTimelineRows,
     PartiallyAggregatedWeeklyTimeline,
-    WeeklyBreakdown,
-    WeeklyChromeUsage,
-    WeeklyProgramUsage,
     WeeklyTimeline,
-} from "../interface/weekly.interface";
+} from "../interface/peripherals.interface";
+import { WeeklyProgramUsage } from "../interface/programs.interface";
 
-import { BarChartDayData } from "../interface/misc.interface";
 import PeripheralsTimeline from "../components/charts/PeripheralsTimeline";
+import StackedBarChart from "../components/charts/StackedBarChart";
+import WeeklyUsageChart from "../components/charts/WeeklyBarChart";
+import NavigationButtons from "../components/NavigationButtons";
+import StartEndDateDisplay from "../components/StartEndDateDisplay";
 import {
+    BarChartDayData,
     DayOfAggregatedRows,
     WeeklyTimelineAggregate,
 } from "../interface/misc.interface";
 import { aggregateEvents } from "../util/aggregateEvents";
 import {
-    getUpcomingSaturday,
     convertStringToDate,
+    dateIsThePresentWeekOrLater,
+    formatDateMmDdYyyy,
     getPreviousSunday,
     getSaturdayThatEndsTheWeek,
     getSundayOfNextWeek,
-    formatDateMmDdYyyy,
-    dateIsThePresentWeekOrLater,
+    getUpcomingSaturday,
 } from "../util/timeTools";
-import WeeklyUsageChart from "../components/charts/WeeklyBarChart";
-import StackedBarChart from "../components/charts/StackedBarChart";
-import NavigationButtons from "../components/NavigationButtons";
-import StartEndDateDisplay from "../components/StartEndDateDisplay";
 
 // ### ###
 // ### ### ###

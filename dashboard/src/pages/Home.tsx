@@ -6,12 +6,12 @@ import ProgramUsageChart from "../components/charts/ProgramUsageChart";
 import { DailyChromeSummaries } from "../interface/chrome.interface";
 import { DailyProgramSummaries } from "../interface/programs.interface";
 
+import { getChromeSummaries, getProgramSummaries } from "../api/getData.api";
+
 import {
-    getChromeSummaries,
     getPresentWeekProgramTimeline,
-    getProgramSummaries,
     getTimelineForPresentWeek,
-} from "../api/getData.api";
+} from "../api/weekly.api";
 
 import ChromeUsageChart from "../components/charts/ChromeUsageChart";
 import PeripheralsTimeline from "../components/charts/PeripheralsTimeline";

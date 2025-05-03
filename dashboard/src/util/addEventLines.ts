@@ -1,7 +1,6 @@
-import { Selection, ScaleTime } from "d3";
-import { ScaleBand } from "d3";
+import { ScaleBand, ScaleTime, Selection } from "d3";
 import { AggregatedTimelineEntry } from "../interface/misc.interface";
-import { TimelineEvent } from "../interface/weekly.interface";
+import { TimelineEvent } from "../interface/overview.interface";
 
 import { getColorFromAppName } from "./coloringLines";
 
