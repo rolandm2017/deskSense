@@ -28,11 +28,6 @@ from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
 
-from surveillance.src.db.dao.queuing.video_dao import VideoDao
-from surveillance.src.db.dao.direct.frame_dao import FrameDao
-
-
-
 # Dependency functions
 system_clock = SystemClock()
 user_facing_clock = UserFacingClock()
@@ -69,14 +64,6 @@ async def get_program_logging_dao() -> ProgramLoggingDao:
 
 async def get_chrome_logging_dao() -> ChromeLoggingDao:
     return _chrome_logging_dao
-
-
-async def get_video_dao() -> VideoDao:
-    return VideoDao(async_session_maker)
-
-
-async def get_frame_dao() -> FrameDao:
-    return FrameDao(async_session_maker)
 
 
 # def get_tracker_service() -> TrackerService:
@@ -143,7 +130,7 @@ async def get_activity_arbiter():
         program_logging_dao, regular_session_maker)
     chrome_summary_dao = ChromeSummaryDao(
         chrome_logging_dao, regular_session_maker)
-    
+
     container = ThreadedEngineContainer(1)
 
     global _arbiter_instance
@@ -188,8 +175,3 @@ async def get_chrome_service(arbiter: ActivityArbiter = Depends(get_activity_arb
         clock = SystemClock()
         _chrome_service_instance = ChromeService(clock, arbiter)
     return _chrome_service_instance
-
-
-async def get_video_service(video_dao: VideoDao = Depends(get_video_dao), frame_dao: FrameDao = Depends(get_frame_dao)):
-    from surveillance.src.services.tiny_services import VideoService
-    return VideoService(video_dao, frame_dao)

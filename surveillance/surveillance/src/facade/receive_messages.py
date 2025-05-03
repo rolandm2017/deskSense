@@ -80,12 +80,10 @@ class MessageReceiver:
 
     def start(self):
         """Start the message receiver in a way that doesn't require async/await."""
-        # Create a new event loop if one doesn't exist
-
         try:
             loop = asyncio.get_event_loop()
         except RuntimeError:
-            # No event loop in current thread
+            # No event loop in current thread, so make one
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
 
@@ -93,17 +91,18 @@ class MessageReceiver:
 
         # Define the coroutines to run
         async def run_tasks():
-            self.tasks = [
-                asyncio.create_task(self.zmq_listener()),
-                asyncio.create_task(self.process_events())
-            ]
+            listener_task = asyncio.create_task(self.zmq_listener(), name="MessageReceiver-zmq_listener")
+            processor_task = asyncio.create_task(self.process_events(), name="MessageReceiver-process_events")
+            self.tasks = [listener_task, processor_task]
             await asyncio.gather(*self.tasks)
 
         # Run the coroutines in the event loop
         if loop.is_running():
             # If the loop is already running (we're in an async context),
-            # create a task
-            future = asyncio.ensure_future(run_tasks(), loop=loop)
+            # create a task with a specific name
+            future = asyncio.create_task(run_tasks(), name="MessageReceiver-main_task")
+            # Store this task in our tasks list too
+            self.tasks.append(future)
             return future
         else:
             # If the loop is not running, run it until complete
@@ -129,28 +128,29 @@ class MessageReceiver:
 
     async def async_stop(self):
         """Stop the message receiver asynchronously."""
-        # self.stop()
-        # # Give time for tasks to be cancelled
-        # await asyncio.sleep(0.5)
+        print(f"MessageReceiver: Stopping {len(self.tasks)} tasks")
+        self.is_running = False  # First mark as not running to exit loops
+        
         # Cancel all tasks and await their cancellation
         tasks_to_cancel = []
         for task in self.tasks:
             if not task.done():
+                print(f"MessageReceiver: Cancelling task {task.get_name()}")
                 task.cancel()
                 tasks_to_cancel.append(task)
         
         if tasks_to_cancel:
             try:
                 # Wait for all tasks to complete with a timeout
-                # Shield is used to prevent the wait itself from being cancelled
+                # Don't use shield here - it can interfere with proper cancellation
                 await asyncio.wait_for(
-                    asyncio.shield(asyncio.gather(*tasks_to_cancel, return_exceptions=True)), 
-                    timeout=1.0
+                    asyncio.gather(*tasks_to_cancel, return_exceptions=True), 
+                    timeout=2.0
                 )
             except asyncio.TimeoutError:
-                print("Some tasks did not complete in time during MessageReceiver shutdown")
+                print(f"MessageReceiver: {len(tasks_to_cancel)} tasks did not complete in time during shutdown")
             except Exception as e:
-                print(f"Error awaiting tasks during MessageReceiver shutdown: {e}")
+                print(f"MessageReceiver: Error awaiting tasks during shutdown: {e}")
         
         # Close ZMQ socket and context if not already closed
         try:
@@ -158,5 +158,6 @@ class MessageReceiver:
                 self.socket.close()
             if hasattr(self, 'context') and self.context:
                 self.context.term()
+            print("MessageReceiver: ZMQ resources closed")
         except Exception as e:
-            print(f"Error closing ZMQ resources: {e}")
+            print(f"MessageReceiver: Error closing ZMQ resources: {e}")

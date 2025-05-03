@@ -10,16 +10,16 @@ from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
 from surveillance.src.util.clock import UserFacingClock
 from surveillance.src.util.time_wrappers import UserLocalTime
-from surveillance.src.util.time_formatting import get_start_of_day_from_ult
+from surveillance.src.tz_handling.time_formatting import get_start_of_day_from_ult
 from surveillance.src.util.console_logger import ConsoleLogger
 
 
 # Persistence component
 
 class ActivityRecorder:
-    def __init__(self, program_logging_dao: ProgramLoggingDao, 
-                 chrome_logging_dao: ChromeLoggingDao, 
-                 program_summary_dao: ProgramSummaryDao, 
+    def __init__(self, program_logging_dao: ProgramLoggingDao,
+                 chrome_logging_dao: ChromeLoggingDao,
+                 program_summary_dao: ProgramSummaryDao,
                  chrome_summary_dao: ChromeSummaryDao, DEBUG=False):
         self.program_logging_dao = program_logging_dao
         self.chrome_logging_dao = chrome_logging_dao
@@ -30,16 +30,17 @@ class ActivityRecorder:
         if not DEBUG:
             self.logger.log_yellow("Recorder logs are off")
 
-
         # For testing: collect session activity history
-        self.pulse_history = []  # List of (session, timestamp) tuples for each pulse
-        self.remainder_history = []  # List of (session, amount, timestamp) tuples for each deduction
+        # List of (session, timestamp) tuples for each pulse
+        self.pulse_history = []
+        # List of (session, amount, timestamp) tuples for each deduction
+        self.remainder_history = []
 
     def on_new_session(self, session: ProgramSession | ChromeSession):
         # TODO: do an audit of logging time and summary time.
         if isinstance(session, ProgramSession):
             # Regardless of the session being brand new today or a repeat,
-            # must start a new logging session, to note the time being added to the summary. 
+            # must start a new logging session, to note the time being added to the summary.
             self.program_logging_dao.start_session(session)
             session_exists_already = self.program_summary_dao.find_todays_entry_for_program(
                 session)
@@ -55,7 +56,7 @@ class ActivityRecorder:
                 session)
             if session_exists_already:
                 # self.chrome_summary_dao.start_window_push_for_session(session, now)
-                return 
+                return
             self.chrome_summary_dao.start_session(session)
         else:
             raise TypeError("Session was not the right type")
@@ -82,7 +83,7 @@ class ActivityRecorder:
             self.chrome_summary_dao.push_window_ahead_ten_sec(session)
         else:
             raise TypeError("Session was not the right type")
-    
+
     def add_partial_window(self, duration_in_sec: int, session: ProgramSession | ChromeSession):
         """
         Deducts t seconds from the duration of a session. 
@@ -90,11 +91,13 @@ class ActivityRecorder:
         """
         if session.start_time is None:
             raise ValueError("Session start time was not set")
-        today_start: UserLocalTime = get_start_of_day_from_ult(session.start_time)
+        today_start: UserLocalTime = get_start_of_day_from_ult(
+            session.start_time)
 
         # For testing: record this deduction
         if self.DEBUG:
-            self.remainder_history.append((session, duration_in_sec, session.start_time))
+            self.remainder_history.append(
+                (session, duration_in_sec, session.start_time))
             session.ledger.extend_by_n(duration_in_sec)
         if duration_in_sec == 0:
             return  # Nothing to add

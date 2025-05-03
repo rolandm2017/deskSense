@@ -15,12 +15,12 @@ from surveillance.src.db.dao.logging_dao_mixin import LoggingDaoMixin
 from surveillance.src.db.models import DomainSummaryLog, ProgramSummaryLog
 
 from surveillance.src.object.classes import ChromeSession, CompletedChromeSession
-from surveillance.src.object.dao_objects import LogTimeInitializer
+from surveillance.src.tz_handling.dao_objects import LogTimeConverter
 
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.errors import ImpossibleToGetHereError
 from surveillance.src.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
-from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day_from_datetime, get_start_of_day_from_ult, attach_tz_to_all
+from surveillance.src.tz_handling.time_formatting import convert_to_utc, get_start_of_day_from_datetime, get_start_of_day_from_ult, attach_tz_to_all
 from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.const import ten_sec_as_pct_of_hour
 from surveillance.src.util.log_dao_helper import group_logs_by_name
@@ -47,28 +47,29 @@ class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         self.regular_session = session_maker  # Do not delete. UtilityDao still uses it
         self.logger = ConsoleLogger()
         self.model = DomainSummaryLog
-      
+
     def start_session(self, session: ChromeSession):
         """
         A session of using a domain. End_time here is like, "when did the user tab away from the program?"
         """
 
-        time_initializer = LogTimeInitializer(session.start_time)
-
-        # self.logger.log_white(f"INFO: querying start_of_day: {start_of_day_as_utc}\n\t for {session.get_name()}")
+        initializer = LogTimeConverter(session.start_time)
 
         log_entry = DomainSummaryLog(
             domain_name=session.domain,
             # Assumes (10 - n) sec will be deducted later
-            hours_spent=ten_sec_as_pct_of_hour,  # FIXME: all time additions should happen thru KeepAlive
-            start_time=time_initializer.base_start_time,
+            # FIXME: all time additions should happen thru KeepAlive
+            hours_spent=ten_sec_as_pct_of_hour,
+            start_time=initializer.base_start_time_as_utc,
             start_time_local=session.start_time.dt,
-            end_time=time_initializer.start_window_end,
-            end_time_local=time_initializer.start_window_end.replace(tzinfo=None),
+            end_time=initializer.base_start_window_end,
+            end_time_local=initializer.base_start_window_end.replace(
+                tzinfo=None),
             duration_in_sec=0,
-            gathering_date=time_initializer.start_of_day_as_utc,
-            gathering_date_local=time_initializer.start_of_day_as_utc.replace(tzinfo=None),
-            created_at=time_initializer.base_start_time
+            gathering_date=initializer.start_of_day_as_utc,
+            gathering_date_local=initializer.start_of_day_as_utc.replace(
+                tzinfo=None),
+            created_at=initializer.base_start_time_as_utc
         )
         self.add_new_item(log_entry)
 
@@ -76,7 +77,8 @@ class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         """Is finding it by time! Looking for the one, specifically, with the arg's time"""
         if session.start_time is None:
             raise ValueError("Start time was None")
-        start_time_as_utc = convert_to_utc(session.start_time.get_dt_for_db())
+        start_time_as_utc = convert_to_utc(
+            session.start_time.get_dt_for_db())
         query = self.select_where_time_equals(start_time_as_utc)
 
         return self.execute_and_read_one_or_none(query)
@@ -90,7 +92,7 @@ class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         # NOTE: the database is storing and returning times in UTC
         return self._read_day_as_sorted(day, DomainSummaryLog, DomainSummaryLog.domain_name)
 
-    def read_all(self):
+    def read_all(self) -> List[DomainSummaryLog]:
         """Fetch all domain log entries"""
         query = select(DomainSummaryLog)
         results = self.execute_and_return_all(query)
@@ -119,5 +121,3 @@ class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
             raise ImpossibleToGetHereError(
                 "Start of pulse didn't reach the db")
         self.attach_final_values_and_update(session, log)
-
-   

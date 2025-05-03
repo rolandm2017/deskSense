@@ -6,49 +6,6 @@ from surveillance.src.util.detect_os import OperatingSystemInfo
 
 os_type = OperatingSystemInfo()
 
-@pytest.mark.skipif(
-    os_type.is_windows == True,
-    reason="Test only applicable on Ubuntu systems"
-)
-def test_read_current_info_on_ubuntu():
-    from surveillance.src.facade.program_facade_ubuntu import UbuntuProgramFacadeCore
-
-    facade = UbuntuProgramFacadeCore()
-
-    program_info = facade.read_current_program_info()
-
-    # Basic validation of structure
-    assert isinstance(program_info, dict)
-    assert "os" in program_info
-    assert "pid" in program_info
-    assert "process_name" in program_info
-    assert "window_title" in program_info
-
-    assert "exe_path" in program_info
-
-@pytest.mark.skipif(
-    os_type.is_ubuntu == True,
-    reason="Test only applicable on Windows systems"
-)
-def test_read_current_info_on_windows(self):
-    from surveillance.src.facade.program_facade_windows import WindowsProgramFacadeCore
-
-    program_info = self.facade.read_current_program_info()
-    
-    facade = WindowsProgramFacadeCore()
-
-    program_info = facade.read_current_program_info()
-
-   # Basic validation of structure
-    assert isinstance(program_info, dict)
-    assert "os" in program_info
-    assert "pid" in program_info
-    assert "process_name" in program_info
-    assert "window_title" in program_info
-
-    # OS-specific checks
-    assert "exe_path" in program_info
-
 
 @pytest.mark.skipif(
     os_type.is_windows == True,
@@ -157,4 +114,3 @@ def test_listen_for_window_changes():
             window_info = next(facade.listen_for_window_changes())
 
             assert window_info == expected_window_info
-

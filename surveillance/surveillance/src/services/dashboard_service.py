@@ -14,7 +14,7 @@ from surveillance.src.config.definitions import productive_sites, productive_app
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.clock import UserFacingClock
 from surveillance.src.util.time_wrappers import UserLocalTime
-from surveillance.src.util.time_formatting import format_for_local_time
+from surveillance.src.tz_handling.time_formatting import format_for_local_time
 
 
 class DashboardService:
@@ -43,11 +43,11 @@ class DashboardService:
             # significant_programs = {}  # New dictionary to track programs with >1hr usage
 
             current_day = starting_sunday + timedelta(days=i)
-            
+
             date_as_datetime = datetime.combine(
                 current_day.dt, datetime.min.time())  # tz is stripped
             date_as_datetime = current_day.dt.tzinfo.localize(date_as_datetime)
-            
+
             daily_chrome_summaries: List[DailyDomainSummary] = self.chrome_summary_dao.read_day(
                 UserLocalTime(date_as_datetime))
             daily_program_summaries: List[DailyProgramSummary] = self.program_summary_dao.read_day(
@@ -172,10 +172,6 @@ class DashboardService:
             mouse_events = await self.timeline_dao.read_day_mice(current_day, self.user_clock)
             keyboard_events = await self.timeline_dao.read_day_keyboard(current_day, self.user_clock)
 
-            # mouse_events_as_local_time = format_for_local_time(mouse_events)
-            # keyboard_events_as_local_time = format_for_local_time(
-            # keyboard_events)
-
             self.logger.log_days_retrieval("[get_specific_week_timeline]", current_day.dt, len(
                 mouse_events) + len(keyboard_events))
             day = {"date": current_day,
@@ -218,6 +214,23 @@ class DashboardService:
 
             program_usage_timeline: dict[str, ProgramSummaryLog] = self.program_logging_dao.read_day_as_sorted(
                 current_day)
+
+            # Figure out:
+            # - is the problem still happening? are new strange datapoints being made?
+            # - where did these ones come from?
+            # - how to make pg show them?
+            # - how far back does it go? does the problem occur in data from two weeks ago?
+            # - if it's still occurring, how to stop it from happening again?
+            # - perhaps there can be an auditor dao with some hardcoded values
+
+            def find_malformed_data(logs_by_name: dict):
+                start_of_typical_day = 8
+                end_of_typical_day = 23
+                for name, logs in logs_by_name.items():
+                    for log in logs:
+                        log: ProgramSummaryLog  # Type annotation for the loop variable
+                        start_time = log.start_time
+                        end_time = log.end_time
 
             self.logger.log_days_retrieval(
                 "[get_current_week_program_usage_timeline]", current_day.dt, len(program_usage_timeline))
@@ -265,7 +278,7 @@ class DashboardService:
                 continue  # avoid reading future dates from db
 
             program_usage_timeline: dict[str, ProgramSummaryLog] = self.program_logging_dao.read_day_as_sorted(
-                current_day)
+                UserLocalTime(current_day))
 
             self.logger.log_days_retrieval(
                 "[get_program_usage_timeline]", current_day, len(program_usage_timeline))
@@ -312,4 +325,3 @@ class DashboardService:
             usage_from_days.extend(daily_summaries)
 
         return usage_from_days
-

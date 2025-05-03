@@ -2,6 +2,7 @@ from datetime import datetime
 
 from surveillance.src.util.errors import TimezoneUnawareError
 
+
 class TimeKeeper:
     """
     Exists to resolve painful problems dealing with converting
@@ -33,6 +34,8 @@ class TimeKeeper:
 
     def convert_utc_to_local_time(self, time_as_utc):
         pass
+
+# TODO: "class UtcDatetime"  <- For all dt's that have been converted into utc
 
 
 class UserLocalTime:
@@ -83,13 +86,13 @@ class UserLocalTime:
     def get_start_of_day(self):
         """Get the start of the day for this time"""
         dt = self.dt.replace(hour=0, minute=0, second=0, microsecond=0)
-        # This .replace() MUST live here, regardless of the existing util func, 
+        # This .replace() MUST live here, regardless of the existing util func,
         # to avoid a circular import.
         return UserLocalTime(dt)
-    
 
     # Optional: Implement other datetime methods directly
     # This allows for direct calling like my_time.strftime()
+
     def strftime(self, format_string):
         return self.dt.strftime(format_string)
 

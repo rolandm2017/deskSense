@@ -112,6 +112,8 @@ class SurveillanceManager:
         self.mouse_thread = ThreadedTracker(self.mouse_tracker)
         self.program_thread = ThreadedTracker(self.program_tracker)
 
+        self.cancelled_tasks = 0
+
     def start_trackers(self):
         self.is_running = True
         print("Running trackers")
@@ -169,61 +171,114 @@ class SurveillanceManager:
 
     async def cancel_pending_tasks(self):
         """Safely cancel all pending tasks created by this manager."""
-        # # Get all tasks from the event loop
-        # tasks = [task for task in asyncio.all_tasks(self.loop)
-        #          if task is not asyncio.current_task(self.loop)]
-
-        # Create a set of tasks we know are created by this manager
-        manager_tasks = set()
-
-        # Track tasks from different components
-        for attr_name in ['keyboard_dao', 'mouse_dao', 'timeline_dao',
-                          'program_summary_dao', 'chrome_summary_dao',
-                          'session_integrity_dao']:
-            if hasattr(self, attr_name):
-                component = getattr(self, attr_name)
-                # Look for any attributes that might be tasks
-                for name in dir(component):
-                    if name.startswith('_task_') or name.endswith('_task'):
-                        task = getattr(component, name, None)
-                        if task and isinstance(task, asyncio.Task) and not task.done():
-                            manager_tasks.add(task)
-
-        # Cancel all identified tasks
-        if manager_tasks:
-            print(f"Cancelling {len(manager_tasks)} pending tasks...")
-            for task in manager_tasks:
-                task.cancel()
-
-            # Wait for all tasks to complete with a timeout
+        # Get all tasks from the event loop except the current one
+        current_task = asyncio.current_task()
+        all_tasks = [task for task in asyncio.all_tasks() 
+                    if task is not current_task]
+        
+        # Print detailed information about all tasks
+        print(f"Found {len(all_tasks)} total asyncio tasks")
+        
+        # Look for uvicorn related tasks specifically
+        uvicorn_tasks = []
+        manager_tasks = []
+        other_tasks = []
+        
+        for task in all_tasks:
+            task_name = task.get_name()
+            task_status = "DONE" if task.done() else "PENDING"
+            
+            # Try to get the frame information
+            task_frame = None
             try:
+                stack = task.get_stack()
+                task_frame = stack[0] if stack else None
+                frame_info = f"File: {task_frame.f_code.co_filename}, Line: {task_frame.f_lineno}" if task_frame else "Unknown"
+            except Exception:
+                frame_info = "Not available"
+            
+            print(f"Task: {task_name} | Status: {task_status} | Source: {frame_info}")
+            
+            # Separate tasks by category for better handling
+            if 'uvicorn' in frame_info.lower() or 'starlette' in frame_info.lower():
+                uvicorn_tasks.append(task)
+            elif any(indicator in task_name.lower() for indicator in 
+                ['mouse', 'keyboard', 'program', 'timeline', 'chrome', 'dao', 'messagereceiver']):
+                manager_tasks.append(task)
+            else:
+                other_tasks.append(task)
+        
+        # Only cancel our manager tasks, not FastAPI framework tasks
+        cancelled_count = 0
+        if manager_tasks:
+            print(f"\nCancelling {len(manager_tasks)} manager-related tasks:")
+            for task in manager_tasks:
+                if not task.done():
+                    stack = task.get_stack()
+                    task_frame = stack[0] if stack else None
+                    frame_info = f"File: {task_frame.f_code.co_filename}, Line: {task_frame.f_lineno}" if task_frame else "Unknown"
+                    print(f"Cancelling task: '{task.get_name()}' from '{frame_info}'")
+                    task.cancel()
+                    cancelled_count += 1
+        
+        # Log but don't cancel uvicorn tasks
+        if uvicorn_tasks:
+            print(f"\nFound {len(uvicorn_tasks)} uvicorn/starlette tasks (not cancelling):")
+            for task in uvicorn_tasks:
+                print(f"  - {task.get_name()}")
+        
+        # Try to safely wait for manager tasks to complete
+        if manager_tasks:
+            try:
+                # Wait for all tasks to complete with a timeout
                 await asyncio.wait_for(
                     asyncio.gather(*manager_tasks, return_exceptions=True),
-                    timeout=2.0
+                    timeout=3.0
                 )
             except asyncio.TimeoutError:
                 print("Some tasks didn't complete within timeout")
-
-        return len(manager_tasks)
-
+        
+        print(f"Cancelled {cancelled_count} tasks")
+        return cancelled_count
+    
     async def cleanup(self):
         """Clean up resources before exit."""
         print("cleaning up")
-        self.keyboard_thread.stop()
-        self.mouse_thread.stop()
-        self.program_thread.stop()
-
-        # Cancel any pending database tasks first
-        await self.cancel_pending_tasks()
-
+        
+        # First stop the threads - this should be safe from exceptions
+        try:
+            self.keyboard_thread.stop()
+            self.mouse_thread.stop()
+            self.program_thread.stop()
+        except Exception as e:
+            print(f"Error stopping threads: {e}")
+        
+        # Store the count of canceled tasks
+        cancelled_tasks = 0
+        
+        # Cancel any pending database tasks
+        try:
+            cancelled_tasks = await self.cancel_pending_tasks()
+        except asyncio.CancelledError:
+            print("Task cancellation was itself cancelled - continuing cleanup")
+            cancelled_tasks = 0
+        except Exception as e:
+            print(f"Error canceling tasks: {e}")
+            import traceback
+            traceback.print_exc()
+        
         # Then stop the message receiver
         if hasattr(self, 'message_receiver') and self.message_receiver:
             try:
                 await self.message_receiver.async_stop()
+            except asyncio.CancelledError:
+                print("MessageReceiver async_stop was cancelled - continuing shutdown")
             except Exception as e:
                 print(f"Error during MessageReceiver cleanup: {e}")
+                import traceback
                 traceback.print_exc()
-
+        
         self.is_running = False
-        # Add any async cleanup operations here
-        await asyncio.sleep(0.5)  # Give threads time to clean up
+        
+        # Return the count for the caller
+        return cancelled_tasks

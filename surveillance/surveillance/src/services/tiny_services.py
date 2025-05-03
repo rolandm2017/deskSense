@@ -6,12 +6,10 @@ from datetime import datetime
 
 
 from surveillance.src.object.pydantic_dto import UtcDtTabChange
-from surveillance.src.util.time_formatting import convert_to_timezone
+from surveillance.src.tz_handling.time_formatting import convert_to_timezone
 
 from surveillance.src.db.dao.queuing.mouse_dao import MouseDao
 from surveillance.src.db.dao.queuing.keyboard_dao import KeyboardDao
-from surveillance.src.db.dao.queuing.video_dao import VideoDao
-from surveillance.src.db.dao.direct.frame_dao import FrameDao
 from surveillance.src.db.models import MouseMove
 from surveillance.src.object.dto import TypingSessionDto
 from surveillance.src.object.classes import TabChangeEventWithLtz
@@ -63,17 +61,3 @@ class MouseService:
 
     async def get_all_events(self) -> List[MouseMove]:
         return await self.dao.read_all()
-
-
-class VideoService:
-    def __init__(self, video_dao: VideoDao, frame_dao: FrameDao):
-        self.video_dao = video_dao
-        self.frame_dao = frame_dao
-
-    async def create_new_video(self, video_create_event) -> int:
-        new_video_id = await self.video_dao.create(video_create_event)
-        new_video_id = cast(int, new_video_id)
-        return new_video_id
-
-    async def add_frame_to_video(self, add_frame_event):
-        return await self.frame_dao.create(add_frame_event)

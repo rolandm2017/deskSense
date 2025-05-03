@@ -3,10 +3,8 @@ import "../App.css";
 
 import ProgramUsageChart from "../components/charts/ProgramUsageChart";
 
-import {
-    DailyChromeSummaries,
-    DailyProgramSummaries,
-} from "../interface/api.interface";
+import { DailyChromeSummaries } from "../interface/chrome.interface";
+import { DailyProgramSummaries } from "../interface/programs.interface";
 
 import {
     getChromeSummaries,
@@ -17,14 +15,14 @@ import {
 
 import ChromeUsageChart from "../components/charts/ChromeUsageChart";
 import PeripheralsTimeline from "../components/charts/PeripheralsTimeline";
-import { aggregateEvents } from "../util/aggregateEvents";
+import ProgramTimeline from "../components/charts/ProgramTimeline";
 import { DayOfAggregatedRows } from "../interface/misc.interface";
 import {
     DayOfTimelineRows,
     PartiallyAggregatedWeeklyTimeline,
-    WeeklyProgramTimelines,
-} from "../interface/weekly.interface";
-import ProgramTimeline from "../components/charts/ProgramTimeline";
+} from "../interface/peripherals.interface";
+import { WeeklyProgramTimelines } from "../interface/programs.interface";
+import { aggregateEvents } from "../util/aggregateEvents";
 
 function Home() {
     const [programSummaries, setProgramSummaries] =
@@ -157,6 +155,8 @@ function Home() {
                 <div>
                     <h2 style={{ margin: "0px" }}>Chrome</h2>
                     {chromeSummaries ? (
+                        // FIXME: make it say bar chart
+
                         <ChromeUsageChart barsInput={chromeSummaries} />
                     ) : (
                         // <p>foo</p>
@@ -168,6 +168,7 @@ function Home() {
                         Programs {programSummaries?.columns.length}
                     </h2>
                     {programSummaries ? (
+                        // FIXME: make it say bar chart
                         <ProgramUsageChart barsInput={programSummaries} />
                     ) : (
                         // <p>bar</p>

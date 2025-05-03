@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Iterator
 
 from surveillance.src.config.definitions import local_time_zone
-from surveillance.src.util.time_formatting import get_start_of_day_from_datetime, get_start_of_day_from_ult
+from surveillance.src.tz_handling.time_formatting import get_start_of_day_from_datetime, get_start_of_day_from_ult
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 

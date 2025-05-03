@@ -12,7 +12,7 @@ from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from surveillance.src.db.models import DailyProgramSummary, ProgramSummaryLog, DailyDomainSummary, DomainSummaryLog
 from surveillance.src.util.const import SECONDS_PER_HOUR
-from surveillance.src.util.time_formatting import get_start_of_day_from_ult
+from surveillance.src.tz_handling.time_formatting import get_start_of_day_from_ult
 from surveillance.src.util.time_wrappers import UserLocalTime
 
 
@@ -31,7 +31,7 @@ from ..mocks.mock_clock import MockClock, UserLocalTimeMockClock
 
 @pytest.fixture
 def setup_daos(db_session_in_mem):
-    
+
     program_logging_dao = ProgramLoggingDao(db_session_in_mem)
     chrome_logging_dao = ChromeLoggingDao(db_session_in_mem)
 
@@ -39,24 +39,20 @@ def setup_daos(db_session_in_mem):
         program_logging_dao, db_session_in_mem)
     chrome_summary_dao = ChromeSummaryDao(
         chrome_logging_dao, db_session_in_mem)
-    
+
     clock = UserLocalTimeMockClock(times_for_system_clock_as_ult)
 
-    
     return {"program_logging": program_logging_dao, "chrome_logging": chrome_logging_dao,
             "program_summary": program_summary_dao, "chrome_summary": chrome_summary_dao
             }
-    
+
+
 def test_simple_round_trip_for_programs(setup_daos):
     selection_for_test = session2
     assert isinstance(selection_for_test, ProgramSession)
     # Enters into KeepAlive
     setup_daos["program_summary"].start_session(selection_for_test)
     # Suppose the session lasts 34 sec
-    session_duration = 34
-    first_write_time = selection_for_test.start_time.dt
-    second_write_time = first_write_time + timedelta(seconds=10)
-    third_write_time = first_write_time + timedelta(seconds=20)
     setup_daos["program_summary"].push_window_ahead_ten_sec(selection_for_test)
     setup_daos["program_summary"].push_window_ahead_ten_sec(selection_for_test)
     setup_daos["program_summary"].push_window_ahead_ten_sec(selection_for_test)
@@ -73,7 +69,6 @@ def test_simple_round_trip_for_programs(setup_daos):
     assert entry.hours_spent == 34 / SECONDS_PER_HOUR
 
 
-
 def test_simple_round_trip_for_chrome(setup_daos):
     selection_for_test = session1
     assert isinstance(selection_for_test, ChromeSession)
@@ -81,9 +76,6 @@ def test_simple_round_trip_for_chrome(setup_daos):
     setup_daos["chrome_summary"].start_session(selection_for_test)
     # Suppose the session lasts 38 sec
     session_duration = 38
-    first_write_time = selection_for_test.start_time.dt
-    second_write_time = first_write_time + timedelta(seconds=10)
-    third_write_time = first_write_time + timedelta(seconds=20)
     setup_daos["chrome_summary"].push_window_ahead_ten_sec(selection_for_test)
     setup_daos["chrome_summary"].push_window_ahead_ten_sec(selection_for_test)
     setup_daos["chrome_summary"].push_window_ahead_ten_sec(selection_for_test)
@@ -98,6 +90,7 @@ def test_simple_round_trip_for_chrome(setup_daos):
     assert entry.domain_name == selection_for_test.domain
     assert entry.hours_spent == 38 / SECONDS_PER_HOUR
 
+
 def test_simple_logging_activity_for_program(setup_daos):
     """Test does the logging for the above changes"""
     program_logging = setup_daos["program_logging"]
@@ -106,21 +99,23 @@ def test_simple_logging_activity_for_program(setup_daos):
 
     # Assume program session is 34 sec, chrome session is 38 sec
     program_duration = 34
-    
+
     print("starting sesssion at ", program_session.start_time)
     program_logging.start_session(program_session)
     program_logging.push_window_ahead_ten_sec(program_session)
     program_logging.push_window_ahead_ten_sec(program_session)
     program_logging.push_window_ahead_ten_sec(program_session)
 
-    program_end_time = program_session.start_time.dt + timedelta(seconds=program_duration)
-    program_session = program_session.to_completed(UserLocalTime(program_end_time))
+    program_end_time = program_session.start_time.dt + \
+        timedelta(seconds=program_duration)
+    program_session = program_session.to_completed(
+        UserLocalTime(program_end_time))
     program_logging.finalize_log(program_session)
 
     # Now take it all back out
     start_of_day = get_start_of_day_from_ult(program_session.start_time)
     entries = program_logging.read_day_as_sorted(start_of_day)
-    
+
     assert len(entries) == 1
     assert isinstance(entries, dict)
     assert isinstance(entries[program_session.get_name()], list)
@@ -129,6 +124,7 @@ def test_simple_logging_activity_for_program(setup_daos):
 
     assert list_of_logs[0].process_name == program_session.process_name
     assert list_of_logs[0].duration_in_sec == program_duration
+
 
 def test_simple_logging_activity_for_chrome(setup_daos):
     """Test does the logging for the above changes"""
@@ -139,14 +135,16 @@ def test_simple_logging_activity_for_chrome(setup_daos):
     # Assume program session is 34 sec, chrome session is 38 sec
     chrome_duration = 38
     print("starting sesssion at ", chrome_session.start_time)
-    
+
     chrome_logging.start_session(chrome_session)
     chrome_logging.push_window_ahead_ten_sec(chrome_session)
     chrome_logging.push_window_ahead_ten_sec(chrome_session)
     chrome_logging.push_window_ahead_ten_sec(chrome_session)
 
-    chrome_end_time = chrome_session.start_time.dt + timedelta(seconds=chrome_duration)
-    chrome_session = chrome_session.to_completed(UserLocalTime(chrome_end_time))
+    chrome_end_time = chrome_session.start_time.dt + \
+        timedelta(seconds=chrome_duration)
+    chrome_session = chrome_session.to_completed(
+        UserLocalTime(chrome_end_time))
     chrome_logging.finalize_log(chrome_session)
 
     # Now take it all back out
