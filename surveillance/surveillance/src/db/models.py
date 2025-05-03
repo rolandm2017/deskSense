@@ -46,7 +46,7 @@ class DailyProgramSummary(DailySummaryBase):
 
     def __str__(self):
         formatted_date = self.gathering_date.strftime(
-            "%Y-%m-%d") if self.gathering_date is not None else "No date"
+            "%Y-%m-%d %H:%M") if self.gathering_date is not None else "No date"
         return f"Program: {self.program_name}, \tHours: {self.hours_spent}, \tDate: {formatted_date}"
 
 

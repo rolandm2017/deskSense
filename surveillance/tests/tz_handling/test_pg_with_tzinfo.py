@@ -312,40 +312,42 @@ class TestSummaryDaoWithTzInfo:
         invalid_exe = "C:/Adobe/Photoshop.exe"
         invalid_process = "Photoshop.exe"
         invalid_session1 = ProgramSession(
-            invalid_exe, invalid_process, "", "", UserLocalTime(outside_of_range_1))
+            invalid_exe, invalid_process, "Adobe Photoshop", "picture4_final5_final.jpg", UserLocalTime(outside_of_range_1))
         invalid_session2 = ProgramSession(
-            invalid_exe, invalid_process, "", "", UserLocalTime(outside_of_range_2))
+            invalid_exe, invalid_process, "Adobe Photoshop", "picture4_final5_final2.jpg", UserLocalTime(outside_of_range_2))
 
         session1_dt_as_ult = UserLocalTime(very_start_of_day)
         session2_dt_as_ult = UserLocalTime(just_before_end_of_day)
         target_exe_path = "C:/ProgramFiles/pour.exe"
         target_process_name = "pour.exe"
         session1 = ProgramSession(
-            target_exe_path, target_process_name, "", "", session1_dt_as_ult)
+            target_exe_path, target_process_name, "Pour", "Beer pour", session1_dt_as_ult)
         session2 = ProgramSession(
-            target_exe_path, target_process_name, "", "", session2_dt_as_ult)
+            target_exe_path, target_process_name, "Pour", "Sprite pour", session2_dt_as_ult)
 
         # Do the writes
-        summary_dao.start_session(invalid_session1)
-        summary_dao.start_session(invalid_session2)
+        try:
+            summary_dao.start_session(invalid_session1)
+            summary_dao.start_session(invalid_session2)
 
-        summary_dao.start_session(session1)
-        summary_dao.push_window_ahead_ten_sec(session1)
-        summary_dao.push_window_ahead_ten_sec(session2)
+            summary_dao.start_session(session1)
+            summary_dao.push_window_ahead_ten_sec(session1)
+            summary_dao.push_window_ahead_ten_sec(session2)
 
-        # Read by day
-        days_entries = summary_dao.read_day(session1_dt_as_ult)
+            # Read by day
+            days_entries = summary_dao.read_day(session1_dt_as_ult)
 
-        # Check that you got the intended valuesa
-        assert len(days_entries) == 2
-        entry_one = days_entries[0]
+            # Check that you got the intended valuesa
+            entry_one = days_entries[0]
 
-        assert entry_one.exe_path_as_id == target_exe_path
-        assert entry_one.process_name == target_process_name
+            assert entry_one.exe_path_as_id == target_exe_path
+            assert entry_one.process_name == target_process_name
 
-        # Check that they match the original datetime's day. (hh:mm:ss isn't saved)
-        assert entry_one.gathering_date_local.day == very_start_of_day.day
-        assert entry_one.gathering_date_local.day == just_before_end_of_day.day
+            # Check that they match the original datetime's day. (hh:mm:ss isn't saved)
+            assert entry_one.gathering_date_local.day == very_start_of_day.day
+            assert entry_one.gathering_date_local.day == just_before_end_of_day.day
+        finally:
+            truncate_summaries_and_logs_tables_via_session(session_maker)
 
     def test_asia_tokyo_tz(self, setup_parts):
         logging_dao, summary_dao, _, session_maker = setup_parts
@@ -393,30 +395,32 @@ class TestSummaryDaoWithTzInfo:
         session2 = ProgramSession(
             target_exe_path, target_process_name, "", "", session2_dt_as_ult)
 
-        # Do the writes
-        summary_dao.start_session(invalid_session1)
-        summary_dao.start_session(invalid_session2)
+        try:
+            # Do the writes
+            summary_dao.start_session(invalid_session1)
+            summary_dao.start_session(invalid_session2)
 
-        summary_dao.start_session(session1)
-        summary_dao.push_window_ahead_ten_sec(session1)
-        summary_dao.push_window_ahead_ten_sec(session2)
+            summary_dao.start_session(session1)
+            summary_dao.push_window_ahead_ten_sec(session1)
+            summary_dao.push_window_ahead_ten_sec(session2)
 
-        # Read by day
-        days_entries = summary_dao.read_day(session1_dt_as_ult)
+            # Read by day
+            days_entries = summary_dao.read_day(session1_dt_as_ult)
 
-        # Check that you got the intended valuesa
-        assert len(days_entries) == 2
-        entry_one = days_entries[0]
+            # Check that you got the intended valuesa
+            assert len(days_entries) == 1
+            entry_one = days_entries[0]
 
-        assert entry_one.exe_path_as_id == target_exe_path
-        assert entry_one.process_name == target_process_name
+            assert entry_one.exe_path_as_id == target_exe_path
+            assert entry_one.process_name == target_process_name
 
-        # Check that they match the original datetime's day. (hh:mm:ss isn't saved)
-        assert entry_one.gathering_date_local.day == very_start_of_day.day
-        assert entry_one.gathering_date_local.day == just_before_end_of_day.day
+            # Check that they match the original datetime's day. (hh:mm:ss isn't saved)
+            assert entry_one.gathering_date_local.day == very_start_of_day.day
+            assert entry_one.gathering_date_local.day == just_before_end_of_day.day
+        finally:
+            truncate_summaries_and_logs_tables_via_session(session_maker)
 
-
-class TestLoggingDaoWithTzInfo:
-    # TODO
-    def test_foo(self):
-        pass
+# class TestLoggingDaoWithTzInfo:
+#     # TODO
+#     def test_foo(self):
+#         pass

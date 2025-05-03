@@ -202,7 +202,14 @@ def nonexistent_session():
 
 
 def test_finalize_log(prepare_daos, mock_regular_session_maker, nonexistent_session):
+    """
+    Confirms that for both session types:
+    - The duration_in_sec is correct
+    - The end_time, start_time are set correctly
+    """
     program_dao, chrome_dao = prepare_daos
+
+    tokyo_tz = pytz.timezone("Asia/Tokyo")
 
     # try:
     program_dao = ProgramLoggingDao(
@@ -210,12 +217,41 @@ def test_finalize_log(prepare_daos, mock_regular_session_maker, nonexistent_sess
     chrome_dao = ChromeLoggingDao(
         mock_regular_session_maker)
 
-    t1 = datetime(2025, 1, 20, 12, 30, 0, tzinfo=tokyo_tz)
-    t2 = datetime(2025, 1, 30, 13, 40, 0, tzinfo=tokyo_tz)
+    dt_utc = tokyo_tz.localize(datetime(2025, 1, 20, 12, 10, 0))
+    dt = dt_utc.astimezone(tokyo_tz)  # This conversion is actually fine
+
+    # Get the UTC offset in hours
+    offset_hours = dt.utcoffset().total_seconds() / 3600  # type: ignore
+    print(f"The offset for Tokyo at this time is UTC+{offset_hours}")
+
+    # Verify if a specific offset is correct
+    expected_offset = 9
+    is_correct = offset_hours == expected_offset
+    print(f"Is UTC+{expected_offset} correct for this time? {is_correct}")
+
+    tokyo_offset = 9
+
+    s1_start = tokyo_tz.localize(datetime(2025, 1, 20, 12, 10, 0))
+    s1_end = s1_start + timedelta(seconds=30)
+    s1_final_end = s1_start + timedelta(seconds=36)
+
+    t4_start = tokyo_tz.localize(datetime(2025, 2, 23, 13, 10, 0))
+    t5_end = t4_start + timedelta(seconds=30)
+    t6_final_end = t4_start + timedelta(seconds=35)
+
+    assert str(s1_start.tzinfo) == "Asia/Tokyo"
+    assert str(s1_end.tzinfo) == "Asia/Tokyo"
+    assert str(t4_start.tzinfo) == "Asia/Tokyo"
+    assert str(t5_end.tzinfo) == "Asia/Tokyo"
+
     found_program_session = ProgramSummaryLog()
-    found_program_session.end_time = t1
+    found_program_session.start_time = convert_to_utc(s1_start)
+    found_program_session.end_time = convert_to_utc(
+        s1_end)  # They're already in UTC
     found_domain_session = DomainSummaryLog()
-    found_domain_session.end_time = t2
+    found_domain_session.start_time = convert_to_utc(t4_start)
+    found_domain_session.end_time = convert_to_utc(
+        t5_end)  # They're already in UTC
 
     program_find_session_mock = Mock()
     program_find_session_mock.return_value = found_program_session
@@ -232,12 +268,21 @@ def test_finalize_log(prepare_daos, mock_regular_session_maker, nonexistent_sess
     program_dao.update_item = pr_update_item_spy
     chrome_dao.update_item = ch_update_item_spy
 
-    # Act
-    delivers_end_time = CompletedProgramSession()
-    delivers_end_time.end_time = UserLocalTime(t1 + timedelta(seconds=10))
+    # Inputs for test
+    pr_delivers_end_time = CompletedProgramSession()
+    pr_delivers_end_time.start_time = UserLocalTime(s1_start)
+    pr_delivers_end_time.end_time = UserLocalTime(s1_final_end)
+
     ch_delivers_end_time = CompletedChromeSession("yadda", "yadda")
-    ch_delivers_end_time.end_time = UserLocalTime(t2 + timedelta(seconds=22))
-    program_dao.finalize_log(delivers_end_time)
+    ch_delivers_end_time.start_time = UserLocalTime(t4_start)
+    ch_delivers_end_time.end_time = UserLocalTime(t6_final_end)
+
+    assert str(pr_delivers_end_time.end_time.dt.tzinfo) == "Asia/Tokyo"
+    assert str(ch_delivers_end_time.end_time.dt.tzinfo) == "Asia/Tokyo"
+
+    # Act
+
+    program_dao.finalize_log(pr_delivers_end_time)
     chrome_dao.finalize_log(ch_delivers_end_time)
 
     # Assert
@@ -248,6 +293,27 @@ def test_finalize_log(prepare_daos, mock_regular_session_maker, nonexistent_sess
     assert isinstance(args[0], ProgramSummaryLog)
     args, _ = ch_update_item_spy.call_args
     assert isinstance(args[0], DomainSummaryLog)
+
+    # Assert that the end time is calculated correctly
+    assert str(found_program_session.end_time.tzinfo) == "UTC"
+    assert str(found_domain_session.end_time.tzinfo) == "UTC"
+
+    s1_expected_hour = s1_final_end.hour - tokyo_offset
+    s2_expected_hour = t6_final_end.hour - tokyo_offset
+    assert found_program_session.end_time.hour == s1_expected_hour, "UTC conversion failed"
+    assert found_domain_session.end_time.hour == s2_expected_hour, "UTC conversion failed"
+
+    # Assert that the .duration_in_sec is calculated correctly
+    program_duration = (s1_final_end - s1_start).total_seconds()
+    assert found_program_session.duration_in_sec == program_duration
+    chrome_duration = (t6_final_end - t4_start).total_seconds()
+    assert found_domain_session.duration_in_sec == chrome_duration
+
+    # Assert that the end_time - start_time yield is correct
+    assert (found_program_session.end_time -
+            found_program_session.start_time).total_seconds() == program_duration
+    assert (found_domain_session.end_time -
+            found_domain_session.start_time).total_seconds() == chrome_duration
 
 
 def test_finalize_log_error(prepare_daos, mock_regular_session_maker, nonexistent_session):

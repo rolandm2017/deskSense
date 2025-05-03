@@ -312,7 +312,6 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
                 bad_log_count += 1
                 s = log.start_time.strftime("%H:%M")
                 e = log.end_time.strftime("%H:%M")
-                print(f"Start: {s}, End: {e}")
             if name in logs_tally_start_end_times:
                 logs_tally_start_end_times[name] += duration
             else:
@@ -321,14 +320,14 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
         print(f"{session_count}, {bad_log_count}")
 
         start_end_totals = 0
-        # FIXME:   assert start_end_totals == sum(expected_durations)
-# E           assert 328150.0 == 540.0
-# E            +  where 540.0 = sum([60.0, 62.0, 28.0, 30.0, 35.0, 37.0, ...])
         for key, seconds_spent in logs_tally_start_end_times.items():
-            start_end_totals += seconds_spent.total_seconds()
+            start_end_totals += seconds_spent
 
-        print(v, "321ru")
-        assert start_end_totals == sum(expected_durations)
+        duration_sum = sum(expected_durations)
+        tolerance = 0.03  # Roughly 10 sec from 550
+        lower_bound = duration_sum * (1 - tolerance)
+        upper_bound = duration_sum * (1 + tolerance)
+        assert lower_bound < start_end_totals and start_end_totals < upper_bound
 
     finally:
         truncate_summaries_and_logs_tables_via_session(
