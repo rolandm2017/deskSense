@@ -17,7 +17,6 @@ from surveillance.src.db.models import DailyDomainSummary, DailyProgramSummary, 
 
 
 from surveillance.src.routes.report_routes import router as report_router
-from surveillance.src.routes.video_routes import router as video_routes
 
 from surveillance.src.object.pydantic_dto import UtcDtTabChange, YouTubeEvent
 from surveillance.src.object.classes import TabChangeEventWithLtz
@@ -42,12 +41,10 @@ from surveillance.src.services.chrome_service import ChromeService
 from surveillance.src.facade.receive_messages import MessageReceiver
 
 
-
 from surveillance.src.services.tiny_services import TimezoneService
 
 from surveillance.src.service_dependencies import (
     get_keyboard_service, get_mouse_service,     get_dashboard_service, get_chrome_service, get_activity_arbiter, get_timezone_service,
-    get_video_service
 )
 
 from surveillance.src.util.console_logger import ConsoleLogger
@@ -107,7 +104,7 @@ async def lifespan(app: FastAPI):
 
     facades = FacadeInjector(get_keyboard_facade_instance,
                              get_mouse_facade_instance, choose_program_facade)
-    
+
     message_receiver = MessageReceiver("tcp://127.0.0.1:5555")
     surveillance_state.manager = SurveillanceManager(user_facing_clock,
                                                      async_session_maker, regular_session_maker, chrome_service, arbiter, facades, message_receiver)
@@ -124,15 +121,17 @@ async def lifespan(app: FastAPI):
             try:
                 # Use a timeout to ensure cleanup doesn't hang
                 cancelled_count = await asyncio.wait_for(
-                    surveillance_state.manager.cleanup(), 
+                    surveillance_state.manager.cleanup(),
                     timeout=5.0
                 )
-                print(f"Cleanup complete. Total tasks cancelled: {cancelled_count}")
+                print(
+                    f"Cleanup complete. Total tasks cancelled: {cancelled_count}")
 
                 # Also ensure the shutdown handler runs
                 surveillance_state.manager.shutdown_handler()
             except asyncio.CancelledError as ce:
-                print("Cleanup itself was cancelled - this is likely from the web server shutting down")
+                print(
+                    "Cleanup itself was cancelled - this is likely from the web server shutting down")
                 # Still try to run the shutdown handler
                 try:
                     surveillance_state.manager.shutdown_handler()
@@ -157,7 +156,6 @@ app.add_middleware(
 )
 
 app.include_router(report_router)
-app.include_router(video_routes)
 
 
 class HealthResponse(BaseModel):
@@ -341,9 +339,9 @@ async def get_previous_week_of_timeline(week_of: date = Path(..., description="W
         rows.append(row)
 
     # TODO: Convert from UTC to PST for the client
-    appeasement_of_type_checker = datetime.combine(start_of_week.dt.date(), 
-                                                               start_of_week.dt.time(),
-                                                               start_of_week.dt.tzinfo)
+    appeasement_of_type_checker = datetime.combine(start_of_week.dt.date(),
+                                                   start_of_week.dt.time(),
+                                                   start_of_week.dt.tzinfo)
 
     response = WeeklyTimeline(days=rows, start_date=start_of_week.dt)
 
@@ -528,4 +526,3 @@ async def receive_ignored_tab(
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-

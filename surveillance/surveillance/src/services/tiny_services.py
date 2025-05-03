@@ -63,17 +63,3 @@ class MouseService:
 
     async def get_all_events(self) -> List[MouseMove]:
         return await self.dao.read_all()
-
-
-class VideoService:
-    def __init__(self, video_dao: VideoDao, frame_dao: FrameDao):
-        self.video_dao = video_dao
-        self.frame_dao = frame_dao
-
-    async def create_new_video(self, video_create_event) -> int:
-        new_video_id = await self.video_dao.create(video_create_event)
-        new_video_id = cast(int, new_video_id)
-        return new_video_id
-
-    async def add_frame_to_video(self, add_frame_event):
-        return await self.frame_dao.create(add_frame_event)
