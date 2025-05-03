@@ -1161,7 +1161,9 @@ async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
     for x in chrome_summaries:
         print("chrome summary:", x)
 
-    expected_date = datetime(2025, 3, 22, 0, 0, 0)
+    pst_tz = pytz.timezone("America/Los_Angeles")
+
+    expected_date = pst_tz.localize(datetime(2025, 3, 22, 0, 0, 0))
     expected_date = convert_to_utc(expected_date)
 
     # FIXME: "Hours: 0.00" for all summaries
