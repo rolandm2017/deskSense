@@ -214,7 +214,8 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
         // TODO: Group days.events by ProgramName, and then for each program, ... draw the line
         // TODO: Draw a highlight for lines that show double counting.
 
-        const hourCounts = new Map();
+        const startHourCounts = new Map();
+        const endHourCounts = new Map();
         days.forEach((day: ProgamUsageTimeline) => {
             const dayName = daysOfWeek[new Date(day.date).getDay()];
 
@@ -233,27 +234,91 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
                     // Aggregate events before visualization
                     // FIXME: they're strings before this, but the type says Date, fix the lie
                     const eventsButTheyreRealDates: TimelineEvent[] =
-                        program.events.map((event: TimelineEvent) => {
-                            return {
-                                startTime: new Date(event.startTime),
-                                endTime: new Date(event.endTime),
-                            };
-                        });
-                    const aggregatedEvents = aggregateEventsProgram(
-                        eventsButTheyreRealDates,
-                        10000
-                    ); // You might need to adjust the threshold
+                        program.events
+                            .map((event: TimelineEvent) => {
+                                return {
+                                    startTime: new Date(event.startTime),
+                                    endTime: new Date(event.endTime),
+                                };
+                            })
+                            .filter((event: TimelineEvent) => {
+                                // remove events that clearly are bad data
+                                const endTime = event.endTime.getHours();
+                                const earliestEverUsage = 6;
+                                const latestEverUsage = 22;
+                                if (
+                                    endTime < earliestEverUsage ||
+                                    endTime > latestEverUsage
+                                ) {
+                                    return;
+                                }
+                                const startTime = event.startTime.getHours();
+                                if (
+                                    startTime < earliestEverUsage ||
+                                    startTime > latestEverUsage
+                                ) {
+                                    console.log(
+                                        `Eliminated because it was at ${startTime}`
+                                    );
+                                    return;
+                                }
+                                return event;
+                            });
+                    const eventsToProcess =
+                        eventsButTheyreRealDates.length > 100
+                            ? eventsButTheyreRealDates.filter(
+                                  (_, i) => i % 2 === 0
+                              ) // Take every 5th event
+                            : eventsButTheyreRealDates;
+                    const aggregatedEvents = eventsToProcess;
+                    // const aggregatedEvents = aggregateEventsProgram(
+                    //     eventsToProcess,
+                    //     2000
+                    // ); // You might need to adjust the threshold
 
                     // Count hours for aggregated events
                     aggregatedEvents.forEach((event) => {
                         const date = event.startTime;
-                        const hour = date.getHours();
-                        const currentCount = hourCounts.get(hour) || 0;
-                        hourCounts.set(hour, currentCount + 1);
+                        const startHour = date.getHours();
+
+                        const currentCount =
+                            startHourCounts.get(startHour) || 0;
+                        startHourCounts.set(startHour, currentCount + 1);
+
+                        const endHour = event.endTime.getHours();
+                        const currentEndCount = endHourCounts.get(endHour) || 0;
+                        endHourCounts.set(endHour, currentEndCount + 1);
+
+                        if (endHour < 8) {
+                            console.log(
+                                `start: ${startHour}, end: ${event.endTime.getHours()}, 258ru`
+                            );
+                        }
                     });
 
                     // Draw program events
                     aggregatedEvents.forEach((event: TimelineEvent) => {
+                        // const endTime = event.startTime.getHours()
+                        // if (endTime )
+                        // if (event.startTime.getHours() < 11) {
+                        //     // no events before 11. the odd times remain
+                        //     return;
+                        // }
+                        // if (event.startTime.getHours() < 17) {
+                        //     return; // before 5 pm, we return. odd times remain
+                        // }
+                        // if (event.startTime.getHours() < 18) {
+                        //     return; // before 6 pm, return. odd times remain
+                        // }
+                        // if (event.startTime.getHours() < 19) {
+                        //     return; // SOME went away at 19 and 20
+                        // }
+                        // if (event.endTime.getHours() > 8) {
+                        //     return;
+                        // }
+                        // console.log(event, "280ru");
+                        // // if (event.endTime.getHours() < 19) {  // odd times gone
+                        // console.log(event.startTime.getHours(), "265ru");
                         addEventLinesForPrograms(
                             yPosition + programIndex * 10,
                             program.programName,
@@ -278,8 +343,15 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
             );
         });
         // Output the results in order from 0 to 23
+        console.log("START TIME MAP:");
         for (let hour = 0; hour < 24; hour++) {
-            const count = hourCounts.get(hour) || 0;
+            const count = startHourCounts.get(hour) || 0;
+            const formattedHour = hour.toString().padStart(2, "0");
+            console.log(`${formattedHour}:00 - ${count} events`);
+        }
+        console.log("END TIME MAP:");
+        for (let hour = 0; hour < 24; hour++) {
+            const count = endHourCounts.get(hour) || 0;
             const formattedHour = hour.toString().padStart(2, "0");
             console.log(`${formattedHour}:00 - ${count} events`);
         }
