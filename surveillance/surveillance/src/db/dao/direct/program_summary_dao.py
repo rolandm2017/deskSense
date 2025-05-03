@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timedelta, time
 from typing import List
 
-from surveillance.src.config.definitions import keep_alive_cycle_length, window_push_length 
+from surveillance.src.config.definitions import keep_alive_cycle_length, window_push_length
 
 from surveillance.src.db.models import DailyProgramSummary
 from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
@@ -18,11 +18,8 @@ from surveillance.src.object.classes import ProgramSession
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.errors import NegativeTimeError, ImpossibleToGetHereError
-from surveillance.src.util.time_formatting import get_start_of_day_from_datetime, attach_tz_to_all, attach_tz_to_obj, get_start_of_day_from_ult
+from surveillance.surveillance.src.tz_handling.time_formatting import get_start_of_day_from_datetime, attach_tz_to_all, attach_tz_to_obj, get_start_of_day_from_ult
 from surveillance.src.util.time_wrappers import UserLocalTime
-
-
-
 
 
 class ProgramSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
@@ -42,14 +39,14 @@ class ProgramSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
     def _create(self, session: ProgramSession, start_time: datetime):
         # self.logger.log_white("[debug] creating session: " + session.exe_path
         today_start = get_start_of_day_from_datetime(start_time)
-        
+
         new_entry = DailyProgramSummary(
             exe_path_as_id=session.exe_path,
             program_name=session.window_title,
             process_name=session.process_name,
             hours_spent=0,
             gathering_date=today_start,
-            gathering_date_local = today_start.replace(tzinfo=None)
+            gathering_date_local=today_start.replace(tzinfo=None)
         )
         self.add_new_item(new_entry)
 
@@ -73,7 +70,7 @@ class ProgramSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
     def read_past_week(self, right_now: UserLocalTime):
         # +1 because weekday() counts from Monday=0
         return self.do_read_past_week(right_now)
-    
+
     def read_day(self, day: UserLocalTime) -> List[DailyProgramSummary]:
         """Read all entries for the given day."""
         return self.do_read_day(day)
@@ -94,10 +91,13 @@ class ProgramSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
         if program_session is None:
             raise ValueError("Session should not be None")
 
-        today_start = get_start_of_day_from_datetime(program_session.start_time.dt)
-        query = self.select_where_time_equals_for_session(today_start, program_session.exe_path)
+        today_start = get_start_of_day_from_datetime(
+            program_session.start_time.dt)
+        query = self.select_where_time_equals_for_session(
+            today_start, program_session.exe_path)
 
-        self.execute_window_push(query, program_session.exe_path, program_session.start_time.dt)
+        self.execute_window_push(
+            query, program_session.exe_path, program_session.start_time.dt)
 
     def select_where_time_equals_for_session(self, some_time, target_exe_path):
         return select(DailyProgramSummary).where(
@@ -111,7 +111,8 @@ class ProgramSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
 
         9 times out of 10. So we add  the used  duration from its hours_spent.
         """
-        self.add_partial_window(session, duration_in_sec, DailyProgramSummary.exe_path_as_id == session.exe_path)
+        self.add_partial_window(
+            session, duration_in_sec, DailyProgramSummary.exe_path_as_id == session.exe_path)
 
     async def shutdown(self):
         """Closes the open session without opening a new one"""
@@ -122,4 +123,3 @@ class ProgramSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
         if hasattr(self, '_current_session') and self._current_session is not None:
             self._current_session.close()
             self._current_session = None
-    

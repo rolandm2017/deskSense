@@ -28,11 +28,10 @@ from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
 from surveillance.src.object.classes import CompletedProgramSession, CompletedChromeSession, ProgramSession, ChromeSession
 
-from surveillance.src.util.time_formatting import convert_to_utc
+from surveillance.surveillance.src.tz_handling.time_formatting import convert_to_utc
 from surveillance.src.util.errors import ImpossibleToGetHereError
 from surveillance.src.util.const import SECONDS_PER_HOUR
 from surveillance.src.util.time_wrappers import UserLocalTime
-
 
 
 timezone_for_test_data = ZoneInfo("Asia/Tokyo")
@@ -215,13 +214,15 @@ def test_push_window_ahead(prepare_daos):
 @pytest.fixture
 def nonexistent_session():
     # almost certainly doesn't exist
-    nonexistent_time = UserLocalTime(tokyo_tz.localize(datetime(2025, 1, 1, 1, 0, 0, 0)))
+    nonexistent_time = UserLocalTime(
+        tokyo_tz.localize(datetime(2025, 1, 1, 1, 0, 0, 0)))
     session = CompletedChromeSession(domain="github.com",
-                            detail="DeepSeek Chat Repository",
-                            start_time=nonexistent_time,
-                            end_time=UserLocalTime(tokyo_tz.localize(datetime(2025, 1, 1, 1, 0, 0, 1))),
-                            duration_for_tests=timedelta(minutes=1),
-                            productive=True)
+                                     detail="DeepSeek Chat Repository",
+                                     start_time=nonexistent_time,
+                                     end_time=UserLocalTime(tokyo_tz.localize(
+                                         datetime(2025, 1, 1, 1, 0, 0, 1))),
+                                     duration_for_tests=timedelta(minutes=1),
+                                     productive=True)
     return session
 
 

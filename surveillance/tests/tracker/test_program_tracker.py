@@ -1,14 +1,17 @@
-import pytest
-from unittest.mock import Mock, MagicMock
-
 from datetime import datetime, timedelta, timezone
+from unittest.mock import MagicMock, Mock
+
+import pytest
+
+from surveillance.src.config.definitions import (
+    no_space_dash_space,
+    productive_apps,
+    productive_sites,
+)
+from surveillance.src.object.classes import CompletedProgramSession, ProgramSession
+from surveillance.src.trackers.program_tracker import ProgramTrackerCore
 
 from ..mocks.mock_clock import MockClock
-
-from surveillance.src.config.definitions import productive_apps, productive_sites
-from surveillance.src.object.classes import ProgramSession, CompletedProgramSession
-from surveillance.src.trackers.program_tracker import ProgramTrackerCore
-from surveillance.src.util.strings import no_space_dash_space
 
 
 @pytest.fixture
@@ -91,8 +94,6 @@ def test_start_new_session():
     assert new_session.window_title == "Visual Studio Code"
     assert new_session.detail == "program_tracker.py - deskSense"
     assert new_session.start_time.dt is current_time
-
-
 
 
 def test_window_change_triggers_handler():
@@ -209,7 +210,6 @@ def test_a_series_of_programs():
     clock = MagicMock(wraps=clock)
     facade = Mock()
     handler = Mock()
-
 
     tracker = ProgramTrackerCore(clock, facade, handler)
 

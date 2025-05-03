@@ -1,6 +1,7 @@
 from functools import wraps
 
-from surveillance.src.util.time_formatting import convert_to_timezone
+from surveillance.surveillance.src.tz_handling.time_formatting import convert_to_timezone
+
 
 def validate_start_end_and_duration(func):
     @wraps(func)
@@ -12,6 +13,7 @@ def validate_start_end_and_duration(func):
         return func(self, session, *args, **kwargs)
     return wrapper
 
+
 def validate_start_and_end_times(func):
     @wraps(func)
     def wrapper(self, session, *args, **kwargs):
@@ -19,6 +21,7 @@ def validate_start_and_end_times(func):
             raise ValueError("Start or end time was None")
         return func(self, session, *args, **kwargs)
     return wrapper
+
 
 def validate_session(func):
     @wraps(func)
@@ -29,6 +32,7 @@ def validate_session(func):
             raise ValueError("Start or end time was None")
         return func(self, session, *args, **kwargs)
     return wrapper
+
 
 def guarantee_start_time(func):
     @wraps(func)

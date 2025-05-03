@@ -1,24 +1,27 @@
+import time
 from datetime import datetime
 
-import time
-
-from surveillance.src.util.console_logger import ConsoleLogger
-from surveillance.src.config.definitions import productive_apps, productive_categories, productive_sites, unproductive_apps
-
+from surveillance.src.config.definitions import (
+    no_space_dash_space,
+    productive_apps,
+    productive_categories,
+    productive_sites,
+    unproductive_apps,
+)
 from surveillance.src.facade.program_facade_base import ProgramFacadeInterface
-
-
 from surveillance.src.object.classes import ProgramSession
-
-from surveillance.src.util.detect_os import OperatingSystemInfo
 from surveillance.src.util.clock import SystemClock
+from surveillance.src.util.console_logger import ConsoleLogger
+from surveillance.src.util.detect_os import OperatingSystemInfo
+from surveillance.src.util.program_tools import (
+    contains_space_dash_space,
+    separate_window_name_and_detail,
+)
 from surveillance.src.util.threaded_tracker import ThreadedTracker
-from surveillance.src.util.program_tools import separate_window_name_and_detail,   contains_space_dash_space
-from surveillance.src.util.strings import no_space_dash_space
 from surveillance.src.util.time_wrappers import UserLocalTime
 
-
 # TODO: report programs that aren't in the apps list.
+
 
 class ProgramTrackerCore:
     def __init__(self, user_facing_clock, program_api_facade, window_change_handler):
@@ -92,9 +95,9 @@ class ProgramTrackerCore:
             window_title = window_change_dict["window_title"]
             detail = no_space_dash_space
         new_session = ProgramSession(window_change_dict["exe_path"],
-                                     window_change_dict["process_name"], 
-                                     window_title, 
-                                     detail, 
+                                     window_change_dict["process_name"],
+                                     window_title,
+                                     detail,
                                      UserLocalTime(start_time))
         # end_time, duration, productive not set yet
         return new_session
@@ -112,10 +115,14 @@ if __name__ == "__main__":
 
     def choose_program_facade(os):
         if os.is_windows:
-            from surveillance.src.facade.program_facade_windows import WindowsProgramFacadeCore
+            from surveillance.src.facade.program_facade_windows import (
+                WindowsProgramFacadeCore,
+            )
             return WindowsProgramFacadeCore()
         else:
-            from surveillance.src.facade.program_facade_ubuntu import UbuntuProgramFacadeCore
+            from surveillance.src.facade.program_facade_ubuntu import (
+                UbuntuProgramFacadeCore,
+            )
             return UbuntuProgramFacadeCore()
 
     program_api_facade = choose_program_facade(os_type)
@@ -123,8 +130,6 @@ if __name__ == "__main__":
     # folder = Path("/tmp")
 
     clock = SystemClock()
-
-
 
     try:
 

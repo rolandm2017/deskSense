@@ -2,10 +2,11 @@
 from sqlalchemy import select, or_
 from sqlalchemy.orm import sessionmaker
 from datetime import timedelta, datetime, date, timezone
+from typing import List
 
 from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 from surveillance.src.db.dao.logging_dao_mixin import LoggingDaoMixin
-from surveillance.src.db.models import  ProgramSummaryLog
+from surveillance.src.db.models import ProgramSummaryLog
 
 from surveillance.src.object.dao_objects import LogTimeInitializer
 from surveillance.src.object.classes import ProgramSession, CompletedProgramSession
@@ -14,7 +15,7 @@ from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.errors import ImpossibleToGetHereError
 from surveillance.src.util.dao_wrapper import validate_session, guarantee_start_time
 from surveillance.src.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
-from surveillance.src.util.time_formatting import convert_to_utc, get_start_of_day_from_datetime, attach_tz_to_all
+from surveillance.surveillance.src.tz_handling.time_formatting import convert_to_utc, get_start_of_day_from_datetime, attach_tz_to_all
 from surveillance.src.util.const import ten_sec_as_pct_of_hour
 from surveillance.src.util.time_wrappers import UserLocalTime
 from surveillance.src.util.log_dao_helper import group_logs_by_name
@@ -51,7 +52,7 @@ class ProgramLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         if session.start_time is None:
             raise ValueError("Start time was None")
         time_initializer = LogTimeInitializer(session.start_time)
-        
+
         # self.logger.log_white(f"INFO: starting session at start_of_day: {start_of_day_as_utc}\n\t for {session.process_name}")
 
         log_entry = ProgramSummaryLog(
@@ -59,14 +60,17 @@ class ProgramLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
             process_name=session.process_name,
             program_name=session.window_title,
             # Assumes (10 - n) sec will be deducted later
-            hours_spent=ten_sec_as_pct_of_hour, # FIXME: all time additions should happen thru KeepAlive
+            # FIXME: all time additions should happen thru KeepAlive
+            hours_spent=ten_sec_as_pct_of_hour,
             start_time=time_initializer.base_start_time,
             start_time_local=session.start_time.dt,
             end_time=time_initializer.start_window_end,
-            end_time_local=time_initializer.start_window_end.replace(tzinfo=None),
+            end_time_local=time_initializer.start_window_end.replace(
+                tzinfo=None),
             duration_in_sec=0,
             gathering_date=time_initializer.start_of_day_as_utc,
-            gathering_date_local=time_initializer.start_of_day_as_utc.replace(tzinfo=None),
+            gathering_date_local=time_initializer.start_of_day_as_utc.replace(
+                tzinfo=None),
             created_at=time_initializer.base_start_time
         )
         # self.do_add_entry(log_entry)
@@ -90,11 +94,11 @@ class ProgramLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         # NOTE: the database is storing and returning times in UTC
         return self._read_day_as_sorted(day, ProgramSummaryLog, ProgramSummaryLog.program_name)
 
-    def read_all(self):
+    def read_all(self) -> List[ProgramSummaryLog]:
         """Fetch all program log entries"""
         query = select(ProgramSummaryLog)
         # Developer is trusted to attach tz info manually
-        return self.execute_and_return_all(query)  
+        return self.execute_and_return_all(query)
 
     def read_last_24_hrs(self, right_now: UserLocalTime):
         """Fetch all program log entries from the last 24 hours
@@ -138,5 +142,3 @@ class ProgramLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
             raise ImpossibleToGetHereError(
                 "Start of pulse didn't reach the db")
         self.attach_final_values_and_update(session, log)
-
-   

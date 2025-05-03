@@ -9,7 +9,6 @@ from surveillance.src.config.definitions import (
     keep_alive_cycle_length,
     window_push_length,
 )
-from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
 from surveillance.src.arbiter.activity_recorder import ActivityRecorder
 from surveillance.src.object.classes import ProgramSession, ChromeSession
 

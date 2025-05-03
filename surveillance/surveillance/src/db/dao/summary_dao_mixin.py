@@ -10,7 +10,7 @@ from surveillance.src.config.definitions import window_push_length
 from surveillance.src.object.classes import ProgramSession, ChromeSession
 from surveillance.src.object.dao_objects import FindTodaysEntryInitializer
 
-from surveillance.src.util.time_formatting import attach_tz_to_obj, get_start_of_day_from_ult, get_start_of_day_from_datetime, attach_tz_to_all
+from surveillance.surveillance.src.tz_handling.time_formatting import attach_tz_to_obj, get_start_of_day_from_ult, get_start_of_day_from_datetime, attach_tz_to_all
 from surveillance.src.util.log_dao_helper import group_logs_by_name
 from surveillance.src.util.errors import ImpossibleToGetHereError
 from surveillance.src.util.time_wrappers import UserLocalTime
@@ -21,6 +21,7 @@ from surveillance.src.util.errors import DatabaseProtectionError, NegativeTimeEr
 T = TypeVar('T', bound=DeclarativeMeta)
 
 # pyright: reportAttributeAccessIssue=false
+
 
 class SummaryDaoMixin:
     def _find_todays_entry(
@@ -47,7 +48,7 @@ class SummaryDaoMixin:
             return None
 
         return attach_tz_to_obj(result, session_time.dt.tzinfo)
-    
+
     def do_read_past_week(self, right_now: UserLocalTime):
         days_since_sunday = right_now.weekday() + 1
         last_sunday = right_now.dt - timedelta(days=days_since_sunday)
@@ -58,7 +59,7 @@ class SummaryDaoMixin:
 
         result = self.execute_and_return_all(query)
         return attach_tz_to_all(result, right_now.dt.tzinfo)
-    
+
     def do_read_day(self, day: UserLocalTime):
         today_start = get_start_of_day_from_datetime(day.dt)
         tomorrow_start = today_start + timedelta(days=1)
@@ -69,13 +70,14 @@ class SummaryDaoMixin:
         )
         result = self.execute_and_return_all(query)
         return attach_tz_to_all(result, day.dt.tzinfo)
-    
+
     def add_partial_window(self, session: ProgramSession | ChromeSession, duration_in_sec: int, name_filter):
         if duration_in_sec == 0:
             return  # No work to do here
         self.throw_if_negative(session.get_name(), duration_in_sec)
 
-        today_start: UserLocalTime = get_start_of_day_from_ult(session.start_time)
+        today_start: UserLocalTime = get_start_of_day_from_ult(
+            session.start_time)
         tomorrow_start = today_start.dt + timedelta(days=1)
 
         time_to_add = duration_in_sec / SECONDS_PER_HOUR
@@ -101,7 +103,6 @@ class SummaryDaoMixin:
             summary.hours_spent = new_duration  # Error is here GPT
             db_session.commit()
 
-            
     def execute_window_push(self, query, purpose, identifier: datetime):
         # self.logger.log_white(f"[info] looking for {purpose} with {identifier}")
         with self.regular_session() as db_session:
@@ -109,7 +110,8 @@ class SummaryDaoMixin:
             summary = db_session.scalars(query).first()
             # FIXME: Sometimes program | domain is None
             if summary:
-                summary.hours_spent = summary.hours_spent + window_push_length / SECONDS_PER_HOUR
+                summary.hours_spent = summary.hours_spent + \
+                    window_push_length / SECONDS_PER_HOUR
                 db_session.commit()
             else:
                 raise ImpossibleToGetHereError(
@@ -120,14 +122,13 @@ class SummaryDaoMixin:
 
         if result is None:
             return None  # Or create a default
-            
+
         return attach_tz_to_obj(result, start_time.dt.tzinfo)
-    
+
     def throw_if_negative(self, activity: str, value: int | float):
         if value < 0:
             raise NegativeTimeError(activity, value)
-    
-    
+
     def delete(self, id: int):
         """Delete an entry by ID"""
         with self.regular_session() as session:

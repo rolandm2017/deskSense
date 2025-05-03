@@ -1,0 +1,8 @@
+# pyproject.toml
+[tool.isort]
+profile = "black"
+sections = ["PARTY1", "PARTY2", "PARTY3", "PARTY4"]
+known_party1 = ["pytest", "unittest"]
+known_party2 = ["asyncio"]
+known_party3 = ["pytz", "datetime", "time"]
+known_party4 = ["typing"]

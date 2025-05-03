@@ -2,6 +2,7 @@ import pytest
 
 from typing import cast
 
+from surveillance.src.db.models import SummaryLogBase
 from surveillance.src.object.classes import ProgramSession, ChromeSession
 from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
@@ -268,42 +269,47 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
         def assert_count_of_logs_is_right(program_logs, domain_logs):
             """One log per entry"""
             # It isn't - 1 because the final test session is seen by on_new_session
-            seen_session_count = len(test_sessions)  
+            seen_session_count = len(verified_sessions)  
             assert len(program_logs) + len(domain_logs) == seen_session_count
 
         assert_count_of_logs_is_right(program_logs, domain_logs)
 
-        logs_tally_by_name = {}
+        logs_durations_tally_by_name = {}
 
         for log in program_logs + domain_logs:
+            log: SummaryLogBase
             name = log.get_name()
-            if name in logs_tally_by_name:
-                logs_tally_by_name[name] += log.duration_in_sec
+            if name in logs_durations_tally_by_name:
+                logs_durations_tally_by_name[name] += log.duration_in_sec
             else:
-                logs_tally_by_name[name] = log.duration_in_sec
+                logs_durations_tally_by_name[name] = log.duration_in_sec
 
         
         logs_total = 0
-        for key, seconds_spent in logs_tally_by_name.items():
+        for key, seconds_spent in logs_durations_tally_by_name.items():
             logs_total += seconds_spent
 
         assert logs_total == sum(expected_durations)
 
         # Even the end - start times work:
 
-        logs_tally_by_times = {}
+        logs_tally_start_end_times = {}
 
         for log in program_logs + domain_logs:
             name = log.get_name()
-            if name in logs_tally_by_times:
-                logs_tally_by_times[name] += log.end_time - log.start_time
+            if name in logs_tally_start_end_times:
+                logs_tally_start_end_times[name] += log.end_time - log.start_time
             else:
-                logs_tally_by_times[name] = log.end_time - log.start_time
+                logs_tally_start_end_times[name] = log.end_time - log.start_time
 
         start_end_totals = 0
-        for key, seconds_spent in logs_tally_by_name.items():
+        for key, seconds_spent in logs_tally_start_end_times.items():
             start_end_totals += seconds_spent
 
         assert start_end_totals == sum(expected_durations)
+
+ 
     finally:
         truncate_summaries_and_logs_tables_via_session(setup_recorder_etc["session_maker"])
+
+    # TODO: Test that logs have the right start_time, end_time

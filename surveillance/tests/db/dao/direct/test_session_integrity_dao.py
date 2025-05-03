@@ -18,7 +18,7 @@ from surveillance.src.db.models import Base, SystemStatus, ProgramSummaryLog, Do
 from surveillance.src.db.dao.direct.session_integrity_dao import SessionIntegrityDao
 from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-from surveillance.src.util.time_formatting import get_start_of_day_from_datetime
+from surveillance.surveillance.src.tz_handling.time_formatting import get_start_of_day_from_datetime
 
 from ....helper.truncation import truncate_logs_tables_via_engine
 
@@ -105,11 +105,14 @@ async def test_program_logs(plain_asm, test_power_events):
             program_name="Outlook",
             hours_spent=12.0,  # Impossibly long session
             start_time=shutdown_time - timedelta(minutes=45),
-            start_time_local=shutdown_time.replace(tzinfo=None) - timedelta(minutes=45),
+            start_time_local=shutdown_time.replace(
+                tzinfo=None) - timedelta(minutes=45),
             end_time=startup_time + timedelta(minutes=15),
-            end_time_local=startup_time.replace(tzinfo=None) + timedelta(minutes=15),
+            end_time_local=startup_time.replace(
+                tzinfo=None) + timedelta(minutes=15),
             gathering_date=get_start_of_day_from_datetime(base_time),
-            gathering_date_local=get_start_of_day_from_datetime(base_time).replace(tzinfo=None),
+            gathering_date_local=get_start_of_day_from_datetime(
+                base_time).replace(tzinfo=None),
             created_at=base_time
         )
         # Phantom: impossibly started during system off time
@@ -125,7 +128,8 @@ async def test_program_logs(plain_asm, test_power_events):
             start_time_local=shutdown_time.replace(tzinfo=None),
             end_time_local=startup_time.replace(tzinfo=None),
             gathering_date=get_start_of_day_from_datetime(base_time),
-            gathering_date_local=get_start_of_day_from_datetime(base_time).replace(tzinfo=None),
+            gathering_date_local=get_start_of_day_from_datetime(
+                base_time).replace(tzinfo=None),
             created_at=base_time
         )
 
@@ -139,10 +143,13 @@ async def test_program_logs(plain_asm, test_power_events):
                 hours_spent=2.0,
                 start_time=shutdown_time - timedelta(hours=3),
                 end_time=shutdown_time - timedelta(hours=1),
-                start_time_local=shutdown_time.replace(tzinfo=None)  - timedelta(hours=3),
-                end_time_local=shutdown_time.replace(tzinfo=None) - timedelta(hours=1),
+                start_time_local=shutdown_time.replace(
+                    tzinfo=None) - timedelta(hours=3),
+                end_time_local=shutdown_time.replace(
+                    tzinfo=None) - timedelta(hours=1),
                 gathering_date=get_start_of_day_from_datetime(base_time),
-                gathering_date_local=get_start_of_day_from_datetime(base_time).replace(tzinfo=None),
+                gathering_date_local=get_start_of_day_from_datetime(
+                    base_time).replace(tzinfo=None),
                 created_at=base_time
             ),
 
@@ -158,9 +165,12 @@ async def test_program_logs(plain_asm, test_power_events):
                 start_time=startup_time + timedelta(minutes=5),
                 end_time=startup_time + timedelta(hours=1, minutes=35),
                 start_time_local=startup_time.replace(tzinfo=None),
-                end_time_local=startup_time.replace(tzinfo=None) + timedelta(hours=1, minutes=35),
-                gathering_date=get_start_of_day_from_datetime(base_time + timedelta(days=1)),
-                gathering_date_local=get_start_of_day_from_datetime(base_time + timedelta(days=1)).replace(tzinfo=None),
+                end_time_local=startup_time.replace(
+                    tzinfo=None) + timedelta(hours=1, minutes=35),
+                gathering_date=get_start_of_day_from_datetime(
+                    base_time + timedelta(days=1)),
+                gathering_date_local=get_start_of_day_from_datetime(
+                    base_time + timedelta(days=1)).replace(tzinfo=None),
                 created_at=base_time + timedelta(days=1)
             )
         ]
@@ -171,7 +181,6 @@ async def test_program_logs(plain_asm, test_power_events):
 
         await session.commit()
 
-            
         return program_logs
 
 
@@ -195,16 +204,19 @@ async def test_domain_logs(plain_asm, test_power_events):
         #     gathering_date=get_start_of_day_from_datetime(base_time),
         #     created_at=base_time
         # Orphan type 2: started before shutdown, ended after startup (impossible)
-         # Orphan type 2: started before shutdown, ended after startup (impossible)
+        # Orphan type 2: started before shutdown, ended after startup (impossible)
         orphan_2 = DomainSummaryLog(
             domain_name="youtube.com",
             hours_spent=10.0,  # Impossibly long session
             start_time=shutdown_time - timedelta(minutes=20),
-            start_time_local=(shutdown_time - timedelta(minutes=20)).replace(tzinfo=None),
+            start_time_local=(
+                shutdown_time - timedelta(minutes=20)).replace(tzinfo=None),
             end_time=startup_time + timedelta(minutes=10),
-            end_time_local=(startup_time + timedelta(minutes=10)).replace(tzinfo=None),
+            end_time_local=(startup_time + timedelta(minutes=10)
+                            ).replace(tzinfo=None),
             gathering_date=get_start_of_day_from_datetime(base_time),
-            gathering_date_local=get_start_of_day_from_datetime(base_time).replace(tzinfo=None),
+            gathering_date_local=get_start_of_day_from_datetime(
+                base_time).replace(tzinfo=None),
             created_at=base_time
         )
         # Phantom: impossibly started during system off time
@@ -213,12 +225,15 @@ async def test_domain_logs(plain_asm, test_power_events):
             hours_spent=0.3,
             # Started after shutdown
             start_time=shutdown_time + timedelta(hours=3),
-            start_time_local=(shutdown_time + timedelta(hours=3)).replace(tzinfo=None),
+            start_time_local=(
+                shutdown_time + timedelta(hours=3)).replace(tzinfo=None),
             # Ended before startup
             end_time=startup_time - timedelta(hours=1),
-            end_time_local=(startup_time - timedelta(hours=1)).replace(tzinfo=None),
+            end_time_local=(startup_time - timedelta(hours=1)
+                            ).replace(tzinfo=None),
             gathering_date=get_start_of_day_from_datetime(base_time),
-            gathering_date_local=get_start_of_day_from_datetime(base_time).replace(tzinfo=None),
+            gathering_date_local=get_start_of_day_from_datetime(
+                base_time).replace(tzinfo=None),
             created_at=base_time
         )
 
@@ -229,11 +244,14 @@ async def test_domain_logs(plain_asm, test_power_events):
                 domain_name="github.com",
                 hours_spent=1.0,
                 start_time=shutdown_time - timedelta(hours=2),
-                start_time_local=(shutdown_time - timedelta(hours=2)).replace(tzinfo=None),
+                start_time_local=(
+                    shutdown_time - timedelta(hours=2)).replace(tzinfo=None),
                 end_time=shutdown_time - timedelta(hours=1),
-                end_time_local=(shutdown_time - timedelta(hours=1)).replace(tzinfo=None),
+                end_time_local=(shutdown_time - timedelta(hours=1)
+                                ).replace(tzinfo=None),
                 gathering_date=get_start_of_day_from_datetime(base_time),
-                gathering_date_local=get_start_of_day_from_datetime(base_time).replace(tzinfo=None),
+                gathering_date_local=get_start_of_day_from_datetime(
+                    base_time).replace(tzinfo=None),
                 created_at=base_time
             ),
             orphan_2,
@@ -245,11 +263,15 @@ async def test_domain_logs(plain_asm, test_power_events):
                 domain_name="google.com",
                 hours_spent=0.8,
                 start_time=startup_time + timedelta(minutes=10),
-                start_time_local=(startup_time + timedelta(minutes=10)).replace(tzinfo=None),
+                start_time_local=(
+                    startup_time + timedelta(minutes=10)).replace(tzinfo=None),
                 end_time=startup_time + timedelta(minutes=58),
-                end_time_local=(startup_time + timedelta(minutes=58)).replace(tzinfo=None),
-                gathering_date=get_start_of_day_from_datetime(base_time + timedelta(days=1)),
-                gathering_date_local=get_start_of_day_from_datetime(base_time + timedelta(days=1)).replace(tzinfo=None),
+                end_time_local=(
+                    startup_time + timedelta(minutes=58)).replace(tzinfo=None),
+                gathering_date=get_start_of_day_from_datetime(
+                    base_time + timedelta(days=1)),
+                gathering_date_local=get_start_of_day_from_datetime(
+                    base_time + timedelta(days=1)).replace(tzinfo=None),
                 created_at=base_time + timedelta(days=1)
             )
         ]
@@ -307,9 +329,6 @@ async def full_test_environment(
         "daos": test_dao_instances
     }
 # Create a function that directly cleans up tables - this is simpler and more reliable
-
-
-
 
 
 # Modify your test functions to call the cleanup explicitly
