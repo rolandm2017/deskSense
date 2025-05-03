@@ -15,7 +15,7 @@ from surveillance.src.db.dao.logging_dao_mixin import LoggingDaoMixin
 from surveillance.src.db.models import DomainSummaryLog, ProgramSummaryLog
 
 from surveillance.src.object.classes import ChromeSession, CompletedChromeSession
-from surveillance.surveillance.src.tz_handling.dao_objects import LogTimeInitializer
+from surveillance.surveillance.src.tz_handling.dao_objects import LogTimeConverter
 
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.errors import ImpossibleToGetHereError
@@ -53,7 +53,7 @@ class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         A session of using a domain. End_time here is like, "when did the user tab away from the program?"
         """
 
-        initializer = LogTimeInitializer(session.start_time)
+        initializer = LogTimeConverter(session.start_time)
 
         # self.logger.log_white(f"INFO: querying start_of_day: {start_of_day_as_utc}\n\t for {session.get_name()}")
 
@@ -62,16 +62,16 @@ class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
             # Assumes (10 - n) sec will be deducted later
             # FIXME: all time additions should happen thru KeepAlive
             hours_spent=ten_sec_as_pct_of_hour,
-            start_time=initializer.base_start_time,
+            start_time=initializer.base_start_time_as_utc,
             start_time_local=session.start_time.dt,
-            end_time=initializer.start_window_end,
-            end_time_local=initializer.start_window_end.replace(
+            end_time=initializer.base_start_window_end,
+            end_time_local=initializer.base_start_window_end.replace(
                 tzinfo=None),
             duration_in_sec=0,
             gathering_date=initializer.start_of_day_as_utc,
             gathering_date_local=initializer.start_of_day_as_utc.replace(
                 tzinfo=None),
-            created_at=initializer.base_start_time
+            created_at=initializer.base_start_time_as_utc
         )
         self.add_new_item(log_entry)
 

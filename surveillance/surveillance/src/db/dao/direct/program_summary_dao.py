@@ -12,7 +12,7 @@ from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 from surveillance.src.db.dao.summary_dao_mixin import SummaryDaoMixin
 
 
-from surveillance.surveillance.src.tz_handling.dao_objects import FindTodaysEntryInitializer
+from surveillance.surveillance.src.tz_handling.dao_objects import FindTodaysEntryConverter
 from surveillance.src.object.classes import ProgramSession
 
 from surveillance.src.util.console_logger import ConsoleLogger
@@ -52,7 +52,7 @@ class ProgramSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
 
     def find_todays_entry_for_program(self, program_session: ProgramSession) -> DailyProgramSummary | None:
         """Find by exe_path"""
-        initializer = FindTodaysEntryInitializer(program_session.start_time)
+        initializer = FindTodaysEntryConverter(program_session.start_time)
 
         query = self.create_find_all_from_day_query(
             program_session.exe_path, initializer.start_of_day_with_tz, initializer.end_of_day_with_tz)

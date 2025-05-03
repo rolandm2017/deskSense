@@ -146,7 +146,7 @@ def convert_to_utc(dt: datetime):
     Returns:
     - A datetime object representing the same moment in UTC
 
-    So 9 pm Asia/Tokyo will be returned as 9 pm UTC.
+    So 9 pm Asia/Tokyo will be returned as 12 pm UTC.
     """
     if dt.tzinfo is None:
         raise ValueError("Input datetime must be timezone-aware")

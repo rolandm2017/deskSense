@@ -799,26 +799,26 @@ async def test_tracker_to_db_path_with_brand_new_sessions(validate_test_data_and
     p_summary_dao.do_addition = do_addition_spy
 
     def make_log_from_session(session):
-        base_start_time = convert_to_utc(
+        base_start_time_as_utc = convert_to_utc(
             session.start_time.get_dt_for_db())
         start_of_day = get_start_of_day_from_datetime(
             session.start_time.get_dt_for_db())
         if isinstance(start_of_day, UserLocalTime):
             raise ValueError("Expected datetime")
         start_of_day_as_utc = convert_to_utc(start_of_day)
-        start_window_end = base_start_time + timedelta(seconds=10)
+        start_window_end = base_start_time_as_utc + timedelta(seconds=10)
         return ProgramSummaryLog(
             exe_path_as_id=session.exe_path,
             process_name=session.process_name,
             program_name=session.window_title,
             # Assumes (10 - n) sec will be deducted later
             hours_spent=ten_sec_as_pct_of_hour,
-            start_time=base_start_time,  # FIXME: start_time_local is missing
+            start_time=base_start_time_as_utc,  # FIXME: start_time_local is missing
             end_time=start_window_end,  # FIXME: _local mia
             duration_in_sec=0,
             gathering_date=start_of_day_as_utc,
             gathering_date_local=start_of_day_as_utc.replace(tzinfo=None),
-            created_at=base_start_time
+            created_at=base_start_time_as_utc
         )
 
     def make_mock_db_rows_for_test_data():

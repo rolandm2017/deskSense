@@ -31,7 +31,13 @@ def test_setup_conditions():
 
 
 def test_convert_to_utc():
+    """
+    Show that the start state {some_hour, non-UTC timezone} comes out as { some hour - offset, UTC timezone}
+    """
     midday = 12
+
+    # Tokyo is UTC +9
+    # PST is UTC -7
 
     tokyo_hour = midday + 9
     some_tokyo_time = tokyo_tz.localize(

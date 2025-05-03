@@ -12,7 +12,7 @@ from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
 from surveillance.src.db.dao.summary_dao_mixin import SummaryDaoMixin
 from surveillance.src.db.models import DailyDomainSummary
 
-from surveillance.surveillance.src.tz_handling.dao_objects import FindTodaysEntryInitializer
+from surveillance.surveillance.src.tz_handling.dao_objects import FindTodaysEntryConverter
 from surveillance.src.object.classes import ChromeSession
 
 from surveillance.src.util.console_logger import ConsoleLogger
@@ -51,7 +51,7 @@ class ChromeSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
 
     def find_todays_entry_for_domain(self, chrome_session: ChromeSession) -> DailyDomainSummary | None:
         """Find by domain name"""
-        initializer = FindTodaysEntryInitializer(chrome_session.start_time)
+        initializer = FindTodaysEntryConverter(chrome_session.start_time)
 
         query = self.create_find_all_from_day_query(
             chrome_session.domain, initializer.start_of_day_with_tz, initializer.end_of_day_with_tz)

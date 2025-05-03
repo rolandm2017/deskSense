@@ -39,7 +39,7 @@ Sqlite does not store tz info. Only pg does.
 
 @pytest.fixture
 def setup_recorder_etc(regular_session_maker):
-    
+
     program_logging_dao = ProgramLoggingDao(regular_session_maker)
     chrome_logging_dao = ChromeLoggingDao(regular_session_maker)
 
@@ -47,9 +47,10 @@ def setup_recorder_etc(regular_session_maker):
         program_logging_dao, regular_session_maker)
     chrome_summary_dao = ChromeSummaryDao(
         chrome_logging_dao, regular_session_maker)
-    
-    recorder = ActivityRecorder(program_logging_dao, chrome_logging_dao, program_summary_dao, chrome_summary_dao, True)
-    
+
+    recorder = ActivityRecorder(
+        program_logging_dao, chrome_logging_dao, program_summary_dao, chrome_summary_dao, True)
+
     return {"program_logging": program_logging_dao, "chrome_logging": chrome_logging_dao,
             "program_summary": program_summary_dao, "chrome_summary": chrome_summary_dao,
             "recorder": recorder, "session_maker": regular_session_maker
@@ -63,7 +64,8 @@ def verified_data_with_durations():
     assert_start_times_are_chronological(test_sessions)
 
     # Start by doing a deepcopy so integration test A doesn't influence integration test B
-    copied_test_data = [snapshot_obj_for_tests_with_ledger(x) for x in test_sessions]
+    copied_test_data = [
+        snapshot_obj_for_tests_with_ledger(x) for x in test_sessions]
 
     durations = get_durations_from_test_data(test_sessions)
 
@@ -83,20 +85,22 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
 
     # assert 1 == 2
     x = int(sum(counted_loops))
-    expected_on_new_sessions = len(verified_sessions)  # on_new_session does see final entry
+    # on_new_session does see final entry
+    expected_on_new_sessions = len(verified_sessions)
     expected_add_ten_count = x  # Must remove final entry
-    expected_partial_windows = len(expected_durations)  # Final entry triggers a partial
-    expected_on_state_changed = len(verified_sessions) - 1  # Doesn't see final val
+    # Final entry triggers a partial
+    expected_partial_windows = len(expected_durations)
+    expected_on_state_changed = len(
+        verified_sessions) - 1  # Doesn't see final val
 
     durations_per_session_dict = {}
-
 
     # TODO: Verify the test's expected summary is what you think. full cycles + partials
 
     def get_session_key(session):
         """Create a unique key for each session based on name and start time"""
         return f"{session.get_name()}_{session.start_time.dt.isoformat()}"
-    
+
     for i, session in enumerate(verified_sessions):
         session_key = get_session_key(session)
         if i == len(verified_sessions) - 2:
@@ -133,26 +137,29 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
 
             session_key = get_session_key(session)
             calls_dict = {"add_ten": 0,
-                        "add_partial": 0,
-                        "state_changed": 0}
+                          "add_partial": 0,
+                          "state_changed": 0}
 
             for _ in range(0, total_cycles):
                 actual_add_ten_count += 1
                 calls_dict["add_ten"] += 1
                 recorded_time += 10
-                setup_recorder_etc["recorder"].add_ten_sec_to_end_time(current_session)
+                setup_recorder_etc["recorder"].add_ten_sec_to_end_time(
+                    current_session)
             # Add in the partial window
             actual_partial_windows += 1
             calls_dict["add_partial"] += 1
             recorded_time += partial_window_time
-            setup_recorder_etc["recorder"].add_partial_window(partial_window_time, current_session)
+            setup_recorder_etc["recorder"].add_partial_window(
+                partial_window_time, current_session)
 
             # Finalize session
             next_session_start_time = verified_sessions[i + 1].start_time
             # print("current:",current_session)
             # print("next:",verified_sessions[i + 1])
             assert next_session_start_time.dt > current_session.start_time.dt
-            completed_session = current_session.to_completed(next_session_start_time)
+            completed_session = current_session.to_completed(
+                next_session_start_time)
 
             actual_on_state_changed += 1
             calls_dict["state_changed"] += 1
@@ -161,25 +168,26 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
 
             recorded_times.append(recorded_time)
 
-
         logs = []
         for session in verified_sessions:
             if isinstance(session, ProgramSession):
-                log = setup_recorder_etc["program_logging"].find_session(session)
+                log = setup_recorder_etc["program_logging"].find_session(
+                    session)
                 logs.append(log)
             else:
-                log = setup_recorder_etc["chrome_logging"].find_session(session)
+                log = setup_recorder_etc["chrome_logging"].find_session(
+                    session)
                 logs.append(log)
 
         actual_durations_in_logs = [log.duration_in_sec for log in logs]
-
 
         def assert_expected_values_match_ledger():
             """Verify each one using it's ledger."""
             for i in range(0, len(verified_sessions)):
                 # check that the ledger says what you expect
                 if i == len(verified_sessions) - 1:
-                    assert verified_sessions[i].ledger.get_total() == 0  # Claude, final session
+                    # Claude, final session
+                    assert verified_sessions[i].ledger.get_total() == 0
                     break
                 ledger_total = verified_sessions[i].ledger.get_total()
                 assert ledger_total == expected_durations[i]
@@ -189,10 +197,9 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
 
         zips = []
         for i in range(0, len(verified_sessions)):
-            zip = (actual_durations_in_logs[i], verified_sessions[i].ledger.get_total())
+            zip = (actual_durations_in_logs[i],
+                   verified_sessions[i].ledger.get_total())
             zips.append(zip)
-
-
 
         print("-- comparing zips -- ")
 
@@ -203,12 +210,13 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
         def assert_actual_logs_match_expected_durations():
             for i in range(0, len(verified_sessions)):
                 current = verified_sessions[i]
-                assert current.ledger.get_total() == actual_durations_in_logs[i]
+                assert current.ledger.get_total(
+                ) == actual_durations_in_logs[i]
 
         assert_actual_logs_match_expected_durations()
 
         # For each session, verify that it had the expected amount of time recorded
-            
+
         def assert_that_writes_had_exact_expected_count():
             assert actual_on_new_sessions == expected_on_new_sessions
             assert actual_add_ten_count == expected_add_ten_count
@@ -217,11 +225,9 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
 
         assert_that_writes_had_exact_expected_count()
 
-
         # --
         # --
         # --
-
 
         program_sums = setup_recorder_etc["program_summary"].read_all()
         domain_sums = setup_recorder_etc["chrome_summary"].read_all()
@@ -235,7 +241,7 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
                 tally_by_name[name] += summary.hours_spent
             else:
                 tally_by_name[name] = summary.hours_spent
-        
+
         for summary in domain_sums:
             name = summary.get_name()
             if name in tally_by_name:
@@ -256,7 +262,7 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
             tolerance = 0.02  # 5%
             lower_threshold = expected_total * (1 - tolerance)
             upper_bounds = expected_total * (1 + tolerance)
-            
+
             assert lower_threshold < total_sum_from_db < upper_bounds
 
         assert_summary_db_falls_within_tolerance()
@@ -269,7 +275,7 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
         def assert_count_of_logs_is_right(program_logs, domain_logs):
             """One log per entry"""
             # It isn't - 1 because the final test session is seen by on_new_session
-            seen_session_count = len(verified_sessions)  
+            seen_session_count = len(verified_sessions)
             assert len(program_logs) + len(domain_logs) == seen_session_count
 
         assert_count_of_logs_is_right(program_logs, domain_logs)
@@ -284,7 +290,6 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
             else:
                 logs_durations_tally_by_name[name] = log.duration_in_sec
 
-        
         logs_total = 0
         for key, seconds_spent in logs_durations_tally_by_name.items():
             logs_total += seconds_spent
@@ -294,22 +299,30 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
         # Even the end - start times work:
 
         logs_tally_start_end_times = {}
+        v = 0
 
         for log in program_logs + domain_logs:
+            v += 1
             name = log.get_name()
             if name in logs_tally_start_end_times:
-                logs_tally_start_end_times[name] += log.end_time - log.start_time
+                logs_tally_start_end_times[name] += log.end_time - \
+                    log.start_time
             else:
-                logs_tally_start_end_times[name] = log.end_time - log.start_time
+                logs_tally_start_end_times[name] = log.end_time - \
+                    log.start_time
 
         start_end_totals = 0
+        # FIXME:   assert start_end_totals == sum(expected_durations)
+# E           assert 328150.0 == 540.0
+# E            +  where 540.0 = sum([60.0, 62.0, 28.0, 30.0, 35.0, 37.0, ...])
         for key, seconds_spent in logs_tally_start_end_times.items():
-            start_end_totals += seconds_spent
+            start_end_totals += seconds_spent.total_seconds()
 
+        print(v, "321ru")
         assert start_end_totals == sum(expected_durations)
 
- 
     finally:
-        truncate_summaries_and_logs_tables_via_session(setup_recorder_etc["session_maker"])
+        truncate_summaries_and_logs_tables_via_session(
+            setup_recorder_etc["session_maker"])
 
     # TODO: Test that logs have the right start_time, end_time
