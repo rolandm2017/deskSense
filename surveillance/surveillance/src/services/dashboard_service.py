@@ -31,6 +31,10 @@ class DashboardService:
         self.user_clock = UserFacingClock()
         self.logger = ConsoleLogger()
 
+        self.peripherals = PeripheralsService(timeline_dao)
+        self.programs = ProgramsService(
+            program_summary_dao, program_logging_dao)
+
     async def get_weekly_productivity_overview(self, starting_sunday: UserLocalTime):
         if starting_sunday.weekday() != 6:  # In Python, Sunday is 6
             raise ValueError("start_date must be a Sunday")
@@ -88,6 +92,159 @@ class DashboardService:
         print("alt tab windows: ", alt_tab_window_hours)
 
         return usage_from_days
+
+    async def get_program_summary(self):
+        today = self.user_clock.now()
+        all = self.program_summary_dao.read_day(today)
+        return all
+
+    async def get_chrome_summary(self):
+        today = self.user_clock.now()
+        all = self.chrome_summary_dao.read_day(today)
+        return all
+
+    async def get_program_summary_weekly(self):
+        right_now = self.user_clock.now()
+        all = self.program_summary_dao.read_past_week(right_now)
+        # FIXME: Ensure that it actually gets all days of week; can't test it on Monday
+        return all
+
+    async def get_chrome_summary_weekly(self) -> List[DailyDomainSummary]:
+        right_now = self.user_clock.now()
+        all = self.chrome_summary_dao.read_past_week(right_now)
+        # FIXME: Ensure that it actually gets all days of week; can't test it on Monday
+        return all
+
+    async def get_previous_week_chrome_summary(self, start_sunday) -> List[DailyDomainSummary]:
+        if start_sunday.weekday() != 6:  # In Python, Sunday is 6
+            raise ValueError("start_date must be a Sunday")
+
+        usage_from_days = []
+        for i in range(7):
+            current_day = start_sunday + timedelta(days=i)
+            date_as_ult = UserLocalTime(datetime.combine(
+                current_day, datetime.min.time()))
+            daily_summaries = self.chrome_summary_dao.read_day(
+                date_as_ult)
+
+            usage_from_days.extend(daily_summaries)
+
+        return usage_from_days
+
+
+class ProgramsService:
+    def __init__(self,
+                 program_summary_dao: ProgramSummaryDao,
+                 program_logging_dao: ProgramLoggingDao,
+
+                 ):
+        self.program_summary_dao = program_summary_dao
+        self.program_logging_dao = program_logging_dao
+        self.user_clock = UserFacingClock()
+        self.logger = ConsoleLogger()
+
+    async def get_usage_timeline_for_week(self, week_of: UserLocalTime) -> Tuple[List[Dict], datetime]:
+        is_sunday = week_of.dt.weekday() == 6
+        if is_sunday:
+            # If the week_of is a sunday, start from there.
+            sunday_that_starts_the_week: UserLocalTime = week_of
+            days_since_sunday = 0
+        else:
+            # If the week_of is not a sunday,
+            # go back in time to the most recent sunday,
+            # and start from there. This is error handling
+            offset = 1
+            days_per_week = 7
+            days_since_sunday = (week_of.dt.weekday() + offset) % days_per_week
+            sunday_that_starts_the_week: UserLocalTime = week_of - \
+                timedelta(days=days_since_sunday)
+
+        now = self.user_clock.now()
+        start_of_today = now.replace(hour=0, minute=0, second=0,
+                                     microsecond=0)
+        start_of_tomorrow = start_of_today + timedelta(days=1)
+
+        all_days = []
+
+        for days_after_sunday in range(7):
+            current_day = sunday_that_starts_the_week + \
+                timedelta(days=days_after_sunday)
+
+            is_in_future = current_day > start_of_tomorrow
+            if is_in_future:
+                continue  # avoid reading future dates from db
+
+            program_usage_timeline: dict[str, ProgramSummaryLog] = self.program_logging_dao.read_day_as_sorted(
+                UserLocalTime(current_day))
+
+            self.logger.log_days_retrieval(
+                "[get_program_usage_timeline]", current_day.dt, len(program_usage_timeline))
+            day = {"date": current_day,
+                   "program_usage_timeline": program_usage_timeline}
+            all_days.append(day)
+
+        return all_days, sunday_that_starts_the_week
+
+    async def get_current_week_usage_timeline(self):
+        today: UserLocalTime = self.user_clock.now()
+
+        is_sunday: bool = today.dt.weekday() == 6
+        if is_sunday:
+            # If the week_of is a sunday, start from there.
+            sunday_that_starts_the_week: UserLocalTime = today
+            days_since_sunday = 0
+        else:
+            # If the week_of is not a sunday,
+            # go back in time to the most recent sunday,
+            # and start from there. This is error handling
+            offset: int = 1
+            days_per_week: int = 7
+            days_since_sunday: int = (today.weekday() + offset) % days_per_week
+            sunday_that_starts_the_week: UserLocalTime = today - \
+                timedelta(days=days_since_sunday)
+
+        now: UserLocalTime = self.user_clock.now()
+        start_of_today: UserLocalTime = now.get_start_of_day()
+        start_of_tomorrow: UserLocalTime = start_of_today + timedelta(days=1)
+
+        all_days = []
+
+        for days_after_sunday in range(7):
+            current_day: UserLocalTime = sunday_that_starts_the_week + \
+                timedelta(days=days_after_sunday)
+            is_in_future: bool = current_day > start_of_tomorrow
+            if is_in_future:
+                continue  # avoid reading future dates from db
+
+            program_usage_timeline: dict[str, ProgramSummaryLog] = self.program_logging_dao.read_day_as_sorted(
+                current_day)
+
+            # Figure out:
+            # - is the problem still happening? are new strange datapoints being made?
+            # - where did these ones come from?
+            # - how to make pg show them?
+            # - how far back does it go? does the problem occur in data from two weeks ago?
+            # - if it's still occurring, how to stop it from happening again?
+            # - perhaps there can be an auditor dao with some hardcoded values
+
+            self.logger.log_days_retrieval(
+                "[get_current_week_program_usage_timeline]", current_day.dt, len(program_usage_timeline))
+            day = {"date": current_day.dt,
+                   "program_usage_timeline": program_usage_timeline}
+
+            all_days.append(day)
+
+        return all_days, sunday_that_starts_the_week
+
+
+class PeripheralsService:
+    def __init__(self, timeline_dao: TimelineEntryDao
+
+
+                 ):
+        self.timeline_dao = timeline_dao
+        self.user_clock = UserFacingClock()
+        self.logger = ConsoleLogger()
 
     # FIXME: Need this method and all it's friends to distinguish between Peripherals and Program timelines
     async def get_timeline_for_today(self):
@@ -181,134 +338,3 @@ class DashboardService:
             all_days.append(day)
 
         return all_days, sunday_that_starts_the_week
-
-    async def get_current_week_program_usage_timeline(self):
-        today: UserLocalTime = self.user_clock.now()
-
-        is_sunday: bool = today.dt.weekday() == 6
-        if is_sunday:
-            # If the week_of is a sunday, start from there.
-            sunday_that_starts_the_week: UserLocalTime = today
-            days_since_sunday = 0
-        else:
-            # If the week_of is not a sunday,
-            # go back in time to the most recent sunday,
-            # and start from there. This is error handling
-            offset: int = 1
-            days_per_week: int = 7
-            days_since_sunday: int = (today.weekday() + offset) % days_per_week
-            sunday_that_starts_the_week: UserLocalTime = today - \
-                timedelta(days=days_since_sunday)
-
-        now: UserLocalTime = self.user_clock.now()
-        start_of_today: UserLocalTime = now.get_start_of_day()
-        start_of_tomorrow: UserLocalTime = start_of_today + timedelta(days=1)
-
-        all_days = []
-
-        for days_after_sunday in range(7):
-            current_day: UserLocalTime = sunday_that_starts_the_week + \
-                timedelta(days=days_after_sunday)
-            is_in_future: bool = current_day > start_of_tomorrow
-            if is_in_future:
-                continue  # avoid reading future dates from db
-
-            program_usage_timeline: dict[str, ProgramSummaryLog] = self.program_logging_dao.read_day_as_sorted(
-                current_day)
-
-            # Figure out:
-            # - is the problem still happening? are new strange datapoints being made?
-            # - where did these ones come from?
-            # - how to make pg show them?
-            # - how far back does it go? does the problem occur in data from two weeks ago?
-            # - if it's still occurring, how to stop it from happening again?
-            # - perhaps there can be an auditor dao with some hardcoded values
-
-            self.logger.log_days_retrieval(
-                "[get_current_week_program_usage_timeline]", current_day.dt, len(program_usage_timeline))
-            day = {"date": current_day.dt,
-                   "program_usage_timeline": program_usage_timeline}
-
-            all_days.append(day)
-
-        return all_days, sunday_that_starts_the_week
-
-    async def get_program_usage_timeline_for_week(self, week_of: UserLocalTime) -> Tuple[List[Dict], datetime]:
-        is_sunday = week_of.dt.weekday() == 6
-        if is_sunday:
-            # If the week_of is a sunday, start from there.
-            sunday_that_starts_the_week: UserLocalTime = week_of
-            days_since_sunday = 0
-        else:
-            # If the week_of is not a sunday,
-            # go back in time to the most recent sunday,
-            # and start from there. This is error handling
-            offset = 1
-            days_per_week = 7
-            days_since_sunday = (week_of.dt.weekday() + offset) % days_per_week
-            sunday_that_starts_the_week: UserLocalTime = week_of - \
-                timedelta(days=days_since_sunday)
-
-        now = self.user_clock.now()
-        start_of_today = now.replace(hour=0, minute=0, second=0,
-                                     microsecond=0)
-        start_of_tomorrow = start_of_today + timedelta(days=1)
-
-        all_days = []
-
-        for days_after_sunday in range(7):
-            current_day = sunday_that_starts_the_week + \
-                timedelta(days=days_after_sunday)
-
-            is_in_future = current_day > start_of_tomorrow
-            if is_in_future:
-                continue  # avoid reading future dates from db
-
-            program_usage_timeline: dict[str, ProgramSummaryLog] = self.program_logging_dao.read_day_as_sorted(
-                UserLocalTime(current_day))
-
-            self.logger.log_days_retrieval(
-                "[get_program_usage_timeline]", current_day.dt, len(program_usage_timeline))
-            day = {"date": current_day,
-                   "program_usage_timeline": program_usage_timeline}
-            all_days.append(day)
-
-        return all_days, sunday_that_starts_the_week
-
-    async def get_program_summary(self):
-        today = self.user_clock.now()
-        all = self.program_summary_dao.read_day(today)
-        return all
-
-    async def get_chrome_summary(self):
-        today = self.user_clock.now()
-        all = self.chrome_summary_dao.read_day(today)
-        return all
-
-    async def get_program_summary_weekly(self):
-        right_now = self.user_clock.now()
-        all = self.program_summary_dao.read_past_week(right_now)
-        # FIXME: Ensure that it actually gets all days of week; can't test it on Monday
-        return all
-
-    async def get_chrome_summary_weekly(self) -> List[DailyDomainSummary]:
-        right_now = self.user_clock.now()
-        all = self.chrome_summary_dao.read_past_week(right_now)
-        # FIXME: Ensure that it actually gets all days of week; can't test it on Monday
-        return all
-
-    async def get_previous_week_chrome_summary(self, start_sunday) -> List[DailyDomainSummary]:
-        if start_sunday.weekday() != 6:  # In Python, Sunday is 6
-            raise ValueError("start_date must be a Sunday")
-
-        usage_from_days = []
-        for i in range(7):
-            current_day = start_sunday + timedelta(days=i)
-            date_as_ult = UserLocalTime(datetime.combine(
-                current_day, datetime.min.time()))
-            daily_summaries = self.chrome_summary_dao.read_day(
-                date_as_ult)
-
-            usage_from_days.extend(daily_summaries)
-
-        return usage_from_days

@@ -179,7 +179,8 @@ async def health_check():
 
 @app.get("/api/dashboard/timeline", response_model=TimelineRows)
 async def get_timeline_for_dashboard(dashboard_service: DashboardService = Depends(get_dashboard_service)):
-    mouse_rows, keyboard_rows = await dashboard_service.get_timeline_for_today()
+    # mouse_rows, keyboard_rows = await dashboard_service.get_peripheral_timeline_for_today()
+    mouse_rows, keyboard_rows = await dashboard_service.peripherals.get_timeline_for_today()
     # // TODO: make this be given by day
     if not isinstance(mouse_rows, list) or not isinstance(keyboard_rows, list):
         raise HTTPException(
@@ -289,7 +290,7 @@ async def get_previous_week_chrome_history(week_of: date = Path(..., description
 
 @app.get("/api/dashboard/timeline/week", response_model=PartiallyPrecomputedWeeklyTimeline)
 async def get_timeline_weekly(dashboard_service: DashboardService = Depends(get_dashboard_service)):
-    days_before_today, todays_payload, latest_sunday = await dashboard_service.get_current_week_timeline()
+    days_before_today, todays_payload, latest_sunday = await dashboard_service.peripherals.get_current_week_timeline()
     rows: List[DayOfTimelineRows] = []
 
     assert isinstance(todays_payload, dict)
@@ -333,7 +334,7 @@ async def get_previous_week_of_timeline(week_of: date = Path(..., description="W
                                             get_dashboard_service),
                                         timezone_service: TimezoneService = Depends(get_timezone_service)):
 
-    days, start_of_week = await dashboard_service.get_specific_week_timeline(UserLocalTime(week_of_as_dt))
+    days, start_of_week = await dashboard_service.peripherals.get_specific_week_timeline(UserLocalTime(week_of))
 
     if not isinstance(start_of_week.dt, datetime):
         raise ValueError("start_of_week.dt was expected to be a datetime")
@@ -366,7 +367,7 @@ async def get_previous_week_of_timeline(week_of: date = Path(..., description="W
 @app.get("/api/dashboard/programs/usage/timeline", response_model=WeeklyProgramUsageTimeline)
 async def get_program_usage_timeline_for_present_week(
         dashboard_service: DashboardService = Depends(get_dashboard_service)):
-    all_days, start_of_week = await dashboard_service.get_current_week_program_usage_timeline()
+    all_days, start_of_week = await dashboard_service.programs.get_current_week_usage_timeline()
 
     days = []
     for day in all_days:
@@ -410,7 +411,7 @@ async def get_program_usage_timeline_by_week(week_of: date = Path(..., descripti
     # Convert date to datetime with time at 00:00:00 and attach user timezone
     week_of_as_dt = user_tz.localize(
         datetime.combine(week_of, dt_time(0, 0, 0)))
-    all_days, start_of_week = await dashboard_service.get_program_usage_timeline_for_week(UserLocalTime(week_of_as_dt))
+    all_days, start_of_week = await dashboard_service.programs.get_usage_timeline_for_week(UserLocalTime(week_of_as_dt))
 
     days = []
     for day in all_days:
