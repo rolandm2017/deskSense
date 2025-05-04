@@ -14,7 +14,7 @@ from surveillance.src.config.definitions import productive_sites, productive_app
 from surveillance.src.util.console_logger import ConsoleLogger
 from surveillance.src.util.clock import UserFacingClock
 from surveillance.src.util.time_wrappers import UserLocalTime
-from surveillance.src.tz_handling.time_formatting import format_for_local_time
+from surveillance.src.tz_handling.time_formatting import format_for_local_time, get_start_of_day_from_datetime
 
 
 class DashboardService:
@@ -167,8 +167,9 @@ class DashboardService:
         all_days = []
 
         for days_after_sunday in range(7):
-            current_day = sunday_that_starts_the_week.dt + \
+            current_day: UserLocalTime = sunday_that_starts_the_week.dt + \
                 timedelta(days=days_after_sunday)
+            assert isinstance(current_day, UserLocalTime)
             mouse_events = await self.timeline_dao.read_day_mice(current_day, self.user_clock)
             keyboard_events = await self.timeline_dao.read_day_keyboard(current_day, self.user_clock)
 
@@ -223,16 +224,6 @@ class DashboardService:
             # - if it's still occurring, how to stop it from happening again?
             # - perhaps there can be an auditor dao with some hardcoded values
 
-            i = 0
-            for _, value in program_usage_timeline.items():
-                for log in value:
-
-                    print(log)
-                    i += 1
-                    if i > 4:
-                        break
-                break
-
             self.logger.log_days_retrieval(
                 "[get_current_week_program_usage_timeline]", current_day.dt, len(program_usage_timeline))
             day = {"date": current_day.dt,
@@ -242,16 +233,11 @@ class DashboardService:
 
         return all_days, sunday_that_starts_the_week
 
-    async def get_program_usage_timeline_for_week(self, week_of: date) -> Tuple[List[Dict], datetime]:
-        if isinstance(week_of, date):
-            # Note: The transformation here is a requirement
-            week_of = datetime.combine(week_of, datetime.min.time())
-        else:
-            raise TypeError("Expected a date object, got " + str(week_of))
-        is_sunday = week_of.weekday() == 6
+    async def get_program_usage_timeline_for_week(self, week_of: UserLocalTime) -> Tuple[List[Dict], datetime]:
+        is_sunday = week_of.dt.weekday() == 6
         if is_sunday:
             # If the week_of is a sunday, start from there.
-            sunday_that_starts_the_week = week_of
+            sunday_that_starts_the_week: UserLocalTime = week_of
             days_since_sunday = 0
         else:
             # If the week_of is not a sunday,
@@ -259,8 +245,8 @@ class DashboardService:
             # and start from there. This is error handling
             offset = 1
             days_per_week = 7
-            days_since_sunday = (week_of.weekday() + offset) % days_per_week
-            sunday_that_starts_the_week = week_of - \
+            days_since_sunday = (week_of.dt.weekday() + offset) % days_per_week
+            sunday_that_starts_the_week: UserLocalTime = week_of - \
                 timedelta(days=days_since_sunday)
 
         now = self.user_clock.now()
@@ -282,7 +268,7 @@ class DashboardService:
                 UserLocalTime(current_day))
 
             self.logger.log_days_retrieval(
-                "[get_program_usage_timeline]", current_day, len(program_usage_timeline))
+                "[get_program_usage_timeline]", current_day.dt, len(program_usage_timeline))
             day = {"date": current_day,
                    "program_usage_timeline": program_usage_timeline}
             all_days.append(day)

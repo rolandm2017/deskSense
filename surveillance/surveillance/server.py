@@ -1,4 +1,5 @@
 # server.py
+import pytz
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Depends, status, Request
 from fastapi import Path
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +10,7 @@ import asyncio
 # import time
 from typing import Optional, List
 from datetime import date, datetime, timezone
+from datetime import time as dt_time
 from time import time
 
 
@@ -216,10 +218,20 @@ async def get_chrome_time_for_dashboard(dashboard_service: DashboardService = De
 # By Week # By Week
 #
 
+
 @app.get("/api/dashboard/breakdown/week/{week_of}", response_model=ProductivityBreakdownByWeek)
 async def get_productivity_breakdown(week_of: date = Path(..., description="Week starting date"),
-                                     dashboard_service: DashboardService = Depends(get_dashboard_service)):
-    weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(UserLocalTime(week_of))
+                                     dashboard_service: DashboardService = Depends(
+                                         get_dashboard_service),
+                                     timezone_service: TimezoneService = Depends(
+                                         get_timezone_service)
+                                     ):
+    user_tz_str = timezone_service.get_tz_for_user(1)
+    user_tz = pytz.timezone(user_tz_str)
+    # Convert date to datetime with time at 00:00:00 and attach user timezone
+    week_of_as_dt = user_tz.localize(
+        datetime.combine(week_of, dt_time(0, 0, 0)))
+    weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(UserLocalTime(week_of_as_dt))
     if not isinstance(weeks_overview, list):
         raise HTTPException(
             status_code=500, detail="Failed to retrieve week of Chrome chart info")
@@ -317,8 +329,11 @@ async def get_timeline_weekly(dashboard_service: DashboardService = Depends(get_
 
 @app.get("/api/dashboard/timeline/week/{week_of}", response_model=WeeklyTimeline)
 async def get_previous_week_of_timeline(week_of: date = Path(..., description="Week starting date"),
-                                        dashboard_service: DashboardService = Depends(get_dashboard_service)):
-    days, start_of_week = await dashboard_service.get_specific_week_timeline(UserLocalTime(week_of))
+                                        dashboard_service: DashboardService = Depends(
+                                            get_dashboard_service),
+                                        timezone_service: TimezoneService = Depends(get_timezone_service)):
+
+    days, start_of_week = await dashboard_service.get_specific_week_timeline(UserLocalTime(week_of_as_dt))
 
     if not isinstance(start_of_week.dt, datetime):
         raise ValueError("start_of_week.dt was expected to be a datetime")
@@ -365,7 +380,6 @@ async def get_program_usage_timeline_for_present_week(
             timeline_events = []
             for program_log in value_list:
                 # Assuming ProgramSummaryLog has startTime and endTime attributes
-                print(f"id: {program_log.id}")
                 timeline_event = TimelineEvent(
                     logId=program_log.id,
                     startTime=program_log.start_time,
@@ -387,19 +401,41 @@ async def get_program_usage_timeline_for_present_week(
 
 @app.get("/api/dashboard/programs/usage/timeline/{week_of}", response_model=WeeklyProgramUsageTimeline)
 async def get_program_usage_timeline_by_week(week_of: date = Path(..., description="Week starting date"),
-                                             dashboard_service: DashboardService = Depends(get_dashboard_service)):
-    all_days, start_of_week = await dashboard_service.get_program_usage_timeline_for_week(week_of)
+                                             dashboard_service: DashboardService = Depends(
+                                                 get_dashboard_service),
+                                             timezone_service: TimezoneService = Depends(get_timezone_service)):
+
+    user_tz_str = timezone_service.get_tz_for_user(1)
+    user_tz = pytz.timezone(user_tz_str)
+    # Convert date to datetime with time at 00:00:00 and attach user timezone
+    week_of_as_dt = user_tz.localize(
+        datetime.combine(week_of, dt_time(0, 0, 0)))
+    all_days, start_of_week = await dashboard_service.get_program_usage_timeline_for_week(UserLocalTime(week_of_as_dt))
 
     days = []
     for day in all_days:
         programs: dict[str, ProgramSummaryLog] = day["program_usage_timeline"]
         date = day["date"]
 
-        for key, value in programs.items():
-            print(key, value)
+        programs_content = []
+        for key, value_list in programs.items():
+            timeline_events = []
+            for program_log in value_list:
+                timeline_event = TimelineEvent(
+                    logId=program_log.id,
+                    startTime=program_log.start_time,
+                    endTime=program_log.end_time
+                )
+                timeline_events.append(timeline_event)
 
-        # program_timeline_content = ProgramTimelineContent(programName=)
-        # program_usage_timeline = ProgramUsageTimeline(date=date, programs=package=[''])
+            content = ProgramTimelineContent(
+                programName=key, events=timeline_events)
+            programs_content.append(content)
+
+        day_timeline = ProgramUsageTimeline(
+            date=date, programs=programs_content)
+        days.append(day_timeline)
+
     return WeeklyProgramUsageTimeline(days=days)
 
 
