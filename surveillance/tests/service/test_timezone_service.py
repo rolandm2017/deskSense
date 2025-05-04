@@ -16,8 +16,14 @@ def test_get_user_timezone():
     assert tz_for_user == local_time_zone
 
 
-def test_make_week_of_ult():
-    week_of = "2025-04-27"
+def test_localize_dt_to_user_tz():
+    some_dt = datetime(2025, 4, 15, 15, 15, 15)
+    localized = timezone_service.localize_to_user_tz(some_dt)
+
+    assert localized.tzinfo is not None
+    assert str(localized.tzinfo) == local_time_zone
+    assert localized.hour == some_dt.hour
+    assert localized.minute == some_dt.minute
 
 
 def test_convert_tab_change_timezone():

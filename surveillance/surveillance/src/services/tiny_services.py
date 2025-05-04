@@ -42,6 +42,19 @@ class TimezoneService:
         as_ult = UserLocalTime(week_of_as_dt)
         return as_ult
 
+    def convert_into_user_timezone_ult(self, day: datetime) -> UserLocalTime:
+        user_tz_str = self.get_tz_for_user(1)
+        user_tz = pytz.timezone(user_tz_str)
+        # Convert date to datetime with time at 00:00:00 and attach user timezone
+        week_of_as_dt = user_tz.localize(day)
+        as_ult = UserLocalTime(week_of_as_dt)
+        return as_ult
+
+    def localize_to_user_tz(self, dt):
+        user_tz_str = self.get_tz_for_user(1)
+        user_tz = pytz.timezone(user_tz_str)
+        return user_tz.localize(dt)
+
     def convert_tab_change_timezone(self, tab_change_event: UtcDtTabChange, new_tz: str) -> TabChangeEventWithLtz:
         new_datetime_with_tz: datetime = convert_to_timezone(
             tab_change_event.startTime, new_tz)

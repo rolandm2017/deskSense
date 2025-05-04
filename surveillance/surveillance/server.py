@@ -227,8 +227,7 @@ async def get_productivity_breakdown(week_of: date = Path(..., description="Week
                                      timezone_service: TimezoneService = Depends(
                                          get_timezone_service)
                                      ):
-    week_of_ult = timezone_service.make_week_of_ult(week_of)
-    weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(week_of_ult)
+    weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(week_of)
     if not isinstance(weeks_overview, list):
         raise HTTPException(
             status_code=500, detail="Failed to retrieve week of Chrome chart info")
@@ -330,11 +329,9 @@ async def get_timeline_weekly(dashboard_service: DashboardService = Depends(get_
 @app.get("/api/dashboard/timeline/week/{week_of}", response_model=WeeklyTimeline)
 async def get_previous_week_of_timeline(week_of: date = Path(..., description="Week starting date"),
                                         dashboard_service: DashboardService = Depends(
-                                            get_dashboard_service),
-                                        timezone_service: TimezoneService = Depends(get_timezone_service)):
+                                            get_dashboard_service)):
 
-    week_of_ult = timezone_service.make_week_of_ult(week_of)
-    days, start_of_week = await dashboard_service.peripherals.get_specific_week_timeline(week_of_ult)
+    days, start_of_week = await dashboard_service.peripherals.get_specific_week_timeline(week_of)
 
     if not isinstance(start_of_week, datetime):
         raise ValueError("start_of_week.dt was expected to be a datetime")
@@ -404,12 +401,9 @@ async def get_program_usage_timeline_for_present_week(
 @app.get("/api/dashboard/programs/usage/timeline/{week_of}", response_model=WeeklyProgramUsageTimeline)
 async def get_program_usage_timeline_by_week(week_of: date = Path(..., description="Week starting date"),
                                              dashboard_service: DashboardService = Depends(
-                                                 get_dashboard_service),
-                                             timezone_service: TimezoneService = Depends(get_timezone_service)):
+                                                 get_dashboard_service)):
 
-    week_of_ult = timezone_service.make_week_of_ult(week_of)
-
-    all_days, start_of_week = await dashboard_service.programs.get_usage_timeline_for_week(week_of_ult)
+    all_days, start_of_week = await dashboard_service.programs.get_usage_timeline_for_week(week_of)
 
     days = []
     for day in all_days:
