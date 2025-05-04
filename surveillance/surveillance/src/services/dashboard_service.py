@@ -135,7 +135,7 @@ class DashboardService:
         return all
 
     async def get_previous_week_chrome_summary(
-        self, start_sunday
+        self, start_sunday: date
     ) -> List[DailyDomainSummary]:
         if start_sunday.weekday() != 6:  # In Python, Sunday is 6
             raise ValueError("start_date must be a Sunday")
@@ -166,8 +166,9 @@ class ProgramsService(WeekCalculationMixin):
 
     async def get_usage_timeline_for_week(
         self, week_of: UserLocalTime
-    ) -> Tuple[List[Dict], UserLocalTime]:
-        sunday_that_starts_the_week = self.prepare_start_of_week(week_of.dt)
+    ) -> Tuple[List[Dict], datetime]:
+        sunday_that_starts_the_week: datetime = self.prepare_start_of_week(
+            week_of.dt)
 
         now = self.user_clock.now()
         start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -176,7 +177,7 @@ class ProgramsService(WeekCalculationMixin):
         all_days = []
 
         for days_after_sunday in range(7):
-            current_day = sunday_that_starts_the_week + timedelta(
+            current_day: datetime = sunday_that_starts_the_week + timedelta(
                 days=days_after_sunday
             )
 
@@ -188,12 +189,22 @@ class ProgramsService(WeekCalculationMixin):
                 self.program_logging_dao.read_day_as_sorted(
                     UserLocalTime(current_day))
             )
+            print(type(current_day), "191ru")
+            if isinstance(current_day, datetime):
+                self.logger.log_days_retrieval(
+                    "[get_program_usage_timeline]",
+                    current_day,
+                    len(program_usage_timeline),
+                )
+            if isinstance(current_day, UserLocalTime):
+                self.logger.log_days_retrieval(
+                    "[get_program_usage_timeline]",
+                    current_day.dt,
+                    len(program_usage_timeline),
+                )
+            else:
+                print("type:", type(current_day))
 
-            self.logger.log_days_retrieval(
-                "[get_program_usage_timeline]",
-                current_day.dt,
-                len(program_usage_timeline),
-            )
             day = {
                 "date": current_day,
                 "program_usage_timeline": program_usage_timeline,
@@ -202,7 +213,7 @@ class ProgramsService(WeekCalculationMixin):
 
         return all_days, sunday_that_starts_the_week
 
-    async def get_current_week_usage_timeline(self):
+    async def get_current_week_usage_timeline(self) -> Tuple[List[Dict], datetime]:
         today: UserLocalTime = self.user_clock.now()
 
         sunday_that_starts_the_week = self.prepare_start_of_week(today.dt)
@@ -214,7 +225,7 @@ class ProgramsService(WeekCalculationMixin):
         all_days = []
 
         for days_after_sunday in range(7):
-            current_day: UserLocalTime = sunday_that_starts_the_week + timedelta(
+            current_day: datetime = sunday_that_starts_the_week + timedelta(
                 days=days_after_sunday
             )
             is_in_future: bool = current_day > start_of_tomorrow
@@ -222,7 +233,8 @@ class ProgramsService(WeekCalculationMixin):
                 continue  # avoid reading future dates from db
 
             program_usage_timeline: dict[str, ProgramSummaryLog] = (
-                self.program_logging_dao.read_day_as_sorted(current_day)
+                self.program_logging_dao.read_day_as_sorted(
+                    UserLocalTime(current_day))
             )
 
             # Figure out:
@@ -235,11 +247,11 @@ class ProgramsService(WeekCalculationMixin):
 
             self.logger.log_days_retrieval(
                 "[get_current_week_program_usage_timeline]",
-                current_day.dt,
+                current_day,
                 len(program_usage_timeline),
             )
             day = {
-                "date": current_day.dt,
+                "date": current_day,
                 "program_usage_timeline": program_usage_timeline,
             }
 
@@ -254,7 +266,6 @@ class PeripheralsService(WeekCalculationMixin):
         self.user_clock = UserFacingClock()
         self.logger = ConsoleLogger()
 
-    # FIXME: Need this method and all it's friends to distinguish between Peripherals and Program timelines
     async def get_timeline_for_today(self):
         today = self.user_clock.now()
         all_mouse_events = await self.timeline_dao.read_day_mice(today, self.user_clock)
@@ -263,12 +274,12 @@ class PeripheralsService(WeekCalculationMixin):
         )
         return all_mouse_events, all_keyboard_events
 
-    async def get_current_week_timeline(self):
+    async def get_current_week_timeline(self) -> Tuple[List[Dict], Dict, datetime]:
         """Returns whichever days have occurred so far in the present week."""
 
         today = self.user_clock.now()
 
-        sunday_that_starts_the_week = self.prepare_start_of_week(
+        sunday_that_starts_the_week: datetime = self.prepare_start_of_week(
             UserLocalTime(today))
 
         days_before_today = []
@@ -280,19 +291,19 @@ class PeripheralsService(WeekCalculationMixin):
                 days=days_after_sunday
             )
             mouse_events = await self.timeline_dao.read_day_mice(
-                current_day, self.user_clock
+                UserLocalTime(current_day), self.user_clock
             )
             keyboard_events = await self.timeline_dao.read_day_keyboard(
-                current_day, self.user_clock
+                UserLocalTime(current_day), self.user_clock
             )
 
             self.logger.log_days_retrieval(
                 "[get_current_week_timeline]",
-                current_day.dt,
+                current_day,
                 len(mouse_events) + len(keyboard_events),
             )
             day = {
-                "date": current_day.dt,
+                "date": current_day,
                 "mouse_events": mouse_events,
                 "keyboard_events": keyboard_events,
             }
@@ -307,17 +318,10 @@ class PeripheralsService(WeekCalculationMixin):
             sunday_that_starts_the_week,
         )
 
-    async def get_specific_week_timeline(self, week_of_as_ult: UserLocalTime):
-        if isinstance(week_of_as_ult, UserLocalTime):
-            # Note: The transformation here is a requirement
-            week_of: UserLocalTime = UserLocalTime(
-                datetime.combine(week_of_as_ult.dt, datetime.min.time())
-            )
-        else:
-            raise TypeError("Expected a date object, got " +
-                            str(week_of_as_ult))
+    async def get_specific_week_timeline(self, week_of_as_ult: UserLocalTime) -> Tuple[List[Dict], datetime]:
 
-        sunday_that_starts_the_week = self.prepare_start_of_week(week_of)
+        sunday_that_starts_the_week: datetime = self.prepare_start_of_week(
+            week_of_as_ult)
 
         # TODO: Make this method purely, always, every time, retrieve the precomputed timelines,
         # TODO: as they are by definition tables that already were computed
@@ -325,7 +329,7 @@ class PeripheralsService(WeekCalculationMixin):
         all_days = []
 
         for days_after_sunday in range(7):
-            current_day: UserLocalTime = sunday_that_starts_the_week.dt + timedelta(
+            current_day: datetime = sunday_that_starts_the_week + timedelta(
                 days=days_after_sunday
             )
             assert isinstance(current_day, UserLocalTime)

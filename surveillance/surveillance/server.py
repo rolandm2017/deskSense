@@ -325,7 +325,10 @@ async def get_timeline_weekly(dashboard_service: DashboardService = Depends(get_
         row = DayOfTimelineRows(date=day["date"], row=row)
         rows.append(row)
 
-    return PartiallyPrecomputedWeeklyTimeline(beforeToday=rows, today=todays_payload, startDate=latest_sunday.dt)
+    if not isinstance(latest_sunday, datetime):
+        raise ValueError("Expected dt in latest_sunday")
+
+    return PartiallyPrecomputedWeeklyTimeline(beforeToday=rows, today=todays_payload, startDate=latest_sunday)
 
 
 @app.get("/api/dashboard/timeline/week/{week_of}", response_model=WeeklyTimeline)
@@ -334,9 +337,14 @@ async def get_previous_week_of_timeline(week_of: date = Path(..., description="W
                                             get_dashboard_service),
                                         timezone_service: TimezoneService = Depends(get_timezone_service)):
 
-    days, start_of_week = await dashboard_service.peripherals.get_specific_week_timeline(UserLocalTime(week_of))
+    user_tz_str = timezone_service.get_tz_for_user(1)
+    user_tz = pytz.timezone(user_tz_str)
+    # Convert date to datetime with time at 00:00:00 and attach user timezone
+    week_of_as_dt = user_tz.localize(
+        datetime.combine(week_of, dt_time(0, 0, 0)))
+    days, start_of_week = await dashboard_service.peripherals.get_specific_week_timeline(UserLocalTime(week_of_as_dt))
 
-    if not isinstance(start_of_week.dt, datetime):
+    if not isinstance(start_of_week, datetime):
         raise ValueError("start_of_week.dt was expected to be a datetime")
 
     rows: List[DayOfTimelineRows] = []
@@ -355,11 +363,12 @@ async def get_previous_week_of_timeline(week_of: date = Path(..., description="W
         rows.append(row)
 
     # TODO: Convert from UTC to PST for the client
-    appeasement_of_type_checker = datetime.combine(start_of_week.dt.date(),
-                                                   start_of_week.dt.time(),
-                                                   start_of_week.dt.tzinfo)
+    appeasement_of_type_checker = datetime.combine(start_of_week.date(),
+                                                   start_of_week.time(),
+                                                   start_of_week.tzinfo)
 
-    response = WeeklyTimeline(days=rows, start_date=start_of_week.dt)
+    response = WeeklyTimeline(
+        days=rows, start_date=appeasement_of_type_checker)
 
     return response
 

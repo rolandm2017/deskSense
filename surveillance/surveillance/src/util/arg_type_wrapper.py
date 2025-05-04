@@ -2,6 +2,17 @@ from functools import wraps
 
 from surveillance.src.tz_handling.time_formatting import convert_to_timezone
 
+from surveillance.src.util.time_wrappers import UserLocalTime
+
+
+def is_really_ult(func):
+    @wraps(func)
+    def wrapper(self, ult, *args, **kwargs):
+        if not isinstance(ult, UserLocalTime):
+            raise ValueError("Expected a UserLocalTime")
+        return func(self, ult, *args, **kwargs)
+    return wrapper
+
 
 def validate_start_end_and_duration(func):
     @wraps(func)

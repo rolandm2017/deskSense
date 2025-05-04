@@ -1,6 +1,5 @@
 from datetime import timedelta, datetime, time
 
-from surveillance.src.util.dao_wrapper import validate_session, guarantee_start_time
 from surveillance.src.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
 from surveillance.src.tz_handling.time_formatting import (
     convert_to_utc,
