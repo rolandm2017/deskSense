@@ -7,7 +7,9 @@ import {
     getEnhancedChromeUsageForPastWeek,
     getEnhancedWeeklyBreakdown,
     getPresentWeekChromeUsage,
+    getPresentWeekProgramTimeline,
     getPresentWeekProgramUsage,
+    getProgramTimelineForPastWeek,
     getTimelineForPastWeek,
     getTimelineForPresentWeek,
 } from "../api/weekly.api";
@@ -22,9 +24,13 @@ import {
     PartiallyAggregatedWeeklyTimeline,
     WeeklyTimeline,
 } from "../interface/peripherals.interface";
-import { WeeklyProgramUsage } from "../interface/programs.interface";
+import {
+    WeeklyProgramTimelines,
+    WeeklyProgramUsage,
+} from "../interface/programs.interface";
 
 import PeripheralsTimeline from "../components/charts/PeripheralsTimeline";
+import ProgramTimeline from "../components/charts/ProgramTimeline";
 import StackedBarChart from "../components/charts/StackedBarChart";
 import WeeklyUsageChart from "../components/charts/WeeklyBarChart";
 import NavigationButtons from "../components/NavigationButtons";
@@ -69,13 +75,19 @@ function Weekly() {
     const [presentWeekRawTimeline, setPresentWeekRawTimeline] =
         useState<PartiallyAggregatedWeeklyTimeline | null>(null);
 
+    const [programTimeline, setProgramTimeline] =
+        useState<WeeklyProgramTimelines | null>(null);
+
+    const [weeklyBreakdown, setWeeklyBreakdown] =
+        useState<WeeklyBreakdown | null>(null);
+    // start, end date
+    // date section
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
 
     const [nextWeekAvailable, setNextWeekAvailable] = useState(false);
 
-    const [weeklyBreakdown, setWeeklyBreakdown] =
-        useState<WeeklyBreakdown | null>(null);
+    // date section
 
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -140,6 +152,11 @@ function Weekly() {
         getEnhancedWeeklyBreakdown(getPreviousSunday()).then(
             (breakdown: WeeklyBreakdown) => {
                 setWeeklyBreakdown(breakdown);
+            }
+        );
+        getPresentWeekProgramTimeline().then(
+            (weekly: WeeklyProgramTimelines) => {
+                setProgramTimeline(weekly);
             }
         );
     }
@@ -211,6 +228,7 @@ function Weekly() {
         setAggregatedTimeline(null);
         setPrevWeeksRawTimeline(null);
         setPresentWeekRawTimeline(null);
+        setProgramTimeline(null);
     }
 
     function goToPreviousWeek() {
@@ -255,6 +273,11 @@ function Weekly() {
         getEnhancedWeeklyBreakdown(weekStart).then(
             (breakdown: WeeklyBreakdown) => {
                 setWeeklyBreakdown(breakdown);
+            }
+        );
+        getProgramTimelineForPastWeek(weekStart).then(
+            (weekly: WeeklyProgramTimelines) => {
+                setProgramTimeline(weekly);
             }
         );
     }
@@ -355,6 +378,23 @@ function Weekly() {
                     {/* // "Showing Sunday 22 to ..." */}
                     <PeripheralsTimeline
                         days={aggregatedTimeline ? aggregatedTimeline.days : []}
+                    />
+                </div>
+
+                <NavigationButtons
+                    nextWeekAvailable={nextWeekAvailable}
+                    goToPreviousWeek={goToPreviousWeek}
+                    goToNextWeek={goToNextWeek}
+                />
+                <div>
+                    <h3 className="mt-4 text-2xl">Program Usage</h3>
+
+                    <StartEndDateDisplay
+                        startDate={startDate}
+                        endDate={endDate}
+                    />
+                    <ProgramTimeline
+                        days={programTimeline ? programTimeline.days : []}
                     />
                 </div>
 

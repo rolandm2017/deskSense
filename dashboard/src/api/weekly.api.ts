@@ -136,7 +136,7 @@ const getChromeUsageForPastWeek = withErrorHandlingAndArgument<
 });
 
 const getProgramTimelineForPastWeek = withErrorHandlingAndArgument<
-    WeeklyChromeUsage,
+    WeeklyProgramTimelines,
     [Date]
 >((date: Date) => {
     ensureSunday(date);
@@ -174,6 +174,7 @@ export {
     // getWeeklyTyping,
     getPresentWeekProgramUsage,
     getProgramSummaries,
+    getProgramTimelineForPastWeek,
     getTimelineForPastWeek,
     getTimelineForPresentWeek,
     getTodaysTimelineData,

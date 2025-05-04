@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
     DailyChromeSummaries,
     DailyDomainSummary,
-} from "../../interface/peripherals.interface";
+} from "../../interface/chrome.interface";
 
 import { chooseTickValuesSpacing } from "../../util/tickValueSpacing";
 

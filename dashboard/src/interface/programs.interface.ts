@@ -1,8 +1,3 @@
-// **
-// ****
-// Program Usage Timeline
-// *
-
 export interface WeeklyProgramUsage {
     days: DayOfProgramUsage[];
 }
