@@ -2,7 +2,8 @@
 from fastapi import Depends
 from typing import List, cast
 
-from datetime import datetime
+import pytz
+from datetime import datetime, time, date
 
 
 from surveillance.src.object.pydantic_dto import UtcDtTabChange
@@ -28,6 +29,18 @@ class TimezoneService:
         # TODO: In the future, read from a cache of recently active users.
         # TODO: If not in cache, read from the db.
         return local_time_zone
+
+    def make_week_of_ult(self, week_of) -> UserLocalTime:
+        if not isinstance(week_of, date):
+            raise ValueError(
+                f"Week of was not a date, it was: {type(week_of)}, value: {week_of}")
+        user_tz_str = self.get_tz_for_user(1)
+        user_tz = pytz.timezone(user_tz_str)
+        # Convert date to datetime with time at 00:00:00 and attach user timezone
+        week_of_as_dt = user_tz.localize(
+            datetime.combine(week_of, time(0, 0, 0)))
+        as_ult = UserLocalTime(week_of_as_dt)
+        return as_ult
 
     def convert_tab_change_timezone(self, tab_change_event: UtcDtTabChange, new_tz: str) -> TabChangeEventWithLtz:
         new_datetime_with_tz: datetime = convert_to_timezone(

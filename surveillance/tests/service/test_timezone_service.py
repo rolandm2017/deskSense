@@ -16,6 +16,10 @@ def test_get_user_timezone():
     assert tz_for_user == local_time_zone
 
 
+def test_make_week_of_ult():
+    week_of = "2025-04-27"
+
+
 def test_convert_tab_change_timezone():
     tab_title = "World's Best Foo"
     url = "foo.com"

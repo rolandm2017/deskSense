@@ -227,12 +227,8 @@ async def get_productivity_breakdown(week_of: date = Path(..., description="Week
                                      timezone_service: TimezoneService = Depends(
                                          get_timezone_service)
                                      ):
-    user_tz_str = timezone_service.get_tz_for_user(1)
-    user_tz = pytz.timezone(user_tz_str)
-    # Convert date to datetime with time at 00:00:00 and attach user timezone
-    week_of_as_dt = user_tz.localize(
-        datetime.combine(week_of, dt_time(0, 0, 0)))
-    weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(UserLocalTime(week_of_as_dt))
+    week_of_ult = timezone_service.make_week_of_ult(week_of)
+    weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(week_of_ult)
     if not isinstance(weeks_overview, list):
         raise HTTPException(
             status_code=500, detail="Failed to retrieve week of Chrome chart info")
@@ -337,12 +333,8 @@ async def get_previous_week_of_timeline(week_of: date = Path(..., description="W
                                             get_dashboard_service),
                                         timezone_service: TimezoneService = Depends(get_timezone_service)):
 
-    user_tz_str = timezone_service.get_tz_for_user(1)
-    user_tz = pytz.timezone(user_tz_str)
-    # Convert date to datetime with time at 00:00:00 and attach user timezone
-    week_of_as_dt = user_tz.localize(
-        datetime.combine(week_of, dt_time(0, 0, 0)))
-    days, start_of_week = await dashboard_service.peripherals.get_specific_week_timeline(UserLocalTime(week_of_as_dt))
+    week_of_ult = timezone_service.make_week_of_ult(week_of)
+    days, start_of_week = await dashboard_service.peripherals.get_specific_week_timeline(week_of_ult)
 
     if not isinstance(start_of_week, datetime):
         raise ValueError("start_of_week.dt was expected to be a datetime")
@@ -415,12 +407,9 @@ async def get_program_usage_timeline_by_week(week_of: date = Path(..., descripti
                                                  get_dashboard_service),
                                              timezone_service: TimezoneService = Depends(get_timezone_service)):
 
-    user_tz_str = timezone_service.get_tz_for_user(1)
-    user_tz = pytz.timezone(user_tz_str)
-    # Convert date to datetime with time at 00:00:00 and attach user timezone
-    week_of_as_dt = user_tz.localize(
-        datetime.combine(week_of, dt_time(0, 0, 0)))
-    all_days, start_of_week = await dashboard_service.programs.get_usage_timeline_for_week(UserLocalTime(week_of_as_dt))
+    week_of_ult = timezone_service.make_week_of_ult(week_of)
+
+    all_days, start_of_week = await dashboard_service.programs.get_usage_timeline_for_week(week_of_ult)
 
     days = []
     for day in all_days:

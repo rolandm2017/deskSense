@@ -9,7 +9,8 @@ def is_really_ult(func):
     @wraps(func)
     def wrapper(self, ult, *args, **kwargs):
         if not isinstance(ult, UserLocalTime):
-            raise ValueError("Expected a UserLocalTime")
+            raise ValueError(
+                f"Expected a UserLocalTime and it was {type(ult)}")
         return func(self, ult, *args, **kwargs)
     return wrapper
 
