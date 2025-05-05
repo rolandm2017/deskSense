@@ -52,13 +52,20 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
 
         return {
             "os": "Ubuntu",
-            "exe_path": "",
+            "exe_path": exe_path,
             "pid": active["pid"] if active else None,
             "process_name": process_name,
             "window_title": window_name  # window_title with the detail
         }
 
+    def _get_active_window_id(self, root, initialized_display):
+        return root.get_full_property(
+            initialized_display.intern_atom(
+                '_NET_ACTIVE_WINDOW'), self.X.AnyPropertyType
+        ).value[0]
+
     def _read_active_window_name_ubuntu(self):
+        """Returns the program title like what you'd see during alt-tab."""
         try:
             if self.X is None or self.display is None:
                 raise AttributeError(
@@ -69,9 +76,7 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
             root = d.screen().root
 
             # Get the active window ID
-            active_window_id = root.get_full_property(
-                d.intern_atom('_NET_ACTIVE_WINDOW'), self.X.AnyPropertyType
-            ).value[0]
+            active_window_id = self._get_active_window_id(root, d)
 
             # Get the window object
             window_obj = d.create_resource_object('window', active_window_id)
@@ -93,13 +98,47 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
             return "Alt-tab window"  # "Alt-Tab Window (Most Likely)"
 
     def _get_active_window_ubuntu(self) -> Optional[Dict]:
-        for proc in psutil.process_iter(['pid', 'name', "exe_path"]):
-            try:
-                if proc.status() == 'running':
-                    return {"pid": proc.pid, "process_name": proc.name(), "exe_path": proc.exe()}
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                continue
-        return None
+        try:
+            # Connect to X server to get active window
+            d = self.display.Display()
+            root = d.screen().root
+
+            # Get active window ID
+            active_window_id = self._get_active_window_id(root, d)
+
+            # Get window PID using _NET_WM_PID property
+            window_obj = d.create_resource_object('window', active_window_id)
+            pid = window_obj.get_full_property(
+                d.intern_atom('_NET_WM_PID'), self.X.AnyPropertyType
+            )
+
+            window_name = window_obj.get_full_property(
+                d.intern_atom('_NET_WM_NAME'), 0
+            )
+
+            if pid:
+                # Get process info using psutil with the specific PID
+                pid_value = pid.value[0]
+                process = psutil.Process(pid_value)
+                return {
+                    "window_title":  window_name,
+                    "pid": pid_value,
+                    "process_name": process.name(),
+                    "exe_path": process.exe()
+                }
+            return None
+        except Exception as e:
+            self.console_logger.debug(f"Error getting active window: {e}")
+            return None
+
+    # def _get_active_window_ubuntu(self) -> Optional[Dict]:
+    #     for process in psutil.process_iter(['pid', 'name']):
+    #         try:
+    #             if process.status() == 'running':
+    #                 return {"pid": process.pid, "process_name": process.name(), "exe_path": process.exe()}
+    #         except (psutil.NoSuchProcess, psutil.AccessDenied):
+    #             continue
+    #     return None
 
     def setup_window_hook(self):
         """

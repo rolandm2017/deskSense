@@ -57,6 +57,7 @@ class ProgramTrackerCore:
 
     def run_tracking_loop(self):
         for window_change in self.program_facade.listen_for_window_changes():
+            print("window change: ", window_change)
             # is_expected_shape_else_throw(window_change)
             # FIXME: "Running Server (WindowsTerminal.exe)" -> Terminal (Terminal)
             on_a_different_window_now = self.current_session and window_change[
@@ -71,7 +72,9 @@ class ProgramTrackerCore:
                     window_change, current_time)
                 self.current_session = new_session
                 # report window change immediately via "window_change_handler()"
-                self.window_change_handler(new_session)
+                self.console_logger.log_yellow(
+                    "New program: " + new_session.process_name)
+                # self.window_change_handler(new_session)
 
             # initialize
             if self.is_uninitialized():
@@ -80,7 +83,7 @@ class ProgramTrackerCore:
                 new_session = self.start_new_session(
                     window_change, current_time)
                 self.current_session = new_session
-                self.window_change_handler(new_session)
+                # self.window_change_handler(new_session)
 
     def is_uninitialized(self):
         return self.current_session is None
