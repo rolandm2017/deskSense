@@ -34,7 +34,6 @@ load_dotenv()
 # TODO: Consider asynchronous I/O for better performance, allowing more events to be processed without blocking.
 
 
-
 def linux_monitor_keyboard(device_path, send_keyboard_event):
     """
     Monitor keyboard events in a separate thread using the efficient read_loop()
@@ -49,7 +48,7 @@ def linux_monitor_keyboard(device_path, send_keyboard_event):
         for event in keyboard.read_loop():
             is_key_down_event = event.value == 1
             if event.type == ecodes.EV_KEY and is_key_down_event:  # type: ignore
-                # print(f"Key {event.code} pressed")
+                print(f"Key {event.code} pressed")
 
                 send_keyboard_event()
 
@@ -68,12 +67,11 @@ def debug_logger_simple():
     print("keyboard event")
 
 
-
 mouse_event_dispatch = MouseEventDispatch(
     mouse_aggregator, publish_mouse_events)
 
 
-def linux_monitor_mouse(device_path):
+def linux_monitor_mouse(device_path, is_running):
     """
     Monitor mouse events in a separate thread using the efficient read_loop()
 
@@ -93,9 +91,9 @@ def linux_monitor_mouse(device_path):
             if event.type == ecodes.EV_REL:  # type: ignore
                 if event.code == ecodes.REL_X or event.code == ecodes.REL_Y:  # type: ignore
                     # print(f"Mouse moved: {event.value}")
-                    # print(
+                    print(
 
-                    # f"Mouse {'X' if event.code == ecodes.REL_X else 'Y'} moved: {event.value}")
+                        f"Mouse {'X' if event.code == ecodes.REL_X else 'Y'} moved: {event.value}")
                     mouse_event_dispatch.add_to_aggregator()
                     # pass
             elif event.type == ecodes.EV_KEY:  # type: ignore

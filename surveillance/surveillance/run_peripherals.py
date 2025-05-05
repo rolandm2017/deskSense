@@ -73,20 +73,16 @@ if __name__ == "__main__":
     # Starting trackers handled in OS specific scripts
     # Import the appropriate modules based on OS
     if current_os.is_windows:
-        # Run windows_peripherals.py, which imports win_keyboard_detector.py, win_mouse_detector.py,
-        # and runs them in threaded processes.
-        pass
+        from surveillance.windows_peripherals import run_windows_monitors
+        run_windows_monitors()
     else:
-        # Run linux_peripherals.py, which imports linux_peripheral_detector.py,
-        # and runs them in threaded processes.
-        pass
-
+        from surveillance.linux_peripherals import run_linux_monitors
+        run_linux_monitors()
     try:
         # Main loop - check running flag periodically
         while running:
             time.sleep(0.1)
 
-        # If we get here, running is False, so clean up
         print("Shutting down all monitors...")
         time.sleep(1)  # Give threads time to clean up
 
