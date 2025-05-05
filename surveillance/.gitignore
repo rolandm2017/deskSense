@@ -31,5 +31,6 @@ events.csv
 
 *.txt
 !requirements.txt
+!windows-requirements.txt
 
 fix_commits.py
