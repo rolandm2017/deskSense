@@ -74,7 +74,7 @@ class ProgramTrackerCore:
                 # report window change immediately via "window_change_handler()"
                 self.console_logger.log_yellow(
                     "New program: " + new_session.process_name)
-                # self.window_change_handler(new_session)
+                self.window_change_handler(new_session)
 
             # initialize
             if self.is_uninitialized():
@@ -83,7 +83,7 @@ class ProgramTrackerCore:
                 new_session = self.start_new_session(
                     window_change, current_time)
                 self.current_session = new_session
-                # self.window_change_handler(new_session)
+                self.window_change_handler(new_session)
 
     def is_uninitialized(self):
         return self.current_session is None

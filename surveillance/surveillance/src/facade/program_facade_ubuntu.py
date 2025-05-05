@@ -1,5 +1,6 @@
 import psutil
 from Xlib import display, X
+from Xlib.error import BadWindow
 
 from typing import Dict, Optional, Generator
 
@@ -90,12 +91,16 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
                 return window_name_as_string  # might need to specify encoding
             else:
                 return "Unnamed window"
+
+        except BadWindow as e:
+            # Handle specifically BadWindow errors
+            self.console_logger.log_yellow(f"BadWindow error occurred: {e}")
+            return "Alt-tab window"
         except Exception as e:
-            # Will always be:
-            # <class 'Xlib.error.BadWindow'>:
-            #     code = 3, resource_id = <Resource 0x00000000>,
-            #     sequence_number = 22, major_opcode = 20, minor_opcode = 0 []
-            return "Alt-tab window"  # "Alt-Tab Window (Most Likely)"
+            # Handle other exceptions
+            self.console_logger.log_yellow(
+                f"Unexpected error getting active window: {e}")
+            return "Unknown"
 
     def _get_active_window_ubuntu(self) -> Optional[Dict]:
         try:
@@ -127,6 +132,13 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
                     "exe_path": process.exe()
                 }
             return None
+        except BadWindow as e:
+            return {
+                "window_title": "Alt-tab window",
+                "pid": 0,
+                "process_name": "Alt-tab",
+                "exe_path": "Unknown"
+            }
         except Exception as e:
             self.console_logger.debug(f"Error getting active window: {e}")
             return None
