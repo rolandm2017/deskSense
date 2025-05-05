@@ -55,4 +55,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 async def init_db() -> None:
     """Initialize the database by creating all tables if they don't exist."""
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        pass
+        # No longer doing automatic create_all
+        # as it takes the db out of sync with Alembic
+        # await conn.run_sync(Base.metadata.create_all)
