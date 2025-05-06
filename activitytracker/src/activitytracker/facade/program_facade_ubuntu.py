@@ -94,7 +94,7 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
 
         except BadWindow as e:
             # Handle specifically BadWindow errors
-            self.console_logger.log_yellow(f"BadWindow error occurred: {e}")
+            self.console_logger.log_white(f"BadWindow error occurred")
             return "Alt-tab window"
         except Exception as e:
             # Handle other exceptions
