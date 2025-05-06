@@ -1,6 +1,6 @@
 # To start the regular server:
 
-deskSense\surveillance> uvicorn surveillance.server:app --reload
+deskSense\surveillance> uvicorn src.surveillance.server:app --reload
 
 # To start peripheral tracking:
 
