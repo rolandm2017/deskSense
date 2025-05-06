@@ -14,29 +14,29 @@ from typing import Dict, List, cast
 
 import traceback
 
-from surveillance.src.config.definitions import window_push_length
-from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
-from surveillance.src.arbiter.activity_recorder import ActivityRecorder
-from surveillance.src.arbiter.session_polling import KeepAliveEngine
-from surveillance.src.surveillance_manager import FacadeInjector, SurveillanceManager
-from surveillance.src.services.chrome_service import ChromeService
+from surveillance.config.definitions import window_push_length
+from surveillance.arbiter.activity_arbiter import ActivityArbiter
+from surveillance.arbiter.activity_recorder import ActivityRecorder
+from surveillance.arbiter.session_polling import KeepAliveEngine
+from surveillance.surveillance_manager import FacadeInjector, SurveillanceManager
+from surveillance.services.chrome_service import ChromeService
 
-from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
-from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-from surveillance.src.db.models import DailyProgramSummary, ProgramSummaryLog
+from surveillance.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from surveillance.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from surveillance.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.db.models import DailyProgramSummary, ProgramSummaryLog
 
-from surveillance.src.facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
-from surveillance.src.object.classes import ChromeSession, ProgramSession
+from surveillance.facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
+from surveillance.object.classes import ChromeSession, ProgramSession
 
-from surveillance.src.object.classes import ProgramSession
-from surveillance.src.object.classes import ProgramSessionDict
+from surveillance.object.classes import ProgramSession
+from surveillance.object.classes import ProgramSessionDict
 
-from surveillance.src.util.time_wrappers import UserLocalTime
-from surveillance.src.util.clock import UserFacingClock
-from surveillance.src.util.const import SECONDS_PER_HOUR, ten_sec_as_pct_of_hour
-from surveillance.src.tz_handling.time_formatting import convert_to_utc, get_start_of_day_from_datetime
+from surveillance.util.time_wrappers import UserLocalTime
+from surveillance.util.clock import UserFacingClock
+from surveillance.util.const import SECONDS_PER_HOUR, ten_sec_as_pct_of_hour
+from surveillance.tz_handling.time_formatting import convert_to_utc, get_start_of_day_from_datetime
 
 from ..mocks.mock_message_receiver import MockMessageReceiver
 from ..mocks.mock_engine_container import MockEngineContainer

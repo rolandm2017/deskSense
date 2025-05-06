@@ -1,17 +1,17 @@
 from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
-from surveillance.src.object.classes import ChromeSession, ProgramSession, CompletedChromeSession, CompletedProgramSession
+from surveillance.object.classes import ChromeSession, ProgramSession, CompletedChromeSession, CompletedProgramSession
 
 from .activity_state_machine import ActivityStateMachine
 from .session_polling import KeepAliveEngine, ThreadedEngineContainer
-from surveillance.src.util.console_logger import ConsoleLogger
-from surveillance.src.util.copy_util import snapshot_obj_for_tests
+from surveillance.util.console_logger import ConsoleLogger
+from surveillance.util.copy_util import snapshot_obj_for_tests
 
 
 class ActivityArbiter:
     def __init__(self, user_facing_clock, threaded_container: ThreadedEngineContainer,
-                    engine_class=KeepAliveEngine):
+                 engine_class=KeepAliveEngine):
         """
         This class exists to prevent the Chrome Service from doing ANYTHING but reporting which tab is active.
 
@@ -93,7 +93,7 @@ class ActivityArbiter:
 
             new_keep_alive_engine = self.engine_class(
                 new_session, self.activity_recorder)
-            
+
             self.current_pulse.replace_engine(new_keep_alive_engine)
 
             self.current_pulse.start()
@@ -107,10 +107,10 @@ class ActivityArbiter:
 
             self.notify_of_new_session(new_session)
             self.state_machine.set_new_session(new_session)
-            
+
             new_keep_alive_engine = self.engine_class(
                 new_session, self.activity_recorder)
-            
+
             self.current_pulse.add_first_engine(new_keep_alive_engine)
 
             self.current_pulse.start()

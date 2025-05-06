@@ -1,10 +1,10 @@
 import threading
 import time
 
-from surveillance.src.config.definitions import keep_alive_cycle_length, window_push_length
-from surveillance.src.object.classes import ProgramSession, ChromeSession
+from surveillance.config.definitions import keep_alive_cycle_length, window_push_length
+from surveillance.object.classes import ProgramSession, ChromeSession
 
-from surveillance.src.util.errors import MissingEngineError, FullWindowError
+from surveillance.util.errors import MissingEngineError, FullWindowError
 
 
 """
@@ -26,6 +26,7 @@ If the session is ended before the ten sec, instead, the used time is added.
 
 Here, worst case scenario in a shutdown situation, is that 0-10 sec is not recorded.
 """
+
 
 class KeepAliveEngine:
     def __init__(self, session: ProgramSession | ChromeSession, dao_connection):
@@ -75,7 +76,7 @@ class KeepAliveEngine:
         Go into the session's Summary DAO entry and add ten sec.
         """
         self.recorder.add_ten_sec_to_end_time(self.session)
-    
+
     def _add_partial_window(self, amount_used):
         """
         Used to add amounts between 0 and 9 inclusive. Incomplete windows.
@@ -88,7 +89,7 @@ class KeepAliveEngine:
     def get_amount_used(self):
         """Get the current amount used (for testing)"""
         return self.amount_used
-    
+
     def get_session(self):
         """Get the current session (for testing)"""
         return self.session
@@ -132,13 +133,13 @@ class ThreadedEngineContainer:
         while not self.stop_event.is_set():
             self.engine.iterate_loop()  # a second has been used
             self.sleep_fn(self.interval)  # Sleep for 1 second
-    
+
     def replace_engine(self, new_engine):
         """Used to maintain container objects between sessions"""
         if self.engine is None:
             # Expect that add_first_engine is used to initialize.
             raise MissingEngineError()
-        
+
         # NOTE: If you have some sort of off by 1 error, it could be because
         # the current .sleep() hasn't flushed yet, i.e. the prev iteration is still going
         if self.is_running:

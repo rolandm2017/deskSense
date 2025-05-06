@@ -10,10 +10,10 @@ from datetime import datetime
 import pytz
 
 # TODO
-from surveillance.src.tz_handling.dao_objects import LogTimeConverter, FindTodaysEntryConverter
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.tz_handling.dao_objects import LogTimeConverter, FindTodaysEntryConverter
+from surveillance.util.time_wrappers import UserLocalTime
 
-from surveillance.src.tz_handling.time_formatting import convert_to_utc
+from surveillance.tz_handling.time_formatting import convert_to_utc
 
 
 def test_log_time_converter():

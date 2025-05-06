@@ -4,9 +4,9 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from datetime import datetime, timedelta
 from typing import List
 
-from surveillance.src.db.models import DomainSummaryLog, ProgramSummaryLog
-from surveillance.src.util.console_logger import ConsoleLogger
-from surveillance.src.util.debug_logger import print_and_log
+from surveillance.db.models import DomainSummaryLog, ProgramSummaryLog
+from surveillance.util.console_logger import ConsoleLogger
+from surveillance.util.debug_logger import print_and_log
 
 
 class SessionIntegrityDao:

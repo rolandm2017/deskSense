@@ -3,13 +3,13 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 
-from surveillance.src.config.definitions import (
+from surveillance.config.definitions import (
     no_space_dash_space,
     productive_apps,
     productive_sites,
 )
-from surveillance.src.object.classes import CompletedProgramSession, ProgramSession
-from surveillance.src.trackers.program_tracker import ProgramTrackerCore
+from surveillance.object.classes import CompletedProgramSession, ProgramSession
+from surveillance.trackers.program_tracker import ProgramTrackerCore
 
 from ..mocks.mock_clock import MockClock
 

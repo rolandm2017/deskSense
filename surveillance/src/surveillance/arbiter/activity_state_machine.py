@@ -1,12 +1,12 @@
 from datetime import timedelta
 
 
-from surveillance.src.object.classes import ChromeSession, ProgramSession, CompletedChromeSession, CompletedProgramSession
-from surveillance.src.object.arbiter_classes import ChromeInternalState, ApplicationInternalState, InternalState
-from surveillance.src.util.program_tools import window_is_chrome
-from surveillance.src.util.console_logger import ConsoleLogger
-from surveillance.src.util.copy_util import snapshot_obj_for_tests
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.object.classes import ChromeSession, ProgramSession, CompletedChromeSession, CompletedProgramSession
+from surveillance.object.arbiter_classes import ChromeInternalState, ApplicationInternalState, InternalState
+from surveillance.util.program_tools import window_is_chrome
+from surveillance.util.console_logger import ConsoleLogger
+from surveillance.util.copy_util import snapshot_obj_for_tests
+from surveillance.util.time_wrappers import UserLocalTime
 
 
 class ActivityStateMachine:
@@ -41,7 +41,7 @@ class ActivityStateMachine:
                 updated_state = self.transition_from_chrome.compute_next_state(
                     next_session)
             if next_session.start_time:
-                
+
                 self._conclude_session(
                     self.current_state, next_session.start_time)
                 self.prior_state = self.current_state
@@ -92,7 +92,7 @@ class ActivityStateMachine:
             updated_state = ChromeInternalState(
                 "Chrome", True, first_session.domain, first_session)
         return updated_state
-    
+
     @staticmethod
     def _initialize_program_machine():
         start_state = ApplicationInternalState("", "", {})

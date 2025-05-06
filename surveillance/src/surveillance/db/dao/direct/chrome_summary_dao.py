@@ -7,19 +7,19 @@ import traceback
 from datetime import datetime, timedelta, time
 from typing import List
 
-from surveillance.src.config.definitions import keep_alive_cycle_length, window_push_length
-from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
-from surveillance.src.db.dao.summary_dao_mixin import SummaryDaoMixin
-from surveillance.src.db.models import DailyDomainSummary
+from surveillance.config.definitions import keep_alive_cycle_length, window_push_length
+from surveillance.db.dao.utility_dao_mixin import UtilityDaoMixin
+from surveillance.db.dao.summary_dao_mixin import SummaryDaoMixin
+from surveillance.db.models import DailyDomainSummary
 
-from surveillance.src.tz_handling.dao_objects import FindTodaysEntryConverter
-from surveillance.src.object.classes import ChromeSession
+from surveillance.tz_handling.dao_objects import FindTodaysEntryConverter
+from surveillance.object.classes import ChromeSession
 
-from surveillance.src.util.console_logger import ConsoleLogger
-from surveillance.src.util.errors import NegativeTimeError, ImpossibleToGetHereError
-from surveillance.src.util.const import SECONDS_PER_HOUR
-from surveillance.src.tz_handling.time_formatting import get_start_of_day_from_datetime, attach_tz_to_all, attach_tz_to_obj, get_start_of_day_from_ult
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.util.console_logger import ConsoleLogger
+from surveillance.util.errors import NegativeTimeError, ImpossibleToGetHereError
+from surveillance.util.const import SECONDS_PER_HOUR
+from surveillance.tz_handling.time_formatting import get_start_of_day_from_datetime, attach_tz_to_all, attach_tz_to_obj, get_start_of_day_from_ult
+from surveillance.util.time_wrappers import UserLocalTime
 
 
 class ChromeSummaryDao(SummaryDaoMixin, UtilityDaoMixin):

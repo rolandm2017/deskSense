@@ -1,4 +1,4 @@
-from surveillance.src.object.classes import ChromeSession, ProgramSession, CompletedChromeSession, CompletedProgramSession
+from surveillance.object.classes import ChromeSession, ProgramSession, CompletedChromeSession, CompletedProgramSession
 
 
 def convert_start_end_times_to_hours(session: ProgramSession | ChromeSession):

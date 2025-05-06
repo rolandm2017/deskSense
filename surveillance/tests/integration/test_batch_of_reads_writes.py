@@ -2,14 +2,14 @@ import pytest
 
 from typing import cast
 
-from surveillance.src.db.models import SummaryLogBase
-from surveillance.src.object.classes import ProgramSession, ChromeSession
-from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
-from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-from surveillance.src.arbiter.activity_recorder import ActivityRecorder
-from surveillance.src.util.const import SECONDS_PER_HOUR
+from surveillance.db.models import SummaryLogBase
+from surveillance.object.classes import ProgramSession, ChromeSession
+from surveillance.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from surveillance.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from surveillance.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.arbiter.activity_recorder import ActivityRecorder
+from surveillance.util.const import SECONDS_PER_HOUR
 
 
 from ..helper.confirm_chronology import (

@@ -9,10 +9,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 import asyncio
 
-from surveillance.src.db.dao.direct.system_status_dao import SystemStatusDao
-from surveillance.src.db.models import SystemStatus, Base
-from surveillance.src.object.enums import SystemStatusType
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.db.dao.direct.system_status_dao import SystemStatusDao
+from surveillance.db.models import SystemStatus, Base
+from surveillance.object.enums import SystemStatusType
+from surveillance.util.time_wrappers import UserLocalTime
 
 
 from ....mocks.mock_clock import MockClock
@@ -81,7 +81,6 @@ async def test_db_dao(mock_regular_session_maker, mock_async_session):
     dao.accept_power_tracker_loop(current_loop)
     yield dao, clock
     await dao.async_session_maker().close()  # Close session explicitly
-
 
 
 @pytest.mark.asyncio

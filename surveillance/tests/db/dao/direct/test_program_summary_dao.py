@@ -10,14 +10,14 @@ from sqlalchemy.sql.selectable import Select
 
 from dotenv import load_dotenv
 
-from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
-from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from surveillance.src.db.models import DailyProgramSummary, Base
-from surveillance.src.object.classes import CompletedProgramSession
+from surveillance.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from surveillance.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.db.models import DailyProgramSummary, Base
+from surveillance.object.classes import CompletedProgramSession
 
-from surveillance.src.util.const import SECONDS_PER_HOUR
-from surveillance.src.util.clock import SystemClock
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.util.const import SECONDS_PER_HOUR
+from surveillance.util.clock import SystemClock
+from surveillance.util.time_wrappers import UserLocalTime
 
 
 from ....mocks.mock_clock import MockClock

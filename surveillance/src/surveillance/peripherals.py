@@ -4,8 +4,8 @@
 Wrapper to run peripheral monitors from the project root.
 """
 
-from surveillance.src.util.detect_os import OperatingSystemInfo
-from surveillance.src.trackers.message_dispatch import publish_keyboard_event, publish_mouse_events
+from surveillance.util.detect_os import OperatingSystemInfo
+from surveillance.trackers.message_dispatch import publish_keyboard_event, publish_mouse_events
 import threading
 import os
 import sys
@@ -46,8 +46,8 @@ if __name__ == "__main__":
 
     # Import the appropriate modules based on OS
     if current_os.is_windows:
-        from surveillance.src.trackers.peripherals.windows.win_keyboard_detector import win_monitor_keyboard
-        from surveillance.src.trackers.peripherals.windows.win_mouse_detector import win_monitor_mouse
+        from surveillance.trackers.peripherals.windows.win_keyboard_detector import win_monitor_keyboard
+        from surveillance.trackers.peripherals.windows.win_mouse_detector import win_monitor_mouse
 
         # On Windows, we'll use dummy paths since the actual paths aren't needed
         keyboard_path = os.getenv("WINDOWS_KEYBOARD_PATH", "WINDOWS_KEYBOARD")
@@ -56,7 +56,7 @@ if __name__ == "__main__":
         chosen_keyboard_monitor = win_monitor_keyboard
         chosen_mouse_monitor = win_monitor_mouse
     else:
-        from surveillance.src.trackers.peripherals.linux.linux_peripheral_detector import linux_monitor_keyboard, linux_monitor_mouse
+        from surveillance.trackers.peripherals.linux.linux_peripheral_detector import linux_monitor_keyboard, linux_monitor_mouse
 
         keyboard_path = os.getenv("UBUNTU_KEYBOARD_PATH")
         mouse_path = os.getenv("UBUNTU_MOUSE_PATH")

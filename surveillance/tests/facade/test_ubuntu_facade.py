@@ -5,15 +5,18 @@ import platform
 
 # Skip the entire module if not on Windows
 if platform.system() != "Linux":
-    pytest.skip("Skipping Windows-specific tests on non-Linux platform", allow_module_level=True)
+    pytest.skip("Skipping Windows-specific tests on non-Linux platform",
+                allow_module_level=True)
 
 
-from surveillance.src.platform.ubuntu_program_facade_core import UbuntuProgramFacadeCore
+from surveillance.platform.ubuntu_program_facade_core import UbuntuProgramFacadeCore
+
 
 @pytest.fixture
 def samples():
     return [
-        {"pid": 1234, "process_name": "firefox", "window_title": "Mozilla Firefox"},
+        {"pid": 1234, "process_name": "firefox",
+            "window_title": "Mozilla Firefox"},
         {"pid": 5678, "process_name": "code", "window_title": "Visual Studio Code"},
         {"pid": 9012, "process_name": "terminal", "window_title": "Terminal"}
     ]
@@ -29,7 +32,8 @@ def test_window_listener_with_mocks_ubuntu(mocker, facade, samples):
     mocker.patch(
         'surveillance.src.platform.ubuntu_program_facade_core.psutil.process_iter',
         return_value=[
-            MagicMock(pid=s["pid"], name=lambda s=s: s["process_name"], status=lambda: "running")
+            MagicMock(
+                pid=s["pid"], name=lambda s=s: s["process_name"], status=lambda: "running")
             for s in samples
         ]
     )

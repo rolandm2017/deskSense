@@ -5,10 +5,10 @@ from unittest.mock import Mock, patch
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from surveillance.src.util.detect_os import OperatingSystemInfo
-from surveillance.src.util.threaded_tracker import ThreadedTracker
-from surveillance.src.trackers.mouse_tracker import MouseTrackerCore, MouseEvent
-# from surveillance.src.facade.mouse_facade import MouseCoords
+from surveillance.util.detect_os import OperatingSystemInfo
+from surveillance.util.threaded_tracker import ThreadedTracker
+from surveillance.trackers.mouse_tracker import MouseTrackerCore, MouseEvent
+# from surveillance.facade.mouse_facade import MouseCoords
 
 
 class MockMouseFacade():
@@ -27,7 +27,7 @@ class MockMouseFacade():
         temp = self.available
         self.available = []
         return temp
-    
+
     def populate_event(self, event):
         self.available.append(event)
 
@@ -104,7 +104,8 @@ def test_make_sure_handler_actually_handles(tracker_and_events, mock_mouse_facad
     # tracker.run_tracking_loop()
 
     # Only check that the stops were logged, because they signal a closed window
-    assert len(events) == len([x2_concludes,x3_concludes]), "Some mouse events were not recorded"
+    assert len(events) == len(
+        [x2_concludes, x3_concludes]), "Some mouse events were not recorded"
 
 
 def test_multiple_handlers_are_called(tracker_and_events, mock_mouse_facade):
@@ -157,7 +158,8 @@ def test_multiple_handlers_are_called(tracker_and_events, mock_mouse_facade):
 
     num_of_gaps_greater_than_1000ms = 2
 
-    assert len(handler1_calls) == len(handler2_calls) == num_of_gaps_greater_than_1000ms
+    assert len(handler1_calls) == len(
+        handler2_calls) == num_of_gaps_greater_than_1000ms
     assert handler1_calls[0] == handler2_calls[0]
 
 

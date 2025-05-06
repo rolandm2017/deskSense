@@ -3,9 +3,9 @@ import pytest
 from unittest.mock import Mock, patch
 from datetime import datetime, timedelta
 
-from surveillance.src.trackers.keyboard_tracker import KeyboardTrackerCore
-from surveillance.src.util.threaded_tracker import ThreadedTracker
-from surveillance.src.object.classes import KeyboardAggregate
+from surveillance.trackers.keyboard_tracker import KeyboardTrackerCore
+from surveillance.util.threaded_tracker import ThreadedTracker
+from surveillance.object.classes import KeyboardAggregate
 from ..mocks.mock_clock import MockClock
 
 
@@ -231,7 +231,7 @@ def test_key_press_tracking(tracker_and_events, mock_keyboard_facade):
 #     t13 = move_time_fwd_one_ms(t12)
 #     times = [t1, t2, t3, t4, t5, t6, t7, t8,
 #              t9, t10, t11, t12, t13, t13]
-    
+
 #     timestamps = []
 
 #     sys_clock = MockClock(times)
@@ -284,6 +284,3 @@ def test_key_press_tracking(tracker_and_events, mock_keyboard_facade):
 #     assert len(handler2_calls) == 1
 
 #     assert handler1_calls[0] == handler2_calls[0]
-
-
-

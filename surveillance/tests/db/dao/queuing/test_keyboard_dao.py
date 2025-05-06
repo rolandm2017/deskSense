@@ -8,12 +8,12 @@ from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy import text
 
-from surveillance.src.object.dto import TypingSessionDto
-from surveillance.src.db.dao.queuing.keyboard_dao import KeyboardDao
-from surveillance.src.db.models import TypingSession
-from surveillance.src.object.classes import KeyboardAggregate
-from surveillance.src.util.clock import SystemClock
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.object.dto import TypingSessionDto
+from surveillance.db.dao.queuing.keyboard_dao import KeyboardDao
+from surveillance.db.models import TypingSession
+from surveillance.object.classes import KeyboardAggregate
+from surveillance.util.clock import SystemClock
+from surveillance.util.time_wrappers import UserLocalTime
 
 
 tokyo_tz = pytz.timezone("Asia/Tokyo")

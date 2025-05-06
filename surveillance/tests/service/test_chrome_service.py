@@ -8,15 +8,15 @@ from unittest.mock import AsyncMock, MagicMock, patch, Mock
 import asyncio
 import os
 
-from surveillance.src.object.pydantic_dto import UtcDtTabChange
-from surveillance.src.object.classes import TabChangeEventWithLtz
-from surveillance.src.services.chrome_service import ChromeService
-from surveillance.src.services.chrome_service import TabQueue
-from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
-from surveillance.src.util.clock import SystemClock
-from surveillance.src.debug.debug_overlay import Overlay
-from surveillance.src.arbiter.activity_recorder import ActivityRecorder
-from surveillance.src.debug.ui_notifier import UINotifier
+from surveillance.object.pydantic_dto import UtcDtTabChange
+from surveillance.object.classes import TabChangeEventWithLtz
+from surveillance.services.chrome_service import ChromeService
+from surveillance.services.chrome_service import TabQueue
+from surveillance.arbiter.activity_arbiter import ActivityArbiter
+from surveillance.util.clock import SystemClock
+from surveillance.debug.debug_overlay import Overlay
+from surveillance.arbiter.activity_recorder import ActivityRecorder
+from surveillance.debug.ui_notifier import UINotifier
 
 from ..mocks.mock_engine_container import MockEngineContainer
 from ..helper.confirm_chronology import get_durations_from_test_data, assert_start_times_are_chronological
@@ -68,7 +68,9 @@ def reconstructed_tab_changes():
                 print(e)
     return reconstructed
 
+
 transience_for_test = 100
+
 
 @pytest.fixture
 def chrome_service_fixture_with_arbiter():
@@ -92,7 +94,8 @@ def chrome_service_fixture_with_arbiter():
 
     arbiter.add_recorder_listener(mock_program_listener)
 
-    chrome_service = ChromeService(clock, arbiter, shorter_debounce, transience_for_test)
+    chrome_service = ChromeService(
+        clock, arbiter, shorter_debounce, transience_for_test)
 
     # Return the initialized ChromeService instance
     return chrome_service
@@ -134,37 +137,40 @@ async def test_add_arrival_to_queue(reconstructed_tab_changes, chrome_service_fi
         test_events.append(duplicate)
 
     # Arrange for the differences between their starttimes to be < transience delay (300ms)
-    
+
     start_time = tokyo_tz.localize(datetime(2025, 4, 15, 1, 0, 0))
     for i in range(0, events_in_test):
-        updated_start = start_time + timedelta(milliseconds=i * transience_for_test)
+        updated_start = start_time + \
+            timedelta(milliseconds=i * transience_for_test)
         test_events[i].start_time_with_tz = updated_start
-
 
     # Arrange spies
       # Set up spies - ONLY ONE SPY PER METHOD
-    with mock.patch.object(chrome_service_fixture_with_arbiter.tab_queue, 'add_to_arrival_queue', 
-                          wraps=chrome_service_fixture_with_arbiter.tab_queue.add_to_arrival_queue) as add_to_arrival_queue_spy, \
-         mock.patch.object(chrome_service_fixture_with_arbiter.tab_queue, 'order_message_queue',
+    with mock.patch.object(chrome_service_fixture_with_arbiter.tab_queue, 'add_to_arrival_queue',
+                           wraps=chrome_service_fixture_with_arbiter.tab_queue.add_to_arrival_queue) as add_to_arrival_queue_spy, \
+        mock.patch.object(chrome_service_fixture_with_arbiter.tab_queue, 'order_message_queue',
                           wraps=chrome_service_fixture_with_arbiter.tab_queue.order_message_queue) as order_message_queue_spy, \
-         mock.patch.object(chrome_service_fixture_with_arbiter.tab_queue, 'remove_transient_tabs',
+        mock.patch.object(chrome_service_fixture_with_arbiter.tab_queue, 'remove_transient_tabs',
                           wraps=chrome_service_fixture_with_arbiter.tab_queue.remove_transient_tabs) as remove_transient_tabs_spy, \
-         mock.patch.object(chrome_service_fixture_with_arbiter.tab_queue, 'empty_queue_as_sessions',
+        mock.patch.object(chrome_service_fixture_with_arbiter.tab_queue, 'empty_queue_as_sessions',
                           wraps=chrome_service_fixture_with_arbiter.tab_queue.empty_queue_as_sessions) as empty_queue_as_sessions_spy, \
-         mock.patch.object(chrome_service_fixture_with_arbiter, 'log_tab_event',
+        mock.patch.object(chrome_service_fixture_with_arbiter, 'log_tab_event',
                           wraps=chrome_service_fixture_with_arbiter.log_tab_event) as log_tab_event_spy:
-    
+
         # Verify empty queue to start
-        assert len(chrome_service_fixture_with_arbiter.tab_queue.message_queue) == 0
-        
+        assert len(
+            chrome_service_fixture_with_arbiter.tab_queue.message_queue) == 0
+
         # Add events one by one and confirm they're added to the queue
         for index, event in enumerate(test_events):
-            chrome_service_fixture_with_arbiter.tab_queue.add_to_arrival_queue(event)
+            chrome_service_fixture_with_arbiter.tab_queue.add_to_arrival_queue(
+                event)
             # Either the event is in the queue OR the queue was processed
-            
+
         # Check either:
         # 1. Events are in the queue (if debounce hasn't fired yet)
-        queue_length = len(chrome_service_fixture_with_arbiter.tab_queue.message_queue)
+        queue_length = len(
+            chrome_service_fixture_with_arbiter.tab_queue.message_queue)
         if queue_length > 0:
             # If debounce hasn't fired, make sure all events were added
             assert queue_length == events_in_test
@@ -173,26 +179,28 @@ async def test_add_arrival_to_queue(reconstructed_tab_changes, chrome_service_fi
             assert order_message_queue_spy.called
             assert remove_transient_tabs_spy.called
             assert empty_queue_as_sessions_spy.called
-        
+
         # Wait for debounce to complete (if it hasn't already)
         await asyncio.sleep(shorter_debounce * 2.0)
-        
+
         # Cancel any pending timers
         if chrome_service_fixture_with_arbiter.tab_queue.debounce_timer and not chrome_service_fixture_with_arbiter.tab_queue.debounce_timer.done():
             chrome_service_fixture_with_arbiter.tab_queue.debounce_timer.cancel()
-        
+
         # Now all events should have been processed
         assert add_to_arrival_queue_spy.call_count == events_in_test
         assert order_message_queue_spy.called
         assert remove_transient_tabs_spy.called
         assert empty_queue_as_sessions_spy.called
-        
+
         # Queue should be empty after processing
-        assert len(chrome_service_fixture_with_arbiter.tab_queue.message_queue) == 0
-        
+        assert len(
+            chrome_service_fixture_with_arbiter.tab_queue.message_queue) == 0
+
         # If there are no transient tabs, log_tab_event should be called for each event
         # Otherwise, it will be called fewer times
         assert log_tab_event_spy.call_count <= events_in_test
+
 
 @pytest.mark.asyncio
 @pytest.mark.skip
@@ -201,14 +209,15 @@ async def test_debounce_process(reconstructed_tab_changes, chrome_service_fixtur
 
     # Arrange spies
 
-    log_tab_event_spy = Mock(side_effect=chrome_service_fixture_with_arbiter.log_tab_event)
+    log_tab_event_spy = Mock(
+        side_effect=chrome_service_fixture_with_arbiter.log_tab_event)
     chrome_service_fixture_with_arbiter.log_tab_event = log_tab_event_spy
 
     events_in_test = 8
     events = reconstructed_tab_changes[:events_in_test]
 
-    with mock.patch.object(chrome_service_fixture_with_arbiter.tab_queue, 'debounced_process', 
-                          wraps=chrome_service_fixture_with_arbiter.tab_queue.debounced_process) as debounce_spy:
+    with mock.patch.object(chrome_service_fixture_with_arbiter.tab_queue, 'debounced_process',
+                           wraps=chrome_service_fixture_with_arbiter.tab_queue.debounced_process) as debounce_spy:
         events_in_test = 8
         events = reconstructed_tab_changes[:events_in_test]
 
@@ -216,29 +225,31 @@ async def test_debounce_process(reconstructed_tab_changes, chrome_service_fixtur
             chrome_service_fixture_with_arbiter.tab_queue.message_queue) == 0, "Start circumstances defied requirements"
 
         for event in events:
-            chrome_service_fixture_with_arbiter.tab_queue.add_to_arrival_queue(event)
-            
+            chrome_service_fixture_with_arbiter.tab_queue.add_to_arrival_queue(
+                event)
+
             # Wait for the debounce timer to fire
         # Make sure to wait longer than your debounce delay
         await asyncio.sleep(shorter_debounce * 1.10)
-        
+
         # Check if debounced_process was called
         assert debounce_spy.called, "debounced_process was not called"
         assert debounce_spy.call_count == 1, f"Expected debounced_process to be called once, but it was called {debounce_spy.call_count} times"
-        
+
         # Clean up any pending timers
         if chrome_service_fixture_with_arbiter.tab_queue.debounce_timer and not chrome_service_fixture_with_arbiter.tab_queue.debounce_timer.done():
             chrome_service_fixture_with_arbiter.tab_queue.debounce_timer.cancel()
-            
+
         # Note: This assertion might need to change depending on what happens when debounced_process is called
         # If it empties the message_queue, then you'd expect 0, not events_in_test
-        assert len(chrome_service_fixture_with_arbiter.tab_queue.message_queue) == events_in_test
+        assert len(
+            chrome_service_fixture_with_arbiter.tab_queue.message_queue) == events_in_test
+
 
 @pytest.mark.asyncio
 async def test_queue_with_debounce(reconstructed_tab_changes, chrome_service_with_mock):
     chrome_svc, mock_log_tab_event = chrome_service_with_mock
     print("\n")
-
 
     num_in_first_batch = 4
     num_in_second_batch = 7
@@ -283,7 +294,6 @@ async def test_queue_with_debounce(reconstructed_tab_changes, chrome_service_wit
     # Clean up any pending task
     if chrome_svc.tab_queue.debounce_timer and not chrome_svc.tab_queue.debounce_timer.done():
         chrome_svc.tab_queue.debounce_timer.cancel()
-
 
 
 def is_chronological(array: list[TabChangeEventWithLtz]):

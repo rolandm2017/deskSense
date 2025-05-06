@@ -8,12 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.sql.selectable import Select
 from typing import cast
 
-from surveillance.src.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
-from surveillance.src.db.models import TimelineEntryObj
-from surveillance.src.object.classes import KeyboardAggregate, MouseMoveWindow
-from surveillance.src.object.enums import ChartEventType
-from surveillance.src.util.clock import SystemClock
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
+from surveillance.db.models import TimelineEntryObj
+from surveillance.object.classes import KeyboardAggregate, MouseMoveWindow
+from surveillance.object.enums import ChartEventType
+from surveillance.util.clock import SystemClock
+from surveillance.util.time_wrappers import UserLocalTime
 
 import psutil
 
@@ -111,7 +111,8 @@ class TestTimelineEntryDao:
         assert args[0].hour == 0 and args[0].minute == 0 and args[0].second == 0
         assert args[1].hour == 0 and args[1].minute == 0 and args[1].second == 0
 
-        assert args[0].day + 1 == args[1].day, "Expected arg1 to be a day later than arg0"
+        assert args[0].day + \
+            1 == args[1].day, "Expected arg1 to be a day later than arg0"
 
         args, _ = execute_and_return_mock.call_args
 

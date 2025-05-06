@@ -1,11 +1,11 @@
 from typing import List
 
-from surveillance.src.object.pydantic_dto import KeyboardLog, MouseLog, ProgramActivityLog
-from surveillance.src.object.dto import TypingSessionDto, MouseMoveDto, ProgramDto
+from surveillance.object.pydantic_dto import KeyboardLog, MouseLog, ProgramActivityLog
+from surveillance.object.dto import TypingSessionDto, MouseMoveDto, ProgramDto
 
-from surveillance.src.db.models import DailyProgramSummary, DailyDomainSummary
+from surveillance.db.models import DailyProgramSummary, DailyDomainSummary
 
-from surveillance.src.object.dashboard_dto import (
+from surveillance.object.dashboard_dto import (
     ProductivityBreakdown, DailyProgramSummarySchema, DailyDomainSummarySchema,
     WeeklyProgramContent,
     DayOfProgramContent, DayOfChromeContent,

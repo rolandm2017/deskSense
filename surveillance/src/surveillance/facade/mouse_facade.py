@@ -7,8 +7,8 @@ from datetime import datetime
 
 from typing import TypedDict, List
 
-from surveillance.src.util.detect_os import OperatingSystemInfo
-from surveillance.src.object.classes import MouseEvent
+from surveillance.util.detect_os import OperatingSystemInfo
+from surveillance.object.classes import MouseEvent
 
 from .monitoring import FacadeMonitoring
 

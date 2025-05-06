@@ -21,12 +21,12 @@ from datetime import datetime
 import os
 from dotenv import load_dotenv
 
-from surveillance.src.trackers.message_dispatch import publish_keyboard_event, publish_mouse_events
+from surveillance.trackers.message_dispatch import publish_keyboard_event, publish_mouse_events
 
-from surveillance.src.trackers.peripherals.util.mouse_event_aggregator import MouseEventAggregator
-from surveillance.src.trackers.peripherals.util.mouse_event_dispatch import MouseEventDispatch
+from surveillance.trackers.peripherals.util.mouse_event_aggregator import MouseEventAggregator
+from surveillance.trackers.peripherals.util.mouse_event_dispatch import MouseEventDispatch
 
-from surveillance.src.object.classes import MouseAggregate
+from surveillance.object.classes import MouseAggregate
 
 load_dotenv()
 

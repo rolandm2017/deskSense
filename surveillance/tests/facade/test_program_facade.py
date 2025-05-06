@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 
-from surveillance.src.util.detect_os import OperatingSystemInfo
+from surveillance.util.detect_os import OperatingSystemInfo
 
 os_type = OperatingSystemInfo()
 
@@ -12,7 +12,7 @@ os_type = OperatingSystemInfo()
     reason="Test only applicable on Ubuntu systems"
 )
 def test_program_facade_on_ubuntu():
-    from surveillance.src.facade.program_facade_ubuntu import UbuntuProgramFacadeCore
+    from surveillance.facade.program_facade_ubuntu import UbuntuProgramFacadeCore
 
     facade = UbuntuProgramFacadeCore()
 
@@ -29,7 +29,7 @@ def test_program_facade_on_ubuntu():
     reason="Test only applicable on Windows systems"
 )
 def test_program_facade_on_windows():
-    from surveillance.src.facade.program_facade_windows import WindowsProgramFacadeCore
+    from surveillance.facade.program_facade_windows import WindowsProgramFacadeCore
 
     facade = WindowsProgramFacadeCore()
 
@@ -75,7 +75,7 @@ real_program_responses = [
 )
 def test_listen_for_window_changes():
 
-    from surveillance.src.facade.program_facade_ubuntu import UbuntuProgramFacadeCore
+    from surveillance.facade.program_facade_ubuntu import UbuntuProgramFacadeCore
 
     facade = UbuntuProgramFacadeCore()
 

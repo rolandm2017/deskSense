@@ -1,8 +1,8 @@
 from functools import wraps
 
-from surveillance.src.tz_handling.time_formatting import convert_to_timezone
+from surveillance.tz_handling.time_formatting import convert_to_timezone
 
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.util.time_wrappers import UserLocalTime
 
 
 def is_really_ult(func):

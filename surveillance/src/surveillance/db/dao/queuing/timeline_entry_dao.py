@@ -6,13 +6,13 @@ from datetime import datetime, timedelta, time
 
 from typing import List
 
-from surveillance.src.db.dao.base_dao import BaseQueueingDao
-from surveillance.src.db.models import TimelineEntryObj, PrecomputedTimelineEntry
-from surveillance.src.object.classes import KeyboardAggregate, MouseMoveWindow
-from surveillance.src.object.enums import ChartEventType
-from surveillance.src.util.console_logger import ConsoleLogger
-from surveillance.src.util.timeline_event_aggregator import aggregate_timeline_events
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.db.dao.base_dao import BaseQueueingDao
+from surveillance.db.models import TimelineEntryObj, PrecomputedTimelineEntry
+from surveillance.object.classes import KeyboardAggregate, MouseMoveWindow
+from surveillance.object.enums import ChartEventType
+from surveillance.util.console_logger import ConsoleLogger
+from surveillance.util.timeline_event_aggregator import aggregate_timeline_events
+from surveillance.util.time_wrappers import UserLocalTime
 
 
 class TimelineEntryDao(BaseQueueingDao):

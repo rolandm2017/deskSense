@@ -12,12 +12,11 @@ from sqlalchemy import text
 
 from typing import cast
 
-from surveillance.src.db.dao.queuing.mouse_dao import MouseDao
-from surveillance.src.db.models import MouseMove
-from surveillance.src.object.classes import MouseMoveWindow
-from surveillance.src.util.clock import SystemClock
-from surveillance.src.util.time_wrappers import UserLocalTime
-
+from surveillance.db.dao.queuing.mouse_dao import MouseDao
+from surveillance.db.models import MouseMove
+from surveillance.object.classes import MouseMoveWindow
+from surveillance.util.clock import SystemClock
+from surveillance.util.time_wrappers import UserLocalTime
 
 
 tokyo_tz = pytz.timezone("Asia/Tokyo")
@@ -86,7 +85,6 @@ class TestMouseDao:
     @pytest.mark.asyncio
     async def test_read_past_24h_events(self, dao):
         t0 = tokyo_tz.localize(datetime(2025, 4, 15, 15, 15, 15))
-
 
         # Today:
         t1 = UserLocalTime(t0 - timedelta(seconds=10))

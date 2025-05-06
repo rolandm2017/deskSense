@@ -15,13 +15,13 @@ from typing import List
 
 import pytz
 
-from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
-from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from surveillance.src.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
-from surveillance.src.db.database import async_session_maker, regular_session_maker
-from surveillance.src.db.models import (
+from surveillance.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from surveillance.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from surveillance.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
+from surveillance.db.database import async_session_maker, regular_session_maker
+from surveillance.db.models import (
     DailyDomainSummary,
     DailyProgramSummary,
     DailySummaryBase,
@@ -29,12 +29,12 @@ from surveillance.src.db.models import (
     ProgramSummaryLog,
     SummaryLogBase,
 )
-from surveillance.src.object.dashboard_dto import WeeklyProgramContent
-from surveillance.src.object.enums import ChartEventType
-from surveillance.src.services.dashboard_service import DashboardService
-from surveillance.src.util.console_logger import ConsoleLogger
-from surveillance.src.util.const import SECONDS_PER_HOUR
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.object.dashboard_dto import WeeklyProgramContent
+from surveillance.object.enums import ChartEventType
+from surveillance.services.dashboard_service import DashboardService
+from surveillance.util.console_logger import ConsoleLogger
+from surveillance.util.const import SECONDS_PER_HOUR
+from surveillance.util.time_wrappers import UserLocalTime
 
 logger = ConsoleLogger()
 

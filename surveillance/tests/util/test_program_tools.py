@@ -1,10 +1,10 @@
 
 import pytest
 
-from surveillance.src.config.definitions import productive_apps, productive_sites
+from surveillance.config.definitions import productive_apps, productive_sites
 
-from surveillance.src.util.program_tools import (separate_window_name_and_detail, is_expected_shape_else_throw,
-                                                 tab_is_a_productive_tab,  separator_error_msg, window_is_chrome, is_productive)
+from surveillance.util.program_tools import (separate_window_name_and_detail, is_expected_shape_else_throw,
+                                             tab_is_a_productive_tab,  separator_error_msg, window_is_chrome, is_productive)
 
 
 def test_separate_window_name_and_detail():

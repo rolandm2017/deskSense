@@ -4,9 +4,9 @@ from typing import List
 from dataclasses import dataclass
 from datetime import timedelta
 
-from surveillance.src.util.event_aggregator import EventAggregator
+from surveillance.util.event_aggregator import EventAggregator
 
-from surveillance.src.util.clock import SystemClock
+from surveillance.util.clock import SystemClock
 
 ####
 # Happy path tests

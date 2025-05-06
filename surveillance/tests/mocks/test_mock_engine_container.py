@@ -7,25 +7,24 @@ from datetime import datetime
 import pytz
 
 
-from surveillance.src.arbiter.session_polling import ThreadedEngineContainer
-from surveillance.src.arbiter.session_polling import KeepAliveEngine
+from surveillance.arbiter.session_polling import ThreadedEngineContainer
+from surveillance.arbiter.session_polling import KeepAliveEngine
 
-from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
-from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from surveillance.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from surveillance.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
-from surveillance.src.object.classes import ProgramSession, ChromeSession
-from surveillance.src.arbiter.activity_recorder import ActivityRecorder
-from surveillance.src.util.time_wrappers import UserLocalTime
-from surveillance.src.util.clock import UserFacingClock
+from surveillance.object.classes import ProgramSession, ChromeSession
+from surveillance.arbiter.activity_recorder import ActivityRecorder
+from surveillance.util.time_wrappers import UserLocalTime
+from surveillance.util.clock import UserFacingClock
 
 from .mock_engine_container import MockEngineContainer
 
-timezone_for_test = "Asia/Tokyo"  #  UTC+9
+timezone_for_test = "Asia/Tokyo"  # UTC+9
 
 tokyo_tz = pytz.timezone(timezone_for_test)
-
 
 
 def test_engine_container(mock_regular_session_maker, mock_async_session):
@@ -38,11 +37,11 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
     chrome_sum_dao = ChromeSummaryDao(
         chrome_logging_dao, mock_regular_session_maker)
 
-
     clock = UserFacingClock()
 
-    recorder = ActivityRecorder(p_logging_dao, chrome_logging_dao, p_summary_dao, chrome_sum_dao)
-    
+    recorder = ActivityRecorder(
+        p_logging_dao, chrome_logging_dao, p_summary_dao, chrome_sum_dao)
+
     window_push_mock = Mock()
     add_partial_window_mock = Mock()
 
@@ -54,9 +53,9 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
 
     session1 = ProgramSession("path/to/bar.exe", "bar.exe")
     session2 = ChromeSession("foo.com", "Experience Foo", t2)
-    
+
     pulse_interval = 0.1
- 
+
     an_engine = KeepAliveEngine(session1, recorder)
 
     duration_in_sec_1 = 33
@@ -112,7 +111,7 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
     assert isinstance(first_arg, int)
     assert first_arg == partial2
     assert isinstance(second_arg, ChromeSession)
-    
+
     add_partial_window_mock.assert_called_once_with(partial2, session2)
 
     window_push_mock.reset_mock()
@@ -121,7 +120,6 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
     # --
     # -- Run #3
     # --
-
 
     session3 = ProgramSession()
 

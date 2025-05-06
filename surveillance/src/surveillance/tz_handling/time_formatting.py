@@ -3,11 +3,11 @@ import pytz
 
 from typing import List, cast
 
-from surveillance.src.db.models import TimelineEntryObj, DailySummaryBase, SummaryLogBase
+from surveillance.db.models import TimelineEntryObj, DailySummaryBase, SummaryLogBase
 
-from surveillance.src.config.definitions import local_time_zone, daylight_savings_tz_offset
-from surveillance.src.util.time_wrappers import UserLocalTime
-from surveillance.src.util.errors import TimezoneUnawareError
+from surveillance.config.definitions import local_time_zone, daylight_savings_tz_offset
+from surveillance.util.time_wrappers import UserLocalTime
+from surveillance.util.errors import TimezoneUnawareError
 
 
 def convert_all_to_tz(obj_list, target_tz):

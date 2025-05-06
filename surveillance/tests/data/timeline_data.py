@@ -1,4 +1,4 @@
-from surveillance.src.db.models import TimelineEntryObj
+from surveillance.db.models import TimelineEntryObj
 from datetime import datetime
 
 # all mouse events

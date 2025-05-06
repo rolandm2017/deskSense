@@ -23,18 +23,18 @@ from datetime import datetime, timedelta
 from typing import List
 
 
-from surveillance.src.services.dashboard_service import DashboardService
+from surveillance.services.dashboard_service import DashboardService
 
-from surveillance.src.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
-from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
-from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
+from surveillance.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from surveillance.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from surveillance.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
-from surveillance.src.db.models import Base, DailyDomainSummary, DailyProgramSummary
-from surveillance.src.object.classes import CompletedChromeSession, CompletedProgramSession
-from surveillance.src.util.const import SECONDS_PER_HOUR
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.db.models import Base, DailyDomainSummary, DailyProgramSummary
+from surveillance.object.classes import CompletedChromeSession, CompletedProgramSession
+from surveillance.util.const import SECONDS_PER_HOUR
+from surveillance.util.time_wrappers import UserLocalTime
 
 from ..helper.truncation import truncate_summaries_and_logs_tables_via_session
 
@@ -103,15 +103,16 @@ def setup_program_writes_for_group(group_of_test_data, program_summary_dao, must
         assert must_be_from_month == dummy_program_session.end_time.dt.month
 
         if 'TEST' not in dummy_program_session.window_title:
-            raise ValueError("Test setup requires 'TEST' string in all window titles")
-
+            raise ValueError(
+                "Test setup requires 'TEST' string in all window titles")
 
         # TODO: method to find if the program already exists for a given date
         session_from_today = program_summary_dao.find_todays_entry_for_program(
             dummy_program_session)
         if session_from_today:
             # A program exists in the db already, so, extend its time
-            program_summary_dao.push_window_ahead_ten_sec(dummy_program_session)
+            program_summary_dao.push_window_ahead_ten_sec(
+                dummy_program_session)
         else:
             program_summary_dao.start_session(
                 dummy_program_session)
@@ -121,7 +122,6 @@ def setup_chrome_writes_for_group(group_of_test_data, chrome_summary_dao, must_b
     for dummy_chrome_session in group_of_test_data:
         assert isinstance(dummy_chrome_session, CompletedChromeSession)
         assert must_be_from_month == dummy_chrome_session.end_time.dt.month
-
 
         session_from_today = chrome_summary_dao.find_todays_entry_for_domain(
             dummy_chrome_session)
@@ -232,14 +232,14 @@ async def test_read_all(setup_with_populated_db):
 
     test_programs = test_programs_and_domains["feb_programs"] + \
         test_programs_and_domains["march_programs"]
-    
+
     for dummy_data in test_programs:
         assert dummy_data.window_title in just_retrieved_program_names_from_db, "A program was missing"
 
     march_1 = 1  # because of postgres
     march_2 = 2  # because of postgres
 
-    def sort_programs_by_date():    
+    def sort_programs_by_date():
         for v in all_programs_for_verification:
             if v.gathering_date.month == 2:
                 feb_vals_from_db.append(v)
@@ -253,8 +253,7 @@ async def test_read_all(setup_with_populated_db):
 
     # -- Compare to the per-day retrievals:
 
-
-        # MISSING:
+    # MISSING:
 
     # ProgramSession(window_title='SpotifyTEST', detail='Background music while working',
     #         start_time=UserLocalTime(2025-03-02 12:49:00+00:00),
@@ -262,16 +261,18 @@ async def test_read_all(setup_with_populated_db):
 
     print("\n\n\nDEBUG: Timestamps for feb_vals_from_db:")
     for v in feb_vals_from_db:
-        print(f"Program: {v.program_name}, Date: {v.gathering_date}, TZ Info: {v.gathering_date.tzinfo}")
+        print(
+            f"Program: {v.program_name}, Date: {v.gathering_date}, TZ Info: {v.gathering_date.tzinfo}")
 
     print("\nDEBUG: Timestamps for march_2_vals_from_db:")
     for v in march_2_vals_from_db:
-        print(f"Program: {v.program_name}, Date: {v.gathering_date}, TZ Info: {v.gathering_date.tzinfo}")
+        print(
+            f"Program: {v.program_name}, Date: {v.gathering_date}, TZ Info: {v.gathering_date.tzinfo}")
 
     print("\nDEBUG: Timestamps for march_3rd_vals_from_db:")
     for v in march_3rd_vals_from_db:
-        print(f"Program: {v.program_name}, Date: {v.gathering_date}, TZ Info: {v.gathering_date.tzinfo}")
-
+        print(
+            f"Program: {v.program_name}, Date: {v.gathering_date}, TZ Info: {v.gathering_date.tzinfo}")
 
     # for k in test_programs_and_domains["feb_programs"]:
     #     print(k, "\n")
@@ -284,40 +285,37 @@ async def test_read_all(setup_with_populated_db):
         """ Function says 'So they're all, like, uniques.' 
             Only makes sense if you run it on a single day.
         """
-        
+
         exe_paths_from_db_entries = [
             x.exe_path_as_id for x in days_vals]
         assert len(set(exe_paths_from_db_entries)) == len(
             exe_paths_from_db_entries), "Array contains duplicate strings"
-        
+
     # FIXME: In the above func, vsCode is in there twice for feb_vals_from_db
 
     # feb_23_read_by_day = program_summary_dao.read_day(UserLocalTime(feb_23_2025)),
     # feb_24_read_by_day = program_summary_dao.read_day(UserLocalTime(feb_24_2025)),
     # feb_26_read_by_day = program_summary_dao.read_day(UserLocalTime(feb_26_2025))
-                       
 
     assert len(
         feb_vals_from_db) == feb_program_count, "Count did not match expected, February"
-    
+
     # NOTE that "assert_has_only_unique_strings(feb_vals_from_db)" is nonsense!
     # The feb vals span multiple days, so of course there are duplicates.
 
     march_2_entries = program_summary_dao.read_day(
-        UserLocalTime(march_2_2025))    
+        UserLocalTime(march_2_2025))
 
     assert len(
         march_2_vals_from_db) == march_2_program_count, "Count did not match expected, for March 2"
     assert_day_has_only_unique_strings(march_2_vals_from_db)
-    
-    
+
     march_3_entries = program_summary_dao.read_day(
         UserLocalTime(march_3_2025))
-    
+
     assert len(
         march_3rd_vals_from_db) == march_3_program_count, "Count did not match expected, for March 3rd"
     assert_day_has_only_unique_strings(march_3rd_vals_from_db)
-
 
     # Do a simple check that the total programs retrieved
     # matches the number of programs entered
@@ -328,7 +326,6 @@ async def test_read_all(setup_with_populated_db):
 
     assert len(all_programs_for_verification) == total_count_of_unique_programs, "A program must have not been added, or 'all' means something differnt"
 
- 
     """
     --
     -- Chrome section
@@ -344,7 +341,7 @@ async def test_read_all(setup_with_populated_db):
 
     print(len(all_domains_for_verify), "vvv")
 
-    def sort_by_date():    
+    def sort_by_date():
         for v in all_domains_for_verify:
             if v.gathering_date.month == 2:
                 feb_vals_chrome.append(v)
@@ -357,14 +354,11 @@ async def test_read_all(setup_with_populated_db):
 
     sort_by_date()
 
-
     assert len(feb_vals_chrome) == feb_chrome_count
     assert len(
         chrome_march2_vals) == march_2_chrome_count, "A Chrome entry was missing"
     assert len(
         chrome_march_3rd_vals) == march_3_chrome_count, "A Chrome entry was missing"
-    
-
 
 
 @pytest.mark.asyncio
@@ -424,7 +418,8 @@ async def test_week_of_feb_23(setup_with_populated_db):
     service, _, _, _ = setup_with_populated_db
     dashboard_service = service
 
-    feb_23_2025_dt =weekly_breakdown_tz.localize(datetime(2025, 2, 23))  # Year, Month, Day
+    feb_23_2025_dt = weekly_breakdown_tz.localize(
+        datetime(2025, 2, 23))  # Year, Month, Day
     # ### ###
     # # Check the test data to see what's in here
     # ### ###
@@ -444,7 +439,8 @@ async def test_week_of_feb_23(setup_with_populated_db):
 @pytest.mark.asyncio
 async def test_week_of_march_2(setup_with_populated_db):
     dashboard_service = setup_with_populated_db[0]
-    march_2_2025_dt = weekly_breakdown_tz.localize(datetime(2025, 3, 2))  # Year, Month, Day
+    march_2_2025_dt = weekly_breakdown_tz.localize(
+        datetime(2025, 3, 2))  # Year, Month, Day
 
     weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(UserLocalTime(march_2_2025_dt))
 

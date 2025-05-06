@@ -21,18 +21,18 @@ from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta, timezone
 
 
-from surveillance.src.db.models import DomainSummaryLog, ProgramSummaryLog, Base
+from surveillance.db.models import DomainSummaryLog, ProgramSummaryLog, Base
 
 
-from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
-from surveillance.src.object.classes import CompletedProgramSession, CompletedChromeSession, ProgramSession, ChromeSession
+from surveillance.object.classes import CompletedProgramSession, CompletedChromeSession, ProgramSession, ChromeSession
 
-from surveillance.src.tz_handling.time_formatting import convert_to_utc
-from surveillance.src.util.errors import ImpossibleToGetHereError
-from surveillance.src.util.const import SECONDS_PER_HOUR
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.tz_handling.time_formatting import convert_to_utc
+from surveillance.util.errors import ImpossibleToGetHereError
+from surveillance.util.const import SECONDS_PER_HOUR
+from surveillance.util.time_wrappers import UserLocalTime
 
 
 timezone_for_test_data = ZoneInfo("Asia/Tokyo")

@@ -5,17 +5,17 @@ from typing import TypeVar, Callable, Type
 
 from datetime import timedelta, datetime
 
-from surveillance.src.config.definitions import window_push_length
+from surveillance.config.definitions import window_push_length
 
-from surveillance.src.object.classes import ProgramSession, ChromeSession
-from surveillance.src.tz_handling.dao_objects import FindTodaysEntryConverter
+from surveillance.object.classes import ProgramSession, ChromeSession
+from surveillance.tz_handling.dao_objects import FindTodaysEntryConverter
 
-from surveillance.src.tz_handling.time_formatting import attach_tz_to_obj, get_start_of_day_from_ult, get_start_of_day_from_datetime, attach_tz_to_all
-from surveillance.src.util.log_dao_helper import group_logs_by_name
-from surveillance.src.util.errors import ImpossibleToGetHereError
-from surveillance.src.util.time_wrappers import UserLocalTime
-from surveillance.src.util.const import SECONDS_PER_HOUR
-from surveillance.src.util.errors import DatabaseProtectionError, NegativeTimeError
+from surveillance.tz_handling.time_formatting import attach_tz_to_obj, get_start_of_day_from_ult, get_start_of_day_from_datetime, attach_tz_to_all
+from surveillance.util.log_dao_helper import group_logs_by_name
+from surveillance.util.errors import ImpossibleToGetHereError
+from surveillance.util.time_wrappers import UserLocalTime
+from surveillance.util.const import SECONDS_PER_HOUR
+from surveillance.util.errors import DatabaseProtectionError, NegativeTimeError
 
 
 T = TypeVar('T', bound=DeclarativeMeta)

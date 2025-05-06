@@ -14,16 +14,16 @@ from datetime import time as dt_time
 from time import time
 
 
-from surveillance.src.db.database import init_db, async_session_maker, regular_session_maker
-from surveillance.src.db.models import DailyDomainSummary, DailyProgramSummary, ProgramSummaryLog
+from surveillance.db.database import init_db, async_session_maker, regular_session_maker
+from surveillance.db.models import DailyDomainSummary, DailyProgramSummary, ProgramSummaryLog
 
 
-from surveillance.src.routes.report_routes import router as report_router
+from surveillance.routes.report_routes import router as report_router
 
-from surveillance.src.object.pydantic_dto import UtcDtTabChange, YouTubeEvent
-from surveillance.src.object.classes import TabChangeEventWithLtz
+from surveillance.object.pydantic_dto import UtcDtTabChange, YouTubeEvent
+from surveillance.object.classes import TabChangeEventWithLtz
 
-from surveillance.src.object.dashboard_dto import (
+from surveillance.object.dashboard_dto import (
     PartiallyPrecomputedWeeklyTimeline,
     ProductivityBreakdownByWeek,
     ProgramBarChartContent,
@@ -35,30 +35,30 @@ from surveillance.src.object.dashboard_dto import (
     WeeklyProgramUsageTimeline, WeeklyTimeline, DayOfTimelineRows
 )
 
-from surveillance.src.facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
-from surveillance.src.surveillance_manager import FacadeInjector, SurveillanceManager
+from surveillance.facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
+from surveillance.surveillance_manager import FacadeInjector, SurveillanceManager
 
-from surveillance.src.services.dashboard_service import DashboardService
-from surveillance.src.services.chrome_service import ChromeService
-from surveillance.src.facade.receive_messages import MessageReceiver
+from surveillance.services.dashboard_service import DashboardService
+from surveillance.services.chrome_service import ChromeService
+from surveillance.facade.receive_messages import MessageReceiver
 
 
-from surveillance.src.services.tiny_services import TimezoneService
+from surveillance.services.tiny_services import TimezoneService
 
-from surveillance.src.service_dependencies import (
+from surveillance.service_dependencies import (
     get_keyboard_service, get_mouse_service,     get_dashboard_service, get_chrome_service, get_activity_arbiter, get_timezone_service,
 )
 
-from surveillance.src.util.console_logger import ConsoleLogger
+from surveillance.util.console_logger import ConsoleLogger
 
-from surveillance.src.util.pydantic_factory import (
+from surveillance.util.pydantic_factory import (
     manufacture_chrome_bar_chart, manufacture_programs_bar_chart,
     DtoMapper
 )
 
-from surveillance.src.util.clock import UserFacingClock
-from surveillance.src.util.time_wrappers import UserLocalTime
-# from surveillance.src.facade.program_facade import ProgramApiFacadeCore
+from surveillance.util.clock import UserFacingClock
+from surveillance.util.time_wrappers import UserLocalTime
+# from surveillance.facade.program_facade import ProgramApiFacadeCore
 
 import sys
 import os
@@ -98,10 +98,10 @@ async def lifespan(app: FastAPI):
 
     def choose_program_facade(os):
         if os.is_windows:
-            from surveillance.src.facade.program_facade_windows import WindowsProgramFacadeCore
+            from surveillance.facade.program_facade_windows import WindowsProgramFacadeCore
             return WindowsProgramFacadeCore()
         else:
-            from surveillance.src.facade.program_facade_ubuntu import UbuntuProgramFacadeCore
+            from surveillance.facade.program_facade_ubuntu import UbuntuProgramFacadeCore
             return UbuntuProgramFacadeCore()
 
     facades = FacadeInjector(get_keyboard_facade_instance,

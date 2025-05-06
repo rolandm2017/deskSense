@@ -5,11 +5,11 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import time
 
-from surveillance.src.arbiter.activity_state_machine import ActivityStateMachine, TransitionFromChromeMachine, TransitionFromProgramMachine
-from surveillance.src.object.classes import ChromeSession, ProgramSession
-from surveillance.src.object.arbiter_classes import ApplicationInternalState, ChromeInternalState
-from surveillance.src.util.clock import SystemClock
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.arbiter.activity_state_machine import ActivityStateMachine, TransitionFromChromeMachine, TransitionFromProgramMachine
+from surveillance.object.classes import ChromeSession, ProgramSession
+from surveillance.object.arbiter_classes import ApplicationInternalState, ChromeInternalState
+from surveillance.util.clock import SystemClock
+from surveillance.util.time_wrappers import UserLocalTime
 
 from ..mocks.mock_clock import MockClock
 

@@ -4,21 +4,21 @@ from sqlalchemy.orm import sessionmaker
 from datetime import timedelta, datetime, date, timezone
 from typing import List
 
-from surveillance.src.db.dao.utility_dao_mixin import UtilityDaoMixin
-from surveillance.src.db.dao.logging_dao_mixin import LoggingDaoMixin
-from surveillance.src.db.models import ProgramSummaryLog
+from surveillance.db.dao.utility_dao_mixin import UtilityDaoMixin
+from surveillance.db.dao.logging_dao_mixin import LoggingDaoMixin
+from surveillance.db.models import ProgramSummaryLog
 
-from surveillance.src.tz_handling.dao_objects import LogTimeConverter
-from surveillance.src.object.classes import ProgramSession, CompletedProgramSession
+from surveillance.tz_handling.dao_objects import LogTimeConverter
+from surveillance.object.classes import ProgramSession, CompletedProgramSession
 
-from surveillance.src.util.console_logger import ConsoleLogger
-from surveillance.src.util.errors import ImpossibleToGetHereError
-from surveillance.src.util.arg_type_wrapper import validate_session, guarantee_start_time
-from surveillance.src.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
-from surveillance.src.tz_handling.time_formatting import convert_to_utc, get_start_of_day_from_datetime, attach_tz_to_all
-from surveillance.src.util.const import ten_sec_as_pct_of_hour
-from surveillance.src.util.time_wrappers import UserLocalTime
-from surveillance.src.util.log_dao_helper import group_logs_by_name
+from surveillance.util.console_logger import ConsoleLogger
+from surveillance.util.errors import ImpossibleToGetHereError
+from surveillance.util.arg_type_wrapper import validate_session, guarantee_start_time
+from surveillance.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
+from surveillance.tz_handling.time_formatting import convert_to_utc, get_start_of_day_from_datetime, attach_tz_to_all
+from surveillance.util.const import ten_sec_as_pct_of_hour
+from surveillance.util.time_wrappers import UserLocalTime
+from surveillance.util.log_dao_helper import group_logs_by_name
 
 
 #

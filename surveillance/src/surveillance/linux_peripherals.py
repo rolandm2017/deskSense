@@ -10,8 +10,8 @@ import time
 from pynput import keyboard as pynput_keyboard
 from dotenv import load_dotenv
 
-from surveillance.src.trackers.peripherals.linux.linux_peripheral_detector import linux_monitor_keyboard, linux_monitor_mouse
-from surveillance.src.trackers.message_dispatch import publish_keyboard_event, publish_mouse_events
+from surveillance.trackers.peripherals.linux.linux_peripheral_detector import linux_monitor_keyboard, linux_monitor_mouse
+from surveillance.trackers.message_dispatch import publish_keyboard_event, publish_mouse_events
 
 
 def run_linux_monitors():

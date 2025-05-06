@@ -32,7 +32,7 @@ from .trackers.program_tracker import ProgramTrackerCore
 from .util.detect_os import OperatingSystemInfo
 from .util.clock import UserFacingClock
 from .util.threaded_tracker import ThreadedTracker
-from surveillance.src.util.copy_util import snapshot_obj_for_tests
+from surveillance.util.copy_util import snapshot_obj_for_tests
 
 
 class FacadeInjector:
@@ -173,21 +173,21 @@ class SurveillanceManager:
         """Safely cancel all pending tasks created by this manager."""
         # Get all tasks from the event loop except the current one
         current_task = asyncio.current_task()
-        all_tasks = [task for task in asyncio.all_tasks() 
-                    if task is not current_task]
-        
+        all_tasks = [task for task in asyncio.all_tasks()
+                     if task is not current_task]
+
         # Print detailed information about all tasks
         print(f"Found {len(all_tasks)} total asyncio tasks")
-        
+
         # Look for uvicorn related tasks specifically
         uvicorn_tasks = []
         manager_tasks = []
         other_tasks = []
-        
+
         for task in all_tasks:
             task_name = task.get_name()
             task_status = "DONE" if task.done() else "PENDING"
-            
+
             # Try to get the frame information
             task_frame = None
             try:
@@ -196,18 +196,19 @@ class SurveillanceManager:
                 frame_info = f"File: {task_frame.f_code.co_filename}, Line: {task_frame.f_lineno}" if task_frame else "Unknown"
             except Exception:
                 frame_info = "Not available"
-            
-            print(f"Task: {task_name} | Status: {task_status} | Source: {frame_info}")
-            
+
+            print(
+                f"Task: {task_name} | Status: {task_status} | Source: {frame_info}")
+
             # Separate tasks by category for better handling
             if 'uvicorn' in frame_info.lower() or 'starlette' in frame_info.lower():
                 uvicorn_tasks.append(task)
-            elif any(indicator in task_name.lower() for indicator in 
-                ['mouse', 'keyboard', 'program', 'timeline', 'chrome', 'dao', 'messagereceiver']):
+            elif any(indicator in task_name.lower() for indicator in
+                     ['mouse', 'keyboard', 'program', 'timeline', 'chrome', 'dao', 'messagereceiver']):
                 manager_tasks.append(task)
             else:
                 other_tasks.append(task)
-        
+
         # Only cancel our manager tasks, not FastAPI framework tasks
         cancelled_count = 0
         if manager_tasks:
@@ -217,16 +218,18 @@ class SurveillanceManager:
                     stack = task.get_stack()
                     task_frame = stack[0] if stack else None
                     frame_info = f"File: {task_frame.f_code.co_filename}, Line: {task_frame.f_lineno}" if task_frame else "Unknown"
-                    print(f"Cancelling task: '{task.get_name()}' from '{frame_info}'")
+                    print(
+                        f"Cancelling task: '{task.get_name()}' from '{frame_info}'")
                     task.cancel()
                     cancelled_count += 1
-        
+
         # Log but don't cancel uvicorn tasks
         if uvicorn_tasks:
-            print(f"\nFound {len(uvicorn_tasks)} uvicorn/starlette tasks (not cancelling):")
+            print(
+                f"\nFound {len(uvicorn_tasks)} uvicorn/starlette tasks (not cancelling):")
             for task in uvicorn_tasks:
                 print(f"  - {task.get_name()}")
-        
+
         # Try to safely wait for manager tasks to complete
         if manager_tasks:
             try:
@@ -237,14 +240,14 @@ class SurveillanceManager:
                 )
             except asyncio.TimeoutError:
                 print("Some tasks didn't complete within timeout")
-        
+
         print(f"Cancelled {cancelled_count} tasks")
         return cancelled_count
-    
+
     async def cleanup(self):
         """Clean up resources before exit."""
         print("cleaning up")
-        
+
         # First stop the threads - this should be safe from exceptions
         try:
             self.keyboard_thread.stop()
@@ -252,10 +255,10 @@ class SurveillanceManager:
             self.program_thread.stop()
         except Exception as e:
             print(f"Error stopping threads: {e}")
-        
+
         # Store the count of canceled tasks
         cancelled_tasks = 0
-        
+
         # Cancel any pending database tasks
         try:
             cancelled_tasks = await self.cancel_pending_tasks()
@@ -266,7 +269,7 @@ class SurveillanceManager:
             print(f"Error canceling tasks: {e}")
             import traceback
             traceback.print_exc()
-        
+
         # Then stop the message receiver
         if hasattr(self, 'message_receiver') and self.message_receiver:
             try:
@@ -277,8 +280,8 @@ class SurveillanceManager:
                 print(f"Error during MessageReceiver cleanup: {e}")
                 import traceback
                 traceback.print_exc()
-        
+
         self.is_running = False
-        
+
         # Return the count for the caller
         return cancelled_tasks

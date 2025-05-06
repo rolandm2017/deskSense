@@ -2,24 +2,24 @@ from curses import window
 import time
 from datetime import datetime
 
-from surveillance.src.config.definitions import (
+from surveillance.config.definitions import (
     no_space_dash_space,
     productive_apps,
     productive_categories,
     productive_sites,
     unproductive_apps,
 )
-from surveillance.src.facade.program_facade_base import ProgramFacadeInterface
-from surveillance.src.object.classes import ProgramSession
-from surveillance.src.util.clock import SystemClock
-from surveillance.src.util.console_logger import ConsoleLogger
-from surveillance.src.util.detect_os import OperatingSystemInfo
-from surveillance.src.util.program_tools import (
+from surveillance.facade.program_facade_base import ProgramFacadeInterface
+from surveillance.object.classes import ProgramSession
+from surveillance.util.clock import SystemClock
+from surveillance.util.console_logger import ConsoleLogger
+from surveillance.util.detect_os import OperatingSystemInfo
+from surveillance.util.program_tools import (
     contains_space_dash_space,
     separate_window_name_and_detail,
 )
-from surveillance.src.util.threaded_tracker import ThreadedTracker
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.util.threaded_tracker import ThreadedTracker
+from surveillance.util.time_wrappers import UserLocalTime
 
 # TODO: report programs that aren't in the apps list.
 
@@ -119,12 +119,12 @@ if __name__ == "__main__":
 
     def choose_program_facade(os):
         if os.is_windows:
-            from surveillance.src.facade.program_facade_windows import (
+            from surveillance.facade.program_facade_windows import (
                 WindowsProgramFacadeCore,
             )
             return WindowsProgramFacadeCore()
         else:
-            from surveillance.src.facade.program_facade_ubuntu import (
+            from surveillance.facade.program_facade_ubuntu import (
                 UbuntuProgramFacadeCore,
             )
             return UbuntuProgramFacadeCore()

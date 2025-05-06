@@ -1,8 +1,8 @@
 from datetime import timedelta, datetime, date
 
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.util.time_wrappers import UserLocalTime
 
-from surveillance.src.util.arg_type_wrapper import is_really_ult
+from surveillance.util.arg_type_wrapper import is_really_ult
 
 
 class WeekCalculationMixin:

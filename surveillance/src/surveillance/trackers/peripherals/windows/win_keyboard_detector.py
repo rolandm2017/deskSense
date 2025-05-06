@@ -1,17 +1,18 @@
-import keyboard 
+import keyboard
 import logging
 import os
 import time
 from datetime import datetime
 
-from surveillance.src.trackers.message_dispatch import publish_keyboard_event
+from surveillance.trackers.message_dispatch import publish_keyboard_event
 
 DEBUG = False
+
 
 def win_monitor_keyboard(device_path=None, get_running_state=None):
     """
     Windows keyboard monitoring function.
-    
+
     Args:
         device_path: Not used on Windows, but kept for API consistency
         get_running_state: Function that returns True if monitoring should continue, False to stop
@@ -36,11 +37,13 @@ def win_monitor_keyboard(device_path=None, get_running_state=None):
             if DEBUG:
                 if len(key_name) == 1:
                     # For regular characters, show the character
-                    print(f"Key pressed: {key_name}, ASCII: {ord(key_name)}, Time: {datetime.now().strftime('%H:%M:%S')}")
+                    print(
+                        f"Key pressed: {key_name}, ASCII: {ord(key_name)}, Time: {datetime.now().strftime('%H:%M:%S')}")
                 else:
                     # For special keys
-                    print(f"Key pressed: {key_name}, Time: {datetime.now().strftime('%H:%M:%S')}")
-            
+                    print(
+                        f"Key pressed: {key_name}, Time: {datetime.now().strftime('%H:%M:%S')}")
+
             # Log to file
             logging.info(f"Key: {key_name}")
 

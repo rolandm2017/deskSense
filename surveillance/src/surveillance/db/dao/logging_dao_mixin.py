@@ -5,12 +5,12 @@ from typing import TypeVar, Callable, Type
 
 from datetime import timedelta
 
-from surveillance.src.db.models import DomainSummaryLog, ProgramSummaryLog
+from surveillance.db.models import DomainSummaryLog, ProgramSummaryLog
 
-from surveillance.src.tz_handling.time_formatting import convert_to_utc, get_start_of_day_from_datetime, get_start_of_day_from_ult, attach_tz_to_all
-from surveillance.src.util.log_dao_helper import group_logs_by_name
-from surveillance.src.util.errors import ImpossibleToGetHereError
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.tz_handling.time_formatting import convert_to_utc, get_start_of_day_from_datetime, get_start_of_day_from_ult, attach_tz_to_all
+from surveillance.util.log_dao_helper import group_logs_by_name
+from surveillance.util.errors import ImpossibleToGetHereError
+from surveillance.util.time_wrappers import UserLocalTime
 
 
 T = TypeVar('T', bound=DeclarativeMeta)

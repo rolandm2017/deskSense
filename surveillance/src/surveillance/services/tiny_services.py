@@ -6,19 +6,19 @@ import pytz
 from datetime import datetime, time, date
 
 
-from surveillance.src.object.pydantic_dto import UtcDtTabChange
-from surveillance.src.tz_handling.time_formatting import convert_to_timezone
+from surveillance.object.pydantic_dto import UtcDtTabChange
+from surveillance.tz_handling.time_formatting import convert_to_timezone
 
-from surveillance.src.db.dao.queuing.mouse_dao import MouseDao
-from surveillance.src.db.dao.queuing.keyboard_dao import KeyboardDao
-from surveillance.src.db.models import MouseMove
-from surveillance.src.object.dto import TypingSessionDto
-from surveillance.src.object.classes import TabChangeEventWithLtz
+from surveillance.db.dao.queuing.mouse_dao import MouseDao
+from surveillance.db.dao.queuing.keyboard_dao import KeyboardDao
+from surveillance.db.models import MouseMove
+from surveillance.object.dto import TypingSessionDto
+from surveillance.object.classes import TabChangeEventWithLtz
 
 
-from surveillance.src.config.definitions import local_time_zone, productive_sites
-from surveillance.src.util.console_logger import ConsoleLogger
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.config.definitions import local_time_zone, productive_sites
+from surveillance.util.console_logger import ConsoleLogger
+from surveillance.util.time_wrappers import UserLocalTime
 
 
 class TimezoneService:

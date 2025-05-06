@@ -15,16 +15,16 @@ from datetime import datetime, timedelta
 
 from typing import List
 
-from surveillance.src.db.models import DailyProgramSummary, ProgramSummaryLog, DomainSummaryLog
-from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
-from surveillance.src.object.classes import ProgramSession, ChromeSession
+from surveillance.db.models import DailyProgramSummary, ProgramSummaryLog, DomainSummaryLog
+from surveillance.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from surveillance.object.classes import ProgramSession, ChromeSession
 
-from surveillance.src.util.time_wrappers import UserLocalTime
-from surveillance.src.util.errors import TimezoneUnawareError
-from surveillance.src.util.const import ten_sec_as_pct_of_hour
-from surveillance.src.tz_handling.time_formatting import get_start_of_day_from_ult
+from surveillance.util.time_wrappers import UserLocalTime
+from surveillance.util.errors import TimezoneUnawareError
+from surveillance.util.const import ten_sec_as_pct_of_hour
+from surveillance.tz_handling.time_formatting import get_start_of_day_from_ult
 
 
 from ..helper.truncation import truncate_summaries_and_logs_tables_via_session

@@ -10,16 +10,15 @@ from sqlalchemy.sql.selectable import Select
 
 from dotenv import load_dotenv
 
-from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-from surveillance.src.db.models import DailyDomainSummary, Base
-from surveillance.src.object.classes import CompletedChromeSession
+from surveillance.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from surveillance.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.db.models import DailyDomainSummary, Base
+from surveillance.object.classes import CompletedChromeSession
 
-from surveillance.src.util.const import SECONDS_PER_HOUR
-from surveillance.src.util.clock import SystemClock
-from surveillance.src.util.time_wrappers import UserLocalTime
-
+from surveillance.util.const import SECONDS_PER_HOUR
+from surveillance.util.clock import SystemClock
+from surveillance.util.time_wrappers import UserLocalTime
 
 
 load_dotenv()
@@ -40,7 +39,6 @@ class TestChromeSummaryDao:
 
     def test_start_session(self, chrome_summary_dao):
         dt = datetime(2025, 1, 25, 15, 5, tzinfo=tokyo_tz)
-
 
         domain_for_test = "www.facebook.com"
         dt2 = dt + timedelta(seconds=13)
@@ -83,7 +81,7 @@ class TestChromeSummaryDao:
         assert isinstance(args[0], DailyDomainSummary)
 
         assert args[0].domain_name == domain_name
-        assert args[0].hours_spent == 0   
+        assert args[0].hours_spent == 0
         assert args[0].gathering_date.day == dt.day
         assert args[0].gathering_date.hour == 0  # Because "get start of day"
 

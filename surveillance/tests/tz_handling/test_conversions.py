@@ -8,8 +8,8 @@ import pytest
 from datetime import datetime, timezone
 import pytz
 
-from surveillance.src.db.models import ProgramSummaryLog, DailyProgramSummary
-from surveillance.src.tz_handling.time_formatting import convert_to_utc, convert_to_timezone, convert_summary_to_tz, convert_log_to_tz
+from surveillance.db.models import ProgramSummaryLog, DailyProgramSummary
+from surveillance.tz_handling.time_formatting import convert_to_utc, convert_to_timezone, convert_summary_to_tz, convert_log_to_tz
 
 tokyo_tz = pytz.timezone("Asia/Tokyo")  # UTC +9
 pst_tz = pytz.timezone("America/Los_Angeles")  # UTC -7

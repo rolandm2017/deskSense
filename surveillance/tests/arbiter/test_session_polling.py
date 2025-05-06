@@ -7,17 +7,19 @@ import asyncio
 import threading
 import time
 
-from surveillance.src.config.definitions import keep_alive_cycle_length, window_push_length
-from surveillance.src.object.classes import ProgramSession
-from surveillance.src.arbiter.session_polling import KeepAliveEngine
+from surveillance.config.definitions import keep_alive_cycle_length, window_push_length
+from surveillance.object.classes import ProgramSession
+from surveillance.arbiter.session_polling import KeepAliveEngine
+
 
 class MockDaoConn:
     """
     Mocking ActivityArbiter
     """
+
     def __init__(self):
         pass
-        
+
     def add_ten_sec_to_end_time(self):
         pass
 
@@ -25,22 +27,24 @@ class MockDaoConn:
         pass
 
 # Custom sleep function that does nothing
+
+
 def fast_sleep(_):
     pass
 
 
 def test_window_addition_math():
     """
-    
+
     """
     dao_mock = Mock()
-    
-    add_ten_mock = Mock() 
+
+    add_ten_mock = Mock()
     dao_mock.add_ten_sec_to_end_time = add_ten_mock
-    
+
     add_partial_window_spy = Mock()
     dao_mock.add_partial_window = add_partial_window_spy
-    
+
     session = ProgramSession()
     # --
     # -- instance 1
@@ -59,7 +63,8 @@ def test_window_addition_math():
     instance.conclude()
 
     # So add_partial_window was called with the remainder:
-    add_partial_window_spy.assert_called_once_with(partial_cycle_loops, session)
+    add_partial_window_spy.assert_called_once_with(
+        partial_cycle_loops, session)
 
     add_partial_window_spy.reset_mock()
 
@@ -75,7 +80,7 @@ def test_window_addition_math():
 
     # Used time is added to duration
     add_ten_mock.assert_not_called()
-    add_partial_window_spy.assert_called_once_with(used_amount, session) 
+    add_partial_window_spy.assert_called_once_with(used_amount, session)
 
     add_partial_window_spy.reset_mock()
 
@@ -85,7 +90,7 @@ def test_window_addition_math():
     # The program opens a new window. Ten sec remain
     used_amount = 0
     instance = KeepAliveEngine(session, dao_mock)
-    
+
     used_amount = 7
     one_full_cycyle = window_push_length  # 10
 
@@ -98,7 +103,6 @@ def test_window_addition_math():
 
     add_partial_window_spy.assert_called_once()
     assert add_partial_window_spy.call_args_list[0][0][0] == used_amount
-
 
 
 def test_hit_max_window():
@@ -129,22 +133,22 @@ def test_keep_alive_pulse_timing():
     mock_recorder = Mock()
     session = ProgramSession("TestApp")
     engine = KeepAliveEngine(session, mock_recorder)
-    
+
     # No pulses at start
     assert mock_recorder.add_ten_sec_to_end_time.call_count == 0
-    
+
     # Iterate 9 times (not enough for pulse)
     for _ in range(9):
         engine.iterate_loop()
     assert mock_recorder.add_ten_sec_to_end_time.call_count == 0
-    
+
     # One more iteration should trigger a pulse
     engine.iterate_loop()
     assert mock_recorder.add_ten_sec_to_end_time.call_count == 1
-    
+
     # Counter should reset
     assert engine.get_amount_used() == 0
-    
+
     # 10 more iterations should trigger another pulse
     for _ in range(10):
         engine.iterate_loop()
@@ -158,8 +162,6 @@ def test_iterate_loop():
     dao_mock.add_ten_sec_to_end_time = add_ten_mock
     dao_mock.add_duration = add_duration_mock
     session = ProgramSession()
-    
-
 
     instance = KeepAliveEngine(session, dao_mock)
 
@@ -182,11 +184,12 @@ def test_iterate_loop():
     max_interval = instance.max_interval
 
     start_of_4th_loop = 3 + 1
-    end_of_9th_loop = max_interval  # max_int is 10, so range(x, 10) takes us to 9
+    # max_int is 10, so range(x, 10) takes us to 9
+    end_of_9th_loop = max_interval
     for i in range(start_of_4th_loop, end_of_9th_loop):
         instance.iterate_loop()
         assert instance.amount_used == i
-    
+
     instance.iterate_loop()
 
     assert instance.amount_used == 0  # The counter reset
@@ -204,9 +207,8 @@ def test_running_for_three_sec():
 
     add_partial_window_mock = Mock()
     dao_mock.add_partial_window = add_partial_window_mock
-    
+
     session = ProgramSession()
-    
 
     instance = KeepAliveEngine(session, dao_mock)
 
@@ -236,7 +238,6 @@ def test_running_for_three_sec():
     add_partial_window_mock.assert_called_once_with(final_loop_amt, session)
 
 
-
 def test_multiple_whole_loops():
     dao_mock = Mock()
     add_ten_mock = Mock()
@@ -244,7 +245,6 @@ def test_multiple_whole_loops():
     dao_mock.add_partial_window = add_partial_window_mock
     dao_mock.add_ten_sec_to_end_time = add_ten_mock
     session = ProgramSession()
-    
 
     instance = KeepAliveEngine(session, dao_mock)
 
@@ -258,7 +258,6 @@ def test_multiple_whole_loops():
     for i in range(total):
         instance.iterate_loop()
 
-
     # Assert
     conclude_spy.assert_not_called
     assert add_ten_mock.call_count == 2
@@ -268,7 +267,8 @@ def test_multiple_whole_loops():
     instance.conclude()
 
     # Assert
-    add_partial_window_mock.assert_called_with(partial_incomplete_cycle, session)  
+    add_partial_window_mock.assert_called_with(
+        partial_incomplete_cycle, session)
 
 
 def test_conclude_calls_add_partial_window():
@@ -289,13 +289,14 @@ def test_conclude_calls_add_partial_window():
     instance.conclude()
 
     assert dao_mock.add_partial_window.call_count == 1
-    
+
+
 def test_window_isnt_used_at_all():
     dao_mock = Mock()
 
     add_ten_sec_to_end_time_mock = Mock()
     dao_mock.add_ten_sec_to_end_time = add_ten_sec_to_end_time_mock
-    
+
     add_partial_window_mock = Mock()
     dao_mock.add_partial_window = add_partial_window_mock
 
@@ -305,12 +306,14 @@ def test_window_isnt_used_at_all():
 
     assert instance.amount_used == 0
     instance.conclude()
-    
+
     add_ten_sec_to_end_time_mock.assert_not_called()
     add_partial_window_mock.assert_called_once_with(0, session)
 
     final_addition = add_partial_window_mock.call_args_list[0][0][0]
-    assert final_addition == 0      
+    assert final_addition == 0
+
+
 def test_used_amount_resets_after_full_window():
     dao_mock = Mock()
     session = ProgramSession()
@@ -323,7 +326,7 @@ def test_used_amount_resets_after_full_window():
     assert instance.amount_used == 1
     instance.iterate_loop()
     assert instance.amount_used == 2
-    
+
     instance.iterate_loop()
     instance.iterate_loop()
     instance.iterate_loop()
@@ -336,15 +339,16 @@ def test_used_amount_resets_after_full_window():
     instance.iterate_loop()
     assert instance.amount_used == 0
 
+
 def test_full_window_is_used():
     dao_mock = Mock()
 
     add_ten_sec_to_end_time_mock = Mock()
     dao_mock.add_ten_sec_to_end_time = add_ten_sec_to_end_time_mock
-    
+
     add_partial_window_mock = Mock()
     dao_mock.add_partial_window = add_partial_window_mock
-    
+
     session = ProgramSession()
 
     instance = KeepAliveEngine(session, dao_mock)
@@ -363,6 +367,7 @@ def test_full_window_is_used():
     instance.conclude()
 
     internal_add_spy.assert_called_once_with(partial_cycle)
+
 
 def test_numerous_full_cycles():
     dao_mock = Mock()

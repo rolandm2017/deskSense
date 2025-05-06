@@ -25,7 +25,7 @@ import asyncio
 import sys
 
 
-from surveillance.src.db.models import Base
+from surveillance.db.models import Base
 
 # Force Windows to use the SelectEventLoop instead of ProactorEventLoop
 # This needs to happen before any asyncio code runs

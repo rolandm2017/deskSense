@@ -5,13 +5,13 @@ import asyncio
 
 from datetime import datetime
 
-from surveillance.src.debug.ui_notifier import UINotifier
-from surveillance.src.object.arbiter_classes import ApplicationInternalState, ChromeInternalState
-from surveillance.src.object.classes import ProgramSession, ChromeSession
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.debug.ui_notifier import UINotifier
+from surveillance.object.arbiter_classes import ApplicationInternalState, ChromeInternalState
+from surveillance.object.classes import ProgramSession, ChromeSession
+from surveillance.util.time_wrappers import UserLocalTime
 
 
-timezone_for_test = "Asia/Tokyo"  #  UTC+9
+timezone_for_test = "Asia/Tokyo"  # UTC+9
 
 tokyo_tz = pytz.timezone(timezone_for_test)
 now_tokyo = datetime.now(pytz.UTC).astimezone(tokyo_tz)
@@ -87,7 +87,8 @@ def test_multiple_state_changes(ui_notifier, mock_overlay):
     # Create test states
     program_session = ProgramSession(
         "C:/InternalApp.exe", "InternalApp.exe", "Internal App", "", UserLocalTime(now_tokyo))
-    chrome_session = ChromeSession("test-domain.org", "", UserLocalTime(now_tokyo))
+    chrome_session = ChromeSession(
+        "test-domain.org", "", UserLocalTime(now_tokyo))
     internal_state = ApplicationInternalState(
         "Internal App", True, program_session)
     other_state = ChromeInternalState(

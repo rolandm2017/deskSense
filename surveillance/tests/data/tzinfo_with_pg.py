@@ -4,9 +4,9 @@ from datetime import datetime, timedelta
 from typing import List
 
 
-from surveillance.src.object.classes import CompletedProgramSession
-from surveillance.src.util.time_wrappers import UserLocalTime
-from surveillance.src.util.errors import TimezoneUnawareError
+from surveillance.object.classes import CompletedProgramSession
+from surveillance.util.time_wrappers import UserLocalTime
+from surveillance.util.errors import TimezoneUnawareError
 
 notion_path = "C:/Path/to/Notion.exe"
 notion_process = "Notion.exe"
@@ -16,6 +16,7 @@ zoom_process = "Zoom.exe"
 
 pycharm_path = "C:/Path/to/PyCharm.exe"
 pycharm_process = "PyCharm.exe"
+
 
 def create_pycharm_entry(dt):
     window_start = UserLocalTime(dt)
@@ -30,6 +31,7 @@ def create_pycharm_entry(dt):
     pycharm_session.duration = pycharm_session.end_time - pycharm_session.start_time
     pycharm_session.productive = True
     return pycharm_session
+
 
 def create_zoom_entry(dt):
     window_start = UserLocalTime(dt)

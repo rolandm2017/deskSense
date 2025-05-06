@@ -6,13 +6,13 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from datetime import timedelta, datetime
 
 # TODO: Replace with AsyncUtilityDaoMixin
-from surveillance.src.db.dao.utility_dao_mixin import AsyncUtilityDaoMixin
-from surveillance.src.db.dao.base_dao import BaseQueueingDao
-from surveillance.src.db.models import TypingSession
-from surveillance.src.object.classes import KeyboardAggregate
-from surveillance.src.object.dto import TypingSessionDto
-from surveillance.src.util.console_logger import ConsoleLogger
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.db.dao.utility_dao_mixin import AsyncUtilityDaoMixin
+from surveillance.db.dao.base_dao import BaseQueueingDao
+from surveillance.db.models import TypingSession
+from surveillance.object.classes import KeyboardAggregate
+from surveillance.object.dto import TypingSessionDto
+from surveillance.util.console_logger import ConsoleLogger
+from surveillance.util.time_wrappers import UserLocalTime
 
 
 def get_rid_of_ms(time):

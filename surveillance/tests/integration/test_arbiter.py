@@ -1,21 +1,21 @@
 # tests/integration/test_arbiter.py
 import pytest
-from unittest.mock import  Mock, MagicMock
-from datetime import  timedelta, datetime
+from unittest.mock import Mock, MagicMock
+from datetime import timedelta, datetime
 import math
 
-from surveillance.src.config.definitions import keep_alive_cycle_length
-from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
-from surveillance.src.arbiter.activity_recorder import ActivityRecorder
-from surveillance.src.object.classes import ProgramSession, ChromeSession
+from surveillance.config.definitions import keep_alive_cycle_length
+from surveillance.arbiter.activity_arbiter import ActivityArbiter
+from surveillance.arbiter.activity_recorder import ActivityRecorder
+from surveillance.object.classes import ProgramSession, ChromeSession
 
-from surveillance.src.arbiter.session_polling import KeepAliveEngine
+from surveillance.arbiter.session_polling import KeepAliveEngine
 
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.util.time_wrappers import UserLocalTime
 from ..helper.copy_util import snapshot_obj_for_tests_with_ledger
 
 
-from ..data.arbiter_events import test_sessions, minutes_between_start_and_2nd_to_last, test_events_elapsed_time_in_sec, times_for_system_clock, minutes_between_start_and_final_time_change 
+from ..data.arbiter_events import test_sessions, minutes_between_start_and_2nd_to_last, test_events_elapsed_time_in_sec, times_for_system_clock, minutes_between_start_and_final_time_change
 from ..mocks.mock_clock import MockClock
 from ..mocks.mock_engine_container import MockEngineContainer
 
@@ -24,11 +24,10 @@ from ..helper.confirm_chronology import assert_test_data_is_chronological_with_t
 # ###
 # ##
 # #  -- Test the integrated arbiter with a series of somewhat realistic data.
-# #  -- A series of test sessions is inserted. 
+# #  -- A series of test sessions is inserted.
 # #  -- The Arbiter yields the expected time.
 # ##
 # ###
-
 
 
 @pytest.fixture
@@ -43,7 +42,8 @@ def activity_arbiter_and_setup():
     durations = get_durations_from_test_data(test_sessions)
 
     # Start by doing a deepcopy so integration test A doesn't influence integration test B
-    copied_test_data = [snapshot_obj_for_tests_with_ledger(x) for x in test_sessions]
+    copied_test_data = [
+        snapshot_obj_for_tests_with_ledger(x) for x in test_sessions]
 
     # Mock dependencies
     clock = MockClock(times=times_for_system_clock)
@@ -55,11 +55,12 @@ def activity_arbiter_and_setup():
     # Create a new arbiter instance for this test
     ultrafast_interval_for_testing = 0.025  # usually is 1.0
     durations_as_int = [int(x) for x in durations]
-    
+
     final_loop = 7  # keep it under 10 so there isn't a final pulse
     durations_as_int.append(final_loop)
 
-    threaded_container = MockEngineContainer(durations_as_int, ultrafast_interval_for_testing)
+    threaded_container = MockEngineContainer(
+        durations_as_int, ultrafast_interval_for_testing)
     arbiter = ActivityArbiter(clock, threaded_container, KeepAliveEngine)
 
     # Add UI listener
@@ -76,7 +77,8 @@ def activity_arbiter_and_setup():
     # Use this pretty darn cool MagicMock(spec_set=whatever) thing
     recorder_spy = MagicMock(spec_set=ActivityRecorder)
     recorder_spy.on_state_changed.side_effect = event_handler
-    recorder_spy.add_partial_window.side_effect = lambda amount_used, session: session.ledger.extend_by_n(amount_used)
+    recorder_spy.add_partial_window.side_effect = lambda amount_used, session: session.ledger.extend_by_n(
+        amount_used)
     recorder_spy.add_ten_sec_to_end_time.side_effect = lambda session: session.ledger.add_ten_sec()
 
     arbiter.add_recorder_listener(recorder_spy)
@@ -101,7 +103,7 @@ def test_activity_arbiter(activity_arbiter_and_setup):
 
     chrome_sessions_in_test = [
         item for item in copied_test_data if isinstance(item, ChromeSession)]
-    
+
     # TODO: Get the test data durations and use it with a MockEngineContainer
 
     assert len(copied_test_data) > 0, "Test setup failed"
@@ -118,7 +120,6 @@ def test_activity_arbiter(activity_arbiter_and_setup):
         counter = counter + 1
         arbiter.transition_state(session)
 
-
     # --
     # -- Assert
     # --
@@ -129,27 +130,27 @@ def test_activity_arbiter(activity_arbiter_and_setup):
     # ### Test some basic assumptions
 
     program_events = [
-            e for e in events_from_on_state_changed_handler if isinstance(e, ProgramSession)]
+        e for e in events_from_on_state_changed_handler if isinstance(e, ProgramSession)]
     chrome_events = [
-            e for e in events_from_on_state_changed_handler if isinstance(e, ChromeSession)]
+        e for e in events_from_on_state_changed_handler if isinstance(e, ChromeSession)]
 
     def assert_basic_expectations_met():
         assert len(
             events_from_on_state_changed_handler) > 0, "Not even one event made it"
 
         assert all(isinstance(log, ProgramSession)
-                for log in program_events), "A program event wasn't a program session"
+                   for log in program_events), "A program event wasn't a program session"
         assert all(isinstance(log, ChromeSession)
-                for log in chrome_events), "A Chrome event wasn't a Chrome session"
+                   for log in chrome_events), "A Chrome event wasn't a Chrome session"
 
         # Because .duration is set in the ASM before on_state_changed:
         assert all(isinstance(obj.duration, timedelta)
-                for obj in events_from_on_state_changed_handler)
-        
+                   for obj in events_from_on_state_changed_handler)
+
     assert_basic_expectations_met()
-    
 
     # ### Test DAO notifications
+
     def assert_recorder_worked_as_intended():
         assert mock_activity_recorder.on_state_changed.call_count == len(
             # NOTE: Would be "- 1" if the final input was a ProgramSession
@@ -161,18 +162,21 @@ def test_activity_arbiter(activity_arbiter_and_setup):
         try:
             if isinstance(session1, ProgramSession):
                 assert session1.process_name == session2.process_name
-                assert isinstance(session1, ProgramSession) and isinstance(session2, ProgramSession)
+                assert isinstance(session1, ProgramSession) and isinstance(
+                    session2, ProgramSession)
             else:
-                assert isinstance(session1, ChromeSession) and isinstance(session2, ChromeSession)
+                assert isinstance(session1, ChromeSession) and isinstance(
+                    session2, ChromeSession)
                 assert session1.domain == session2.domain
         except AssertionError:
             print(session1)
             print(session2)
             raise
 
-    total_expected_calls = sum(math.floor(duration // 10) for duration in durations_between_events_from_setup)
-    assert len(mock_activity_recorder.add_ten_sec_to_end_time.call_args_list) == total_expected_calls
-
+    total_expected_calls = sum(math.floor(duration // 10)
+                               for duration in durations_between_events_from_setup)
+    assert len(
+        mock_activity_recorder.add_ten_sec_to_end_time.call_args_list) == total_expected_calls
 
     # assert number of conclude calls equals the num of sessions
     # assert the num of add_partial_window calls equals the num of sessions
@@ -183,14 +187,15 @@ def test_activity_arbiter(activity_arbiter_and_setup):
         the KeepAlive DAO funcs were called as expected.
         The order depends greatly on what the test data says.
         """
-        # Tally up the arguments from 
+        # Tally up the arguments from
         end_of_prev_calls = 0
         for i in range(0, len(copied_test_data)):
             target_session = copied_test_data[i]
             final_duration = len(durations_between_events_from_setup) - 1
             if i > final_duration:
                 # The session is never closed.
-                session_from_spy = mock_activity_recorder.add_ten_sec_to_end_time.call_args_list[0][0][0]
+                session_from_spy = mock_activity_recorder.add_ten_sec_to_end_time.call_args_list[
+                    0][0][0]
                 assert_names_match(session_from_spy, target_session)
                 return  # Done
             expected_duration = durations_between_events_from_setup[i]
@@ -199,26 +204,28 @@ def test_activity_arbiter(activity_arbiter_and_setup):
             # Check that the window push spy saw that event that many times
             for j in range(end_of_prev_calls, corresponding_num_of_pushes + end_of_prev_calls):
                 end_of_prev_calls += 1
-                session_from_spy = mock_activity_recorder.add_ten_sec_to_end_time.call_args_list[j][0][0]
+                session_from_spy = mock_activity_recorder.add_ten_sec_to_end_time.call_args_list[
+                    j][0][0]
                 assert_names_match(session_from_spy, target_session)
                 assert session_from_spy.start_time.dt == target_session.start_time.dt
 
             # Check that the add parital window calls were as intended
 
             corresponding_addition = expected_duration % 10
-            
+
             args = mock_activity_recorder.add_partial_window.call_args_list[i].args
 
             corresponding_addition_arg = args[0]  # First argument
             add_partial_window_session_arg = args[1]  # Second argument
 
             assert_names_match(add_partial_window_session_arg, target_session)
-        
+
             # assert the sessions are actually the same
-        
+
             assert corresponding_addition == corresponding_addition_arg
             assert isinstance(session.start_time.dt, datetime)
-            assert isinstance(add_partial_window_session_arg.start_time.dt, datetime)
+            assert isinstance(
+                add_partial_window_session_arg.start_time.dt, datetime)
 
             t1 = target_session.start_time.dt
             t2 = add_partial_window_session_arg.start_time.dt
@@ -229,7 +236,6 @@ def test_activity_arbiter(activity_arbiter_and_setup):
             assert target_session.start_time.dt == add_partial_window_session_arg.start_time.dt
 
     assert_keep_alive_worked_as_intended()
-
 
     # Total number of recorded Program DAO entries was as expected
     assert len(program_events) == len(
@@ -285,7 +291,7 @@ def test_activity_arbiter(activity_arbiter_and_setup):
     # change the amount of time
     # in the sessions
     zero_index = 1
-    
+
     events_from_handler_len = len(copied_test_data) - zero_index
 
     final_event_index = events_from_handler_len - 1
@@ -299,11 +305,12 @@ def test_activity_arbiter(activity_arbiter_and_setup):
     # So as of this comment, the final test_session is number 14, meaning index 13, i.e. the final one.
     assert arbiter.state_machine.current_state.session.start_time == copied_test_data[
         len(copied_test_data) - 1].start_time
-    
+
     # To get the total time elapsed, you can also count the number of window pushes,
     # minus all the deductions made. The number should be the same.
 
     sec_per_min = 60
+
     def assert_time_matches_in_on_state_changed():
         t0 = events_from_on_state_changed_handler[0].start_time
         t13 = events_from_on_state_changed_handler[final_event_index].start_time
@@ -315,7 +322,6 @@ def test_activity_arbiter(activity_arbiter_and_setup):
 
     assert_time_matches_in_on_state_changed()
 
-
     def assert_expected_values_match_ledger():
         """
         Verify each one using it's ledger. This is testing that 
@@ -324,29 +330,32 @@ def test_activity_arbiter(activity_arbiter_and_setup):
         for i in range(0, len(copied_test_data)):
             # check that the ledger says what you expect
             if i == len(copied_test_data) - 1:
-                assert copied_test_data[i].ledger.get_total() == 0  # Claude, final session
+                # Claude, final session
+                assert copied_test_data[i].ledger.get_total() == 0
                 break
             ledger_total = copied_test_data[i].ledger.get_total()
             assert ledger_total == durations_between_events_from_setup[i]
             # assert verified_sessions[i].ledger.get_total() == actual_durations_in_logs[i]
 
     assert_expected_values_match_ledger()
-    
 
     def assert_actual_values_match_ledger():
         """Verify each one using it's ledger."""
         for i in range(0, len(copied_test_data)):
             # check that the ledger says what you expect
             if i == len(copied_test_data) - 1:
-                assert copied_test_data[i].ledger.get_total() == 0  # Claude, final session
+                # Claude, final session
+                assert copied_test_data[i].ledger.get_total() == 0
                 break
             ledger_total = copied_test_data[i].ledger.get_total()
-            assert ledger_total == events_from_on_state_changed_handler[i].ledger.get_total()
+            assert ledger_total == events_from_on_state_changed_handler[i].ledger.get_total(
+            )
             # assert verified_sessions[i].ledger.get_total() == actual_durations_in_logs[i]
 
     assert_actual_values_match_ledger()
 
-    total_expected_partials = len(durations_between_events_from_setup)  # Because even 0 is a partial
+    # Because even 0 is a partial
+    total_expected_partials = len(durations_between_events_from_setup)
 
     partials_tally = 0
 
@@ -360,8 +369,10 @@ def test_activity_arbiter(activity_arbiter_and_setup):
     amount_from_add_ten_sec = total_expected_calls * 10
     full_keep_alive_output = amount_from_add_ten_sec + partials_tally
 
-    add_ten_calls_per_session = [math.floor(duration // 10) for duration in durations_between_events_from_setup]
-    partial_for_session = [duration % 10 for duration in durations_between_events_from_setup]
+    add_ten_calls_per_session = [math.floor(
+        duration // 10) for duration in durations_between_events_from_setup]
+    partial_for_session = [duration %
+                           10 for duration in durations_between_events_from_setup]
 
     zips = []
     # create zips: ledger, keepAlive, expectedDuration pairs.
@@ -377,8 +388,9 @@ def test_activity_arbiter(activity_arbiter_and_setup):
         else:
             expected_duration = int(durations_between_events_from_setup[i])
         ledger_amt = copied_test_data[i].ledger.get_total()
-        keep_alive_tally = int(add_ten_calls_per_session[i] * 10 + partial_for_session[i])
-        
+        keep_alive_tally = int(
+            add_ten_calls_per_session[i] * 10 + partial_for_session[i])
+
         zip = (int(expected_duration), ledger_amt, int(keep_alive_tally))
         print(zip)
         assert ledger_amt == expected_duration, f"Failed on index {i} of {len(copied_test_data) - 1}"
@@ -386,11 +398,11 @@ def test_activity_arbiter(activity_arbiter_and_setup):
 
         zips.append(zip)
 
-
-
     def assert_time_matches_in_keep_alive():
-        num_of_window_pushes = len(mock_activity_recorder.add_ten_sec_to_end_time.call_args_list)
-        num_of_additions = len(mock_activity_recorder.add_partial_window.call_args_list)
+        num_of_window_pushes = len(
+            mock_activity_recorder.add_ten_sec_to_end_time.call_args_list)
+        num_of_additions = len(
+            mock_activity_recorder.add_partial_window.call_args_list)
 
         window_push_tally = 0
 
@@ -405,7 +417,8 @@ def test_activity_arbiter(activity_arbiter_and_setup):
             window_push_tally += keep_alive_cycle_length
             # Verify there is something in it
             session = mock_activity_recorder.add_ten_sec_to_end_time.call_args_list[i][0][0]
-            assert isinstance(session, ProgramSession) or isinstance(session, ChromeSession)
+            assert isinstance(session, ProgramSession) or isinstance(
+                session, ChromeSession)
 
         assert window_push_tally == sum(add_ten_calls_per_session) * 10
 
@@ -413,12 +426,12 @@ def test_activity_arbiter(activity_arbiter_and_setup):
 
         for j in range(0, num_of_additions):
             # get addition amt
-            addition = mock_activity_recorder.add_partial_window.call_args_list[j].args[0]        
+            addition = mock_activity_recorder.add_partial_window.call_args_list[j].args[0]
             if addition == 0:
                 print("Zero addition")
             if addition == 10:
                 raise ValueError("Addition of ten found")
-                
+
             # assert duration > 0 and duration < 10
             # tally addition
             assert addition == partial_for_session[j]

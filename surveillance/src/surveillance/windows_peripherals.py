@@ -10,9 +10,9 @@ import time
 import keyboard
 from dotenv import load_dotenv
 
-from surveillance.src.trackers.peripherals.windows.win_keyboard_detector import win_monitor_keyboard
-from surveillance.src.trackers.peripherals.windows.win_mouse_detector import win_monitor_mouse
-from surveillance.src.trackers.message_dispatch import publish_keyboard_event, publish_mouse_events
+from surveillance.trackers.peripherals.windows.win_keyboard_detector import win_monitor_keyboard
+from surveillance.trackers.peripherals.windows.win_mouse_detector import win_monitor_mouse
+from surveillance.trackers.message_dispatch import publish_keyboard_event, publish_mouse_events
 
 
 def run_windows_monitors():

@@ -1,11 +1,11 @@
 from datetime import timedelta, datetime, time
 
-from surveillance.src.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
-from surveillance.src.tz_handling.time_formatting import (
+from surveillance.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
+from surveillance.tz_handling.time_formatting import (
     convert_to_utc,
     get_start_of_day_from_ult, attach_tz_to_all,
     get_start_of_day_from_datetime)
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.util.time_wrappers import UserLocalTime
 
 
 class LogTimeConverter:

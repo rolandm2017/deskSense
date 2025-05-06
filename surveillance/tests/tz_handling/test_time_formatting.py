@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 
-from surveillance.src.tz_handling.time_formatting import account_for_timezone_offset, convert_to_timezone, format_for_local_time
+from surveillance.tz_handling.time_formatting import account_for_timezone_offset, convert_to_timezone, format_for_local_time
 
 
 def test_account_for_timezone_offset():

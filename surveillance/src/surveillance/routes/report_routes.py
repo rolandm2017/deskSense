@@ -1,25 +1,25 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 
-from surveillance.src.object.pydantic_dto import (
+from surveillance.object.pydantic_dto import (
     KeyboardReport,
     MouseReport,
     ProgramActivityReport
 )
 
-from surveillance.src.services.tiny_services import (
+from surveillance.services.tiny_services import (
     KeyboardService, MouseService
 )
 
-from surveillance.src.service_dependencies import (
+from surveillance.service_dependencies import (
     get_keyboard_service, get_mouse_service, get_chrome_service
 )
 
-from surveillance.src.util.pydantic_factory import (
+from surveillance.util.pydantic_factory import (
     make_keyboard_log, make_mouse_log, make_program_log
 )
 
-from surveillance.src.util.console_logger import ConsoleLogger
+from surveillance.util.console_logger import ConsoleLogger
 
 # Create a logger
 logger = ConsoleLogger()

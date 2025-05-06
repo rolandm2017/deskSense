@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from surveillance.src.util.errors import TimezoneUnawareError
+from surveillance.util.errors import TimezoneUnawareError
 
 
 class TimeKeeper:

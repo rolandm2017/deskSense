@@ -1,4 +1,4 @@
-from surveillance.src.config.definitions import keep_alive_cycle_length
+from surveillance.config.definitions import keep_alive_cycle_length
 
 
 def count_full_loops(duration):

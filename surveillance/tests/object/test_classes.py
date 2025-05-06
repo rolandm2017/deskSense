@@ -2,18 +2,20 @@ import pytest
 from datetime import datetime
 import pytz
 
-from surveillance.src.object.classes import ProgramSession, ChromeSession, CompletedProgramSession, CompletedChromeSession, SessionLedger
-from surveillance.src.util.time_wrappers import UserLocalTime
-from surveillance.src.util.errors import SessionClosedError
+from surveillance.object.classes import ProgramSession, ChromeSession, CompletedProgramSession, CompletedChromeSession, SessionLedger
+from surveillance.util.time_wrappers import UserLocalTime
+from surveillance.util.errors import SessionClosedError
 
 
 tz_for_test = "Asia/Tokyo"
 tokyo_tz = pytz.timezone(tz_for_test)
 
+
 def test_ledger_init():
     ledger = SessionLedger("test_ledger")
     assert ledger.get_total() == 0
     assert ledger.open is True
+
 
 def test_ledger_add_ten_sec():
     ledger = SessionLedger("test_ledger")
@@ -22,6 +24,7 @@ def test_ledger_add_ten_sec():
     assert ledger.get_total() == 10
     ledger.add_ten_sec()
     assert ledger.get_total() == 20
+
 
 def test_ledger_deduct_time():
     ledger = SessionLedger("test_ledger")
@@ -36,6 +39,7 @@ def test_ledger_deduct_time():
 
     assert ledger.get_total() == 20 + 4
 
+
 def test_cant_add_time_after_ledger_closure():
     ledger = SessionLedger("test_ledger")
 
@@ -49,12 +53,14 @@ def test_cant_add_time_after_ledger_closure():
     with pytest.raises(SessionClosedError):
         ledger.add_ten_sec()
 
+
 def test_program_session_constructor():
     path = "C:/ProgramFiles/foo.exe"
     process = "foo.exe"
     window_title = "The Foo Program"
     detail = "Get Your Foo"
-    start_time = UserLocalTime(tokyo_tz.localize(datetime(2025, 4, 29, 10, 23, 0)))
+    start_time = UserLocalTime(tokyo_tz.localize(
+        datetime(2025, 4, 29, 10, 23, 0)))
     session = ProgramSession(path, process, window_title, detail, start_time)
 
     assert session.exe_path == path
@@ -65,15 +71,18 @@ def test_program_session_constructor():
     assert session.duration is None
     assert session.end_time is None
 
+
 def test_chrome_session_constructor():
     pass
+
 
 def test_to_completed():
     path = "C:/ProgramFiles/foo.exe"
     process = "foo.exe"
     window_title = "The Foo Program"
     detail = "Get Your Foo"
-    start_time = UserLocalTime(tokyo_tz.localize(datetime(2025, 4, 29, 10, 23, 0)))
+    start_time = UserLocalTime(tokyo_tz.localize(
+        datetime(2025, 4, 29, 10, 23, 0)))
     session = ProgramSession(path, process, window_title, detail, start_time)
 
     # Give the session ledger some time
@@ -81,7 +90,8 @@ def test_to_completed():
     session.ledger.add_ten_sec()
     session.ledger.add_ten_sec()
 
-    end_time =  UserLocalTime(tokyo_tz.localize(datetime(2025, 4, 29, 10, 25, 25)))
+    end_time = UserLocalTime(tokyo_tz.localize(
+        datetime(2025, 4, 29, 10, 25, 25)))
     completed = session.to_completed(end_time)
 
     assert completed.exe_path == path
@@ -90,7 +100,8 @@ def test_to_completed():
     assert completed.detail == detail
     assert completed.start_time.dt == start_time.dt
     assert completed.end_time.dt == end_time.dt
-    assert completed.duration.total_seconds() == (end_time.dt - start_time.dt).total_seconds()
+    assert completed.duration.total_seconds() == (
+        end_time.dt - start_time.dt).total_seconds()
 
     # Test the ledger
     assert completed.ledger.get_total() == 30
@@ -99,16 +110,20 @@ def test_to_completed():
     completed.ledger.add_ten_sec()
     assert completed.ledger.get_total() == 40
 
+
 def test_add_duration_for_tests():
     path = "C:/ProgramFiles/foo.exe"
     process = "foo.exe"
     window_title = "The Foo Program"
     detail = "Get Your Foo"
-    start_time = UserLocalTime(tokyo_tz.localize(datetime(2025, 4, 29, 10, 23, 0)))
-    end_time =  UserLocalTime(tokyo_tz.localize(datetime(2025, 4, 29, 10, 25, 55)))
+    start_time = UserLocalTime(tokyo_tz.localize(
+        datetime(2025, 4, 29, 10, 23, 0)))
+    end_time = UserLocalTime(tokyo_tz.localize(
+        datetime(2025, 4, 29, 10, 25, 55)))
 
     premade_duration = end_time.dt - start_time.dt
 
-    session = CompletedProgramSession(path, process, window_title, detail, start_time, end_time, True, premade_duration)
+    session = CompletedProgramSession(
+        path, process, window_title, detail, start_time, end_time, True, premade_duration)
 
     assert session.duration.total_seconds() == premade_duration.total_seconds()

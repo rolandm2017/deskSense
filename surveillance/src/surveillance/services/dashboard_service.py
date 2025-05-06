@@ -2,25 +2,25 @@
 from datetime import datetime, timedelta, timezone, date
 from typing import List, TypedDict, Dict, Tuple
 
-from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
-from surveillance.src.services.tiny_services import TimezoneService
-from surveillance.src.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
-from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
-from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from surveillance.src.db.models import (
+from surveillance.services.tiny_services import TimezoneService
+from surveillance.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
+from surveillance.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from surveillance.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from surveillance.db.models import (
     DailyDomainSummary,
     DailyProgramSummary,
     ProgramSummaryLog,
     TimelineEntryObj,
 )
-from surveillance.src.config.definitions import productive_sites, productive_apps
-from surveillance.src.util.console_logger import ConsoleLogger
-from surveillance.src.util.clock import UserFacingClock
-from surveillance.src.util.time_wrappers import UserLocalTime
-from surveillance.src.util.dashboard_svc_mixin import WeekCalculationMixin
-from surveillance.src.tz_handling.time_formatting import (
+from surveillance.config.definitions import productive_sites, productive_apps
+from surveillance.util.console_logger import ConsoleLogger
+from surveillance.util.clock import UserFacingClock
+from surveillance.util.time_wrappers import UserLocalTime
+from surveillance.util.dashboard_svc_mixin import WeekCalculationMixin
+from surveillance.tz_handling.time_formatting import (
     format_for_local_time,
     get_start_of_day_from_datetime,
 )

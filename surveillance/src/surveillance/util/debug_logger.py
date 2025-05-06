@@ -8,14 +8,14 @@ from typing import List
 from .errors import SuspiciousDurationError
 from .console_logger import ConsoleLogger
 
-from surveillance.src.db.models import (
+from surveillance.db.models import (
     DailyDomainSummary,
     DailyProgramSummary,
     DomainSummaryLog,
     ProgramSummaryLog,
 )
-from surveillance.src.object.classes import ProgramSession
-from surveillance.src.object.pydantic_dto import UtcDtTabChange
+from surveillance.object.classes import ProgramSession
+from surveillance.object.pydantic_dto import UtcDtTabChange
 
 
 def write_to_debug_log(name, hours_spent, time):

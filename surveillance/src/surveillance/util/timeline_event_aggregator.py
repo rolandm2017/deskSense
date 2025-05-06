@@ -1,7 +1,7 @@
 
 from typing import List
 
-from surveillance.src.db.models import TimelineEntryObj, PrecomputedTimelineEntry
+from surveillance.db.models import TimelineEntryObj, PrecomputedTimelineEntry
 
 
 # /*

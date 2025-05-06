@@ -7,8 +7,8 @@ import psutil
 import gc
 import weakref
 
-from surveillance.src.db.dao.base_dao import BaseQueueingDao
-from surveillance.src.db.models import TimelineEntryObj
+from surveillance.db.dao.base_dao import BaseQueueingDao
+from surveillance.db.models import TimelineEntryObj
 
 
 class TestResourceManagement:

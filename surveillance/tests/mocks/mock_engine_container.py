@@ -1,10 +1,9 @@
 import time
 
-from surveillance.src.arbiter.session_polling import ThreadedEngineContainer
-from surveillance.src.arbiter.session_polling import KeepAliveEngine
+from surveillance.arbiter.session_polling import ThreadedEngineContainer
+from surveillance.arbiter.session_polling import KeepAliveEngine
 
-from surveillance.src.util.errors import MissingEngineError
-
+from surveillance.util.errors import MissingEngineError
 
 
 # TODO:
@@ -13,7 +12,7 @@ from surveillance.src.util.errors import MissingEngineError
 # I want the loops to happen in an instant, because the main pipeline
 # won't care whether a threaded sleep happened over 40 sec or 40 CPU cycles.
 # The main pipeline is detached completely
-# So the test env should be able to be like, cooked, based on some inputs like 
+# So the test env should be able to be like, cooked, based on some inputs like
 # "how long will this session be in the arbiter for?", and then it just
 # it just does it. Like you get the calculation by hand, before feeding vals in in the test
 # and you feed the Mock, "hey, it's actually going to be, 23 sec" or "it's gonna be 8 sec" or
@@ -57,7 +56,7 @@ class MockEngineContainer(ThreadedEngineContainer):
                 self.engine.iterate_loop()
         except StopIteration:
             print("No more durations available in the iterator")
-        
+
     def _iterate_loop(self):
         pass
 

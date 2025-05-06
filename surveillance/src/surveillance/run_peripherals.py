@@ -4,8 +4,8 @@
 Wrapper to run peripheral monitors from the project root.
 """
 
-from surveillance.src.util.detect_os import OperatingSystemInfo
-from surveillance.src.trackers.message_dispatch import publish_keyboard_event, publish_mouse_events
+from surveillance.util.detect_os import OperatingSystemInfo
+from surveillance.trackers.message_dispatch import publish_keyboard_event, publish_mouse_events
 import threading
 import os
 import sys

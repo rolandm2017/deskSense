@@ -14,11 +14,11 @@ from dotenv import load_dotenv
 import os
 
 # Import models and DAOs
-from surveillance.src.db.models import Base, SystemStatus, ProgramSummaryLog, DomainSummaryLog
-from surveillance.src.db.dao.direct.session_integrity_dao import SessionIntegrityDao
-from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-from surveillance.src.tz_handling.time_formatting import get_start_of_day_from_datetime
+from surveillance.db.models import Base, SystemStatus, ProgramSummaryLog, DomainSummaryLog
+from surveillance.db.dao.direct.session_integrity_dao import SessionIntegrityDao
+from surveillance.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.tz_handling.time_formatting import get_start_of_day_from_datetime
 
 from ....helper.truncation import truncate_logs_tables_via_engine
 

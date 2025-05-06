@@ -5,10 +5,10 @@ from typing import TypedDict, Optional
 
 from abc import ABC, abstractmethod
 
-from surveillance.src.config.definitions import window_push_length
-from surveillance.src.util.time_wrappers import UserLocalTime
-from surveillance.src.tz_handling.time_formatting import parse_time_string
-from surveillance.src.util.errors import SessionClosedError
+from surveillance.config.definitions import window_push_length
+from surveillance.util.time_wrappers import UserLocalTime
+from surveillance.tz_handling.time_formatting import parse_time_string
+from surveillance.util.errors import SessionClosedError
 
 
 class SessionLedger:

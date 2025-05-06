@@ -6,8 +6,8 @@ from typing import Dict, Optional, Generator
 
 from .program_facade_base import ProgramFacadeInterface
 
-from surveillance.src.object.classes import ProgramSessionDict
-from surveillance.src.util.console_logger import ConsoleLogger
+from surveillance.object.classes import ProgramSessionDict
+from surveillance.util.console_logger import ConsoleLogger
 
 
 class UbuntuProgramFacadeCore(ProgramFacadeInterface):

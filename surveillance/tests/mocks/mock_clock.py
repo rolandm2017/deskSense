@@ -7,10 +7,10 @@ from typing import Iterator
 from zoneinfo import ZoneInfo
 import threading
 
-from surveillance.src.config.definitions import local_time_zone
+from surveillance.config.definitions import local_time_zone
 
-from surveillance.src.util.clock import ClockProtocol
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.util.clock import ClockProtocol
+from surveillance.util.time_wrappers import UserLocalTime
 
 
 class MockClock(ClockProtocol):
@@ -30,7 +30,7 @@ class MockClock(ClockProtocol):
             # print("[debug] Returning ", self._current_time, datetime.now().strftime("%I:%M:%S %p"))
             self.count_of_times += 1
             return self._current_time
-          
+
         except StopIteration:
             raise RuntimeError(
                 f"MockClock ran out of times. It started with {self.count_of_times}")
@@ -71,73 +71,76 @@ class UserLocalTimeMockClock(ClockProtocol):
             self.original_times = times.copy()  # Make a copy to avoid modifying original
         else:
             self.original_times = list(times)  # Convert iterator to list
-            
+
         if not self.original_times:
             raise ValueError("Cannot create MockClock with empty times list")
-            
+
         # Create initial iterator
         self.times = iter(self.original_times)
         self.count_of_times = 0
         self._current_time = None
-        
+
         # Thread safety lock
         self._lock = threading.RLock()
-        
+
         # Debug info
         self.thread_call_counts = {}  # Track calls per thread
 
     def now(self) -> UserLocalTime:
         thread_id = threading.get_ident()
-        
+
         # Get caller information
         stack = inspect.stack()
         caller_frame = stack[1]
         caller_function = caller_frame.function
         caller_filename = caller_frame.filename.split('\\')[-1]
         caller_line = caller_frame.lineno
-        
+
         # Thread-safe increment and iterator access
         with self._lock:
             # Update thread call counts
             if thread_id not in self.thread_call_counts:
                 self.thread_call_counts[thread_id] = 0
             self.thread_call_counts[thread_id] += 1
-            
+
             try:
                 # Try to get next value
                 next_val_from_iter = next(self.times)
                 self._current_time = next_val_from_iter
-                
+
                 # Ensure timezone is set
                 if self._current_time.tzinfo is None:
-                    self._current_time = self._current_time.replace(tzinfo=timezone.utc)
-                
+                    self._current_time = self._current_time.replace(
+                        tzinfo=timezone.utc)
+
                 # Increment counter safely
                 self.count_of_times += 1
-                
+
                 # Debug output with thread info
                 # print(f"[DEBUG] Clock call #{self.count_of_times} - Thread {thread_id} - "
                 #       f"Called by: {caller_filename}:{caller_function}:{caller_line}")
-                
+
                 return self._current_time
-                
+
             except StopIteration:
                 # We're out of values, reset the iterator to reuse values
-                print(f"\n[WARNING] Clock ran out after {self.count_of_times} calls, resetting iterator")
+                print(
+                    f"\n[WARNING] Clock ran out after {self.count_of_times} calls, resetting iterator")
                 self.times = iter(self.original_times)  # Reset iterator
-                
+
                 # Try again with the reset iterator
                 next_val_from_iter = next(self.times)
                 self._current_time = next_val_from_iter
-                
+
                 if self._current_time.tzinfo is None:
-                    self._current_time = self._current_time.replace(tzinfo=timezone.utc)
-                
+                    self._current_time = self._current_time.replace(
+                        tzinfo=timezone.utc)
+
                 self.count_of_times += 1
-                
+
                 # print(f"[DEBUG] Clock RESET - call #{self.count_of_times} - Thread {thread_id} - "
                 #       f"Called by: {caller_filename}:{caller_function}:{caller_line}")
-                
+
                 return self._current_time
             #  raise RuntimeError(
             #     f"MockClock ran out of times. It started with {self.count_of_times}")
@@ -170,10 +173,10 @@ class UserLocalTimeMockClock(ClockProtocol):
         caller_function = caller_frame.function
         caller_filename = caller_frame.filename.split('\\')[-1]
         caller_line = caller_frame.lineno
-        
+
         print(f"[DEBUG] Clock today_start() - Thread {thread_id} - "
               f"Called by: {caller_filename}:{caller_function}:{caller_line}")
-        
+
         with self._lock:
             if self._current_time:
                 return self._current_time.replace(hour=0, minute=0, second=0, microsecond=0)

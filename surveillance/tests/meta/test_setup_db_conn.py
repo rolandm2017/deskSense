@@ -7,9 +7,9 @@ from unittest.mock import AsyncMock, Mock, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, AsyncEngine
 from sqlalchemy import text
 
-from surveillance.src.db.models import Base
-from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
-from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.db.models import Base
+from surveillance.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from surveillance.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 
 """
 File exists to end the problem with "cannot await coroutine!"
@@ -27,7 +27,6 @@ Offenders:
 @pytest.mark.asyncio
 async def test_plain_async_engine(regular_session_maker, async_engine_and_asm):
 
-
     # Try to use it
     log_dao = ProgramLoggingDao(regular_session_maker)
     sum_dao = ProgramSummaryDao(log_dao, regular_session_maker)
@@ -44,7 +43,7 @@ async def test_plain_async_engine(regular_session_maker, async_engine_and_asm):
 
 
 def test_sqlite(db_session_in_mem, async_db_session_in_mem):
-      # Try to use it
+    # Try to use it
     session_maker = db_session_in_mem
     log_dao = ProgramLoggingDao(session_maker)
     sum_dao = ProgramSummaryDao(log_dao, session_maker)
@@ -54,7 +53,6 @@ def test_sqlite(db_session_in_mem, async_db_session_in_mem):
 
     assert all_summaries is not None
     assert all_logs is not None
-
 
     for v in all_logs:
         print(v)

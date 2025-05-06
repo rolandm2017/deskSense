@@ -10,15 +10,14 @@ from operator import attrgetter
 import copy
 
 
-
-from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from surveillance.src.object.classes import ChromeSession, TabChangeEventWithLtz
-from surveillance.src.object.pydantic_dto import UtcDtTabChange
-from surveillance.src.config.definitions import productive_sites
-from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
-from surveillance.src.util.console_logger import ConsoleLogger
-from surveillance.src.util.errors import SuspiciousDurationError
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from surveillance.object.classes import ChromeSession, TabChangeEventWithLtz
+from surveillance.object.pydantic_dto import UtcDtTabChange
+from surveillance.config.definitions import productive_sites
+from surveillance.arbiter.activity_arbiter import ActivityArbiter
+from surveillance.util.console_logger import ConsoleLogger
+from surveillance.util.errors import SuspiciousDurationError
+from surveillance.util.time_wrappers import UserLocalTime
 
 
 class TabQueue:
@@ -109,7 +108,8 @@ class ChromeService:
         self.elapsed_alt_tab = None
         # self.summary_dao = summary_dao
 
-        self.tab_queue = TabQueue(self.log_tab_event, debounce_delay, transience_msa)
+        self.tab_queue = TabQueue(
+            self.log_tab_event, debounce_delay, transience_msa)
         self.arbiter = arbiter  # Replace direct arbiter calls
 
         self.event_emitter = EventEmitter()
@@ -121,7 +121,6 @@ class ChromeService:
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
         self.logger = ConsoleLogger()
-
 
     def log_tab_event(self, url_deliverable: TabChangeEventWithLtz):
         """Occurs whenever the user tabs through Chrome tabs.

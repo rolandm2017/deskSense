@@ -9,9 +9,9 @@ from sqlalchemy import Enum as SQLAlchemyEnum
 from sqlalchemy import Float, ForeignKey, Integer, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from surveillance.src.config.definitions import max_content_len
-from surveillance.src.db.database import Base
-from surveillance.src.object.enums import ChartEventType, SystemStatusType
+from surveillance.config.definitions import max_content_len
+from surveillance.db.database import Base
+from surveillance.object.enums import ChartEventType, SystemStatusType
 
 
 class DailySummaryBase(Base):

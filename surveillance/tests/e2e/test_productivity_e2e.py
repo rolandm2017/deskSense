@@ -10,40 +10,40 @@ from datetime import datetime, timedelta
 from typing import cast
 
 
-from surveillance.src.config.definitions import imported_local_tz_str, window_push_length
+from surveillance.config.definitions import imported_local_tz_str, window_push_length
 
-from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
-from surveillance.src.arbiter.activity_recorder import ActivityRecorder
-from surveillance.src.surveillance_manager import FacadeInjector, SurveillanceManager
+from surveillance.arbiter.activity_arbiter import ActivityArbiter
+from surveillance.arbiter.activity_recorder import ActivityRecorder
+from surveillance.surveillance_manager import FacadeInjector, SurveillanceManager
 
-from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
-from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from surveillance.src.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
+from surveillance.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from surveillance.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from surveillance.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
 
-from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-from surveillance.src.facade.facade_singletons import (
+from surveillance.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.facade.facade_singletons import (
     get_keyboard_facade_instance,
     get_mouse_facade_instance,
 )
 
-from surveillance.src.services.tiny_services import TimezoneService
+from surveillance.services.tiny_services import TimezoneService
 
-from surveillance.src.services.dashboard_service import DashboardService
-from surveillance.src.services.chrome_service import ChromeService
+from surveillance.services.dashboard_service import DashboardService
+from surveillance.services.chrome_service import ChromeService
 
-from surveillance.src.object.classes import (
+from surveillance.object.classes import (
     ChromeSession,
     ProgramSession,
     TabChangeEventWithLtz,
 )
-from surveillance.src.util.program_tools import separate_window_name_and_detail
-from surveillance.src.util.clock import UserFacingClock
-from surveillance.src.util.const import SECONDS_PER_HOUR
-from surveillance.src.util.console_logger import ConsoleLogger
-from surveillance.src.util.time_wrappers import UserLocalTime
+from surveillance.util.program_tools import separate_window_name_and_detail
+from surveillance.util.clock import UserFacingClock
+from surveillance.util.const import SECONDS_PER_HOUR
+from surveillance.util.console_logger import ConsoleLogger
+from surveillance.util.time_wrappers import UserLocalTime
 
-from surveillance.src.tz_handling.time_formatting import convert_to_utc
+from surveillance.tz_handling.time_formatting import convert_to_utc
 
 from ..mocks.mock_clock import UserLocalTimeMockClock, MockClock
 from ..mocks.mock_engine_container import MockEngineContainer

@@ -1,31 +1,31 @@
 # surveillance/src/service_dependencies.py
-from surveillance.src.util.clock import SystemClock, UserFacingClock
+from surveillance.util.clock import SystemClock, UserFacingClock
 from fastapi import Depends
 from typing import Callable
 import asyncio
 
 
-from surveillance.src.debug.ui_notifier import UINotifier
+from surveillance.debug.ui_notifier import UINotifier
 
-from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
-from surveillance.src.arbiter.activity_recorder import ActivityRecorder
-from surveillance.src.arbiter.session_polling import ThreadedEngineContainer
+from surveillance.arbiter.activity_arbiter import ActivityArbiter
+from surveillance.arbiter.activity_recorder import ActivityRecorder
+from surveillance.arbiter.session_polling import ThreadedEngineContainer
 
 
-from surveillance.src.services.chrome_service import ChromeService
-from surveillance.src.services.tiny_services import KeyboardService, MouseService, TimezoneService
-from surveillance.src.facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
+from surveillance.services.chrome_service import ChromeService
+from surveillance.services.tiny_services import KeyboardService, MouseService, TimezoneService
+from surveillance.facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
 
-from surveillance.src.db.database import async_session_maker, regular_session_maker
-from surveillance.src.db.dao.queuing.mouse_dao import MouseDao
-from surveillance.src.db.dao.queuing.keyboard_dao import KeyboardDao
+from surveillance.db.database import async_session_maker, regular_session_maker
+from surveillance.db.dao.queuing.mouse_dao import MouseDao
+from surveillance.db.dao.queuing.keyboard_dao import KeyboardDao
 
-from surveillance.src.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
-from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from surveillance.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
+from surveillance.db.dao.direct.program_summary_dao import ProgramSummaryDao
 
-from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from surveillance.src.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from surveillance.src.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from surveillance.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from surveillance.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from surveillance.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
 
 # Dependency functions
@@ -73,24 +73,24 @@ async def get_chrome_logging_dao() -> ChromeLoggingDao:
 
 
 async def get_timezone_service() -> TimezoneService:
-    from surveillance.src.services.tiny_services import TimezoneService
+    from surveillance.services.tiny_services import TimezoneService
     return TimezoneService()
 
 
 async def get_keyboard_service(dao: KeyboardDao = Depends(get_keyboard_dao)) -> KeyboardService:
-    from surveillance.src.services.tiny_services import KeyboardService
+    from surveillance.services.tiny_services import KeyboardService
     return KeyboardService(dao)
 
 
 async def get_mouse_service(dao: MouseDao = Depends(get_mouse_dao)) -> MouseService:
     # Lazy import to avoid circular dependency
-    from surveillance.src.services.tiny_services import MouseService
+    from surveillance.services.tiny_services import MouseService
     return MouseService(dao)
 
 
 # async def get_program_service() -> ProgramService:
 #     # Lazy import to avoid circular dependency
-#     from surveillance.src.services.tiny_services import ProgramService
+#     from surveillance.services.tiny_services import ProgramService
 #     return ProgramService(None)  # Under construction
 
 
@@ -102,7 +102,7 @@ async def get_dashboard_service(
     chrome_logging_dao: ChromeLoggingDao = Depends(get_chrome_logging_dao)
 ):
     # Lazy import to avoid circular dependency
-    from surveillance.src.services.dashboard_service import DashboardService
+    from surveillance.services.dashboard_service import DashboardService
     return DashboardService(timeline_dao, program_summary_dao, program_logging_dao, chrome_summary_dao, chrome_logging_dao)
 
 
@@ -113,10 +113,10 @@ _chrome_service_instance = None
 
 
 async def get_activity_arbiter():
-    from surveillance.src.debug.debug_overlay import Overlay
-    from surveillance.src.arbiter.activity_arbiter import ActivityArbiter
-    from surveillance.src.db.dao.direct.program_summary_dao import ProgramSummaryDao
-    from surveillance.src.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+    from surveillance.debug.debug_overlay import Overlay
+    from surveillance.arbiter.activity_arbiter import ActivityArbiter
+    from surveillance.db.dao.direct.program_summary_dao import ProgramSummaryDao
+    from surveillance.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 
     loop = asyncio.get_event_loop()
     system_clock = SystemClock()
@@ -169,7 +169,7 @@ async def get_activity_arbiter():
 
 async def get_chrome_service(arbiter: ActivityArbiter = Depends(get_activity_arbiter)) -> ChromeService:
     # Lazy import to avoid circular dependency
-    from surveillance.src.services.chrome_service import ChromeService
+    from surveillance.services.chrome_service import ChromeService
     global _chrome_service_instance  # Singleton because it must preserve internal state
     if _chrome_service_instance is None:
         clock = SystemClock()

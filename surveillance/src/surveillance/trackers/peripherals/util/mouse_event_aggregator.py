@@ -2,7 +2,8 @@
 import threading
 from datetime import datetime
 
-from surveillance.src.object.classes import MouseAggregate
+from surveillance.object.classes import MouseAggregate
+
 
 class MouseEventAggregator:
     """Really just a named array; the timer will take place outside of it, or else timers are duplicated"""
@@ -29,4 +30,3 @@ class MouseEventAggregator:
     def reset(self):
         self.current_aggregation = []
         self.count = 0
-
