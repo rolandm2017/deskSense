@@ -1,0 +1,45 @@
+# virtual envs
+.linuxEnv
+.venv-linux
+.venv
+.win-env
+.win-env2
+
+.idea
+# pycache
+**/__pycache__
+**/__pycache__/
+
+**/usepytest.egg-info/
+usepytest.egg-info
+
+activitytracker.egg-info
+
+
+.pytest_cache
+
+productivity_data/*
+productivity_logs
+logs
+
+# Virtual envs
+.env
+
+reports
+
+
+deskSense.egg-info
+
+temp.py
+
+events.csv
+
+*.csv
+
+*.sql
+
+*.txt
+!requirements.txt
+!windows-requirements.txt
+
+fix_commits.py
