@@ -1,9 +1,9 @@
 # To start the regular server:
 
-deskSense\surveillance> uvicorn src.surveillance.server:app --reload
+deskSense\activitytracker> uvicorn src.activitytracker.server:app --reload
 
 # To start peripheral tracking:
 
-deskSense> cd .\surveillance\
-deskSense\surveillance> .\.venv\Scripts\activate
-(.venv) PS C:\deskSense\surveillance> python .\surveillance\peripherals.py
+deskSense> cd .\activitytracker\
+deskSense\activitytracker> .\.venv\Scripts\activate
+(.venv) PS C:\deskSense\activitytracker> python .\src\activitytracker\run_peripherals.py

@@ -1,9 +1,11 @@
 # virtual envs
 .linuxEnv
 .venv-linux
+.venv-linux2
 .venv
 .win-env
 .win-env2
+
 
 .idea
 # pycache
