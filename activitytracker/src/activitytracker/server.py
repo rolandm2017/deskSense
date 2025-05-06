@@ -169,7 +169,7 @@ class HealthResponse(BaseModel):
 async def health_check():
     logger.log_purple("[LOG] health check")
     try:
-        if not activitytracker_state and not activitytracker_state.manager.keyboard_tracker:
+        if not surveillance_state and not surveillance_state.manager.keyboard_tracker:
             return {"status": "error", "detail": "Tracker not initialized"}
         return {"status": "healthy"}
     except Exception as e:

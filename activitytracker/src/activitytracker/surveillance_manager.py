@@ -76,10 +76,10 @@ class SurveillanceManager:
 
         self.session_integrity_dao = SessionIntegrityDao(
             program_summary_logger, chrome_summary_logger, self.async_session_maker)
-        # FIXME: 04/04/2025: why isn't the sys status dao used anywhere?
-        # FIXME: 04/21/2025: it should be!
-        system_status_dao = SystemStatusDao(
-            self.regular_session, self.async_session_maker)
+
+        # TODO: Put it in an async loop! with a cancelable task referenced for canceling.
+        self.system_status_dao = SystemStatusDao(
+            self.regular_session)
 
         self.mouse_dao = MouseDao(self.async_session_maker)
         self.keyboard_dao = KeyboardDao(self.async_session_maker)

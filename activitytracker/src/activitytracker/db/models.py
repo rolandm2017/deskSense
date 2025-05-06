@@ -251,32 +251,3 @@ class SystemStatus(Base):
     status: Mapped[SystemStatusType] = mapped_column(
         SQLAlchemyEnum(SystemStatusType))
     created_at = Column(DateTime(timezone=True))
-
-
-class Video(Base):
-    """
-    The Created At field is given BY THE RECORDER, not when the db row is written.
-
-    A Video connects to a Frames table. One to Many.
-    """
-    __tablename__ = "video_files"
-
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String)
-    created_at = Column(DateTime, default=None)
-
-    # This establishes the one-to-many relationship
-    frames = relationship("Frame", back_populates="video")
-
-
-class Frame(Base):
-    __tablename__ = "frames"
-
-    id = Column(Integer, primary_key=True, index=True)
-    # This creates the foreign key column
-    video_id = Column(Integer, ForeignKey('video_files.id'))
-    created_at = Column(DateTime, default=None)
-    frame_number = Column(Integer)
-
-    # This creates the reference back to the Video
-    video = relationship("Video", back_populates="frames")
