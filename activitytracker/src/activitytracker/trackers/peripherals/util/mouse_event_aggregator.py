@@ -16,6 +16,7 @@ class MouseEventAggregator:
         """A timestamp must be a datetime.timestamp() result."""
         next = self.count + 1
         self.count += 1
+        # TODO: Since it is just a count in the end, let's remove the array and rely just on the self.count
         self.current_aggregation.append(next)
 
     def package_aggregate(self):

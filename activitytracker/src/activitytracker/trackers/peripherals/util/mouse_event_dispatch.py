@@ -36,7 +36,7 @@ class MouseEventDispatch:
 
         # If we've reached the maximum number of events, handle it immediately
         if len(self.event_aggregator.current_aggregation) >= self.MAX_AGGREGATIONS:
-            print("--> beyond max count of aggregates: " + str(self.fun_counter))
+            # print("--> beyond max count of aggregates: " + str(self.fun_counter))
             self.fun_counter += 1
             with self._timer_lock:
                 if self.debounce_timer:
@@ -64,9 +64,13 @@ class MouseEventDispatch:
 
         # Process the events
         if len(self.event_aggregator.current_aggregation) > 0:
+
             # print("Event ready handler")
             # print("[start]", self.start_time)
             end_time = datetime.now()
+            elapsed_sec = (end_time - self.start_time).total_seconds()
+            # print(
+            #     f"logged {len(self.event_aggregator.current_aggregation)} in {elapsed_sec}")
             # print("[end]", end_time)
             # print("[duration]", end_time - self.start_time)
             end_time = end_time.timestamp()
