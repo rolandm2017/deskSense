@@ -15,7 +15,7 @@ class SystemStatusType(Enum):
     # Type one: When the program is just started
     PROGRAM_STARTED = "program_started"
     # Type two: when it's a "still on" signal
-    CONTINUED_USE = "continued_use"
+    ONLINE = "online"
     # Type three: Shutdown.
     SHUTDOWN = "shutdown"
     # If the row is a shutdown, obviously the

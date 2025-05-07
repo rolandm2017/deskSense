@@ -1,6 +1,6 @@
-from sqlalchemy.ext.asyncio import async_sessionmaker
+from activitytracker.tz_handling.time_formatting import convert_to_utc
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import select, desc, func
+from sqlalchemy import select, desc, func, update
 from datetime import datetime
 import asyncpg
 
@@ -24,11 +24,74 @@ class SystemStatusDao(UtilityDaoMixin):
 
     def __init__(self, sync_session_maker: sessionmaker):
         """ Exists mostly for debugging. """
-        self.shutdown_session_maker = sync_session_maker
+        self.sync_session_maker = sync_session_maker
+        self.latest_id = None
         self.logger = ConsoleLogger()
 
-    def add_new(self):
+    def add_program_started(self, current_time):
+        """Used for the first status entry after the program starts up"""
+        current_time_utc = convert_to_utc(current_time.dt)
+        new_status_log = SystemStatus(
+            status=SystemStatusType.PROGRAM_STARTED,
+            created_at=current_time_utc
+        )
+        id_from_new_write = self.add_new_item(new_status_log)
+        # Do not update the latest value. Only do that for the 2nd and later writes.
+        # Said another way, updating the latest value would mean
+        # updating the final "Shutdown" to "Online"
+        self.latest_id = id_from_new_write
+
+    def add_new(self, current_time: UserLocalTime):
         """
         Writes the current timestamp to the table.
         """
-        pass
+        current_time_utc = convert_to_utc(current_time.dt)
+        new_status_log = SystemStatus(
+            # It will be updated to "ONLINE" if program continues running
+            status=SystemStatusType.SHUTDOWN,
+            created_at=current_time_utc
+        )
+        # TODO: Make a "return with id" version
+        id_from_new_write = self.add_new_item(new_status_log)
+        # Make the previous newest record a "still online" status
+        self.update_latest(self.latest_id)
+        self.latest_id = id_from_new_write
+
+    def update_latest(self, latest_id):
+        """Latest_id is stored as a variable for convenience"""
+        with self.sync_session_maker() as session:
+            try:
+                # Direct update without fetching first
+
+                stmt = update(SystemStatus).where(
+                    SystemStatus.id == latest_id
+                ).values(
+                    status_type=SystemStatusType.ONLINE
+                )
+
+                session.execute(stmt)
+                session.commit()
+
+            except Exception as e:
+                session.rollback()
+                self.logger.log_yellow(
+                    f"Error updating status record: {str(e)}")
+
+    def read_highest_id(self):
+        """
+        Retrieves the highest ID in the system_change_log table.
+
+        Returns:
+            int: The highest ID value, or None if the table is empty
+        """
+        with self.sync_session_maker() as session:
+            try:
+                # Use max() function to get the highest ID directly
+                from sqlalchemy import func
+                result = session.query(func.max(SystemStatus.id)).scalar()
+                return result  # Will be None if table is empty
+
+            except Exception as e:
+                self.logger.log_yellow(
+                    f"Error retrieving highest ID: {str(e)}")
+                return None
