@@ -1,8 +1,9 @@
 from sqlalchemy import select, update
 from sqlalchemy.orm import sessionmaker
 
-from typing import List
 from datetime import datetime, timedelta
+
+from typing import List
 
 from activitytracker.db.dao.utility_dao_mixin import UtilityDaoMixin
 from activitytracker.db.models import SystemStatus
@@ -37,8 +38,10 @@ class SystemStatusDao(UtilityDaoMixin):
         on_first_iteration = self.latest_id is None
         current_time = self.clock.now()
         if on_first_iteration:
+            self.logger.log_green("info: Writing program startup entry")
             self.add_program_started(current_time)
         else:
+            self.logger.log_green("info: continued session")
             self.add_new(current_time)
 
     def add_program_started(self, current_time) -> None:
@@ -70,6 +73,7 @@ class SystemStatusDao(UtilityDaoMixin):
 
     def update_latest(self, latest_id) -> None:
         """Latest_id is stored as a variable for convenience"""
+        self.logger.log_green("updating: " + str(latest_id))
         with self.sync_session_maker() as session:
             try:
                 # Direct update without fetching first
@@ -85,8 +89,7 @@ class SystemStatusDao(UtilityDaoMixin):
 
             except Exception as e:
                 session.rollback()
-                self.logger.log_yellow(
-                    f"Error updating status record: {str(e)}")
+                self.logger.log_yellow(f"Error updating status record: {str(e)}")
 
     def read_highest_id(self) -> int | None:
         """
@@ -104,8 +107,7 @@ class SystemStatusDao(UtilityDaoMixin):
                 return result  # Will be None if table is empty
 
             except Exception as e:
-                self.logger.log_yellow(
-                    f"Error retrieving highest ID: {str(e)}")
+                self.logger.log_yellow(f"Error retrieving highest ID: {str(e)}")
                 return None
 
     def read_day(self, day: UserLocalTime) -> List[SystemStatus]:
@@ -117,7 +119,7 @@ class SystemStatusDao(UtilityDaoMixin):
             SystemStatus.created_at < tomorrow_start,
         )
         result = self.execute_and_return_all(query)
-        return attach_tz_to_all(result, day.dt.tzinfo)
+        return attach_tz_to_all(result, day.dt.tzinfo)  # type: ignore
 
     def read_all(self) -> List[SystemStatus]:
         """Read all entries."""

@@ -1,20 +1,24 @@
-
 import pytest
-from unittest.mock import AsyncMock, patch, Mock
+from unittest.mock import AsyncMock, Mock, patch
 
 import asyncio
 
-import threading
 import time
 
-from activitytracker.config.definitions import keep_alive_cycle_length, window_push_length
+from activitytracker.arbiter.session_polling import (
+    KeepAliveEngine,
+    ThreadedEngineContainer,
+)
+from activitytracker.config.definitions import (
+    keep_alive_cycle_length,
+    window_push_length,
+)
 from activitytracker.object.classes import ProgramSession
-from activitytracker.arbiter.session_polling import KeepAliveEngine
 
 
 class MockDaoConn:
     """
-    Mocking ActivityArbiter
+    Mocking ActivityRecorder
     """
 
     def __init__(self):
@@ -26,6 +30,7 @@ class MockDaoConn:
     def add_partial_window(self):
         pass
 
+
 # Custom sleep function that does nothing
 
 
@@ -34,9 +39,7 @@ def fast_sleep(_):
 
 
 def test_window_addition_math():
-    """
-
-    """
+    """ """
     dao_mock = Mock()
 
     add_ten_mock = Mock()
@@ -63,8 +66,7 @@ def test_window_addition_math():
     instance.conclude()
 
     # So add_partial_window was called with the remainder:
-    add_partial_window_spy.assert_called_once_with(
-        partial_cycle_loops, session)
+    add_partial_window_spy.assert_called_once_with(partial_cycle_loops, session)
 
     add_partial_window_spy.reset_mock()
 
@@ -267,8 +269,7 @@ def test_multiple_whole_loops():
     instance.conclude()
 
     # Assert
-    add_partial_window_mock.assert_called_with(
-        partial_incomplete_cycle, session)
+    add_partial_window_mock.assert_called_with(partial_incomplete_cycle, session)
 
 
 def test_conclude_calls_add_partial_window():
@@ -392,3 +393,43 @@ def test_numerous_full_cycles():
 
     time_arg = add_partial_window_mock.call_args_list[0][0][0]
     assert time_arg == 3
+
+
+class TestThreadedEngineContainer:
+    @pytest.mark.asyncio
+    async def test_engine_container(self):
+        iterate_loop_mock = Mock()
+        conclude_mock = Mock()
+        dao_mock = Mock()
+        session = ProgramSession()
+
+        iteration_count = 63
+
+        engine = KeepAliveEngine(session, dao_mock)
+
+        engine.conclude = conclude_mock
+
+        engine.iterate_loop = iterate_loop_mock
+
+        quick_test_interval = 0.02
+        container = ThreadedEngineContainer(quick_test_interval, time.sleep)
+
+        container.add_first_engine(engine)
+
+        assert container.engine is not None
+
+        container.start()
+
+        sleep_time = 0.25
+        await asyncio.sleep(sleep_time)
+
+        assert container.is_running is True
+
+        container.stop()
+
+        assert container.is_running is False
+
+        # Because the thread runs a whole lot of times
+        assert iterate_loop_mock.call_count >= int(sleep_time / quick_test_interval)
+
+        conclude_mock.assert_called_once()

@@ -104,15 +104,15 @@ class ThreadedEngineContainer:
     """
     # TODO: Also keep the EngineContainer between engines. just change it out. Keep the thread alive.
 
-    def __init__(self, interval: int | float = 1, sleep_fn=time.sleep, timestamp=None):
+    def __init__(self, interval: int | float = 1, sleep_fn=time.sleep, profiler=None):
         # TODO: Use a sleep interval of like 0.25. Finer granularity.
-        self.engine = None
-        self.sleep_fn = sleep_fn  # More testable
-        self.stop_event = threading.Event()
         self.interval = interval  # seconds - delay between loops
+        self.sleep_fn = sleep_fn  # More testable to inject a func
+        self.engine = None
+        self.stop_event = threading.Event()
         self.hook_thread = None
         self.is_running = False
-        self.timestamp = timestamp
+        self.profiler = profiler
 
     def add_first_engine(self, engine):
         self.engine = engine
