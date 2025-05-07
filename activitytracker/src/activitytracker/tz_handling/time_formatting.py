@@ -134,6 +134,7 @@ def attach_tz_to_all(obj_list, target_tz):
 
 def attach_tz_to_created_at_field_for_status(status: SystemStatus, tz):
     status.created_at = status.created_at.replace(tzinfo=tz)
+    return status
 
 
 def attach_tz_to_local_fields_for_summary(summary_obj: DailySummaryBase, tz):

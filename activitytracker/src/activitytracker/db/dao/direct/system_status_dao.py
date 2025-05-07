@@ -12,6 +12,7 @@ from activitytracker.db.models import SystemStatus
 from activitytracker.object.enums import SystemStatusType
 from activitytracker.tz_handling.time_formatting import (
     attach_tz_to_all,
+    attach_tz_to_created_at_field_for_status,
     convert_to_utc,
     get_start_of_day_from_datetime,
 )
@@ -41,7 +42,9 @@ class SystemStatusDao(UtilityDaoMixin):
             self.logger.log_green("info: Writing program startup entry")
             self.add_activitytracker_started(current_time)
         else:
-            self.logger.log_green("info: continued session")
+            self.logger.log_green(
+                "info: continued session at " + current_time.dt.strftime("%H:%M:%S")
+            )
             self.add_new_log(current_time)
 
     def add_activitytracker_started(self, current_time) -> None:
@@ -69,7 +72,7 @@ class SystemStatusDao(UtilityDaoMixin):
 
     def make_status_log(self, type_of_status: SystemStatusType, utc_datetime):
         return SystemStatus(
-            status=type_of_status,
+            status=type_of_status.value,  # Must use .value or Pg complains
             created_at=utc_datetime,
         )
 
@@ -83,7 +86,7 @@ class SystemStatusDao(UtilityDaoMixin):
                 stmt = (
                     update(SystemStatus)
                     .where(SystemStatus.id == latest_id)
-                    .values(status_type=SystemStatusType.ONLINE)
+                    .values(status=SystemStatusType.ONLINE)
                 )
 
                 session.execute(stmt)
@@ -110,6 +113,31 @@ class SystemStatusDao(UtilityDaoMixin):
 
             except Exception as e:
                 self.logger.log_yellow(f"Error retrieving highest ID: {str(e)}")
+                return None
+
+    def read_latest(self) -> SystemStatus | None:
+        """
+        Retrieves the latest SystemStatus record (with highest ID).
+
+        Returns:
+            SystemStatus: The most recent status record, or None if table is empty
+        """
+        with self.regular_session() as session:
+            try:
+                # Direct query for the latest record by ID descending
+                latest_record = (
+                    session.query(SystemStatus).order_by(SystemStatus.id.desc()).first()
+                )
+
+                if latest_record and latest_record.created_at:
+                    # Convert timezone if record exists and has timestamp
+                    return attach_tz_to_created_at_field_for_status(
+                        latest_record, self.clock.now().dt.tzinfo
+                    )
+                return latest_record
+
+            except Exception as e:
+                self.logger.log_yellow(f"Error retrieving latest status record: {str(e)}")
                 return None
 
     def read_day(self, day: UserLocalTime) -> List[SystemStatus]:

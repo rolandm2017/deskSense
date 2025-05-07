@@ -145,6 +145,7 @@ async def lifespan(app: FastAPI):
         facades,
         message_receiver,
     )
+    activity_tracker_state.manager.print_sys_status_info()
     activity_tracker_state.manager.start_trackers()
 
     try:

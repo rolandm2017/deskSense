@@ -274,5 +274,7 @@ class SystemStatus(Base):
     __tablename__ = "system_status"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    status: Mapped[SystemStatusType] = mapped_column(SQLAlchemyEnum(SystemStatusType))
+    status: Mapped[SystemStatusType] = mapped_column(
+        SQLAlchemyEnum("program_started", "online", "shutdown", name="systemstatustype")
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # Is the local timezone

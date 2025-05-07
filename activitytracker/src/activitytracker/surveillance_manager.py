@@ -129,7 +129,11 @@ class SurveillanceManager:
 
     def print_sys_status_info(self):
         latest_status = self.system_status_dao.read_latest()
-        self
+        if latest_status is None:
+            self.logger.log_yellow("No latest status found")
+        else:
+            time_string = latest_status.created_at.strftime("%m-%d %H:%M:%S")
+            self.logger.log_white(f"[info] latest status {latest_status.status} at {time_string}")
 
     def operate_facades(self):
         """Start the message receiver."""
