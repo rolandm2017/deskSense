@@ -29,6 +29,8 @@ async def test_periodic_task():
     test_sleep_interval = 0.05  # sec
     periodic_task = AsyncPeriodicTask(mock_dao, test_sleep_interval, asyncio.sleep)
 
+    assert periodic_task.current_task is None
+
     periodic_task.start()
 
     cycle_count = 5

@@ -30,7 +30,7 @@ class SystemStatusDao(UtilityDaoMixin):
     def __init__(self, clock: UserFacingClock, sync_session_maker: sessionmaker):
         """Exists mostly for debugging."""
         self.clock = clock  # Must exist via constructor injection
-        self.sync_session_maker = sync_session_maker
+        self.regular_session = sync_session_maker
         self.latest_id = None
         self.logger = ConsoleLogger()
 
@@ -39,42 +39,44 @@ class SystemStatusDao(UtilityDaoMixin):
         current_time = self.clock.now()
         if on_first_iteration:
             self.logger.log_green("info: Writing program startup entry")
-            self.add_program_started(current_time)
+            self.add_activitytracker_started(current_time)
         else:
             self.logger.log_green("info: continued session")
-            self.add_new(current_time)
+            self.add_new_log(current_time)
 
-    def add_program_started(self, current_time) -> None:
+    def add_activitytracker_started(self, current_time) -> None:
         """Used for the first status entry after the program starts up"""
         current_time_utc = convert_to_utc(current_time.dt)
-        new_status_log = SystemStatus(
-            status=SystemStatusType.PROGRAM_STARTED, created_at=current_time_utc
-        )
+        new_status_log = self.make_status_log(SystemStatusType.PROGRAM_STARTED, current_time_utc)
         id_from_new_write = self.add_new_item(new_status_log)
         # Do not update the latest value. Only do that for the 2nd and later writes.
         # Said another way, updating the latest value would mean
         # updating the final "Shutdown" to "Online"
         self.latest_id = id_from_new_write
 
-    def add_new(self, current_time: UserLocalTime) -> None:
+    def add_new_log(self, current_time: UserLocalTime) -> None:
         """
         Writes the current timestamp to the table.
         """
         current_time_utc = convert_to_utc(current_time.dt)
-        new_status_log = SystemStatus(
-            # It will be updated to "ONLINE" if program continues running
-            status=SystemStatusType.SHUTDOWN,
-            created_at=current_time_utc,
-        )
+        # It will be updated to "ONLINE" if program continues running
+        new_status_log = self.make_status_log(SystemStatusType.SHUTDOWN, current_time_utc)
+        self.latest_status = new_status_log
         id_from_new_write = self.add_new_item(new_status_log)
         # Make the previous newest record a "still online" status
-        self.update_latest(self.latest_id)
+        self.mark_prior_entry_online(self.latest_id)
         self.latest_id = id_from_new_write
 
-    def update_latest(self, latest_id) -> None:
+    def make_status_log(self, type_of_status: SystemStatusType, utc_datetime):
+        return SystemStatus(
+            status=type_of_status,
+            created_at=utc_datetime,
+        )
+
+    def mark_prior_entry_online(self, latest_id) -> None:
         """Latest_id is stored as a variable for convenience"""
         self.logger.log_green("updating: " + str(latest_id))
-        with self.sync_session_maker() as session:
+        with self.regular_session() as session:
             try:
                 # Direct update without fetching first
 
@@ -93,12 +95,12 @@ class SystemStatusDao(UtilityDaoMixin):
 
     def read_highest_id(self) -> int | None:
         """
-        Retrieves the highest ID in the system_change_log table.
+        Retrieves the highest ID in the system_status table.
 
         Returns:
             int: The highest ID value, or None if the table is empty
         """
-        with self.sync_session_maker() as session:
+        with self.regular_session() as session:
             try:
                 # Use max() function to get the highest ID directly
                 from sqlalchemy import func

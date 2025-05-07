@@ -1,13 +1,14 @@
 # models.py
-from datetime import datetime
-from typing import Any, Optional, Union
-
 from sqlalchemy import Column
 from sqlalchemy import Column as SQLAlchemyColumn
 from sqlalchemy import Computed, DateTime
 from sqlalchemy import Enum as SQLAlchemyEnum
 from sqlalchemy import Float, ForeignKey, Integer, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from datetime import datetime
+
+from typing import Any, Optional, Union
 
 from activitytracker.config.definitions import max_content_len
 from activitytracker.db.database import Base
@@ -18,6 +19,7 @@ class DailySummaryBase(Base):
     """
     Base class for summary models with common fields
     """
+
     __abstract__ = True
 
     id = Column(Integer, primary_key=True, index=True)
@@ -26,8 +28,7 @@ class DailySummaryBase(Base):
     # The date on which the program data was gathered, without hh:mm:ss
     # MUST be the date FOR THE USER. Otherwise, the program doesn't make sense
     gathering_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    gathering_date_local: Mapped[datetime] = mapped_column(
-        DateTime(timezone=False))
+    gathering_date_local: Mapped[datetime] = mapped_column(DateTime(timezone=False))
     # TODO: Try gathering_date not as .date() but the full hh:mm:ss thing. Until you figure out why it isn't like that already
 
 
@@ -35,6 +36,7 @@ class DailyProgramSummary(DailySummaryBase):
     """
     A summation of every instance of time spent on a program
     """
+
     __tablename__ = "daily_program_summaries"
 
     exe_path_as_id: Mapped[str] = mapped_column(String)  # unique identifier
@@ -45,15 +47,21 @@ class DailyProgramSummary(DailySummaryBase):
         return self.process_name
 
     def __str__(self):
-        formatted_date = self.gathering_date.strftime(
-            "%Y-%m-%d %H:%M") if self.gathering_date is not None else "No date"
-        return f"Program: {self.program_name}, \tHours: {self.hours_spent}, \tDate: {formatted_date}"
+        formatted_date = (
+            self.gathering_date.strftime("%Y-%m-%d %H:%M")
+            if self.gathering_date is not None
+            else "No date"
+        )
+        return (
+            f"Program: {self.program_name}, \tHours: {self.hours_spent}, \tDate: {formatted_date}"
+        )
 
 
 class DailyDomainSummary(DailySummaryBase):
     """
     A summation of every instance of time spent on a domain
     """
+
     __tablename__ = "daily_chrome_summaries"
 
     domain_name: Mapped[str] = mapped_column(String)
@@ -62,15 +70,21 @@ class DailyDomainSummary(DailySummaryBase):
         return self.domain_name
 
     def __str__(self):
-        formatted_date = self.gathering_date.strftime(
-            "%Y-%m-%d") if self.gathering_date is not None else "No date"
-        return f"Domain: {self.domain_name}, \tHours: {self.hours_spent}, \tDate: {formatted_date}"
+        formatted_date = (
+            self.gathering_date.strftime("%Y-%m-%d")
+            if self.gathering_date is not None
+            else "No date"
+        )
+        return (
+            f"Domain: {self.domain_name}, \tHours: {self.hours_spent}, \tDate: {formatted_date}"
+        )
 
 
 class SummaryLogBase(Base):
     """
     Base class for summary logs with common fields
     """
+
     __abstract__ = True
 
     id = Column(Integer, primary_key=True, index=True)
@@ -78,15 +92,13 @@ class SummaryLogBase(Base):
     # time stuff
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    start_time_local: Mapped[datetime] = mapped_column(
-        DateTime(timezone=False))
+    start_time_local: Mapped[datetime] = mapped_column(DateTime(timezone=False))
     end_time_local: Mapped[datetime] = mapped_column(DateTime(timezone=False))
 
     duration_in_sec: Mapped[float] = mapped_column(Float, nullable=True)
     # The date on which the data was gathered
     gathering_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    gathering_date_local: Mapped[datetime] = mapped_column(
-        DateTime(timezone=False))
+    gathering_date_local: Mapped[datetime] = mapped_column(DateTime(timezone=False))
 
     created_at = Column(DateTime(timezone=True))
 
@@ -95,6 +107,7 @@ class ProgramSummaryLog(SummaryLogBase):
     """
     Logs a singular addition to the ProgramSummary table
     """
+
     __tablename__ = "program_logs"
 
     exe_path_as_id: Mapped[str] = mapped_column(String)  # unique identifier
@@ -105,9 +118,11 @@ class ProgramSummaryLog(SummaryLogBase):
         return self.process_name
 
     def __str__(self):
-        return f"ProgramSummaryLog(id={self.id}, program_name={self.program_name}, hours_spent={self.hours_spent}, " \
-            f"start_time={self.start_time}, end_time={self.end_time}, " \
+        return (
+            f"ProgramSummaryLog(id={self.id}, program_name={self.program_name}, hours_spent={self.hours_spent}, "
+            f"start_time={self.start_time}, end_time={self.end_time}, "
             f"gathering_date={self.gathering_date}, created_at={self.created_at})"
+        )
 
 
 class DomainSummaryLog(SummaryLogBase):
@@ -119,9 +134,11 @@ class DomainSummaryLog(SummaryLogBase):
         return self.domain_name
 
     def __str__(self):
-        return f"DomainSummaryLog(domain_name={self.domain_name}, hours_spent={self.hours_spent}, " \
-            f"start_time={self.start_time}, end_time={self.end_time}, " \
+        return (
+            f"DomainSummaryLog(domain_name={self.domain_name}, hours_spent={self.hours_spent}, "
+            f"start_time={self.start_time}, end_time={self.end_time}, "
             f"gathering_date={self.gathering_date}, created_at={self.created_at})"
+        )
 
 
 class TypingSession(Base):
@@ -132,7 +149,9 @@ class TypingSession(Base):
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     def __repr__(self):
-        return f"TypingSession(id={self.id}, start_time={self.start_time}, end_time={self.end_time})"
+        return (
+            f"TypingSession(id={self.id}, start_time={self.start_time}, end_time={self.end_time})"
+        )
 
 
 class MouseMove(Base):
@@ -155,6 +174,7 @@ class TimelineEntryObj(Base):
     It *intentionally* has the same name and fields as the server.py Pydantic model.
     Both *intentionally* have the same fields as the client's interface.
     """
+
     __tablename__ = "client_timeline_entries"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -163,7 +183,9 @@ class TimelineEntryObj(Base):
         String,
         # "Sqlalchemy db-agnostic language" - Claude
         Computed(
-            "CASE WHEN \"group\" = 'MOUSE' THEN 'mouse-' || id ELSE 'keyboard-' || id END", persisted=True)
+            "CASE WHEN \"group\" = 'MOUSE' THEN 'mouse-' || id ELSE 'keyboard-' || id END",
+            persisted=True,
+        ),
     )
 
     group = Column(SQLAlchemyEnum(ChartEventType))
@@ -172,7 +194,9 @@ class TimelineEntryObj(Base):
         String,
         # "Sqlalchemy db-agnostic language" - Claude
         Computed(
-            "CASE WHEN \"group\" = 'MOUSE' THEN 'Mouse Event ' || id ELSE 'Typing Session ' || id END", persisted=True)
+            "CASE WHEN \"group\" = 'MOUSE' THEN 'Mouse Event ' || id ELSE 'Typing Session ' || id END",
+            persisted=True,
+        ),
     )
     # It is unclear if this model needs a start_time_local, end_time_local, so I'm leaving it
     start = Column(DateTime(timezone=True))
@@ -197,13 +221,14 @@ class PrecomputedTimelineEntry(Base):
     """
     Problem: The program was sending 7.2 mb of timeline data, to be aggregated each refresh, over and over.
 
-    Solution: Precompute the timeline data here on the server, since 
+    Solution: Precompute the timeline data here on the server, since
     it only needs to be done one time supposing the result is stored and demanded effectively.
 
     Note: This table uses camelCase column names (rather than snake_case)
     to avoid expensive case conversion of thousands of records before sending
     to the client. This is an intentional performance optimization.
     """
+
     __tablename__ = "precomputed_timelines"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -245,9 +270,9 @@ class SystemStatus(Base):
 
     If the machine powers on at time t, surely no sessions should be open before t.
     """
+
     __tablename__ = "system_status"
 
-    id = Column(Integer, primary_key=True, index=True)
-    status: Mapped[SystemStatusType] = mapped_column(
-        SQLAlchemyEnum(SystemStatusType))
-    created_at = Column(DateTime(timezone=True))  # Is the local timezone
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    status: Mapped[SystemStatusType] = mapped_column(SQLAlchemyEnum(SystemStatusType))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # Is the local timezone
