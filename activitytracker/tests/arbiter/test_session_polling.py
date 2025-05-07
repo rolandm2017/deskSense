@@ -400,15 +400,13 @@ class TestThreadedEngineContainer:
     async def test_engine_container(self):
         iterate_loop_mock = Mock()
         conclude_mock = Mock()
+
         dao_mock = Mock()
         session = ProgramSession()
-
-        iteration_count = 63
 
         engine = KeepAliveEngine(session, dao_mock)
 
         engine.conclude = conclude_mock
-
         engine.iterate_loop = iterate_loop_mock
 
         quick_test_interval = 0.02
