@@ -1,13 +1,20 @@
-from datetime import datetime, timedelta, timezone
 import pytz
+from datetime import datetime, timedelta, timezone
 
 from typing import List, cast
 
-from activitytracker.db.models import TimelineEntryObj, DailySummaryBase, SummaryLogBase
-
-from activitytracker.config.definitions import local_time_zone, daylight_savings_tz_offset
-from activitytracker.util.time_wrappers import UserLocalTime
+from activitytracker.config.definitions import (
+    daylight_savings_tz_offset,
+    local_time_zone,
+)
+from activitytracker.db.models import (
+    DailySummaryBase,
+    SummaryLogBase,
+    SystemStatus,
+    TimelineEntryObj,
+)
 from activitytracker.util.errors import TimezoneUnawareError
+from activitytracker.util.time_wrappers import UserLocalTime
 
 
 def convert_all_to_tz(obj_list, target_tz):
@@ -53,27 +60,30 @@ def convert_log_to_tz(log_obj: SummaryLogBase, tz):
     """
     # For local times (timezone=False in your model)
     # First, determine the original timezone (if known)
-    original_tz = pytz.timezone('UTC')  # Assuming they were originally UTC
+    original_tz = pytz.timezone("UTC")  # Assuming they were originally UTC
 
     # Properly localize and then convert each datetime
     if log_obj.gathering_date.tzinfo is None:
         temp_time = original_tz.localize(log_obj.gathering_date)
         log_obj.gathering_date = temp_time.astimezone(tz)
-    elif log_obj.gathering_date.tzinfo == timezone.utc or str(log_obj.gathering_date.tzinfo) == 'UTC':
+    elif (
+        log_obj.gathering_date.tzinfo == timezone.utc
+        or str(log_obj.gathering_date.tzinfo) == "UTC"
+    ):
         # Already UTC-aware - just convert to target timezone
         log_obj.gathering_date = log_obj.gathering_date.astimezone(tz)
 
     if log_obj.start_time.tzinfo is None:
         temp_time = original_tz.localize(log_obj.start_time)
         log_obj.start_time = temp_time.astimezone(tz)
-    elif log_obj.start_time.tzinfo == timezone.utc or str(log_obj.start_time.tzinfo) == 'UTC':
+    elif log_obj.start_time.tzinfo == timezone.utc or str(log_obj.start_time.tzinfo) == "UTC":
         # Already UTC-aware - just convert to target timezone
         log_obj.start_time = log_obj.start_time.astimezone(tz)
 
     if log_obj.end_time.tzinfo is None:
         temp_time = original_tz.localize(log_obj.end_time)
         log_obj.end_time = temp_time.astimezone(tz)
-    elif log_obj.end_time.tzinfo == timezone.utc or str(log_obj.end_time.tzinfo) == 'UTC':
+    elif log_obj.end_time.tzinfo == timezone.utc or str(log_obj.end_time.tzinfo) == "UTC":
         # Already UTC-aware - just convert to target timezone
         log_obj.end_time = log_obj.end_time.astimezone(tz)
 
@@ -81,7 +91,6 @@ def convert_log_to_tz(log_obj: SummaryLogBase, tz):
 def attach_tz_to_obj(obj, target_tz):
     """Used to attach tz info after DAOs read data"""
     # Func assumes the obj will be of a specific type
-    return obj
     if isinstance(obj, DailySummaryBase):
         # The gathering date is either the same day, or the previous day.
         # 00:00:00-04:00 -> 20:00:00 UTC -1 day.
@@ -101,7 +110,6 @@ def attach_tz_to_obj(obj, target_tz):
 
 def attach_tz_to_all(obj_list, target_tz):
     """Used to attach tz info after DAOs read data"""
-    return obj_list
     if not obj_list:
         return obj_list  # Return empty list if input is empty
     # Func assumes the obj list will all be of the same type
@@ -117,18 +125,23 @@ def attach_tz_to_all(obj_list, target_tz):
             # FIXME: If _local fields are None, convert the gathering_date
             attach_tz_to_local_fields_for_logs(log_obj, target_tz)
         return obj_list
+    elif isinstance(obj_list[0], SystemStatus):
+        for status in obj_list:
+            attach_tz_to_created_at_field_for_status(status, target_tz)
     else:
         raise NotImplementedError("Summaries and Logs are converted so far")
 
 
+def attach_tz_to_created_at_field_for_status(status: SystemStatus, tz):
+    status.created_at = status.created_at.replace(tzinfo=tz)
+
+
 def attach_tz_to_local_fields_for_summary(summary_obj: DailySummaryBase, tz):
-    summary_obj.gathering_date_local = summary_obj.gathering_date_local.replace(
-        tzinfo=tz)
+    summary_obj.gathering_date_local = summary_obj.gathering_date_local.replace(tzinfo=tz)
 
 
 def attach_tz_to_local_fields_for_logs(log_obj: SummaryLogBase, tz):
-    log_obj.gathering_date_local = log_obj.gathering_date_local.replace(
-        tzinfo=tz)
+    log_obj.gathering_date_local = log_obj.gathering_date_local.replace(tzinfo=tz)
     log_obj.start_time_local = log_obj.start_time_local.replace(tzinfo=tz)
     log_obj.end_time_local = log_obj.end_time_local.replace(tzinfo=tz)
 
@@ -183,6 +196,7 @@ def require_tzinfo(dt: datetime) -> datetime:
         raise TimezoneUnawareError("require_tzinfo", dt)
     return dt
 
+
 # Alternate method for below code
 # def get_start_of_day(dt):
 #     """Get the start of the day (midnight) for the given datetime"""
@@ -211,13 +225,11 @@ def format_for_local_time(events: List[TimelineEntryObj]) -> List[TimelineEntryO
 
         start_value = cast(datetime, entry_copy.start)
         if start_value:
-            entry_copy.start = convert_to_timezone(  # type: ignore
-                start_value, local_time_zone)
+            entry_copy.start = convert_to_timezone(start_value, local_time_zone)  # type: ignore
 
         end_value = cast(datetime, entry_copy.end)
         if end_value:
-            entry_copy.end = convert_to_timezone(  # type: ignore
-                end_value, local_time_zone)
+            entry_copy.end = convert_to_timezone(end_value, local_time_zone)  # type: ignore
 
         formatted_entries.append(entry_copy)
 
@@ -225,16 +237,11 @@ def format_for_local_time(events: List[TimelineEntryObj]) -> List[TimelineEntryO
 
 
 def parse_time_string(time_str):
-    parts = time_str.split(':')
+    parts = time_str.split(":")
     hours = int(parts[0])
     minutes = int(parts[1])
-    seconds_parts = parts[2].split('.')
+    seconds_parts = parts[2].split(".")
     seconds = int(seconds_parts[0])
     microseconds = int(seconds_parts[1]) if len(seconds_parts) > 1 else 0
 
-    return timedelta(
-        hours=hours,
-        minutes=minutes,
-        seconds=seconds,
-        microseconds=microseconds
-    )
+    return timedelta(hours=hours, minutes=minutes, seconds=seconds, microseconds=microseconds)

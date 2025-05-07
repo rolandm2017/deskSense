@@ -10,28 +10,30 @@ from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 
 
-from .arbiter.activity_arbiter import ActivityArbiter
+from activitytracker.arbiter.activity_arbiter import ActivityArbiter
 
-from .facade.receive_messages import MessageReceiver
+from activitytracker.facade.receive_messages import MessageReceiver
 
-from .db.dao.direct.system_status_dao import SystemStatusDao
-from .db.dao.direct.session_integrity_dao import SessionIntegrityDao
+from activitytracker.db.dao.direct.system_status_dao import SystemStatusDao
+from activitytracker.db.dao.direct.session_integrity_dao import SessionIntegrityDao
 
-from .db.dao.queuing.mouse_dao import MouseDao
-from .db.dao.queuing.keyboard_dao import KeyboardDao
+from activitytracker.db.dao.queuing.mouse_dao import MouseDao
+from activitytracker.db.dao.queuing.keyboard_dao import KeyboardDao
 
-from .db.dao.queuing.timeline_entry_dao import TimelineEntryDao
-from .db.dao.direct.program_summary_dao import ProgramSummaryDao
-from .db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from .db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from .db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from activitytracker.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
+from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
-from .trackers.mouse_tracker import MouseTrackerCore
-from .trackers.keyboard_tracker import KeyboardTrackerCore
-from .trackers.program_tracker import ProgramTrackerCore
-from .util.detect_os import OperatingSystemInfo
-from .util.clock import UserFacingClock
-from .util.threaded_tracker import ThreadedTracker
+from activitytracker.trackers.mouse_tracker import MouseTrackerCore
+from activitytracker.trackers.keyboard_tracker import KeyboardTrackerCore
+from activitytracker.trackers.program_tracker import ProgramTrackerCore
+
+from activitytracker.util.periodic_task import AsyncPeriodicTask
+from activitytracker.util.detect_os import OperatingSystemInfo
+from activitytracker.util.clock import UserFacingClock
+from activitytracker.util.threaded_tracker import ThreadedTracker
 from activitytracker.util.copy_util import snapshot_obj_for_tests
 
 
@@ -56,7 +58,8 @@ class SurveillanceManager:
         # Initialize tracking data
         self.current_window = None
         self.start_time = None
-        self.session_data = []
+
+        self.system_status_task = None
 
         self.message_receiver = message_receiver
         # self.message_receiver = MessageReceiver("tcp://127.0.0.1:5555")
@@ -77,9 +80,11 @@ class SurveillanceManager:
         self.session_integrity_dao = SessionIntegrityDao(
             program_summary_logger, chrome_summary_logger, self.async_session_maker)
 
-        # TODO: Put it in an async loop! with a cancelable task referenced for canceling.
-        self.system_status_dao = SystemStatusDao(
-            self.regular_session)
+        self.system_status_dao = SystemStatusDao(clock,
+                                                 self.regular_session)
+
+        self.program_online_polling = AsyncPeriodicTask(self.system_status_dao)
+        self.program_online_polling.start()
 
         self.mouse_dao = MouseDao(self.async_session_maker)
         self.keyboard_dao = KeyboardDao(self.async_session_maker)
@@ -127,9 +132,7 @@ class SurveillanceManager:
         self.message_receiver.start()
 
     def check_session_integrity(self, latest_shutdown_time: datetime | None, latest_startup_time: datetime):
-        # FIXME:
         # FIXME: This function isn't being used anywhere! And it still should be
-        # FIXME:
         # FIXME: get latest times from system status dao
         if latest_shutdown_time is None:
             self.session_integrity_dao.audit_first_startup(latest_startup_time)
@@ -157,20 +160,18 @@ class SurveillanceManager:
         copy_of_event = snapshot_obj_for_tests(event)
         self.arbiter.set_program_state(copy_of_event)  # type: ignore
 
-    def handle_program_ready_for_db(self, event):
-        pass
-        # self.loop.create_task(self.program_dao.create(event))
-
     def shutdown_handler(self):
         try:
             self.chrome_service.shutdown()  # works despite the lack of highlighting
             self.arbiter.shutdown()
+            self.program_online_polling.stop()
         except Exception as e:
             print(f"Error during shutdown cleanup: {e}")
             traceback.print_exc()
 
     async def cancel_pending_tasks(self):
         """Safely cancel all pending tasks created by this manager."""
+        self.program_online_polling.stop()
         # Get all tasks from the event loop except the current one
         current_task = asyncio.current_task()
         all_tasks = [task for task in asyncio.all_tasks()

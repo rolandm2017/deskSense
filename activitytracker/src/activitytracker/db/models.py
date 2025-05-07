@@ -245,9 +245,9 @@ class SystemStatus(Base):
 
     If the machine powers on at time t, surely no sessions should be open before t.
     """
-    __tablename__ = "system_change_log"
+    __tablename__ = "system_status"
 
     id = Column(Integer, primary_key=True, index=True)
     status: Mapped[SystemStatusType] = mapped_column(
         SQLAlchemyEnum(SystemStatusType))
-    created_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True))  # Is the local timezone

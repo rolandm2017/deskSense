@@ -22,6 +22,9 @@ class UtilityDaoMixin:
         with self.regular_session() as db_session:
             db_session.add(item)
             db_session.commit()
+            # After commit, the item's ID will be populated
+            # You don't have to use the ID, but it's there if you want it
+            return item.id
 
     def execute_and_return_all(self, query):
         """
