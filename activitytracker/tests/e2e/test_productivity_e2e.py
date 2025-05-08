@@ -1,7 +1,10 @@
-import pytest
-import pytest_asyncio
-from unittest.mock import Mock
 import traceback
+
+import pytest_asyncio
+
+import pytest
+from unittest.mock import Mock
+
 import asyncio
 
 import pytz
@@ -9,49 +12,40 @@ from datetime import datetime, timedelta
 
 from typing import cast
 
-
-from activitytracker.config.definitions import imported_local_tz_str, window_push_length
-
 from activitytracker.arbiter.activity_arbiter import ActivityArbiter
 from activitytracker.arbiter.activity_recorder import ActivityRecorder
-from activitytracker.surveillance_manager import FacadeInjector, SurveillanceManager
-
-from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from activitytracker.config.definitions import imported_local_tz_str, window_push_length
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from activitytracker.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
-
-from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from activitytracker.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
 from activitytracker.facade.facade_singletons import (
     get_keyboard_facade_instance,
     get_mouse_facade_instance,
 )
-
-from activitytracker.services.tiny_services import TimezoneService
-
-from activitytracker.services.dashboard_service import DashboardService
-from activitytracker.services.chrome_service import ChromeService
-
 from activitytracker.object.classes import (
     ChromeSession,
     ProgramSession,
     TabChangeEventWithLtz,
 )
-from activitytracker.util.program_tools import separate_window_name_and_detail
+from activitytracker.services.chrome_service import ChromeService
+from activitytracker.services.dashboard_service import DashboardService
+from activitytracker.services.tiny_services import TimezoneService
+from activitytracker.surveillance_manager import FacadeInjector, SurveillanceManager
+from activitytracker.tz_handling.time_formatting import convert_to_utc
 from activitytracker.util.clock import UserFacingClock
-from activitytracker.util.const import SECONDS_PER_HOUR
 from activitytracker.util.console_logger import ConsoleLogger
+from activitytracker.util.const import SECONDS_PER_HOUR
+from activitytracker.util.program_tools import separate_window_name_and_detail
 from activitytracker.util.time_wrappers import UserLocalTime
 
-from activitytracker.tz_handling.time_formatting import convert_to_utc
-
-from ..mocks.mock_clock import UserLocalTimeMockClock, MockClock
-from ..mocks.mock_engine_container import MockEngineContainer
-from ..mocks.mock_message_receiver import MockMessageReceiver
 from ..data.captures_for_test_data_Chrome import chrome_data
 from ..data.captures_for_test_data_programs import program_data
 from ..helper.confirm_chronology import get_durations_from_test_data
-
+from ..mocks.mock_clock import MockClock, UserLocalTimeMockClock
+from ..mocks.mock_engine_container import MockEngineContainer
+from ..mocks.mock_message_receiver import MockMessageReceiver
 
 # TODO: Test the program facade to the database,
 # and the Chrome service to the database,
@@ -103,9 +97,7 @@ async def cleanup_test_resources(manager):
                 task.cancel()
 
         try:
-            await asyncio.wait_for(
-                asyncio.gather(*tasks, return_exceptions=True), timeout=1.0
-            )
+            await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=1.0)
         except asyncio.TimeoutError:
             print("Some tasks did not complete in time during test cleanup")
 
@@ -148,9 +140,7 @@ async def test_setup_conditions(regular_session_maker, plain_asm):
 # FIXME: integrate with the 3rd test
 @pytest.mark.asyncio
 # @pytest.mark.skip
-async def test_program_tracker_to_arbiter(
-    plain_asm, regular_session_maker, times_from_test_data
-):
+async def test_program_tracker_to_arbiter(plain_asm, regular_session_maker, times_from_test_data):
 
     real_program_events = [x["event"] for x in program_data]
 
@@ -483,9 +473,7 @@ def parse_time_string(time_str):
     seconds = int(seconds_parts[0])
     microseconds = int(seconds_parts[1]) if len(seconds_parts) > 1 else 0
 
-    return timedelta(
-        hours=hours, minutes=minutes, seconds=seconds, microseconds=microseconds
-    )
+    return timedelta(hours=hours, minutes=minutes, seconds=seconds, microseconds=microseconds)
 
 
 def fmt_time_string(s):
@@ -674,9 +662,7 @@ async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
             partials.append(partial)
         return partials
 
-    partials_for_mock_recorder = get_partials_for_add_partial_window(
-        session_durations_in_sec
-    )
+    partials_for_mock_recorder = get_partials_for_add_partial_window(session_durations_in_sec)
 
     def assert_setup_times_went_well(session_durations):
         """
@@ -699,9 +685,7 @@ async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
     program_logging_dao = ProgramLoggingDao(regular_session_maker)
     chrome_logging_dao = ChromeLoggingDao(regular_session_maker)
 
-    program_logging_push_spy = Mock(
-        side_effect=program_logging_dao.push_window_ahead_ten_sec
-    )
+    program_logging_push_spy = Mock(side_effect=program_logging_dao.push_window_ahead_ten_sec)
 
     program_logging_start_session_spy = Mock(side_effect=program_logging_dao.start_session)
 
@@ -725,9 +709,7 @@ async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
     chrome_sum_start_session_spy = Mock(side_effect=chrome_summary_dao.start_session)
     chrome_summary_dao.start_session = chrome_sum_start_session_spy
 
-    program_summary_push_spy = Mock(
-        side_effect=program_summary_dao.push_window_ahead_ten_sec
-    )
+    program_summary_push_spy = Mock(side_effect=program_summary_dao.push_window_ahead_ten_sec)
     program_summary_dao.push_window_ahead_ten_sec = program_summary_push_spy
 
     chrome_summary_push_spy = Mock(side_effect=chrome_summary_dao.push_window_ahead_ten_sec)
@@ -785,9 +767,7 @@ async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
         durations_to_override=partials_for_mock_recorder,
     )
 
-    activity_recorder_add_ten_spy = Mock(
-        side_effect=activity_recorder.add_ten_sec_to_end_time
-    )
+    activity_recorder_add_ten_spy = Mock(side_effect=activity_recorder.add_ten_sec_to_end_time)
     activity_recorder.add_ten_sec_to_end_time = activity_recorder_add_ten_spy
 
     container = MockEngineContainer([int(x) for x in session_durations_in_sec])
@@ -814,14 +794,10 @@ async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
     notify_of_new_session_spy = Mock(side_effect=activity_arbiter.notify_of_new_session)
     activity_arbiter.notify_of_new_session = notify_of_new_session_spy
 
-    pr_start_session_spy = Mock(
-        side_effect=activity_recorder.program_logging_dao.start_session
-    )
+    pr_start_session_spy = Mock(side_effect=activity_recorder.program_logging_dao.start_session)
     activity_recorder.program_logging_dao.start_session = pr_start_session_spy
 
-    ch_start_session_spy = Mock(
-        side_effect=activity_recorder.chrome_logging_dao.start_session
-    )
+    ch_start_session_spy = Mock(side_effect=activity_recorder.chrome_logging_dao.start_session)
     activity_recorder.chrome_logging_dao.start_session = ch_start_session_spy
 
     pr_push_window_spy = Mock(
@@ -941,12 +917,8 @@ async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
     assert pr_start_session_spy.call_count == count_of_programs
     assert ch_start_session_spy.call_count == count_of_tabs
 
-    assert pr_push_window_spy.call_count == sum(
-        [x // 10 for x in output_times_tally["programs"]]
-    )
-    assert ch_push_window_spy.call_count == sum(
-        [x // 10 for x in output_times_tally["domains"]]
-    )
+    assert pr_push_window_spy.call_count == sum([x // 10 for x in output_times_tally["programs"]])
+    assert ch_push_window_spy.call_count == sum([x // 10 for x in output_times_tally["domains"]])
 
     assert pr_finalize_spy.call_count == count_of_programs
     assert ch_finalize_spy.call_count == count_of_tabs - one_left_in_arbiter
@@ -1335,9 +1307,8 @@ async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
     # # Events are from 03-22, a Saturday.
     # # So we need 03-16, the prior Sunday.
     the_16th_with_tz = some_local_tz.localize(datetime(2025, 3, 16))
-    sunday_the_16th = UserLocalTime(the_16th_with_tz)
 
-    time_for_week = await dashboard_service.get_weekly_productivity_overview(sunday_the_16th)
+    time_for_week = await dashboard_service.get_weekly_productivity_overview(the_16th_with_tz)
 
     assert any(
         entry["productivity"] > 0 and entry["leisure"] > 0 for entry in time_for_week
@@ -1369,9 +1340,7 @@ async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
 
     dashboard_svc_total = production + leisure
 
-    def assert_summary_db_falls_within_tolerance(
-        dashboard_svc_total, expected_durations_sum
-    ):
+    def assert_summary_db_falls_within_tolerance(dashboard_svc_total, expected_durations_sum):
         tolerance = 0.02  # 5%
         lower_threshold = expected_durations_sum * (1 - tolerance)
         upper_bounds = expected_durations_sum * (1 + tolerance)
