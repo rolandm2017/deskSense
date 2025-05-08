@@ -1,19 +1,20 @@
+import ctypes
+from ctypes import wintypes
+
 import psutil  # type: ignore -> can't import on ubuntu
 import win32api  # type: ignore -> can't import on ubuntu
 import win32con  # type: ignore -> can't import on ubuntu
 import win32gui  # type: ignore -> can't import on ubuntu
 import win32process  # type: ignore -> can't import on ubuntu
 
-import ctypes
-from ctypes import wintypes
 import time
 
 from typing import Dict, Generator, List, TypedDict
 
-from .program_facade_base import ProgramFacadeInterface
-
-from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.object.classes import ProgramSessionDict
+from activitytracker.util.console_logger import ConsoleLogger
+
+from .program_facade_base import ProgramFacadeInterface
 
 
 class WindowsProgramFacadeCore(ProgramFacadeInterface):
