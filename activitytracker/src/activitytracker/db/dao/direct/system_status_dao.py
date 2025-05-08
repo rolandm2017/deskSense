@@ -86,7 +86,7 @@ class SystemStatusDao(UtilityDaoMixin):
                 stmt = (
                     update(SystemStatus)
                     .where(SystemStatus.id == latest_id)
-                    .values(status=SystemStatusType.ONLINE)
+                    .values(status=SystemStatusType.ONLINE.value)
                 )
 
                 session.execute(stmt)
