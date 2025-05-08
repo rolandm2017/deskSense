@@ -69,11 +69,9 @@ class ActivityArbiter:
             self.activity_recorder.on_new_session(session_copy)
 
     def set_program_state(self, event: ProgramSession):
-        # pass
         self.transition_state(event)
 
     def set_tab_state(self, tab: ChromeSession):
-        # pass
         self.transition_state(tab)
 
     def transition_state(self, new_session: ChromeSession | ProgramSession):

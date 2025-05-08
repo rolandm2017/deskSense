@@ -39,7 +39,7 @@ class SystemStatusDao(UtilityDaoMixin):
         on_first_iteration = self.latest_id is None
         current_time = self.clock.now()
         if on_first_iteration:
-            self.logger.log_green("info: Writing program startup entry")
+            self.logger.log_green("info: Writing program startup entry\n")
             self.add_activitytracker_started(current_time)
         else:
             self.logger.log_green(
@@ -50,9 +50,7 @@ class SystemStatusDao(UtilityDaoMixin):
     def add_activitytracker_started(self, current_time) -> None:
         """Used for the first status entry after the program starts up"""
         current_time_utc = convert_to_utc(current_time.dt)
-        new_status_log = self.make_status_log(
-            SystemStatusType.PROGRAM_STARTED, current_time_utc
-        )
+        new_status_log = self.make_status_log(SystemStatusType.PROGRAM_STARTED, current_time_utc)
         id_from_new_write = self.add_new_item(new_status_log)
         # Do not update the latest value. Only do that for the 2nd and later writes.
         # Said another way, updating the latest value would mean

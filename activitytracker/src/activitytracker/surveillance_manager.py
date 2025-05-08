@@ -47,11 +47,13 @@ class SurveillanceManager:
         arbiter: ActivityArbiter,
         facades,
         message_receiver: MessageReceiver,
+        is_test=False,
     ):
         """
         Facades argument is DI for testability.
         """
         self.is_running = False
+        self.is_test = is_test
         self.async_session_maker = async_session_maker
         self.regular_session = regular_session_maker
         self.chrome_service = chrome_service
@@ -78,8 +80,11 @@ class SurveillanceManager:
 
         self.system_status_dao = SystemStatusDao(clock, self.regular_session)
 
-        self.program_online_polling = AsyncPeriodicTask(self.system_status_dao)
-        self.program_online_polling.start()
+        if is_test:
+            pass
+        else:
+            self.program_online_polling = AsyncPeriodicTask(self.system_status_dao)
+            self.program_online_polling.start()
 
         self.mouse_dao = MouseDao(self.async_session_maker)
         self.keyboard_dao = KeyboardDao(self.async_session_maker)
@@ -167,14 +172,16 @@ class SurveillanceManager:
         try:
             self.chrome_service.shutdown()  # works despite the lack of highlighting
             self.arbiter.shutdown()
-            self.program_online_polling.stop()
+            if not self.is_test:
+                self.program_online_polling.stop()
         except Exception as e:
             print(f"Error during shutdown cleanup: {e}")
             traceback.print_exc()
 
     async def cancel_pending_tasks(self):
         """Safely cancel all pending tasks created by this manager."""
-        await self.program_online_polling.stop()
+        if not self.is_test:
+            await self.program_online_polling.stop()
         # Get all tasks from the event loop except the current one
         current_task = asyncio.current_task()
         all_tasks = [task for task in asyncio.all_tasks() if task is not current_task]
