@@ -1,4 +1,5 @@
 from curses import window
+
 import time
 from datetime import datetime
 
@@ -68,7 +69,7 @@ class ProgramTrackerCore:
                 if self.current_session is None:
                     raise ValueError("Current session was None")
 
-                current_time: datetime = self.user_facing_clock.now()  # once per loop
+                current_time: UserLocalTime = self.user_facing_clock.now()  # once per loop
 
                 new_session = self.start_new_session(window_change, current_time)
                 self.current_session = new_session
@@ -78,7 +79,7 @@ class ProgramTrackerCore:
 
             # initialize
             if self.is_uninitialized():
-                current_time = self.user_facing_clock.now()
+                current_time: UserLocalTime = self.user_facing_clock.now()
                 # capture_program_data_for_tests(window_change, current_time)
                 new_session = self.start_new_session(window_change, current_time)
                 self.current_session = new_session
@@ -90,7 +91,7 @@ class ProgramTrackerCore:
     def is_initialized(self):
         return not self.current_session is None
 
-    def start_new_session(self, window_change_dict, start_time) -> ProgramSession:
+    def start_new_session(self, window_change_dict, start_time: UserLocalTime) -> ProgramSession:
         if contains_space_dash_space(window_change_dict["window_title"]):
             detail, window_title = separate_window_name_and_detail(
                 window_change_dict["window_title"]
@@ -103,7 +104,7 @@ class ProgramTrackerCore:
             window_change_dict["process_name"],
             window_title,
             detail,
-            UserLocalTime(start_time),
+            start_time,
         )
         # end_time, duration, productive not set yet
         return new_session

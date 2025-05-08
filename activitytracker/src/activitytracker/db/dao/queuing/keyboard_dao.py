@@ -1,12 +1,12 @@
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
+from datetime import datetime, timedelta
 
-from datetime import timedelta, datetime
+from activitytracker.db.dao.base_dao import BaseQueueingDao
 
 # TODO: Replace with AsyncUtilityDaoMixin
 from activitytracker.db.dao.utility_dao_mixin import AsyncUtilityDaoMixin
-from activitytracker.db.dao.base_dao import BaseQueueingDao
 from activitytracker.db.models import TypingSession
 from activitytracker.object.classes import KeyboardAggregate
 from activitytracker.object.dto import TypingSessionDto
@@ -19,9 +19,7 @@ def get_rid_of_ms(time):
 
 
 class KeyboardDao(AsyncUtilityDaoMixin, BaseQueueingDao):
-    def __init__(
-        self, async_session_maker: async_sessionmaker, batch_size=100, flush_interval=1
-    ):
+    def __init__(self, async_session_maker: async_sessionmaker, batch_size=100, flush_interval=1):
         super().__init__(
             async_session_maker=async_session_maker,
             batch_size=batch_size,
@@ -42,7 +40,6 @@ class KeyboardDao(AsyncUtilityDaoMixin, BaseQueueingDao):
         await self.queue_item(new_typing_session_entry)
 
     async def create_without_queue(self, session: KeyboardAggregate):
-        print("adding keystrokes to db ", str(session))
         new_session = TypingSession(
             start_time=session.start_time.get_dt_for_db(),
             end_time=session.end_time.get_dt_for_db(),

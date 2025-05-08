@@ -5,37 +5,33 @@ from datetime import datetime, timedelta
 from typing import cast
 
 from activitytracker.config.definitions import window_push_length
-from activitytracker.object.classes import ProgramSession, ChromeSession
-from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.models import (
-    DailyProgramSummary,
-    ProgramSummaryLog,
     DailyDomainSummary,
+    DailyProgramSummary,
     DomainSummaryLog,
+    ProgramSummaryLog,
 )
-from activitytracker.util.const import SECONDS_PER_HOUR
+from activitytracker.object.classes import ChromeSession, ProgramSession
 from activitytracker.tz_handling.time_formatting import get_start_of_day_from_ult
+from activitytracker.util.const import SECONDS_PER_HOUR
 from activitytracker.util.time_wrappers import UserLocalTime
 
-
+from ..data.arbiter_events import (
+    session1,
+    session2,
+    test_sessions,
+    times_for_system_clock_as_ult,
+)
 from ..helper.confirm_chronology import (
     assert_test_data_is_chronological_with_tz,
     get_durations_from_test_data,
 )
-
-from ..helper.polling_util import count_full_loops
-from ..helper.counting import get_total_in_sec, get_logs_total
-
-from ..data.arbiter_events import (
-    test_sessions,
-    times_for_system_clock_as_ult,
-    session1,
-    session2,
-)
-
+from ..helper.counting import get_logs_total, get_total_in_sec
+from ..helper.testing_util import count_full_loops
 from ..mocks.mock_clock import MockClock, UserLocalTimeMockClock
 
 

@@ -1,23 +1,20 @@
 from datetime import datetime
 
-from activitytracker.object.classes import (
-    ChromeSession,
-    ProgramSession,
-    CompletedChromeSession,
-    CompletedProgramSession,
-)
-from activitytracker.object.arbiter_classes import InternalState
-
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
-from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-
-from activitytracker.util.clock import UserFacingClock
-from activitytracker.util.time_wrappers import UserLocalTime
+from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from activitytracker.object.arbiter_classes import InternalState
+from activitytracker.object.classes import (
+    ChromeSession,
+    CompletedChromeSession,
+    CompletedProgramSession,
+    ProgramSession,
+)
 from activitytracker.tz_handling.time_formatting import get_start_of_day_from_ult
+from activitytracker.util.clock import UserFacingClock
 from activitytracker.util.console_logger import ConsoleLogger
-
+from activitytracker.util.time_wrappers import UserLocalTime
 
 # Persistence component
 
@@ -63,9 +60,7 @@ class ActivityRecorder:
             self.program_summary_dao.start_session(session)
         elif isinstance(session, ChromeSession):
             self.chrome_logging_dao.start_session(session)
-            session_exists_already = self.chrome_summary_dao.find_todays_entry_for_domain(
-                session
-            )
+            session_exists_already = self.chrome_summary_dao.find_todays_entry_for_domain(session)
             if session_exists_already:
                 # self.chrome_summary_dao.start_window_push_for_session(session, now)
                 return
@@ -96,16 +91,13 @@ class ActivityRecorder:
         else:
             raise TypeError("Session was not the right type")
 
-    def add_partial_window(
-        self, duration_in_sec: int, session: ProgramSession | ChromeSession
-    ):
+    def add_partial_window(self, duration_in_sec: int, session: ProgramSession | ChromeSession):
         """
         Deducts t seconds from the duration of a session.
         Here, the session's current window was cut short by a new session taking it's place.
         """
         if session.start_time is None:
             raise ValueError("Session start time was not set")
-        today_start: UserLocalTime = get_start_of_day_from_ult(session.start_time)
 
         # For testing: record this deduction
         if self.DEBUG:
@@ -115,17 +107,13 @@ class ActivityRecorder:
             return  # Nothing to add
 
         if isinstance(session, ProgramSession):
-            print(f"adding {duration_in_sec} to {session.window_title}")
             self.program_summary_dao.add_used_time(session, duration_in_sec)
         elif isinstance(session, ChromeSession):
-            print(f"adding {duration_in_sec} to {session.domain}")
             self.chrome_summary_dao.add_used_time(session, duration_in_sec)
         else:
             raise TypeError("Session was not the right type")
 
-    def on_state_changed(
-        self, session: CompletedProgramSession | CompletedChromeSession | None
-    ):
+    def on_state_changed(self, session: CompletedProgramSession | CompletedChromeSession | None):
         if isinstance(session, ProgramSession):
             self.program_logging_dao.finalize_log(session)
         elif isinstance(session, ChromeSession):

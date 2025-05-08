@@ -1,4 +1,4 @@
-from .polling_util import count_full_loops
+from .testing_util import count_full_loops
 
 
 def test_whole_tens():

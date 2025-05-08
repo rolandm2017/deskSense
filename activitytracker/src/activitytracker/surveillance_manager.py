@@ -57,11 +57,6 @@ class SurveillanceManager:
         self.chrome_service = chrome_service
 
         self.arbiter = arbiter
-        # Initialize tracking data
-        self.current_window = None
-        self.start_time = None
-
-        self.system_status_task = None
 
         self.message_receiver = message_receiver
         # self.message_receiver = MessageReceiver("tcp://127.0.0.1:5555")

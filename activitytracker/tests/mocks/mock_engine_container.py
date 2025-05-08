@@ -1,10 +1,10 @@
 import time
 
-from activitytracker.arbiter.session_polling import ThreadedEngineContainer
-from activitytracker.arbiter.session_polling import KeepAliveEngine
-
+from activitytracker.arbiter.session_polling import (
+    KeepAliveEngine,
+    ThreadedEngineContainer,
+)
 from activitytracker.util.errors import MissingEngineError
-
 
 # TODO:
 # I want this mock to be able to like
@@ -57,7 +57,7 @@ class MockEngineContainer(ThreadedEngineContainer):
         try:
             duration_for_run = next(self.duration_iter)
             self.count += 1  # Increment the count here
-            print(f"duration for run: {duration_for_run} in run {self.count}")
+            # print(f"duration for run: {duration_for_run} in run {self.count}")
             for i in range(0, duration_for_run):
                 self.engine.iterate_loop()
         except StopIteration:

@@ -1,35 +1,33 @@
 # tests/integration/test_keep_alive.py
-import pytest
-import pytz
-from unittest.mock import Mock, MagicMock
-from datetime import timedelta, datetime
 import math
 
+import pytest
+from unittest.mock import MagicMock, Mock
+
+import pytz
+from datetime import datetime, timedelta
+
+from activitytracker.arbiter.activity_recorder import ActivityRecorder
+from activitytracker.arbiter.session_polling import KeepAliveEngine
 from activitytracker.config.definitions import (
     keep_alive_cycle_length,
     window_push_length,
 )
-from activitytracker.arbiter.activity_recorder import ActivityRecorder
-from activitytracker.object.classes import ProgramSession, ChromeSession
-
-from activitytracker.arbiter.session_polling import KeepAliveEngine
-
+from activitytracker.object.classes import ChromeSession, ProgramSession
 from activitytracker.util.time_wrappers import UserLocalTime
 
 from ..data.arbiter_events import (
-    test_sessions,
     minutes_between_start_and_2nd_to_last,
     test_events_elapsed_time_in_sec,
+    test_sessions,
 )
-from ..mocks.mock_clock import MockClock
-from ..mocks.mock_engine_container import MockEngineContainer
-
-from ..helper.polling_util import count_full_loops
 from ..helper.confirm_chronology import (
     assert_test_data_is_chronological_with_tz,
     get_durations_from_test_data,
 )
-
+from ..helper.testing_util import count_full_loops
+from ..mocks.mock_clock import MockClock
+from ..mocks.mock_engine_container import MockEngineContainer
 
 timezone_for_test = "Asia/Tokyo"  # UTC +9
 tokyo_tz = pytz.timezone(timezone_for_test)
@@ -358,8 +356,7 @@ def test_full_test_sessions(activity_arbiter_and_setup, mock_recorder):
 
     def assert_final_partial_is_from_final_test_data():
         assert (
-            mock_recorder.partial_window_history[-1][0].get_name()
-            == test_sessions[-1].get_name()
+            mock_recorder.partial_window_history[-1][0].get_name() == test_sessions[-1].get_name()
         )
 
     assert_final_partial_is_from_final_test_data()

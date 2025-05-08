@@ -23,6 +23,7 @@ from ..helper.confirm_chronology import (
     assert_start_times_are_chronological,
     get_durations_from_test_data,
 )
+from ..helper.deepcopy_test_data import deepcopy_test_data
 from ..mocks.mock_engine_container import MockEngineContainer
 
 tokyo_tz = pytz.timezone("Asia/Tokyo")
@@ -131,10 +132,7 @@ async def test_add_arrival_to_queue(
     events_in_test = 8
     # Sort before starting
     # Sort the reconstructed events by start_time_with_tz
-    test_events = []
-    for x in reconstructed_tab_changes[:events_in_test]:
-        duplicate = copy.deepcopy(x)
-        test_events.append(duplicate)
+    test_events = deepcopy_test_data(reconstructed_tab_changes[:events_in_test])
 
     # Arrange for the differences between their starttimes to be < transience delay (300ms)
 
@@ -243,10 +241,7 @@ async def test_debounce_process(reconstructed_tab_changes):
 
     # Sort before starting
     # Sort the reconstructed events by start_time_with_tz
-    test_events = []
-    for x in reconstructed_tab_changes[:events_in_test]:
-        duplicate = copy.deepcopy(x)
-        test_events.append(duplicate)
+    test_events = deepcopy_test_data(reconstructed_tab_changes[:events_in_test])
 
     # Arrange for the differences between their starttimes to be < transience delay (300ms)
 

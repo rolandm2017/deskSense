@@ -1,14 +1,13 @@
 # mock_clock.py
 import inspect
+import threading
+from zoneinfo import ZoneInfo
 
 from datetime import datetime, timedelta, timezone
+
 from typing import Iterator
 
-from zoneinfo import ZoneInfo
-import threading
-
 from activitytracker.config.definitions import local_time_zone
-
 from activitytracker.util.clock import ClockProtocol
 from activitytracker.util.time_wrappers import UserLocalTime
 
@@ -117,9 +116,11 @@ class UserLocalTimeMockClock(ClockProtocol):
                 # Increment counter safely
                 self.count_of_times += 1
 
-                # Debug output with thread info
-                # print(f"[DEBUG] Clock call #{self.count_of_times} - Thread {thread_id} - "
-                #       f"Called by: {caller_filename}:{caller_function}:{caller_line}")
+                # Debug output with thread info. Do not remove this. Commenting out is fine
+                print(
+                    f"[DEBUG] Clock call #{self.count_of_times} - Thread {thread_id} - "
+                    f"Called by: {caller_filename}:{caller_function}:{caller_line}"
+                )
 
                 return self._current_time
 
@@ -138,9 +139,11 @@ class UserLocalTimeMockClock(ClockProtocol):
                     self._current_time = self._current_time.replace(tzinfo=timezone.utc)
 
                 self.count_of_times += 1
-
-                # print(f"[DEBUG] Clock RESET - call #{self.count_of_times} - Thread {thread_id} - "
-                #       f"Called by: {caller_filename}:{caller_function}:{caller_line}")
+                # Do not remove this. Commenting out is fine
+                print(
+                    f"[DEBUG] Clock RESET - call #{self.count_of_times} - Thread {thread_id} - "
+                    f"Called by: {caller_filename}:{caller_function}:{caller_line}"
+                )
 
                 return self._current_time
             #  raise RuntimeError(
