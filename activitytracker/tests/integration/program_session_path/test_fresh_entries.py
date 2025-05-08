@@ -41,13 +41,6 @@ from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.const import SECONDS_PER_HOUR, ten_sec_as_pct_of_hour
 from activitytracker.util.time_wrappers import UserLocalTime
 
-from ...data.program_session_path import (
-    session1,
-    session2,
-    session3,
-    session4,
-    test_events,
-)
 from ...helper.program_path.program_path_assertions import (
     assert_add_partial_window_happened_as_expected,
     assert_session_was_in_order,
@@ -96,7 +89,7 @@ async def test_program_path_with_fresh_sessions(
 
     for i, session in enumerate(test_two_data_clone):
         print(f"Cloned test data {i}: {session.start_time}")
-        assert session.start_time == test_events[i].start_time
+        assert session.start_time == test_two_data_clone[i].start_time
 
     logger = ConsoleLogger()
 
@@ -146,10 +139,10 @@ async def test_program_path_with_fresh_sessions(
     """
     # fmt: off
     times_for_test_two = [
-                copy.deepcopy(session1.start_time),     
-                copy.deepcopy(session2.start_time),
-                copy.deepcopy(session3.start_time),
-                copy.deepcopy(session4.start_time), session4.start_time, session4.start_time, session4.start_time,
+                copy.deepcopy(test_two_data_clone[0].start_time),     
+                copy.deepcopy(test_two_data_clone[1].start_time),
+                copy.deepcopy(test_two_data_clone[2].start_time),
+                copy.deepcopy(test_two_data_clone[3].start_time)
 
             ]
     # fmt: on
@@ -286,9 +279,9 @@ async def test_program_path_with_fresh_sessions(
         trailing_entry = 1
 
         def assert_all_window_change_args_match_src_material(calls_from_spy):
-            assert calls_from_spy[0][0][0].exe_path == session1.exe_path
-            assert calls_from_spy[1][0][0].exe_path == session2.exe_path
-            assert calls_from_spy[2][0][0].exe_path == session3.exe_path
+            assert calls_from_spy[0][0][0].exe_path == test_two_data_clone[0].exe_path
+            assert calls_from_spy[1][0][0].exe_path == test_two_data_clone[1].exe_path
+            assert calls_from_spy[2][0][0].exe_path == test_two_data_clone[2].exe_path
             # Note that there is no entry 3 here; used idx 0,1,2 for brevity
 
         def assert_state_machine_had_correct_order():
@@ -317,15 +310,17 @@ async def test_program_path_with_fresh_sessions(
                 some_session = spy_from_mock.call_args_list[i][0][0]
                 print("\n---")
                 # print(some_session, "some_session 953ru")
-                print("Expected:", test_events[i].start_time)
+                print("Expected:", test_two_data_clone[i].start_time)
                 print("Actual:", some_session.start_time)
-                # print(test_events[i], "954ru")
-                print(str(some_session.start_time.dt) == str(test_events[i].start_time.dt))
+                # print(test_two_data_clone[i], "954ru")
+                print(
+                    str(some_session.start_time.dt) == str(test_two_data_clone[i].start_time.dt)
+                )
             print("end of debug segment 956ru")
             for i in range(0, expected_loops):
                 some_session = spy_from_mock.call_args_list[i][0][0]
                 assert isinstance(some_session, ProgramSession)
-                assert_session_was_in_order(some_session, i, test_events)
+                assert_session_was_in_order(some_session, i, test_two_data_clone)
             call_count = len(spy_from_mock.call_args_list)
             assert call_count == expected_loops, f"Expected exactly {expected_loops} calls"
 
@@ -355,7 +350,7 @@ async def test_program_path_with_fresh_sessions(
             assert_all_on_new_sessions_received_sessions()
             assert_all_on_state_changes_received_sessions()
             assert_add_partial_window_happened_as_expected(
-                second_test_event_count, recorder_spies, test_events
+                second_test_event_count, recorder_spies, test_two_data_clone
             )
 
         # ## Assert that each session showed up as specified above, in the correct place
@@ -375,7 +370,7 @@ async def test_program_path_with_fresh_sessions(
 
         def assert_window_change_spy_as_expected(arg):
             assert isinstance(arg, ProgramSession)
-            assert arg.exe_path == test_events[i].exe_path
+            assert arg.exe_path == test_two_data_clone[i].exe_path
 
         for i in range(0, second_test_event_count):
             print(f"comparing window change spy arg {i}")

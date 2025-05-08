@@ -225,6 +225,7 @@ async def test_program_tracker_to_arbiter(plain_asm, regular_session_maker, time
         activity_arbiter,
         facades,
         mock_message_receiver,
+        True,
     )
 
     window_change_spy = Mock(

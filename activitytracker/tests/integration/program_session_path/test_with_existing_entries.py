@@ -41,13 +41,6 @@ from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.const import SECONDS_PER_HOUR, ten_sec_as_pct_of_hour
 from activitytracker.util.time_wrappers import UserLocalTime
 
-from ...data.program_session_path import (
-    session1,
-    session2,
-    session3,
-    session4,
-    test_events,
-)
 from ...helper.program_path.program_path_assertions import (
     assert_add_partial_window_happened_as_expected,
     assert_session_was_in_order,
@@ -132,10 +125,10 @@ async def test_program_path_with_existing_sessions(
     3. ActivityRecorder.add_ten_sec_to_end_time - whenever it's called
     """
     # fmt: off
-    times = [copy.deepcopy(session1.start_time),  
-             copy.deepcopy(session2.start_time), 
-             copy.deepcopy(session3.start_time), 
-             copy.deepcopy(session4.start_time), session4.start_time, session4.start_time, session4.start_time
+    times = [copy.deepcopy(test_data_clone[0].start_time),  
+             copy.deepcopy(test_data_clone[1].start_time), 
+             copy.deepcopy(test_data_clone[2].start_time), 
+             copy.deepcopy(test_data_clone[3].start_time)
              ]
     # fmt: on
 
@@ -286,10 +279,10 @@ async def test_program_path_with_existing_sessions(
         active_entry = 1
 
         def assert_all_window_change_args_match_src_material(calls_from_spy):
-            assert calls_from_spy[0][0][0].exe_path == session1.exe_path
-            assert calls_from_spy[1][0][0].exe_path == session2.exe_path
-            assert calls_from_spy[2][0][0].exe_path == session3.exe_path
-            assert calls_from_spy[3][0][0].exe_path == session4.exe_path
+            assert calls_from_spy[0][0][0].exe_path == test_data_clone[0].exe_path
+            assert calls_from_spy[1][0][0].exe_path == test_data_clone[1].exe_path
+            assert calls_from_spy[2][0][0].exe_path == test_data_clone[2].exe_path
+            assert calls_from_spy[3][0][0].exe_path == test_data_clone[3].exe_path
 
         def assert_state_machine_had_correct_order():
             assert_all_spy_args_were_sessions(
@@ -318,7 +311,7 @@ async def test_program_path_with_existing_sessions(
             for i in range(0, expected_loops):
                 some_session = spy_from_mock.call_args_list[i][0][0]
                 assert isinstance(some_session, ProgramSession)
-                assert_session_was_in_order(some_session, i, test_events)
+                assert_session_was_in_order(some_session, i, test_data_clone)
             call_count = len(spy_from_mock.call_args_list)
             assert call_count == expected_loops, f"Expected exactly {expected_loops} calls"
 
@@ -344,7 +337,7 @@ async def test_program_path_with_existing_sessions(
             assert_all_on_new_sessions_received_sessions()
             assert_all_on_state_changes_received_sessions()
             assert_add_partial_window_happened_as_expected(
-                event_count, recorder_spies, test_events
+                event_count, recorder_spies, test_data_clone
             )
 
         #     # ## Assert that each session showed up as specified above, in the correct place
@@ -368,7 +361,7 @@ async def test_program_path_with_existing_sessions(
 
         def assert_window_change_spy_as_expected(arg):
             assert isinstance(arg, ProgramSession)
-            assert arg.exe_path == test_events[i].exe_path
+            assert arg.exe_path == test_data_clone[i].exe_path
 
         for i in range(0, event_count):
             arg = window_change_spy.call_args_list[i][0][0]
@@ -386,7 +379,7 @@ async def test_program_path_with_existing_sessions(
                 actual_dict = spy_from_mock.call_args_list[i][0][0]
                 actual_start = spy_from_mock.call_args_list[i][0][1]
                 assert isinstance(actual_dict, dict)
-                expected = test_events[i]
+                expected = test_data_clone[i]
                 print("Loop: ", i)
                 print("Expected:", expected)
                 print("Actual:", actual_dict)
@@ -405,7 +398,7 @@ async def test_program_path_with_existing_sessions(
             for i in range(0, expected_loops):
                 some_dict = start_new_session_spy.call_args_list[i][0][0]
                 some_dt = start_new_session_spy.call_args_list[i][0][1]
-                assert some_dt == test_events[i].start_time
+                assert some_dt == test_data_clone[i].start_time
 
         assert_all_start_new_session_spy_args_received_correct_time(event_count)
 
