@@ -39,12 +39,13 @@ class TabQueue:
         MAX_QUEUE_LEN = 40
 
         if len(self.message_queue) >= MAX_QUEUE_LEN:
-            assert self.debounce_timer is not None, "Debounce timer was None when it should exist"
-            self.debounce_timer.cancel()
+            if self.debounce_timer is not None and not self.debounce_timer.done():
+                self.debounce_timer.cancel()
+                self.debounce_timer = None
             self.start_processing_msgs()
             return
 
-        if self.debounce_timer:
+        if self.debounce_timer is not None and not self.debounce_timer.done():
             self.debounce_timer.cancel()
 
         self.debounce_timer = asyncio.create_task(self.debounced_process())
@@ -54,6 +55,7 @@ class TabQueue:
         self.message_queue.append(tab_event)
 
     async def debounced_process(self):
+        print("in debounced process")
         await asyncio.sleep(self.debounce_delay)
         # print("[debug] Starting processing")
         self.start_processing_msgs()
@@ -94,7 +96,9 @@ class TabQueue:
         self.ordered_messages = []
 
     def empty_queue_as_sessions(self):
+        print(len(self.ready_queue), "97ru")
         for event in self.ready_queue:
+            print(event, "99ru")
             self.log_tab_event(event)
         self.ready_queue = []
 
@@ -125,9 +129,6 @@ class ChromeService:
         # Set up event handlers
         # self.event_emitter.on('tab_processed', self.log_tab_event)
 
-        self.loop = asyncio.get_running_loop()
-        # self.loop = asyncio.new_event_loop()
-        # asyncio.set_event_loop(self.loop)
         self.logger = ConsoleLogger()
 
     def log_tab_event(self, url_deliverable: TabChangeEventWithLtz):
