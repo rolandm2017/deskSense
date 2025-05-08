@@ -1,4 +1,4 @@
-# test_program_session_path.py
+# test_fresh_entries.py
 """
 Proves that the ProgramSession and all relevant fields get where they're intended to go.
 
@@ -47,7 +47,7 @@ from ...data.program_session_path import (
     test_events,
 )
 from ...helper.confirm_chronology import assert_session_was_in_order
-from ...helper.deepcopy_test_data import deepcopy_test_data
+from ...helper.program_path.program_path_setup import setup_recorder_spies
 from ...helper.testing_util import convert_back_to_dict
 from ...mocks.mock_clock import UserLocalTimeMockClock
 from ...mocks.mock_engine_container import MockEngineContainer
@@ -189,17 +189,9 @@ async def test_program_path_with_fresh_sessions(
     # # Activity Recorder spies
     #
 
-    on_new_session_spy = Mock(side_effect=activity_recorder.on_new_session)
-    activity_recorder.on_new_session = on_new_session_spy
+    recorder_with_spies, recorder_spies = setup_recorder_spies(activity_recorder)
 
-    add_ten_sec_to_end_time_spy = Mock(side_effect=activity_recorder.add_ten_sec_to_end_time)
-    activity_recorder.add_ten_sec_to_end_time = add_ten_sec_to_end_time_spy
-
-    on_state_changed_spy = Mock(side_effect=activity_recorder.on_state_changed)
-    activity_recorder.on_state_changed = on_state_changed_spy
-
-    add_partial_window_spy = Mock(side_effect=activity_recorder.add_partial_window)
-    activity_recorder.add_partial_window = add_partial_window_spy
+    activity_recorder = recorder_with_spies
 
     activity_arbiter.add_recorder_listener(activity_recorder)
 
@@ -344,14 +336,17 @@ async def test_program_path_with_fresh_sessions(
             )
 
         def assert_activity_recorder_called_expected_times(count_of_events):
-            assert on_new_session_spy.call_count == count_of_events
+            assert recorder_spies["on_new_session_spy"].call_count == count_of_events
 
             # Test stopped before first pulse
             assert push_window_ahead_ten_sec_spy.call_count == total_pushes
 
             # The final entry here is holding the window push open
             assert finalize_log_spy.call_count == count_of_events - trailing_entry
-            assert add_partial_window_spy.call_count == count_of_events - trailing_entry
+            assert (
+                recorder_spies["add_partial_window_spy"].call_count
+                == count_of_events - trailing_entry
+            )
 
         def assert_all_spy_args_were_sessions(spy_from_mock, expected_loops: int, spy_name: str):
             logger.log_yellow(
@@ -377,7 +372,9 @@ async def test_program_path_with_fresh_sessions(
 
         def assert_all_on_new_sessions_received_sessions():
             assert_all_spy_args_were_sessions(
-                on_new_session_spy, second_test_event_count, "on_new_session_spy"
+                recorder_spies["on_new_session_spy"],
+                second_test_event_count,
+                "on_new_session_spy",
             )
 
         def assert_all_on_state_changes_received_sessions():
@@ -387,7 +384,7 @@ async def test_program_path_with_fresh_sessions(
             """
             one_left_in_arb = 1
             assert_all_spy_args_were_sessions(
-                on_state_changed_spy,
+                recorder_spies["on_state_changed_spy"],
                 second_test_event_count - one_left_in_arb,
                 "on_state_changed_spy",
             )
@@ -401,14 +398,14 @@ async def test_program_path_with_fresh_sessions(
             one_left_in_arb = 1
             total_loops = second_test_event_count - one_left_in_arb
             for i in range(0, total_loops):
-                some_duration = add_partial_window_spy.call_args_list[i][0][0]
+                some_duration = recorder_spies["add_partial_window_spy"].call_args_list[i][0][0]
                 assert isinstance(some_duration, int)
 
-                some_session = add_partial_window_spy.call_args_list[i][0][1]
+                some_session = recorder_spies["add_partial_window_spy"].call_args_list[i][0][1]
                 assert isinstance(some_session, ProgramSession)
                 assert_session_was_in_order(some_session, i, test_events)
 
-            call_count = len(add_partial_window_spy.call_args_list)
+            call_count = len(recorder_spies["add_partial_window_spy"].call_args_list)
             assert call_count == total_loops, f"Expected exactly {total_loops} calls"
 
         def assert_activity_recorder_saw_expected_vals():
@@ -426,7 +423,7 @@ async def test_program_path_with_fresh_sessions(
         # TODO: Move the below spy
         total_pushes = sum([x // window_push_length for x in durations_for_keep_alive])
 
-        assert add_ten_sec_to_end_time_spy.call_count == total_pushes
+        assert recorder_spies["add_ten_sec_to_end_time_spy"].call_count == total_pushes
 
         assert second_test_event_count == 4
         assert window_change_spy.call_count == 4
@@ -493,7 +490,7 @@ async def test_program_path_with_fresh_sessions(
         def assert_sessions_form_a_chain():
             sessions = []
             for i in range(0, second_test_event_count - trailing_entry):
-                args = on_state_changed_spy.call_args_list[i][0]
+                args = recorder_spies["on_state_changed_spy"].call_args_list[i][0]
                 sessions.append(args[0])
             assert len(sessions) == 3
             assert sessions[0].end_time == sessions[1].start_time

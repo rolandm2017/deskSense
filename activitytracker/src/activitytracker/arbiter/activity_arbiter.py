@@ -1,17 +1,18 @@
 from __future__ import annotations
+
 from datetime import datetime, timedelta, timezone
 
 from activitytracker.object.classes import (
     ChromeSession,
-    ProgramSession,
     CompletedChromeSession,
     CompletedProgramSession,
+    ProgramSession,
 )
+from activitytracker.util.console_logger import ConsoleLogger
+from activitytracker.util.copy_util import snapshot_obj_for_tests
 
 from .activity_state_machine import ActivityStateMachine
 from .session_polling import KeepAliveEngine, ThreadedEngineContainer
-from activitytracker.util.console_logger import ConsoleLogger
-from activitytracker.util.copy_util import snapshot_obj_for_tests
 
 
 class ActivityArbiter:
@@ -68,9 +69,11 @@ class ActivityArbiter:
             self.activity_recorder.on_new_session(session_copy)
 
     def set_program_state(self, event: ProgramSession):
+        # pass
         self.transition_state(event)
 
     def set_tab_state(self, tab: ChromeSession):
+        # pass
         self.transition_state(tab)
 
     def transition_state(self, new_session: ChromeSession | ProgramSession):

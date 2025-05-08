@@ -4,11 +4,11 @@ from datetime import datetime
 
 from activitytracker.util.time_wrappers import UserLocalTime
 
-from ..data.program_session_path import test_events
-from ..helper.deepcopy_test_data import deepcopy_test_data
+from ...data.program_session_path import test_events
+from ...helper.deepcopy_test_data import deepcopy_test_data
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def validate_test_data_and_get_durations():
     """Exists to ensure no PEBKAC. 'The data really does say what was intended.'"""
     # Validate your dummy test data
