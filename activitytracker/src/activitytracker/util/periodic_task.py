@@ -34,7 +34,11 @@ class AsyncPeriodicTask:
         self.is_running = True
         self.current_task = asyncio.create_task(self._loop())
 
-    def stop(self):
+    async def stop(self):
         self.is_running = False
         if self.current_task:
             self.current_task.cancel()
+            try:
+                await self.current_task
+            except asyncio.CancelledError:
+                pass  # expected during shutdown

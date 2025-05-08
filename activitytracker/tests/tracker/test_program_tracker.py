@@ -1,7 +1,7 @@
-from datetime import datetime, timedelta, timezone
+import pytest
 from unittest.mock import MagicMock, Mock
 
-import pytest
+from datetime import datetime, timedelta, timezone
 
 from activitytracker.config.definitions import (
     no_space_dash_space,
@@ -239,7 +239,7 @@ def test_a_series_of_programs():
     # Setup
     program1 = {
         "os": "some_val",
-        "process_name": "code",
+        "process_name": "whatever.exe",
         "exe_path": "C:/whatever.exe",
         "window_title": "Alt-tab window",
     }
@@ -249,16 +249,14 @@ def test_a_series_of_programs():
     tracker.run_tracking_loop()  # 1
 
     # ### Assert
-    assert (
-        tracker.current_session is not None
-    ), "Tracker wasn't initialized when it should be"
+    assert tracker.current_session is not None, "Tracker wasn't initialized when it should be"
     assert tracker.current_session.window_title == program1["window_title"]
     assert tracker.current_session.detail == no_space_dash_space
 
     # More setup
     program2 = {
         "os": "some_val",
-        "process_name": "Xorg",
+        "process_name": "whatever5.exe",
         "exe_path": "C:/whatever5.exe",
         "window_title": "rlm@kingdom: ~/Code/deskSense/activitytracker",
     }
@@ -275,7 +273,7 @@ def test_a_series_of_programs():
     # More setup
     program3 = {
         "os": "some_val",
-        "process_name": "Xorg",
+        "process_name": "whatever11.exe",
         "exe_path": "C:/whatever11.exe",
         "window_title": "Vite + React + TS - Google Chrome",
     }
@@ -291,7 +289,7 @@ def test_a_series_of_programs():
     # More setup
     program4 = {
         "os": "some_val",
-        "process_name": None,
+        "process_name": "wherever.exe",
         "exe_path": "C:/wherever.exe",
         "window_title": "Alt-tab window",
     }
@@ -307,7 +305,7 @@ def test_a_series_of_programs():
     # More setup
     program5 = {
         "os": "some_val",
-        "process_name": "Xorg",
+        "process_name": "whatever25.exe",
         "exe_path": "C:/whatever25.exe",
         "window_title": "program_tracker.py - deskSense - Visual Studio Code",
     }

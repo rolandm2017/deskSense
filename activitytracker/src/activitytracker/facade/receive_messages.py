@@ -1,9 +1,11 @@
-import asyncio
+import traceback
+
 import zmq
 import zmq.asyncio
-from datetime import datetime
 
-import traceback
+import asyncio
+
+from datetime import datetime
 
 
 class MessageReceiver:
@@ -80,7 +82,9 @@ class MessageReceiver:
     def start(self):
         """Start the message receiver in a way that doesn't require async/await."""
         try:
+            # "If you're in the main thread and not inside async def, use this safe read-only pattern:"
             loop = asyncio.get_event_loop()
+            # loop = asyncio.get_running_loop()
         except RuntimeError:
             # No event loop in current thread, so make one
             loop = asyncio.new_event_loop()

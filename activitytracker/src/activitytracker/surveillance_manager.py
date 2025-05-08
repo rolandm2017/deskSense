@@ -91,12 +91,8 @@ class SurveillanceManager:
         # self.program_dao = ProgramDao(self.async_session_maker)
         # self.chrome_dao = ChromeDao(self.async_session_maker)
 
-        self.program_summary_dao = ProgramSummaryDao(
-            program_summary_logger, self.regular_session
-        )
-        self.chrome_summary_dao = ChromeSummaryDao(
-            chrome_summary_logger, self.regular_session
-        )
+        self.program_summary_dao = ProgramSummaryDao(program_summary_logger, self.regular_session)
+        self.chrome_summary_dao = ChromeSummaryDao(chrome_summary_logger, self.regular_session)
 
         self.timeline_dao = TimelineEntryDao(self.async_session_maker)
 
@@ -137,9 +133,7 @@ class SurveillanceManager:
             self.logger.log_yellow("No latest status found")
         else:
             time_string = latest_status.created_at.strftime("%m-%d %H:%M:%S")
-            self.logger.log_white(
-                f"[info] latest status {latest_status.status} at {time_string}"
-            )
+            self.logger.log_white(f"[info] latest status {latest_status.status} at {time_string}")
 
     def operate_facades(self):
         """Start the message receiver."""
@@ -156,9 +150,7 @@ class SurveillanceManager:
             # self.loop.create_task(
             #     self.session_integrity_dao.audit_first_startup(latest_startup_time))
         else:
-            self.session_integrity_dao.audit_sessions(
-                latest_shutdown_time, latest_startup_time
-            )
+            self.session_integrity_dao.audit_sessions(latest_shutdown_time, latest_startup_time)
             #     latest_shutdown_time, latest_startup_time)
             # self.loop.create_task(self.session_integrity_dao.audit_sessions(
             #     latest_shutdown_time, latest_startup_time))
@@ -187,7 +179,7 @@ class SurveillanceManager:
 
     async def cancel_pending_tasks(self):
         """Safely cancel all pending tasks created by this manager."""
-        self.program_online_polling.stop()
+        await self.program_online_polling.stop()
         # Get all tasks from the event loop except the current one
         current_task = asyncio.current_task()
         all_tasks = [task for task in asyncio.all_tasks() if task is not current_task]
@@ -283,6 +275,8 @@ class SurveillanceManager:
             self.keyboard_thread.stop()
             self.mouse_thread.stop()
             self.program_thread.stop()
+            # Stop the asyncio loop
+            await self.program_online_polling.stop()
         except Exception as e:
             print(f"Error stopping threads: {e}")
 

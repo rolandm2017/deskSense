@@ -10,71 +10,66 @@ The point of the test is to verify precise accuracy with the outcome of adding
 sessions into the db. The data should match exactly, and everything should be understood.
 
 """
-import pytest
 import pytest_asyncio
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+import pytest
+
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 import pytz
 from datetime import datetime, timedelta
 
-
 from typing import List
 
-
-from activitytracker.services.dashboard_service import DashboardService
-
-from activitytracker.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
-from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-
+from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from activitytracker.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
 from activitytracker.db.models import Base, DailyDomainSummary, DailyProgramSummary
-from activitytracker.object.classes import CompletedChromeSession, CompletedProgramSession
+from activitytracker.object.classes import (
+    CompletedChromeSession,
+    CompletedProgramSession,
+)
+from activitytracker.services.dashboard_service import DashboardService
 from activitytracker.util.const import SECONDS_PER_HOUR
 from activitytracker.util.time_wrappers import UserLocalTime
 
-from ..helper.truncation import truncate_summaries_and_logs_tables_via_session
-
-from ..data.weekly_breakdown_programs import (
-    duplicate_programs_march_2,
-    duplicate_programs_march_3rd,
-    programs_march_2nd,
-    programs_march_3rd,
-    march_2_2025,
-    march_3_2025,
-    feb_23_2025,
-    feb_24_2025,
-    feb_26_2025,
-    march_2_program_count,
-    march_3_program_count,
-    unique_programs,
-    feb_program_count,
-    programs_feb_23,
-    programs_feb_24,
-    programs_feb_26,
-    weekly_breakdown_tz,
-)
-
 from ..data.weekly_breakdown_chrome import (
-    duplicates_chrome_march_2,
-    duplicates_chrome_march_3rd,
-    chrome_march_2nd,
-    chrome_march_3rd,
-    march_2_chrome_count,
-    march_3_chrome_count,
-    unique_domains,
-    feb_chrome_count,
     chrome_feb_23,
     chrome_feb_24,
     chrome_feb_26,
+    chrome_march_2nd,
+    chrome_march_3rd,
+    duplicates_chrome_march_2,
+    duplicates_chrome_march_3rd,
+    feb_chrome_count,
+    march_2_chrome_count,
+    march_3_chrome_count,
+    unique_domains,
 )
-
-
+from ..data.weekly_breakdown_programs import (
+    duplicate_programs_march_2,
+    duplicate_programs_march_3rd,
+    feb_23_2025,
+    feb_24_2025,
+    feb_26_2025,
+    feb_program_count,
+    march_2_2025,
+    march_2_program_count,
+    march_3_2025,
+    march_3_program_count,
+    programs_feb_23,
+    programs_feb_24,
+    programs_feb_26,
+    programs_march_2nd,
+    programs_march_3rd,
+    unique_programs,
+    weekly_breakdown_tz,
+)
+from ..helper.truncation import truncate_summaries_and_logs_tables_via_session
 from ..mocks.mock_clock import MockClock
-
 
 # FIXME: Turtle slow test: use in memory db?
 
@@ -110,9 +105,7 @@ async def setup_parts(regular_session_maker, async_engine_and_asm):
     # If your DAOs have close methods, you could call them here
 
 
-def setup_program_writes_for_group(
-    group_of_test_data, program_summary_dao, must_be_from_month
-):
+def setup_program_writes_for_group(group_of_test_data, program_summary_dao, must_be_from_month):
     """"""
     for dummy_program_session in group_of_test_data:
         assert isinstance(dummy_program_session, CompletedProgramSession)
@@ -135,16 +128,12 @@ def setup_program_writes_for_group(
             program_summary_dao.start_session(dummy_program_session)
 
 
-def setup_chrome_writes_for_group(
-    group_of_test_data, chrome_summary_dao, must_be_from_month
-):
+def setup_chrome_writes_for_group(group_of_test_data, chrome_summary_dao, must_be_from_month):
     for dummy_chrome_session in group_of_test_data:
         assert isinstance(dummy_chrome_session, CompletedChromeSession)
         assert must_be_from_month == dummy_chrome_session.end_time.dt.month
 
-        session_from_today = chrome_summary_dao.find_todays_entry_for_domain(
-            dummy_chrome_session
-        )
+        session_from_today = chrome_summary_dao.find_todays_entry_for_domain(dummy_chrome_session)
         if session_from_today:
             print(f"Already added: ", dummy_chrome_session.domain)
             chrome_summary_dao.push_window_ahead_ten_sec(dummy_chrome_session)
@@ -250,15 +239,12 @@ async def test_read_all(setup_with_populated_db):
     # it was wrote on march 2 or 3. Because PST -> UTC or vice versa causes days to change
     print(len(all_programs_for_verification), "vvv")
 
-    just_retrieved_program_names_from_db = [
-        x.program_name for x in all_programs_for_verification
-    ]
+    just_retrieved_program_names_from_db = [x.program_name for x in all_programs_for_verification]
 
     print("just_retrieved_program_names:", just_retrieved_program_names_from_db)
 
     test_programs = (
-        test_programs_and_domains["feb_programs"]
-        + test_programs_and_domains["march_programs"]
+        test_programs_and_domains["feb_programs"] + test_programs_and_domains["march_programs"]
     )
 
     for dummy_data in test_programs:
@@ -330,9 +316,7 @@ async def test_read_all(setup_with_populated_db):
     # feb_24_read_by_day = program_summary_dao.read_day(UserLocalTime(feb_24_2025)),
     # feb_26_read_by_day = program_summary_dao.read_day(UserLocalTime(feb_26_2025))
 
-    assert (
-        len(feb_vals_from_db) == feb_program_count
-    ), "Count did not match expected, February"
+    assert len(feb_vals_from_db) == feb_program_count, "Count did not match expected, February"
 
     # NOTE that "assert_has_only_unique_strings(feb_vals_from_db)" is nonsense!
     # The feb vals span multiple days, so of course there are duplicates.
@@ -421,9 +405,7 @@ async def test_reading_individual_days(setup_with_populated_db):
 
     # ### Continue asserting that expected domains, programs are all in there
 
-    march_3_modified = UserLocalTime(
-        march_3_2025 + timedelta(hours=1, minutes=9, seconds=33)
-    )
+    march_3_modified = UserLocalTime(march_3_2025 + timedelta(hours=1, minutes=9, seconds=33))
 
     daily_program_summaries_2: List[DailyProgramSummary] = program_summary_dao.read_day(
         march_3_modified
@@ -435,9 +417,7 @@ async def test_reading_individual_days(setup_with_populated_db):
     assert (
         len(daily_program_summaries_2) == march_3_program_count
     ), "A program session didn't load"
-    assert (
-        len(daily_chrome_summaries_2) == march_3_chrome_count
-    ), "A Chrome session didn't load"
+    assert len(daily_chrome_summaries_2) == march_3_chrome_count, "A Chrome session didn't load"
 
     count_of_march_2 = march_2_program_count + march_2_chrome_count
     count_of_march_3 = march_3_program_count + march_3_chrome_count
@@ -445,9 +425,7 @@ async def test_reading_individual_days(setup_with_populated_db):
     assert len(daily_program_summaries) + len(daily_chrome_summaries) == count_of_march_2
     assert len(daily_program_summaries_2) + len(daily_chrome_summaries_2) == count_of_march_3
 
-    zero_pop_day_programs: List[DailyProgramSummary] = program_summary_dao.read_day(
-        test_day_3
-    )
+    zero_pop_day_programs: List[DailyProgramSummary] = program_summary_dao.read_day(test_day_3)
     zero_pop_day_chrome: List[DailyDomainSummary] = chrome_summary_dao.read_day(test_day_3)
 
     assert len(zero_pop_day_programs) + len(zero_pop_day_chrome) == 0
@@ -463,7 +441,7 @@ async def test_week_of_feb_23(setup_with_populated_db):
     # # Check the test data to see what's in here
     # ### ###
     weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(
-        UserLocalTime(feb_23_2025_dt)
+        feb_23_2025_dt
     )
 
     assert all(isinstance(d, dict) for d in weeks_overview), "Expected types not found"
@@ -482,7 +460,7 @@ async def test_week_of_march_2(setup_with_populated_db):
     march_2_2025_dt = weekly_breakdown_tz.localize(datetime(2025, 3, 2))  # Year, Month, Day
 
     weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(
-        UserLocalTime(march_2_2025_dt)
+        march_2_2025_dt
     )
 
     assert all(isinstance(d, dict) for d in weeks_overview), "Expected types not found"

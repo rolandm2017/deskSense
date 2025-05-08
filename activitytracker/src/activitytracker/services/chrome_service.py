@@ -1,20 +1,23 @@
 # chrome_service.py
-import asyncio
+import copy
+from operator import attrgetter
 from tracemalloc import start
 from urllib.parse import urldefrag
+
 from fastapi import Depends
-from typing import List
 from pyee import EventEmitter
-from datetime import datetime, timedelta, timezone, date
-from operator import attrgetter
-import copy
 
+import asyncio
 
+from datetime import date, datetime, timedelta, timezone
+
+from typing import List
+
+from activitytracker.arbiter.activity_arbiter import ActivityArbiter
+from activitytracker.config.definitions import productive_sites
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from activitytracker.object.classes import ChromeSession, TabChangeEventWithLtz
 from activitytracker.object.pydantic_dto import UtcDtTabChange
-from activitytracker.config.definitions import productive_sites
-from activitytracker.arbiter.activity_arbiter import ActivityArbiter
 from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.errors import SuspiciousDurationError
 from activitytracker.util.time_wrappers import UserLocalTime
@@ -36,9 +39,7 @@ class TabQueue:
         MAX_QUEUE_LEN = 40
 
         if len(self.message_queue) >= MAX_QUEUE_LEN:
-            assert (
-                self.debounce_timer is not None
-            ), "Debounce timer was None when it should exist"
+            assert self.debounce_timer is not None, "Debounce timer was None when it should exist"
             self.debounce_timer.cancel()
             self.start_processing_msgs()
             return
@@ -124,9 +125,9 @@ class ChromeService:
         # Set up event handlers
         # self.event_emitter.on('tab_processed', self.log_tab_event)
 
-        # self.loop = asyncio.get_event_loop()
-        self.loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.loop)
+        self.loop = asyncio.get_running_loop()
+        # self.loop = asyncio.new_event_loop()
+        # asyncio.set_event_loop(self.loop)
         self.logger = ConsoleLogger()
 
     def log_tab_event(self, url_deliverable: TabChangeEventWithLtz):

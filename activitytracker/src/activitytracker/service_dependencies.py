@@ -1,39 +1,33 @@
 # activitytracker/src/service_dependencies.py
-from activitytracker.util.clock import SystemClock, UserFacingClock
 from fastapi import Depends
-from typing import Callable
+
 import asyncio
 
-
-from activitytracker.debug.ui_notifier import UINotifier
+from typing import Callable
 
 from activitytracker.arbiter.activity_arbiter import ActivityArbiter
 from activitytracker.arbiter.activity_recorder import ActivityRecorder
 from activitytracker.arbiter.session_polling import ThreadedEngineContainer
-
-
+from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from activitytracker.db.dao.queuing.keyboard_dao import KeyboardDao
+from activitytracker.db.dao.queuing.mouse_dao import MouseDao
+from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from activitytracker.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
+from activitytracker.db.database import async_session_maker, regular_session_maker
+from activitytracker.debug.ui_notifier import UINotifier
+from activitytracker.facade.facade_singletons import (
+    get_keyboard_facade_instance,
+    get_mouse_facade_instance,
+)
 from activitytracker.services.chrome_service import ChromeService
 from activitytracker.services.tiny_services import (
     KeyboardService,
     MouseService,
     TimezoneService,
 )
-from activitytracker.facade.facade_singletons import (
-    get_keyboard_facade_instance,
-    get_mouse_facade_instance,
-)
-
-from activitytracker.db.database import async_session_maker, regular_session_maker
-from activitytracker.db.dao.queuing.mouse_dao import MouseDao
-from activitytracker.db.dao.queuing.keyboard_dao import KeyboardDao
-
-from activitytracker.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
-from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
-
-from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-
+from activitytracker.util.clock import SystemClock, UserFacingClock
 
 # Dependency functions
 system_clock = SystemClock()
@@ -130,13 +124,11 @@ _chrome_service_instance = None
 
 
 async def get_activity_arbiter():
-    from activitytracker.debug.debug_overlay import Overlay
     from activitytracker.arbiter.activity_arbiter import ActivityArbiter
-    from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
     from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+    from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
+    from activitytracker.debug.debug_overlay import Overlay
 
-    loop = asyncio.get_event_loop()
-    system_clock = SystemClock()
     user_facing_clock = UserFacingClock()
     chrome_logging_dao = ChromeLoggingDao(regular_session_maker)
     program_logging_dao = ProgramLoggingDao(regular_session_maker)

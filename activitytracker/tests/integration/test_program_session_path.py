@@ -4,50 +4,49 @@ Proves that the ProgramSession and all relevant fields get where they're intende
 
 Using three sessions to notice edge cases and prove a chain is established.
 """
+import traceback
+
 import pytest
 from unittest.mock import Mock
+
 import asyncio
 
 import pytz
 from datetime import datetime, timedelta
+
 from typing import Dict, List, cast
 
-import traceback
-
-from activitytracker.config.definitions import window_push_length
 from activitytracker.arbiter.activity_arbiter import ActivityArbiter
 from activitytracker.arbiter.activity_recorder import ActivityRecorder
 from activitytracker.arbiter.session_polling import KeepAliveEngine
-from activitytracker.surveillance_manager import FacadeInjector, SurveillanceManager
-from activitytracker.services.chrome_service import ChromeService
-
-from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from activitytracker.config.definitions import window_push_length
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.models import DailyProgramSummary, ProgramSummaryLog
-
 from activitytracker.facade.facade_singletons import (
     get_keyboard_facade_instance,
     get_mouse_facade_instance,
 )
-from activitytracker.object.classes import ChromeSession, ProgramSession
-
-from activitytracker.object.classes import ProgramSession
-from activitytracker.object.classes import ProgramSessionDict
-
-from activitytracker.util.time_wrappers import UserLocalTime
-from activitytracker.util.clock import UserFacingClock
-from activitytracker.util.const import SECONDS_PER_HOUR, ten_sec_as_pct_of_hour
+from activitytracker.object.classes import (
+    ChromeSession,
+    ProgramSession,
+    ProgramSessionDict,
+)
+from activitytracker.services.chrome_service import ChromeService
+from activitytracker.surveillance_manager import FacadeInjector, SurveillanceManager
 from activitytracker.tz_handling.time_formatting import (
     convert_to_utc,
     get_start_of_day_from_datetime,
 )
-
-from ..mocks.mock_message_receiver import MockMessageReceiver
-from ..mocks.mock_engine_container import MockEngineContainer
+from activitytracker.util.clock import UserFacingClock
+from activitytracker.util.const import SECONDS_PER_HOUR, ten_sec_as_pct_of_hour
+from activitytracker.util.time_wrappers import UserLocalTime
 
 from ..mocks.mock_clock import UserLocalTimeMockClock
+from ..mocks.mock_engine_container import MockEngineContainer
+from ..mocks.mock_message_receiver import MockMessageReceiver
 
 timezone_for_test = "Europe/Berlin"  # UTC +1 or UTC +2
 
@@ -169,8 +168,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(
             self.yield_count = 0  # Initialize the counter
             self.MAX_EVENTS = len(valid_test_data)
             self.test_program_dicts = [
-                convert_back_to_dict(x, made_up_pids[i])
-                for i, x in enumerate(valid_test_data)
+                convert_back_to_dict(x, made_up_pids[i]) for i, x in enumerate(valid_test_data)
             ]
 
         def listen_for_window_changes(self):
@@ -192,9 +190,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(
     mock_program_facade = MockProgramFacade()
 
     # Spy on listen_for_window_changes
-    spy_on_listen_for_window = Mock(
-        side_effect=mock_program_facade.listen_for_window_changes
-    )
+    spy_on_listen_for_window = Mock(side_effect=mock_program_facade.listen_for_window_changes)
     mock_program_facade.listen_for_window_changes = spy_on_listen_for_window
 
     def choose_program_facade(current_os):
@@ -233,9 +229,7 @@ async def test_tracker_to_db_path_with_preexisting_sessions(
 
     activity_arbiter = ActivityArbiter(mock_user_facing_clock, mock_container, engine_type)
 
-    asm_set_new_session_spy = Mock(
-        side_effect=activity_arbiter.state_machine.set_new_session
-    )
+    asm_set_new_session_spy = Mock(side_effect=activity_arbiter.state_machine.set_new_session)
     activity_arbiter.state_machine.set_new_session = asm_set_new_session_spy
 
     p_logging_dao = ProgramLoggingDao(regular_session_maker)
@@ -405,261 +399,268 @@ async def test_tracker_to_db_path_with_preexisting_sessions(
     activity_arbiter.set_program_state = spy_on_set_program_state
 
     # Spy on listen_for_window_changes
-    spy_on_listen_for_window = Mock(
-        side_effect=mock_program_facade.listen_for_window_changes
-    )
+    spy_on_listen_for_window = Mock(side_effect=mock_program_facade.listen_for_window_changes)
     mock_program_facade.listen_for_window_changes = spy_on_listen_for_window
 
-    # ### Act
-    surveillance_manager.start_trackers()
+    try:
+        # ### Act
+        surveillance_manager.start_trackers()
 
-    async def wait_for_events_to_process():
-        # Wait for events to be processed
-        print("\n++\n++\nWaiting for events to be processed...")
-        # Give the events time to propagate through the system
-        # Try for up to 10 iterations
-        for _ in range(len(valid_test_data)):
-            if mock_program_facade.yield_count == 4:
-                print(mock_program_facade.yield_count, "stop signal ++ \n ++ \n ++ \n ++")
-                break
-            # Seems 1.3 is the minimum wait to get this done
-            await asyncio.sleep(1.3)  # Short sleep between checks ("short")
-            # await asyncio.sleep(1.3)  # Short sleep between checks ("short")
-            # await asyncio.sleep(1.7)  # Short sleep between checks ("short")
-            # await asyncio.sleep(0.8)  # Short sleep between checks ("short")
-            # Check if we have the expected number of calls
-            if spy_on_set_program_state.call_count >= len(valid_test_data) - 1:
-                print(f"Events processed after {_+1} iterations")
-                surveillance_manager.program_thread.stop()  # Stop the thread properly
-                break
+        async def wait_for_events_to_process():
+            # Wait for events to be processed
+            try:
+                print("\n++\n++\nWaiting for events to be processed...")
+                # Give the events time to propagate through the system
+                # Try for up to 10 iterations
+                for _ in range(len(valid_test_data)):
+                    if mock_program_facade.yield_count == 4:
+                        print(mock_program_facade.yield_count, "stop signal ++ \n ++ \n ++ \n ++")
+                        break
+                    # Seems 1.3 is the minimum wait to get this done
+                    await asyncio.sleep(1.3)  # Short sleep between checks ("short")
+                    # await asyncio.sleep(1.3)  # Short sleep between checks ("short")
+                    # await asyncio.sleep(1.7)  # Short sleep between checks ("short")
+                    # await asyncio.sleep(0.8)  # Short sleep between checks ("short")
+                    # Check if we have the expected number of calls
+                    if spy_on_set_program_state.call_count >= len(valid_test_data) - 1:
+                        print(f"Events processed after {_+1} iterations")
+                        surveillance_manager.program_thread.stop()  # Stop the thread properly
+                        break
+            finally:
+                surveillance_manager.program_thread.stop()
 
-    await wait_for_events_to_process()
+        await wait_for_events_to_process()
 
-    event_count = len(valid_test_data)
-    active_entry = 1
+        event_count = len(valid_test_data)
+        active_entry = 1
 
-    def assert_all_window_change_args_match_src_material(calls_from_spy):
-        assert calls_from_spy[0][0][0].exe_path == session1.exe_path
-        assert calls_from_spy[1][0][0].exe_path == session2.exe_path
-        assert calls_from_spy[2][0][0].exe_path == session3.exe_path
-        assert calls_from_spy[3][0][0].exe_path == session4.exe_path
+        def assert_all_window_change_args_match_src_material(calls_from_spy):
+            assert calls_from_spy[0][0][0].exe_path == session1.exe_path
+            assert calls_from_spy[1][0][0].exe_path == session2.exe_path
+            assert calls_from_spy[2][0][0].exe_path == session3.exe_path
+            assert calls_from_spy[3][0][0].exe_path == session4.exe_path
 
-    def assert_state_machine_had_correct_order():
-        assert_all_spy_args_were_sessions(
-            asm_set_new_session_spy, event_count, "Activity State Machine"
-        )
-        # for i in range(0, event_count):
-        #     some_session = asm_set_new_session_spy.call_args_list[i][0][0]
-        #     assert isinstance(some_session, ProgramSession)
-        #     assert_session_was_in_order(some_session, i)
+        def assert_state_machine_had_correct_order():
+            assert_all_spy_args_were_sessions(
+                asm_set_new_session_spy, event_count, "Activity State Machine"
+            )
 
-    def assert_activity_recorder_called_expected_times(count_of_events):
-        assert on_new_session_spy.call_count == count_of_events
+        def assert_activity_recorder_called_expected_times(count_of_events):
+            assert on_new_session_spy.call_count == count_of_events
 
-        # Count is 4 here becasuse it's used in on_new_session as of 04/26
-        assert push_window_ahead_ten_sec_spy.call_count == sum(
-            [x // window_push_length for x in durations_for_keep_alive]
-        )
+            # Count is 4 here becasuse it's used in on_new_session as of 04/26
+            assert push_window_ahead_ten_sec_spy.call_count == sum(
+                [x // window_push_length for x in durations_for_keep_alive]
+            )
 
-        # The final entry here is holding the window push open
-        assert finalize_log_spy.call_count == count_of_events - active_entry
-        assert add_partial_window_spy.call_count == count_of_events - active_entry
+            # The final entry here is holding the window push open
+            assert finalize_log_spy.call_count == count_of_events - active_entry
+            assert add_partial_window_spy.call_count == count_of_events - active_entry
 
-    def assert_session_was_in_order(actual: ProgramSession, i):
-        expected = test_events[i]
-        # print("Loop: ", i)
-        # print("Expected:", expected.start_time)
-        # print("Actual:", actual.start_time)
-        assert actual.exe_path == expected.exe_path
-        assert actual.process_name == expected.process_name
-        assert actual.window_title == expected.window_title
-        assert actual.detail == expected.detail
-        assert actual.start_time == expected.start_time
-
-    def assert_all_spy_args_were_sessions(spy_from_mock, expected_loops: int, spy_name: str):
-        print(f"Asserting against {spy_name} with count {len(spy_from_mock.call_args_list)}")
-        for i in range(0, expected_loops):
-            some_session = spy_from_mock.call_args_list[i][0][0]
-            assert isinstance(some_session, ProgramSession)
-            assert_session_was_in_order(some_session, i)
-        call_count = len(spy_from_mock.call_args_list)
-        assert call_count == expected_loops, f"Expected exactly {expected_loops} calls"
-
-    def assert_all_on_new_sessions_received_sessions():
-        assert_all_spy_args_were_sessions(
-            on_new_session_spy, event_count, "on_new_session_spy"
-        )
-
-    def assert_all_on_state_changes_received_sessions():
-        """
-        Note that on_state_changed probably is called 3x, not 4x, because
-        nothing happens to push the final session out of the Arbiter.
-        """
-        one_left_in_arb = 1
-        assert_all_spy_args_were_sessions(
-            on_state_changed_spy, event_count - one_left_in_arb, "on_state_changed_spy"
-        )
-
-    def assert_add_partial_window_happened_as_expected():
-        """
-        Deduct duration might happen 3x b/c of the final val staying in the Arbiter.
-        """
-        # This func does not use assert_all_spy_args_were_sessions because
-        # the arg order is reversed here, i.e. 0th arg is an int
-        one_left_in_arb = 1
-        total_loops = event_count - one_left_in_arb
-        for i in range(0, total_loops):
-            some_duration = add_partial_window_spy.call_args_list[i][0][0]
-            assert isinstance(some_duration, int)
-
-            some_session = add_partial_window_spy.call_args_list[i][0][1]
-            assert isinstance(some_session, ProgramSession)
-            assert_session_was_in_order(some_session, i)
-
-        call_count = len(add_partial_window_spy.call_args_list)
-        assert call_count == total_loops, f"Expected exactly {total_loops} calls"
-
-    def assert_activity_recorder_saw_expected_vals():
-        """Asserts that the recorder spies all saw, in general, what was expected."""
-        assert_all_on_new_sessions_received_sessions()
-        assert_all_on_state_changes_received_sessions()
-        assert_add_partial_window_happened_as_expected()
-
-    # ## Assert that each session showed up as specified above, in the correct place
-
-    # --
-    # -- Most ambitious stuff at the end. Alternatively: Earlier encounters asserted first
-    # --
-
-    assert event_count == 4
-    assert start_new_session_spy.call_count == event_count
-    assert window_change_spy.call_count == 4
-    assert window_change_spy.call_count == event_count
-
-    def assert_window_change_spy_as_expected(arg):
-        assert isinstance(arg, ProgramSession)
-        assert arg.exe_path == test_events[i].exe_path
-
-    for i in range(0, event_count):
-        arg = window_change_spy.call_args_list[i][0][0]
-        assert_window_change_spy_as_expected(arg)
-
-    window_change_calls = window_change_spy.call_args_list
-
-    def assert_all_spy_args_were_dicts(spy_from_mock, expected_loops: int, spy_name: str):
-        print(f"Asserting against {spy_name} with count {len(spy_from_mock.call_args_list)}")
-        for i in range(0, expected_loops):
-            actual_dict = spy_from_mock.call_args_list[i][0][0]
-            actual_start = spy_from_mock.call_args_list[i][0][1]
-            assert isinstance(actual_dict, dict)
+        def assert_session_was_in_order(actual: ProgramSession, i):
+            """The first one"""
             expected = test_events[i]
-            print("Loop: ", i)
-            print("Expected:", expected)
-            print("Actual:", actual_dict)
-            assert actual_dict["exe_path"] == expected.exe_path
-            assert actual_dict["process_name"] == expected.process_name
-            assert actual_start == expected.start_time
-        call_count = len(spy_from_mock.call_args_list)
-        assert call_count == expected_loops, f"Expected exactly {expected_loops} calls"
+            # print("Loop: ", i)
+            # print("Expected:", expected.start_time)
+            # print("Actual:", actual.start_time)
+            assert actual.exe_path == expected.exe_path
+            assert actual.process_name == expected.process_name
+            assert actual.window_title == expected.window_title
+            assert actual.detail == expected.detail
+            assert actual.start_time == expected.start_time
 
-    assert_all_spy_args_were_dicts(
-        start_new_session_spy, event_count, "Start new session spy"
-    )
+        def assert_all_spy_args_were_sessions(spy_from_mock, expected_loops: int, spy_name: str):
+            print(f"Asserting against {spy_name} with count {len(spy_from_mock.call_args_list)}")
+            for i in range(0, expected_loops):
+                some_session = spy_from_mock.call_args_list[i][0][0]
+                assert isinstance(some_session, ProgramSession)
+                assert_session_was_in_order(some_session, i)
+            call_count = len(spy_from_mock.call_args_list)
+            assert call_count == expected_loops, f"Expected exactly {expected_loops} calls"
 
-    assert_all_spy_args_were_sessions(window_change_spy, event_count, "Window change spy")
+        def assert_all_on_new_sessions_received_sessions():
+            assert_all_spy_args_were_sessions(
+                on_new_session_spy, event_count, "on_new_session_spy"
+            )
 
-    assert_all_window_change_args_match_src_material(window_change_calls)
+        def assert_all_on_state_changes_received_sessions():
+            """
+            Note that on_state_changed probably is called 3x, not 4x, because
+            nothing happens to push the final session out of the Arbiter.
+            """
+            one_left_in_arb = 1
+            assert_all_spy_args_were_sessions(
+                on_state_changed_spy, event_count - one_left_in_arb, "on_state_changed_spy"
+            )
 
-    assert (
-        len(window_change_calls) == 4
-    ), "The number of sessions is four, so the calls should be four"
+        def assert_add_partial_window_happened_as_expected():
+            """
+            Deduct duration might happen 3x b/c of the final val staying in the Arbiter.
+            """
+            # This func does not use assert_all_spy_args_were_sessions because
+            # the arg order is reversed here, i.e. 0th arg is an int
+            one_left_in_arb = 1
+            total_loops = event_count - one_left_in_arb
+            for i in range(0, total_loops):
+                some_duration = add_partial_window_spy.call_args_list[i][0][0]
+                assert isinstance(some_duration, int)
 
-    assert window_change_spy.call_count == event_count  # Deliberately redundant
+                some_session = add_partial_window_spy.call_args_list[i][0][1]
+                assert isinstance(some_session, ProgramSession)
+                assert_session_was_in_order(some_session, i)
 
-    assert spy_on_set_program_state.call_count == event_count  # Deliberately redundant
+            call_count = len(add_partial_window_spy.call_args_list)
+            assert call_count == total_loops, f"Expected exactly {total_loops} calls"
 
-    assert_state_machine_had_correct_order()
+        def assert_activity_recorder_saw_expected_vals():
+            """Asserts that the recorder spies all saw, in general, what was expected."""
+            assert_all_on_new_sessions_received_sessions()
+            assert_all_on_state_changes_received_sessions()
+            assert_add_partial_window_happened_as_expected()
 
-    assert_activity_recorder_saw_expected_vals()
+        # ## Assert that each session showed up as specified above, in the correct place
 
-    assert_activity_recorder_called_expected_times(event_count)
+        # --
+        # -- Most ambitious stuff at the end. Alternatively: Earlier encounters asserted first
+        # --
 
-    assert find_todays_entry_for_program_mock.call_count == event_count
+        assert event_count == 4
+        assert start_new_session_spy.call_count == event_count
+        assert window_change_spy.call_count == 4
+        assert window_change_spy.call_count == event_count
 
-    # It's never used because preexisting sessions block the path
-    assert summary_start_session_spy.call_count == 0
+        def assert_window_change_spy_as_expected(arg):
+            assert isinstance(arg, ProgramSession)
+            assert arg.exe_path == test_events[i].exe_path
 
-    # --
-    # -- A much needed value: The count of window pushes
-    # --
-    total_pushes = sum([x // window_push_length for x in durations_for_keep_alive])
+        for i in range(0, event_count):
+            arg = window_change_spy.call_args_list[i][0][0]
+            assert_window_change_spy_as_expected(arg)
 
-    def assert_sqlalchemy_layer_went_as_expected():
-        """Covers only stuff that obscures sqlalchemy code."""
-        assert sum_dao_execute_and_read_one_or_none_spy.call_count == event_count
-        # FIXME:L assert 10 == (4 - 1)
-        # execute_and_read_one_or_none is used in find_session, which
-        # is used in window push and finalize log
+        window_change_calls = window_change_spy.call_args_list
 
-        concluded_sessions = event_count - active_entry
+        def assert_all_spy_args_were_dicts(spy_from_mock, expected_loops: int, spy_name: str):
+            print(f"Asserting against {spy_name} with count {len(spy_from_mock.call_args_list)}")
+            for i in range(0, expected_loops):
+                actual_dict = spy_from_mock.call_args_list[i][0][0]
+                actual_start = spy_from_mock.call_args_list[i][0][1]
+                assert isinstance(actual_dict, dict)
+                expected = test_events[i]
+                print("Loop: ", i)
+                print("Expected:", expected)
+                print("Actual:", actual_dict)
+                assert actual_dict["exe_path"] == expected.exe_path
+                assert actual_dict["process_name"] == expected.process_name
+                assert actual_start == expected.start_time
+            call_count = len(spy_from_mock.call_args_list)
+            assert call_count == expected_loops, f"Expected exactly {expected_loops} calls"
+
+        assert_all_spy_args_were_dicts(
+            start_new_session_spy, event_count, "Start new session spy"
+        )
+
+        assert_all_spy_args_were_sessions(window_change_spy, event_count, "Window change spy")
+
+        assert_all_window_change_args_match_src_material(window_change_calls)
 
         assert (
-            logging_dao_execute_and_read_one_or_none_spy.call_count
-            == total_pushes + concluded_sessions
-        )
+            len(window_change_calls) == 4
+        ), "The number of sessions is four, so the calls should be four"
+
+        assert window_change_spy.call_count == event_count  # Deliberately redundant
+
+        assert spy_on_set_program_state.call_count == event_count  # Deliberately redundant
+
+        assert_state_machine_had_correct_order()
+
+        assert_activity_recorder_saw_expected_vals()
+
+        assert_activity_recorder_called_expected_times(event_count)
+
+        assert find_todays_entry_for_program_mock.call_count == event_count
+
+        # It's never used because preexisting sessions block the path
+        assert summary_start_session_spy.call_count == 0
+
+        # --
+        # -- A much needed value: The count of window pushes
+        # --
+        total_pushes = sum([x // window_push_length for x in durations_for_keep_alive])
+
+        def assert_sqlalchemy_layer_went_as_expected():
+            """Covers only stuff that obscures sqlalchemy code."""
+            assert sum_dao_execute_and_read_one_or_none_spy.call_count == event_count
+            # FIXME:L assert 10 == (4 - 1)
+            # execute_and_read_one_or_none is used in find_session, which
+            # is used in window push and finalize log
+
+            concluded_sessions = event_count - active_entry
+
+            assert (
+                logging_dao_execute_and_read_one_or_none_spy.call_count
+                == total_pushes + concluded_sessions
+            )
+
+            assert (
+                summary_add_new_item_spy.call_count == 0
+            ), "A Summary existed already for each session, so this shouldn't happen"
+            assert logger_add_new_item_spy.call_count == event_count
+
+            assert update_item_spy.call_count == total_pushes + concluded_sessions
+
+            assert execute_window_push_spy.call_count == total_pushes
+
+        assert_sqlalchemy_layer_went_as_expected()
+
+        # Count is 4 here becasuse it's used in on_new_session as of 04/26
+        assert len(push_window_ahead_ten_sec_spy.call_args_list) == total_pushes
+
+        def assert_sessions_form_a_chain():
+            sessions = []
+            for i in range(0, event_count - active_entry):
+                args = on_state_changed_spy.call_args_list[i][0]
+                sessions.append(args[0])
+            assert sessions[0].end_time == sessions[1].start_time
+            assert sessions[1].end_time == sessions[2].start_time
+            # assert sessions[2].end_time == sessions[3].start_time
+            # Sessions[3] has no .start_time to link up with
+            # Sessions[4] is still left in the arbiter (not spied on)
+
+        assert_sessions_form_a_chain()
+
+        assert push_window_ahead_ten_sec_spy.call_count == total_pushes
+
+        assert do_addition_spy.call_count == event_count - active_entry
+
+        assert finalize_log_spy.call_count == event_count - active_entry
 
         assert (
             summary_add_new_item_spy.call_count == 0
-        ), "A Summary existed already for each session, so this shouldn't happen"
+        ), "A new summary was created despite preexisting sessions"
+
         assert logger_add_new_item_spy.call_count == event_count
 
-        assert update_item_spy.call_count == total_pushes + concluded_sessions
+        assert len(logger_add_new_item_spy.call_args_list) == event_count
 
-        assert execute_window_push_spy.call_count == total_pushes
+        for i in range(0, event_count):
+            summary_log = logger_add_new_item_spy.call_args_list[i][0][0]
 
-    assert_sqlalchemy_layer_went_as_expected()
-
-    # Count is 4 here becasuse it's used in on_new_session as of 04/26
-    assert len(push_window_ahead_ten_sec_spy.call_args_list) == total_pushes
-
-    def assert_sessions_form_a_chain():
-        sessions = []
-        for i in range(0, event_count - active_entry):
-            args = on_state_changed_spy.call_args_list[i][0]
-            sessions.append(args[0])
-        assert sessions[0].end_time == sessions[1].start_time
-        assert sessions[1].end_time == sessions[2].start_time
-        # assert sessions[2].end_time == sessions[3].start_time
-        # Sessions[3] has no .start_time to link up with
-        # Sessions[4] is still left in the arbiter (not spied on)
-
-    assert_sessions_form_a_chain()
-
-    assert push_window_ahead_ten_sec_spy.call_count == total_pushes
-
-    assert do_addition_spy.call_count == event_count - active_entry
-
-    assert finalize_log_spy.call_count == event_count - active_entry
-
-    assert (
-        summary_add_new_item_spy.call_count == 0
-    ), "A new summary was created despite preexisting sessions"
-
-    assert logger_add_new_item_spy.call_count == event_count
-
-    assert len(logger_add_new_item_spy.call_args_list) == event_count
-
-    for i in range(0, event_count):
-        summary_log = logger_add_new_item_spy.call_args_list[i][0][0]
-
-        assert isinstance(summary_log, ProgramSummaryLog)
-        assert (
-            summary_log.exe_path_as_id == valid_test_data[i].exe_path
-        ), "Exe path didn't make it to one of it's destinations"
-        assert summary_log.process_name == valid_test_data[i].process_name
-        assert (
-            summary_log.program_name == valid_test_data[i].window_title
-        ), "Window title's end result didn't look right"
+            assert isinstance(summary_log, ProgramSummaryLog)
+            assert (
+                summary_log.exe_path_as_id == valid_test_data[i].exe_path
+            ), "Exe path didn't make it to one of it's destinations"
+            assert summary_log.process_name == valid_test_data[i].process_name
+            assert (
+                summary_log.program_name == valid_test_data[i].window_title
+            ), "Window title's end result didn't look right"
+    finally:
+        await surveillance_manager.cleanup()
+        await asyncio.sleep(0)  # Let pending tasks schedule
+        tasks = [t for t in asyncio.all_tasks() if not t.done()]
+        if tasks:
+            print("⚠️ Pending tasks at teardown:")
+            for t in tasks:
+                print(f" - {t}")
 
 
 @pytest.mark.asyncio
@@ -684,8 +685,7 @@ async def test_tracker_to_db_path_with_brand_new_sessions(
             self.yield_count = 0  # Initialize the counter
             self.MAX_EVENTS = len(valid_test_data)
             self.test_program_dicts = [
-                convert_back_to_dict(x, made_up_pids[i])
-                for i, x in enumerate(valid_test_data)
+                convert_back_to_dict(x, made_up_pids[i]) for i, x in enumerate(valid_test_data)
             ]
 
         def listen_for_window_changes(self):
@@ -707,9 +707,7 @@ async def test_tracker_to_db_path_with_brand_new_sessions(
     mock_program_facade = MockProgramFacade()
 
     # Spy on listen_for_window_changes
-    spy_on_listen_for_window = Mock(
-        side_effect=mock_program_facade.listen_for_window_changes
-    )
+    spy_on_listen_for_window = Mock(side_effect=mock_program_facade.listen_for_window_changes)
     mock_program_facade.listen_for_window_changes = spy_on_listen_for_window
 
     def choose_program_facade(current_os):
@@ -751,9 +749,7 @@ async def test_tracker_to_db_path_with_brand_new_sessions(
 
     activity_arbiter = ActivityArbiter(mock_user_facing_clock, mock_container, engine_type)
 
-    asm_set_new_session_spy = Mock(
-        side_effect=activity_arbiter.state_machine.set_new_session
-    )
+    asm_set_new_session_spy = Mock(side_effect=activity_arbiter.state_machine.set_new_session)
     activity_arbiter.state_machine.set_new_session = asm_set_new_session_spy
 
     p_logging_dao = ProgramLoggingDao(regular_session_maker)
@@ -899,244 +895,267 @@ async def test_tracker_to_db_path_with_brand_new_sessions(
     activity_arbiter.set_program_state = spy_on_set_program_state
 
     # Spy on listen_for_window_changes
-    spy_on_listen_for_window = Mock(
-        side_effect=mock_program_facade.listen_for_window_changes
-    )
+    spy_on_listen_for_window = Mock(side_effect=mock_program_facade.listen_for_window_changes)
     mock_program_facade.listen_for_window_changes = spy_on_listen_for_window
 
-    # ### Act
-    surveillance_manager.start_trackers()
+    try:
+        # ### Act
+        surveillance_manager.start_trackers()
 
-    async def wait_for_events_to_process():
-        # Wait for events to be processed
-        print("\n++\n++\nWaiting for events to be processed...")
-        # Give the events time to propagate through the system
-        # Try for up to 10 iterations
-        for _ in range(len(valid_test_data)):
-            if mock_program_facade.yield_count == 4:
-                print(mock_program_facade.yield_count, "stop signal ++ \n ++ \n ++ \n ++")
-                break
-            # Seems 1.5 is the minimum wait to get this done. Below 1.5, it works only sometimes
-            await asyncio.sleep(1.5)  # Short sleep between checks ("short")
-            # Check if we have the expected number of calls
-            if spy_on_set_program_state.call_count >= len(valid_test_data) - 1:
-                print(f"Events processed after {_+1} iterations")
-                surveillance_manager.program_thread.stop()  # Stop the thread properly
-                break
+        async def wait_for_events_to_process():
+            # Wait for events to be processed
+            try:
+                print("\n++\n++\nWaiting for events to be processed...")
+                # Give the events time to propagate through the system
+                # Try for up to 10 iterations
+                for _ in range(len(valid_test_data)):
+                    if mock_program_facade.yield_count == 4:
+                        print(mock_program_facade.yield_count, "stop signal ++ \n ++ \n ++ \n ++")
+                        break
+                    # Seems 1.5 is the minimum wait to get this done. Below 1.5, it works only sometimes
+                    await asyncio.sleep(1.5)  # Short sleep between checks ("short")
+                    # Check if we have the expected number of calls
+                    if spy_on_set_program_state.call_count >= len(valid_test_data) - 1:
+                        print(f"Events processed after {_+1} iterations")
+                        surveillance_manager.program_thread.stop()  # Stop the thread properly
+                        break
+            finally:
+                surveillance_manager.program_thread.stop()
 
-    await wait_for_events_to_process()
+        await wait_for_events_to_process()
 
-    second_test_event_count = len(valid_test_data)
-    trailing_entry = 1
+        second_test_event_count = len(valid_test_data)
+        trailing_entry = 1
 
-    def assert_all_window_change_args_match_src_material(calls_from_spy):
-        assert calls_from_spy[0][0][0].exe_path == session1.exe_path
-        assert calls_from_spy[1][0][0].exe_path == session2.exe_path
-        assert calls_from_spy[2][0][0].exe_path == session3.exe_path
-        # Note that there is no entry 3 here; used idx 0,1,2 for brevity
+        def assert_all_window_change_args_match_src_material(calls_from_spy):
+            assert calls_from_spy[0][0][0].exe_path == session1.exe_path
+            assert calls_from_spy[1][0][0].exe_path == session2.exe_path
+            assert calls_from_spy[2][0][0].exe_path == session3.exe_path
+            # Note that there is no entry 3 here; used idx 0,1,2 for brevity
 
-    def assert_state_machine_had_correct_order():
+        def assert_state_machine_had_correct_order():
+            assert_all_spy_args_were_sessions(
+                asm_set_new_session_spy, second_test_event_count, "Activity State Machine"
+            )
+
+        def assert_activity_recorder_called_expected_times(count_of_events):
+            assert on_new_session_spy.call_count == count_of_events
+
+            # Test stopped before first pulse
+            assert push_window_ahead_ten_sec_spy.call_count == total_pushes
+
+            # The final entry here is holding the window push open
+            assert finalize_log_spy.call_count == count_of_events - trailing_entry
+            assert add_partial_window_spy.call_count == count_of_events - trailing_entry
+
+        def assert_session_was_in_order(actual: ProgramSession, i):
+            """
+            The second one
+            """
+            expected = test_events[i]
+            print("Loop: ", i)
+            print("Expected:", expected.start_time)
+            print("Actual:", actual.start_time)
+            assert actual.exe_path == expected.exe_path
+            assert actual.process_name == expected.process_name
+            assert actual.window_title == expected.window_title
+            assert actual.detail == expected.detail
+            assert actual.start_time == expected.start_time
+
+        def assert_all_spy_args_were_sessions(spy_from_mock, expected_loops: int, spy_name: str):
+            print(f"Asserting against {spy_name} with count {len(spy_from_mock.call_args_list)}")
+            for i in range(0, expected_loops):
+                some_session = spy_from_mock.call_args_list[i][0][0]
+                print("\n")
+                print(some_session, "some_session 953ru")
+                print(some_session.start_time)
+                print(test_events[i], "954ru")
+                print(test_events[i].start_time)
+                print(str(some_session.start_time.dt) == str(test_events[i].start_time.dt))
+            print("end of debug segment 956ru")
+            for i in range(0, expected_loops):
+                some_session = spy_from_mock.call_args_list[i][0][0]
+                assert isinstance(some_session, ProgramSession)
+                assert_session_was_in_order(some_session, i)
+            call_count = len(spy_from_mock.call_args_list)
+            assert call_count == expected_loops, f"Expected exactly {expected_loops} calls"
+
+        def assert_all_on_new_sessions_received_sessions():
+            assert_all_spy_args_were_sessions(
+                on_new_session_spy, second_test_event_count, "on_new_session_spy"
+            )
+
+        def assert_all_on_state_changes_received_sessions():
+            """
+            Note that on_state_changed probably is called 3x, not 4x, because
+            nothing happens to push the final session out of the Arbiter.
+            """
+            one_left_in_arb = 1
+            assert_all_spy_args_were_sessions(
+                on_state_changed_spy,
+                second_test_event_count - one_left_in_arb,
+                "on_state_changed_spy",
+            )
+
+        def assert_add_partial_window_happened_as_expected():
+            """
+            Deduct duration might happen 3x b/c of the final val staying in the Arbiter.
+            """
+            # This func does not use assert_all_spy_args_were_sessions because
+            # the arg order is reversed here, i.e. 0th arg is an int
+            one_left_in_arb = 1
+            total_loops = second_test_event_count - one_left_in_arb
+            for i in range(0, total_loops):
+                some_duration = add_partial_window_spy.call_args_list[i][0][0]
+                assert isinstance(some_duration, int)
+
+                some_session = add_partial_window_spy.call_args_list[i][0][1]
+                assert isinstance(some_session, ProgramSession)
+                assert_session_was_in_order(some_session, i)
+
+            call_count = len(add_partial_window_spy.call_args_list)
+            assert call_count == total_loops, f"Expected exactly {total_loops} calls"
+
+        def assert_activity_recorder_saw_expected_vals():
+            """Asserts that the recorder spies all saw, in general, what was expected."""
+            assert_all_on_new_sessions_received_sessions()
+            assert_all_on_state_changes_received_sessions()
+            assert_add_partial_window_happened_as_expected()
+
+        # ## Assert that each session showed up as specified above, in the correct place
+
+        # --
+        # -- Most ambitious stuff at the end. Alternatively: Earlier encounters asserted first
+        # --
+
+        # TODO: Move the below spy
+        total_pushes = sum([x // window_push_length for x in durations_for_keep_alive])
+
+        assert add_ten_sec_to_end_time_spy.call_count == total_pushes
+
+        assert second_test_event_count == 4
+        assert window_change_spy.call_count == 4
+        assert window_change_spy.call_count == second_test_event_count
+
+        def assert_window_change_spy_as_expected(arg):
+            assert isinstance(arg, ProgramSession)
+            assert arg.exe_path == test_events[i].exe_path
+
+        for i in range(0, second_test_event_count):
+            print(f"comparing window change spy arg {i}")
+            arg = window_change_spy.call_args_list[i][0][0]
+            assert_window_change_spy_as_expected(arg)
+
+        window_change_calls = window_change_spy.call_args_list
+
         assert_all_spy_args_were_sessions(
-            asm_set_new_session_spy, second_test_event_count, "Activity State Machine"
+            window_change_spy, second_test_event_count, "Window change spy"
         )
 
-    def assert_activity_recorder_called_expected_times(count_of_events):
-        assert on_new_session_spy.call_count == count_of_events
+        assert_all_window_change_args_match_src_material(window_change_calls)
 
-        # Test stopped before first pulse
+        assert (
+            len(window_change_calls) == 4
+        ), "The number of sessions is three, so the calls should be three"
+
+        assert window_change_spy.call_count == second_test_event_count  # Deliberately redundant
+
+        # Deliberately redundant
+        assert spy_on_set_program_state.call_count == second_test_event_count
+
+        assert_state_machine_had_correct_order()
+
+        assert_activity_recorder_saw_expected_vals()
+
+        assert_activity_recorder_called_expected_times(second_test_event_count)
+
+        assert find_todays_entry_for_program_mock.call_count == second_test_event_count
+
+        def assert_sqlalchemy_layer_went_as_expected():
+            """Covers only stuff that obscures sqlalchemy code."""
+            assert sum_dao_execute_and_read_one_or_none_spy.call_count == second_test_event_count
+
+            concluded_sessions = second_test_event_count - trailing_entry
+
+            assert (
+                logging_dao_execute_and_read_one_or_none_spy.call_count
+                == total_pushes + concluded_sessions
+            )
+
+            assert (
+                summary_add_new_item_spy.call_count == second_test_event_count
+            ), "A Summary should've been made for each entry, hence 'brand new' sessions"
+            assert logger_add_new_item_spy.call_count == second_test_event_count
+
+            assert update_item_spy.call_count == total_pushes + concluded_sessions
+
+            assert execute_window_push_spy.call_count == total_pushes
+
+        assert_sqlalchemy_layer_went_as_expected()
+
+        assert len(push_window_ahead_ten_sec_spy.call_args_list) == total_pushes
+
+        def assert_sessions_form_a_chain():
+            sessions = []
+            for i in range(0, second_test_event_count - trailing_entry):
+                args = on_state_changed_spy.call_args_list[i][0]
+                sessions.append(args[0])
+            assert len(sessions) == 3
+            assert sessions[0].end_time == sessions[1].start_time
+            assert sessions[1].end_time == sessions[2].start_time
+            # I guess the end_time is set before it gets into the on_state_change method
+            assert isinstance(sessions[2].end_time, UserLocalTime)
+            # Sessions[2] has no .end_time to link up with
+
+        assert_sessions_form_a_chain()
+
+        # The final entry being held suspended in Arbiter
         assert push_window_ahead_ten_sec_spy.call_count == total_pushes
 
-        # The final entry here is holding the window push open
-        assert finalize_log_spy.call_count == count_of_events - trailing_entry
-        assert add_partial_window_spy.call_count == count_of_events - trailing_entry
+        assert do_addition_spy.call_count == second_test_event_count - trailing_entry
 
-    def assert_session_was_in_order(actual: ProgramSession, i):
-        expected = test_events[i]
-        # print("Loop: ", i)
-        # print("Expected:", expected.start_time)
-        # print("Actual:", actual.start_time)
-        assert actual.exe_path == expected.exe_path
-        assert actual.process_name == expected.process_name
-        assert actual.window_title == expected.window_title
-        assert actual.detail == expected.detail
-        assert actual.start_time == expected.start_time
+        assert finalize_log_spy.call_count == second_test_event_count - trailing_entry
 
-    def assert_all_spy_args_were_sessions(spy_from_mock, expected_loops: int, spy_name: str):
-        print(f"Asserting against {spy_name} with count {len(spy_from_mock.call_args_list)}")
-        for i in range(0, expected_loops):
-            some_session = spy_from_mock.call_args_list[i][0][0]
-            assert isinstance(some_session, ProgramSession)
-            assert_session_was_in_order(some_session, i)
-        call_count = len(spy_from_mock.call_args_list)
-        assert call_count == expected_loops, f"Expected exactly {expected_loops} calls"
-
-    def assert_all_on_new_sessions_received_sessions():
-        assert_all_spy_args_were_sessions(
-            on_new_session_spy, second_test_event_count, "on_new_session_spy"
-        )
-
-    def assert_all_on_state_changes_received_sessions():
-        """
-        Note that on_state_changed probably is called 3x, not 4x, because
-        nothing happens to push the final session out of the Arbiter.
-        """
-        one_left_in_arb = 1
-        assert_all_spy_args_were_sessions(
-            on_state_changed_spy,
-            second_test_event_count - one_left_in_arb,
-            "on_state_changed_spy",
-        )
-
-    def assert_add_partial_window_happened_as_expected():
-        """
-        Deduct duration might happen 3x b/c of the final val staying in the Arbiter.
-        """
-        # This func does not use assert_all_spy_args_were_sessions because
-        # the arg order is reversed here, i.e. 0th arg is an int
-        one_left_in_arb = 1
-        total_loops = second_test_event_count - one_left_in_arb
-        for i in range(0, total_loops):
-            some_duration = add_partial_window_spy.call_args_list[i][0][0]
-            assert isinstance(some_duration, int)
-
-            some_session = add_partial_window_spy.call_args_list[i][0][1]
-            assert isinstance(some_session, ProgramSession)
-            assert_session_was_in_order(some_session, i)
-
-        call_count = len(add_partial_window_spy.call_args_list)
-        assert call_count == total_loops, f"Expected exactly {total_loops} calls"
-
-    def assert_activity_recorder_saw_expected_vals():
-        """Asserts that the recorder spies all saw, in general, what was expected."""
-        assert_all_on_new_sessions_received_sessions()
-        assert_all_on_state_changes_received_sessions()
-        assert_add_partial_window_happened_as_expected()
-
-    # ## Assert that each session showed up as specified above, in the correct place
-
-    # --
-    # -- Most ambitious stuff at the end. Alternatively: Earlier encounters asserted first
-    # --
-
-    # TODO: Move the below spy
-    total_pushes = sum([x // window_push_length for x in durations_for_keep_alive])
-
-    assert add_ten_sec_to_end_time_spy.call_count == total_pushes
-
-    assert second_test_event_count == 4
-    assert window_change_spy.call_count == 4
-    assert window_change_spy.call_count == second_test_event_count
-
-    def assert_window_change_spy_as_expected(arg):
-        assert isinstance(arg, ProgramSession)
-        assert arg.exe_path == test_events[i].exe_path
-
-    for i in range(0, second_test_event_count):
-        arg = window_change_spy.call_args_list[i][0][0]
-        assert_window_change_spy_as_expected(arg)
-
-    window_change_calls = window_change_spy.call_args_list
-
-    assert_all_spy_args_were_sessions(
-        window_change_spy, second_test_event_count, "Window change spy"
-    )
-
-    assert_all_window_change_args_match_src_material(window_change_calls)
-
-    assert (
-        len(window_change_calls) == 4
-    ), "The number of sessions is three, so the calls should be three"
-
-    assert window_change_spy.call_count == second_test_event_count  # Deliberately redundant
-
-    # Deliberately redundant
-    assert spy_on_set_program_state.call_count == second_test_event_count
-
-    assert_state_machine_had_correct_order()
-
-    assert_activity_recorder_saw_expected_vals()
-
-    assert_activity_recorder_called_expected_times(second_test_event_count)
-
-    assert find_todays_entry_for_program_mock.call_count == second_test_event_count
-
-    def assert_sqlalchemy_layer_went_as_expected():
-        """Covers only stuff that obscures sqlalchemy code."""
-        assert sum_dao_execute_and_read_one_or_none_spy.call_count == second_test_event_count
-
-        concluded_sessions = second_test_event_count - trailing_entry
+        # TODO assert that process_name made it into where it belongs, and looked right
+        # TODO: assert that detail looked right
 
         assert (
-            logging_dao_execute_and_read_one_or_none_spy.call_count
-            == total_pushes + concluded_sessions
-        )
+            summary_add_new_item_spy.call_count == 4
+        ), "A new summary was created despite preexisting sessions"
 
-        assert (
-            summary_add_new_item_spy.call_count == second_test_event_count
-        ), "A Summary should've been made for each entry, hence 'brand new' sessions"
         assert logger_add_new_item_spy.call_count == second_test_event_count
 
-        assert update_item_spy.call_count == total_pushes + concluded_sessions
+        assert len(logger_add_new_item_spy.call_args_list) == second_test_event_count
 
-        assert execute_window_push_spy.call_count == total_pushes
+        for i in range(0, second_test_event_count):
+            summary = summary_add_new_item_spy.call_args_list[i][0][0]
 
-    assert_sqlalchemy_layer_went_as_expected()
+            assert isinstance(summary, DailyProgramSummary)
+            assert (
+                summary.exe_path_as_id == valid_test_data[i].exe_path
+            ), "Exe path didn't make it to one of it's destinations"
+            assert (
+                summary.program_name == valid_test_data[i].window_title
+            ), "Window title's end result didn't look right"
 
-    assert len(push_window_ahead_ten_sec_spy.call_args_list) == total_pushes
-
-    def assert_sessions_form_a_chain():
-        sessions = []
         for i in range(0, second_test_event_count - trailing_entry):
-            args = on_state_changed_spy.call_args_list[i][0]
-            sessions.append(args[0])
-        assert len(sessions) == 3
-        assert sessions[0].end_time == sessions[1].start_time
-        assert sessions[1].end_time == sessions[2].start_time
-        # I guess the end_time is set before it gets into the on_state_change method
-        assert isinstance(sessions[2].end_time, UserLocalTime)
-        # Sessions[2] has no .end_time to link up with
+            program_log = logger_add_new_item_spy.call_args_list[i][0][0]
 
-    assert_sessions_form_a_chain()
+            assert isinstance(program_log, ProgramSummaryLog)
+            assert (
+                program_log.exe_path_as_id == valid_test_data[i].exe_path
+            ), "Exe path didn't make it to one of it's destinations"
+            assert program_log.process_name == valid_test_data[i].process_name
+            assert (
+                program_log.program_name == valid_test_data[i].window_title
+            ), "Window title's end result didn't look right"
 
-    # The final entry being held suspended in Arbiter
-    assert push_window_ahead_ten_sec_spy.call_count == total_pushes
-
-    assert do_addition_spy.call_count == second_test_event_count - trailing_entry
-
-    assert finalize_log_spy.call_count == second_test_event_count - trailing_entry
-
-    # TODO assert that process_name made it into where it belongs, and looked right
-    # TODO: assert that detail looked right
-
-    assert (
-        summary_add_new_item_spy.call_count == 4
-    ), "A new summary was created despite preexisting sessions"
-
-    assert logger_add_new_item_spy.call_count == second_test_event_count
-
-    assert len(logger_add_new_item_spy.call_args_list) == second_test_event_count
-
-    for i in range(0, second_test_event_count):
-        summary = summary_add_new_item_spy.call_args_list[i][0][0]
-
-        assert isinstance(summary, DailyProgramSummary)
-        assert (
-            summary.exe_path_as_id == valid_test_data[i].exe_path
-        ), "Exe path didn't make it to one of it's destinations"
-        assert (
-            summary.program_name == valid_test_data[i].window_title
-        ), "Window title's end result didn't look right"
-
-    for i in range(0, second_test_event_count - trailing_entry):
-        program_log = logger_add_new_item_spy.call_args_list[i][0][0]
-
-        assert isinstance(program_log, ProgramSummaryLog)
-        assert (
-            program_log.exe_path_as_id == valid_test_data[i].exe_path
-        ), "Exe path didn't make it to one of it's destinations"
-        assert program_log.process_name == valid_test_data[i].process_name
-        assert (
-            program_log.program_name == valid_test_data[i].window_title
-        ), "Window title's end result didn't look right"
-
-    # TODO: Assert logs had correct end_time, start_time, durations
+        # TODO: Assert logs had correct end_time, start_time, durations
+    finally:
+        await surveillance_manager.cleanup()
+        await asyncio.sleep(0)  # Let pending tasks schedule
+        tasks = [t for t in asyncio.all_tasks() if not t.done()]
+        if tasks:
+            print("⚠️ Pending tasks at teardown:")
+            for t in tasks:
+                print(f" - {t}")

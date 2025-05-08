@@ -1,26 +1,18 @@
 # conftest.py
-import pytest
-import pytest_asyncio
-from unittest.mock import AsyncMock, MagicMock, Mock
-
-from sqlalchemy import create_engine, text
-
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
-
-import asyncio
-
-
+import os
 import sys
 from pathlib import Path
 
+import pytest_asyncio
 from dotenv import load_dotenv
-import os
+
+import pytest
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import asyncio
-import sys
-
+from sqlalchemy import create_engine, text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import Session, sessionmaker
 
 from activitytracker.db.models import Base
 
@@ -43,9 +35,6 @@ pytest_plugins = ["pytest_asyncio"]
 @pytest.fixture(scope="session")
 def anyio_backend():
     return "asyncio"
-
-
-pytest_plugins = ["pytest_asyncio"]
 
 
 def pytest_configure(config):
