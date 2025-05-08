@@ -13,8 +13,10 @@ from activitytracker.util.const import SECONDS_PER_HOUR
 
 
 from ..helper.confirm_chronology import (
-    assert_test_data_is_chronological_with_tz, assert_start_times_are_chronological,
-    get_durations_from_test_data, assert_all_start_times_precede_end_times
+    assert_test_data_is_chronological_with_tz,
+    assert_start_times_are_chronological,
+    get_durations_from_test_data,
+    assert_all_start_times_precede_end_times,
 )
 
 from ..helper.copy_util import snapshot_obj_for_tests_with_ledger
@@ -43,18 +45,25 @@ def setup_recorder_etc(regular_session_maker):
     program_logging_dao = ProgramLoggingDao(regular_session_maker)
     chrome_logging_dao = ChromeLoggingDao(regular_session_maker)
 
-    program_summary_dao = ProgramSummaryDao(
-        program_logging_dao, regular_session_maker)
-    chrome_summary_dao = ChromeSummaryDao(
-        chrome_logging_dao, regular_session_maker)
+    program_summary_dao = ProgramSummaryDao(program_logging_dao, regular_session_maker)
+    chrome_summary_dao = ChromeSummaryDao(chrome_logging_dao, regular_session_maker)
 
     recorder = ActivityRecorder(
-        program_logging_dao, chrome_logging_dao, program_summary_dao, chrome_summary_dao, True)
+        program_logging_dao,
+        chrome_logging_dao,
+        program_summary_dao,
+        chrome_summary_dao,
+        True,
+    )
 
-    return {"program_logging": program_logging_dao, "chrome_logging": chrome_logging_dao,
-            "program_summary": program_summary_dao, "chrome_summary": chrome_summary_dao,
-            "recorder": recorder, "session_maker": regular_session_maker
-            }
+    return {
+        "program_logging": program_logging_dao,
+        "chrome_logging": chrome_logging_dao,
+        "program_summary": program_summary_dao,
+        "chrome_summary": chrome_summary_dao,
+        "recorder": recorder,
+        "session_maker": regular_session_maker,
+    }
 
 
 @pytest.fixture
@@ -64,18 +73,20 @@ def verified_data_with_durations():
     assert_start_times_are_chronological(test_sessions)
 
     # Start by doing a deepcopy so integration test A doesn't influence integration test B
-    copied_test_data = [
-        snapshot_obj_for_tests_with_ledger(x) for x in test_sessions]
+    copied_test_data = [snapshot_obj_for_tests_with_ledger(x) for x in test_sessions]
 
     durations = get_durations_from_test_data(test_sessions)
 
     return copied_test_data, durations
 
+
 # TODO: Migrate alembic
 # TODO: Write very simple integration tests for DAOs confirming the name fields work and are the same across all models, equally present
 
 
-def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, verified_data_with_durations):
+def test_long_series_of_writes_yields_correct_final_times(
+    setup_recorder_etc, verified_data_with_durations
+):
     verified_sessions, expected_durations = verified_data_with_durations
 
     counted_loops = [int(num // 10) for num in expected_durations]
@@ -87,8 +98,7 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
     expected_add_ten_count = int(sum(counted_loops))
     # Final entry triggers a partial
     expected_partial_windows = len(expected_durations)
-    expected_on_state_changed = len(
-        verified_sessions) - 1  # Doesn't see final val
+    expected_on_state_changed = len(verified_sessions) - 1  # Doesn't see final val
 
     durations_per_session_dict = {}
 
@@ -133,30 +143,27 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
             recorded_time = 0
 
             session_key = get_session_key(session)
-            calls_dict = {"add_ten": 0,
-                          "add_partial": 0,
-                          "state_changed": 0}
+            calls_dict = {"add_ten": 0, "add_partial": 0, "state_changed": 0}
 
             for _ in range(0, total_cycles):
                 actual_add_ten_count += 1
                 calls_dict["add_ten"] += 1
                 recorded_time += 10
-                setup_recorder_etc["recorder"].add_ten_sec_to_end_time(
-                    current_session)
+                setup_recorder_etc["recorder"].add_ten_sec_to_end_time(current_session)
             # Add in the partial window
             actual_partial_windows += 1
             calls_dict["add_partial"] += 1
             recorded_time += partial_window_time
             setup_recorder_etc["recorder"].add_partial_window(
-                partial_window_time, current_session)
+                partial_window_time, current_session
+            )
 
             # Finalize session
             next_session_start_time = verified_sessions[i + 1].start_time
             # print("current:",current_session)
             # print("next:",verified_sessions[i + 1])
             assert next_session_start_time.dt > current_session.start_time.dt
-            completed_session = current_session.to_completed(
-                next_session_start_time)
+            completed_session = current_session.to_completed(next_session_start_time)
 
             actual_on_state_changed += 1
             calls_dict["state_changed"] += 1
@@ -168,12 +175,10 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
         logs = []
         for session in verified_sessions:
             if isinstance(session, ProgramSession):
-                log = setup_recorder_etc["program_logging"].find_session(
-                    session)
+                log = setup_recorder_etc["program_logging"].find_session(session)
                 logs.append(log)
             else:
-                log = setup_recorder_etc["chrome_logging"].find_session(
-                    session)
+                log = setup_recorder_etc["chrome_logging"].find_session(session)
                 logs.append(log)
 
         actual_durations_in_logs = [log.duration_in_sec for log in logs]
@@ -194,8 +199,7 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
 
         zips = []
         for i in range(0, len(verified_sessions)):
-            zip = (actual_durations_in_logs[i],
-                   verified_sessions[i].ledger.get_total())
+            zip = (actual_durations_in_logs[i], verified_sessions[i].ledger.get_total())
             zips.append(zip)
 
         print("-- comparing zips -- ")
@@ -207,8 +211,7 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
         def assert_actual_logs_match_expected_durations():
             for i in range(0, len(verified_sessions)):
                 current = verified_sessions[i]
-                assert current.ledger.get_total(
-                ) == actual_durations_in_logs[i]
+                assert current.ledger.get_total() == actual_durations_in_logs[i]
 
         assert_actual_logs_match_expected_durations()
 
@@ -275,8 +278,7 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
             seen_session_count = len(test_data_arr)
             assert len(program_logs) + len(domain_logs) == seen_session_count
 
-        assert_count_of_logs_is_right(
-            program_logs, domain_logs, verified_sessions)
+        assert_count_of_logs_is_right(program_logs, domain_logs, verified_sessions)
 
         logs_durations_tally_by_name = {}
 
@@ -330,7 +332,6 @@ def test_long_series_of_writes_yields_correct_final_times(setup_recorder_etc, ve
         assert lower_bound < start_end_totals and start_end_totals < upper_bound
 
     finally:
-        truncate_summaries_and_logs_tables_via_session(
-            setup_recorder_etc["session_maker"])
+        truncate_summaries_and_logs_tables_via_session(setup_recorder_etc["session_maker"])
 
     # TODO: Test that logs have the right start_time, end_time

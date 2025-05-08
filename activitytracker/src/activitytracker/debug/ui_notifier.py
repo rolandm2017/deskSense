@@ -1,4 +1,8 @@
-from activitytracker.object.arbiter_classes import ApplicationInternalState, ChromeInternalState, InternalState
+from activitytracker.object.arbiter_classes import (
+    ApplicationInternalState,
+    ChromeInternalState,
+    InternalState,
+)
 from activitytracker.object.classes import ProgramSession, ChromeSession
 
 
@@ -33,14 +37,8 @@ class UINotifier:
 
 
 def get_program_display_info(window_title):
-    return {
-        "text": window_title,
-        "color": "lime"  # Could have a color map like the overlay
-    }
+    return {"text": window_title, "color": "lime"}  # Could have a color map like the overlay
 
 
 def get_chrome_display_info(domain):
-    return {
-        "text": f"Chrome | {domain}",
-        "color": "#4285F4"
-    }
+    return {"text": f"Chrome | {domain}", "color": "#4285F4"}

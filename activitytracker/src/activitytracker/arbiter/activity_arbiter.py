@@ -1,7 +1,12 @@
 from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
-from activitytracker.object.classes import ChromeSession, ProgramSession, CompletedChromeSession, CompletedProgramSession
+from activitytracker.object.classes import (
+    ChromeSession,
+    ProgramSession,
+    CompletedChromeSession,
+    CompletedProgramSession,
+)
 
 from .activity_state_machine import ActivityStateMachine
 from .session_polling import KeepAliveEngine, ThreadedEngineContainer
@@ -10,8 +15,12 @@ from activitytracker.util.copy_util import snapshot_obj_for_tests
 
 
 class ActivityArbiter:
-    def __init__(self, user_facing_clock, threaded_container: ThreadedEngineContainer,
-                 engine_class=KeepAliveEngine):
+    def __init__(
+        self,
+        user_facing_clock,
+        threaded_container: ThreadedEngineContainer,
+        engine_class=KeepAliveEngine,
+    ):
         """
         This class exists to prevent the Chrome Service from doing ANYTHING but reporting which tab is active.
 
@@ -46,7 +55,9 @@ class ActivityArbiter:
         else:
             raise AttributeError("Listener method was missing")
 
-    def notify_summary_dao(self, session: CompletedProgramSession | CompletedChromeSession | None):
+    def notify_summary_dao(
+        self, session: CompletedProgramSession | CompletedChromeSession | None
+    ):
         if self.activity_recorder:
             self.activity_recorder.on_state_changed(session)
 
@@ -73,8 +84,7 @@ class ActivityArbiter:
             self.logger.log_white("[Arb]", new_session.window_title)
         else:
             self.logger.log_white("[Tab]", new_session.domain)
-        assert not isinstance(
-            new_session, dict), "Found an empty dictionary as session"
+        assert not isinstance(new_session, dict), "Found an empty dictionary as session"
         self.notify_display_update(new_session)
         if self.state_machine.current_state:
             if self.current_pulse is None:
@@ -91,8 +101,7 @@ class ActivityArbiter:
 
             self.current_pulse.stop()  # stop the old one from prev loop
 
-            new_keep_alive_engine = self.engine_class(
-                new_session, self.activity_recorder)
+            new_keep_alive_engine = self.engine_class(new_session, self.activity_recorder)
 
             self.current_pulse.replace_engine(new_keep_alive_engine)
 
@@ -108,8 +117,7 @@ class ActivityArbiter:
             self.notify_of_new_session(new_session)
             self.state_machine.set_new_session(new_session)
 
-            new_keep_alive_engine = self.engine_class(
-                new_session, self.activity_recorder)
+            new_keep_alive_engine = self.engine_class(new_session, self.activity_recorder)
 
             self.current_pulse.add_first_engine(new_keep_alive_engine)
 

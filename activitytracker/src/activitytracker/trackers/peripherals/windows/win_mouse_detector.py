@@ -7,7 +7,9 @@ from datetime import datetime
 from pynput import mouse
 
 from activitytracker.trackers.message_dispatch import publish_mouse_events
-from activitytracker.trackers.peripherals.util.mouse_event_aggregator import MouseEventAggregator
+from activitytracker.trackers.peripherals.util.mouse_event_aggregator import (
+    MouseEventAggregator,
+)
 from activitytracker.trackers.peripherals.util.mouse_event_dispatch import MouseEventDispatch
 
 # Debug flag
@@ -26,34 +28,30 @@ def win_monitor_mouse(device_path, get_running_state=None):
 
     # Create shared resources
     mouse_aggregator = MouseEventAggregator()
-    mouse_event_dispatch = MouseEventDispatch(
-        mouse_aggregator, publish_mouse_events)
+    mouse_event_dispatch = MouseEventDispatch(mouse_aggregator, publish_mouse_events)
 
     def on_move(x, y):
         # Add to aggregator
         mouse_event_dispatch.add_to_aggregator()
         if DEBUG:
-            print(f'Mouse moved to ({x}, {y})')
+            print(f"Mouse moved to ({x}, {y})")
 
     def on_click(x, y, button, pressed):
         # Add to aggregator for clicks
         mouse_event_dispatch.add_to_aggregator()
         if DEBUG:
             print(
-                f'Mouse {"pressed" if pressed else "released"} at ({x}, {y}) with {button}')
+                f'Mouse {"pressed" if pressed else "released"} at ({x}, {y}) with {button}'
+            )
 
     def on_scroll(x, y, dx, dy):
         # Add to aggregator for scrolls
         mouse_event_dispatch.add_to_aggregator()
         if DEBUG:
-            print(f'Mouse scrolled at ({x}, {y})')
+            print(f"Mouse scrolled at ({x}, {y})")
 
     # Start mouse listener
-    listener = mouse.Listener(
-        on_move=on_move,
-        on_click=on_click,
-        on_scroll=on_scroll
-    )
+    listener = mouse.Listener(on_move=on_move, on_click=on_click, on_scroll=on_scroll)
     print("Starting Windows mouse logger...")
     listener.start()
 

@@ -1,4 +1,3 @@
-
 from collections import deque
 
 from datetime import datetime
@@ -21,7 +20,7 @@ class KeyboardFacadeCore:
         self.queue.append(time)
 
     def read_event(self):
-        if not hasattr(self, 'monitoring'):
+        if not hasattr(self, "monitoring"):
             self.monitoring = FacadeMonitoring("Keyboard")
 
         queue_length = len(self.queue)

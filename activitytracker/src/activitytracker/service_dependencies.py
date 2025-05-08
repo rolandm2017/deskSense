@@ -13,8 +13,15 @@ from activitytracker.arbiter.session_polling import ThreadedEngineContainer
 
 
 from activitytracker.services.chrome_service import ChromeService
-from activitytracker.services.tiny_services import KeyboardService, MouseService, TimezoneService
-from activitytracker.facade.facade_singletons import get_keyboard_facade_instance, get_mouse_facade_instance
+from activitytracker.services.tiny_services import (
+    KeyboardService,
+    MouseService,
+    TimezoneService,
+)
+from activitytracker.facade.facade_singletons import (
+    get_keyboard_facade_instance,
+    get_mouse_facade_instance,
+)
 
 from activitytracker.db.database import async_session_maker, regular_session_maker
 from activitytracker.db.dao.queuing.mouse_dao import MouseDao
@@ -32,10 +39,8 @@ from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 system_clock = SystemClock()
 user_facing_clock = UserFacingClock()
 
-_program_logging_dao = ProgramLoggingDao(
-    regular_session_maker)
-_chrome_logging_dao = ChromeLoggingDao(
-    regular_session_maker)
+_program_logging_dao = ProgramLoggingDao(regular_session_maker)
+_chrome_logging_dao = ChromeLoggingDao(regular_session_maker)
 
 
 async def get_keyboard_dao() -> KeyboardDao:
@@ -74,17 +79,22 @@ async def get_chrome_logging_dao() -> ChromeLoggingDao:
 
 async def get_timezone_service() -> TimezoneService:
     from activitytracker.services.tiny_services import TimezoneService
+
     return TimezoneService()
 
 
-async def get_keyboard_service(dao: KeyboardDao = Depends(get_keyboard_dao)) -> KeyboardService:
+async def get_keyboard_service(
+    dao: KeyboardDao = Depends(get_keyboard_dao),
+) -> KeyboardService:
     from activitytracker.services.tiny_services import KeyboardService
+
     return KeyboardService(dao)
 
 
 async def get_mouse_service(dao: MouseDao = Depends(get_mouse_dao)) -> MouseService:
     # Lazy import to avoid circular dependency
     from activitytracker.services.tiny_services import MouseService
+
     return MouseService(dao)
 
 
@@ -99,11 +109,18 @@ async def get_dashboard_service(
     program_summary_dao: ProgramSummaryDao = Depends(get_program_summary_dao),
     program_logging_dao: ProgramLoggingDao = Depends(get_program_logging_dao),
     chrome_summary_dao: ChromeSummaryDao = Depends(get_chrome_summary_dao),
-    chrome_logging_dao: ChromeLoggingDao = Depends(get_chrome_logging_dao)
+    chrome_logging_dao: ChromeLoggingDao = Depends(get_chrome_logging_dao),
 ):
     # Lazy import to avoid circular dependency
     from activitytracker.services.dashboard_service import DashboardService
-    return DashboardService(timeline_dao, program_summary_dao, program_logging_dao, chrome_summary_dao, chrome_logging_dao)
+
+    return DashboardService(
+        timeline_dao,
+        program_summary_dao,
+        program_logging_dao,
+        chrome_summary_dao,
+        chrome_logging_dao,
+    )
 
 
 # Singleton instance of ActivityArbiter
@@ -121,15 +138,11 @@ async def get_activity_arbiter():
     loop = asyncio.get_event_loop()
     system_clock = SystemClock()
     user_facing_clock = UserFacingClock()
-    chrome_logging_dao = ChromeLoggingDao(
-        regular_session_maker)
-    program_logging_dao = ProgramLoggingDao(
-        regular_session_maker)
+    chrome_logging_dao = ChromeLoggingDao(regular_session_maker)
+    program_logging_dao = ProgramLoggingDao(regular_session_maker)
 
-    program_summary_dao = ProgramSummaryDao(
-        program_logging_dao, regular_session_maker)
-    chrome_summary_dao = ChromeSummaryDao(
-        chrome_logging_dao, regular_session_maker)
+    program_summary_dao = ProgramSummaryDao(program_logging_dao, regular_session_maker)
+    chrome_summary_dao = ChromeSummaryDao(chrome_logging_dao, regular_session_maker)
 
     container = ThreadedEngineContainer(1)
 
@@ -138,8 +151,9 @@ async def get_activity_arbiter():
         print("Creating new Overlay")
         overlay = Overlay()
         ui_layer = UINotifier(overlay)
-        activity_recorder = ActivityRecorder(program_logging_dao, chrome_logging_dao,
-                                             program_summary_dao, chrome_summary_dao)
+        activity_recorder = ActivityRecorder(
+            program_logging_dao, chrome_logging_dao, program_summary_dao, chrome_summary_dao
+        )
         print("Creating new ActivityArbiter")
         chrome_service = await get_chrome_service()
 
@@ -148,11 +162,10 @@ async def get_activity_arbiter():
         )
 
         _arbiter_instance.add_ui_listener(ui_layer.on_state_changed)
-        _arbiter_instance.add_recorder_listener(
-            activity_recorder)
+        _arbiter_instance.add_recorder_listener(activity_recorder)
 
         # Create wrapper for async handler
-        @chrome_service.event_emitter.on('tab_change')
+        @chrome_service.event_emitter.on("tab_change")
         def handle_tab_change(tab):
             # Create and schedule the task
             if _arbiter_instance is None:
@@ -162,14 +175,17 @@ async def get_activity_arbiter():
 
         print("ActivityArbiter created successfully")
     # else:
-        # print(f"Reusing arbiter instance with id: {id(_arbiter_instance)}")
+    # print(f"Reusing arbiter instance with id: {id(_arbiter_instance)}")
 
     return _arbiter_instance
 
 
-async def get_chrome_service(arbiter: ActivityArbiter = Depends(get_activity_arbiter)) -> ChromeService:
+async def get_chrome_service(
+    arbiter: ActivityArbiter = Depends(get_activity_arbiter),
+) -> ChromeService:
     # Lazy import to avoid circular dependency
     from activitytracker.services.chrome_service import ChromeService
+
     global _chrome_service_instance  # Singleton because it must preserve internal state
     if _chrome_service_instance is None:
         clock = SystemClock()

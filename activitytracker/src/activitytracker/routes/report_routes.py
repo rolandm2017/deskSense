@@ -4,19 +4,21 @@ from typing import List
 from activitytracker.object.pydantic_dto import (
     KeyboardReport,
     MouseReport,
-    ProgramActivityReport
+    ProgramActivityReport,
 )
 
-from activitytracker.services.tiny_services import (
-    KeyboardService, MouseService
-)
+from activitytracker.services.tiny_services import KeyboardService, MouseService
 
 from activitytracker.service_dependencies import (
-    get_keyboard_service, get_mouse_service, get_chrome_service
+    get_keyboard_service,
+    get_mouse_service,
+    get_chrome_service,
 )
 
 from activitytracker.util.pydantic_factory import (
-    make_keyboard_log, make_mouse_log, make_program_log
+    make_keyboard_log,
+    make_mouse_log,
+    make_program_log,
 )
 
 from activitytracker.util.console_logger import ConsoleLogger
@@ -29,25 +31,27 @@ router = APIRouter(prefix="/report", tags=["reports"])
 
 
 @router.get("/keyboard/all", response_model=KeyboardReport)
-async def get_all_keyboard_reports(keyboard_service: KeyboardService = Depends(get_keyboard_service)):
+async def get_all_keyboard_reports(
+    keyboard_service: KeyboardService = Depends(get_keyboard_service),
+):
     logger.log_purple("[LOG] keyboard report - all")
     events = await keyboard_service.get_all_events()
     if not isinstance(events, list):
-        raise HTTPException(
-            status_code=500, detail="Failed to generate keyboard report")
+        raise HTTPException(status_code=500, detail="Failed to generate keyboard report")
 
     logs = [make_keyboard_log(e) for e in events]
     return KeyboardReport(count=len(events), keyboardLogs=logs)
 
 
 @router.get("/keyboard", response_model=KeyboardReport)
-async def get_keyboard_report(keyboard_service: KeyboardService = Depends(get_keyboard_service)):
+async def get_keyboard_report(
+    keyboard_service: KeyboardService = Depends(get_keyboard_service),
+):
     logger.log_purple("[LOG] keyboard report")
     events = await keyboard_service.get_past_days_events()
 
     if not isinstance(events, list):
-        raise HTTPException(
-            status_code=500, detail="Failed to generate keyboard report")
+        raise HTTPException(status_code=500, detail="Failed to generate keyboard report")
 
     logs = [make_keyboard_log(e) for e in events]
     return KeyboardReport(count=len(events), keyboardLogs=logs)
@@ -58,8 +62,7 @@ async def get_all_mouse_reports(mouse_service: MouseService = Depends(get_mouse_
     logger.log_purple("[LOG] mouse report - all")
     events = await mouse_service.get_all_events()
     if not isinstance(events, list):
-        raise HTTPException(
-            status_code=500, detail="Failed to generate mouse report")
+        raise HTTPException(status_code=500, detail="Failed to generate mouse report")
 
     reports = [make_mouse_log(e) for e in events]
     return MouseReport(count=len(reports), mouseLogs=reports)
@@ -70,8 +73,7 @@ async def get_mouse_report(mouse_service: MouseService = Depends(get_mouse_servi
     logger.log_purple("[LOG] mouse report")
     events = await mouse_service.get_past_days_events()
     if not isinstance(events, list):
-        raise HTTPException(
-            status_code=500, detail="Failed to generate mouse report")
+        raise HTTPException(status_code=500, detail="Failed to generate mouse report")
 
     reports = [make_mouse_log(e) for e in events]
     return MouseReport(count=len(reports), mouseLogs=reports)

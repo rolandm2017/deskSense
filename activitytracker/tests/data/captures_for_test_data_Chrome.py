@@ -10,14 +10,26 @@ from activitytracker.object.pydantic_dto import UtcDtTabChange
 # NOTE #2: i changed .strptime into .fromisoformat because it looks like it works better
 
 chrome_data = [
-    UtcDtTabChange(tabTitle='Google Docs', url='docs.google.com',
-                            startTime=datetime.fromisoformat('2025-03-22 16:15:02-07:00')),
-    UtcDtTabChange(tabTitle='ChatGPT', url='chatgpt.com',
-                            startTime=datetime.fromisoformat('2025-03-22 16:15:10-07:00')),
-    UtcDtTabChange(tabTitle='Claude', url='claude.ai',
-                            startTime=datetime.fromisoformat('2025-03-22 16:15:21-07:00')),
-    UtcDtTabChange(tabTitle='ChatGPT', url='chatgpt.com',
-                            startTime=datetime.fromisoformat('2025-03-22 16:15:30-07:00'))
+    UtcDtTabChange(
+        tabTitle="Google Docs",
+        url="docs.google.com",
+        startTime=datetime.fromisoformat("2025-03-22 16:15:02-07:00"),
+    ),
+    UtcDtTabChange(
+        tabTitle="ChatGPT",
+        url="chatgpt.com",
+        startTime=datetime.fromisoformat("2025-03-22 16:15:10-07:00"),
+    ),
+    UtcDtTabChange(
+        tabTitle="Claude",
+        url="claude.ai",
+        startTime=datetime.fromisoformat("2025-03-22 16:15:21-07:00"),
+    ),
+    UtcDtTabChange(
+        tabTitle="ChatGPT",
+        url="chatgpt.com",
+        startTime=datetime.fromisoformat("2025-03-22 16:15:30-07:00"),
+    ),
     # Commented out below entries because, because the tests were too long
     # TabChangeEvent(tabTitle='Google', url='www.google.com',
     #                startTime=datetime.strptime('2025-03-22 23:15:39', '%Y-%m-%d %H:%M:%S')),

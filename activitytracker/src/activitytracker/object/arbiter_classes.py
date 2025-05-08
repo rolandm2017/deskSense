@@ -1,4 +1,3 @@
-
 class InternalState:
     def __init__(self, active_application, is_chrome, session):
         self.active_application = active_application

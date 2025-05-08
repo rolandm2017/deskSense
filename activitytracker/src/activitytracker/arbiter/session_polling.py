@@ -31,14 +31,14 @@ Here, worst case scenario in a shutdown situation, is that 0-10 sec is not recor
 class KeepAliveEngine:
     def __init__(self, session: ProgramSession | ChromeSession, dao_connection):
         """
-        This class is a loop. Each iteration of ten loops nudges 
+        This class is a loop. Each iteration of ten loops nudges
         the end time of the current session forward ten sec.
 
         The benefit is that the program can shutdown ~whenever~ and
         the end time of the final program will be pretty much accurate,
         while every other program will be bang on.
 
-        The meaning of the interval between iterate_loop() calls is 
+        The meaning of the interval between iterate_loop() calls is
         agnostic, dependent on the delay between calls in the container.
         """
         self.session = session
@@ -58,7 +58,7 @@ class KeepAliveEngine:
 
     def conclude(self):
         """
-        The "used amount" resets after it reaches a full window. 
+        The "used amount" resets after it reaches a full window.
         So deducting the full 10 sec should never happen.
 
         Said another way, the addition of the full 10 sec
@@ -85,7 +85,7 @@ class KeepAliveEngine:
         """
         self.recorder.add_partial_window(amount_used, self.session)
 
-     # For testing: methods to expose internal state
+    # For testing: methods to expose internal state
     def get_amount_used(self):
         """Get the current amount used (for testing)"""
         return self.amount_used
@@ -102,6 +102,7 @@ class ThreadedEngineContainer:
     Does this to keep the ActivityArbiter and the currently active session's window push
 
     """
+
     # TODO: Also keep the EngineContainer between engines. just change it out. Keep the thread alive.
 
     def __init__(self, interval: int | float = 1, sleep_fn=time.sleep, profiler=None):

@@ -25,17 +25,19 @@ class MockClock(ClockProtocol):
             next_val_from_iter = next(self.times)
             self._current_time = next_val_from_iter
             if self._current_time.tzinfo is None:
-                self._current_time = self._current_time.replace(
-                    tzinfo=timezone.utc)
+                self._current_time = self._current_time.replace(tzinfo=timezone.utc)
             # print("[debug] Returning ", self._current_time, datetime.now().strftime("%I:%M:%S %p"))
             self.count_of_times += 1
             return self._current_time
 
         except StopIteration:
             raise RuntimeError(
-                f"MockClock ran out of times. It started with {self.count_of_times}")
+                f"MockClock ran out of times. It started with {self.count_of_times}"
+            )
 
-    def seconds_have_elapsed(self, current_time: datetime, previous_time: datetime, seconds: int) -> bool:
+    def seconds_have_elapsed(
+        self, current_time: datetime, previous_time: datetime, seconds: int
+    ) -> bool:
         """Check if the specified number of seconds has elapsed between two times."""
         elapsed = current_time - previous_time
         return elapsed >= timedelta(seconds=seconds)
@@ -45,7 +47,7 @@ class MockClock(ClockProtocol):
         Advance the iterator by n positions.
         Example: self.times is [3, 4, 15, 16, 28, 29]
         next(self.times) would grab 3.
-        advance_time(3) is called. 
+        advance_time(3) is called.
         3 -> 4 -> 15 -> 16 is 3 skips. next(self.times) grabs 28.
         """
 
@@ -93,7 +95,7 @@ class UserLocalTimeMockClock(ClockProtocol):
         stack = inspect.stack()
         caller_frame = stack[1]
         caller_function = caller_frame.function
-        caller_filename = caller_frame.filename.split('\\')[-1]
+        caller_filename = caller_frame.filename.split("\\")[-1]
         caller_line = caller_frame.lineno
 
         # Thread-safe increment and iterator access
@@ -110,8 +112,7 @@ class UserLocalTimeMockClock(ClockProtocol):
 
                 # Ensure timezone is set
                 if self._current_time.tzinfo is None:
-                    self._current_time = self._current_time.replace(
-                        tzinfo=timezone.utc)
+                    self._current_time = self._current_time.replace(tzinfo=timezone.utc)
 
                 # Increment counter safely
                 self.count_of_times += 1
@@ -125,7 +126,8 @@ class UserLocalTimeMockClock(ClockProtocol):
             except StopIteration:
                 # We're out of values, reset the iterator to reuse values
                 print(
-                    f"\n[WARNING] Clock ran out after {self.count_of_times} calls, resetting iterator")
+                    f"\n[WARNING] Clock ran out after {self.count_of_times} calls, resetting iterator"
+                )
                 self.times = iter(self.original_times)  # Reset iterator
 
                 # Try again with the reset iterator
@@ -133,8 +135,7 @@ class UserLocalTimeMockClock(ClockProtocol):
                 self._current_time = next_val_from_iter
 
                 if self._current_time.tzinfo is None:
-                    self._current_time = self._current_time.replace(
-                        tzinfo=timezone.utc)
+                    self._current_time = self._current_time.replace(tzinfo=timezone.utc)
 
                 self.count_of_times += 1
 
@@ -145,7 +146,9 @@ class UserLocalTimeMockClock(ClockProtocol):
             #  raise RuntimeError(
             #     f"MockClock ran out of times. It started with {self.count_of_times}")
 
-    def seconds_have_elapsed(self, current_time: UserLocalTime, previous_time: UserLocalTime, seconds: int) -> bool:
+    def seconds_have_elapsed(
+        self, current_time: UserLocalTime, previous_time: UserLocalTime, seconds: int
+    ) -> bool:
         """Check if the specified number of seconds has elapsed between two times."""
         elapsed = current_time.dt - previous_time.dt
         return elapsed >= timedelta(seconds=seconds)
@@ -171,11 +174,13 @@ class UserLocalTimeMockClock(ClockProtocol):
         stack = inspect.stack()
         caller_frame = stack[1]
         caller_function = caller_frame.function
-        caller_filename = caller_frame.filename.split('\\')[-1]
+        caller_filename = caller_frame.filename.split("\\")[-1]
         caller_line = caller_frame.lineno
 
-        print(f"[DEBUG] Clock today_start() - Thread {thread_id} - "
-              f"Called by: {caller_filename}:{caller_function}:{caller_line}")
+        print(
+            f"[DEBUG] Clock today_start() - Thread {thread_id} - "
+            f"Called by: {caller_filename}:{caller_function}:{caller_line}"
+        )
 
         with self._lock:
             if self._current_time:

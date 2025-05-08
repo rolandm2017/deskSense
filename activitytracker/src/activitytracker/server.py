@@ -205,7 +205,10 @@ class HealthResponse(BaseModel):
 async def health_check():
     logger.log_purple("[LOG] health check")
     try:
-        if not surveillance_state and not surveillance_state.manager.keyboard_tracker:
+        if (
+            not activity_tracker_state
+            and not activity_tracker_state.manager.keyboard_tracker
+        ):
             return {"status": "error", "detail": "Tracker not initialized"}
         return {"status": "healthy"}
     except Exception as e:
@@ -224,7 +227,9 @@ async def get_timeline_for_dashboard(
 
     # Convert SQLAlchemy models to Pydantic models
     pydantic_mouse_rows = [TimelineEntrySchema.from_orm_model(row) for row in mouse_rows]
-    pydantic_keyboard_rows = [TimelineEntrySchema.from_orm_model(row) for row in keyboard_rows]
+    pydantic_keyboard_rows = [
+        TimelineEntrySchema.from_orm_model(row) for row in keyboard_rows
+    ]
 
     return TimelineRows(mouseRows=pydantic_mouse_rows, keyboardRows=pydantic_keyboard_rows)
 
@@ -256,13 +261,17 @@ async def get_chrome_time_for_dashboard(
 #
 
 
-@app.get("/api/dashboard/breakdown/week/{week_of}", response_model=ProductivityBreakdownByWeek)
+@app.get(
+    "/api/dashboard/breakdown/week/{week_of}", response_model=ProductivityBreakdownByWeek
+)
 async def get_productivity_breakdown(
     week_of: date = Path(..., description="Week starting date"),
     dashboard_service: DashboardService = Depends(get_dashboard_service),
     timezone_service: TimezoneService = Depends(get_timezone_service),
 ):
-    weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(week_of)
+    weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(
+        week_of
+    )
     if not isinstance(weeks_overview, list):
         raise HTTPException(
             status_code=500, detail="Failed to retrieve week of Chrome chart info"
@@ -278,7 +287,9 @@ async def get_productivity_breakdown(
 async def get_program_week_history(
     dashboard_service: DashboardService = Depends(get_dashboard_service),
 ):
-    week_of_data: List[DailyProgramSummary] = await dashboard_service.get_program_summary_weekly()
+    week_of_data: List[DailyProgramSummary] = (
+        await dashboard_service.get_program_summary_weekly()
+    )
     if not isinstance(week_of_data, list):
         raise HTTPException(
             status_code=500, detail="Failed to retrieve week of program chart info"
@@ -301,12 +312,15 @@ async def get_chrome_week_history(
     for day in week_of_unsorted_domain_summaries:
         if not isinstance(day, DailyDomainSummary):
             raise HTTPException(
-                status_code=500, detail="Did not receive a list of DailyDomainSummary objects"
+                status_code=500,
+                detail="Did not receive a list of DailyDomainSummary objects",
             )
     return WeeklyChromeContent(days=DtoMapper.map_chrome(week_of_unsorted_domain_summaries))
 
 
-@app.get("/api/dashboard/chrome/summaries/week/{week_of}", response_model=WeeklyChromeContent)
+@app.get(
+    "/api/dashboard/chrome/summaries/week/{week_of}", response_model=WeeklyChromeContent
+)
 async def get_previous_week_chrome_history(
     week_of: date = Path(..., description="Week starting date"),
     dashboard_service: DashboardService = Depends(get_dashboard_service),
@@ -351,9 +365,13 @@ async def get_timeline_weekly(
     keyboard_rows = todays_payload["keyboard_events"]
     # Convert SQLAlchemy models to Pydantic models
     pydantic_mouse_rows = [TimelineEntrySchema.from_orm_model(row) for row in mouse_rows]
-    pydantic_keyboard_rows = [TimelineEntrySchema.from_orm_model(row) for row in keyboard_rows]
+    pydantic_keyboard_rows = [
+        TimelineEntrySchema.from_orm_model(row) for row in keyboard_rows
+    ]
 
-    todays_row = TimelineRows(mouseRows=pydantic_mouse_rows, keyboardRows=pydantic_keyboard_rows)
+    todays_row = TimelineRows(
+        mouseRows=pydantic_mouse_rows, keyboardRows=pydantic_keyboard_rows
+    )
 
     todays_payload = DayOfTimelineRows(date=todays_date, row=todays_row)
 
@@ -367,7 +385,9 @@ async def get_timeline_weekly(
             TimelineEntrySchema.from_orm_model(row) for row in keyboard_rows
         ]
 
-        row = TimelineRows(mouseRows=pydantic_mouse_rows, keyboardRows=pydantic_keyboard_rows)
+        row = TimelineRows(
+            mouseRows=pydantic_mouse_rows, keyboardRows=pydantic_keyboard_rows
+        )
 
         row = DayOfTimelineRows(date=day["date"], row=row)
         rows.append(row)
@@ -386,7 +406,9 @@ async def get_previous_week_of_timeline(
     dashboard_service: DashboardService = Depends(get_dashboard_service),
 ):
 
-    days, start_of_week = await dashboard_service.peripherals.get_specific_week_timeline(week_of)
+    days, start_of_week = await dashboard_service.peripherals.get_specific_week_timeline(
+        week_of
+    )
 
     if not isinstance(start_of_week, datetime):
         raise ValueError("start_of_week.dt was expected to be a datetime")
@@ -401,7 +423,9 @@ async def get_previous_week_of_timeline(
         pydantic_keyboard_rows = [
             TimelineEntrySchema.from_orm_model(row) for row in keyboard_rows
         ]
-        row = TimelineRows(mouseRows=pydantic_mouse_rows, keyboardRows=pydantic_keyboard_rows)
+        row = TimelineRows(
+            mouseRows=pydantic_mouse_rows, keyboardRows=pydantic_keyboard_rows
+        )
         row = DayOfTimelineRows(date=day["date"], row=row)
         rows.append(row)
 
@@ -419,7 +443,9 @@ async def get_previous_week_of_timeline(
 async def get_program_usage_timeline_for_present_week(
     dashboard_service: DashboardService = Depends(get_dashboard_service),
 ):
-    all_days, start_of_week = await dashboard_service.programs.get_current_week_usage_timeline()
+    all_days, start_of_week = (
+        await dashboard_service.programs.get_current_week_usage_timeline()
+    )
 
     days = []
     for day in all_days:
@@ -451,7 +477,8 @@ async def get_program_usage_timeline_for_present_week(
 
 
 @app.get(
-    "/api/dashboard/programs/usage/timeline/{week_of}", response_model=WeeklyProgramUsageTimeline
+    "/api/dashboard/programs/usage/timeline/{week_of}",
+    response_model=WeeklyProgramUsageTimeline,
 )
 async def get_program_usage_timeline_by_week(
     week_of: date = Path(..., description="Week starting date"),

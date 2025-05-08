@@ -10,9 +10,14 @@ import time
 import keyboard
 from dotenv import load_dotenv
 
-from activitytracker.trackers.peripherals.windows.win_keyboard_detector import win_monitor_keyboard
+from activitytracker.trackers.peripherals.windows.win_keyboard_detector import (
+    win_monitor_keyboard,
+)
 from activitytracker.trackers.peripherals.windows.win_mouse_detector import win_monitor_mouse
-from activitytracker.trackers.message_dispatch import publish_keyboard_event, publish_mouse_events
+from activitytracker.trackers.message_dispatch import (
+    publish_keyboard_event,
+    publish_mouse_events,
+)
 
 
 def run_windows_monitors():
@@ -37,7 +42,7 @@ def run_windows_monitors():
         raise ValueError("Failed to load peripheral paths")
 
     # Register global exit hotkey
-    keyboard.add_hotkey('alt+q', exit_all_monitors)
+    keyboard.add_hotkey("alt+q", exit_all_monitors)
     print("Starting monitors. Press Alt+Q to exit all monitors.")
 
     # Define a function to check running state
@@ -49,14 +54,14 @@ def run_windows_monitors():
         target=win_monitor_keyboard,
         args=(keyboard_path, is_running),
         daemon=True,
-        name="KeyboardMonitorThread"
+        name="KeyboardMonitorThread",
     )
 
     mouse_thread = threading.Thread(
         target=win_monitor_mouse,
         args=(mouse_path, is_running),
         daemon=True,
-        name="MouseMonitorThread"
+        name="MouseMonitorThread",
     )
 
     # Start threads

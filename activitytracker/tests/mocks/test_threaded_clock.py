@@ -80,8 +80,7 @@ class TestMockClockThreading(unittest.TestCase):
         """Test that simulates your specific threading setup"""
         # Create a list of 7 times (deliberately fewer than needed)
         times = [
-            UserLocalTime(datetime(2025, 3, 22, 16,
-                          14, i, tzinfo=timezone.utc))
+            UserLocalTime(datetime(2025, 3, 22, 16, 14, i, tzinfo=timezone.utc))
             for i in range(7)
         ]
 
@@ -95,6 +94,7 @@ class TestMockClockThreading(unittest.TestCase):
             thread_id = threading.get_ident()
             print(f"[THREAD DEBUG] Clock call from thread {thread_id}")
             return original_now()
+
         clock.now = now_with_thread_id
 
         # Create the DAO that will use the clock
@@ -133,5 +133,8 @@ class TestMockClockThreading(unittest.TestCase):
         print(f"Total clock count: {clock.count_of_times}")
 
         # This will fail if we have the threading issue
-        self.assertEqual(clock.count_of_times, len(direct_calls) + dao.call_count,
-                         "Clock count doesn't match expected number of calls")
+        self.assertEqual(
+            clock.count_of_times,
+            len(direct_calls) + dao.call_count,
+            "Clock count doesn't match expected number of calls",
+        )

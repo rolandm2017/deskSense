@@ -41,8 +41,7 @@ class TestResourceManagement:
     async def dao(self, mock_session_maker):
         """Create a DAO instance with the mock session maker"""
         maker, _ = mock_session_maker
-        dao = BaseQueueingDao(maker,
-                              batch_size=5, flush_interval=0.1)
+        dao = BaseQueueingDao(maker, batch_size=5, flush_interval=0.1)
         yield dao
         await dao.cleanup()  # Ensure cleanup happens after the test
 
@@ -144,8 +143,9 @@ class TestResourceManagement:
         fd_after = len(process.open_files())
 
         # They should be approximately the same (allowing for some system variations)
-        assert abs(
-            fd_after - fd_before) <= 2, f"Possible resource leak: {fd_before} FDs before, {fd_after} after"
+        assert (
+            abs(fd_after - fd_before) <= 2
+        ), f"Possible resource leak: {fd_before} FDs before, {fd_after} after"
 
     @pytest.mark.asyncio
     async def test_concurrent_queue_operations(self, dao):
@@ -177,7 +177,9 @@ class TestResourceManagement:
 
             # Verify the task wasn't recreated mid-processing
             if not task_completed and dao._queue_task is not None:
-                assert dao._queue_task is initial_task, "Task was recreated during concurrent operations"
+                assert (
+                    dao._queue_task is initial_task
+                ), "Task was recreated during concurrent operations"
 
         # Wait for processing to complete
         for _ in range(30):  # Try for 3 seconds maximum
@@ -225,7 +227,9 @@ class TestResourceManagement:
         await asyncio.sleep(0.5)
 
         # Check that the new processing occurred
-        assert session.add_all.called, "Should be able to process new items after an exception"
+        assert (
+            session.add_all.called
+        ), "Should be able to process new items after an exception"
 
     @pytest.mark.asyncio
     async def test_aenter_aexit_context_manager(self):
@@ -264,6 +268,5 @@ class TestResourceManagement:
             assert dao.processing is True
 
         # After context exit, cleanup should have been called
-        print(
-            f"In test, type of session.add_all, near the end: {type(session.add_all)}")
+        print(f"In test, type of session.add_all, near the end: {type(session.add_all)}")
         assert cleanup_called, "cleanup was not called when exiting context"

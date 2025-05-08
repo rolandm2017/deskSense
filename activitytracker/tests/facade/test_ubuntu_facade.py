@@ -1,4 +1,3 @@
-
 from unittest.mock import MagicMock, patch
 import pytest
 
@@ -9,8 +8,9 @@ import platform
 
 # Skip the entire module if not on Windows
 if platform.system() != "Linux":
-    pytest.skip("Skipping Windows-specific tests on non-Linux platform",
-                allow_module_level=True)
+    pytest.skip(
+        "Skipping Windows-specific tests on non-Linux platform", allow_module_level=True
+    )
 
 
 from activitytracker.facade.program_facade_ubuntu import UbuntuProgramFacadeCore
@@ -19,10 +19,9 @@ from activitytracker.facade.program_facade_ubuntu import UbuntuProgramFacadeCore
 @pytest.fixture
 def samples():
     return [
-        {"pid": 1234, "process_name": "firefox",
-            "window_title": "Mozilla Firefox"},
+        {"pid": 1234, "process_name": "firefox", "window_title": "Mozilla Firefox"},
         {"pid": 5678, "process_name": "code", "window_title": "Visual Studio Code"},
-        {"pid": 9012, "process_name": "terminal", "window_title": "Terminal"}
+        {"pid": 9012, "process_name": "terminal", "window_title": "Terminal"},
     ]
 
 
@@ -33,8 +32,9 @@ def facade():
 
 # Skip the entire module if not on Windows
 if platform.system() != "Linux":
-    pytest.skip("Skipping Windows-specific tests on non-Linux platform",
-                allow_module_level=True)
+    pytest.skip(
+        "Skipping Windows-specific tests on non-Linux platform", allow_module_level=True
+    )
 
 # FIXME: the tests must run and pass. simple ones for ubuntu facade
 

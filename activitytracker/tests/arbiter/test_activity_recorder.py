@@ -26,16 +26,16 @@ tokyo_tz = pytz.timezone(timezone_for_test)
 
 @pytest.fixture
 def program_session():
-    return CompletedProgramSession("C:/ProgramFiles/Code.exe", "Code.exe",
-                                   "Visual Studio Code",
-                                   "main.py",
-                                   UserLocalTime(
-                                       datetime(2023, 1, 1, 12, 0, 0, tzinfo=tokyo_tz)),
-                                   UserLocalTime(
-                                       datetime(2023, 1, 1, 12, 10, 0, tzinfo=tokyo_tz)),
-                                   True,
-                                   timedelta(minutes=10)
-                                   )
+    return CompletedProgramSession(
+        "C:/ProgramFiles/Code.exe",
+        "Code.exe",
+        "Visual Studio Code",
+        "main.py",
+        UserLocalTime(datetime(2023, 1, 1, 12, 0, 0, tzinfo=tokyo_tz)),
+        UserLocalTime(datetime(2023, 1, 1, 12, 10, 0, tzinfo=tokyo_tz)),
+        True,
+        timedelta(minutes=10),
+    )
 
 
 @pytest.fixture
@@ -46,17 +46,17 @@ def chrome_session():
         UserLocalTime(datetime(2023, 1, 1, 12, 0, 0, tzinfo=tokyo_tz)),
         UserLocalTime(datetime(2023, 1, 1, 12, 5, 0, tzinfo=tokyo_tz)),
         productive=True,
-        duration_for_tests=timedelta(minutes=5)
+        duration_for_tests=timedelta(minutes=5),
     )
 
 
 @pytest.fixture
 def mock_daos():
     return {
-        'program_logging': AsyncMock(spec=ProgramLoggingDao),
-        'chrome_logging': AsyncMock(spec=ChromeLoggingDao),
-        'program_summary': AsyncMock(spec=ProgramSummaryDao),
-        'chrome_summary': AsyncMock(spec=ChromeSummaryDao),
+        "program_logging": AsyncMock(spec=ProgramLoggingDao),
+        "chrome_logging": AsyncMock(spec=ChromeLoggingDao),
+        "program_summary": AsyncMock(spec=ProgramSummaryDao),
+        "chrome_summary": AsyncMock(spec=ChromeSummaryDao),
     }
 
 
@@ -70,10 +70,10 @@ def mock_clock():
 @pytest.fixture
 def activity_recorder(mock_daos, mock_clock):
     return ActivityRecorder(
-        program_logging_dao=mock_daos['program_logging'],
-        chrome_logging_dao=mock_daos['chrome_logging'],
-        program_summary_dao=mock_daos['program_summary'],
-        chrome_summary_dao=mock_daos['chrome_summary'],
+        program_logging_dao=mock_daos["program_logging"],
+        chrome_logging_dao=mock_daos["chrome_logging"],
+        program_summary_dao=mock_daos["program_summary"],
+        chrome_summary_dao=mock_daos["chrome_summary"],
     )
 
 
@@ -81,18 +81,16 @@ def activity_recorder(mock_daos, mock_clock):
 async def test_on_state_changed_program(activity_recorder, mock_daos, program_session):
     activity_recorder.on_state_changed(program_session)
 
-    mock_daos['program_logging'].finalize_log.assert_called_once_with(
-        program_session)
-    mock_daos['chrome_logging'].finalize_log.assert_not_called()
+    mock_daos["program_logging"].finalize_log.assert_called_once_with(program_session)
+    mock_daos["chrome_logging"].finalize_log.assert_not_called()
 
 
 @pytest.mark.asyncio
 async def test_on_state_changed_chrome(activity_recorder, mock_daos, chrome_session):
     activity_recorder.on_state_changed(chrome_session)
 
-    mock_daos['chrome_logging'].finalize_log.assert_called_once_with(
-        chrome_session)
-    mock_daos['program_logging'].finalize_log.assert_not_called()
+    mock_daos["chrome_logging"].finalize_log.assert_called_once_with(chrome_session)
+    mock_daos["program_logging"].finalize_log.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -101,9 +99,8 @@ async def test_add_partial_window_program(activity_recorder, mock_daos, program_
 
     activity_recorder.add_partial_window(duration, program_session)
 
-    start_of_day = program_session.start_time.dt.replace(
-        hour=0, minute=0, second=0)
+    start_of_day = program_session.start_time.dt.replace(hour=0, minute=0, second=0)
 
-    mock_daos['program_summary'].add_used_time.assert_called_once_with(
+    mock_daos["program_summary"].add_used_time.assert_called_once_with(
         program_session, duration
     )

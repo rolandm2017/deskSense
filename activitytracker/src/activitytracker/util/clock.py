@@ -4,7 +4,10 @@ from datetime import datetime, timedelta, timezone
 from typing import Iterator
 
 from activitytracker.config.definitions import local_time_zone
-from activitytracker.tz_handling.time_formatting import get_start_of_day_from_datetime, get_start_of_day_from_ult
+from activitytracker.tz_handling.time_formatting import (
+    get_start_of_day_from_datetime,
+    get_start_of_day_from_ult,
+)
 from activitytracker.util.time_wrappers import UserLocalTime
 
 
@@ -12,7 +15,9 @@ class ClockProtocol:
     def now(self) -> datetime:
         raise NotImplementedError
 
-    def seconds_have_elapsed(self, current_time: datetime, previous_time: datetime, seconds: int) -> bool:
+    def seconds_have_elapsed(
+        self, current_time: datetime, previous_time: datetime, seconds: int
+    ) -> bool:
         raise NotImplementedError
 
     def today(self) -> datetime:
@@ -28,7 +33,9 @@ class SystemClock(ClockProtocol):
         # The server always uses UTC!
         return datetime.now(timezone.utc)
 
-    def seconds_have_elapsed(self, current_time: datetime, previous_time: datetime, seconds: int) -> bool:
+    def seconds_have_elapsed(
+        self, current_time: datetime, previous_time: datetime, seconds: int
+    ) -> bool:
         elapsed = current_time - previous_time
         return elapsed >= timedelta(seconds=seconds)
 
@@ -58,7 +65,9 @@ class UserFacingClock(ClockProtocol):
     def today_start(self):
         return get_start_of_day_from_datetime(datetime.now(ZoneInfo(local_time_zone)))
 
-    def seconds_have_elapsed(self, current_time: datetime, previous_time: datetime, seconds: int) -> bool:
+    def seconds_have_elapsed(
+        self, current_time: datetime, previous_time: datetime, seconds: int
+    ) -> bool:
         """
         Arguments dictate that the 1st arg is closer to the present than the 2nd arg.
         Alternatively: The 2nd arg happened further in the past than the 1st.

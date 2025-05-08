@@ -18,7 +18,12 @@ from activitytracker.db.models import DomainSummaryLog, ProgramSummaryLog, Base
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
-from activitytracker.object.classes import CompletedProgramSession, CompletedChromeSession, ProgramSession, ChromeSession
+from activitytracker.object.classes import (
+    CompletedProgramSession,
+    CompletedChromeSession,
+    ProgramSession,
+    ChromeSession,
+)
 
 from activitytracker.tz_handling.time_formatting import convert_to_utc
 from activitytracker.util.errors import ImpossibleToGetHereError
@@ -38,17 +43,17 @@ def mock_session_data():
     test_program_session = ProgramSession(
         "Ventrilo",
         "The Programmer's Hangout",
-        start_time=UserLocalTime(datetime(2025, 2, 1, 1, 0, 4, 0,
-                                          tzinfo=timezone_for_test_data)),
-        productive=False
+        start_time=UserLocalTime(
+            datetime(2025, 2, 1, 1, 0, 4, 0, tzinfo=timezone_for_test_data)
+        ),
+        productive=False,
     )
 
     test_chrome_session = ChromeSession(
         "chatgpt.com",
         "gpt Chat Repository",
-        UserLocalTime(datetime(2025, 2, 1, 1, 0, 5, 0,
-                      tzinfo=timezone_for_test_data)),
-        productive=True
+        UserLocalTime(datetime(2025, 2, 1, 1, 0, 5, 0, tzinfo=timezone_for_test_data)),
+        productive=True,
     )
 
     return test_program_session, test_chrome_session
@@ -56,10 +61,8 @@ def mock_session_data():
 
 @pytest_asyncio.fixture
 async def prepare_daos(mock_regular_session_maker, mock_async_session):
-    program_dao = ProgramLoggingDao(
-        mock_regular_session_maker)
-    chrome_dao = ChromeLoggingDao(
-        mock_regular_session_maker)
+    program_dao = ProgramLoggingDao(mock_regular_session_maker)
+    chrome_dao = ChromeLoggingDao(mock_regular_session_maker)
 
     yield program_dao, chrome_dao
 
@@ -94,10 +97,8 @@ def test_find_session(prepare_daos, mock_session_data):
     program_dao.execute_and_read_one_or_none = pr_execute_and_read_one_mock
     chrome_dao.execute_and_read_one_or_none = ch_execute_and_read_one_mock
 
-    pr_select_where_time_equals_spy = Mock(
-        side_effect=program_dao.select_where_time_equals)
-    ch_select_where_time_equals_spy = Mock(
-        side_effect=chrome_dao.select_where_time_equals)
+    pr_select_where_time_equals_spy = Mock(side_effect=program_dao.select_where_time_equals)
+    ch_select_where_time_equals_spy = Mock(side_effect=chrome_dao.select_where_time_equals)
     program_dao.select_where_time_equals = pr_select_where_time_equals_spy
     chrome_dao.select_where_time_equals = ch_select_where_time_equals_spy
 
@@ -108,10 +109,8 @@ def test_find_session(prepare_daos, mock_session_data):
     _ = program_dao.find_session(program_session)
     _ = chrome_dao.find_session(chrome_session)
 
-    pr_select_where_time_equals_spy.assert_called_with(
-        pr_time_as_utc)
-    ch_select_where_time_equals_spy.assert_called_with(
-        ch_time_as_utc)
+    pr_select_where_time_equals_spy.assert_called_with(pr_time_as_utc)
+    ch_select_where_time_equals_spy.assert_called_with(ch_time_as_utc)
 
     args, _ = pr_execute_and_read_one_mock.call_args
 
@@ -140,11 +139,10 @@ def test_push_window_ahead(prepare_daos):
         program_name="VSCode",
         hours_spent=120 / SECONDS_PER_HOUR,
         start_time=datetime(2025, 4, 19, 9, 0, 0, tzinfo=tokyo_tz),
-        end_time=datetime(2025, 4, 19, 17, 0,
-                          start_val_for_test, tzinfo=tokyo_tz),
+        end_time=datetime(2025, 4, 19, 17, 0, start_val_for_test, tzinfo=tokyo_tz),
         duration_in_sec=8.0,
         created_at=datetime.now(tokyo_tz),
-        gathering_date=datetime(2025, 4, 19, tzinfo=tokyo_tz)
+        gathering_date=datetime(2025, 4, 19, tzinfo=tokyo_tz),
     )
     program_find_session_mock.return_value = pretend_pr_log
     program_dao.find_session = program_find_session_mock
@@ -154,20 +152,22 @@ def test_push_window_ahead(prepare_daos):
         domain_name="example.com",
         hours_spent=4.5,
         start_time=datetime(2025, 4, 20, 10, 0, tzinfo=tokyo_tz),
-        end_time=datetime(2025, 4, 20, 14, 4, start_val_for_test,
-                          tzinfo=tokyo_tz),
+        end_time=datetime(2025, 4, 20, 14, 4, start_val_for_test, tzinfo=tokyo_tz),
         duration_in_sec=4.5,
         gathering_date=datetime(2025, 4, 20, tzinfo=tokyo_tz),
-        created_at=datetime.now(tokyo_tz)
+        created_at=datetime.now(tokyo_tz),
     )
     chrome_find_session_mock.return_value = pretend_domain_log
     chrome_dao.find_session = chrome_find_session_mock
 
-    initial_write_of_program = ProgramSession("path/to/foo.exe", "foo.exe",
-
-                                              "cat", "hat", UserLocalTime(datetime(2025, 4, 20, 2, 2, 2, tzinfo=tokyo_tz)))
-    initial_write_of_chrome = ChromeSession(
-        "foo", "bar", datetime(2025, 4, 20, 1, 1, 1))
+    initial_write_of_program = ProgramSession(
+        "path/to/foo.exe",
+        "foo.exe",
+        "cat",
+        "hat",
+        UserLocalTime(datetime(2025, 4, 20, 2, 2, 2, tzinfo=tokyo_tz)),
+    )
+    initial_write_of_chrome = ChromeSession("foo", "bar", datetime(2025, 4, 20, 1, 1, 1))
 
     # ### Act
     program_dao.push_window_ahead_ten_sec(initial_write_of_program)
@@ -178,26 +178,24 @@ def test_push_window_ahead(prepare_daos):
     chrome_update_item_spy.assert_called_once()
 
     args, _ = program_update_item_spy.call_args
-    assert isinstance(
-        args[0], ProgramSummaryLog), "Window push failed in logging dao"
+    assert isinstance(args[0], ProgramSummaryLog), "Window push failed in logging dao"
 
     args, _ = chrome_update_item_spy.call_args
-    assert isinstance(
-        args[0], DomainSummaryLog), "Window push failed in logging dao"
+    assert isinstance(args[0], DomainSummaryLog), "Window push failed in logging dao"
 
 
 @pytest.fixture
 def nonexistent_session():
     # almost certainly doesn't exist
-    nonexistent_time = UserLocalTime(
-        tokyo_tz.localize(datetime(2025, 1, 1, 1, 0, 0, 0)))
-    session = CompletedChromeSession(domain="github.com",
-                                     detail="DeepSeek Chat Repository",
-                                     start_time=nonexistent_time,
-                                     end_time=UserLocalTime(tokyo_tz.localize(
-                                         datetime(2025, 1, 1, 1, 0, 0, 1))),
-                                     duration_for_tests=timedelta(minutes=1),
-                                     productive=True)
+    nonexistent_time = UserLocalTime(tokyo_tz.localize(datetime(2025, 1, 1, 1, 0, 0, 0)))
+    session = CompletedChromeSession(
+        domain="github.com",
+        detail="DeepSeek Chat Repository",
+        start_time=nonexistent_time,
+        end_time=UserLocalTime(tokyo_tz.localize(datetime(2025, 1, 1, 1, 0, 0, 1))),
+        duration_for_tests=timedelta(minutes=1),
+        productive=True,
+    )
     return session
 
 
@@ -212,10 +210,8 @@ def test_finalize_log(prepare_daos, mock_regular_session_maker, nonexistent_sess
     tokyo_tz = pytz.timezone("Asia/Tokyo")
 
     # try:
-    program_dao = ProgramLoggingDao(
-        mock_regular_session_maker)
-    chrome_dao = ChromeLoggingDao(
-        mock_regular_session_maker)
+    program_dao = ProgramLoggingDao(mock_regular_session_maker)
+    chrome_dao = ChromeLoggingDao(mock_regular_session_maker)
 
     dt_utc = tokyo_tz.localize(datetime(2025, 1, 20, 12, 10, 0))
     dt = dt_utc.astimezone(tokyo_tz)  # This conversion is actually fine
@@ -246,12 +242,10 @@ def test_finalize_log(prepare_daos, mock_regular_session_maker, nonexistent_sess
 
     found_program_session = ProgramSummaryLog()
     found_program_session.start_time = convert_to_utc(s1_start)
-    found_program_session.end_time = convert_to_utc(
-        s1_end)  # They're already in UTC
+    found_program_session.end_time = convert_to_utc(s1_end)  # They're already in UTC
     found_domain_session = DomainSummaryLog()
     found_domain_session.start_time = convert_to_utc(t4_start)
-    found_domain_session.end_time = convert_to_utc(
-        t5_end)  # They're already in UTC
+    found_domain_session.end_time = convert_to_utc(t5_end)  # They're already in UTC
 
     program_find_session_mock = Mock()
     program_find_session_mock.return_value = found_program_session
@@ -310,20 +304,20 @@ def test_finalize_log(prepare_daos, mock_regular_session_maker, nonexistent_sess
     assert found_domain_session.duration_in_sec == chrome_duration
 
     # Assert that the end_time - start_time yield is correct
-    assert (found_program_session.end_time -
-            found_program_session.start_time).total_seconds() == program_duration
-    assert (found_domain_session.end_time -
-            found_domain_session.start_time).total_seconds() == chrome_duration
+    assert (
+        found_program_session.end_time - found_program_session.start_time
+    ).total_seconds() == program_duration
+    assert (
+        found_domain_session.end_time - found_domain_session.start_time
+    ).total_seconds() == chrome_duration
 
 
 def test_finalize_log_error(prepare_daos, mock_regular_session_maker, nonexistent_session):
     program_dao, chrome_dao = prepare_daos
 
     # try:
-    program_dao = ProgramLoggingDao(
-        mock_regular_session_maker)
-    chrome_dao = ChromeLoggingDao(
-        mock_regular_session_maker)
+    program_dao = ProgramLoggingDao(mock_regular_session_maker)
+    chrome_dao = ChromeLoggingDao(mock_regular_session_maker)
 
     doesnt_do_anything_mock = Mock()
     doesnt_do_anything_mock.return_value = None

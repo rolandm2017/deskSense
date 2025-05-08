@@ -17,8 +17,7 @@ class TestMockClock(unittest.TestCase):
         """Test that the counter increments exactly once per call to now()."""
         # Create a list of 20 UserLocalTime objects
         times = [
-            UserLocalTime(datetime(2025, 3, 22, 16,
-                          14, i, tzinfo=timezone.utc))
+            UserLocalTime(datetime(2025, 3, 22, 16, 14, i, tzinfo=timezone.utc))
             for i in range(20)
         ]
 
@@ -28,28 +27,27 @@ class TestMockClock(unittest.TestCase):
         # Call now() 6 times and verify the counter
         for i in range(6):
             result = clock.now()
-            self.assertEqual(clock.count_of_times, i + 1,
-                             f"Counter should be {i+1} after {i+1} calls, but got {clock.count_of_times}")
+            self.assertEqual(
+                clock.count_of_times,
+                i + 1,
+                f"Counter should be {i+1} after {i+1} calls, but got {clock.count_of_times}",
+            )
 
         # This should be call #7
         result = clock.now()
-        self.assertEqual(clock.count_of_times, 7,
-                         "Counter should be 7 after 7 calls")
+        self.assertEqual(clock.count_of_times, 7, "Counter should be 7 after 7 calls")
 
         # This should be call #8
         result = clock.now()
-        self.assertEqual(clock.count_of_times, 8,
-                         "Counter should be 8 after 8 calls")
+        self.assertEqual(clock.count_of_times, 8, "Counter should be 8 after 8 calls")
 
         # This should be call #9
         result = clock.now()
-        self.assertEqual(clock.count_of_times, 9,
-                         "Counter should be 9 after 9 calls")
+        self.assertEqual(clock.count_of_times, 9, "Counter should be 9 after 9 calls")
 
         # This should be call #10
         result = clock.now()
-        self.assertEqual(clock.count_of_times, 10,
-                         "Counter should be 10 after 10 calls")
+        self.assertEqual(clock.count_of_times, 10, "Counter should be 10 after 10 calls")
 
     def test_counter_with_thread(self):
         """Test counter behavior with a thread that also calls the clock."""
@@ -58,8 +56,7 @@ class TestMockClock(unittest.TestCase):
 
         # Create a list of 20 UserLocalTime objects
         times = [
-            UserLocalTime(datetime(2025, 3, 22, 16,
-                          14, i, tzinfo=timezone.utc))
+            UserLocalTime(datetime(2025, 3, 22, 16, 14, i, tzinfo=timezone.utc))
             for i in range(20)
         ]
 
@@ -86,15 +83,15 @@ class TestMockClock(unittest.TestCase):
         thread.join()
 
         # We should have made a total of 8 calls (5 main + 3 background)
-        self.assertEqual(clock.count_of_times, 8,
-                         f"Expected 8 total calls but got {clock.count_of_times}")
+        self.assertEqual(
+            clock.count_of_times, 8, f"Expected 8 total calls but got {clock.count_of_times}"
+        )
 
     def test_today_start_behavior(self):
         """Test that today_start() doesn't cause counter issues."""
         # Create a list of UserLocalTime objects
         times = [
-            UserLocalTime(datetime(2025, 3, 22, 16,
-                          14, i, tzinfo=timezone.utc))
+            UserLocalTime(datetime(2025, 3, 22, 16, 14, i, tzinfo=timezone.utc))
             for i in range(10)
         ]
 
@@ -112,25 +109,31 @@ class TestMockClock(unittest.TestCase):
         start_of_day = clock.today_start()
 
         # Counter should still be 3 (if today_start uses existing _current_time)
-        self.assertEqual(clock.count_of_times, 3,
-                         "today_start() shouldn't increment counter when _current_time exists")
+        self.assertEqual(
+            clock.count_of_times,
+            3,
+            "today_start() shouldn't increment counter when _current_time exists",
+        )
 
         # Set _current_time to None and call today_start again
         clock._current_time = None
         start_of_day = clock.today_start()
 
         # Counter should be 4 (today_start should call now() once)
-        self.assertEqual(clock.count_of_times, 4,
-                         "today_start() should increment counter exactly once when calling now()")
+        self.assertEqual(
+            clock.count_of_times,
+            4,
+            "today_start() should increment counter exactly once when calling now()",
+        )
 
 
 def test_using_list_mins():
     times = [
         datetime(2024, 1, 1, 12, 0),  # noon
         datetime(2024, 1, 1, 12, 1),  # 1pm
-        datetime(2024, 1, 1, 12, 2),   # 2pm
-        datetime(2024, 1, 1, 12, 3),   # 2pm
-        datetime(2024, 1, 1, 12, 4),   # 2pm
+        datetime(2024, 1, 1, 12, 2),  # 2pm
+        datetime(2024, 1, 1, 12, 3),  # 2pm
+        datetime(2024, 1, 1, 12, 4),  # 2pm
     ]
 
     clock = MockClock(times)
@@ -146,9 +149,9 @@ def test_using_list_hours():
     times = [
         datetime(2024, 1, 1, 12, 0),  # noon
         datetime(2024, 1, 1, 13, 1),  # 1pm
-        datetime(2024, 1, 1, 14, 2),   # 2pm
-        datetime(2024, 1, 1, 15, 3),   # 2pm
-        datetime(2024, 1, 1, 16, 4),   # 2pm
+        datetime(2024, 1, 1, 14, 2),  # 2pm
+        datetime(2024, 1, 1, 15, 3),  # 2pm
+        datetime(2024, 1, 1, 16, 4),  # 2pm
     ]
 
     clock = MockClock(times)

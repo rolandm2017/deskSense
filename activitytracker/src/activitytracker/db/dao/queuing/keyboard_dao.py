@@ -1,4 +1,3 @@
-
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
@@ -20,9 +19,15 @@ def get_rid_of_ms(time):
 
 
 class KeyboardDao(AsyncUtilityDaoMixin, BaseQueueingDao):
-    def __init__(self, async_session_maker: async_sessionmaker, batch_size=100, flush_interval=1):
-        super().__init__(async_session_maker=async_session_maker,
-                         batch_size=batch_size, flush_interval=flush_interval, dao_name="Keyboard")
+    def __init__(
+        self, async_session_maker: async_sessionmaker, batch_size=100, flush_interval=1
+    ):
+        super().__init__(
+            async_session_maker=async_session_maker,
+            batch_size=batch_size,
+            flush_interval=flush_interval,
+            dao_name="Keyboard",
+        )
         self.logger = ConsoleLogger()
 
     async def create(self, session: KeyboardAggregate):
@@ -30,7 +35,9 @@ class KeyboardDao(AsyncUtilityDaoMixin, BaseQueueingDao):
         # self.logger.log_green("[LOG] Keyboard session")
         # event time should be just month :: date :: HH:MM:SS
         new_typing_session_entry = TypingSession(
-            start_time=session.start_time.get_dt_for_db(), end_time=session.end_time.get_dt_for_db())
+            start_time=session.start_time.get_dt_for_db(),
+            end_time=session.end_time.get_dt_for_db(),
+        )
         # self.logger.log_blue("[LOG] Keyboard event: " + str(session))
         await self.queue_item(new_typing_session_entry)
 
@@ -38,7 +45,7 @@ class KeyboardDao(AsyncUtilityDaoMixin, BaseQueueingDao):
         print("adding keystrokes to db ", str(session))
         new_session = TypingSession(
             start_time=session.start_time.get_dt_for_db(),
-            end_time=session.end_time.get_dt_for_db()
+            end_time=session.end_time.get_dt_for_db(),
         )
 
         # Create a new session from the session_maker
@@ -57,7 +64,7 @@ class KeyboardDao(AsyncUtilityDaoMixin, BaseQueueingDao):
 
     async def read_by_id(self, keystroke_id: int):
         """
-        Read Keystroke entries. 
+        Read Keystroke entries.
         """
         # TODO: refactor
         # return self.get_with_session(argType, argId)
@@ -74,8 +81,7 @@ class KeyboardDao(AsyncUtilityDaoMixin, BaseQueueingDao):
         return dtos
 
     def package_dtos(self, typing_sessions):
-        return [TypingSessionDto(
-            x.id, x.start_time, x.end_time) for x in typing_sessions]
+        return [TypingSessionDto(x.id, x.start_time, x.end_time) for x in typing_sessions]
         # return [TypingSessionDto(
         #     x[0].id, x[0].start_time, x[0].end_time) for x in typing_sessions]
 
@@ -99,9 +105,11 @@ class KeyboardDao(AsyncUtilityDaoMixin, BaseQueueingDao):
             raise RuntimeError("Failed to read typing sessions") from e
 
     def get_prev_24_hours_query(self, twenty_four_hours_ago):
-        return select(TypingSession).where(
-            TypingSession.start_time >= twenty_four_hours_ago
-        ).order_by(TypingSession.start_time.desc())
+        return (
+            select(TypingSession)
+            .where(TypingSession.start_time >= twenty_four_hours_ago)
+            .order_by(TypingSession.start_time.desc())
+        )
 
     async def delete(self, id: int):
         """Delete an entry by ID"""

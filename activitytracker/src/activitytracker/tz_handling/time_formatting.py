@@ -76,7 +76,9 @@ def convert_log_to_tz(log_obj: SummaryLogBase, tz):
     if log_obj.start_time.tzinfo is None:
         temp_time = original_tz.localize(log_obj.start_time)
         log_obj.start_time = temp_time.astimezone(tz)
-    elif log_obj.start_time.tzinfo == timezone.utc or str(log_obj.start_time.tzinfo) == "UTC":
+    elif (
+        log_obj.start_time.tzinfo == timezone.utc or str(log_obj.start_time.tzinfo) == "UTC"
+    ):
         # Already UTC-aware - just convert to target timezone
         log_obj.start_time = log_obj.start_time.astimezone(tz)
 
@@ -245,4 +247,6 @@ def parse_time_string(time_str):
     seconds = int(seconds_parts[0])
     microseconds = int(seconds_parts[1]) if len(seconds_parts) > 1 else 0
 
-    return timedelta(hours=hours, minutes=minutes, seconds=seconds, microseconds=microseconds)
+    return timedelta(
+        hours=hours, minutes=minutes, seconds=seconds, microseconds=microseconds
+    )

@@ -3,6 +3,7 @@ Asserts that:
 
 1. DAO start_session converters do what they say.
 """
+
 import pytest
 
 from datetime import datetime
@@ -10,7 +11,10 @@ from datetime import datetime
 import pytz
 
 # TODO
-from activitytracker.tz_handling.dao_objects import LogTimeConverter, FindTodaysEntryConverter
+from activitytracker.tz_handling.dao_objects import (
+    LogTimeConverter,
+    FindTodaysEntryConverter,
+)
 from activitytracker.util.time_wrappers import UserLocalTime
 
 from activitytracker.tz_handling.time_formatting import convert_to_utc
@@ -38,11 +42,15 @@ def test_log_time_converter():
     assert str(converter.base_start_time_as_utc.tzinfo) == "UTC"
     assert str(converter.base_start_window_end.tzinfo) == "UTC"
 
-    hour_was_converted_to_utc = converter.base_start_time_as_utc.hour == midday_in_asia.hour - tokyo_offset
+    hour_was_converted_to_utc = (
+        converter.base_start_time_as_utc.hour == midday_in_asia.hour - tokyo_offset
+    )
     assert hour_was_converted_to_utc
     assert converter.base_start_time_as_utc.minute == midday_in_asia.minute
 
-    hour_was_converted_to_utc = converter.base_start_window_end.hour == midday_in_asia.hour - tokyo_offset
+    hour_was_converted_to_utc = (
+        converter.base_start_window_end.hour == midday_in_asia.hour - tokyo_offset
+    )
     assert hour_was_converted_to_utc
     assert converter.base_start_window_end.second == midday_in_asia.second + 10
 

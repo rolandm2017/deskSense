@@ -16,9 +16,15 @@ from activitytracker.util.time_wrappers import UserLocalTime
 
 
 class TimelineEntryDao(BaseQueueingDao):
-    def __init__(self, async_session_maker: async_sessionmaker, batch_size=100, flush_interval=1):
-        super().__init__(async_session_maker=async_session_maker, batch_size=batch_size,
-                         flush_interval=flush_interval, dao_name="TimelineEntry")
+    def __init__(
+        self, async_session_maker: async_sessionmaker, batch_size=100, flush_interval=1
+    ):
+        super().__init__(
+            async_session_maker=async_session_maker,
+            batch_size=batch_size,
+            flush_interval=flush_interval,
+            dao_name="TimelineEntry",
+        )
 
         self.logger = ConsoleLogger()
 
@@ -27,7 +33,7 @@ class TimelineEntryDao(BaseQueueingDao):
         new_row = TimelineEntryObj(
             group=group,
             start=content.start_time.get_dt_for_db(),
-            end=content.end_time.get_dt_for_db()
+            end=content.end_time.get_dt_for_db(),
         )
         await self.create(new_row)
 
@@ -36,7 +42,7 @@ class TimelineEntryDao(BaseQueueingDao):
         new_row = TimelineEntryObj(
             group=group,
             start=content.start_time.get_dt_for_db(),
-            end=content.end_time.get_dt_for_db()
+            end=content.end_time.get_dt_for_db(),
         )
         await self.create(new_row)
 
@@ -50,15 +56,23 @@ class TimelineEntryDao(BaseQueueingDao):
         # ### store them into the db
         rows = []
         for event in aggregated:
-            row = PrecomputedTimelineEntry(clientFacingId=event.clientFacingId,
-                                           group=event.group,
-                                           content=event.content,
-                                           start=event.start,
-                                           end=event.end,
-                                           eventCount=event.eventCount if hasattr(
-                                               # Default to 1 if not provided
-                                               event, 'eventCount') and event.eventCount is not None else 1
-                                           )
+            row = PrecomputedTimelineEntry(
+                clientFacingId=event.clientFacingId,
+                group=event.group,
+                content=event.content,
+                start=event.start,
+                end=event.end,
+                eventCount=(
+                    event.eventCount
+                    if hasattr(
+                        # Default to 1 if not provided
+                        event,
+                        "eventCount",
+                    )
+                    and event.eventCount is not None
+                    else 1
+                ),
+            )
 
             rows.append(row)
         await self.bulk_create_precomputed(rows)
@@ -96,29 +110,35 @@ class TimelineEntryDao(BaseQueueingDao):
         query = select(PrecomputedTimelineEntry).where(
             PrecomputedTimelineEntry.group == type,
             PrecomputedTimelineEntry.start >= start_of_day,
-            PrecomputedTimelineEntry.end <= end_of_day
+            PrecomputedTimelineEntry.end <= end_of_day,
         )
         return await self.execute_and_return_all(query)
 
-    async def read_day(self, day: UserLocalTime, event_type: ChartEventType) -> List[TimelineEntryObj]:
+    async def read_day(
+        self, day: UserLocalTime, event_type: ChartEventType
+    ) -> List[TimelineEntryObj]:
         """Read all entries for the given day"""
-        start_of_day = datetime.combine(
-            day.dt.date(), datetime.min.time())
+        start_of_day = datetime.combine(day.dt.date(), datetime.min.time())
         end_of_day = start_of_day + timedelta(days=1)
 
-        query = self.get_find_by_day_query(
-            start_of_day, end_of_day, event_type)
+        query = self.get_find_by_day_query(start_of_day, end_of_day, event_type)
 
         return await self.execute_and_return_all(query)
 
     def get_find_by_day_query(self, start_of_day, end_of_day, event_type):
-        return select(TimelineEntryObj).where(
-            TimelineEntryObj.start >= start_of_day,
-            TimelineEntryObj.start < end_of_day,
-            TimelineEntryObj.group == event_type
-        ).order_by(TimelineEntryObj.start)
+        return (
+            select(TimelineEntryObj)
+            .where(
+                TimelineEntryObj.start >= start_of_day,
+                TimelineEntryObj.start < end_of_day,
+                TimelineEntryObj.group == event_type,
+            )
+            .order_by(TimelineEntryObj.start)
+        )
 
-    async def read_day_mice(self, users_systems_day: UserLocalTime, user_facing_clock) -> List[TimelineEntryObj]:
+    async def read_day_mice(
+        self, users_systems_day: UserLocalTime, user_facing_clock
+    ) -> List[TimelineEntryObj]:
         today = user_facing_clock.now().date()
         is_today = today == users_systems_day.date()
 
@@ -129,7 +149,8 @@ class TimelineEntryDao(BaseQueueingDao):
             # print(users_systems_day, " is not today mouse")
             # return await self.read_day(day, ChartEventType.MOUSE)
             precomputed_day_entries = await self.read_precomputed_entry_for_day(
-                users_systems_day, ChartEventType.MOUSE)
+                users_systems_day, ChartEventType.MOUSE
+            )
             if len(precomputed_day_entries) > 0:
                 return precomputed_day_entries
             else:
@@ -137,7 +158,9 @@ class TimelineEntryDao(BaseQueueingDao):
                 new_precomputed_day = await self.create_precomputed_day(read_events)
                 return new_precomputed_day
 
-    async def read_day_keyboard(self, users_systems_day: UserLocalTime, user_facing_clock) -> List[TimelineEntryObj]:
+    async def read_day_keyboard(
+        self, users_systems_day: UserLocalTime, user_facing_clock
+    ) -> List[TimelineEntryObj]:
         today = user_facing_clock.now().date()
         is_today = today == users_systems_day.date()
         if is_today:
@@ -147,7 +170,8 @@ class TimelineEntryDao(BaseQueueingDao):
             # print(users_systems_day, " is not today keyboard")
             # return await self.read_day(day, ChartEventType.KEYBOARD)
             precomputed_day_entries = await self.read_precomputed_entry_for_day(
-                users_systems_day, ChartEventType.KEYBOARD)
+                users_systems_day, ChartEventType.KEYBOARD
+            )
 
             if len(precomputed_day_entries) > 0:
                 return precomputed_day_entries

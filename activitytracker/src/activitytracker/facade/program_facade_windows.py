@@ -42,7 +42,8 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
                 # It does call getForegroundWindow a second time. that's OK
                 window_info = self._read_windows()
                 self.console_logger.debug(
-                    f"Window changed: {window_info['window_title']} ({window_info['process_name']})")
+                    f"Window changed: {window_info['window_title']} ({window_info['process_name']})"
+                )
                 yield window_info
 
     def _read_windows(self) -> ProgramSessionDict:
@@ -59,7 +60,7 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
                 "pid": None,
                 "process_name": "No foreground window",
                 "exe_path": "No foreground window",
-                "window_title": ""
+                "window_title": "",
             }
         # pid = self.win32process.GetWindowThreadProcessId(window)[1]
 
@@ -76,7 +77,7 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
                     "pid": None,
                     "process_name": "Invalid process",
                     "exe_path": "Invalid",
-                    "window_title": self.win32gui.GetWindowText(window)
+                    "window_title": self.win32gui.GetWindowText(window),
                 }
             # FIXME: ValueError: pid must be a positive integer (got -516382288)
             # FIXME: ValueError: pid must be a positive integer (got -1313135248)
@@ -93,7 +94,7 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
             "pid": pid,
             "process_name": process_name,
             "exe_path": exe_path,
-            "window_title": self.win32gui.GetWindowText(window)
+            "window_title": self.win32gui.GetWindowText(window),
         }
 
     def setup_window_hook(self):

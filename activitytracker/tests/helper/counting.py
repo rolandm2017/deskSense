@@ -12,6 +12,7 @@ def get_total_in_sec(item_name, verified_sessions, expected_durations):
         durations.append(expected_durations[index])
     return sum(durations)
 
+
 def get_logs_total(item_name, logs_arr):
     relevant_picks = []
     for entry in logs_arr:

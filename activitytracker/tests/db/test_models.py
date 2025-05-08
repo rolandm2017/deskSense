@@ -9,22 +9,19 @@ from activitytracker.db.models import TimelineEntryObj, Base
 from activitytracker.object.enums import ChartEventType
 from dotenv import load_dotenv
 import os
+
 load_dotenv()
 
 
 # Use a test database URL
-SYNC_TEST_DATABASE_URL = os.getenv(
-    'SYNC_TEST_DB_URL')
+SYNC_TEST_DATABASE_URL = os.getenv("SYNC_TEST_DB_URL")
 
 if not isinstance(SYNC_TEST_DATABASE_URL, str):
     raise ValueError("Failed to load database URL")
 
 print(SYNC_TEST_DATABASE_URL[:6])
 # Create sync engine
-test_engine = create_engine(
-    SYNC_TEST_DATABASE_URL,
-    echo=False
-)
+test_engine = create_engine(SYNC_TEST_DATABASE_URL, echo=False)
 
 # Create sync session maker
 Session = sessionmaker(
@@ -53,11 +50,7 @@ def db_session():
 def test_timeline_entry_mouse_event(db_session):  # Removed async marker
     """Test creation of a mouse event timeline entry."""
     now = datetime.now()
-    mouse_event = TimelineEntryObj(
-        group=ChartEventType.MOUSE,
-        start=now,
-        end=now
-    )
+    mouse_event = TimelineEntryObj(group=ChartEventType.MOUSE, start=now, end=now)
 
     db_session.add(mouse_event)
     db_session.commit()
@@ -83,11 +76,7 @@ def test_timeline_entry_mouse_event(db_session):  # Removed async marker
     assert my_mouse_event.content == "Mouse Event 1"
 
     now = datetime.now()
-    another_event = TimelineEntryObj(
-        group=ChartEventType.MOUSE,
-        start=now,
-        end=now
-    )
+    another_event = TimelineEntryObj(group=ChartEventType.MOUSE, start=now, end=now)
 
     db_session.add(another_event)
     db_session.commit()
@@ -106,11 +95,7 @@ def test_timeline_entry_keyboard_event(db_session):
     """Test creation of a keyboard event timeline entry."""
     # Create a keyboard event
     now = datetime.now()
-    keyboard_event = TimelineEntryObj(
-        group=ChartEventType.KEYBOARD,
-        start=now,
-        end=now
-    )
+    keyboard_event = TimelineEntryObj(group=ChartEventType.KEYBOARD, start=now, end=now)
 
     db_session.add(keyboard_event)
     db_session.commit()
@@ -119,10 +104,8 @@ def test_timeline_entry_keyboard_event(db_session):
     # Verify the computed columns
     assert keyboard_event.id is not None
     assert cast(int, keyboard_event.id) >= 0
-    assert cast(
-        str, keyboard_event.clientFacingId) == f"keyboard-{keyboard_event.id}"
-    assert cast(
-        str, keyboard_event.content) == f"Typing Session {keyboard_event.id}"
+    assert cast(str, keyboard_event.clientFacingId) == f"keyboard-{keyboard_event.id}"
+    assert cast(str, keyboard_event.content) == f"Typing Session {keyboard_event.id}"
 
 
 def test_multiple_timeline_entries(db_session):
@@ -133,7 +116,7 @@ def test_multiple_timeline_entries(db_session):
     events = [
         TimelineEntryObj(group=ChartEventType.MOUSE, start=now, end=now),
         TimelineEntryObj(group=ChartEventType.KEYBOARD, start=now, end=now),
-        TimelineEntryObj(group=ChartEventType.MOUSE, start=now, end=now)
+        TimelineEntryObj(group=ChartEventType.MOUSE, start=now, end=now),
     ]
 
     for event in events:
@@ -151,10 +134,14 @@ def test_multiple_timeline_entries(db_session):
 
     # Verify correct prefixes based on group
     assert all(
-        event.clientFacingId.startswith("mouse-") for event in events if cast(str, event.group) == ChartEventType.MOUSE
+        event.clientFacingId.startswith("mouse-")
+        for event in events
+        if cast(str, event.group) == ChartEventType.MOUSE
     )
     assert all(
-        event.clientFacingId.startswith("keyboard-") for event in events if cast(str, event.group) == ChartEventType.KEYBOARD
+        event.clientFacingId.startswith("keyboard-")
+        for event in events
+        if cast(str, event.group) == ChartEventType.KEYBOARD
     )
     some_ids = [int(event.clientFacingId.split("-")[1]) for event in events]
 
@@ -166,11 +153,7 @@ def test_timeline_entry_timestamps(db_session):
     start_time = datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)
     end_time = datetime(2024, 1, 1, 13, 0, tzinfo=timezone.utc)
 
-    event = TimelineEntryObj(
-        group=ChartEventType.MOUSE,
-        start=start_time,
-        end=end_time
-    )
+    event = TimelineEntryObj(group=ChartEventType.MOUSE, start=start_time, end=end_time)
 
     db_session.add(event)
     db_session.commit()

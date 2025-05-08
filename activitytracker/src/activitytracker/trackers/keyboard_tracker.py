@@ -37,7 +37,8 @@ class KeyboardTrackerCore:
                 finalized_aggregate = self.aggregator.add_event(event)
                 if finalized_aggregate:
                     session = self.aggregator.package_keyboard_events_for_db(
-                        finalized_aggregate)
+                        finalized_aggregate
+                    )
                     self.apply_handlers(session)
 
     def apply_handlers(self, content: KeyboardAggregate | InProgressAggregation):

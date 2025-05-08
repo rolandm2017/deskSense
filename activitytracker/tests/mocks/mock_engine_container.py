@@ -28,7 +28,13 @@ class MockEngineContainer(ThreadedEngineContainer):
     Hence the interval arg is just for consistency.
     """
 
-    def __init__(self, session_durations: list[int], interval: int | float = 1, sleep_fn=time.sleep, timestamp=None):
+    def __init__(
+        self,
+        session_durations: list[int],
+        interval: int | float = 1,
+        sleep_fn=time.sleep,
+        timestamp=None,
+    ):
         """
         If you submit an inaccurate session_durations here, your test won't work. Be sure it's right!
 

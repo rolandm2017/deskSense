@@ -7,32 +7,35 @@ from datetime import timedelta
 
 from activitytracker.db.models import DomainSummaryLog, ProgramSummaryLog
 
-from activitytracker.tz_handling.time_formatting import convert_to_utc, get_start_of_day_from_datetime, get_start_of_day_from_ult, attach_tz_to_all
+from activitytracker.tz_handling.time_formatting import (
+    convert_to_utc,
+    get_start_of_day_from_datetime,
+    get_start_of_day_from_ult,
+    attach_tz_to_all,
+)
 from activitytracker.util.log_dao_helper import group_logs_by_name
 from activitytracker.util.errors import ImpossibleToGetHereError
 from activitytracker.util.time_wrappers import UserLocalTime
 
 
-T = TypeVar('T', bound=DeclarativeMeta)
+T = TypeVar("T", bound=DeclarativeMeta)
 
 # pyright: reportAttributeAccessIssue=false
 
 
 class LoggingDaoMixin:
     def _read_day_as_sorted(
-        self,
-        day: UserLocalTime,
-        model: Type[T],
-        sort_column
+        self, day: UserLocalTime, model: Type[T], sort_column
     ) -> dict[str, T]:
         start_of_day = get_start_of_day_from_datetime(day.get_dt_for_db())
         start_of_day = convert_to_utc(start_of_day)
         end_of_day = start_of_day + timedelta(days=1)
 
-        query = select(model).where(
-            model.gathering_date >= start_of_day,
-            model.gathering_date < end_of_day
-        ).order_by(sort_column)
+        query = (
+            select(model)
+            .where(model.gathering_date >= start_of_day, model.gathering_date < end_of_day)
+            .order_by(sort_column)
+        )
 
         logs = self.execute_and_return_all(query)
         logs = attach_tz_to_all(logs, day.dt.tzinfo)
@@ -40,9 +43,10 @@ class LoggingDaoMixin:
 
         return grouped_logs
 
-    def attach_final_values_and_update(self, session, log: ProgramSummaryLog | DomainSummaryLog):
-        finalized_duration = (session.end_time.dt -
-                              session.start_time.dt).total_seconds()
+    def attach_final_values_and_update(
+        self, session, log: ProgramSummaryLog | DomainSummaryLog
+    ):
+        finalized_duration = (session.end_time.dt - session.start_time.dt).total_seconds()
         if finalized_duration < 0:
             print("session:", session)
             print("log", log)
@@ -61,13 +65,15 @@ class LoggingDaoMixin:
         NOTE: the database is storing and returning times in UTC
         """
         cutoff_time = right_now.dt - timedelta(hours=24)
-        query = select(self.model).where(
-            self.model.created_at >= cutoff_time
-        ).order_by(self.model.created_at.desc())
+        query = (
+            select(self.model)
+            .where(self.model.created_at >= cutoff_time)
+            .order_by(self.model.created_at.desc())
+        )
         results = self.execute_and_return_all(query)
         return attach_tz_to_all(results, right_now.dt.tzinfo)
 
-    def find_orphans(self,  latest_shutdown_time, startup_time):
+    def find_orphans(self, latest_shutdown_time, startup_time):
         """
         Finds orphaned sessions that:
         1. Started before shutdown but never ended (end_time is None)
@@ -77,15 +83,19 @@ class LoggingDaoMixin:
             latest_shutdown_time: Timestamp when system shut down
             startup_time: Timestamp when system started up again
         """
-        query = select(self.model).where(
-            # Started before shutdown
-            self.model.start_time <= latest_shutdown_time,
-            # AND (end_time is None OR end_time is after next startup)
-            or_(
-                self.model.end_time == None,  # Sessions never closed
-                self.model.end_time >= startup_time  # End time after startup
+        query = (
+            select(self.model)
+            .where(
+                # Started before shutdown
+                self.model.start_time <= latest_shutdown_time,
+                # AND (end_time is None OR end_time is after next startup)
+                or_(
+                    self.model.end_time == None,  # Sessions never closed
+                    self.model.end_time >= startup_time,  # End time after startup
+                ),
             )
-        ).order_by(self.model.start_time)
+            .order_by(self.model.start_time)
+        )
         # the database is storing and returning times in UTC
         return self.execute_and_return_all(query)
 
@@ -97,11 +107,15 @@ class LoggingDaoMixin:
             latest_shutdown_time: Timestamp when system shut down
             startup_time: Timestamp when system started up again
         """
-        query = select(self.model).where(
-            # Started after shutdown
-            self.model.start_time > latest_shutdown_time,
-            # But before startup
-            self.model.start_time < startup_time
-        ).order_by(self.model.start_time)
+        query = (
+            select(self.model)
+            .where(
+                # Started after shutdown
+                self.model.start_time > latest_shutdown_time,
+                # But before startup
+                self.model.start_time < startup_time,
+            )
+            .order_by(self.model.start_time)
+        )
         # the database is storing and returning times in UTC
         return self.execute_and_return_all(query)

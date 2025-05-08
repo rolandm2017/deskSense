@@ -23,7 +23,7 @@ known_third_party = ["sqlalchemy"] # Add this line
 multi_line_output = 3
 
 [tool.black]
-line-length = 98
+line-length = 93
 
 
 [tool.pytest.ini_options]

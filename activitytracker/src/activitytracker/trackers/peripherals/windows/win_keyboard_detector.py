@@ -30,7 +30,7 @@ def win_monitor_keyboard(device_path=None, get_running_state=None):
     def on_key_event(event):
         """Callback function for key press events"""
         # Skip key releases, only process key presses
-        if event.event_type == 'down':
+        if event.event_type == "down":
             # Log to console
             key_name = event.name
             publish_keyboard_event()
@@ -38,11 +38,13 @@ def win_monitor_keyboard(device_path=None, get_running_state=None):
                 if len(key_name) == 1:
                     # For regular characters, show the character
                     print(
-                        f"Key pressed: {key_name}, ASCII: {ord(key_name)}, Time: {datetime.now().strftime('%H:%M:%S')}")
+                        f"Key pressed: {key_name}, ASCII: {ord(key_name)}, Time: {datetime.now().strftime('%H:%M:%S')}"
+                    )
                 else:
                     # For special keys
                     print(
-                        f"Key pressed: {key_name}, Time: {datetime.now().strftime('%H:%M:%S')}")
+                        f"Key pressed: {key_name}, Time: {datetime.now().strftime('%H:%M:%S')}"
+                    )
 
             # Log to file
             logging.info(f"Key: {key_name}")

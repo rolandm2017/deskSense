@@ -8,10 +8,11 @@ from datetime import datetime, timedelta
 from activitytracker.util.detect_os import OperatingSystemInfo
 from activitytracker.util.threaded_tracker import ThreadedTracker
 from activitytracker.trackers.mouse_tracker import MouseTrackerCore, MouseEvent
+
 # from activitytracker.facade.mouse_facade import MouseCoords
 
 
-class MockMouseFacade():
+class MockMouseFacade:
     def __init__(self):
         # self.cursor_pos = MouseCoords(0, 0)
         self.hook_thread = None
@@ -105,7 +106,8 @@ def test_make_sure_handler_actually_handles(tracker_and_events, mock_mouse_facad
 
     # Only check that the stops were logged, because they signal a closed window
     assert len(events) == len(
-        [x2_concludes, x3_concludes]), "Some mouse events were not recorded"
+        [x2_concludes, x3_concludes]
+    ), "Some mouse events were not recorded"
 
 
 def test_multiple_handlers_are_called(tracker_and_events, mock_mouse_facade):
@@ -158,8 +160,7 @@ def test_multiple_handlers_are_called(tracker_and_events, mock_mouse_facade):
 
     num_of_gaps_greater_than_1000ms = 2
 
-    assert len(handler1_calls) == len(
-        handler2_calls) == num_of_gaps_greater_than_1000ms
+    assert len(handler1_calls) == len(handler2_calls) == num_of_gaps_greater_than_1000ms
     assert handler1_calls[0] == handler2_calls[0]
 
 

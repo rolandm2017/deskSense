@@ -12,12 +12,11 @@ from activitytracker.facade.mouse_facade import MouseFacadeCore
 
 
 class MouseTrackerCore:
-    def __init__(self,  mouse_api_facade, event_handlers):
+    def __init__(self, mouse_api_facade, event_handlers):
         self.mouse_facade: MouseFacadeCore = mouse_api_facade
         self.event_handlers = event_handlers
 
-        self.aggregator = EventAggregator(
-            timeout_ms=1000, aggregate_class=MouseAggregate)
+        self.aggregator = EventAggregator(timeout_ms=1000, aggregate_class=MouseAggregate)
         self.logger = ConsoleLogger()
 
     def run_tracking_loop(self):
@@ -48,8 +47,7 @@ class MouseTrackerCore:
                 #     self.conclude_aggregation(finalized_aggregate)
 
     def conclude_aggregation(self, finalized_agg):
-        session = self.aggregator.package_mouse_events_for_db(
-            finalized_agg)
+        session = self.aggregator.package_mouse_events_for_db(finalized_agg)
         self.apply_handlers(session)
 
     def reset(self):

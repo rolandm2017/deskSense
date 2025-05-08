@@ -19,6 +19,7 @@ class FacadeMonitoring:
                 avg_length = sum(self.queue_lengths) / len(self.queue_lengths)
                 max_length = max(self.queue_lengths)
                 print(
-                    f"{self.name} Queue Stats - Avg: {avg_length:.2f}, Max: {max_length}, Current: {length}")
+                    f"{self.name} Queue Stats - Avg: {avg_length:.2f}, Max: {max_length}, Current: {length}"
+                )
             self.queue_lengths = []  # Reset
             self.last_report_time = current_time

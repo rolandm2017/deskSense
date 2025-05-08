@@ -5,7 +5,7 @@ from activitytracker.util.detect_os import OperatingSystemInfo
 
 @pytest.mark.skipif(
     OperatingSystemInfo().is_windows == True,  # Use explicit comparison
-    reason="Test only applicable on Ubuntu systems"
+    reason="Test only applicable on Ubuntu systems",
 )
 def test_is_ubuntu():
     os = OperatingSystemInfo()
@@ -16,7 +16,7 @@ def test_is_ubuntu():
 
 @pytest.mark.skipif(
     OperatingSystemInfo().is_ubuntu == True,  # Use explicit comparison
-    reason="Test only applicable on Ubuntu systems"
+    reason="Test only applicable on Ubuntu systems",
 )
 def test_is_windows():
     os = OperatingSystemInfo()

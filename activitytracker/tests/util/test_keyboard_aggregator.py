@@ -72,7 +72,9 @@ def test_timeout_creates_new_aggregation(monkeypatch):
 
     completed = aggregator.add_event(base_time + 1.8)  # > 1000ms timeout
 
-    assert completed is not None, "Because adding another event, much later, closes the current window"
+    assert (
+        completed is not None
+    ), "Because adding another event, much later, closes the current window"
     assert isinstance(completed, list)
     assert len(completed) == 1
     assert completed[0].timestamp() == base_time
@@ -147,6 +149,7 @@ def test_callback_on_force_complete():
 
     assert callback_executed
 
+
 ####
 # Sad path tests
 ####
@@ -176,5 +179,4 @@ def test_out_of_order_timestamps():
 
     aggregator.add_event(later.timestamp())
     with pytest.raises(ValueError):
-        aggregator.add_event(much_much_earlier.timestamp()
-                             )  # Earlier timestamp
+        aggregator.add_event(much_much_earlier.timestamp())  # Earlier timestamp

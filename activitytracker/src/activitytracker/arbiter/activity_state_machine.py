@@ -1,8 +1,17 @@
 from datetime import timedelta
 
 
-from activitytracker.object.classes import ChromeSession, ProgramSession, CompletedChromeSession, CompletedProgramSession
-from activitytracker.object.arbiter_classes import ChromeInternalState, ApplicationInternalState, InternalState
+from activitytracker.object.classes import (
+    ChromeSession,
+    ProgramSession,
+    CompletedChromeSession,
+    CompletedProgramSession,
+)
+from activitytracker.object.arbiter_classes import (
+    ChromeInternalState,
+    ApplicationInternalState,
+    InternalState,
+)
 from activitytracker.util.program_tools import window_is_chrome
 from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.copy_util import snapshot_obj_for_tests
@@ -32,18 +41,16 @@ class ActivityStateMachine:
         next_session = snapshot_obj_for_tests(next_session)
         if self.current_state:
             prior_update_was_program = isinstance(
-                self.current_state, ApplicationInternalState)
+                self.current_state, ApplicationInternalState
+            )
             if prior_update_was_program:
-                updated_state = self.transition_from_program.compute_next_state(
-                    next_session)
+                updated_state = self.transition_from_program.compute_next_state(next_session)
                 # updated_overall_state = OverallState()
             else:
-                updated_state = self.transition_from_chrome.compute_next_state(
-                    next_session)
+                updated_state = self.transition_from_chrome.compute_next_state(next_session)
             if next_session.start_time:
 
-                self._conclude_session(
-                    self.current_state, next_session.start_time)
+                self._conclude_session(self.current_state, next_session.start_time)
                 self.prior_state = self.current_state
                 self.current_state = updated_state
             else:
@@ -55,10 +62,12 @@ class ActivityStateMachine:
             if isinstance(next_session, ProgramSession):
                 is_chrome = window_is_chrome(next_session.window_title)
                 updated_state = ApplicationInternalState(
-                    next_session.window_title, is_chrome, next_session)
+                    next_session.window_title, is_chrome, next_session
+                )
             else:
                 updated_state = ChromeInternalState(
-                    "Chrome", True, next_session.domain, next_session)
+                    "Chrome", True, next_session.domain, next_session
+                )
             self.current_state = updated_state
 
     @staticmethod
@@ -86,26 +95,28 @@ class ActivityStateMachine:
         if isinstance(first_session, ProgramSession):
             is_chrome = window_is_chrome(first_session.window_title)
             updated_state = ApplicationInternalState(
-                first_session.window_title, is_chrome, first_session)
+                first_session.window_title, is_chrome, first_session
+            )
         else:
             assert isinstance(first_session, ChromeSession)
             updated_state = ChromeInternalState(
-                "Chrome", True, first_session.domain, first_session)
+                "Chrome", True, first_session.domain, first_session
+            )
         return updated_state
 
     @staticmethod
     def _initialize_program_machine():
         start_state = ApplicationInternalState("", "", {})
-        return TransitionFromProgramMachine(
-            start_state)
+        return TransitionFromProgramMachine(start_state)
 
     @staticmethod
     def _initialize_chrome_machine():
         start_state = ChromeInternalState("", "", "", {})
-        return TransitionFromChromeMachine(
-            start_state)
+        return TransitionFromChromeMachine(start_state)
 
-    def get_concluded_session(self) -> CompletedProgramSession | CompletedChromeSession | None:
+    def get_concluded_session(
+        self,
+    ) -> CompletedProgramSession | CompletedChromeSession | None:
         """Assumes the prior state is the updated transformation from set_new_session"""
         on_initialization = self.prior_state is None
         if on_initialization:
@@ -129,17 +140,22 @@ class TransitionFromProgramMachine:
     def __init__(self, current_state):
         if not isinstance(current_state, ApplicationInternalState):
             raise TypeError(
-                "TransitionFromProgramMachine requires an ApplicationInternalState")
+                "TransitionFromProgramMachine requires an ApplicationInternalState"
+            )
 
         self.current_state = current_state
 
-    def compute_next_state(self, next_state: ProgramSession | ChromeSession) -> InternalState:
+    def compute_next_state(
+        self, next_state: ProgramSession | ChromeSession
+    ) -> InternalState:
         if isinstance(next_state, ProgramSession):
             return self._change_to_new_program(next_state)
         else:
             return self._transit_to_chrome_state(next_state)
 
-    def _change_to_new_program(self, next_session: ProgramSession) -> ApplicationInternalState:
+    def _change_to_new_program(
+        self, next_session: ProgramSession
+    ) -> ApplicationInternalState:
         # TODO: If next state is the same program, return current state
         is_same_program = self.current_state.active_application == next_session.window_title
         if is_same_program:
@@ -150,7 +166,8 @@ class TransitionFromProgramMachine:
             is_chrome = False
             current_tab = None
             brand_new_state = ApplicationInternalState(
-                next_session.window_title, is_chrome, next_session)
+                next_session.window_title, is_chrome, next_session
+            )
             return brand_new_state
 
     def _stay_on_same_program(self) -> ApplicationInternalState:
@@ -162,23 +179,26 @@ class TransitionFromProgramMachine:
         # A new tab opens at the same time as Chrome opens.
         # FIXME: What to do with, case where, a tab was suspended in the bg
         # while user ran VSCode, now he goes back to Claude?
-        next_state = ChromeInternalState(active_application="Chrome",
-                                         is_chrome=True,
-                                         current_tab=next_session.domain,
-                                         session=next_session)
+        next_state = ChromeInternalState(
+            active_application="Chrome",
+            is_chrome=True,
+            current_tab=next_session.domain,
+            session=next_session,
+        )
         return next_state
 
 
 class TransitionFromChromeMachine:
-    def __init__(self,  current_state):
+    def __init__(self, current_state):
 
         if not isinstance(current_state, ChromeInternalState):
-            raise TypeError(
-                "TransitionFromChromeMachine requires a ChromeInternalState")
+            raise TypeError("TransitionFromChromeMachine requires a ChromeInternalState")
 
         self.current_state = current_state
 
-    def compute_next_state(self, next_session: ProgramSession | ChromeSession) -> InternalState:
+    def compute_next_state(
+        self, next_session: ProgramSession | ChromeSession
+    ) -> InternalState:
         if isinstance(next_session, ProgramSession):
             return self._transit_to_program(next_session)
         else:
@@ -205,7 +225,8 @@ class TransitionFromChromeMachine:
         is_chrome = False
         current_tab = None  # should it be whatever is open in chrome? if Chrome is open
         next_state = ApplicationInternalState(
-            next_session.window_title, is_chrome, next_session)
+            next_session.window_title, is_chrome, next_session
+        )
         return next_state
 
     def _stay_on_chrome(self) -> ChromeInternalState:
@@ -213,10 +234,12 @@ class TransitionFromChromeMachine:
 
     @staticmethod
     def _change_to_new_tab(next_session: ChromeSession) -> ChromeInternalState:
-        next_state = ChromeInternalState(active_application="Chrome",
-                                         is_chrome=True,
-                                         current_tab=next_session.domain,
-                                         session=next_session)
+        next_state = ChromeInternalState(
+            active_application="Chrome",
+            is_chrome=True,
+            current_tab=next_session.domain,
+            session=next_session,
+        )
         return next_state
 
     def _stay_on_current_tab(self) -> ChromeInternalState:

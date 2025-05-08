@@ -1,5 +1,5 @@
 """
-Exists because, sometimes, time x on day y, in <timezone>, 
+Exists because, sometimes, time x on day y, in <timezone>,
 becomes time a on day y - 1 or y + 1.
 
 It's not enough to just know that: It must also be known exactly.
@@ -15,7 +15,11 @@ from datetime import datetime, timedelta
 
 from typing import List
 
-from activitytracker.db.models import DailyProgramSummary, ProgramSummaryLog, DomainSummaryLog
+from activitytracker.db.models import (
+    DailyProgramSummary,
+    ProgramSummaryLog,
+    DomainSummaryLog,
+)
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
@@ -29,7 +33,11 @@ from activitytracker.tz_handling.time_formatting import get_start_of_day_from_ul
 
 from ..helper.truncation import truncate_summaries_and_logs_tables_via_session
 
-from ..data.tzinfo_with_pg import create_notion_entry, create_pycharm_entry, create_zoom_entry
+from ..data.tzinfo_with_pg import (
+    create_notion_entry,
+    create_pycharm_entry,
+    create_zoom_entry,
+)
 
 
 def add_time(base_date, hours=0, minutes=0, seconds=0):
@@ -63,7 +71,8 @@ def test_basic_setup():
     assert timezone_for_test in str(time_with_wrapper.dt.tzinfo)
     # Compare timezone names instead of timezone objects
     assert str(time_with_wrapper.dt.tzinfo) == str(
-        some_local_tz), f"Expected both to equal {str(some_local_tz)}"
+        some_local_tz
+    ), f"Expected both to equal {str(some_local_tz)}"
 
     assert time_with_wrapper.dt.hour == time_for_test.hour
     assert time_with_wrapper.dt.minute == time_for_test.minute
@@ -78,40 +87,39 @@ def test_basic_setup():
 #
 
 # Day before base day
-just_before_boundary = create_pycharm_entry(some_local_tz.localize(
-    add_time(one_day_before, 23, 59, 59)))  # Just before midnight
+just_before_boundary = create_pycharm_entry(
+    some_local_tz.localize(add_time(one_day_before, 23, 59, 59))
+)  # Just before midnight
 
 # Base day
 
 noon = some_local_tz.localize(add_time(base_day, 12, 0, 0))
 
-late_night_entry = create_pycharm_entry(some_local_tz.localize(
-    add_time(base_day, 23, 59, 59)))  # Just before midnight
-midnight_entry = create_notion_entry(some_local_tz.localize(
-    add_time(base_day, 0, 0, 1)))  # Just after midnight
-abs_min_time = create_zoom_entry(
-    some_local_tz.localize(add_time(base_day, 0, 0, 0)))
-very_early_morning_entry = create_zoom_entry(some_local_tz.localize(add_time(base_day, 3, 0, 1))
-                                             )
+late_night_entry = create_pycharm_entry(
+    some_local_tz.localize(add_time(base_day, 23, 59, 59))
+)  # Just before midnight
+midnight_entry = create_notion_entry(
+    some_local_tz.localize(add_time(base_day, 0, 0, 1))
+)  # Just after midnight
+abs_min_time = create_zoom_entry(some_local_tz.localize(add_time(base_day, 0, 0, 0)))
+very_early_morning_entry = create_zoom_entry(
+    some_local_tz.localize(add_time(base_day, 3, 0, 1))
+)
 
-five_am_ish = create_notion_entry(
-    some_local_tz.localize(add_time(base_day, 5, 0, 0)))
+five_am_ish = create_notion_entry(some_local_tz.localize(add_time(base_day, 5, 0, 0)))
 
-seven_am_ish = create_zoom_entry(
-    some_local_tz.localize(add_time(base_day, 7, 0, 0)))
+seven_am_ish = create_zoom_entry(some_local_tz.localize(add_time(base_day, 7, 0, 0)))
 
-afternoon = create_pycharm_entry(
-    some_local_tz.localize(add_time(base_day, 15, 0, 15)))
+afternoon = create_pycharm_entry(some_local_tz.localize(add_time(base_day, 15, 0, 15)))
 
-latenight1 = create_zoom_entry(
-    some_local_tz.localize(add_time(base_day, 23, 59, 59)))
-latenight2 = create_pycharm_entry(
-    some_local_tz.localize(add_time(base_day, 23, 59, 59)))
+latenight1 = create_zoom_entry(some_local_tz.localize(add_time(base_day, 23, 59, 59)))
+latenight2 = create_pycharm_entry(some_local_tz.localize(add_time(base_day, 23, 59, 59)))
 
 # Just after end of base day
 
 just_after_boundary = create_notion_entry(
-    some_local_tz.localize(add_time(one_day_later, 0, 0, 1)))
+    some_local_tz.localize(add_time(one_day_later, 0, 0, 1))
+)
 
 #
 # -- choose test data from the above pool!
@@ -139,13 +147,16 @@ async def setup_parts(regular_session_maker):
     """
 
     # Get all required DAOs
-    program_logging_dao = ProgramLoggingDao(
-        regular_session_maker)
+    program_logging_dao = ProgramLoggingDao(regular_session_maker)
     chrome_logging_dao = ChromeLoggingDao(regular_session_maker)
-    program_summary_dao = ProgramSummaryDao(
-        program_logging_dao, regular_session_maker)
+    program_summary_dao = ProgramSummaryDao(program_logging_dao, regular_session_maker)
 
-    return program_logging_dao, program_summary_dao, chrome_logging_dao, regular_session_maker
+    return (
+        program_logging_dao,
+        program_summary_dao,
+        chrome_logging_dao,
+        regular_session_maker,
+    )
 
 
 class TestSummaryDaoWithTzInfo:
@@ -154,10 +165,10 @@ class TestSummaryDaoWithTzInfo:
         """Away from edge cases, meaning, 11 am, 3 pm, 6 pm."""
         logging_dao, summary_dao, _, regular_session_maker = setup_parts
 
-        seven_am_ish = create_zoom_entry(
-            some_local_tz.localize(add_time(base_day, 7, 0, 0)))
+        seven_am_ish = create_zoom_entry(some_local_tz.localize(add_time(base_day, 7, 0, 0)))
         afternoon = create_pycharm_entry(
-            some_local_tz.localize(add_time(base_day, 15, 0, 15)))
+            some_local_tz.localize(add_time(base_day, 15, 0, 15))
+        )
 
         test_inputs = [seven_am_ish, afternoon]
 
@@ -174,7 +185,8 @@ class TestSummaryDaoWithTzInfo:
             # Gather by day
             print(f"reading values for day: {test_inputs[0].start_time}")
             all_for_day: List[DailyProgramSummary] = summary_dao.read_day(
-                test_inputs[0].start_time)
+                test_inputs[0].start_time
+            )
 
             assert isinstance(all_for_day[0], DailyProgramSummary)
 
@@ -187,18 +199,18 @@ class TestSummaryDaoWithTzInfo:
 
             assert len(all_for_day) == len(test_inputs)
         finally:
-            truncate_summaries_and_logs_tables_via_session(
-                regular_session_maker)
+            truncate_summaries_and_logs_tables_via_session(regular_session_maker)
 
     def test_on_twelve_ish_am_boundary(self, setup_parts):
         logging_dao, summary_dao, _, regular_session_maker = setup_parts
 
-        late_night_entry = create_pycharm_entry(some_local_tz.localize(
-            add_time(base_day, 23, 59, 59)))  # Just before midnight
-        midnight_entry = create_notion_entry(some_local_tz.localize(
-            add_time(base_day, 0, 0, 1)))  # Just after midnight
-        abs_min_time = create_zoom_entry(
-            some_local_tz.localize(add_time(base_day, 0, 0, 0)))
+        late_night_entry = create_pycharm_entry(
+            some_local_tz.localize(add_time(base_day, 23, 59, 59))
+        )  # Just before midnight
+        midnight_entry = create_notion_entry(
+            some_local_tz.localize(add_time(base_day, 0, 0, 1))
+        )  # Just after midnight
+        abs_min_time = create_zoom_entry(some_local_tz.localize(add_time(base_day, 0, 0, 0)))
 
         test_inputs = [late_night_entry, midnight_entry, abs_min_time]
 
@@ -217,7 +229,8 @@ class TestSummaryDaoWithTzInfo:
             # Gather by day
             print(f"reading values for day: {test_inputs[0].start_time}")
             all_for_day: List[DailyProgramSummary] = summary_dao.read_day(
-                test_inputs[0].start_time)
+                test_inputs[0].start_time
+            )
 
             assert isinstance(all_for_day[0], DailyProgramSummary)
 
@@ -230,16 +243,17 @@ class TestSummaryDaoWithTzInfo:
 
             assert len(all_for_day) == len(test_inputs)
         finally:
-            truncate_summaries_and_logs_tables_via_session(
-                regular_session_maker)
+            truncate_summaries_and_logs_tables_via_session(regular_session_maker)
 
     def test_on_eleven_ish_pm_boundary(self, setup_parts):
         logging_dao, summary_dao, _, session_maker = setup_parts
 
         latenight1 = create_zoom_entry(
-            some_local_tz.localize(add_time(base_day, 23, 59, 59)))
+            some_local_tz.localize(add_time(base_day, 23, 59, 59))
+        )
         latenight2 = create_pycharm_entry(
-            some_local_tz.localize(add_time(base_day, 23, 59, 59)))
+            some_local_tz.localize(add_time(base_day, 23, 59, 59))
+        )
 
         edge_case_micros = 999999  # HEY, LISTEN! Max value possible.
         latenight2.start_time.dt.replace(microsecond=edge_case_micros)
@@ -260,7 +274,8 @@ class TestSummaryDaoWithTzInfo:
             # Gather by day
             print(f"reading values for day: {test_inputs[0].start_time}")
             all_for_day: List[DailyProgramSummary] = summary_dao.read_day(
-                test_inputs[0].start_time)
+                test_inputs[0].start_time
+            )
 
             assert isinstance(all_for_day[0], DailyProgramSummary)
 
@@ -305,25 +320,39 @@ class TestSummaryDaoWithTzInfo:
 
         # Don't want the test to depend on what time of year it is. EST has Daylight Savings
         assert very_start_of_day.utcoffset() == timedelta(
-            hours=-4) or very_start_of_day.utcoffset() == timedelta(hours=-5)
+            hours=-4
+        ) or very_start_of_day.utcoffset() == timedelta(hours=-5)
         assert just_before_end_of_day.utcoffset() == timedelta(
-            hours=-4) or just_before_end_of_day.utcoffset() == timedelta(hours=-5)
+            hours=-4
+        ) or just_before_end_of_day.utcoffset() == timedelta(hours=-5)
         # FIXME: you didnt complete this test
         invalid_exe = "C:/Adobe/Photoshop.exe"
         invalid_process = "Photoshop.exe"
         invalid_session1 = ProgramSession(
-            invalid_exe, invalid_process, "Adobe Photoshop", "picture4_final5_final.jpg", UserLocalTime(outside_of_range_1))
+            invalid_exe,
+            invalid_process,
+            "Adobe Photoshop",
+            "picture4_final5_final.jpg",
+            UserLocalTime(outside_of_range_1),
+        )
         invalid_session2 = ProgramSession(
-            invalid_exe, invalid_process, "Adobe Photoshop", "picture4_final5_final2.jpg", UserLocalTime(outside_of_range_2))
+            invalid_exe,
+            invalid_process,
+            "Adobe Photoshop",
+            "picture4_final5_final2.jpg",
+            UserLocalTime(outside_of_range_2),
+        )
 
         session1_dt_as_ult = UserLocalTime(very_start_of_day)
         session2_dt_as_ult = UserLocalTime(just_before_end_of_day)
         target_exe_path = "C:/ProgramFiles/pour.exe"
         target_process_name = "pour.exe"
         session1 = ProgramSession(
-            target_exe_path, target_process_name, "Pour", "Beer pour", session1_dt_as_ult)
+            target_exe_path, target_process_name, "Pour", "Beer pour", session1_dt_as_ult
+        )
         session2 = ProgramSession(
-            target_exe_path, target_process_name, "Pour", "Sprite pour", session2_dt_as_ult)
+            target_exe_path, target_process_name, "Pour", "Sprite pour", session2_dt_as_ult
+        )
 
         # Do the writes
         try:
@@ -373,8 +402,8 @@ class TestSummaryDaoWithTzInfo:
         assert just_before_end_of_day.hour == t2.hour
 
         # Check the timezone name
-        assert str(very_start_of_day.tzinfo) == 'Asia/Tokyo'
-        assert str(just_before_end_of_day.tzinfo) == 'Asia/Tokyo'
+        assert str(very_start_of_day.tzinfo) == "Asia/Tokyo"
+        assert str(just_before_end_of_day.tzinfo) == "Asia/Tokyo"
 
         assert very_start_of_day.utcoffset() == timedelta(hours=9)
         assert just_before_end_of_day.utcoffset() == timedelta(hours=9)
@@ -382,18 +411,22 @@ class TestSummaryDaoWithTzInfo:
         invalid_exe = "C:/Adobe/Photoshop.exe"
         invalid_process = "Photoshop.exe"
         invalid_session1 = ProgramSession(
-            invalid_exe, invalid_process, "", "", UserLocalTime(outside_of_range_1))
+            invalid_exe, invalid_process, "", "", UserLocalTime(outside_of_range_1)
+        )
         invalid_session2 = ProgramSession(
-            invalid_exe, invalid_process, "", "", UserLocalTime(outside_of_range_2))
+            invalid_exe, invalid_process, "", "", UserLocalTime(outside_of_range_2)
+        )
 
         session1_dt_as_ult = UserLocalTime(very_start_of_day)
         session2_dt_as_ult = UserLocalTime(just_before_end_of_day)
         target_exe_path = "C:/ProgramFiles/pour.exe"
         target_process_name = "pour.exe"
         session1 = ProgramSession(
-            target_exe_path, target_process_name, "", "", session1_dt_as_ult)
+            target_exe_path, target_process_name, "", "", session1_dt_as_ult
+        )
         session2 = ProgramSession(
-            target_exe_path, target_process_name, "", "", session2_dt_as_ult)
+            target_exe_path, target_process_name, "", "", session2_dt_as_ult
+        )
 
         try:
             # Do the writes
@@ -419,6 +452,7 @@ class TestSummaryDaoWithTzInfo:
             assert entry_one.gathering_date_local.day == just_before_end_of_day.day
         finally:
             truncate_summaries_and_logs_tables_via_session(session_maker)
+
 
 # class TestLoggingDaoWithTzInfo:
 #     # TODO

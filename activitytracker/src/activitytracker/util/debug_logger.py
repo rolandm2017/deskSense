@@ -64,7 +64,11 @@ def get_current_day_log_name(log_date: str):
     return "session_integrity_log - " + log_date + ".txt"
 
 
-def print_and_log(sessions: List[ProgramSummaryLog] | List[DomainSummaryLog], latest_shutdown_time: datetime, startup_time: datetime):
+def print_and_log(
+    sessions: List[ProgramSummaryLog] | List[DomainSummaryLog],
+    latest_shutdown_time: datetime,
+    startup_time: datetime,
+):
     log_identifier = startup_time.strftime("%m-%d")
     log_for_current_day = get_current_day_log_name(log_identifier)
 
@@ -117,18 +121,30 @@ def notice_suspicious_durations(existing_entry, program_session):
     impossibly_long_day = existing_entry.hours_spent > 24
     if impossibly_long_day:
         logger.log_red(
-            "[critical] " + str(existing_entry.hours_spent) + " for " + existing_entry.program_name)
+            "[critical] "
+            + str(existing_entry.hours_spent)
+            + " for "
+            + existing_entry.program_name
+        )
         raise SuspiciousDurationError("long day")
     if program_session.duration and program_session.duration > timedelta(hours=1):
         logger.log_red(
-            "[critical] " + str(program_session.duration) + " for " + existing_entry.program_name)
+            "[critical] "
+            + str(program_session.duration)
+            + " for "
+            + existing_entry.program_name
+        )
         raise SuspiciousDurationError("duration")
 
 
 def log_if_needed(program_session, target_program_name, usage_duration_in_hours, right_now):
     if program_session.window_title == "Alt-tab window":
-        write_to_debug_log(target_program_name, usage_duration_in_hours,
-                           right_now.strftime("%m-%d %H:%M:%S"))
+        write_to_debug_log(
+            target_program_name,
+            usage_duration_in_hours,
+            right_now.strftime("%m-%d %H:%M:%S"),
+        )
     if usage_duration_in_hours > 0.333:
-        write_to_large_usage_log(program_session,
-                                 usage_duration_in_hours, right_now.strftime("%m-%d %H:%M:%S"))
+        write_to_large_usage_log(
+            program_session, usage_duration_in_hours, right_now.strftime("%m-%d %H:%M:%S")
+        )

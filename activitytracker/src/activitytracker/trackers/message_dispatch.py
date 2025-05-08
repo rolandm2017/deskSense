@@ -27,10 +27,7 @@ socket.bind("tcp://127.0.0.1:5555")
 
 
 def publish_keyboard_event():
-    event = {
-        "type": "keyboard",
-        "timestamp": datetime.now().timestamp()
-    }
+    event = {"type": "keyboard", "timestamp": datetime.now().timestamp()}
     socket.send_json(event)
 
 
@@ -39,6 +36,6 @@ def publish_mouse_events(aggregate):
     event = {
         "type": "mouse",
         "start": aggregate["start"],  # MUST be timestamp format, a float
-        "end": aggregate["end"]
+        "end": aggregate["end"],
     }
     socket.send_json(event)

@@ -1,4 +1,3 @@
-
 import pytest
 from unittest.mock import patch
 
@@ -6,7 +5,11 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 
-from activitytracker.tz_handling.time_formatting import account_for_timezone_offset, convert_to_timezone, format_for_local_time
+from activitytracker.tz_handling.time_formatting import (
+    account_for_timezone_offset,
+    convert_to_timezone,
+    format_for_local_time,
+)
 
 
 def test_account_for_timezone_offset():
@@ -43,29 +46,34 @@ class TestConvertToTimezone:
         # Europe/Berlin - UTC +1 (standard time) or UTC +2 (daylight saving time, depending on the time of year)
         # March 15, 2025 at 14:30:00
         berlin_dt = datetime(2025, 3, 15, 14, 30, 0, 0)
-        berlin_dt = berlin_dt.replace(tzinfo=ZoneInfo(
-            "Europe/Berlin"))  # Localize to Europe/Berlin
+        berlin_dt = berlin_dt.replace(
+            tzinfo=ZoneInfo("Europe/Berlin")
+        )  # Localize to Europe/Berlin
 
         # ###
         # ### Test setup circumstances
         # ###
         # Assertions
         assert est_dt.tzinfo == ZoneInfo(
-            "America/New_York"), f"Expected America/New_York, but got {est_dt.tzinfo}"
+            "America/New_York"
+        ), f"Expected America/New_York, but got {est_dt.tzinfo}"
         assert berlin_dt.tzinfo == ZoneInfo(
-            "Europe/Berlin"), f"Expected Europe/Berlin, but got {berlin_dt.tzinfo}"
+            "Europe/Berlin"
+        ), f"Expected Europe/Berlin, but got {berlin_dt.tzinfo}"
 
         # Checking the expected UTC offsets (in hours)
         est_utc_offset = est_dt.utcoffset()
         assert est_utc_offset is not None
-        assert est_utc_offset.total_seconds() == -4 * \
-            3600, f"Expected UTC offset -4 hours, but got {est_utc_offset}"
+        assert (
+            est_utc_offset.total_seconds() == -4 * 3600
+        ), f"Expected UTC offset -4 hours, but got {est_utc_offset}"
 
         # For Berlin, we keep the check for +1 hour or +2 hours depending on daylight saving time
         berlin_utc_offset = berlin_dt.utcoffset()
         assert berlin_utc_offset is not None
-        assert berlin_utc_offset.total_seconds(
-        ) == 1 * 3600, f"Expected UTC offset +1 hour, but got {berlin_utc_offset}"
+        assert (
+            berlin_utc_offset.total_seconds() == 1 * 3600
+        ), f"Expected UTC offset +1 hour, but got {berlin_utc_offset}"
 
         # Verifying the datetime values
         assert est_dt.year == 2025, f"Expected year 2025, but got {est_dt.year}"
@@ -86,10 +94,9 @@ class TestConvertToTimezone:
         dt = datetime.now()
 
         hawaii_time = convert_to_timezone(dt, "Pacific/Honolulu")  # -10
-        european_time = convert_to_timezone(dt, 'Europe/London')  # 0 or 1
-        east_asian_time = convert_to_timezone(dt, 'Asia/Tokyo')  # 9
-        south_american_time = convert_to_timezone(
-            dt, 'America/Sao_Paulo')  # -3
+        european_time = convert_to_timezone(dt, "Europe/London")  # 0 or 1
+        east_asian_time = convert_to_timezone(dt, "Asia/Tokyo")  # 9
+        south_american_time = convert_to_timezone(dt, "America/Sao_Paulo")  # -3
 
         hawaii_offset = -10
         european_offset = 0
@@ -99,7 +106,8 @@ class TestConvertToTimezone:
 
         assert (dt.hour + hawaii_offset) % 24 == hawaii_time.hour
         assert (dt.hour + european_offset) % 24 == european_time.hour or (
-            dt.hour + european_offset_daylight_savings) % 24 == european_time.hour
+            dt.hour + european_offset_daylight_savings
+        ) % 24 == european_time.hour
         assert (dt.hour + east_asian_offset) % 24 == east_asian_time.hour
         assert (dt.hour + south_american_offset) % 24 == south_american_time.hour
 
@@ -107,10 +115,9 @@ class TestConvertToTimezone:
         no_tz = datetime.now()  # does not have a tz
 
         hawaii_time = convert_to_timezone(no_tz, "Pacific/Honolulu")  # -10
-        european_time = convert_to_timezone(no_tz, 'Europe/London')  # 0 or 1
-        east_asian_time = convert_to_timezone(no_tz, 'Asia/Tokyo')  # 9
-        south_american_time = convert_to_timezone(
-            no_tz, 'America/Sao_Paulo')  # -3
+        european_time = convert_to_timezone(no_tz, "Europe/London")  # 0 or 1
+        east_asian_time = convert_to_timezone(no_tz, "Asia/Tokyo")  # 9
+        south_american_time = convert_to_timezone(no_tz, "America/Sao_Paulo")  # -3
 
         hawaii_offset = -10
         european_offset = 0
@@ -120,7 +127,8 @@ class TestConvertToTimezone:
 
         assert (no_tz.hour + hawaii_offset) % 24 == hawaii_time.hour
         assert (no_tz.hour + european_offset) % 24 == european_time.hour or (
-            no_tz.hour + european_offset_daylight_savings) % 24 == european_time.hour
+            no_tz.hour + european_offset_daylight_savings
+        ) % 24 == european_time.hour
         assert (no_tz.hour + east_asian_offset) % 24 == east_asian_time.hour
         assert (no_tz.hour + south_american_offset) % 24 == south_american_time.hour
 

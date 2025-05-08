@@ -7,7 +7,11 @@ from zoneinfo import ZoneInfo
 
 from activitytracker.services.tiny_services import TimezoneService
 
-from activitytracker.config.definitions import local_time_zone, regular_tz_offset, daylight_savings_tz_offset
+from activitytracker.config.definitions import (
+    local_time_zone,
+    regular_tz_offset,
+    daylight_savings_tz_offset,
+)
 from activitytracker.util.clock import UserFacingClock
 from activitytracker.util.time_wrappers import UserLocalTime
 
@@ -33,11 +37,12 @@ def test_seconds_have_elapsed():
     later = earlier + timedelta(seconds=11)
 
     assert not user_facing_clock.seconds_have_elapsed(
-        later, earlier, 12), "The 'less than' condition failed"
+        later, earlier, 12
+    ), "The 'less than' condition failed"
+    assert user_facing_clock.seconds_have_elapsed(later, earlier, 11), "The boundary failed"
     assert user_facing_clock.seconds_have_elapsed(
-        later, earlier, 11), "The boundary failed"
-    assert user_facing_clock.seconds_have_elapsed(
-        later, earlier, 10), "The 'greater than' condition failed"
+        later, earlier, 10
+    ), "The 'greater than' condition failed"
 
 
 def test_seconds_have_elapsed_sad_path():
@@ -116,4 +121,5 @@ def test_timezones_are_same():
     assert user_facing_clock.timezones_are_same(aware_dt, aware_dt_2)
     assert user_facing_clock.timezones_are_same(another, another_v2)
     assert not user_facing_clock.timezones_are_same(
-        aware_dt, another), "Different TZ datetimes failed detection"
+        aware_dt, another
+    ), "Different TZ datetimes failed detection"

@@ -45,6 +45,7 @@ class ProgramActivityReport(BaseModel):
 
 # Chrome stuff
 
+
 class TabChangeEventWithUnknownTz(BaseModel):
     tabTitle: str
     url: str

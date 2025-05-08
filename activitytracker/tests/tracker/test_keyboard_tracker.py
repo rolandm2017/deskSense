@@ -25,7 +25,7 @@ class MockKeyboardFacade:
         return event is not None
 
     def is_ctrl_c(self, event):
-        return event == 'ctrl+c'
+        return event == "ctrl+c"
 
     def trigger_ctrl_c(self):
         self.ctrl_c_triggered = True
@@ -62,7 +62,7 @@ def mock_clock():
         datetime(2025, 1, 1, 12, 0, 23),
         datetime(2025, 1, 1, 12, 0, 23),
         datetime(2025, 1, 1, 12, 0, 23),
-        datetime(2025, 1, 1, 12, 0, 23)
+        datetime(2025, 1, 1, 12, 0, 23),
     ]
     return MockClock(times)
 
@@ -127,7 +127,9 @@ def test_key_press_tracking(tracker_and_events, mock_keyboard_facade):
     t9 = t8_closer + timedelta(milliseconds=4)
     t9_t = t9.timestamp()
 
-    with patch.object(tracker.aggregator, 'add_event', wraps=tracker.aggregator.add_event) as mock_add_event:
+    with patch.object(
+        tracker.aggregator, "add_event", wraps=tracker.aggregator.add_event
+    ) as mock_add_event:
         # ### Test a setup condition
         assert mock_add_event.call_count == 0
 
@@ -166,7 +168,7 @@ def test_key_press_tracking(tracker_and_events, mock_keyboard_facade):
         # t3, t3a, t3b, t4:
         assert len(tracker.aggregator.current_aggregation.events) == 4
 
-        deliverable_for_db = handler_events[0]   # Note "events[0]"
+        deliverable_for_db = handler_events[0]  # Note "events[0]"
         assert isinstance(deliverable_for_db, KeyboardAggregate)
         assert deliverable_for_db.start_time is not None
         assert deliverable_for_db.end_time is not None
@@ -180,8 +182,7 @@ def test_key_press_tracking(tracker_and_events, mock_keyboard_facade):
         mock_keyboard_facade.set_event(t5_t)
         tracker.run_tracking_loop()
         assert len(tracker.aggregator.current_aggregation.events) == 1
-        assert len(
-            handler_events) == 2, "The aggregator timeout window wasn't closed 2x"
+        assert len(handler_events) == 2, "The aggregator timeout window wasn't closed 2x"
 
         mock_keyboard_facade.set_event(t6_t)
         tracker.run_tracking_loop()
@@ -204,8 +205,7 @@ def test_key_press_tracking(tracker_and_events, mock_keyboard_facade):
 
         assert t8_t_closer in events
         assert len(tracker.aggregator.current_aggregation.events) == 1
-        assert len(
-            handler_events) == 3, "The aggregator timeout window wasn't closed 3x"
+        assert len(handler_events) == 3, "The aggregator timeout window wasn't closed 3x"
 
 
 # def move_time_fwd_one_ms(d):

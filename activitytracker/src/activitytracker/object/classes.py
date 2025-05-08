@@ -28,8 +28,7 @@ class SessionLedger:
         """Proof that the add_ten_sec Recorder method occurred."""
         if self.open:
             if self.DEBUG:
-                print(
-                    f"Ledger for {self.name}: Adding ten sec for total {self.total}")
+                print(f"Ledger for {self.name}: Adding ten sec for total {self.total}")
             self.total += window_push_length
         else:
             raise SessionClosedError("Tried to push window after deduction")
@@ -38,8 +37,7 @@ class SessionLedger:
         """Proof that the deduct_duration method was called with a value."""
         self.open = False  # Cannot window push after deduct_duration
         if self.DEBUG:
-            print(
-                f"Ledger for {self.name}: Extend by n for total {self.total}")
+            print(f"Ledger for {self.name}: Extend by n for total {self.total}")
         self.total += amount
 
     def get_total(self):
@@ -48,6 +46,7 @@ class SessionLedger:
 
 class ActivitySession(ABC):
     """Base class for all activity sessions that should never be instantiated directly."""
+
     start_time: UserLocalTime
     productive: bool
     ledger: SessionLedger
@@ -73,7 +72,15 @@ class ProgramSession(ActivitySession):
     duration: Optional[timedelta]
     # productive: bool  # exists in ActivitySession
 
-    def __init__(self, exe_path="", process_name="", window_title="", detail="", start_time=UserLocalTime(datetime(2000, 1, 1, tzinfo=timezone.utc)), productive=False):
+    def __init__(
+        self,
+        exe_path="",
+        process_name="",
+        window_title="",
+        detail="",
+        start_time=UserLocalTime(datetime(2000, 1, 1, tzinfo=timezone.utc)),
+        productive=False,
+    ):
         # IF you remove the default args for this class, then you will have to do A LOT of cleanup in the test data.
         super().__init__(start_time, productive, process_name)
         self.exe_path = exe_path
@@ -93,7 +100,7 @@ class ProgramSession(ActivitySession):
             #
             start_time=self.start_time,
             end_time=end_time,
-            productive=self.productive
+            productive=self.productive,
         )
         completed.ledger = self.ledger
         return completed
@@ -122,7 +129,7 @@ class CompletedProgramSession(ProgramSession):
         start_time=UserLocalTime(datetime(2000, 1, 1, tzinfo=timezone.utc)),
         end_time=UserLocalTime(datetime(2000, 1, 1, tzinfo=timezone.utc)),
         productive=False,
-        duration_for_tests=None
+        duration_for_tests=None,
     ):
         """Only use duration arg in testing. Don't use it otherwise. 'duration_for_tests' exists only for e2e tests thresholds"""
         # TODO: Reorder it so productive is further up in the constructor.
@@ -136,7 +143,7 @@ class CompletedProgramSession(ProgramSession):
             window_title=window_title,
             detail=detail,
             start_time=start_time,
-            productive=productive
+            productive=productive,
         )
 
         # Add the fields specific to CompletedProgramSession
@@ -151,10 +158,12 @@ class CompletedProgramSession(ProgramSession):
             self.duration = timedelta(seconds=0)
 
     def __str__(self):
-        return (f"CompletedProgramSession(exe_path='{self.exe_path}', process_name='{self.process_name}', \n\t"
-                f"title='{self.window_title}', detail='{self.detail}', \n\t"
-                f"start_time='{self.start_time}', \n\t"
-                f"end_time='{self.end_time}', duration='{self.duration}', productive='{self.productive}', \n\tledger='{self.ledger.get_total()}')")
+        return (
+            f"CompletedProgramSession(exe_path='{self.exe_path}', process_name='{self.process_name}', \n\t"
+            f"title='{self.window_title}', detail='{self.detail}', \n\t"
+            f"start_time='{self.start_time}', \n\t"
+            f"end_time='{self.end_time}', duration='{self.duration}', productive='{self.productive}', \n\tledger='{self.ledger.get_total()}')"
+        )
 
     # TODO: Transfer whole codebase to use 2-3 vers of the program session.
 
@@ -182,7 +191,7 @@ class ChromeSession(ActivitySession):
             #
             start_time=self.start_time,
             end_time=end_time,
-            productive=self.productive
+            productive=self.productive,
         )
         completed.ledger = self.ledger
         return completed
@@ -203,19 +212,19 @@ class CompletedChromeSession(ChromeSession):
     end_time: UserLocalTime
     duration: timedelta
 
-    def __init__(self, domain, detail,
-                 start_time=UserLocalTime(
-                     datetime(2000, 1, 1, tzinfo=timezone.utc)),
-                 end_time=UserLocalTime(
-                     datetime(2000, 1, 1, tzinfo=timezone.utc)),
-                 productive=False, duration_for_tests=None):
+    def __init__(
+        self,
+        domain,
+        detail,
+        start_time=UserLocalTime(datetime(2000, 1, 1, tzinfo=timezone.utc)),
+        end_time=UserLocalTime(datetime(2000, 1, 1, tzinfo=timezone.utc)),
+        productive=False,
+        duration_for_tests=None,
+    ):
         # Initialize the base class first
         """Only use duration arg in testing. Don't use it otherwise. 'duration_for_tests' exists only for e2e tests thresholds"""
         super().__init__(
-            domain=domain,
-            detail=detail,
-            start_time=start_time,
-            productive=productive
+            domain=domain, detail=detail, start_time=start_time, productive=productive
         )
 
         # Add the fields specific to CompletedChromeSession
@@ -231,6 +240,7 @@ class CompletedChromeSession(ChromeSession):
 
     def __str__(self):
         return f"CompletedChromeSession(domain='{self.domain}', detail='{self.detail}', \n\tstart_time='{self.start_time}', \n\tend_time='{self.end_time}', duration='{self.duration}', \n\tproductive='{self.productive}', \n\tledger='{self.ledger.get_total()}')"
+
 
 # TODO: Convert to use CompletedChromeSession to avoid that gross "start_time is not None" bs
 
@@ -255,8 +265,9 @@ class TabChangeEventWithLtz:
 
     def __str__(self) -> str:
         """Custom string representation of the TabChangeEvent."""
-        formatted_time = self.start_time_with_tz.strftime(
-            "%Y-%m-%d %H:%M:%S.%f")[:-3]  # Truncate to milliseconds
+        formatted_time = self.start_time_with_tz.strftime("%Y-%m-%d %H:%M:%S.%f")[
+            :-3
+        ]  # Truncate to milliseconds
         return f"TabChangeEvent(tabTitle='{self.tab_title}', url='{self.url}', startTime='{formatted_time}')"
 
 
@@ -307,7 +318,9 @@ class MouseAggregate(PeripheralAggregate):
 
 
 class MouseMoveWindow:
-    def __init__(self, start_of_window: UserLocalTime, end_of_window: UserLocalTime, source=None):
+    def __init__(
+        self, start_of_window: UserLocalTime, end_of_window: UserLocalTime, source=None
+    ):
         """Where the mouse was is irrelevant. From when to when it was moving is the important part."""
         self.start_time: UserLocalTime = start_of_window
         self.end_time: UserLocalTime = end_of_window
@@ -315,5 +328,7 @@ class MouseMoveWindow:
 
     def __str__(self):
         if self.source:
-            return f"Mouse movement from {self.start_time} to {self.end_time} - {self.source}"
+            return (
+                f"Mouse movement from {self.start_time} to {self.end_time} - {self.source}"
+            )
         return f"Mouse movement from {self.start_time} to {self.end_time} : nameless"

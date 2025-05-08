@@ -8,7 +8,7 @@ from activitytracker.object.classes import ProgramSession, ChromeSession
 
 def snapshot_obj_for_tests(obj: ProgramSession | ChromeSession):
     """
-    The object fed into this helper will retain 
+    The object fed into this helper will retain
     it's present state when a spy looks at it later.
     """
     ledger_for_transfer = obj.ledger

@@ -8,7 +8,7 @@ class TimeKeeper:
     Exists to resolve painful problems dealing with converting
     what is "the time" to the user into what will be "the time" to the database.
 
-    Problem statement: 
+    Problem statement:
 
     The user is in EST, the database in UTC, some machine off in China in CST when User goes on vacation.
     You have to convert timezones every which way and a plain "datetime" typing
@@ -34,6 +34,7 @@ class TimeKeeper:
 
     def convert_utc_to_local_time(self, time_as_utc):
         pass
+
 
 # TODO: "class UtcDatetime"  <- For all dt's that have been converted into utc
 
@@ -63,7 +64,7 @@ class UserLocalTime:
             if dt.tzinfo is None:
                 raise TimezoneUnawareError("UserLocalTime", dt)
             self.dt = dt
-        self.timezone = getattr(self.dt, 'tzinfo', None)
+        self.timezone = getattr(self.dt, "tzinfo", None)
 
     def get_dt_for_db(self):
         return self.dt
@@ -71,9 +72,8 @@ class UserLocalTime:
     def __getattr__(self, name):
         """Forward attribute access to the underlying datetime object"""
         # This prevents infinite recursion during copying
-        if name.startswith('__') and name.endswith('__'):
-            raise AttributeError(
-                f"{self.__class__.__name__} has no attribute {name}")
+        if name.startswith("__") and name.endswith("__"):
+            raise AttributeError(f"{self.__class__.__name__} has no attribute {name}")
         return getattr(self.dt, name)
 
     def __repr__(self):
@@ -111,14 +111,14 @@ class UserLocalTime:
             return self.dt < other
         return NotImplemented
 
-       # Support datetime arithmetic
+    # Support datetime arithmetic
     def __sub__(self, other):
         """Support subtraction between time objects or timedelta objects"""
         if isinstance(other, (UserLocalTime, SystemTime)):
             return self.dt - other.dt
         elif isinstance(other, datetime):
             return self.dt - other
-        elif hasattr(other, 'days'):  # Check if it's a timedelta-like object
+        elif hasattr(other, "days"):  # Check if it's a timedelta-like object
             return UserLocalTime(self.dt - other)
         return NotImplemented
 
@@ -144,6 +144,7 @@ class UserLocalTime:
     def __deepcopy__(self, memo):
         """Support for copy.deepcopy()"""
         from copy import deepcopy
+
         return UserLocalTime(deepcopy(self.dt, memo))
 
     def __gt__(self, other):
@@ -165,6 +166,7 @@ class UserLocalTime:
     def __str__(self):
         return str(f"UserLocalTime('{str(self.dt)})'")
 
+
 # TODO: Implement a .to_system_time() method
 # Converted into system time, it should keep track of what it previously was
 
@@ -181,14 +183,13 @@ class SystemTime:
             self.dt = dt.dt
         else:
             self.dt = dt
-        self.timezone = getattr(self.dt, 'tzinfo', None)
+        self.timezone = getattr(self.dt, "tzinfo", None)
 
     def __getattr__(self, name):
         """Forward attribute access to the underlying datetime object"""
         # This prevents infinite recursion during copying
-        if name.startswith('__') and name.endswith('__'):
-            raise AttributeError(
-                f"{self.__class__.__name__} has no attribute {name}")
+        if name.startswith("__") and name.endswith("__"):
+            raise AttributeError(f"{self.__class__.__name__} has no attribute {name}")
         return getattr(self.dt, name)
 
     def __str__(self):
@@ -209,6 +210,7 @@ class SystemTime:
     def __deepcopy__(self, memo):
         """Support for copy.deepcopy()"""
         from copy import deepcopy
+
         return SystemTime(deepcopy(self.dt, memo))
 
     # To support datetime-like comparison operations

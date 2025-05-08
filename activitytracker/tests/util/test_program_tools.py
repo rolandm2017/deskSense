@@ -1,10 +1,15 @@
-
 import pytest
 
 from activitytracker.config.definitions import productive_apps, productive_sites
 
-from activitytracker.util.program_tools import (separate_window_name_and_detail, is_expected_shape_else_throw,
-                                                tab_is_a_productive_tab,  separator_error_msg, window_is_chrome, is_productive)
+from activitytracker.util.program_tools import (
+    separate_window_name_and_detail,
+    is_expected_shape_else_throw,
+    tab_is_a_productive_tab,
+    separator_error_msg,
+    window_is_chrome,
+    is_productive,
+)
 
 
 def test_separate_window_name_and_detail():
@@ -50,7 +55,9 @@ def test_tab_is_a_productive_tab_validation():
     # PRODUCTIVE
     productive_tab_name_1 = "www.github.com/sama"  # github.com is present
     productive_tab_name_2 = "https://stackoverflow.com/questions/455338/how-do-i-check-if-an-object-has-a-key-in-javascript"  # stackoverflow.com
-    productive_tab_name_3 = "https://claude.ai/chat/db4a35ae-3b3c-4fae-a251-82c0bdc261f1"  # claude.ai
+    productive_tab_name_3 = (
+        "https://claude.ai/chat/db4a35ae-3b3c-4fae-a251-82c0bdc261f1"  # claude.ai
+    )
 
     # UNPRODUCTIVE
     questionable_tab_name_4 = "https://www.youtube.com/watch?v=vu4dsCtsocE"  # youtube
@@ -60,23 +67,21 @@ def test_tab_is_a_productive_tab_validation():
     # facade = Mock()
     # tracker = ProgramTrackerCore(clock, facade, Mock())
 
-    assert tab_is_a_productive_tab(
-        productive_tab_name_1, productive_sites) is True
-    assert tab_is_a_productive_tab(
-        productive_tab_name_2, productive_sites) is True
-    assert tab_is_a_productive_tab(
-        productive_tab_name_3, productive_sites) is True
+    assert tab_is_a_productive_tab(productive_tab_name_1, productive_sites) is True
+    assert tab_is_a_productive_tab(productive_tab_name_2, productive_sites) is True
+    assert tab_is_a_productive_tab(productive_tab_name_3, productive_sites) is True
 
-    assert tab_is_a_productive_tab(
-        questionable_tab_name_4, productive_sites) is False
-    assert tab_is_a_productive_tab(
-        questionable_tab_name_5, productive_sites) is False
-    assert tab_is_a_productive_tab(
-        questionable_tab_name_6, productive_sites) is False
+    assert tab_is_a_productive_tab(questionable_tab_name_4, productive_sites) is False
+    assert tab_is_a_productive_tab(questionable_tab_name_5, productive_sites) is False
+    assert tab_is_a_productive_tab(questionable_tab_name_6, productive_sites) is False
 
 
-my_chrome_example = {'os': 'Ubuntu', 'pid': 129614, 'process_name': 'chrome',
-                     'window_title': 'Squashing Commits with Git Rebase - Claude - Google Chrome'}
+my_chrome_example = {
+    "os": "Ubuntu",
+    "pid": 129614,
+    "process_name": "chrome",
+    "window_title": "Squashing Commits with Git Rebase - Claude - Google Chrome",
+}
 
 
 def test_window_is_chrome():
@@ -84,18 +89,42 @@ def test_window_is_chrome():
     assert window_is_chrome({"window_title": "foo bar baz"}) is False
 
 
-ex1 = {'os': 'Ubuntu', 'pid': 129614, 'process_name': 'chrome',
-       'window_title': 'Squashing Commits with Git Rebase - Claude - Google Chrome'}
-ex2 = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg',
-       'window_title': 'Vite + React + TS - Google Chrome'}
-ex3 = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg',
-       'window_title': 'H&M | Online Fashion, Homeware & Kids Clothes | H&M CA - Google Chrome'}
-ex4 = {'os': 'Ubuntu', 'pid': 128216,
-       'process_name': 'Xorg', 'window_title': 'Alt-tab window'}
-ex5 = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg',
-       'window_title': 'rlm@kingdom: ~/Code/deskSense/activitytracker'}
-ex6 = {'os': 'Ubuntu', 'pid': 128216, 'process_name': 'Xorg',
-       'window_title': 'program_tracker.py - deskSense - Visual Studio Code'}
+ex1 = {
+    "os": "Ubuntu",
+    "pid": 129614,
+    "process_name": "chrome",
+    "window_title": "Squashing Commits with Git Rebase - Claude - Google Chrome",
+}
+ex2 = {
+    "os": "Ubuntu",
+    "pid": 128216,
+    "process_name": "Xorg",
+    "window_title": "Vite + React + TS - Google Chrome",
+}
+ex3 = {
+    "os": "Ubuntu",
+    "pid": 128216,
+    "process_name": "Xorg",
+    "window_title": "H&M | Online Fashion, Homeware & Kids Clothes | H&M CA - Google Chrome",
+}
+ex4 = {
+    "os": "Ubuntu",
+    "pid": 128216,
+    "process_name": "Xorg",
+    "window_title": "Alt-tab window",
+}
+ex5 = {
+    "os": "Ubuntu",
+    "pid": 128216,
+    "process_name": "Xorg",
+    "window_title": "rlm@kingdom: ~/Code/deskSense/activitytracker",
+}
+ex6 = {
+    "os": "Ubuntu",
+    "pid": 128216,
+    "process_name": "Xorg",
+    "window_title": "program_tracker.py - deskSense - Visual Studio Code",
+}
 
 
 def test_is_expected_shape_else_throw():
@@ -123,17 +152,19 @@ def test_is_productive_chrome_productive():
 
     # Stackoverflow makes it productive
     window_info_1 = {
-        'process_name': 'Google Chrome',
-        'window_title': 'stackoverflow.com - Google Chrome'
+        "process_name": "Google Chrome",
+        "window_title": "stackoverflow.com - Google Chrome",
     }
     # Claude makes it productive
-    productive_window_3 = {'os': 'Ubuntu', 'pid': 129614, 'process_name': 'chrome',
-                           'window_title': 'Squashing Commits with Git Rebase - Claude - Google Chrome'}
+    productive_window_3 = {
+        "os": "Ubuntu",
+        "pid": 129614,
+        "process_name": "chrome",
+        "window_title": "Squashing Commits with Git Rebase - Claude - Google Chrome",
+    }
 
-    assert is_productive(
-        window_info_1, productive_apps, productive_sites) == True
-    assert is_productive(
-        productive_window_3, productive_apps, productive_sites) == True
+    assert is_productive(window_info_1, productive_apps, productive_sites) == True
+    assert is_productive(productive_window_3, productive_apps, productive_sites) == True
 
 
 def test_is_productive_chrome_unproductive():
@@ -141,15 +172,13 @@ def test_is_productive_chrome_unproductive():
 
     # YouTube and TikTok are entertainment
     window_info = {
-        'process_name': 'Google Chrome',
-        'window_title': 'YouTube - Google Chrome'
+        "process_name": "Google Chrome",
+        "window_title": "YouTube - Google Chrome",
     }
     window_info_2 = {
-        'process_name': 'Google Chrome',
-        'window_title': 'Tiktok - Google Chrome'
+        "process_name": "Google Chrome",
+        "window_title": "Tiktok - Google Chrome",
     }
 
-    assert is_productive(
-        window_info, productive_apps, productive_sites) == False
-    assert is_productive(
-        window_info_2, productive_apps, productive_sites) == False
+    assert is_productive(window_info, productive_apps, productive_sites) == False
+    assert is_productive(window_info_2, productive_apps, productive_sites) == False

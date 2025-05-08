@@ -45,17 +45,16 @@ class DashboardService(WeekCalculationMixin):
 
         self.timezone_service = TimezoneService()
 
-        self.peripherals = PeripheralsService(
-            timeline_dao, self.timezone_service)
+        self.peripherals = PeripheralsService(timeline_dao, self.timezone_service)
         self.programs = ProgramsService(
-            program_summary_dao, program_logging_dao, self.timezone_service)
+            program_summary_dao, program_logging_dao, self.timezone_service
+        )
 
     async def get_weekly_productivity_overview(self, week_of: date):
         if week_of.weekday() != 6:  # In Python, Sunday is 6
             raise ValueError("start_date must be a Sunday")
 
-        starting_sunday: datetime = self.prepare_start_of_week(
-            week_of)
+        starting_sunday: datetime = self.prepare_start_of_week(week_of)
 
         # TODO: Standardize (prepare start of week method)
 
@@ -68,16 +67,15 @@ class DashboardService(WeekCalculationMixin):
 
             current_day: datetime = starting_sunday + timedelta(days=i)
 
-            date_with_tz_info: UserLocalTime = self.timezone_service.convert_into_user_timezone_ult(
-                current_day)
+            date_with_tz_info: UserLocalTime = (
+                self.timezone_service.convert_into_user_timezone_ult(current_day)
+            )
 
             daily_chrome_summaries: List[DailyDomainSummary] = (
-                self.chrome_summary_dao.read_day(
-                    date_with_tz_info)
+                self.chrome_summary_dao.read_day(date_with_tz_info)
             )
             daily_program_summaries: List[DailyProgramSummary] = (
-                self.program_summary_dao.read_day(
-                    date_with_tz_info)
+                self.program_summary_dao.read_day(date_with_tz_info)
             )
             productivity = 0
             leisure = 0
@@ -145,8 +143,7 @@ class DashboardService(WeekCalculationMixin):
         for i in range(7):
             current_day = starting_sunday + timedelta(days=i)
 
-            date_as_ult = self.timezone_service.convert_into_user_timezone_ult(
-                current_day)
+            date_as_ult = self.timezone_service.convert_into_user_timezone_ult(current_day)
 
             daily_summaries = self.chrome_summary_dao.read_day(date_as_ult)
 
@@ -160,7 +157,7 @@ class ProgramsService(WeekCalculationMixin):
         self,
         program_summary_dao: ProgramSummaryDao,
         program_logging_dao: ProgramLoggingDao,
-        timezone_service: TimezoneService
+        timezone_service: TimezoneService,
     ):
         self.program_summary_dao = program_summary_dao
         self.program_logging_dao = program_logging_dao
@@ -172,34 +169,28 @@ class ProgramsService(WeekCalculationMixin):
         self, week_of: date
     ) -> Tuple[List[Dict], datetime]:
         """
-        week_of: The day according to the user. 
+        week_of: The day according to the user.
 
         starting_sunday: The Sunday that is the start of the week being selected.
         """
-        starting_sunday: datetime = self.prepare_start_of_week(
-            week_of)
-        starting_sunday = self.timezone_service.localize_to_user_tz(
-            starting_sunday)
+        starting_sunday: datetime = self.prepare_start_of_week(week_of)
+        starting_sunday = self.timezone_service.localize_to_user_tz(starting_sunday)
 
         now: UserLocalTime = self.user_clock.now()
-        start_of_today: datetime = now.dt.replace(
-            hour=0, minute=0, second=0, microsecond=0)
+        start_of_today: datetime = now.dt.replace(hour=0, minute=0, second=0, microsecond=0)
         start_of_tomorrow: datetime = start_of_today + timedelta(days=1)
 
         all_days = []
 
         for days_after_sunday in range(7):
-            current_day: datetime = starting_sunday + timedelta(
-                days=days_after_sunday
-            )
+            current_day: datetime = starting_sunday + timedelta(days=days_after_sunday)
 
             is_in_future = current_day > start_of_tomorrow
             if is_in_future:
                 continue  # avoid reading future dates from db
 
             program_usage_timeline: dict[str, ProgramSummaryLog] = (
-                self.program_logging_dao.read_day_as_sorted(
-                    UserLocalTime(current_day))
+                self.program_logging_dao.read_day_as_sorted(UserLocalTime(current_day))
             )
             day = {
                 "date": current_day,
@@ -213,8 +204,7 @@ class ProgramsService(WeekCalculationMixin):
         today: UserLocalTime = self.user_clock.now()
 
         starting_sunday: datetime = self.prepare_start_of_week(today.dt.date())
-        starting_sunday = self.timezone_service.localize_to_user_tz(
-            starting_sunday)
+        starting_sunday = self.timezone_service.localize_to_user_tz(starting_sunday)
 
         now: UserLocalTime = self.user_clock.now()
         start_of_today: UserLocalTime = now.get_start_of_day()
@@ -223,17 +213,16 @@ class ProgramsService(WeekCalculationMixin):
         all_days = []
 
         for days_after_sunday in range(7):
-            current_day: datetime = starting_sunday + timedelta(
-                days=days_after_sunday
-            )
+            current_day: datetime = starting_sunday + timedelta(days=days_after_sunday)
             print(current_day)
             print(start_of_tomorrow)
             is_in_future: bool = current_day > start_of_tomorrow
             if is_in_future:
                 continue  # avoid reading future dates from db
 
-            program_usage_timeline: dict[str, ProgramSummaryLog] = self.program_logging_dao.read_day_as_sorted(
-                UserLocalTime(current_day))
+            program_usage_timeline: dict[str, ProgramSummaryLog] = (
+                self.program_logging_dao.read_day_as_sorted(UserLocalTime(current_day))
+            )
 
             # Figure out:
             # - is the problem still happening? are new strange datapoints being made?
@@ -278,17 +267,14 @@ class PeripheralsService(WeekCalculationMixin):
 
         today = self.user_clock.now()
 
-        starting_sunday: datetime = self.prepare_start_of_week(
-            today.date())
+        starting_sunday: datetime = self.prepare_start_of_week(today.date())
 
         days_before_today = []
 
         todays_date = today.date()
 
         for days_after_sunday in range(7):
-            current_day = starting_sunday + timedelta(
-                days=days_after_sunday
-            )
+            current_day = starting_sunday + timedelta(days=days_after_sunday)
             mouse_events = await self.timeline_dao.read_day_mice(
                 UserLocalTime(current_day), self.user_clock
             )
@@ -319,18 +305,16 @@ class PeripheralsService(WeekCalculationMixin):
 
     async def get_specific_week_timeline(self, week_of: date) -> Tuple[List[Dict], datetime]:
 
-        starting_sunday: datetime = self.prepare_start_of_week(
-            week_of)
+        starting_sunday: datetime = self.prepare_start_of_week(week_of)
 
         all_days = []
 
         for days_after_sunday in range(7):
-            current_day: datetime = starting_sunday + timedelta(
-                days=days_after_sunday
-            )
+            current_day: datetime = starting_sunday + timedelta(days=days_after_sunday)
 
             current_day_ult = self.timezone_service.convert_into_user_timezone_ult(
-                current_day)
+                current_day
+            )
 
             mouse_events = await self.timeline_dao.read_day_mice(
                 current_day_ult, self.user_clock

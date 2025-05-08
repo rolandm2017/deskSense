@@ -10,7 +10,12 @@ from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-from activitytracker.db.models import DailyProgramSummary, ProgramSummaryLog, DailyDomainSummary, DomainSummaryLog
+from activitytracker.db.models import (
+    DailyProgramSummary,
+    ProgramSummaryLog,
+    DailyDomainSummary,
+    DomainSummaryLog,
+)
 from activitytracker.util.const import SECONDS_PER_HOUR
 from activitytracker.tz_handling.time_formatting import get_start_of_day_from_ult
 from activitytracker.util.time_wrappers import UserLocalTime
@@ -24,7 +29,12 @@ from ..helper.confirm_chronology import (
 from ..helper.polling_util import count_full_loops
 from ..helper.counting import get_total_in_sec, get_logs_total
 
-from ..data.arbiter_events import test_sessions, times_for_system_clock_as_ult, session1, session2
+from ..data.arbiter_events import (
+    test_sessions,
+    times_for_system_clock_as_ult,
+    session1,
+    session2,
+)
 
 from ..mocks.mock_clock import MockClock, UserLocalTimeMockClock
 
@@ -35,16 +45,17 @@ def setup_daos(db_session_in_mem):
     program_logging_dao = ProgramLoggingDao(db_session_in_mem)
     chrome_logging_dao = ChromeLoggingDao(db_session_in_mem)
 
-    program_summary_dao = ProgramSummaryDao(
-        program_logging_dao, db_session_in_mem)
-    chrome_summary_dao = ChromeSummaryDao(
-        chrome_logging_dao, db_session_in_mem)
+    program_summary_dao = ProgramSummaryDao(program_logging_dao, db_session_in_mem)
+    chrome_summary_dao = ChromeSummaryDao(chrome_logging_dao, db_session_in_mem)
 
     clock = UserLocalTimeMockClock(times_for_system_clock_as_ult)
 
-    return {"program_logging": program_logging_dao, "chrome_logging": chrome_logging_dao,
-            "program_summary": program_summary_dao, "chrome_summary": chrome_summary_dao
-            }
+    return {
+        "program_logging": program_logging_dao,
+        "chrome_logging": chrome_logging_dao,
+        "program_summary": program_summary_dao,
+        "chrome_summary": chrome_summary_dao,
+    }
 
 
 def test_simple_round_trip_for_programs(setup_daos):
@@ -106,10 +117,8 @@ def test_simple_logging_activity_for_program(setup_daos):
     program_logging.push_window_ahead_ten_sec(program_session)
     program_logging.push_window_ahead_ten_sec(program_session)
 
-    program_end_time = program_session.start_time.dt + \
-        timedelta(seconds=program_duration)
-    program_session = program_session.to_completed(
-        UserLocalTime(program_end_time))
+    program_end_time = program_session.start_time.dt + timedelta(seconds=program_duration)
+    program_session = program_session.to_completed(UserLocalTime(program_end_time))
     program_logging.finalize_log(program_session)
 
     # Now take it all back out
@@ -141,10 +150,8 @@ def test_simple_logging_activity_for_chrome(setup_daos):
     chrome_logging.push_window_ahead_ten_sec(chrome_session)
     chrome_logging.push_window_ahead_ten_sec(chrome_session)
 
-    chrome_end_time = chrome_session.start_time.dt + \
-        timedelta(seconds=chrome_duration)
-    chrome_session = chrome_session.to_completed(
-        UserLocalTime(chrome_end_time))
+    chrome_end_time = chrome_session.start_time.dt + timedelta(seconds=chrome_duration)
+    chrome_session = chrome_session.to_completed(UserLocalTime(chrome_end_time))
     chrome_logging.finalize_log(chrome_session)
 
     # Now take it all back out

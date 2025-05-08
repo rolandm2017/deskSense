@@ -34,6 +34,7 @@ def truncate_summaries_and_logs_tables_via_engine(engine):
         conn.commit()
         print("Super truncated tables")
 
+
 def truncate_logs_tables_via_engine(engine):
     """Truncate all test tables directly"""
     # NOTE: IF you run the tests in a broken manner,
@@ -42,10 +43,7 @@ def truncate_logs_tables_via_engine(engine):
     # ####  Because the truncation happens *at the end of* a test.
 
     with engine.begin() as conn:
-        conn.execute(
-            text("TRUNCATE program_logs RESTART IDENTITY CASCADE"))
-        conn.execute(
-            text("TRUNCATE domain_logs RESTART IDENTITY CASCADE"))
-        conn.execute(
-            text("TRUNCATE system_change_log RESTART IDENTITY CASCADE"))
+        conn.execute(text("TRUNCATE program_logs RESTART IDENTITY CASCADE"))
+        conn.execute(text("TRUNCATE domain_logs RESTART IDENTITY CASCADE"))
+        conn.execute(text("TRUNCATE system_change_log RESTART IDENTITY CASCADE"))
         print("Tables truncated")

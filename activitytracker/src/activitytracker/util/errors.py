@@ -14,8 +14,7 @@ class TimezoneUnawareError(ValueError):
     """Raised when a datetime object is missing timezone info. tzinfo=None brings you here"""
 
     def __init__(self, source: str, dt):
-        super().__init__(
-            f"Timezone-unaware datetime detected: {source} with dt {str(dt)}")
+        super().__init__(f"Timezone-unaware datetime detected: {source} with dt {str(dt)}")
 
 
 class MismatchedTimezonesError(ValueError):
@@ -42,7 +41,7 @@ class WayTooLongWaitError(ValueError):
 
 class NegativeTimeError(ValueError):
     """
-    For when the summary DAO claims a negative amount of time 
+    For when the summary DAO claims a negative amount of time
     was spent using a program or website
     """
 
@@ -50,9 +49,10 @@ class NegativeTimeError(ValueError):
         message = f"The DAO claims {activity} had {time} seconds spent on it"
         super().__init__(message, *args)
 
+
 class MissingEngineError(ValueError):
     """
-    For when the summary DAO claims a negative amount of time 
+    For when the summary DAO claims a negative amount of time
     was spent using a program or website
     """
 
@@ -60,8 +60,10 @@ class MissingEngineError(ValueError):
         message = f"The KeepAliveEngine was missing"
         super().__init__(message, *args)
 
+
 class SessionClosedError(Exception):
     """Raised when operations are attempted on a closed session."""
+
     pass
 
 
@@ -71,6 +73,8 @@ class FullWindowError(Exception):
     Full windows should be added by the other DAO method.
     """
 
+
 class DatabaseProtectionError(RuntimeError):
     """Custom exception for database protection violations."""
+
     pass

@@ -60,28 +60,27 @@ class ProgramTrackerCore:
             print("window change: ", window_change)
             # is_expected_shape_else_throw(window_change)
             # FIXME: "Running Server (WindowsTerminal.exe)" -> Terminal (Terminal)
-            on_a_different_window_now = self.current_session and window_change[
-                "window_title"] != self.current_session.window_title
+            on_a_different_window_now = (
+                self.current_session
+                and window_change["window_title"] != self.current_session.window_title
+            )
             if on_a_different_window_now and self.is_initialized():
                 if self.current_session is None:
                     raise ValueError("Current session was None")
 
                 current_time: datetime = self.user_facing_clock.now()  # once per loop
 
-                new_session = self.start_new_session(
-                    window_change, current_time)
+                new_session = self.start_new_session(window_change, current_time)
                 self.current_session = new_session
                 # report window change immediately via "window_change_handler()"
-                self.console_logger.log_yellow(
-                    "New program: " + new_session.process_name)
+                self.console_logger.log_yellow("New program: " + new_session.process_name)
                 self.window_change_handler(new_session)
 
             # initialize
             if self.is_uninitialized():
                 current_time = self.user_facing_clock.now()
                 # capture_program_data_for_tests(window_change, current_time)
-                new_session = self.start_new_session(
-                    window_change, current_time)
+                new_session = self.start_new_session(window_change, current_time)
                 self.current_session = new_session
                 self.window_change_handler(new_session)
 
@@ -94,15 +93,18 @@ class ProgramTrackerCore:
     def start_new_session(self, window_change_dict, start_time) -> ProgramSession:
         if contains_space_dash_space(window_change_dict["window_title"]):
             detail, window_title = separate_window_name_and_detail(
-                window_change_dict["window_title"])
+                window_change_dict["window_title"]
+            )
         else:
             window_title = window_change_dict["window_title"]
             detail = no_space_dash_space
-        new_session = ProgramSession(window_change_dict["exe_path"],
-                                     window_change_dict["process_name"],
-                                     window_title,
-                                     detail,
-                                     UserLocalTime(start_time))
+        new_session = ProgramSession(
+            window_change_dict["exe_path"],
+            window_change_dict["process_name"],
+            window_title,
+            detail,
+            UserLocalTime(start_time),
+        )
         # end_time, duration, productive not set yet
         return new_session
 
@@ -122,11 +124,13 @@ if __name__ == "__main__":
             from activitytracker.facade.program_facade_windows import (
                 WindowsProgramFacadeCore,
             )
+
             return WindowsProgramFacadeCore()
         else:
             from activitytracker.facade.program_facade_ubuntu import (
                 UbuntuProgramFacadeCore,
             )
+
             return UbuntuProgramFacadeCore()
 
     program_api_facade = choose_program_facade(os_type)
@@ -137,8 +141,7 @@ if __name__ == "__main__":
 
     try:
 
-        tracker = ProgramTrackerCore(clock, program_api_facade, [
-                                     "", ""])
+        tracker = ProgramTrackerCore(clock, program_api_facade, ["", ""])
         thread_handler = ThreadedTracker(tracker)
         thread_handler.start()
         # Add a way to keep the main thread alive

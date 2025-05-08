@@ -6,7 +6,10 @@ import asyncio
 from datetime import datetime
 
 from activitytracker.debug.ui_notifier import UINotifier
-from activitytracker.object.arbiter_classes import ApplicationInternalState, ChromeInternalState
+from activitytracker.object.arbiter_classes import (
+    ApplicationInternalState,
+    ChromeInternalState,
+)
 from activitytracker.object.classes import ProgramSession, ChromeSession
 from activitytracker.util.time_wrappers import UserLocalTime
 
@@ -33,8 +36,7 @@ def mock_overlay():
 
     # Make the mock record all calls
     def record_call(text, color):
-        overlay.change_display_text.calls.append(
-            {"text": text, "color": color})
+        overlay.change_display_text.calls.append({"text": text, "color": color})
 
     overlay.change_display_text.side_effect = record_call
     return overlay
@@ -49,10 +51,14 @@ def ui_notifier(mock_overlay):
 def test_internal_state_change(ui_notifier, mock_overlay):
     """Test that internal state changes update the overlay with the right text and color"""
     # Create a test state
-    program_session = ProgramSession("C:/TestFiles/Window.exe", "Window.exe",
-                                     "Test Window Title", "", UserLocalTime(now_tokyo))
-    test_state = ApplicationInternalState(
-        "Test Window Title", False, program_session)
+    program_session = ProgramSession(
+        "C:/TestFiles/Window.exe",
+        "Window.exe",
+        "Test Window Title",
+        "",
+        UserLocalTime(now_tokyo),
+    )
+    test_state = ApplicationInternalState("Test Window Title", False, program_session)
 
     # Trigger the state change
     ui_notifier.on_state_changed(test_state)
@@ -69,8 +75,7 @@ def test_other_state_change(ui_notifier, mock_overlay):
     # Create a test state
 
     chrome_session = ChromeSession("example.com", "", UserLocalTime(now_tokyo))
-    test_state = ChromeInternalState(
-        "Chrome", True, "example.com", chrome_session)
+    test_state = ChromeInternalState("Chrome", True, "example.com", chrome_session)
 
     # Trigger the state change
     ui_notifier.on_state_changed(test_state)
@@ -86,13 +91,11 @@ def test_multiple_state_changes(ui_notifier, mock_overlay):
     """Test multiple state changes in sequence"""
     # Create test states
     program_session = ProgramSession(
-        "C:/InternalApp.exe", "InternalApp.exe", "Internal App", "", UserLocalTime(now_tokyo))
-    chrome_session = ChromeSession(
-        "test-domain.org", "", UserLocalTime(now_tokyo))
-    internal_state = ApplicationInternalState(
-        "Internal App", True, program_session)
-    other_state = ChromeInternalState(
-        "Chrome", True, "test-domain.org", chrome_session)
+        "C:/InternalApp.exe", "InternalApp.exe", "Internal App", "", UserLocalTime(now_tokyo)
+    )
+    chrome_session = ChromeSession("test-domain.org", "", UserLocalTime(now_tokyo))
+    internal_state = ApplicationInternalState("Internal App", True, program_session)
+    other_state = ChromeInternalState("Chrome", True, "test-domain.org", chrome_session)
 
     # Trigger state changes
     ui_notifier.on_state_changed(internal_state)

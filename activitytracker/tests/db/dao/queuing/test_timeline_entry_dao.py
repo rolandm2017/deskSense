@@ -37,7 +37,7 @@ class TestTimelineEntryDao:
         current_time = test_time
         keyboard_aggregate = KeyboardAggregate(
             start_time=UserLocalTime(current_time),
-            end_time=UserLocalTime(current_time + timedelta(minutes=5))
+            end_time=UserLocalTime(current_time + timedelta(minutes=5)),
         )
 
         # Mock highest_id query
@@ -61,7 +61,8 @@ class TestTimelineEntryDao:
         # Arrange
         current_time = test_time
         mouse_window = MouseMoveWindow(
-            UserLocalTime(current_time), UserLocalTime(current_time + timedelta(minutes=5)))
+            UserLocalTime(current_time), UserLocalTime(current_time + timedelta(minutes=5))
+        )
 
         # Mock highest_id query
         mock_result = AsyncMock()
@@ -84,10 +85,7 @@ class TestTimelineEntryDao:
         # Arrange
         test_day = UserLocalTime(test_time)
         event_type = ChartEventType.KEYBOARD
-        mock_entries = [
-            Mock(spec=TimelineEntryObj),
-            Mock(spec=TimelineEntryObj)
-        ]
+        mock_entries = [Mock(spec=TimelineEntryObj), Mock(spec=TimelineEntryObj)]
 
         get_find_by_day_mock = Mock(side_effect=dao.get_find_by_day_query)
         dao.get_find_by_day_query = get_find_by_day_mock
@@ -111,8 +109,7 @@ class TestTimelineEntryDao:
         assert args[0].hour == 0 and args[0].minute == 0 and args[0].second == 0
         assert args[1].hour == 0 and args[1].minute == 0 and args[1].second == 0
 
-        assert args[0].day + \
-            1 == args[1].day, "Expected arg1 to be a day later than arg0"
+        assert args[0].day + 1 == args[1].day, "Expected arg1 to be a day later than arg0"
 
         args, _ = execute_and_return_mock.call_args
 
@@ -126,15 +123,18 @@ class TestTimelineEntryDao:
         test_day = test_time
         test_day = test_day - timedelta(days=7)
 
-        mock_entries = [Mock(spec=TimelineEntryObj),
-                        Mock(spec=TimelineEntryObj)]
+        mock_entries = [Mock(spec=TimelineEntryObj), Mock(spec=TimelineEntryObj)]
 
         day_result = ["Precomputed day result"]
 
         # In order of which they are called:
-        with patch.object(dao, 'read_precomputed_entry_for_day') as mocked_precomputed_entry_for_day, \
-                patch.object(dao, 'read_day') as mocked_read_day, \
-                patch.object(dao, 'create_precomputed_day') as mocked_create_precomputed_day:
+        with patch.object(
+            dao, "read_precomputed_entry_for_day"
+        ) as mocked_precomputed_entry_for_day, patch.object(
+            dao, "read_day"
+        ) as mocked_read_day, patch.object(
+            dao, "create_precomputed_day"
+        ) as mocked_create_precomputed_day:
 
             # ### Set up the return values for the mocks
             # Empty list to trigger that path
@@ -153,13 +153,13 @@ class TestTimelineEntryDao:
             mocked_precomputed_entry_for_day.assert_called_once()
 
             mocked_read_day.assert_called_once()
-            mocked_read_day.assert_called_once_with(
-                test_day, ChartEventType.MOUSE)
+            mocked_read_day.assert_called_once_with(test_day, ChartEventType.MOUSE)
 
             mocked_create_precomputed_day.assert_called_once_with(mock_entries)
 
-            assert isinstance(
-                result, list) and len(result) > 0, "create_precomputed_day must return a non-empty list"
+            assert (
+                isinstance(result, list) and len(result) > 0
+            ), "create_precomputed_day must return a non-empty list"
             assert result == day_result
 
     # # FIXME: need more tests for the branches of read_day_peripheral
@@ -173,15 +173,18 @@ class TestTimelineEntryDao:
         test_day_end = test_time
         test_day_start = test_day_end - timedelta(days=7)
 
-        mock_entries = [Mock(spec=TimelineEntryObj),
-                        Mock(spec=TimelineEntryObj)]
+        mock_entries = [Mock(spec=TimelineEntryObj), Mock(spec=TimelineEntryObj)]
 
         day_result = ["A valid precomputed day of Keyboard Events"]
 
         # In the order in which they are called
-        with patch.object(dao, 'read_precomputed_entry_for_day') as mocked_precomputed_entry_for_day, \
-                patch.object(dao, 'read_day') as mocked_read_day, \
-                patch.object(dao, 'create_precomputed_day') as mocked_create_precomputed_day:
+        with patch.object(
+            dao, "read_precomputed_entry_for_day"
+        ) as mocked_precomputed_entry_for_day, patch.object(
+            dao, "read_day"
+        ) as mocked_read_day, patch.object(
+            dao, "create_precomputed_day"
+        ) as mocked_create_precomputed_day:
 
             # ### Set up return values for the mocks
             # Empty list to trigger the else path (assuming similar logic to read_day_mice)
@@ -197,22 +200,19 @@ class TestTimelineEntryDao:
             mocked_precomputed_entry_for_day.assert_called_once()
 
             mocked_read_day.assert_called_once()
-            mocked_read_day.assert_called_once_with(
-                test_day_start, ChartEventType.KEYBOARD)
+            mocked_read_day.assert_called_once_with(test_day_start, ChartEventType.KEYBOARD)
 
             mocked_create_precomputed_day.assert_called_once_with(mock_entries)
 
-            assert isinstance(
-                result, list) and len(result) > 0, "create_precomputed_day must return a non-empty list"
+            assert (
+                isinstance(result, list) and len(result) > 0
+            ), "create_precomputed_day must return a non-empty list"
             assert result == day_result
 
     @pytest.mark.asyncio
     async def test_read_all(self, dao, mock_session):
         # Arrange
-        mock_entries = [
-            Mock(spec=TimelineEntryObj),
-            Mock(spec=TimelineEntryObj)
-        ]
+        mock_entries = [Mock(spec=TimelineEntryObj), Mock(spec=TimelineEntryObj)]
 
         execute_and_return_all_mock = AsyncMock()
         execute_and_return_all_mock.return_value = mock_entries

@@ -18,12 +18,17 @@ from activitytracker.object.classes import ChromeSession
 from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.errors import NegativeTimeError, ImpossibleToGetHereError
 from activitytracker.util.const import SECONDS_PER_HOUR
-from activitytracker.tz_handling.time_formatting import get_start_of_day_from_datetime, attach_tz_to_all, attach_tz_to_obj, get_start_of_day_from_ult
+from activitytracker.tz_handling.time_formatting import (
+    get_start_of_day_from_datetime,
+    attach_tz_to_all,
+    attach_tz_to_obj,
+    get_start_of_day_from_ult,
+)
 from activitytracker.util.time_wrappers import UserLocalTime
 
 
 class ChromeSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
-    def __init__(self,  chrome_logging_dao, regular_session: sessionmaker):
+    def __init__(self, chrome_logging_dao, regular_session: sessionmaker):
         self.chrome_logging_dao = chrome_logging_dao
         self.debug = False
         self.regular_session = regular_session
@@ -38,23 +43,27 @@ class ChromeSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
     def _create(self, target_domain_name, start_time_dt: datetime):
         # self.logger.log_white(
         #     f"[info] creating for {target_domain_name} with duration {duration_in_hours * SECONDS_PER_HOUR}")
-        today = get_start_of_day_from_datetime(
-            start_time_dt)  # Still has tz attached
+        today = get_start_of_day_from_datetime(start_time_dt)  # Still has tz attached
 
         new_entry = DailyDomainSummary(
             domain_name=target_domain_name,
             hours_spent=0,
             gathering_date=today,
-            gathering_date_local=start_time_dt.replace(tzinfo=None)
+            gathering_date_local=start_time_dt.replace(tzinfo=None),
         )
         self.add_new_item(new_entry)
 
-    def find_todays_entry_for_domain(self, chrome_session: ChromeSession) -> DailyDomainSummary | None:
+    def find_todays_entry_for_domain(
+        self, chrome_session: ChromeSession
+    ) -> DailyDomainSummary | None:
         """Find by domain name"""
         initializer = FindTodaysEntryConverter(chrome_session.start_time)
 
         query = self.create_find_all_from_day_query(
-            chrome_session.domain, initializer.start_of_day_with_tz, initializer.end_of_day_with_tz)
+            chrome_session.domain,
+            initializer.start_of_day_with_tz,
+            initializer.end_of_day_with_tz,
+        )
 
         return self._execute_read_with_restored_tz(query, chrome_session.start_time)
 
@@ -63,7 +72,7 @@ class ChromeSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
         return select(DailyDomainSummary).where(
             DailyDomainSummary.domain_name == domain_name,
             DailyDomainSummary.gathering_date >= start_of_day,
-            DailyDomainSummary.gathering_date < end_of_day
+            DailyDomainSummary.gathering_date < end_of_day,
         )
 
     def read_past_week(self, right_now: UserLocalTime):
@@ -84,17 +93,14 @@ class ChromeSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
 
         NOTE: This only ever happens after start_session
         """
-        today_start = get_start_of_day_from_datetime(
-            chrome_session.start_time.dt)
-        query = self.select_where_time_equals_for_session(
-            today_start, chrome_session.domain)
-        self.execute_window_push(
-            query, chrome_session.domain, chrome_session.start_time.dt)
+        today_start = get_start_of_day_from_datetime(chrome_session.start_time.dt)
+        query = self.select_where_time_equals_for_session(today_start, chrome_session.domain)
+        self.execute_window_push(query, chrome_session.domain, chrome_session.start_time.dt)
 
     def select_where_time_equals_for_session(self, some_time, target_domain):
         return select(DailyDomainSummary).where(
-            DailyDomainSummary.gathering_date.op('=')(some_time),
-            DailyDomainSummary.domain_name == target_domain
+            DailyDomainSummary.gathering_date.op("=")(some_time),
+            DailyDomainSummary.domain_name == target_domain,
         )
 
     def add_used_time(self, session: ChromeSession, duration_in_sec: int):
@@ -103,8 +109,9 @@ class ChromeSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
 
         9 times out of 10. So we add  the used  duration from its hours_spent.
         """
-        self.add_partial_window(session, duration_in_sec,
-                                DailyDomainSummary.domain_name == session.domain)
+        self.add_partial_window(
+            session, duration_in_sec, DailyDomainSummary.domain_name == session.domain
+        )
 
     def shutdown(self):
         """Closes the open session without opening a new one"""

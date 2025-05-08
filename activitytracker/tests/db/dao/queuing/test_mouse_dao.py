@@ -90,15 +90,12 @@ class TestMouseDao:
         t1 = UserLocalTime(t0 - timedelta(seconds=10))
         t2 = UserLocalTime(t0 - timedelta(seconds=8))
         t3 = UserLocalTime(t0 - timedelta(seconds=6))
-        test_1: MouseMoveWindow = MouseMoveWindow(
-            start_of_window=t1, end_of_window=t2)
-        test_2: MouseMoveWindow = MouseMoveWindow(
-            start_of_window=t2, end_of_window=t3)
+        test_1: MouseMoveWindow = MouseMoveWindow(start_of_window=t1, end_of_window=t2)
+        test_2: MouseMoveWindow = MouseMoveWindow(start_of_window=t2, end_of_window=t3)
 
         todays_events = [test_1, test_2]
 
-        get_prev_24_hrs_query_mock = Mock(
-            side_effect=dao.get_prev_24_hours_query)
+        get_prev_24_hrs_query_mock = Mock(side_effect=dao.get_prev_24_hours_query)
         dao.get_prev_24_hours_query = get_prev_24_hrs_query_mock
 
         exec_mock = AsyncMock()

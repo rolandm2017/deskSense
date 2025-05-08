@@ -27,17 +27,14 @@ class MouseFacadeCore:
         """Handle mouse events from the message receiver."""
         if "start" in event and "end" in event:
             # TODO: Just send a datetime.timestamp() since that's what will happen later
-            event_dict = {
-                "start": event["start"],
-                "end": event["end"]
-            }
+            event_dict = {"start": event["start"], "end": event["end"]}
             self.add_event(event_dict)
 
     def add_event(self, event: MouseEvent):
         self.queue.append(event)
 
     def read_event(self):
-        if not hasattr(self, 'monitoring'):
+        if not hasattr(self, "monitoring"):
             self.monitoring = FacadeMonitoring("Mouse")
 
         queue_length = len(self.queue)

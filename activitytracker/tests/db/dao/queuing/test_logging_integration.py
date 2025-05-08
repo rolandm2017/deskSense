@@ -27,7 +27,12 @@ from activitytracker.db.models import DomainSummaryLog, ProgramSummaryLog, Base
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 
-from activitytracker.object.classes import CompletedProgramSession, CompletedChromeSession, ProgramSession, ChromeSession
+from activitytracker.object.classes import (
+    CompletedProgramSession,
+    CompletedChromeSession,
+    ProgramSession,
+    ChromeSession,
+)
 
 from activitytracker.tz_handling.time_formatting import convert_to_utc
 from activitytracker.util.errors import ImpossibleToGetHereError
@@ -47,27 +52,24 @@ def test_round_trip(regular_session_maker):
     Start session, find session to do window push, finalize end time.
     """
 
-    program_logging_dao = ProgramLoggingDao(
-        regular_session_maker)
+    program_logging_dao = ProgramLoggingDao(regular_session_maker)
 
-    start_time = UserLocalTime(datetime(2025, 2, 1, 1, 0, 1, 2,
-                                        tzinfo=timezone_for_test_data))
-    end_time = UserLocalTime(datetime(2025, 2, 1, 1, 1, 2, 3,
-                                      tzinfo=timezone_for_test_data))
+    start_time = UserLocalTime(
+        datetime(2025, 2, 1, 1, 0, 1, 2, tzinfo=timezone_for_test_data)
+    )
+    end_time = UserLocalTime(datetime(2025, 2, 1, 1, 1, 2, 3, tzinfo=timezone_for_test_data))
 
     expected_duration = (end_time.dt - start_time.dt).total_seconds()
 
     expected_start_time_in_utc = convert_to_utc(start_time.dt)
     expected_end_time_in_utc = convert_to_utc(end_time.dt)
 
-    slightly_after_session = UserLocalTime(datetime(2025, 2, 1, 1, 44, 2, 3,
-                                                    tzinfo=timezone_for_test_data))
+    slightly_after_session = UserLocalTime(
+        datetime(2025, 2, 1, 1, 44, 2, 3, tzinfo=timezone_for_test_data)
+    )
 
     test_program_session = ProgramSession(
-        "Ventrilo",
-        "The Programmer's Hangout",
-        start_time=start_time,
-        productive=False
+        "Ventrilo", "The Programmer's Hangout", start_time=start_time, productive=False
     )
 
     # -- spies
@@ -78,8 +80,7 @@ def test_round_trip(regular_session_maker):
     find_session_spy = Mock(side_effect=program_logging_dao.find_session)
     program_logging_dao.find_session = find_session_spy
 
-    push_window_spy = Mock(
-        side_effect=program_logging_dao.push_window_ahead_ten_sec)
+    push_window_spy = Mock(side_effect=program_logging_dao.push_window_ahead_ten_sec)
     program_logging_dao.push_window_ahead_ten_sec = push_window_spy
 
     finalize_log_spy = Mock(side_effect=program_logging_dao.finalize_log)
@@ -118,8 +119,7 @@ def test_round_trip(regular_session_maker):
 
         assert isinstance(log, ProgramSummaryLog)
 
-        duration_from_start_end = (
-            log.end_time - log.start_time).total_seconds()
+        duration_from_start_end = (log.end_time - log.start_time).total_seconds()
 
         print(duration_from_start_end, "123ru")
         print("expected duration in sec:", expected_duration)
@@ -128,7 +128,6 @@ def test_round_trip(regular_session_maker):
         assert log.end_time == expected_end_time_in_utc
     finally:
         with regular_session_maker() as session:
-            session.execute(
-                text("TRUNCATE program_logs RESTART IDENTITY CASCADE"))
+            session.execute(text("TRUNCATE program_logs RESTART IDENTITY CASCADE"))
             session.commit()
             print("Super truncated tables")

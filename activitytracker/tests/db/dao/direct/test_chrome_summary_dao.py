@@ -31,10 +31,8 @@ class TestChromeSummaryDao:
     @pytest_asyncio.fixture
     async def chrome_summary_dao(self, mock_regular_session_maker):
 
-        logging_dao = ChromeLoggingDao(
-            mock_regular_session_maker)
-        chrome_summary_dao = ChromeSummaryDao(
-            logging_dao, mock_regular_session_maker)
+        logging_dao = ChromeLoggingDao(mock_regular_session_maker)
+        chrome_summary_dao = ChromeSummaryDao(logging_dao, mock_regular_session_maker)
         yield chrome_summary_dao
 
     def test_start_session(self, chrome_summary_dao):
@@ -43,7 +41,8 @@ class TestChromeSummaryDao:
         domain_for_test = "www.facebook.com"
         dt2 = dt + timedelta(seconds=13)
         session_data_1 = CompletedChromeSession(
-            domain_for_test, "Chrome.exe", UserLocalTime(dt), UserLocalTime(dt2), False)
+            domain_for_test, "Chrome.exe", UserLocalTime(dt), UserLocalTime(dt2), False
+        )
 
         create_spy = Mock()
         chrome_summary_dao._create = create_spy
@@ -139,8 +138,7 @@ class TestChromeSummaryDao:
 
         # Arrange
         execute_and_return_all_spy = Mock()
-        execute_and_return_all_spy.return_value = [
-            1, 2, 3]  # Pretend they're the right type
+        execute_and_return_all_spy.return_value = [1, 2, 3]  # Pretend they're the right type
         chrome_summary_dao.execute_and_return_all = execute_and_return_all_spy
 
         # Act

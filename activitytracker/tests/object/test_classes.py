@@ -2,7 +2,13 @@ import pytest
 from datetime import datetime
 import pytz
 
-from activitytracker.object.classes import ProgramSession, ChromeSession, CompletedProgramSession, CompletedChromeSession, SessionLedger
+from activitytracker.object.classes import (
+    ProgramSession,
+    ChromeSession,
+    CompletedProgramSession,
+    CompletedChromeSession,
+    SessionLedger,
+)
 from activitytracker.util.time_wrappers import UserLocalTime
 from activitytracker.util.errors import SessionClosedError
 
@@ -59,8 +65,7 @@ def test_program_session_constructor():
     process = "foo.exe"
     window_title = "The Foo Program"
     detail = "Get Your Foo"
-    start_time = UserLocalTime(tokyo_tz.localize(
-        datetime(2025, 4, 29, 10, 23, 0)))
+    start_time = UserLocalTime(tokyo_tz.localize(datetime(2025, 4, 29, 10, 23, 0)))
     session = ProgramSession(path, process, window_title, detail, start_time)
 
     assert session.exe_path == path
@@ -81,8 +86,7 @@ def test_to_completed():
     process = "foo.exe"
     window_title = "The Foo Program"
     detail = "Get Your Foo"
-    start_time = UserLocalTime(tokyo_tz.localize(
-        datetime(2025, 4, 29, 10, 23, 0)))
+    start_time = UserLocalTime(tokyo_tz.localize(datetime(2025, 4, 29, 10, 23, 0)))
     session = ProgramSession(path, process, window_title, detail, start_time)
 
     # Give the session ledger some time
@@ -90,8 +94,7 @@ def test_to_completed():
     session.ledger.add_ten_sec()
     session.ledger.add_ten_sec()
 
-    end_time = UserLocalTime(tokyo_tz.localize(
-        datetime(2025, 4, 29, 10, 25, 25)))
+    end_time = UserLocalTime(tokyo_tz.localize(datetime(2025, 4, 29, 10, 25, 25)))
     completed = session.to_completed(end_time)
 
     assert completed.exe_path == path
@@ -100,8 +103,9 @@ def test_to_completed():
     assert completed.detail == detail
     assert completed.start_time.dt == start_time.dt
     assert completed.end_time.dt == end_time.dt
-    assert completed.duration.total_seconds() == (
-        end_time.dt - start_time.dt).total_seconds()
+    assert (
+        completed.duration.total_seconds() == (end_time.dt - start_time.dt).total_seconds()
+    )
 
     # Test the ledger
     assert completed.ledger.get_total() == 30
@@ -116,14 +120,13 @@ def test_add_duration_for_tests():
     process = "foo.exe"
     window_title = "The Foo Program"
     detail = "Get Your Foo"
-    start_time = UserLocalTime(tokyo_tz.localize(
-        datetime(2025, 4, 29, 10, 23, 0)))
-    end_time = UserLocalTime(tokyo_tz.localize(
-        datetime(2025, 4, 29, 10, 25, 55)))
+    start_time = UserLocalTime(tokyo_tz.localize(datetime(2025, 4, 29, 10, 23, 0)))
+    end_time = UserLocalTime(tokyo_tz.localize(datetime(2025, 4, 29, 10, 25, 55)))
 
     premade_duration = end_time.dt - start_time.dt
 
     session = CompletedProgramSession(
-        path, process, window_title, detail, start_time, end_time, True, premade_duration)
+        path, process, window_title, detail, start_time, end_time, True, premade_duration
+    )
 
     assert session.duration.total_seconds() == premade_duration.total_seconds()

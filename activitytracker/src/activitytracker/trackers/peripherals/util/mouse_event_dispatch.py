@@ -5,7 +5,7 @@ from datetime import datetime
 class MouseEventDispatch:
     """
     Moving the mouse in any non-tiny manner yields a stream of perhaps 50 to 100 events
-    in just a second. So to avoid sending 400 POST requests inside of a few seconds, 
+    in just a second. So to avoid sending 400 POST requests inside of a few seconds,
     the dispatch contains a debounce timer and an event aggregator.
 
     As long as a new event comes in from within the span of the timer, the window
@@ -53,7 +53,8 @@ class MouseEventDispatch:
 
             # Create a new timer
             self.debounce_timer = threading.Timer(
-                self.max_delay_for_end_bundle, self.handle_finished)
+                self.max_delay_for_end_bundle, self.handle_finished
+            )
             self.debounce_timer.daemon = True
             self.debounce_timer.start()
 
@@ -74,7 +75,10 @@ class MouseEventDispatch:
             # print("[end]", end_time)
             # print("[duration]", end_time - self.start_time)
             end_time = end_time.timestamp()
-            deliverable = {"type": "mouse",
-                           "start": self.start_time.timestamp(), "end": end_time}
+            deliverable = {
+                "type": "mouse",
+                "start": self.start_time.timestamp(),
+                "end": end_time,
+            }
             self.event_aggregator.reset()
             self.event_ready_handler(deliverable)

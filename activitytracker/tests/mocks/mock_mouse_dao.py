@@ -27,8 +27,7 @@ class MockMouseDao:
         for i in range(50):
             # Random start time within last 24 hours
             start_offset = timedelta(
-                hours=random.uniform(0, 24),
-                minutes=random.uniform(0, 60)
+                hours=random.uniform(0, 24), minutes=random.uniform(0, 60)
             )
             start_time = base_time + start_offset
 
@@ -36,9 +35,7 @@ class MockMouseDao:
             duration = timedelta(seconds=random.uniform(0.5, 10))
             end_time = start_time + duration
 
-            self.fake_data.append(
-                MockMouseMove(i + 1, start_time, end_time)
-            )
+            self.fake_data.append(MockMouseMove(i + 1, start_time, end_time))
 
         # Sort by end_time to match real database behavior
         self.fake_data.sort(key=lambda x: x.end_time)
@@ -63,10 +60,7 @@ class MockMouseDao:
     async def read_past_24h_events(self):
         """Simulate reading past 24h events"""
         cutoff_time = datetime.now() - timedelta(days=1)
-        return [
-            move for move in self.fake_data
-            if move.end_time >= cutoff_time
-        ]
+        return [move for move in self.fake_data if move.end_time >= cutoff_time]
 
     async def delete(self, mouse_move_id: int):
         """Simulate deleting a mouse movement"""

@@ -27,17 +27,9 @@ engine = create_async_engine(
 sync_engine = create_engine(SYNCHRONOUS_DB_URL)
 
 # Create async session maker
-async_session_maker = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False
-)
+async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-regular_session_maker = sessionmaker(
-    sync_engine,
-    class_=Session,
-    expire_on_commit=False
-)
+regular_session_maker = sessionmaker(sync_engine, class_=Session, expire_on_commit=False)
 
 Base = declarative_base()
 

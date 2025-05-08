@@ -1,10 +1,15 @@
 from datetime import timedelta, datetime, time
 
-from activitytracker.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
+from activitytracker.util.log_dao_helper import (
+    convert_start_end_times_to_hours,
+    convert_duration_to_hours,
+)
 from activitytracker.tz_handling.time_formatting import (
     convert_to_utc,
-    get_start_of_day_from_ult, attach_tz_to_all,
-    get_start_of_day_from_datetime)
+    get_start_of_day_from_ult,
+    attach_tz_to_all,
+    get_start_of_day_from_datetime,
+)
 from activitytracker.util.time_wrappers import UserLocalTime
 
 
@@ -28,6 +33,8 @@ class FindTodaysEntryConverter:
         date_for_day = get_start_of_day_from_datetime(session_start_time.dt)
 
         self.start_of_day_with_tz = datetime.combine(
-            date_for_day, time.min, tzinfo=date_for_day.tzinfo)
+            date_for_day, time.min, tzinfo=date_for_day.tzinfo
+        )
         self.end_of_day_with_tz = datetime.combine(
-            date_for_day, time.max, tzinfo=date_for_day.tzinfo)
+            date_for_day, time.max, tzinfo=date_for_day.tzinfo
+        )

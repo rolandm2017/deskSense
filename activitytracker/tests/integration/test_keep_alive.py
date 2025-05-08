@@ -247,8 +247,7 @@ def test_five_runs(dao_connection):
         partial_window = dao_connection.add_partial_window.call_args_list[i][0][0]
         assert partial_window == durations_for_test[i] % window_push_length
 
-    assert dao_connection.add_partial_window.call_count == len(
-        count_of_additions)
+    assert dao_connection.add_partial_window.call_count == len(count_of_additions)
 
     assert dao_connection.add_ten_sec_to_end_time.call_count == count_of_full_windows
 
@@ -358,8 +357,10 @@ def test_full_test_sessions(activity_arbiter_and_setup, mock_recorder):
     assert_partials_were_all_counted()
 
     def assert_final_partial_is_from_final_test_data():
-        assert mock_recorder.partial_window_history[-1][0].get_name(
-        ) == test_sessions[-1].get_name()
+        assert (
+            mock_recorder.partial_window_history[-1][0].get_name()
+            == test_sessions[-1].get_name()
+        )
 
     assert_final_partial_is_from_final_test_data()
 
@@ -377,8 +378,7 @@ def test_full_test_sessions(activity_arbiter_and_setup, mock_recorder):
                 ), f"Session {session.get_name()} (start: {session.start_time.dt.isoformat()}) expected partial addition of {expected} but got {actual}"
             else:
                 # Verify that it's a session that had x % 10 == 0 loops.
-                actual_addition = mock_recorder.get_addition_for_session(
-                    session)
+                actual_addition = mock_recorder.get_addition_for_session(session)
                 assert actual_addition == 0
 
     assert_recorder_received_expected_partials()
@@ -499,14 +499,12 @@ def test_session_sequences_with_explicit_expectations():
             session_key = get_session_key(session)
             expected_partial = expected_partials.get(session_key)
             if expected_partial != 0:
-                actual_partial = mock_recorder.get_addition_for_session(
-                    session)
+                actual_partial = mock_recorder.get_addition_for_session(session)
                 assert (
                     actual_partial == expected_partial
                 ), f"Session {session.get_name()} (start: {session.start_time.dt.isoformat()}) expected partial of {expected_partial} but got {actual_partial}"
             else:
-                actual_partial = mock_recorder.get_addition_for_session(
-                    session)
+                actual_partial = mock_recorder.get_addition_for_session(session)
                 assert actual_partial == 0, "Session ended on a full window"
 
     assert_each_session_had_expected_partials()

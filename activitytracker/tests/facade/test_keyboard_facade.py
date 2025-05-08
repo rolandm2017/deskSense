@@ -15,7 +15,7 @@ def keyboard_facade():
 
 @pytest.fixture
 def mock_listener():
-    with patch('pynput.keyboard.Listener', autospec=True) as mock:
+    with patch("pynput.keyboard.Listener", autospec=True) as mock:
         # Create a mock instance
         listener_instance = Mock()
         mock.return_value = listener_instance

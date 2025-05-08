@@ -1,4 +1,3 @@
-
 from typing import List
 
 from activitytracker.db.models import TimelineEntryObj, PrecomputedTimelineEntry
@@ -22,7 +21,9 @@ three_sec = 3000
 half_sec = 500
 
 
-def aggregate_timeline_events(events: List[TimelineEntryObj], threshold=half_sec) -> List[PrecomputedTimelineEntry]:
+def aggregate_timeline_events(
+    events: List[TimelineEntryObj], threshold=half_sec
+) -> List[PrecomputedTimelineEntry]:
     acc = []
     not_a_list = not isinstance(events, list)
     if not_a_list:
@@ -32,25 +33,39 @@ def aggregate_timeline_events(events: List[TimelineEntryObj], threshold=half_sec
     for i in range(0, len(events)):
         if i == 0:
             first_obj = events[i]
-            first_compressed_obj = PrecomputedTimelineEntry(clientFacingId=first_obj.clientFacingId, group=first_obj.group,
-                                                            content=first_obj.content, start=first_obj.start, end=first_obj.end, eventCount=1)
+            first_compressed_obj = PrecomputedTimelineEntry(
+                clientFacingId=first_obj.clientFacingId,
+                group=first_obj.group,
+                content=first_obj.content,
+                start=first_obj.start,
+                end=first_obj.end,
+                eventCount=1,
+            )
             acc.append(first_compressed_obj)
             continue
         last_event = acc[len(acc) - 1]
         last_end = last_event.end
         # const timeBetweenEventsIsSmall = currStart.getTime() - lastEnd.getTime() < threshold;
         current = events[i]
-        time_between_events_is_small = current.start.timestamp(
-        ) - last_end.timestamp() < threshold
+        time_between_events_is_small = (
+            current.start.timestamp() - last_end.timestamp() < threshold
+        )
         if last_end and time_between_events_is_small:
             # // Merge events that are close together
             last_event.end = current.end
             last_event.eventCount = last_event.eventCount + 1
         else:
-            compressed_obj = PrecomputedTimelineEntry(clientFacingId=current.clientFacingId, group=current.group,
-                                                      content=current.content, start=current.start, end=current.end, eventCount=1)
+            compressed_obj = PrecomputedTimelineEntry(
+                clientFacingId=current.clientFacingId,
+                group=current.group,
+                content=current.content,
+                start=current.start,
+                end=current.end,
+                eventCount=1,
+            )
             acc.append(compressed_obj)
     return acc
+
 
 # From
 # dashboard/src/util/aggregateEvents.ts

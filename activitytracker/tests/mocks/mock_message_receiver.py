@@ -51,15 +51,14 @@ class MockMessageReceiver(MessageReceiver):
 
         event_type = message["type"]
         if event_type not in self.handlers:
-            print(
-                f"[MockMessageReceiver] No handler for event type: {event_type}")
+            print(f"[MockMessageReceiver] No handler for event type: {event_type}")
             return False
 
         handler = self.handlers[event_type]
-        print(
-            f"[MockMessageReceiver] Processing simulated {event_type} message")
+        print(f"[MockMessageReceiver] Processing simulated {event_type} message")
 
         import asyncio
+
         if asyncio.iscoroutinefunction(handler):
             asyncio.create_task(handler(message))
         else:

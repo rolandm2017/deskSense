@@ -5,7 +5,11 @@ from typing import List, Callable, Optional, Type
 
 # Import the base and derived classes
 
-from activitytracker.object.classes import PeripheralAggregate, KeyboardAggregate, MouseAggregate
+from activitytracker.object.classes import (
+    PeripheralAggregate,
+    KeyboardAggregate,
+    MouseAggregate,
+)
 from activitytracker.util.time_wrappers import UserLocalTime
 
 
@@ -17,8 +21,9 @@ class InProgressAggregation:
 
 
 class EventAggregator:
-    def __init__(self, timeout_ms: int,
-                 aggregate_class: Type[PeripheralAggregate] = KeyboardAggregate):
+    def __init__(
+        self, timeout_ms: int, aggregate_class: Type[PeripheralAggregate] = KeyboardAggregate
+    ):
         self.timeout_in_sec = timeout_ms / 1000
         self.current_aggregation: Optional[InProgressAggregation] = None
         self._on_aggregation_complete = None
@@ -36,7 +41,7 @@ class EventAggregator:
             raise TypeError("Timestamp must be a number")
 
         # if timestamp > self.user_facing_clock.now().timestamp():
-            # raise ValueError("Timestamp cannot be in the future")
+        # raise ValueError("Timestamp cannot be in the future")
         if self.current_aggregation and timestamp < self.current_aggregation.end_time:
             print(timestamp)
             raise ValueError("Timestamps must be in chronological order")
@@ -44,7 +49,8 @@ class EventAggregator:
         uninitialized = self.current_aggregation is None
         if uninitialized:
             self.current_aggregation = InProgressAggregation(
-                timestamp, timestamp, [timestamp])
+                timestamp, timestamp, [timestamp]
+            )
             return None
         if self.current_aggregation is None:
             raise ValueError("Should be impossible to get None here")
@@ -54,8 +60,7 @@ class EventAggregator:
         if session_window_has_elapsed:
             # "If no keystroke within timeout, end session; report session to db"
             events_in_session = self.current_aggregation.events
-            completed_to_report = self.convert_events_to_timestamps(
-                events_in_session)
+            completed_to_report = self.convert_events_to_timestamps(events_in_session)
 
             self.start_new_aggregate(timestamp)
 
@@ -68,11 +73,13 @@ class EventAggregator:
         return None
 
     def convert_events_to_timestamps(self, current_agg_events) -> List[UserLocalTime]:
-        return [UserLocalTime(datetime.fromtimestamp(t, tz=timezone.utc)) for t in current_agg_events]
+        return [
+            UserLocalTime(datetime.fromtimestamp(t, tz=timezone.utc))
+            for t in current_agg_events
+        ]
 
     def start_new_aggregate(self, timestamp):
-        self.current_aggregation = InProgressAggregation(
-            timestamp, timestamp, [timestamp])
+        self.current_aggregation = InProgressAggregation(timestamp, timestamp, [timestamp])
 
     def extend_until(self, time_for_extension):
         self.current_aggregation.end_time = time_for_extension
@@ -86,8 +93,7 @@ class EventAggregator:
         self.current_aggregation = None
 
         if self._on_aggregation_complete:
-            events_as_datetimes = self.convert_events_to_timestamps(
-                completed.events)
+            events_as_datetimes = self.convert_events_to_timestamps(completed.events)
             self._on_aggregation_complete(events_as_datetimes)
 
         return completed

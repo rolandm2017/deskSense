@@ -52,9 +52,7 @@ class DailyProgramSummary(DailySummaryBase):
             if self.gathering_date is not None
             else "No date"
         )
-        return (
-            f"Program: {self.program_name}, \tHours: {self.hours_spent}, \tDate: {formatted_date}"
-        )
+        return f"Program: {self.program_name}, \tHours: {self.hours_spent}, \tDate: {formatted_date}"
 
 
 class DailyDomainSummary(DailySummaryBase):
@@ -75,9 +73,7 @@ class DailyDomainSummary(DailySummaryBase):
             if self.gathering_date is not None
             else "No date"
         )
-        return (
-            f"Domain: {self.domain_name}, \tHours: {self.hours_spent}, \tDate: {formatted_date}"
-        )
+        return f"Domain: {self.domain_name}, \tHours: {self.hours_spent}, \tDate: {formatted_date}"
 
 
 class SummaryLogBase(Base):
@@ -149,9 +145,7 @@ class TypingSession(Base):
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     def __repr__(self):
-        return (
-            f"TypingSession(id={self.id}, start_time={self.start_time}, end_time={self.end_time})"
-        )
+        return f"TypingSession(id={self.id}, start_time={self.start_time}, end_time={self.end_time})"
 
 
 class MouseMove(Base):
@@ -277,4 +271,6 @@ class SystemStatus(Base):
     status: Mapped[SystemStatusType] = mapped_column(
         SQLAlchemyEnum("program_started", "online", "shutdown", name="systemstatustype")
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # Is the local timezone
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True)
+    )  # Is the local timezone

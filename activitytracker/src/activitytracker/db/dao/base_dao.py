@@ -10,7 +10,7 @@ from activitytracker.util.errors import WayTooLongWaitError
 def handle_exception(loop, context):
     # context['message'] contains the error message
     # context['exception'] (if available) contains the exception object
-    msg = context.get('exception', context['message'])
+    msg = context.get("exception", context["message"])
     task = context.get("task")
     task_name = task.get_name() if task else "Unknown-Task"
     print(f"\n⚠️ Caught asyncio exception: {msg}\nIn: {task_name}\n")
@@ -22,13 +22,19 @@ class BaseQueueingDao:
     """
     DAO exists to provide a queue for writes.
 
-    Events are expected to happen quite quickly for keyboard, mouse. 
+    Events are expected to happen quite quickly for keyboard, mouse.
     Hence writes are batched up to be written in a group.
 
     The point is to (a) prevent bottlenecks and (b) avoid wasted overhead resources.
     """
 
-    def __init__(self, async_session_maker: async_sessionmaker, batch_size=30, flush_interval: int | float = 1, dao_name="BaseQueueingDao"):
+    def __init__(
+        self,
+        async_session_maker: async_sessionmaker,
+        batch_size=30,
+        flush_interval: int | float = 1,
+        dao_name="BaseQueueingDao",
+    ):
         self.async_session_maker = async_session_maker
         self.batch_size = batch_size
         if flush_interval > 1:
@@ -51,8 +57,7 @@ class BaseQueueingDao:
         if isinstance(item, dict):
             raise ValueError("Dict found")
         if expected_type and not isinstance(item, expected_type):
-            raise ValueError(
-                f"Expected {expected_type.__name__}, got {type(item).__name__}")
+            raise ValueError(f"Expected {expected_type.__name__}, got {type(item).__name__}")
 
         await self.queue.put(item)
 
@@ -63,8 +68,7 @@ class BaseQueueingDao:
             # Create a new task and store a strong reference to it
             # self._queue_task = asyncio.create_task(self._wrapped_process_queue())
             self._queue_task = asyncio.create_task(
-                self._wrapped_process_queue(),
-                name=f"{self.dao_name}-{source}-Task"
+                self._wrapped_process_queue(), name=f"{self.dao_name}-{source}-Task"
             )
             self._queue_task.add_done_callback(self._task_done_callback)
 
@@ -81,11 +85,13 @@ class BaseQueueingDao:
             # traceback.print_exc()
             # Report the exception to the event loop
             loop = asyncio.get_running_loop()
-            loop.call_exception_handler({
-                "message": "Unhandled exception in process_queue",
-                "exception": e,
-                "task": asyncio.current_task()
-            })
+            loop.call_exception_handler(
+                {
+                    "message": "Unhandled exception in process_queue",
+                    "exception": e,
+                    "task": asyncio.current_task(),
+                }
+            )
             # Re-raise to mark the task as failed
             raise
 

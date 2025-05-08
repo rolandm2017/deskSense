@@ -5,6 +5,7 @@ from datetime import datetime
 
 import traceback
 
+
 class MessageReceiver:
     def __init__(self, zmq_url="tcp://127.0.0.1:5555"):
         """Initialize the message receiver with a ZMQ URL."""
@@ -59,11 +60,9 @@ class MessageReceiver:
                         if event_type in self.handlers:
                             await self.handlers[event_type](event)
                         else:
-                            print(
-                                f"No handler registered for event type: {event_type}")
+                            print(f"No handler registered for event type: {event_type}")
                     else:
-                        print(
-                            f"Unexpected message format (missing 'type'): {event}")
+                        print(f"Unexpected message format (missing 'type'): {event}")
 
                 except Exception as e:
                     print(f"Error processing message: {e}")
@@ -91,8 +90,12 @@ class MessageReceiver:
 
         # Define the coroutines to run
         async def run_tasks():
-            listener_task = asyncio.create_task(self.zmq_listener(), name="MessageReceiver-zmq_listener")
-            processor_task = asyncio.create_task(self.process_events(), name="MessageReceiver-process_events")
+            listener_task = asyncio.create_task(
+                self.zmq_listener(), name="MessageReceiver-zmq_listener"
+            )
+            processor_task = asyncio.create_task(
+                self.process_events(), name="MessageReceiver-process_events"
+            )
             self.tasks = [listener_task, processor_task]
             await asyncio.gather(*self.tasks)
 
@@ -130,7 +133,7 @@ class MessageReceiver:
         """Stop the message receiver asynchronously."""
         print(f"MessageReceiver: Stopping {len(self.tasks)} tasks")
         self.is_running = False  # First mark as not running to exit loops
-        
+
         # Cancel all tasks and await their cancellation
         tasks_to_cancel = []
         for task in self.tasks:
@@ -138,25 +141,26 @@ class MessageReceiver:
                 print(f"MessageReceiver: Cancelling task {task.get_name()}")
                 task.cancel()
                 tasks_to_cancel.append(task)
-        
+
         if tasks_to_cancel:
             try:
                 # Wait for all tasks to complete with a timeout
                 # Don't use shield here - it can interfere with proper cancellation
                 await asyncio.wait_for(
-                    asyncio.gather(*tasks_to_cancel, return_exceptions=True), 
-                    timeout=2.0
+                    asyncio.gather(*tasks_to_cancel, return_exceptions=True), timeout=2.0
                 )
             except asyncio.TimeoutError:
-                print(f"MessageReceiver: {len(tasks_to_cancel)} tasks did not complete in time during shutdown")
+                print(
+                    f"MessageReceiver: {len(tasks_to_cancel)} tasks did not complete in time during shutdown"
+                )
             except Exception as e:
                 print(f"MessageReceiver: Error awaiting tasks during shutdown: {e}")
-        
+
         # Close ZMQ socket and context if not already closed
         try:
-            if hasattr(self, 'socket') and self.socket:
+            if hasattr(self, "socket") and self.socket:
                 self.socket.close()
-            if hasattr(self, 'context') and self.context:
+            if hasattr(self, "context") and self.context:
                 self.context.term()
             print("MessageReceiver: ZMQ resources closed")
         except Exception as e:

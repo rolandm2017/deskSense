@@ -36,7 +36,9 @@ class TabQueue:
         MAX_QUEUE_LEN = 40
 
         if len(self.message_queue) >= MAX_QUEUE_LEN:
-            assert self.debounce_timer is not None, "Debounce timer was None when it should exist"
+            assert (
+                self.debounce_timer is not None
+            ), "Debounce timer was None when it should exist"
             self.debounce_timer.cancel()
             self.start_processing_msgs()
             return
@@ -62,7 +64,7 @@ class TabQueue:
 
     def order_message_queue(self):
         current = self.message_queue
-        sorted_events = sorted(current, key=attrgetter('start_time_with_tz'))
+        sorted_events = sorted(current, key=attrgetter("start_time_with_tz"))
         self.ordered_messages = sorted_events
         self.message_queue = []
 
@@ -97,7 +99,13 @@ class TabQueue:
 
 
 class ChromeService:
-    def __init__(self, user_facing_clock, arbiter: ActivityArbiter, debounce_delay=0.5, transience_msa=300):
+    def __init__(
+        self,
+        user_facing_clock,
+        arbiter: ActivityArbiter,
+        debounce_delay=0.5,
+        transience_msa=300,
+    ):
         print("╠════════╣")
         print("║ ****** ║ Starting Chrome Service")
         print("╚════════╝")
@@ -108,8 +116,7 @@ class ChromeService:
         self.elapsed_alt_tab = None
         # self.summary_dao = summary_dao
 
-        self.tab_queue = TabQueue(
-            self.log_tab_event, debounce_delay, transience_msa)
+        self.tab_queue = TabQueue(self.log_tab_event, debounce_delay, transience_msa)
         self.arbiter = arbiter  # Replace direct arbiter calls
 
         self.event_emitter = EventEmitter()
@@ -126,7 +133,7 @@ class ChromeService:
         """Occurs whenever the user tabs through Chrome tabs.
 
         A tab comes in and becomes the last entry. Call this the Foo tab.
-        A new tab comes in, called Bar, to become the new last entry in place of Foo. 
+        A new tab comes in, called Bar, to become the new last entry in place of Foo.
 
         The time between Foo's start, and Bar's start, is compared. Bar.start - Foo.start = time_elapsed
 
@@ -138,8 +145,7 @@ class ChromeService:
         is_productive = url_deliverable.url in productive_sites
         start_time = UserLocalTime(url_deliverable.start_time_with_tz)
 
-        initialized: ChromeSession = ChromeSession(
-            url, title, start_time, is_productive)
+        initialized: ChromeSession = ChromeSession(url, title, start_time, is_productive)
 
         # NOTE: In the past, the intent was to keep everything in UTC.
         # Now, the intent is to do everything in the user's LTZ, local time zone.
@@ -170,7 +176,7 @@ class ChromeService:
     def handle_session_ready_for_arbiter(self, session):
         session_copy = copy.deepcopy(session)
         # Leads to activityArbiter.set_tab_state
-        self.event_emitter.emit('tab_change', session_copy)
+        self.event_emitter.emit("tab_change", session_copy)
 
     def shutdown(self):
         """Mostly just logs the final chrome session to the db"""

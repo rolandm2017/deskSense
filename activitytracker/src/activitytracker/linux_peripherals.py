@@ -10,8 +10,14 @@ import time
 from pynput import keyboard as pynput_keyboard
 from dotenv import load_dotenv
 
-from activitytracker.trackers.peripherals.linux.linux_peripheral_detector import linux_monitor_keyboard, linux_monitor_mouse
-from activitytracker.trackers.message_dispatch import publish_keyboard_event, publish_mouse_events
+from activitytracker.trackers.peripherals.linux.linux_peripheral_detector import (
+    linux_monitor_keyboard,
+    linux_monitor_mouse,
+)
+from activitytracker.trackers.message_dispatch import (
+    publish_keyboard_event,
+    publish_mouse_events,
+)
 
 
 def run_linux_monitors():
@@ -40,7 +46,7 @@ def run_linux_monitors():
         try:
             if key == pynput_keyboard.Key.alt_l or key == pynput_keyboard.Key.alt_r:
                 on_alt_q_press.alt_pressed = True
-            elif on_alt_q_press.alt_pressed and hasattr(key, 'char') and key.char == 'q':
+            elif on_alt_q_press.alt_pressed and hasattr(key, "char") and key.char == "q":
                 exit_all_monitors()
         except AttributeError:
             pass
@@ -54,8 +60,7 @@ def run_linux_monitors():
 
     # Start the keyboard listener
     keyboard_listener = pynput_keyboard.Listener(
-        on_press=on_alt_q_press,
-        on_release=on_key_release
+        on_press=on_alt_q_press, on_release=on_key_release
     )
     keyboard_listener.start()
 
@@ -70,14 +75,14 @@ def run_linux_monitors():
         target=linux_monitor_keyboard,
         args=(keyboard_path, is_running),
         daemon=True,
-        name="KeyboardMonitorThread"
+        name="KeyboardMonitorThread",
     )
 
     mouse_thread = threading.Thread(
         target=linux_monitor_mouse,
         args=(mouse_path, is_running),
         daemon=True,
-        name="MouseMonitorThread"
+        name="MouseMonitorThread",
     )
 
     # Start threads

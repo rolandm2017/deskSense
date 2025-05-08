@@ -32,8 +32,8 @@ class WeekCalculationMixin:
             offset = 1
             days_per_week = 7
             days_since_sunday = (today.weekday() + offset) % days_per_week
-            sunday_that_starts_the_week = today - \
-                timedelta(days=days_since_sunday)
+            sunday_that_starts_the_week = today - timedelta(days=days_since_sunday)
         starting_sunday = datetime.combine(
-            sunday_that_starts_the_week, datetime.min.time())  # NOTE: Has no tz info
+            sunday_that_starts_the_week, datetime.min.time()
+        )  # NOTE: Has no tz info
         return starting_sunday

@@ -19,21 +19,19 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
 
     def listen_for_window_changes(self) -> Generator[ProgramSessionDict, None, None]:
         if self.X is None or self.display is None:
-            raise AttributeError(
-                "Crucial component was not initialized")
+            raise AttributeError("Crucial component was not initialized")
 
         d = self.display.Display()
         root = d.screen().root
 
         # Listen for focus change events
 
-        root.change_attributes(
-            event_mask=self.X.FocusChangeMask | self.X.PropertyChangeMask)
+        root.change_attributes(event_mask=self.X.FocusChangeMask | self.X.PropertyChangeMask)
 
         while True:
             event = d.next_event()
             if event.type == self.X.PropertyNotify:
-                if event.atom == d.intern_atom('_NET_ACTIVE_WINDOW'):
+                if event.atom == d.intern_atom("_NET_ACTIVE_WINDOW"):
                     # Window focus changed - get new window info
                     window_info = self._read_ubuntu()
                     yield window_info
@@ -56,21 +54,19 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
             "exe_path": exe_path,
             "pid": active["pid"] if active else None,
             "process_name": process_name,
-            "window_title": window_name  # window_title with the detail
+            "window_title": window_name,  # window_title with the detail
         }
 
     def _get_active_window_id(self, root, initialized_display):
         return root.get_full_property(
-            initialized_display.intern_atom(
-                '_NET_ACTIVE_WINDOW'), self.X.AnyPropertyType
+            initialized_display.intern_atom("_NET_ACTIVE_WINDOW"), self.X.AnyPropertyType
         ).value[0]
 
     def _read_active_window_name_ubuntu(self):
         """Returns the program title like what you'd see during alt-tab."""
         try:
             if self.X is None or self.display is None:
-                raise AttributeError(
-                    "Crucial component was not initialized")
+                raise AttributeError("Crucial component was not initialized")
 
             # Connect to the X server
             d = self.display.Display()
@@ -80,10 +76,8 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
             active_window_id = self._get_active_window_id(root, d)
 
             # Get the window object
-            window_obj = d.create_resource_object('window', active_window_id)
-            window_name = window_obj.get_full_property(
-                d.intern_atom('_NET_WM_NAME'), 0
-            )
+            window_obj = d.create_resource_object("window", active_window_id)
+            window_name = window_obj.get_full_property(d.intern_atom("_NET_WM_NAME"), 0)
 
             if window_name:
                 # convert bytestring -> plain string as soon as it enters the system. don't let it leave the facade
@@ -98,8 +92,7 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
             return "Alt-tab window"
         except Exception as e:
             # Handle other exceptions
-            self.console_logger.log_yellow(
-                f"Unexpected error getting active window: {e}")
+            self.console_logger.log_yellow(f"Unexpected error getting active window: {e}")
             return "Unknown"
 
     def _get_active_window_ubuntu(self) -> Optional[Dict]:
@@ -112,24 +105,22 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
             active_window_id = self._get_active_window_id(root, d)
 
             # Get window PID using _NET_WM_PID property
-            window_obj = d.create_resource_object('window', active_window_id)
+            window_obj = d.create_resource_object("window", active_window_id)
             pid = window_obj.get_full_property(
-                d.intern_atom('_NET_WM_PID'), self.X.AnyPropertyType
+                d.intern_atom("_NET_WM_PID"), self.X.AnyPropertyType
             )
 
-            window_name = window_obj.get_full_property(
-                d.intern_atom('_NET_WM_NAME'), 0
-            )
+            window_name = window_obj.get_full_property(d.intern_atom("_NET_WM_NAME"), 0)
 
             if pid:
                 # Get process info using psutil with the specific PID
                 pid_value = pid.value[0]
                 process = psutil.Process(pid_value)
                 return {
-                    "window_title":  window_name,
+                    "window_title": window_name,
                     "pid": pid_value,
                     "process_name": process.name(),
-                    "exe_path": process.exe()
+                    "exe_path": process.exe(),
                 }
             return None
         except BadWindow as e:
@@ -137,7 +128,7 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
                 "window_title": "Alt-tab window",
                 "pid": 0,
                 "process_name": "Alt-tab",
-                "exe_path": "Unknown"
+                "exe_path": "Unknown",
             }
         except Exception as e:
             self.console_logger.debug(f"Error getting active window: {e}")

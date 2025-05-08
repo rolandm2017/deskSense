@@ -33,12 +33,12 @@ class TimezoneService:
     def make_week_of_ult(self, week_of) -> UserLocalTime:
         if not isinstance(week_of, date):
             raise ValueError(
-                f"Week of was not a date, it was: {type(week_of)}, value: {week_of}")
+                f"Week of was not a date, it was: {type(week_of)}, value: {week_of}"
+            )
         user_tz_str = self.get_tz_for_user(1)
         user_tz = pytz.timezone(user_tz_str)
         # Convert date to datetime with time at 00:00:00 and attach user timezone
-        week_of_as_dt = user_tz.localize(
-            datetime.combine(week_of, time(0, 0, 0)))
+        week_of_as_dt = user_tz.localize(datetime.combine(week_of, time(0, 0, 0)))
         as_ult = UserLocalTime(week_of_as_dt)
         return as_ult
 
@@ -55,11 +55,17 @@ class TimezoneService:
         user_tz = pytz.timezone(user_tz_str)
         return user_tz.localize(dt)
 
-    def convert_tab_change_timezone(self, tab_change_event: UtcDtTabChange, new_tz: str) -> TabChangeEventWithLtz:
+    def convert_tab_change_timezone(
+        self, tab_change_event: UtcDtTabChange, new_tz: str
+    ) -> TabChangeEventWithLtz:
         new_datetime_with_tz: datetime = convert_to_timezone(
-            tab_change_event.startTime, new_tz)
+            tab_change_event.startTime, new_tz
+        )
         tab_change_with_time_zone = TabChangeEventWithLtz(
-            tab_change_event.tabTitle, tab_change_event.url, UserLocalTime(new_datetime_with_tz))
+            tab_change_event.tabTitle,
+            tab_change_event.url,
+            UserLocalTime(new_datetime_with_tz),
+        )
         return tab_change_with_time_zone
 
 

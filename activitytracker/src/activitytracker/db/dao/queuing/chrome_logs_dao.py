@@ -1,4 +1,3 @@
-
 import asyncio
 from datetime import timedelta, datetime, date, timezone
 from typing import List
@@ -19,8 +18,16 @@ from activitytracker.tz_handling.dao_objects import LogTimeConverter
 
 from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.errors import ImpossibleToGetHereError
-from activitytracker.util.log_dao_helper import convert_start_end_times_to_hours, convert_duration_to_hours
-from activitytracker.tz_handling.time_formatting import convert_to_utc, get_start_of_day_from_datetime, get_start_of_day_from_ult, attach_tz_to_all
+from activitytracker.util.log_dao_helper import (
+    convert_start_end_times_to_hours,
+    convert_duration_to_hours,
+)
+from activitytracker.tz_handling.time_formatting import (
+    convert_to_utc,
+    get_start_of_day_from_datetime,
+    get_start_of_day_from_ult,
+    attach_tz_to_all,
+)
 from activitytracker.util.time_wrappers import UserLocalTime
 from activitytracker.util.const import ten_sec_as_pct_of_hour
 from activitytracker.util.log_dao_helper import group_logs_by_name
@@ -33,8 +40,9 @@ from activitytracker.util.log_dao_helper import group_logs_by_name
 #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #
 #
 
+
 class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
-    """DAO for program activity logging. 
+    """DAO for program activity logging.
     TIMEZONE HANDLING:
     - All datetimes are stored in UTC by PostgreSQL
     - Methods return UTC timestamps regardless of input timezone
@@ -42,7 +50,7 @@ class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
     - Date comparisons are performed in UTC"""
 
     def __init__(self, session_maker: sessionmaker):
-        """ Exists mostly for debugging. """
+        """Exists mostly for debugging."""
 
         self.regular_session = session_maker  # Do not delete. UtilityDao still uses it
         self.logger = ConsoleLogger()
@@ -63,13 +71,11 @@ class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
             start_time=initializer.base_start_time_as_utc,
             start_time_local=session.start_time.dt,
             end_time=initializer.base_start_window_end,
-            end_time_local=initializer.base_start_window_end.replace(
-                tzinfo=None),
+            end_time_local=initializer.base_start_window_end.replace(tzinfo=None),
             duration_in_sec=0,
             gathering_date=initializer.start_of_day_as_utc,
-            gathering_date_local=initializer.start_of_day_as_utc.replace(
-                tzinfo=None),
-            created_at=initializer.base_start_time_as_utc
+            gathering_date_local=initializer.start_of_day_as_utc.replace(tzinfo=None),
+            created_at=initializer.base_start_time_as_utc,
         )
         self.add_new_item(log_entry)
 
@@ -77,16 +83,13 @@ class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         """Is finding it by time! Looking for the one, specifically, with the arg's time"""
         if session.start_time is None:
             raise ValueError("Start time was None")
-        start_time_as_utc = convert_to_utc(
-            session.start_time.get_dt_for_db())
+        start_time_as_utc = convert_to_utc(session.start_time.get_dt_for_db())
         query = self.select_where_time_equals(start_time_as_utc)
 
         return self.execute_and_read_one_or_none(query)
 
     def select_where_time_equals(self, some_time):
-        return select(DomainSummaryLog).where(
-            DomainSummaryLog.start_time.op('=')(some_time)
-        )
+        return select(DomainSummaryLog).where(DomainSummaryLog.start_time.op("=")(some_time))
 
     def read_day_as_sorted(self, day: UserLocalTime) -> dict[str, DomainSummaryLog]:
         # NOTE: the database is storing and returning times in UTC
@@ -106,8 +109,7 @@ class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
     def push_window_ahead_ten_sec(self, session: ChromeSession):
         log: DomainSummaryLog = self.find_session(session)
         if not log:
-            raise ImpossibleToGetHereError(
-                "Start of pulse didn't reach the db")
+            raise ImpossibleToGetHereError("Start of pulse didn't reach the db")
         log.end_time = log.end_time + timedelta(seconds=10)
         self.update_item(log)
 
@@ -118,6 +120,5 @@ class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         """
         log: DomainSummaryLog = self.find_session(session)
         if not log:
-            raise ImpossibleToGetHereError(
-                "Start of pulse didn't reach the db")
+            raise ImpossibleToGetHereError("Start of pulse didn't reach the db")
         self.attach_final_values_and_update(session, log)

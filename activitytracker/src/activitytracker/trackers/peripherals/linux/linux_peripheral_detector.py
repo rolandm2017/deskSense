@@ -21,9 +21,14 @@ from datetime import datetime
 import os
 from dotenv import load_dotenv
 
-from activitytracker.trackers.message_dispatch import publish_keyboard_event, publish_mouse_events
+from activitytracker.trackers.message_dispatch import (
+    publish_keyboard_event,
+    publish_mouse_events,
+)
 
-from activitytracker.trackers.peripherals.util.mouse_event_aggregator import MouseEventAggregator
+from activitytracker.trackers.peripherals.util.mouse_event_aggregator import (
+    MouseEventAggregator,
+)
 from activitytracker.trackers.peripherals.util.mouse_event_dispatch import MouseEventDispatch
 
 from activitytracker.object.classes import MouseAggregate
@@ -71,8 +76,7 @@ def debug_logger_simple():
     print("keyboard event")
 
 
-mouse_event_dispatch = MouseEventDispatch(
-    mouse_aggregator, publish_mouse_events)
+mouse_event_dispatch = MouseEventDispatch(mouse_aggregator, publish_mouse_events)
 
 
 def linux_monitor_mouse(device_path, is_running):
@@ -104,8 +108,8 @@ def linux_monitor_mouse(device_path, is_running):
                         #     start_of_batch = updated_time
                         # Can likely clean up spam if desired - but see the aggregator below, can log in there
                         print(
-
-                            f"Mouse {'X' if event.code == ecodes.REL_X else 'Y'} moved: {event.value}")
+                            f"Mouse {'X' if event.code == ecodes.REL_X else 'Y'} moved: {event.value}"
+                        )
                     mouse_event_dispatch.add_to_aggregator()
                     # pass
             elif event.type == ecodes.EV_KEY:  # type: ignore
@@ -114,7 +118,7 @@ def linux_monitor_mouse(device_path, is_running):
                     ecodes.BTN_RIGHT: "right",  # type: ignore
                     ecodes.BTN_MIDDLE: "middle",  # type: ignore
                     ecodes.BTN_SIDE: "side",  # type: ignore
-                    ecodes.BTN_EXTRA: "extra"  # type: ignore
+                    ecodes.BTN_EXTRA: "extra",  # type: ignore
                 }
 
                 if event.code in button_names:
@@ -141,21 +145,17 @@ if __name__ == "__main__":
     mouse_aggregator = MouseEventAggregator()
 
     # Create event dispatch with conditional handler based on debug mode
-    mouse_event_dispatch = MouseEventDispatch(
-        mouse_aggregator, publish_mouse_events
-    )
+    mouse_event_dispatch = MouseEventDispatch(mouse_aggregator, publish_mouse_events)
 
     # Create and start threads
     keyboard_thread = threading.Thread(
         target=linux_monitor_keyboard,
         args=(keyboard_path, publish_keyboard_event),
-        daemon=True
+        daemon=True,
     )
 
     mouse_thread = threading.Thread(
-        target=linux_monitor_mouse,
-        args=(mouse_path, mouse_event_dispatch),
-        daemon=True
+        target=linux_monitor_mouse, args=(mouse_path, mouse_event_dispatch), daemon=True
     )
 
     keyboard_thread.start()

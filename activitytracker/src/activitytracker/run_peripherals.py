@@ -5,7 +5,10 @@ Wrapper to run peripheral monitors from the project root.
 """
 
 from activitytracker.util.detect_os import OperatingSystemInfo
-from activitytracker.trackers.message_dispatch import publish_keyboard_event, publish_mouse_events
+from activitytracker.trackers.message_dispatch import (
+    publish_keyboard_event,
+    publish_mouse_events,
+)
 import threading
 import os
 import sys
@@ -48,10 +51,11 @@ def on_alt_q_press(key):
         if key == pynput_keyboard.Key.alt_l or key == pynput_keyboard.Key.alt_r:
             # Set a flag that Alt is pressed
             on_alt_q_press.alt_pressed = True
-        elif on_alt_q_press.alt_pressed and hasattr(key, 'char') and key.char == 'q':
+        elif on_alt_q_press.alt_pressed and hasattr(key, "char") and key.char == "q":
             exit_all_monitors()
     except AttributeError:
         pass
+
 
 # Reset the alt_pressed flag on key release
 
@@ -74,9 +78,11 @@ if __name__ == "__main__":
     # Import the appropriate modules based on OS
     if current_os.is_windows:
         from activitytracker.windows_peripherals import run_windows_monitors
+
         run_windows_monitors()
     else:
         from activitytracker.linux_peripherals import run_linux_monitors
+
         run_linux_monitors()
     try:
         # Main loop - check running flag periodically

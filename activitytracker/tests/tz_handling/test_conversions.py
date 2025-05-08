@@ -3,13 +3,19 @@ Asserts that:
 
 1. Conversion from UTC to <tz> works.
 """
+
 import pytest
 
 from datetime import datetime, timezone
 import pytz
 
 from activitytracker.db.models import ProgramSummaryLog, DailyProgramSummary
-from activitytracker.tz_handling.time_formatting import convert_to_utc, convert_to_timezone, convert_summary_to_tz, convert_log_to_tz
+from activitytracker.tz_handling.time_formatting import (
+    convert_to_utc,
+    convert_to_timezone,
+    convert_summary_to_tz,
+    convert_log_to_tz,
+)
 
 tokyo_tz = pytz.timezone("Asia/Tokyo")  # UTC +9
 pst_tz = pytz.timezone("America/Los_Angeles")  # UTC -7
@@ -19,8 +25,7 @@ utc_tz = pytz.timezone("UTC")
 
 def test_setup_conditions():
     midday = 12
-    some_tokyo_time = tokyo_tz.localize(
-        datetime(2025, 4, 15, midday + 9, 40, 0))
+    some_tokyo_time = tokyo_tz.localize(datetime(2025, 4, 15, midday + 9, 40, 0))
     some_pst_time = pst_tz.localize(datetime(2025, 4, 15, midday - 7, 40, 0))
 
     tokyo_as_utc = some_tokyo_time.replace(hour=midday)
@@ -40,8 +45,7 @@ def test_convert_to_utc():
     # PST is UTC -7
 
     tokyo_hour = midday + 9
-    some_tokyo_time = tokyo_tz.localize(
-        datetime(2025, 4, 15, tokyo_hour, 40, 0))
+    some_tokyo_time = tokyo_tz.localize(datetime(2025, 4, 15, tokyo_hour, 40, 0))
 
     pst_hour = midday - 7
     some_pst_time = pst_tz.localize(datetime(2025, 4, 15, pst_hour, 40, 0))

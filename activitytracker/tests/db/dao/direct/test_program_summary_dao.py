@@ -33,10 +33,8 @@ class TestProgramSummaryDao:
     async def program_summary_dao(self, mock_regular_session_maker):
         clock = SystemClock()
 
-        logging_dao = ProgramLoggingDao(
-            mock_regular_session_maker)
-        program_summary_dao = ProgramSummaryDao(
-            logging_dao, mock_regular_session_maker)
+        logging_dao = ProgramLoggingDao(mock_regular_session_maker)
+        program_summary_dao = ProgramSummaryDao(logging_dao, mock_regular_session_maker)
         yield program_summary_dao
 
     def test_start_session(self, program_summary_dao):
@@ -46,7 +44,13 @@ class TestProgramSummaryDao:
 
         dt2 = dt + timedelta(seconds=13)
         session_data_1 = CompletedProgramSession(
-            "path/to/chrome.exe", "Chrome.exe", chrome, "Facebook.com", UserLocalTime(dt), UserLocalTime(dt2))
+            "path/to/chrome.exe",
+            "Chrome.exe",
+            chrome,
+            "Facebook.com",
+            UserLocalTime(dt),
+            UserLocalTime(dt2),
+        )
         session_data_1.productive = False
 
         create_spy = Mock()
@@ -76,7 +80,8 @@ class TestProgramSummaryDao:
         session_duration = 1 / 60
         window_title = "Foo!"
         dummy_session = CompletedProgramSession(
-            "C:/foo.exe", "foo.exe", window_title, "detail of foo", UserLocalTime(dt))
+            "C:/foo.exe", "foo.exe", window_title, "detail of foo", UserLocalTime(dt)
+        )
         program_summary_dao._create(dummy_session, dt)
 
         add_new_item_spy.assert_called_once()
@@ -144,8 +149,7 @@ class TestProgramSummaryDao:
 
         # Arrange
         execute_and_return_all_spy = Mock()
-        execute_and_return_all_spy.return_value = [
-            1, 2, 3]  # Pretend they're the right type
+        execute_and_return_all_spy.return_value = [1, 2, 3]  # Pretend they're the right type
         program_summary_dao.execute_and_return_all = execute_and_return_all_spy
 
         # Act

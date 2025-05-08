@@ -10,7 +10,12 @@ from activitytracker.config.definitions import window_push_length
 from activitytracker.object.classes import ProgramSession, ChromeSession
 from activitytracker.tz_handling.dao_objects import FindTodaysEntryConverter
 
-from activitytracker.tz_handling.time_formatting import attach_tz_to_obj, get_start_of_day_from_ult, get_start_of_day_from_datetime, attach_tz_to_all
+from activitytracker.tz_handling.time_formatting import (
+    attach_tz_to_obj,
+    get_start_of_day_from_ult,
+    get_start_of_day_from_datetime,
+    attach_tz_to_all,
+)
 from activitytracker.util.log_dao_helper import group_logs_by_name
 from activitytracker.util.errors import ImpossibleToGetHereError
 from activitytracker.util.time_wrappers import UserLocalTime
@@ -18,7 +23,7 @@ from activitytracker.util.const import SECONDS_PER_HOUR
 from activitytracker.util.errors import DatabaseProtectionError, NegativeTimeError
 
 
-T = TypeVar('T', bound=DeclarativeMeta)
+T = TypeVar("T", bound=DeclarativeMeta)
 
 # pyright: reportAttributeAccessIssue=false
 
@@ -66,18 +71,19 @@ class SummaryDaoMixin:
 
         query = select(self.model).where(
             self.model.gathering_date >= today_start,
-            self.model.gathering_date < tomorrow_start
+            self.model.gathering_date < tomorrow_start,
         )
         result = self.execute_and_return_all(query)
         return attach_tz_to_all(result, day.dt.tzinfo)
 
-    def add_partial_window(self, session: ProgramSession | ChromeSession, duration_in_sec: int, name_filter):
+    def add_partial_window(
+        self, session: ProgramSession | ChromeSession, duration_in_sec: int, name_filter
+    ):
         if duration_in_sec == 0:
             return  # No work to do here
         self.throw_if_negative(session.get_name(), duration_in_sec)
 
-        today_start: UserLocalTime = get_start_of_day_from_ult(
-            session.start_time)
+        today_start: UserLocalTime = get_start_of_day_from_ult(session.start_time)
         tomorrow_start = today_start.dt + timedelta(days=1)
 
         time_to_add = duration_in_sec / SECONDS_PER_HOUR
@@ -85,7 +91,7 @@ class SummaryDaoMixin:
         query = select(self.model).where(
             name_filter,
             self.model.gathering_date >= today_start.dt,
-            self.model.gathering_date < tomorrow_start
+            self.model.gathering_date < tomorrow_start,
         )
         self.do_addition(query, time_to_add)
 
@@ -95,7 +101,8 @@ class SummaryDaoMixin:
 
             if summary is None:
                 raise ImpossibleToGetHereError(
-                    "Session should exist before do_addition occurs")
+                    "Session should exist before do_addition occurs"
+                )
 
             # FIXME: Must test this method
             new_duration = summary.hours_spent + time_to_add
@@ -110,12 +117,14 @@ class SummaryDaoMixin:
             summary = db_session.scalars(query).first()
             # FIXME: Sometimes program | domain is None
             if summary:
-                summary.hours_spent = summary.hours_spent + \
-                    window_push_length / SECONDS_PER_HOUR
+                summary.hours_spent = (
+                    summary.hours_spent + window_push_length / SECONDS_PER_HOUR
+                )
                 db_session.commit()
             else:
                 raise ImpossibleToGetHereError(
-                    "A summary should already exist here, but was not found: " + purpose)
+                    "A summary should already exist here, but was not found: " + purpose
+                )
 
     def _execute_read_with_restored_tz(self, query, start_time: UserLocalTime):
         result = self.execute_and_read_one_or_none(query)

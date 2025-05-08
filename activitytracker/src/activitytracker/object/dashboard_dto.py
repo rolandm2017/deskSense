@@ -14,6 +14,7 @@ class ProductivityBreakdown(BaseModel):
 class ProductivityBreakdownByWeek(BaseModel):
     days: List[ProductivityBreakdown]
 
+
 # For the uh, dashboard
 
 
@@ -80,19 +81,28 @@ class TimelineEntrySchema(BaseModel):
 
     # Optional: Add a method to convert from SQLAlchemy model
     @classmethod
-    def from_orm_model(cls, db_model: PrecomputedTimelineEntry) -> 'TimelineEntrySchema':
+    def from_orm_model(cls, db_model: PrecomputedTimelineEntry) -> "TimelineEntrySchema":
         try:
             # Note: If not for appeasing the IDE typing checker, this would be obj.property all the way down
             return cls(
                 # Convert to string explicitly
                 id=str(db_model.clientFacingId),
-                group=db_model.group.value if hasattr(
-                    db_model.group, 'value') else str(db_model.group),
+                group=(
+                    db_model.group.value
+                    if hasattr(db_model.group, "value")
+                    else str(db_model.group)
+                ),
                 content=str(db_model.content),
-                start=db_model.start if isinstance(
-                    db_model.start, datetime) else datetime.fromisoformat(str(db_model.start)),
-                end=db_model.end if isinstance(
-                    db_model.end, datetime) else datetime.fromisoformat(str(db_model.end))
+                start=(
+                    db_model.start
+                    if isinstance(db_model.start, datetime)
+                    else datetime.fromisoformat(str(db_model.start))
+                ),
+                end=(
+                    db_model.end
+                    if isinstance(db_model.end, datetime)
+                    else datetime.fromisoformat(str(db_model.end))
+                ),
             )
         except:
             print(db_model)
@@ -134,7 +144,7 @@ class ProgramTimelineContent(BaseModel):
 
 class ProgramUsageTimeline(BaseModel):
     date: datetime
-    programs:  List[ProgramTimelineContent]
+    programs: List[ProgramTimelineContent]
 
 
 class WeeklyProgramUsageTimeline(BaseModel):

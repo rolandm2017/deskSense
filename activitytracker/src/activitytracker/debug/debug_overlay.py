@@ -14,15 +14,15 @@ class Overlay:
 
         # Color mapping for different applications
         self.color_map = {
-            'Chrome': '#4285F4',    # Google Blue
-            'Firefox': '#FF6B2B',   # Firefox Orange
-            'Code': '#007ACC',      # VSCode Blue
-            'Terminal': '#32CD32',  # Lime Green
-            'Slack': '#4A154B',     # Slack Purple
-            'Discord': '#7289DA',   # Discord Blue
-            'Spotify': '#1DB954',   # Spotify Green
+            "Chrome": "#4285F4",  # Google Blue
+            "Firefox": "#FF6B2B",  # Firefox Orange
+            "Code": "#007ACC",  # VSCode Blue
+            "Terminal": "#32CD32",  # Lime Green
+            "Slack": "#4A154B",  # Slack Purple
+            "Discord": "#7289DA",  # Discord Blue
+            "Spotify": "#1DB954",  # Spotify Green
         }
-        self.default_color = 'lime'
+        self.default_color = "lime"
 
         self.update_queue = Queue()
 
@@ -53,8 +53,7 @@ class Overlay:
         """Actually update the display (called from main thread)"""
         # f"Starting _update_display with: {new_text}, {display_color}")
         formatted_text = self.format_title(new_text)
-        color = display_color if display_color else self.get_color_for_window(
-            new_text)
+        color = display_color if display_color else self.get_color_for_window(new_text)
 
         try:
             self.label.config(text=formatted_text, fg=color)
@@ -72,13 +71,13 @@ class Overlay:
 
     def format_title(self, title):
         """Format the window title for display"""
-        linux_cli_pattern = r'^([^\s@]+@[^\s@:]+):'
+        linux_cli_pattern = r"^([^\s@]+@[^\s@:]+):"
         match = re.match(linux_cli_pattern, title)
         if match:
             return match.group(1)
 
         if "Google Chrome" in title:
-            parts = title.split(' - ')
+            parts = title.split(" - ")
             if len(parts) < 2:
                 site = ""
             else:
@@ -103,26 +102,26 @@ class Overlay:
         # print("Creating window")  # Debug
 
         # Make window transparent
-        self.window.attributes('-alpha', 0.8)
+        self.window.attributes("-alpha", 0.8)
         self.window.overrideredirect(True)
-        self.window.attributes('-topmost', 1)
+        self.window.attributes("-topmost", 1)
 
         # Configure window appearance
-        self.window.configure(bg='black')
+        self.window.configure(bg="black")
         self.label = tk.Label(
             self.window,
             text="Initializing...",  # Add initial text
-            font=('Arial', 24, 'bold'),
+            font=("Arial", 24, "bold"),
             fg=self.default_color,
-            bg='black',
+            bg="black",
             padx=10,
-            pady=5
+            pady=5,
         )
-        self.label.pack(expand=True, fill='both')  # Make label fill window
+        self.label.pack(expand=True, fill="both")  # Make label fill window
 
         # Position window
         # self.window.geometry('300x100+10+10')  # Give it an explicit size
-        self.window.geometry('300x70+10+10')  # Width x Height + X + Y position
+        self.window.geometry("300x70+10+10")  # Width x Height + X + Y position
 
         self.window.deiconify()
         self.window.lift()
