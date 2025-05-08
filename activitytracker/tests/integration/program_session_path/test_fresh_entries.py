@@ -5,6 +5,8 @@ Proves that the ProgramSession and all relevant fields get where they're intende
 Using three sessions to notice edge cases and prove a chain is established.
 """
 
+import copy
+
 import pytest
 from unittest.mock import Mock
 
@@ -46,8 +48,12 @@ from ...data.program_session_path import (
     session4,
     test_events,
 )
-from ...helper.confirm_chronology import assert_session_was_in_order
+from ...helper.program_path.program_path_assertions import (
+    assert_add_partial_window_happened_as_expected,
+    assert_session_was_in_order,
+)
 from ...helper.program_path.program_path_setup import (
+    make_mock_db_rows_for_test_data,
     setup_recorder_spies,
     setup_summary_dao_spies,
 )
@@ -66,6 +72,12 @@ made_up_pids = [2345, 3456, 4567, 5678]
 
 # @pytest.mark.skip
 
+# FIXME: This test and its sibling have some kind of race condition
+# or interdepencence. The bug is related to the setting of start_times.
+# The bug appears only sometimes. If you switch the order of the tests, the
+# failing test passes and the passing test now fails, due to the order.
+# The fail manifests as the start times of sessions being out of alignment.
+
 
 @pytest.mark.asyncio
 async def test_program_path_with_fresh_sessions(
@@ -79,9 +91,7 @@ async def test_program_path_with_fresh_sessions(
 
     Intent is to not worry about start and end times too much. Focus is the str vals.
     """
-    # surveillance_manager, summary_dao, logging_dao, mock_program_facade, arbiter = setup_for_test
 
-    # skip final entry to save us time; 3 is good
     test_two_data_clone, durations_for_keep_alive = validate_test_data_and_get_durations
 
     for i, session in enumerate(test_two_data_clone):
@@ -136,10 +146,10 @@ async def test_program_path_with_fresh_sessions(
     """
     # fmt: off
     times_for_test_two = [
-                session1.start_time,     
-                session2.start_time,
-                session3.start_time,
-                session4.start_time, session4.start_time, session4.start_time, session4.start_time,
+                copy.deepcopy(session1.start_time),     
+                copy.deepcopy(session2.start_time),
+                copy.deepcopy(session3.start_time),
+                copy.deepcopy(session4.start_time), session4.start_time, session4.start_time, session4.start_time,
 
             ]
     # fmt: on
@@ -177,6 +187,7 @@ async def test_program_path_with_fresh_sessions(
         activity_arbiter,
         facades,
         mock_message_receiver,
+        is_test=True,
     )
 
     window_change_spy = Mock(
@@ -216,41 +227,6 @@ async def test_program_path_with_fresh_sessions(
     # So that the condition "the user already has a session for these programs" is met
     p_summary_dao.find_todays_entry_for_program = find_todays_entry_for_program_mock
 
-    def make_log_from_session(session):
-        base_start_time_as_utc = convert_to_utc(session.start_time.get_dt_for_db())
-        start_of_day = get_start_of_day_from_datetime(session.start_time.get_dt_for_db())
-        if isinstance(start_of_day, UserLocalTime):
-            raise ValueError("Expected datetime")
-        start_of_day_as_utc = convert_to_utc(start_of_day)
-        start_window_end = base_start_time_as_utc + timedelta(seconds=10)
-        return ProgramSummaryLog(
-            exe_path_as_id=session.exe_path,
-            process_name=session.process_name,
-            program_name=session.window_title,
-            # Assumes (10 - n) sec will be deducted later
-            hours_spent=ten_sec_as_pct_of_hour,
-            start_time=base_start_time_as_utc,  # FIXME: start_time_local is missing
-            end_time=start_window_end,  # FIXME: _local mia
-            duration_in_sec=0,
-            gathering_date=start_of_day_as_utc,
-            gathering_date_local=start_of_day_as_utc.replace(tzinfo=None),
-            created_at=base_start_time_as_utc,
-        )
-
-    def make_mock_db_rows_for_test_data():
-        """
-        The test "just made" these logs during the test. They're mocks but
-        if it really did run with the db attached, the find_session method
-        would indeed find these logs sitting there
-        """
-        # FIXME: you MUST account for find_session() being hit more than four times.
-        # FIXME: push_window_ahead_ten_sec hits it, finalize_log hits it.
-        # for now cook it by hand
-        yield make_log_from_session(session1)
-        yield make_log_from_session(session2)
-        yield make_log_from_session(session3)
-        yield make_log_from_session(session4)
-
     #
     # Logger methods
     #
@@ -279,10 +255,6 @@ async def test_program_path_with_fresh_sessions(
 
     spy_on_set_program_state = Mock(side_effect=activity_arbiter.set_program_state)
     activity_arbiter.set_program_state = spy_on_set_program_state
-
-    # Spy on listen_for_window_changes
-    spy_on_listen_for_window = Mock(side_effect=mock_program_facade.listen_for_window_changes)
-    mock_program_facade.listen_for_window_changes = spy_on_listen_for_window
 
     try:
         # ### Act
@@ -378,30 +350,13 @@ async def test_program_path_with_fresh_sessions(
                 "on_state_changed_spy",
             )
 
-        def assert_add_partial_window_happened_as_expected():
-            """
-            Deduct duration might happen 3x b/c of the final val staying in the Arbiter.
-            """
-            # This func does not use assert_all_spy_args_were_sessions because
-            # the arg order is reversed here, i.e. 0th arg is an int
-            one_left_in_arb = 1
-            total_loops = second_test_event_count - one_left_in_arb
-            for i in range(0, total_loops):
-                some_duration = recorder_spies["add_partial_window_spy"].call_args_list[i][0][0]
-                assert isinstance(some_duration, int)
-
-                some_session = recorder_spies["add_partial_window_spy"].call_args_list[i][0][1]
-                assert isinstance(some_session, ProgramSession)
-                assert_session_was_in_order(some_session, i, test_events)
-
-            call_count = len(recorder_spies["add_partial_window_spy"].call_args_list)
-            assert call_count == total_loops, f"Expected exactly {total_loops} calls"
-
         def assert_activity_recorder_saw_expected_vals():
             """Asserts that the recorder spies all saw, in general, what was expected."""
             assert_all_on_new_sessions_received_sessions()
             assert_all_on_state_changes_received_sessions()
-            assert_add_partial_window_happened_as_expected()
+            assert_add_partial_window_happened_as_expected(
+                second_test_event_count, recorder_spies, test_events
+            )
 
         # ## Assert that each session showed up as specified above, in the correct place
 

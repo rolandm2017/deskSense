@@ -5,6 +5,8 @@ Proves that the ProgramSession and all relevant fields get where they're intende
 Using three sessions to notice edge cases and prove a chain is established.
 """
 
+import copy
+
 import pytest
 from unittest.mock import Mock
 
@@ -46,8 +48,13 @@ from ...data.program_session_path import (
     session4,
     test_events,
 )
-from ...helper.confirm_chronology import assert_session_was_in_order
+from ...helper.program_path.program_path_assertions import (
+    assert_add_partial_window_happened_as_expected,
+    assert_session_was_in_order,
+)
 from ...helper.program_path.program_path_setup import (
+    group_of_preexisting_logs,
+    group_of_preexisting_summaries,
     setup_recorder_spies,
     setup_summary_dao_spies,
 )
@@ -125,10 +132,10 @@ async def test_program_path_with_existing_sessions(
     3. ActivityRecorder.add_ten_sec_to_end_time - whenever it's called
     """
     # fmt: off
-    times = [session1.start_time,  
-             session2.start_time, 
-             session3.start_time, 
-             session4.start_time, session4.start_time, session4.start_time, session4.start_time
+    times = [copy.deepcopy(session1.start_time),  
+             copy.deepcopy(session2.start_time), 
+             copy.deepcopy(session3.start_time), 
+             copy.deepcopy(session4.start_time), session4.start_time, session4.start_time, session4.start_time
              ]
     # fmt: on
 
@@ -165,6 +172,7 @@ async def test_program_path_with_existing_sessions(
         activity_arbiter,
         facades,
         mock_message_receiver,
+        is_test=True,
     )
 
     start_new_session_spy = Mock(
@@ -194,56 +202,12 @@ async def test_program_path_with_existing_sessions(
     # ### Arrange
     starting_hours_spent_in_db = 1.0
 
-    def make_preexisting_summary(session, id_for_session):
-        return DailyProgramSummary(
-            id=id_for_session,
-            exe_path_as_id=session.exe_path,
-            program_name=session.window_title,
-            hours_spent=starting_hours_spent_in_db,
-            gathering_date=get_start_of_day_from_datetime(session.start_time),
-            gathering_date_local=get_start_of_day_from_datetime(session.start_time).replace(
-                tzinfo=None
-            ),
-        )
+    # return [s1,s2,s3,s4]
 
-    def group_of_preexisting_summaries():
-        yield make_preexisting_summary(session1, made_up_pids[0])
-        yield make_preexisting_summary(session2, made_up_pids[1])
-        yield make_preexisting_summary(session3, made_up_pids[2])
-        yield make_preexisting_summary(session4, made_up_pids[3])
-        # return [s1,s2,s3,s4]
-
-    def make_preexisting_log(session, id_for_log):
-        sixty_sec = 60
-        # Note that the test data is from  "2025-03-22 16:16:17.480951-07:00" ish. 03-22.
-        very_early_morning = datetime(2025, 3, 22, 5, 35, 50)
-        return ProgramSummaryLog(
-            id=id_for_log,
-            exe_path_as_id=session.process_name,
-            process_name=session.process_name,
-            program_name=session.window_title,
-            # Assumes (10 - n) sec will be deducted later
-            hours_spent=sixty_sec / SECONDS_PER_HOUR,
-            start_time=very_early_morning,
-            end_time=very_early_morning + timedelta(minutes=5),
-            duration_in_sec=60.0,
-            gathering_date=get_start_of_day_from_datetime(very_early_morning),
-            gathering_date_local=get_start_of_day_from_datetime(very_early_morning).replace(
-                tzinfo=None
-            ),
-            created_at=very_early_morning,
-        )
-
-    def group_of_preexisting_logs():
-        yield make_preexisting_log(session1, made_up_pids[0])
-        yield make_preexisting_log(session2, made_up_pids[1])
-        yield make_preexisting_log(session3, made_up_pids[2])
-        yield make_preexisting_log(session4, made_up_pids[3])
-
-        # return [s1,s2,s3,s4]
-
-    pretend_sums_from_db = group_of_preexisting_summaries()
-    pretend_logs_from_db = group_of_preexisting_logs()
+    pretend_sums_from_db = group_of_preexisting_summaries(
+        made_up_pids, starting_hours_spent_in_db
+    )
+    pretend_logs_from_db = group_of_preexisting_logs(made_up_pids)
 
     #
     # Summary methods
@@ -288,10 +252,6 @@ async def test_program_path_with_existing_sessions(
 
     spy_on_set_program_state = Mock(side_effect=activity_arbiter.set_program_state)
     activity_arbiter.set_program_state = spy_on_set_program_state
-
-    # Spy on listen_for_window_changes
-    spy_on_listen_for_window = Mock(side_effect=mock_program_facade.listen_for_window_changes)
-    mock_program_facade.listen_for_window_changes = spy_on_listen_for_window
 
     try:
         # ### Act
@@ -379,30 +339,13 @@ async def test_program_path_with_existing_sessions(
                 "on_state_changed_spy",
             )
 
-        def assert_add_partial_window_happened_as_expected():
-            """
-            Deduct duration might happen 3x b/c of the final val staying in the Arbiter.
-            """
-            # This func does not use assert_all_spy_args_were_sessions because
-            # the arg order is reversed here, i.e. 0th arg is an int
-            one_left_in_arb = 1
-            total_loops = event_count - one_left_in_arb
-            for i in range(0, total_loops):
-                some_duration = recorder_spies["add_partial_window_spy"].call_args_list[i][0][0]
-                assert isinstance(some_duration, int)
-
-                some_session = recorder_spies["add_partial_window_spy"].call_args_list[i][0][1]
-                assert isinstance(some_session, ProgramSession)
-                assert_session_was_in_order(some_session, i, test_events)
-
-            call_count = len(recorder_spies["add_partial_window_spy"].call_args_list)
-            assert call_count == total_loops, f"Expected exactly {total_loops} calls"
-
         def assert_activity_recorder_saw_expected_vals():
             """Asserts that the recorder spies all saw, in general, what was expected."""
             assert_all_on_new_sessions_received_sessions()
             assert_all_on_state_changes_received_sessions()
-            assert_add_partial_window_happened_as_expected()
+            assert_add_partial_window_happened_as_expected(
+                event_count, recorder_spies, test_events
+            )
 
         #     # ## Assert that each session showed up as specified above, in the correct place
 

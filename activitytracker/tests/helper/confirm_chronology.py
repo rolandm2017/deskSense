@@ -50,16 +50,3 @@ def get_durations_from_test_data(test_events):
         durations_for_sessions.append(seconds)
 
     return durations_for_sessions
-
-
-def assert_session_was_in_order(actual: ProgramSession, i, test_events):
-    """The first one"""
-    expected = test_events[i]
-    # print("Loop: ", i)
-    # print("Expected:", expected.start_time)
-    # print("Actual:", actual.start_time)
-    assert actual.exe_path == expected.exe_path
-    assert actual.process_name == expected.process_name
-    assert actual.window_title == expected.window_title
-    assert actual.detail == expected.detail
-    assert actual.start_time == expected.start_time

@@ -29,6 +29,8 @@ def validate_test_data_and_get_durations():
         )
         durations_for_sessions.append(elapsed_between_sessions)
 
-    # Return the data to the test
     clones = deepcopy_test_data(test_events)
+    print("enumerating clones")
+    for i, c in enumerate(clones):
+        print(i, c.start_time)
     return clones, durations_for_sessions
