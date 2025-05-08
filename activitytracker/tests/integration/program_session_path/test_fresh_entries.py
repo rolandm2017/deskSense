@@ -47,7 +47,10 @@ from ...data.program_session_path import (
     test_events,
 )
 from ...helper.confirm_chronology import assert_session_was_in_order
-from ...helper.program_path.program_path_setup import setup_recorder_spies
+from ...helper.program_path.program_path_setup import (
+    setup_recorder_spies,
+    setup_summary_dao_spies,
+)
 from ...helper.testing_util import convert_back_to_dict
 from ...mocks.mock_clock import UserLocalTimeMockClock
 from ...mocks.mock_engine_container import MockEngineContainer
@@ -199,17 +202,9 @@ async def test_program_path_with_fresh_sessions(
     # -- Arrange
     # --
 
-    summary_add_new_item_spy = Mock()
-    p_summary_dao.add_new_item = summary_add_new_item_spy
+    summary_dao, summary_dao_spies = setup_summary_dao_spies(p_summary_dao)
 
-    push_window_ahead_ten_sec_spy = Mock(side_effect=p_summary_dao.push_window_ahead_ten_sec)
-    p_summary_dao.push_window_ahead_ten_sec = push_window_ahead_ten_sec_spy
-
-    make_find_all_from_day_query_spy = Mock(
-        side_effect=p_summary_dao.create_find_all_from_day_query
-    )
-    p_summary_dao.create_find_all_from_day_query = make_find_all_from_day_query_spy
-
+    # -- different per file
     sum_dao_execute_and_read_one_or_none_spy = Mock()
     sum_dao_execute_and_read_one_or_none_spy.return_value = None
     p_summary_dao.execute_and_read_one_or_none = sum_dao_execute_and_read_one_or_none_spy
@@ -220,12 +215,6 @@ async def test_program_path_with_fresh_sessions(
     find_todays_entry_for_program_mock.return_value = None
     # So that the condition "the user already has a session for these programs" is met
     p_summary_dao.find_todays_entry_for_program = find_todays_entry_for_program_mock
-
-    execute_window_push_spy = Mock()
-    p_summary_dao.execute_window_push = execute_window_push_spy
-
-    do_addition_spy = Mock()
-    p_summary_dao.do_addition = do_addition_spy
 
     def make_log_from_session(session):
         base_start_time_as_utc = convert_to_utc(session.start_time.get_dt_for_db())
@@ -339,7 +328,7 @@ async def test_program_path_with_fresh_sessions(
             assert recorder_spies["on_new_session_spy"].call_count == count_of_events
 
             # Test stopped before first pulse
-            assert push_window_ahead_ten_sec_spy.call_count == total_pushes
+            assert summary_dao_spies["push_window_ahead_ten_sec_spy"].call_count == total_pushes
 
             # The final entry here is holding the window push open
             assert finalize_log_spy.call_count == count_of_events - trailing_entry
@@ -475,17 +464,20 @@ async def test_program_path_with_fresh_sessions(
             )
 
             assert (
-                summary_add_new_item_spy.call_count == second_test_event_count
+                summary_dao_spies["summary_add_new_item_spy"].call_count
+                == second_test_event_count
             ), "A Summary should've been made for each entry, hence 'brand new' sessions"
             assert logger_add_new_item_spy.call_count == second_test_event_count
 
             assert update_item_spy.call_count == total_pushes + concluded_sessions
 
-            assert execute_window_push_spy.call_count == total_pushes
+            assert summary_dao_spies["execute_window_push_spy"].call_count == total_pushes
 
         assert_sqlalchemy_layer_went_as_expected()
 
-        assert len(push_window_ahead_ten_sec_spy.call_args_list) == total_pushes
+        assert (
+            len(summary_dao_spies["push_window_ahead_ten_sec_spy"].call_args_list) == total_pushes
+        )
 
         def assert_sessions_form_a_chain():
             sessions = []
@@ -502,9 +494,12 @@ async def test_program_path_with_fresh_sessions(
         assert_sessions_form_a_chain()
 
         # The final entry being held suspended in Arbiter
-        assert push_window_ahead_ten_sec_spy.call_count == total_pushes
+        assert summary_dao_spies["push_window_ahead_ten_sec_spy"].call_count == total_pushes
 
-        assert do_addition_spy.call_count == second_test_event_count - trailing_entry
+        assert (
+            summary_dao_spies["do_addition_spy"].call_count
+            == second_test_event_count - trailing_entry
+        )
 
         assert finalize_log_spy.call_count == second_test_event_count - trailing_entry
 
@@ -512,7 +507,7 @@ async def test_program_path_with_fresh_sessions(
         # TODO: assert that detail looked right
 
         assert (
-            summary_add_new_item_spy.call_count == 4
+            summary_dao_spies["summary_add_new_item_spy"].call_count == 4
         ), "A new summary was created despite preexisting sessions"
 
         assert logger_add_new_item_spy.call_count == second_test_event_count
@@ -520,7 +515,7 @@ async def test_program_path_with_fresh_sessions(
         assert len(logger_add_new_item_spy.call_args_list) == second_test_event_count
 
         for i in range(0, second_test_event_count):
-            summary = summary_add_new_item_spy.call_args_list[i][0][0]
+            summary = summary_dao_spies["summary_add_new_item_spy"].call_args_list[i][0][0]
 
             assert isinstance(summary, DailyProgramSummary)
             assert (
