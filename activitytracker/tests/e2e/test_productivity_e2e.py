@@ -139,7 +139,6 @@ async def test_setup_conditions(regular_session_maker, plain_asm):
 
 # FIXME: integrate with the 3rd test
 @pytest.mark.asyncio
-# @pytest.mark.skip
 async def test_program_tracker_to_arbiter(plain_asm, regular_session_maker, times_from_test_data):
 
     real_program_events = [x["event"] for x in program_data]
@@ -149,15 +148,13 @@ async def test_program_tracker_to_arbiter(plain_asm, regular_session_maker, time
     mock_clock_times = []
 
     for i in range(0, len(times_for_program_events)):
-        # TODO: The if block looks useless, delete
-        if i == len(times_for_program_events) - 1:
-            current = datetime.fromisoformat(times_for_program_events[i])
-            mock_clock_times.append(current)
-            break
         current = datetime.fromisoformat(times_for_program_events[i])
-        mock_clock_times.append(current)
+        mock_clock_times.append(UserLocalTime(current))
 
-    mock_clock = MockClock(mock_clock_times)
+    for v in mock_clock_times:
+        assert isinstance(v, UserLocalTime)
+
+    mock_clock = UserLocalTimeMockClock(mock_clock_times)
 
     class MockProgramFacade:
         def __init__(self):
