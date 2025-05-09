@@ -1,7 +1,10 @@
 from pydantic import BaseModel
-from typing import Optional, List
+
 from datetime import datetime
 
+from typing import List, Optional
+
+from activitytracker.object.enums import PlayerState
 from activitytracker.util.time_wrappers import UserLocalTime
 
 # Reports
@@ -70,6 +73,8 @@ class UtcDtTabChange(BaseModel):
 
 class YouTubeEvent(UtcDtTabChange):
     channel: str
+    player_state: PlayerState
+    player_position_in_sec: int
 
     def __str__(self) -> str:
         """Custom string representation of the YouTubeEvent."""

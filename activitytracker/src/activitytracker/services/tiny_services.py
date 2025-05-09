@@ -1,22 +1,19 @@
 # services.py
 from fastapi import Depends
-from typing import List, cast
 
 import pytz
-from datetime import datetime, time, date
+from datetime import date, datetime, time
 
-
-from activitytracker.object.pydantic_dto import UtcDtTabChange
-from activitytracker.tz_handling.time_formatting import convert_to_timezone
-
-from activitytracker.db.dao.queuing.mouse_dao import MouseDao
-from activitytracker.db.dao.queuing.keyboard_dao import KeyboardDao
-from activitytracker.db.models import MouseMove
-from activitytracker.object.dto import TypingSessionDto
-from activitytracker.object.classes import TabChangeEventWithLtz
-
+from typing import List, cast
 
 from activitytracker.config.definitions import local_time_zone, productive_sites
+from activitytracker.db.dao.queuing.keyboard_dao import KeyboardDao
+from activitytracker.db.dao.queuing.mouse_dao import MouseDao
+from activitytracker.db.models import MouseMove
+from activitytracker.object.classes import TabChangeEventWithLtz
+from activitytracker.object.dto import TypingSessionDto
+from activitytracker.object.pydantic_dto import UtcDtTabChange, YouTubeEvent
+from activitytracker.tz_handling.time_formatting import convert_to_timezone
 from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.time_wrappers import UserLocalTime
 
@@ -56,16 +53,25 @@ class TimezoneService:
         return user_tz.localize(dt)
 
     def convert_tab_change_timezone(
-        self, tab_change_event: UtcDtTabChange, new_tz: str
+        self, tab_change_event: UtcDtTabChange | YouTubeEvent, new_tz: str
     ) -> TabChangeEventWithLtz:
         new_datetime_with_tz: datetime = convert_to_timezone(
             tab_change_event.startTime, new_tz
         )
-        tab_change_with_time_zone = TabChangeEventWithLtz(
-            tab_change_event.tabTitle,
-            tab_change_event.url,
-            UserLocalTime(new_datetime_with_tz),
-        )
+        if isinstance(tab_change_event, YouTubeEvent):
+            tab_change_with_time_zone = TabChangeEventWithLtz(
+                tab_change_event.tabTitle,
+                tab_change_event.url,
+                UserLocalTime(new_datetime_with_tz),
+                tab_change_event.channel,
+            )
+        else:
+            tab_change_with_time_zone = TabChangeEventWithLtz(
+                tab_change_event.tabTitle,
+                tab_change_event.url,
+                UserLocalTime(new_datetime_with_tz),
+                None,
+            )
         return tab_change_with_time_zone
 
 

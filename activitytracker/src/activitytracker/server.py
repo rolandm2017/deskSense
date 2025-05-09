@@ -538,8 +538,8 @@ async def receive_chrome_tab(
         # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
         # capture_chrome_data_for_tests(tab_change_event)
         tz_for_user = timezone_service.get_tz_for_user(user_id)
-        updated_tab_change_event = timezone_service.convert_tab_change_timezone(
-            tab_change_event, tz_for_user
+        updated_tab_change_event: TabChangeEventWithLtz = (
+            timezone_service.convert_tab_change_timezone(tab_change_event, tz_for_user)
         )
 
         chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
@@ -565,14 +565,15 @@ async def receive_youtube_event(
     logger.log_purple("[LOG] Chrome Tab Received")
     try:
         utc_dt = tab_change_event.startTime.tzinfo == timezone.utc
+        # TODO: Replace assertion with throwing a UtcDatetimeExpectedError or something
         assert utc_dt, "Expected UTC datetime"
         user_id = 1  # temp until i have more than 1 user
 
         # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
         # capture_chrome_data_for_tests(tab_change_event)
         tz_for_user = timezone_service.get_tz_for_user(user_id)
-        updated_tab_change_event = timezone_service.convert_tab_change_timezone(
-            tab_change_event, tz_for_user
+        updated_tab_change_event: TabChangeEventWithLtz = (
+            timezone_service.convert_tab_change_timezone(tab_change_event, tz_for_user)
         )
 
         chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
@@ -600,6 +601,8 @@ async def receive_ignored_tab(
     logger.log_purple("[LOG] Ignored Chrome Tab Received")
     try:
         utc_dt = tab_change_event.startTime.tzinfo == timezone.utc
+        # TODO: Replace assertion with throwing a UtcDatetimeExpectedError or something
+
         assert utc_dt, "Expected UTC datetime"
         user_id = 1  # temp until i have more than 1 user
 
