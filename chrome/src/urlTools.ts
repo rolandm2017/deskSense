@@ -1,4 +1,4 @@
-// urlTools.js
+// urlTools.ts
 
 // import psl from "psl"
 

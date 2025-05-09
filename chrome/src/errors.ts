@@ -1,4 +1,4 @@
-// errors.js
+// errors.ts
 class ImpossibleToGetHereError extends Error {
     constructor(message = "This code path should be impossible to reach.") {
         super(message);

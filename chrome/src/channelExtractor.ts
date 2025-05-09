@@ -1,4 +1,48 @@
-// channelExtractor.js
+// channelExtractor.ts
+
+declare global {
+    interface Window {
+        videoTimeTrackerId?: number;
+        __videoTimeIntervalStarted?: boolean;
+    }
+}
+
+function markIntervalStarted(window: Window) {
+    // This flag prevents multiple intervals from being set in the same tab.
+    // YouTube pages can trigger repeated script injections (e.g. via navigation),
+    // and without this check, we'd end up logging or sending duplicate timestamps.
+    // Setting a flag on `window` ensures it's scoped to the tab's page context.
+    // This way, only one tracker runs per video page.
+    window.__videoTimeIntervalStarted = true;
+}
+
+export function startVideoTimeTracking() {
+    const additionalIntervalWouldBeDuplicate =
+        window.__videoTimeIntervalStarted;
+    if (additionalIntervalWouldBeDuplicate) return;
+    markIntervalStarted(window);
+
+    // TODO: Make a way to stop this interval. so it doesn't run forever
+    const intervalId: number = window.setInterval(() => {
+        const video = document.querySelector("video");
+        const time = video?.currentTime;
+        if (typeof time === "number") {
+            chrome.runtime.sendMessage({ type: "VIDEO_TIME", time });
+        }
+    }, 3000); // every 3 seconds
+    window.videoTimeTrackerId = intervalId;
+    // to cancel:
+    // clearInterval(intervalId);
+}
+
+export function stopVideoTimeTracking() {
+    if (window.videoTimeTrackerId) {
+        clearInterval(window.videoTimeTrackerId);
+        window.videoTimeTrackerId = undefined;
+        return true;
+    }
+    return false;
+}
 
 /*
  * It's necessary to run this using chrome.scripting.executeScript.

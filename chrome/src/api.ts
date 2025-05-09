@@ -1,4 +1,4 @@
-// api.js
+// api.ts
 
 const DESKSENSE_BACKEND_URL = "http://localhost:8000";
 
@@ -16,7 +16,16 @@ export function reportTabSwitch(domain: string, tabTitle: string) {
     sendPayload(chromeTabUrl, payload);
 }
 
-export function reportYouTube(tabTitle: string | undefined, channel: string) {
+interface PlayerData {
+    timestamp: number;
+    state: "playing" | "paused";
+}
+
+export function reportYouTube(
+    tabTitle: string | undefined,
+    channel: string,
+    playerData?: PlayerData
+) {
     /* Tab title must be undefined sometimes, says TS */
     console.log("[info] Channel " + channel);
     const payload = {

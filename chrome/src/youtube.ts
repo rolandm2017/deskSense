@@ -1,6 +1,6 @@
-// youtube.js
+// youtube.ts
 import { extractChannelInfoFromWatchPage } from "./channelExtractor";
-import { ChannelPageOnlyError, ImpossibleToGetHereError } from "./errors";
+import { ChannelPageOnlyError } from "./errors";
 import { stripProtocol } from "./urlTools";
 
 /*
@@ -33,20 +33,6 @@ export function isOnSomeChannel(youTubeUrl: string) {
 
 export function watchingShorts(youTubeUrl: string) {
     return youTubeUrl.includes("www.youtube.com/shorts/");
-}
-
-function detectTypeOfYouTubePage(youTubeUrl: string) {
-    const onBaseUrl = youTubeUrl.endsWith("youtube.com");
-    if (onBaseUrl) {
-        // is on JUST youtube
-        return "base";
-    } else if (isOnSomeChannel(youTubeUrl)) {
-        return "A channel";
-    } else if (isWatchingVideo(youTubeUrl)) {
-        return "Watching video";
-    } else {
-        throw new ImpossibleToGetHereError();
-    }
 }
 
 export function extractChannelNameFromUrl(youTubeUrl: string) {

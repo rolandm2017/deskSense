@@ -1,6 +1,9 @@
-// background.js
+// background.ts
 import { reportIgnoredUrl, reportTabSwitch, reportYouTube } from "./api";
-import { extractChannelInfoFromWatchPage } from "./channelExtractor";
+import {
+    extractChannelInfoFromWatchPage,
+    startVideoTimeTracking,
+} from "./channelExtractor";
 import { getDomainFromUrl } from "./urlTools";
 import {
     extractChannelNameFromUrl,
@@ -39,13 +42,26 @@ function handleYouTubeUrl(tab: chrome.tabs.Tab) {
                 },
                 (results) => {
                     if (results && results[0] && results[0].result) {
+                        // TODO: Get the video player info
                         reportYouTube(tab.title, results[0].result);
                     } else {
                         reportYouTube(tab.title, "Unknown Channel");
                     }
+                    // Now start tracking video time
+                    chrome.scripting.executeScript(
+                        {
+                            target: { tabId: tabId },
+                            func: startVideoTimeTracking,
+                        },
+                        (results) => {
+                            // adfadsfadsfasdfasf
+                            // take the player state, package it with prev func results, pass it to server
+                        }
+                    );
                 }
             );
-        }, 1500); // 1.5 second delay - adjust as needed
+            // NOTE: ** do not change this 1500 ms delay **
+        }, 1500); // 1.5 second delay. The absolute minimum value.
         // 1.0 sec delay still had the "prior channel reported as current" problem
     } else if (isOnSomeChannel(tab.url)) {
         // For channel pages, we can extract from the URL
@@ -53,7 +69,7 @@ function handleYouTubeUrl(tab: chrome.tabs.Tab) {
         reportYouTube(tab.title, channelName);
     } else if (watchingShorts(tab.url)) {
         // Avoids trying to extract the channel name from
-        // the YouTube Shorts page. The page's HTML changes often.
+        // the YouTube Shorts page. The page's HTML changes often. Sisyphean task.
         reportYouTube(tab.title, "Watching Shorts");
     } else {
         reportYouTube(tab.title, "YouTube Home");
@@ -93,6 +109,19 @@ chrome.tabs.onCreated.addListener((tab) => {
         getDomainFromUrlAndSubmit(tab);
     }
 });
+
+/*
+ * Claude says:
+ *
+ * The chrome.tabs.onUpdated event specifically triggers when any tab in the browser undergoes a state change. This event can fire for various reasons:
+ *
+ * When a page is loading
+ * When a page completes loading
+ * When a tab's URL changes
+ * When a tab's title changes
+ * When a tab's favicon changes
+ * When a tab's loading status changes
+ */
 
 // Listen for any tab updates
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
