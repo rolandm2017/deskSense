@@ -556,7 +556,7 @@ async def receive_chrome_tab(
         )
 
 
-@app.post("/api/chrome/youtube", status_code=status.HTTP_204_NO_CONTENT)
+@app.post("/api/chrome/youtube/new", status_code=status.HTTP_204_NO_CONTENT)
 async def receive_youtube_event(
     tab_change_event: YouTubeEvent,
     chrome_service: ChromeService = Depends(get_chrome_service),

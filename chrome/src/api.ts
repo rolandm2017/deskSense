@@ -2,9 +2,9 @@
 
 const DESKSENSE_BACKEND_URL = "http://localhost:8000"
 
-const chromeTabUrl = "/api/chrome/tab"
-const youTubeUrl = "/api/chrome/youtube"
-const ignoredDomainUrl = "/api/chrome/ignored"
+const chromeTabUrl = "/api/chrome/tab";
+const ignoredDomainUrl = "/api/chrome/ignored";
+const youTubeUrl = "/api/chrome/youtube/new";
 
 export function reportTabSwitch(domain: string, tabTitle: string) {
     const payload = {
