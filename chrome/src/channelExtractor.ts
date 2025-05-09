@@ -1,5 +1,14 @@
 // channelExtractor.ts
 
+// Polling Interval: "How often do we check if it's still playing?"
+export const pollingInterval = 3000;
+// Note that the interval must stay < 20 sec or so.
+// Consider what happens if the interval is 180 sec, and
+// the user pauses right after the 180 sec interval refreshes.
+// The extension then believes the user is active for three minutes
+// before it records that they have paused. A 20 sec interval might be okay.
+// Could be YAGNI and KISS though.
+
 declare global {
     interface Window {
         videoTimeTrackerId?: number;
@@ -27,9 +36,10 @@ export function startVideoTimeTracking() {
         const video = document.querySelector("video");
         const time = video?.currentTime;
         if (typeof time === "number") {
+            // Query "VIDEO_TIME" to find where this comes out
             chrome.runtime.sendMessage({ type: "VIDEO_TIME", time });
         }
-    }, 3000); // every 3 seconds
+    }, pollingInterval); // every 3 seconds
     window.videoTimeTrackerId = intervalId;
     // to cancel:
     // clearInterval(intervalId);

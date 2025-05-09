@@ -4,6 +4,7 @@ import {
     extractChannelInfoFromWatchPage,
     startVideoTimeTracking,
 } from "./channelExtractor";
+import { MissingUrlError, TrackerInitializationError } from "./errors";
 import { getDomainFromUrl } from "./urlTools";
 import {
     extractChannelNameFromUrl,
@@ -11,6 +12,8 @@ import {
     isWatchingVideo,
     watchingShorts,
 } from "./youtube";
+
+import { sessionTracker, YouTubeSession } from "./sessions";
 
 import { ignoredDomains, isDomainIgnored, loadDomains } from "./ignoreList";
 
@@ -23,7 +26,10 @@ function openOptionsOnClickIcon() {
 openOptionsOnClickIcon();
 
 // // Handle YouTube URL specifically
-function handleYouTubeUrl(tab: chrome.tabs.Tab) {
+function handleYouTubeUrl(
+    tab: chrome.tabs.Tab,
+    tabsWithIntervalsRecorder: Function
+) {
     if (!tab.url || !tab.id || !tab.title) {
         console.warn("Missing required tab properties");
         return;
@@ -34,6 +40,7 @@ function handleYouTubeUrl(tab: chrome.tabs.Tab) {
         // a short delay ensures that the page has fully loaded
         // Use executeScript to access the DOM on YouTube watch pages
         const tabId = tab.id;
+        tabsWithIntervalsRecorder(tabId);
         setTimeout(() => {
             chrome.scripting.executeScript(
                 {
@@ -41,22 +48,38 @@ function handleYouTubeUrl(tab: chrome.tabs.Tab) {
                     func: extractChannelInfoFromWatchPage,
                 },
                 (results) => {
+                    const tabTitle = tab.title ? tab.title : "Unknown Title";
+
+                    let videoId;
+                    if (tab.url) {
+                        videoId = tab.url.split("v=")[1]; // Extract video ID
+                    } else {
+                        videoId = "Missing URL";
+                        throw new MissingUrlError();
+                    }
+
+                    let channelName;
                     if (results && results[0] && results[0].result) {
                         // TODO: Get the video player info
-                        api.reportYouTube(tab.title, results[0].result);
+                        channelName = results[0].result;
                     } else {
-                        api.reportYouTube(tab.title, "Unknown Channel");
+                        channelName = "Unknown Channel";
                     }
+                    const youTubeSession = new YouTubeSession(
+                        videoId,
+                        tabTitle,
+                        channelName
+                    );
+                    youTubeSession.sendInitialInfoToServer();
+                    sessionTracker.setCurrent(youTubeSession);
                     // Now start tracking video time
                     chrome.scripting.executeScript(
                         {
                             target: { tabId: tabId },
                             func: startVideoTimeTracking,
-                        },
-                        (results) => {
-                            // adfadsfadsfasdfasf
-                            // take the player state, package it with prev func results, pass it to server
                         }
+                        // adfadsfadsfasdfasf
+                        // take the player state, package it with prev func results, pass it to server
                     );
                 }
             );
@@ -76,6 +99,12 @@ function handleYouTubeUrl(tab: chrome.tabs.Tab) {
     }
 }
 
+const tabsWithPollingList: number[] = [];
+
+function putTabIdIntoList(tabId: number) {
+    tabsWithPollingList.push(tabId);
+}
+
 function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
     console.log("Tab.url", tab.url);
     if (tab.url === undefined) {
@@ -93,7 +122,7 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
         if (isYouTube) {
             console.log("[info] on YouTube");
             // Use the dedicated function to handle YouTube URLs
-            handleYouTubeUrl(tab);
+            handleYouTubeUrl(tab, putTabIdIntoList);
             return;
         }
         console.log("New tab created:", domain, "\tTitle:", tab.title);
@@ -102,6 +131,38 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
         console.log("No domain found for ", tab.url);
     }
 }
+
+chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
+    // Your code to run when a tab is closed
+    console.log(`Tab ${tabId} was closed`);
+
+    // removeInfo contains additional information
+    console.log("Window was closed:", removeInfo.isWindowClosing);
+
+    const isYouTubeWatchPage = tabsWithPollingList.includes(tabId);
+
+    // Perform any cleanup or final operations here
+    if (isYouTubeWatchPage && sessionTracker.current) {
+        // send final data to server
+        sessionTracker.current.conclude();
+    }
+
+    // const domain = getDomainFromUrl(tab.url);
+    // if (domain) {
+    //     const isYouTube = domain.includes("youtube.com");
+});
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === "VIDEO_TIME") {
+        console.log("Video timestamp:", message.time);
+        // store, sync, or process time here
+        if (sessionTracker.current) {
+            sessionTracker.current.addTimestamp(message.time);
+        } else {
+            throw new TrackerInitializationError();
+        }
+    }
+});
 
 // New tab created
 chrome.tabs.onCreated.addListener((tab) => {
@@ -130,7 +191,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     }
 });
 
-// Listen for tab switches
+// Listen for tab switches.
 chrome.tabs.onActivated.addListener((activeInfo) => {
     chrome.tabs.get(activeInfo.tabId, (tab) => {
         if (tab.url) {

@@ -15,4 +15,25 @@ class ChannelPageOnlyError extends Error {
     }
 }
 
-export { ChannelPageOnlyError, ImpossibleToGetHereError };
+class TrackerInitializationError extends Error {
+    constructor(
+        message = "SessionTracker had no current value when it should have"
+    ) {
+        super(message);
+        this.name = "TrackerInitializationError";
+    }
+}
+
+class MissingUrlError extends Error {
+    constructor(message = "URL not found when it was supposed to be") {
+        super(message);
+        this.name = "MissingUrlError";
+    }
+}
+
+export {
+    ChannelPageOnlyError,
+    ImpossibleToGetHereError,
+    MissingUrlError,
+    TrackerInitializationError,
+};

@@ -37,6 +37,11 @@ class ServerApi {
         this.sendPayload(youTubeUrl, payload);
     }
 
+    reportNetflix(foo: string, bar: string) {
+        // TODO
+        console.log("Reporting netflix is not supported yet");
+    }
+
     reportIgnoredUrl() {
         const payload = {
             url: "ignored", // Must match the pydantic definition
