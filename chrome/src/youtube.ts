@@ -1,7 +1,7 @@
 // youtube.js
-import { ImpossibleToGetHereError, ChannelPageOnlyError } from "./errors"
-import { stripProtocol, urlHasProtocol } from "./urlTools"
-import { extractChannelInfoFromWatchPage } from "./channelExtractor"
+import { extractChannelInfoFromWatchPage } from "./channelExtractor";
+import { ChannelPageOnlyError, ImpossibleToGetHereError } from "./errors";
+import { stripProtocol } from "./urlTools";
 
 /*
  * For YouTube, some channels are productive; others are not.
@@ -14,60 +14,60 @@ import { extractChannelInfoFromWatchPage } from "./channelExtractor"
 export function getYouTubeChannel(youTubeUrl: string) {
     // try this way first
     if (isWatchingVideo(youTubeUrl)) {
-        return extractChannelInfoFromWatchPage()
+        return extractChannelInfoFromWatchPage();
     } else if (isOnSomeChannel(youTubeUrl)) {
-        return extractChannelNameFromUrl(youTubeUrl)
+        return extractChannelNameFromUrl(youTubeUrl);
     } else {
-        console.log("Cannot get channel name from ", youTubeUrl)
-        return null
+        console.log("Cannot get channel name from ", youTubeUrl);
+        return null;
     }
 }
 
 export function isWatchingVideo(youTubeUrl: string) {
-    return youTubeUrl.includes("youtube.com/watch")
+    return youTubeUrl.includes("youtube.com/watch");
 }
 
 export function isOnSomeChannel(youTubeUrl: string) {
-    return youTubeUrl.includes("@")
+    return youTubeUrl.includes("@");
 }
 
 export function watchingShorts(youTubeUrl: string) {
-    return youTubeUrl.includes("www.youtube.com/shorts/")
+    return youTubeUrl.includes("www.youtube.com/shorts/");
 }
 
 function detectTypeOfYouTubePage(youTubeUrl: string) {
-    const onBaseUrl = youTubeUrl.endsWith("youtube.com")
+    const onBaseUrl = youTubeUrl.endsWith("youtube.com");
     if (onBaseUrl) {
         // is on JUST youtube
-        return "base"
+        return "base";
     } else if (isOnSomeChannel(youTubeUrl)) {
-        return "A channel"
+        return "A channel";
     } else if (isWatchingVideo(youTubeUrl)) {
-        return "Watching video"
+        return "Watching video";
     } else {
-        throw new ImpossibleToGetHereError()
+        throw new ImpossibleToGetHereError();
     }
 }
 
 export function extractChannelNameFromUrl(youTubeUrl: string) {
-    const onSomeChannelsPage = youTubeUrl.includes("@")
+    const onSomeChannelsPage = youTubeUrl.includes("@");
     if (onSomeChannelsPage) {
         // https://www.youtube.com/@pieceoffrench
         // https://www.youtube.com/@pieceoffrench/featured
         // https://www.youtube.com/@pieceoffrench/videos
         // https://www.youtube.com/@pieceoffrench/streams
-        const hasProtocol = youTubeUrl.startsWith("http")
+        const hasProtocol = youTubeUrl.startsWith("http");
         if (hasProtocol) {
-            const withoutProtocol = stripProtocol(youTubeUrl)
+            const withoutProtocol = stripProtocol(youTubeUrl);
             if (withoutProtocol === undefined) {
-                throw new Error("URL did not have a protocol")
+                throw new Error("URL did not have a protocol");
             }
-            const segments = withoutProtocol?.split("/")
-            return segments[1].slice(1)
+            const segments = withoutProtocol?.split("/");
+            return segments[1].slice(1);
         } else {
-            const segments = youTubeUrl.split("/")
-            return segments[1].slice(1)
+            const segments = youTubeUrl.split("/");
+            return segments[1].slice(1);
         }
     }
-    throw new ChannelPageOnlyError("Was not on a channel page")
+    throw new ChannelPageOnlyError("Was not on a channel page");
 }

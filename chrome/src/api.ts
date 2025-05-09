@@ -1,6 +1,6 @@
 // api.js
 
-const DESKSENSE_BACKEND_URL = "http://localhost:8000"
+const DESKSENSE_BACKEND_URL = "http://localhost:8000";
 
 const chromeTabUrl = "/api/chrome/tab";
 const ignoredDomainUrl = "/api/chrome/ignored";
@@ -11,23 +11,23 @@ export function reportTabSwitch(domain: string, tabTitle: string) {
         url: domain, // Must match the pydantic definition
         tabTitle: tabTitle,
         startTime: new Date(),
-    }
+    };
     // console.log("Sending payload:", payload)
-    sendPayload(chromeTabUrl, payload)
+    sendPayload(chromeTabUrl, payload);
 }
 
 export function reportYouTube(tabTitle: string | undefined, channel: string) {
     /* Tab title must be undefined sometimes, says TS */
-    console.log("[info] Channel " + channel)
+    console.log("[info] Channel " + channel);
     const payload = {
         // Uses the YouTubeEvent pydantic definition
         url: "www.youtube.com",
         tabTitle,
         channel,
         startTime: new Date(),
-    }
-    console.log("Sending YouTube payload:", payload)
-    sendPayload(youTubeUrl, payload)
+    };
+    console.log("Sending YouTube payload:", payload);
+    sendPayload(youTubeUrl, payload);
 }
 
 export function reportIgnoredUrl() {
@@ -35,9 +35,9 @@ export function reportIgnoredUrl() {
         url: "ignored", // Must match the pydantic definition
         tabTitle: "ignored",
         startTime: new Date(),
-    }
-    console.log("Sending payload:", payload)
-    sendPayload(ignoredDomainUrl, payload)
+    };
+    console.log("Sending payload:", payload);
+    sendPayload(ignoredDomainUrl, payload);
 }
 
 function sendPayload(targetUrl: string, payload: object) {
@@ -55,8 +55,10 @@ function sendPayload(targetUrl: string, payload: object) {
             if (response.status === 204) {
                 // console.log("200 good to go")
             } else {
-                throw new Error(`Request failed with status ${response.status}`)
+                throw new Error(
+                    `Request failed with status ${response.status}`
+                );
             }
         })
-        .catch((error) => console.error("Error:", error))
+        .catch((error) => console.error("Error:", error));
 }

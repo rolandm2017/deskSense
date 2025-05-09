@@ -1,18 +1,15 @@
 // background.js
-import { reportTabSwitch, reportIgnoredUrl, reportYouTube } from "./api";
+import { reportIgnoredUrl, reportTabSwitch, reportYouTube } from "./api";
+import { extractChannelInfoFromWatchPage } from "./channelExtractor";
 import { getDomainFromUrl } from "./urlTools";
 import {
-    extractChannelInfoFromWatchPage,
-    extractChannelInfoFromShortsPage,
-} from "./channelExtractor";
-import {
-    isWatchingVideo,
-    isOnSomeChannel,
     extractChannelNameFromUrl,
+    isOnSomeChannel,
+    isWatchingVideo,
     watchingShorts,
 } from "./youtube";
 
-import { isDomainIgnored, loadDomains, ignoredDomains } from "./ignoreList";
+import { ignoredDomains, isDomainIgnored, loadDomains } from "./ignoreList";
 
 function openOptionsOnClickIcon() {
     chrome.action.onClicked.addListener(() => {

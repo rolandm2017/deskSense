@@ -14,23 +14,23 @@
 // This function will run in the context of the YouTube page
 export function extractChannelInfoFromWatchPage() {
     // Modern YouTube channel selector
-    const channelElement = document.querySelector("ytd-channel-name a")
+    const channelElement = document.querySelector("ytd-channel-name a");
 
     let channelName =
         channelElement && channelElement.textContent
             ? channelElement.textContent.trim()
-            : null
+            : null;
 
     // Fallback to alternative selectors if the primary one fails
     if (!channelName) {
-        const altChannelElement = document.querySelector("#owner-name a")
+        const altChannelElement = document.querySelector("#owner-name a");
         channelName =
             altChannelElement && altChannelElement.textContent
                 ? altChannelElement.textContent.trim()
-                : "Unknown Channel"
+                : "Unknown Channel";
     }
 
-    return channelName
+    return channelName;
 }
 
 // Function to extract channel name from YouTube Shorts
@@ -38,5 +38,5 @@ export function extractChannelInfoFromShortsPage() {
     /*
      * Here be dragons
      */
-    return false
+    return false;
 }
