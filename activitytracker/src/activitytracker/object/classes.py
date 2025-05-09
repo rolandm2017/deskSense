@@ -1,14 +1,21 @@
 # classes.py
 # For various classes
-from datetime import datetime, timedelta, timezone
-from typing import TypedDict, Optional
-
 from abc import ABC, abstractmethod
 
+from datetime import datetime, timedelta, timezone
+
+from typing import Optional, TypedDict
+
 from activitytracker.config.definitions import window_push_length
-from activitytracker.util.time_wrappers import UserLocalTime
+from activitytracker.object.video_classes import (
+    NetflixInfo,
+    VideoInfo,
+    VlcInfo,
+    YouTubeInfo,
+)
 from activitytracker.tz_handling.time_formatting import parse_time_string
 from activitytracker.util.errors import SessionClosedError
+from activitytracker.util.time_wrappers import UserLocalTime
 
 
 class SessionLedger:
@@ -50,6 +57,7 @@ class ActivitySession(ABC):
     start_time: UserLocalTime
     productive: bool
     ledger: SessionLedger
+    video_info: Optional[VideoInfo] = None
 
     def __init__(self, start_time, productive, name):
         self.start_time = start_time
@@ -70,6 +78,8 @@ class ProgramSession(ActivitySession):
     # start_time: UserLocalTime  # exists in ActivitySession
     end_time: Optional[UserLocalTime]
     duration: Optional[timedelta]
+    video_info: Optional[VlcInfo] = None
+
     # productive: bool  # exists in ActivitySession
 
     def __init__(
@@ -79,6 +89,7 @@ class ProgramSession(ActivitySession):
         window_title="",
         detail="",
         start_time=UserLocalTime(datetime(2000, 1, 1, tzinfo=timezone.utc)),
+        video_info=None,
         productive=False,
     ):
         # IF you remove the default args for this class, then you will have to do A LOT of cleanup in the test data.
@@ -87,6 +98,7 @@ class ProgramSession(ActivitySession):
         self.process_name = process_name
         self.window_title = window_title
         self.detail = detail
+        self.video_info = video_info
         self.end_time = None
         self.duration = None
 
@@ -116,6 +128,30 @@ class ProgramSession(ActivitySession):
         return f"ProgramSession(exe_path='{self.exe_path}', process_name='{self.process_name}', \n\ttitle='{self.window_title}', detail='{self.detail}', \n\tstart_time='{self.start_time}', \n\tproductive='{self.productive}',\n\tledger='{self.ledger.get_total()}')"
 
 
+# class ProgramSessionWithVideo(ProgramSession):
+#     video_details: VlcContent
+
+#     def __init__(
+#         self,
+#         exe_path,
+#         process_name,
+#         window_title,
+#         detail,
+#         video_details,
+#         start_time=UserLocalTime(datetime(2000, 1, 1, tzinfo=timezone.utc)),
+#         productive=False,
+#     ):
+#         super().__init__(
+#             exe_path,
+#             process_name,
+#             window_title,
+#             detail,
+#             start_time,
+#             productive,
+#         )
+#         self.video_details = video_details
+
+
 class CompletedProgramSession(ProgramSession):
     end_time: UserLocalTime
     duration: timedelta
@@ -126,6 +162,7 @@ class CompletedProgramSession(ProgramSession):
         process_name="",
         window_title="",
         detail="",
+        video_info=None,
         start_time=UserLocalTime(datetime(2000, 1, 1, tzinfo=timezone.utc)),
         end_time=UserLocalTime(datetime(2000, 1, 1, tzinfo=timezone.utc)),
         productive=False,
@@ -142,6 +179,7 @@ class CompletedProgramSession(ProgramSession):
             process_name=process_name,
             window_title=window_title,
             detail=detail,
+            video_info=video_info,
             start_time=start_time,
             productive=productive,
         )
@@ -174,12 +212,14 @@ class ChromeSession(ActivitySession):
     # start_time: UserLocalTime  # exists in ActivitySession
     end_time: Optional[UserLocalTime]
     duration: Optional[timedelta]
+    video_info: Optional[YouTubeInfo | NetflixInfo] = None
     # productive: bool  # exists in ActivitySession
 
-    def __init__(self, domain, detail, start_time, productive=False):
+    def __init__(self, domain, detail, start_time, productive=False, video_info=None):
         super().__init__(start_time, productive, domain)
         self.domain = domain
         self.detail = detail
+        self.video_info = video_info
         self.end_time = None
         self.duration = None
 
@@ -208,6 +248,13 @@ class ChromeSession(ActivitySession):
         return f"ChromeSession(domain='{self.domain}', detail='{self.detail}', \n\tstart_time='{self.start_time}', \n\tproductive='{self.productive}', \n\tledger='{self.ledger.get_total()}')"
 
 
+# class ChromeSessionWithVideo(ChromeSession):
+#     video_details: YouTubeContent | NetflixContent
+
+#     def __init__(self, domain, detail, start_time, video_details, productive=False):
+#         super().__init__(domain, detail, start_time, productive)
+
+
 class CompletedChromeSession(ChromeSession):
     end_time: UserLocalTime
     duration: timedelta
@@ -216,6 +263,7 @@ class CompletedChromeSession(ChromeSession):
         self,
         domain,
         detail,
+        video_info=None,
         start_time=UserLocalTime(datetime(2000, 1, 1, tzinfo=timezone.utc)),
         end_time=UserLocalTime(datetime(2000, 1, 1, tzinfo=timezone.utc)),
         productive=False,
@@ -224,7 +272,11 @@ class CompletedChromeSession(ChromeSession):
         # Initialize the base class first
         """Only use duration arg in testing. Don't use it otherwise. 'duration_for_tests' exists only for e2e tests thresholds"""
         super().__init__(
-            domain=domain, detail=detail, start_time=start_time, productive=productive
+            domain=domain,
+            detail=detail,
+            start_time=start_time,
+            productive=productive,
+            video_info=video_info,
         )
 
         # Add the fields specific to CompletedChromeSession
@@ -240,9 +292,6 @@ class CompletedChromeSession(ChromeSession):
 
     def __str__(self):
         return f"CompletedChromeSession(domain='{self.domain}', detail='{self.detail}', \n\tstart_time='{self.start_time}', \n\tend_time='{self.end_time}', duration='{self.duration}', \n\tproductive='{self.productive}', \n\tledger='{self.ledger.get_total()}')"
-
-
-# TODO: Convert to use CompletedChromeSession to avoid that gross "start_time is not None" bs
 
 
 class ProgramSessionDict(TypedDict):

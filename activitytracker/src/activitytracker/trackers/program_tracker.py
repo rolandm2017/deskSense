@@ -12,6 +12,7 @@ from activitytracker.config.definitions import (
 )
 from activitytracker.facade.program_facade_base import ProgramFacadeInterface
 from activitytracker.object.classes import ProgramSession
+from activitytracker.object.video_classes import VlcInfo
 from activitytracker.util.clock import SystemClock
 from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.detect_os import OperatingSystemInfo
@@ -21,6 +22,8 @@ from activitytracker.util.program_tools import (
 )
 from activitytracker.util.threaded_tracker import ThreadedTracker
 from activitytracker.util.time_wrappers import UserLocalTime
+
+from .vlc_player_query import get_vlc_status
 
 # TODO: report programs that aren't in the apps list.
 
@@ -58,9 +61,9 @@ class ProgramTrackerCore:
 
     def run_tracking_loop(self):
         for window_change in self.program_facade.listen_for_window_changes():
-            print("[tracker] window change: ", window_change)
             # is_expected_shape_else_throw(window_change)
             # FIXME: "Running Server (WindowsTerminal.exe)" -> Terminal (Terminal)
+            # TODO: Wager I can delete self.current_session & related code
             on_a_different_window_now = (
                 self.current_session
                 and window_change["window_title"] != self.current_session.window_title
@@ -71,7 +74,15 @@ class ProgramTrackerCore:
 
                 current_time: UserLocalTime = self.user_facing_clock.now()  # once per loop
 
-                new_session = self.start_new_session(window_change, current_time)
+                is_vlc = self.window_is_vlc(window_change)
+                if is_vlc:
+                    video_details = self.ask_vlc_player_for_info()
+                    print(video_details, "81ru")
+                    new_session = self.start_new_video_session(
+                        window_change, current_time, video_details
+                    )
+                else:
+                    new_session = self.start_new_session(window_change, current_time)
                 self.current_session = new_session
                 # report window change immediately via "window_change_handler()"
                 self.console_logger.log_yellow("New program: " + new_session.process_name)
@@ -85,20 +96,19 @@ class ProgramTrackerCore:
                 self.current_session = new_session
                 self.window_change_handler(new_session)
 
+    def ask_vlc_player_for_info(self) -> VlcInfo | None:
+        return get_vlc_status()
+
     def is_uninitialized(self):
         return self.current_session is None
 
     def is_initialized(self):
         return not self.current_session is None
 
-    def start_new_session(self, window_change_dict, start_time: UserLocalTime) -> ProgramSession:
-        if contains_space_dash_space(window_change_dict["window_title"]):
-            detail, window_title = separate_window_name_and_detail(
-                window_change_dict["window_title"]
-            )
-        else:
-            window_title = window_change_dict["window_title"]
-            detail = no_space_dash_space
+    def start_new_session(
+        self, window_change_dict, start_time: UserLocalTime
+    ) -> ProgramSession:
+        detail, window_title = self.prepare_window_name_and_detail(window_change_dict)
         new_session = ProgramSession(
             window_change_dict["exe_path"],
             window_change_dict["process_name"],
@@ -109,12 +119,38 @@ class ProgramTrackerCore:
         # end_time, duration, productive not set yet
         return new_session
 
-    def report_missing_program(self, title):
-        """For when the program isn't found in the productive apps list"""
-        self.console_logger.log_yellow(title)  # temp
+    def start_new_video_session(self, window_dict, start_time, video_info):
+        detail, window_title = self.prepare_window_name_and_detail(window_dict)
+        new_session = ProgramSession(
+            window_dict["exe_path"],
+            window_dict["process_name"],
+            window_title,
+            detail,
+            start_time,
+            video_info,
+        )
+        # end_time, duration, productive not set yet
+        return new_session
 
-    def stop(self):
-        pass
+    def prepare_window_name_and_detail(self, window_dict):
+        if contains_space_dash_space(window_dict["window_title"]):
+            detail, window_title = separate_window_name_and_detail(
+                window_dict["window_title"]
+            )
+        else:
+            window_title = window_dict["window_title"]
+            detail = no_space_dash_space
+        return detail, window_title
+
+    def window_is_vlc(self, window):
+        current_os = "Linux"
+        if current_os == "Linux":
+            linux_name_for_vlc = "vlc"
+            return window["process_name"] == linux_name_for_vlc
+        else:
+            # TODO: Find out what the name is
+            windows_name_for_vlc = "Bar"
+            return window["process_name"] == windows_name_for_vlc
 
 
 if __name__ == "__main__":
