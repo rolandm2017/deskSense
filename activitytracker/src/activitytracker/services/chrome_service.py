@@ -24,7 +24,7 @@ from activitytracker.util.time_wrappers import UserLocalTime
 
 
 class TabQueue:
-    def __init__(self, log_tab_event, debounce_delay=0.5, transience_time_in_ms=300):
+    def __init__(self, log_tab_event, debounce_delay=2.0, transience_time_in_ms=300):
         self.last_entry = None
         self.message_queue: list[TabChangeEventWithLtz] = []
         self.ordered_messages: list[TabChangeEventWithLtz] = []
@@ -35,17 +35,21 @@ class TabQueue:
         self.log_tab_event = log_tab_event
 
     def add_to_arrival_queue(self, tab_change_event: TabChangeEventWithLtz):
+        print("appending to queue")
         self.append_to_queue(tab_change_event)
         MAX_QUEUE_LEN = 40
 
         if len(self.message_queue) >= MAX_QUEUE_LEN:
-            if self.debounce_timer is not None and not self.debounce_timer.done():
-                self.debounce_timer.cancel()
-                self.debounce_timer = None
+            assert (
+                self.debounce_timer is not None
+            ), "Debounce timer was None when it should exist"
+            print("Message queue length reached")
+            self.debounce_timer.cancel()
             self.start_processing_msgs()
             return
 
-        if self.debounce_timer is not None and not self.debounce_timer.done():
+        if self.debounce_timer:
+            print("Canceling debounce")
             self.debounce_timer.cancel()
 
         self.debounce_timer = asyncio.create_task(self.debounced_process())
@@ -55,8 +59,8 @@ class TabQueue:
         self.message_queue.append(tab_event)
 
     async def debounced_process(self):
-        print("in debounced process")
         await asyncio.sleep(self.debounce_delay)
+        print("in debounced process after sleep!")
         # print("[debug] Starting processing")
         self.start_processing_msgs()
 
@@ -96,9 +100,7 @@ class TabQueue:
         self.ordered_messages = []
 
     def empty_queue_as_sessions(self):
-        print(len(self.ready_queue), "97ru")
         for event in self.ready_queue:
-            print(event, "99ru")
             self.log_tab_event(event)
         self.ready_queue = []
 
@@ -148,6 +150,7 @@ class ChromeService:
         start_time = UserLocalTime(url_deliverable.start_time_with_tz)
 
         initialized: ChromeSession = ChromeSession(url, title, start_time, is_productive)
+        self.logger.log_yellow(initialized)
 
         # NOTE: In the past, the intent was to keep everything in UTC.
         # Now, the intent is to do everything in the user's LTZ, local time zone.
