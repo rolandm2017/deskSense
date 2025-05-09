@@ -50,7 +50,9 @@ class SystemStatusDao(UtilityDaoMixin):
     def add_activitytracker_started(self, current_time) -> None:
         """Used for the first status entry after the program starts up"""
         current_time_utc = convert_to_utc(current_time.dt)
-        new_status_log = self.make_status_log(SystemStatusType.PROGRAM_STARTED, current_time_utc)
+        new_status_log = self.make_status_log(
+            SystemStatusType.PROGRAM_STARTED, current_time_utc
+        )
         id_from_new_write = self.add_new_item(new_status_log)
         # Do not update the latest value. Only do that for the 2nd and later writes.
         # Said another way, updating the latest value would mean
@@ -78,7 +80,7 @@ class SystemStatusDao(UtilityDaoMixin):
 
     def mark_prior_entry_online(self, latest_id) -> None:
         """Latest_id is stored as a variable for convenience"""
-        self.logger.log_green("updating: " + str(latest_id))
+        # self.logger.log_green("updating: " + str(latest_id))
         with self.regular_session() as session:
             try:
                 # Direct update without fetching first

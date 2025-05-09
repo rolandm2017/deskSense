@@ -15,6 +15,11 @@ class VideoInfo(ABC):
         self.player_state = player_state
         self.player_position_in_sec = player_position_in_sec
 
+    @abstractmethod
+    def get_name(self):
+        """Grab some identifying info"""
+        pass
+
 
 class YouTubeInfo(VideoInfo):
     def __init__(self, channel_name, player_state, player_position_in_sec) -> None:
@@ -22,12 +27,18 @@ class YouTubeInfo(VideoInfo):
 
         self.channel_name = channel_name
 
+    def get_name(self):
+        return f"YouTube: {self.channel_name}"
+
 
 class NetflixInfo(VideoInfo):
 
     def __init__(self, title, player_state, player_position_in_sec) -> None:
         super().__init__(player_state, player_position_in_sec)
         self.title = title
+
+    def get_name(self):
+        return f"Netflix: {self.title}"
 
 
 class VlcInfo(VideoInfo):
@@ -37,6 +48,9 @@ class VlcInfo(VideoInfo):
         super().__init__(player_state, player_position_in_sec)
         self.file = file
         self.folder = folder
+
+    def get_name(self):
+        return f"VLC: {self.file}"
 
     def __str__(self) -> str:
         return (

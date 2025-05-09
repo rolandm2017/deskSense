@@ -45,6 +45,10 @@ class ActivityRecorder:
 
     def on_new_session(self, session: ProgramSession | ChromeSession):
         # TODO: do an audit of logging time and summary time.
+        if session.video_info:
+            self.logger.log_blue(
+                f"video info made it to recorder: " + session.video_info.get_name()
+            )
         if isinstance(session, ProgramSession):
             # Regardless of the session being brand new today or a repeat,
             # must start a new logging session, to note the time being added to the summary.
@@ -60,7 +64,9 @@ class ActivityRecorder:
             self.program_summary_dao.start_session(session)
         elif isinstance(session, ChromeSession):
             self.chrome_logging_dao.start_session(session)
-            session_exists_already = self.chrome_summary_dao.find_todays_entry_for_domain(session)
+            session_exists_already = self.chrome_summary_dao.find_todays_entry_for_domain(
+                session
+            )
             if session_exists_already:
                 # self.chrome_summary_dao.start_window_push_for_session(session, now)
                 return
@@ -81,6 +87,10 @@ class ActivityRecorder:
             session.ledger.add_ten_sec()
 
         # Window push now finds session based on start_time
+        if session.video_info:
+            self.logger.log_blue(
+                f"video info made it to recorder: " + session.video_info.get_name()
+            )
 
         if isinstance(session, ProgramSession):
             self.program_logging_dao.push_window_ahead_ten_sec(session)
@@ -91,7 +101,9 @@ class ActivityRecorder:
         else:
             raise TypeError("Session was not the right type")
 
-    def add_partial_window(self, duration_in_sec: int, session: ProgramSession | ChromeSession):
+    def add_partial_window(
+        self, duration_in_sec: int, session: ProgramSession | ChromeSession
+    ):
         """
         Deducts t seconds from the duration of a session.
         Here, the session's current window was cut short by a new session taking it's place.
@@ -106,6 +118,11 @@ class ActivityRecorder:
         if duration_in_sec == 0:
             return  # Nothing to add
 
+        if session.video_info:
+            self.logger.log_blue(
+                f"video info made it to recorder: " + session.video_info.get_name()
+            )
+
         if isinstance(session, ProgramSession):
             self.program_summary_dao.add_used_time(session, duration_in_sec)
         elif isinstance(session, ChromeSession):
@@ -113,7 +130,9 @@ class ActivityRecorder:
         else:
             raise TypeError("Session was not the right type")
 
-    def on_state_changed(self, session: CompletedProgramSession | CompletedChromeSession | None):
+    def on_state_changed(
+        self, session: CompletedProgramSession | CompletedChromeSession | None
+    ):
         if isinstance(session, ProgramSession):
             self.program_logging_dao.finalize_log(session)
         elif isinstance(session, ChromeSession):
