@@ -1,5 +1,5 @@
 // background.ts
-import { reportIgnoredUrl, reportTabSwitch, reportYouTube } from "./api";
+import { api } from "./api";
 import {
     extractChannelInfoFromWatchPage,
     startVideoTimeTracking,
@@ -43,9 +43,9 @@ function handleYouTubeUrl(tab: chrome.tabs.Tab) {
                 (results) => {
                     if (results && results[0] && results[0].result) {
                         // TODO: Get the video player info
-                        reportYouTube(tab.title, results[0].result);
+                        api.reportYouTube(tab.title, results[0].result);
                     } else {
-                        reportYouTube(tab.title, "Unknown Channel");
+                        api.reportYouTube(tab.title, "Unknown Channel");
                     }
                     // Now start tracking video time
                     chrome.scripting.executeScript(
@@ -66,13 +66,13 @@ function handleYouTubeUrl(tab: chrome.tabs.Tab) {
     } else if (isOnSomeChannel(tab.url)) {
         // For channel pages, we can extract from the URL
         const channelName = extractChannelNameFromUrl(tab.url);
-        reportYouTube(tab.title, channelName);
+        api.reportYouTube(tab.title, channelName);
     } else if (watchingShorts(tab.url)) {
         // Avoids trying to extract the channel name from
         // the YouTube Shorts page. The page's HTML changes often. Sisyphean task.
-        reportYouTube(tab.title, "Watching Shorts");
+        api.reportYouTube(tab.title, "Watching Shorts");
     } else {
-        reportYouTube(tab.title, "YouTube Home");
+        api.reportYouTube(tab.title, "YouTube Home");
     }
 }
 
@@ -86,7 +86,7 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
     if (domain) {
         const ignored = isDomainIgnored(domain, ignoredDomains.getAll());
         if (ignored) {
-            reportIgnoredUrl();
+            api.reportIgnoredUrl();
             return;
         }
         const isYouTube = domain.includes("youtube.com");
@@ -97,7 +97,7 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
             return;
         }
         console.log("New tab created:", domain, "\tTitle:", tab.title);
-        reportTabSwitch(domain, tab.title ? tab.title : "No title found");
+        api.reportTabSwitch(domain, tab.title ? tab.title : "No title found");
     } else {
         console.log("No domain found for ", tab.url);
     }
