@@ -1,5 +1,9 @@
 <div id="watch-tracker-modal">
     <style>
+        h2 {
+            font-size: 28px;
+            color: black
+        }
         #watch-tracker-modal {
             position: fixed;
             top: 0;
@@ -11,6 +15,40 @@
             align-items: center;
             justify-content: center;
             font-family: sans-serif;
+        }
+
+        #watch-tracker-modal #series-select {
+            border: 2px solid #6C33FF;
+            color: #333; /* Text color for the selected option */
+            background-color: white;
+        }
+
+        #watch-tracker-modal #series-select option {
+            color: #333; /* Text color for dropdown options */
+            background-color: white; /* Background color for dropdown options */
+            padding: 8px;
+        }
+
+        /* For hover effect on options */
+        #watch-tracker-modal #series-select option:hover {
+            background-color: #f0f0f0;
+            color: #000;
+        }
+
+        #dropdown-selection {
+            border: 2px solid #6C33FF;
+        }
+
+        #new-entry-btn {
+            background-color: #FF6B3D;
+        }
+
+        #confirm-btn {
+            background-color: #1A73E8;
+        }
+
+        #dont-ask-again-btn {
+            background-color: #E0E0E0;
         }
 
         .modal-backdrop {
@@ -46,17 +84,33 @@
             margin: 5px;
         }
 
+
+
         .hint {
-            font-size: 0.85em;
+            font-size: 1.85em;
             margin-top: 10px;
             color: #555;
+        }
+
+        .desk-sense-rounding {
+            
+            border-radius: 8px;
+            border: 0;
+        }
+
+        .desk-sense-button {
+            padding: 8px;
+            height: 30px;
+            width: auto;
+            background-color: #AAAAAA;
+            font-size: 1.55em;
         }
     </style>
     <div class="modal-backdrop"></div>
     <div class="modal-box">
         <h2>What are you watching?</h2>
         <div id="dropdown-section">
-            <select id="series-select">
+            <select id="series-select" class="desk-sense-rounding">
                 <option>Hilda</option>
                 <option>The Three Body Problem</option>
                 <option>The Agency</option>
@@ -64,15 +118,15 @@
                 <option>The Hollow</option>
             </select>
             <p class="hint">Can't find your title?</p>
-            <button id="new-entry-btn">New entry</button>
+            <button id="new-entry-btn" class="desk-sense-button desk-sense-rounding">New entry</button>
         </div>
         <div id="input-section" style="display: none;">
             <input type="text" id="series-input" placeholder="Enter series name">
-            <button id="cancel-entry-btn">Cancel</button>
+            <button id="cancel-entry-btn" class="desk-sense-button desk-sense-rounding">Cancel</button>
         </div>
         <div class="modal-actions">
-            <button id="confirm-btn">Confirm</button>
-            <button id="ignore-btn">Don't ask again</button>
+            <button id="confirm-btn" class="desk-sense-button desk-sense-rounding">Confirm</button>
+            <button id="ignore-btn" class="desk-sense-button desk-sense-rounding">Don't ask again</button>
         </div>
     </div>
 </div>

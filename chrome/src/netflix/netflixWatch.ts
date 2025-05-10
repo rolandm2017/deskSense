@@ -20,19 +20,29 @@ function injectModal() {
     // Add event listeners
     const modal = document.getElementById("watch-tracker-modal");
 
+    if (!modal) {
+        throw new Error("Null element");
+    }
+
+    document.body.appendChild(modal);
+
     const dropdownSection = document.getElementById("dropdown-section");
     const inputSection = document.getElementById("input-section");
     const newEntryBtn = document.getElementById("new-entry-btn");
     const cancelEntryBtn = document.getElementById("cancel-entry-btn");
 
-    newEntryBtn!.onclick = () => {
-        dropdownSection!.style.display = "none";
-        inputSection!.style.display = "block";
+    if (!newEntryBtn || !dropdownSection || !inputSection || !cancelEntryBtn) {
+        throw new Error("Null element`");
+    }
+
+    newEntryBtn.onclick = () => {
+        dropdownSection.style.display = "none";
+        inputSection.style.display = "block";
     };
 
-    cancelEntryBtn!.onclick = () => {
-        inputSection!.style.display = "none";
-        dropdownSection!.style.display = "block";
+    cancelEntryBtn.onclick = () => {
+        inputSection.style.display = "none";
+        dropdownSection.style.display = "block";
     };
 
     document.getElementById("confirm-btn")!.onclick = () => {
@@ -62,6 +72,7 @@ function injectModal() {
     document.getElementById("ignore-btn")!.onclick = () => {
         // Get current video URL or ID to ignore
         const currentUrl = window.location.href;
+        console.log("current URL", currentUrl);
 
         // Save video to ignore list
         chrome.storage.local.get(["ignoredVideos"], (result) => {
@@ -76,13 +87,17 @@ function injectModal() {
     };
 }
 
+let checkCount = 1;
 // Wait for Netflix page to load and inject modal
 const checkNetflixLoaded = () => {
     // You might want to add specific checks here for Netflix player
     if (document.readyState === "complete") {
         // Add a delay to ensure Netflix has fully loaded
+        console.log("Injecting modal");
         setTimeout(injectModal, 2000);
     } else {
+        console.log("Checking again for check number", checkCount);
+        checkCount++;
         setTimeout(checkNetflixLoaded, 500);
     }
 };
