@@ -1,10 +1,7 @@
 // background.ts
 import { api } from "./api";
-import {
-    extractChannelInfoFromWatchPage,
-    startVideoTimeTracking,
-} from "./channelExtractor";
-import { MissingUrlError, TrackerInitializationError } from "./errors";
+import { extractChannelInfoFromWatchPage } from "./channelExtractor";
+import { MissingUrlError } from "./errors";
 import { getDomainFromUrl } from "./urlTools";
 import {
     extractChannelNameFromUrl,
@@ -13,7 +10,7 @@ import {
     watchingShorts,
 } from "./youtube";
 
-import { sessionTracker, YouTubeSession } from "./sessions";
+import { visitTracker, YouTubeVisit } from "./visits";
 
 import { ignoredDomains, isDomainIgnored, loadDomains } from "./ignoreList";
 
@@ -65,22 +62,13 @@ function handleYouTubeUrl(
                     } else {
                         channelName = "Unknown Channel";
                     }
-                    const youTubeSession = new YouTubeSession(
+                    const youTubeVisit = new YouTubeVisit(
                         videoId,
                         tabTitle,
                         channelName
                     );
-                    youTubeSession.sendInitialInfoToServer();
-                    sessionTracker.setCurrent(youTubeSession);
-                    // Now start tracking video time
-                    chrome.scripting.executeScript(
-                        {
-                            target: { tabId: tabId },
-                            func: startVideoTimeTracking,
-                        }
-                        // adfadsfadsfasdfasf
-                        // take the player state, package it with prev func results, pass it to server
-                    );
+                    youTubeVisit.sendInitialInfoToServer();
+                    visitTracker.setCurrent(youTubeVisit);
                 }
             );
             // NOTE: ** do not change this 1500 ms delay **
@@ -142,25 +130,20 @@ chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
     const isYouTubeWatchPage = tabsWithPollingList.includes(tabId);
 
     // Perform any cleanup or final operations here
-    if (isYouTubeWatchPage && sessionTracker.current) {
+    if (isYouTubeWatchPage && visitTracker.current) {
         // send final data to server
-        sessionTracker.current.conclude();
+        visitTracker.endVisit();
     }
-
-    // const domain = getDomainFromUrl(tab.url);
-    // if (domain) {
-    //     const isYouTube = domain.includes("youtube.com");
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === "VIDEO_TIME") {
-        console.log("Video timestamp:", message.time);
-        // store, sync, or process time here
-        if (sessionTracker.current) {
-            sessionTracker.current.addTimestamp(message.time);
-        } else {
-            throw new TrackerInitializationError();
-        }
+    console.log(message, sender);
+    if (message.event === "play") {
+        console.log("Play detected");
+    } else if (message.event === "pause") {
+        console.log("Pause detected");
+    } else {
+        console.log("Unknown event:", message);
     }
 });
 

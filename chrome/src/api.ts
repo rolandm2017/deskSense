@@ -15,7 +15,7 @@ class ServerApi {
             tabTitle: tabTitle,
             startTime: new Date(),
         };
-        // console.log("Sending payload:", payload)
+        console.log("Sending payload:", payload);
         this.sendPayload(chromeTabUrl, payload);
     }
 
@@ -32,8 +32,10 @@ class ServerApi {
             tabTitle,
             channel,
             startTime: new Date(),
+            playerPositionInSec: 1000,
         };
         console.log("Sending YouTube payload:", payload);
+        console.log(youTubeUrl, "is the youtube url");
         this.sendPayload(youTubeUrl, payload);
     }
 
@@ -65,7 +67,9 @@ class ServerApi {
 
                 // console.log("Status Code:", response.status) // Log the status code
                 if (response.status === 204) {
-                    // console.log("200 good to go")
+                    // console.log("payload received")
+                } else if (response.status == 422) {
+                    console.log("Validation Error Details:", response.json());
                 } else {
                     throw new Error(
                         `Request failed with status ${response.status}`

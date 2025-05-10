@@ -1,8 +1,8 @@
-import path from "path"
-import { fileURLToPath } from "url"
+import path from "path";
+import { fileURLToPath } from "url";
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export default {
     mode: "production", // avoid eval-style source maps
@@ -11,6 +11,7 @@ export default {
         options: "./src/options.js",
         background: "./src/background.ts",
         // Add more entry points as needed
+        videoPolling: "./src/videoPolling.ts",
     },
     output: {
         path: path.resolve(__dirname, "dist"),
@@ -41,4 +42,4 @@ export default {
     resolve: {
         extensions: [".tsx", ".ts", ".js"], // Allow importing .ts files without extension
     },
-}
+};

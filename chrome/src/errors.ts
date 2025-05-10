@@ -17,7 +17,7 @@ class ChannelPageOnlyError extends Error {
 
 class TrackerInitializationError extends Error {
     constructor(
-        message = "SessionTracker had no current value when it should have"
+        message = "VisitTracker had no current value when it should have"
     ) {
         super(message);
         this.name = "TrackerInitializationError";

@@ -15,5 +15,12 @@
     "options_ui": {
         "page": "src/options.html",
         "open_in_tab": true
-    }
+    },
+    "content_scripts": [
+        {
+            "matches": ["https://www.youtube.com/watch*"],
+            "js": ["dist/videoPolling.bundle.js"],
+            "run_at": "document_end"
+        }
+    ]
 }
