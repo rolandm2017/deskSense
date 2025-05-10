@@ -1,43 +1,8 @@
-// Option 1: Event Delegation (Most Efficient)
-// document.addEventListener(
-//     "click",
-//     (e: MouseEvent) => {
-//         // Find the closest video title element
-//         if (e.target && e.target instanceof Element) {
-//             const titleElement = e.target.closest("h2, h3, h4, .title-class");
+// netflixBrowse.ts
 
-//             if (titleElement) {
-//                 console.log("Clicked on:", titleElement.textContent);
-//                 // Your tracking logic here
-//             }
-//         } else {
-//             console.warn("Found no target");
-//         }
-//     },
-//     true
-// );
-
-// Option 2: Hover-to-Register Pattern
-// document.addEventListener(
-//     "mouseover",
-//     (e) => {
-//         if (e.target && e.target instanceof Element) {
-//             const titleElement = e.target.closest("h2, h3, h4, .video-title");
-
-//             if (
-//                 titleElement &&
-//                 titleElement instanceof HTMLElement &&
-//                 !titleElement.dataset.listenerAdded
-//             ) {
-//                 titleElement.addEventListener("click", handleTitleClick);
-//                 titleElement.dataset.listenerAdded = "true";
-//             }
-//         } else {
-//             console.warn("Found no target");
-//         }
-//     },
-//     true
-// );
+// https://www.netflix.com/browse?jbv=81939610
+// https://www.netflix.com/browse?jbv=81417684
+// shows the series title
 
 function obtuseConsoleLog() {
     console.log("############");
@@ -49,12 +14,45 @@ function obtuseConsoleLog() {
     console.log("############");
 }
 
-console.log("Hi from roly");
-console.log("The script loaded");
-console.log("The script loaded");
-console.log("The script loaded");
-console.log("The script loaded");
-console.log("The script loaded");
+obtuseConsoleLog();
+
+let titleEventHandlers = new Map();
+
+interface CleanupHandler {
+    type: string;
+    handler: EventListener;
+    options?: boolean | AddEventListenerOptions | undefined;
+}
+let pageCleanupHandlers: CleanupHandler[] = [];
+
+// Option 1: Event Delegation (Most Efficient)
+
+function setupClosestStyleListener() {
+    const closestElHandler = (e: Event) => {
+        // Find the closest video title element
+        if (e.target && e.target instanceof Element) {
+            const titleElement = e.target.closest("h2, h3, h4, .title-class");
+
+            if (titleElement) {
+                console.log("Clicked on:", titleElement.textContent);
+                // Your tracking logic here
+            }
+        } else {
+            console.warn("Found no target");
+        }
+    };
+
+    document.addEventListener("click", closestElHandler, true);
+
+    // Store reference for cleanup
+    pageCleanupHandlers.push({
+        type: "mouseover",
+        handler: closestElHandler,
+        options: true,
+    });
+}
+
+// Option 2: Hover-to-Register Pattern
 function handleTitleClick(e: MouseEvent) {
     console.log("GOAL GOAL GOAL GOAL");
     console.log("GOAL GOAL GOAL GOAL");
@@ -68,12 +66,46 @@ function handleTitleClick(e: MouseEvent) {
         console.log("Not an element");
     }
 }
+function setupTitleEventListeners() {
+    const mouseoverHandler = (e: Event) => {
+        if (e.target instanceof Element) {
+            const titleElement = e.target.closest("div");
+            if (
+                titleElement &&
+                titleElement instanceof HTMLElement &&
+                !titleElement.dataset.listenerAdded
+            ) {
+                titleElement.addEventListener("click", handleTitleClick);
+                titleElement.dataset.listenerAdded = "true";
+
+                // Store reference for cleanup
+                titleEventHandlers.set(titleElement, handleTitleClick);
+            }
+        }
+    };
+
+    document.addEventListener("mouseover", mouseoverHandler, true);
+
+    // Store reference for cleanup
+    pageCleanupHandlers.push({
+        type: "mouseover",
+        handler: mouseoverHandler,
+        options: true,
+    });
+}
+
+console.log("Hi from roly");
+console.log("The script loaded");
+console.log("The script loaded");
+console.log("The script loaded");
+console.log("The script loaded");
+console.log("The script loaded");
 
 // Option (3) "ready, fire, aim"
 // This will log every single click on the page
-document.addEventListener(
-    "click",
-    (e) => {
+
+function putListenerEverywhere() {
+    const everywhereListener = (e: Event) => {
         console.log("Clicked element:", e.target);
         if (e.target) {
             if (e.target instanceof Element) {
@@ -86,7 +118,31 @@ document.addEventListener(
                 console.log("SURPRISE! not an element");
             }
         }
-    },
-    true
-); // Use capture phase to make sure we catch everything
-//
+    };
+    document.addEventListener("click", everywhereListener, true); // Use capture phase to make sure we catch everything
+
+    // Store reference for cleanup
+    pageCleanupHandlers.push({
+        type: "mouseover",
+        handler: everywhereListener,
+        options: true,
+    });
+}
+
+// Cleanup function
+function cleanup() {
+    console.log("Cleaning up content script...");
+
+    // Remove all title click listeners
+    titleEventHandlers.forEach((handler, element) => {
+        element.removeEventListener("click", handler);
+        delete element.dataset.listenerAdded;
+    });
+    titleEventHandlers.clear();
+
+    // Remove page-level event listeners
+    pageCleanupHandlers.forEach(({ type, handler, options }) => {
+        document.removeEventListener(type, handler, options);
+    });
+    pageCleanupHandlers = [];
+}

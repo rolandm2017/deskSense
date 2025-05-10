@@ -64,16 +64,6 @@ class ViewingTracker {
     }
 
     setCurrent(current: YouTubeViewing | NetflixViewing) {
-        // if (this.current) {
-        //     if (this.current instanceof YouTubeViewing) {
-        //         // report old Viewing
-        //         console.log("[debug] Reporting YouTube Viewing");
-        //         // api.reportYouTube("TODO", "TODO");
-        //     } else {
-        //         console.log("[debug] Reporting Netflix Viewing");
-        //         // api.reportNetflix("TODO", "TODO");
-        //     }
-        // }
         this.current = current;
     }
 

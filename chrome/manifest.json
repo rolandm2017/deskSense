@@ -25,7 +25,7 @@
         {
             "matches": ["https://www.netflix.com/browse"],
             "js": ["dist/netflixBrowse.bundle.js"],
-            "run_at": "document_end"
+            "run_at": "document_idle"
         }
     ]
 }
