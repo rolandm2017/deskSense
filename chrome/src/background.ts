@@ -5,6 +5,7 @@ import { MissingUrlError } from "./errors";
 import { getDomainFromUrl } from "./urlTools";
 import {
     extractChannelNameFromUrl,
+    getYouTubeVideoId,
     isOnSomeChannel,
     isWatchingVideo,
     watchingShorts,
@@ -49,18 +50,16 @@ function handleYouTubeUrl(
 
                     let videoId;
                     if (tab.url) {
-                        videoId = tab.url.split("v=")[1]; // Extract video ID
+                        videoId = getYouTubeVideoId(tab.url);
                     } else {
                         videoId = "Missing URL";
                         throw new MissingUrlError();
                     }
 
-                    let channelName;
+                    let channelName = "Unknown Channel";
                     if (results && results[0] && results[0].result) {
                         // TODO: Get the video player info
                         channelName = results[0].result;
-                    } else {
-                        channelName = "Unknown Channel";
                     }
                     const youTubeVisit = new YouTubeViewing(
                         videoId,
@@ -140,6 +139,8 @@ chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
     // Perform any cleanup or final operations here
     if (isYouTubeWatchPage && viewingTracker.current) {
         // send final data to server
+        // TODO: This actually ends THE VISIT because a visit is the time on a page!
+        // The Viewing would be when the user hits Pause.
         viewingTracker.endViewing();
     }
 });
@@ -148,24 +149,79 @@ function cancelPauseRecording(timeoutId: number) {
     clearTimeout(timeoutId);
 }
 
+let tempTimerVar = new Date();
+
+let playCount = 0;
+let pauseCount = 0;
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log(message, sender);
     let endSessionTimeoutId;
     if (message.event === "play") {
+        playCount++;
+        console.log("[onMsg] Play detected", playCount);
         if (endSessionTimeoutId) {
+            console.log("[onMsg] Cancel pause viewing");
+            const endOfIntervalTime = new Date();
+            console.log(
+                "[onMsg] DURATION: ",
+                endOfIntervalTime.getSeconds() - tempTimerVar.getSeconds()
+            );
             cancelPauseRecording(endSessionTimeoutId);
         }
         if (viewingTracker.current) {
+            console.log("[onMsg] Starting time tracking");
             viewingTracker.current.startTimeTracking();
+            return;
+        } else {
+            // it wasn't there yet because, the, the channel extractor
+            // script didn't run yet but the "report playing video" code did
+            if (sender.tab) {
+                const tab = sender.tab;
+                const tabUrl = tab.url;
+                const tabTitle = tab.title || "Unknown Title";
+
+                // Extract video ID from URL
+                let videoId;
+                if (tabUrl) {
+                    // Handle any additional parameters after the video ID
+                    videoId = getYouTubeVideoId(tabUrl);
+                } else {
+                    videoId = "Missing URL";
+                    console.error("URL doesn't contain video ID parameter");
+                }
+
+                // TODO: Get channel name from somewhere
+                const youTubeVisit = new YouTubeViewing(
+                    videoId,
+                    tabTitle,
+                    "Unknown Channel"
+                );
+                youTubeVisit.sendInitialInfoToServer();
+                viewingTracker.setCurrent(youTubeVisit);
+            }
         }
-        console.log("Play detected");
     } else if (message.event === "pause") {
-        console.log("Pause detected");
+        pauseCount++;
+        console.log("[onMsg] Pause detected", pauseCount);
         if (viewingTracker.current) {
             // TODO: Set delay to pause tracking
+            console.log("[onMsg]START pause timer");
+            tempTimerVar = new Date();
+
+            const localTime = new Date();
 
             endSessionTimeoutId = setTimeout(() => {
-                viewingTracker.current.pauseTracking();
+                const endOfIntervalTime = new Date();
+                console.log("[onMsg] Timer expired: pausing tracking");
+                console.log("[onMsg] THIS PRITNS");
+                console.log(
+                    "[onMsg] DURATION 2: ",
+                    endOfIntervalTime.getSeconds() - localTime.getSeconds()
+                );
+                if (viewingTracker.current) {
+                    viewingTracker.current.pauseTracking();
+                }
             }, 3000);
         }
     } else {

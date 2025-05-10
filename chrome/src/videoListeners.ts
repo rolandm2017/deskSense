@@ -45,6 +45,7 @@ function attachVideoListeners(retries = 0, maxRetries = 10) {
         }
         return;
     }
+
     console.log("Injecting video listeners");
     // Define handler functions and store references
     playHandler = () => {
@@ -60,6 +61,12 @@ function attachVideoListeners(retries = 0, maxRetries = 10) {
     // Attach listeners
     video.addEventListener("play", playHandler);
     video.addEventListener("pause", pauseHandler);
+
+    const videoAutostarted = !video.paused;
+    if (videoAutostarted) {
+        console.log("One-off autoplay on page load / refresh");
+        chrome.runtime.sendMessage({ event: "play" });
+    }
 
     window.__videoElement = video;
 }

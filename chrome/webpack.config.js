@@ -11,7 +11,7 @@ export default {
         options: "./src/options.js",
         background: "./src/background.ts",
         // Add more entry points as needed
-        videoPolling: "./src/videoPolling.ts",
+        videoListeners: "./src/videoListeners.ts",
     },
     output: {
         path: path.resolve(__dirname, "dist"),

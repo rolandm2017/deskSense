@@ -1,4 +1,4 @@
-import { visitTracker } from "./visits";
+import { viewingTracker } from "./visits";
 
 import { TrackerInitializationError } from "./errors";
 
@@ -19,11 +19,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === "VIDEO_TIME") {
         console.log("Video timestamp:", message.time);
         // store, sync, or process time here
-        if (visitTracker.current) {
-            visitTracker.current.addTimestamp(message.time);
-            const ready = visitTracker.timerElapsed();
+        if (viewingTracker.current) {
+            viewingTracker.current.addTimestamp(message.time);
+            const ready = viewingTracker.timerElapsed();
             if (ready) {
-                visitTracker.endVisit();
+                viewingTracker.endViewing();
             }
         } else {
             throw new TrackerInitializationError();

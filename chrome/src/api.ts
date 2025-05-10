@@ -8,26 +8,44 @@ const chromeTabUrl = "/api/chrome/tab";
 const ignoredDomainUrl = "/api/chrome/ignored";
 const youTubeUrl = "/api/chrome/youtube/new";
 
+interface YouTubePayload {
+    videoId: string;
+    tabTitle: string;
+    channelName: string;
+}
 class YouTubeApi {
     sendPayload: Function;
     constructor(sendPayload: Function) {
         this.sendPayload = sendPayload;
     }
 
-    sendPlayEvent() {
+    sendPlayEvent({ videoId, tabTitle, channelName }: YouTubePayload) {
         // The server knows which VideoSession it's modifying because
         // the currently active tab deliverable, contained the ...
+        console.log("Would send play event for youtugbe");
         const payload = {
-            videoId: "",
-            timestamp: 0,
+            videoId: videoId,
+            tabTitle,
+            channelName,
+            // I don't think I care about the timestamp.
+            // Like, what if they did a bunch of rewinding?
+            // The timestamp would be messed and not representative of
+            // their time spent watching content that day.
+            // timestamp: 0
         };
+        console.log("The payload would be ", payload);
     }
 
-    sendPauseEvent() {
+    sendPauseEvent({ videoId, tabTitle, channelName }: YouTubePayload) {
+        console.log("Would send pause event for youtube");
         const payload = {
-            videoId: "",
-            timestamp: 0,
+            videoId,
+            tabTitle,
+            channelName,
+            // timestamp: 0,
         };
+
+        console.log("The pause payload would be ", payload);
     }
 }
 

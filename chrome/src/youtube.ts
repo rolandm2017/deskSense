@@ -38,6 +38,7 @@ export function watchingShorts(youTubeUrl: string) {
 export function extractChannelNameFromUrl(youTubeUrl: string) {
     const onSomeChannelsPage = youTubeUrl.includes("@");
     if (onSomeChannelsPage) {
+        // Examples of valid URLs for this func:
         // https://www.youtube.com/@pieceoffrench
         // https://www.youtube.com/@pieceoffrench/featured
         // https://www.youtube.com/@pieceoffrench/videos
@@ -56,4 +57,14 @@ export function extractChannelNameFromUrl(youTubeUrl: string) {
         }
     }
     throw new ChannelPageOnlyError("Was not on a channel page");
+}
+
+export function getYouTubeVideoId(url: string) {
+    let videoId = url.split("v=")[1]; // Extract video ID
+    console.log("VIDEO ID: ", videoId, videoId.includes("&t"));
+    if (videoId.includes("&t")) {
+        videoId = videoId.split("&")[0];
+        console.log("And NOW it is: ", videoId);
+    }
+    return videoId;
 }
