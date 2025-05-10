@@ -1,10 +1,30 @@
-<div id="watch-tracker-modal">
+<!--
+* RESPONSIVE STYLING EXPLANATION:
+*
+* VW (Viewport Width):
+* - 1vw = 1% of viewport width
+* - Example: 4vw on 1920px screen = 76.8px, on 1280px screen = 51.2px
+* - Makes elements scale with screen size
+*
+* CLAMP(min, preferred, max):
+* - Sets a scalable value with minimum and maximum bounds
+* - Example: clamp(14px, 2.5vw, 18px) means:
+* - Never smaller than 14px
+* - Scale with 2.5% of viewport width
+* - Never grow larger than 18px
+* - Grows/shrinks between 14-18px as screen resizes
+*
+* MIN(value1, value2):
+* - Uses the smaller of two values
+* - Example: min(400px, 80vw) means:
+* - Use 400px if 80% of viewport is wider than 400px
+* - Use 80% of viewport if screen is smaller
+* - Prevents elements from being too large on small screens 
+-->
+
+<div id="desk-sense-modal">
     <style>
-        h2 {
-            font-size: 28px;
-            color: black
-        }
-        #watch-tracker-modal {
+        #desk-sense-modal {
             position: fixed;
             top: 0;
             left: 0;
@@ -17,20 +37,29 @@
             font-family: sans-serif;
         }
 
-        #watch-tracker-modal #series-select {
+        #desk-sense-modal h2 {
+            font-size: 28px;
+            color: black
+        }
+
+        #series-select {
             border: 2px solid #6C33FF;
             color: #333; /* Text color for the selected option */
+
+            font-size: 14px;
             background-color: white;
         }
-
-        #watch-tracker-modal #series-select option {
+        
+        #series-select option {
             color: #333; /* Text color for dropdown options */
             background-color: white; /* Background color for dropdown options */
+            font-size: 14px;
             padding: 8px;
         }
-
+        
         /* For hover effect on options */
-        #watch-tracker-modal #series-select option:hover {
+        #series-select option:hover {
+            font-size: 14px;
             background-color: #f0f0f0;
             color: #000;
         }
@@ -84,8 +113,6 @@
             margin: 5px;
         }
 
-
-
         .hint {
             font-size: 1.85em;
             margin-top: 10px;
@@ -99,8 +126,8 @@
         }
 
         .desk-sense-button {
-            padding: 8px;
-            height: 30px;
+            padding: 12px;
+            height: auto;
             width: auto;
             background-color: #AAAAAA;
             font-size: 1.55em;
