@@ -49,6 +49,39 @@ class ProgramActivityReport(BaseModel):
 # Chrome stuff
 
 
+class VideoContentEvent(BaseModel):
+    videoId: str
+    tabTitle: str
+    # url: str  # These objects don't care about URL. That's just the ID.
+    # These objs do not track startTime.
+    # They only care about play, pause.
+
+    def __str__(self) -> str:
+        """Custom string representation of the TabChangeEvent."""
+        formatted_time = self.startTime.strftime("%Y-%m-%d %H:%M:%S")
+        return f"TabChangeEvent(tabTitle='{self.tabTitle}', url='{self.url}', startTime='{formatted_time}')"
+
+
+class YouTubePageEvent(VideoContentEvent):
+    channel: str
+
+    def __str__(self) -> str:
+        formatted_time = self.startTime.strftime("%Y-%m-%d %H:%M:%S")
+        return f"YouTubePageEvent(tabTitle='{self.tabTitle}', url='{self.url}', chan='{self.channel}', startTime='{formatted_time}')"
+
+
+class YouTubePlayerEvent(VideoContentEvent):
+    channel: str
+    playerState: str  # Will be "paused" or "playing"
+
+    def __str__(self) -> str:
+        formatted_time = self.startTime.strftime("%Y-%m-%d %H:%M:%S")
+        return (
+            f"YouTubePlayerEvent(videoId='{self.videoId}', tabTitle='{self.tabTitle}', url='{self.url}', chan='{self.channel}', startTime='{formatted_time}'"
+            + f"\n\tplayerState: {self.playerState})"
+        )
+
+
 class TabChangeEventWithUnknownTz(BaseModel):
     tabTitle: str
     url: str
@@ -71,33 +104,9 @@ class UtcDtTabChange(BaseModel):
         return f"TabChangeEvent(tabTitle='{self.tabTitle}', url='{self.url}', startTime='{formatted_time}')"
 
 
-class YouTubeEvent(UtcDtTabChange):
-    channel: str
-    playerState: PlayerState
-    playerPositionInSec: int
-
-    def __str__(self) -> str:
-        """Custom string representation of the YouTubeEvent."""
-        formatted_time = self.startTime.strftime("%Y-%m-%d %H:%M:%S")
-        return (
-            f"YouTubeEvent(tabTitle='{self.tabTitle}', url='{self.url}', chan='{self.channel}', startTime='{formatted_time}'"
-            + f"\n\tplayerState: {self.playerState}, playerPositionInSec={self.playerPositionInSec})"
-        )
+class YouTubeTabChange(UtcDtTabChange):
+    pageEvent: YouTubePageEvent
 
 
-# Video recording stuff
-
-
-class VideoCreateEvent(BaseModel):
-    title: str
-    created_at: datetime
-
-
-class FrameCreateEvent(BaseModel):
-    video_id: int
-    created_at: datetime
-    frame_number: int
-
-
-class VideoCreateConfirmation(BaseModel):
-    video_id: int
+class YouTubePlayerChange(UtcDtTabChange):
+    playerEvent: YouTubePlayerEvent

@@ -12,7 +12,14 @@ from activitytracker.db.dao.queuing.mouse_dao import MouseDao
 from activitytracker.db.models import MouseMove
 from activitytracker.object.classes import TabChangeEventWithLtz
 from activitytracker.object.dto import TypingSessionDto
-from activitytracker.object.pydantic_dto import UtcDtTabChange, YouTubeEvent
+from activitytracker.object.pydantic_dto import (
+    UtcDtTabChange,
+    YouTubePageEvent,
+    YouTubePlayerChange,
+    YouTubePlayerEvent,
+    YouTubeTabChange,
+)
+from activitytracker.object.video_classes import YouTubeInfo
 from activitytracker.tz_handling.time_formatting import convert_to_timezone
 from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.time_wrappers import UserLocalTime
@@ -52,26 +59,42 @@ class TimezoneService:
         user_tz = pytz.timezone(user_tz_str)
         return user_tz.localize(dt)
 
+    def convert_tz_for_youtube_tab_change(self, tab_event: YouTubeTabChange, new_tz: str):
+        youtube_info = YouTubeInfo("paused", tab_event.pageEvent.channel)
+        return self.make_tab_change_event_with_youtube_info(tab_event, youtube_info, new_tz)
+
+    def convert_tz_for_youtube_state_change(
+        self, tab_event: YouTubePlayerChange, new_tz: str
+    ):
+        youtube_info = YouTubeInfo(
+            tab_event.playerEvent.playerState, tab_event.playerEvent.channel
+        )
+        return self.make_tab_change_event_with_youtube_info(tab_event, youtube_info, new_tz)
+
+    def make_tab_change_event_with_youtube_info(
+        self, tab_event, youtube_info: YouTubeInfo, tz
+    ):
+        new_datetime_with_tz: datetime = convert_to_timezone(tab_event.startTime, new_tz)
+        tab_change_with_time_zone = TabChangeEventWithLtz(
+            tab_event.tabTitle,
+            tab_event.url,
+            UserLocalTime(new_datetime_with_tz),
+            youtube_info,
+        )
+        return tab_change_with_time_zone
+
     def convert_tab_change_timezone(
-        self, tab_change_event: UtcDtTabChange | YouTubeEvent, new_tz: str
+        self, tab_change_event: UtcDtTabChange, new_tz: str
     ) -> TabChangeEventWithLtz:
         new_datetime_with_tz: datetime = convert_to_timezone(
             tab_change_event.startTime, new_tz
         )
-        if isinstance(tab_change_event, YouTubeEvent):
-            tab_change_with_time_zone = TabChangeEventWithLtz(
-                tab_change_event.tabTitle,
-                tab_change_event.url,
-                UserLocalTime(new_datetime_with_tz),
-                tab_change_event.channel,
-            )
-        else:
-            tab_change_with_time_zone = TabChangeEventWithLtz(
-                tab_change_event.tabTitle,
-                tab_change_event.url,
-                UserLocalTime(new_datetime_with_tz),
-                None,
-            )
+        tab_change_with_time_zone = TabChangeEventWithLtz(
+            tab_change_event.tabTitle,
+            tab_change_event.url,
+            UserLocalTime(new_datetime_with_tz),
+            None,
+        )
         return tab_change_with_time_zone
 
 

@@ -9,11 +9,11 @@ class VideoInfo(ABC):
 
     # Start time, end time exist on the container class
     player_state: PlayerState
-    player_position_in_sec: int
+    # player_position_in_sec: int  # Don't care
 
-    def __init__(self, player_state, player_position_in_sec):
+    def __init__(self, player_state):
         self.player_state = player_state
-        self.player_position_in_sec = player_position_in_sec
+        # self.player_position_in_sec = player_position_in_sec
 
     @abstractmethod
     def get_name(self):
@@ -22,8 +22,8 @@ class VideoInfo(ABC):
 
 
 class YouTubeInfo(VideoInfo):
-    def __init__(self, channel_name, player_state, player_position_in_sec) -> None:
-        super().__init__(player_state, player_position_in_sec)
+    def __init__(self, channel_name, player_state) -> None:
+        super().__init__(player_state)
 
         self.channel_name = channel_name
 
@@ -33,8 +33,8 @@ class YouTubeInfo(VideoInfo):
 
 class NetflixInfo(VideoInfo):
 
-    def __init__(self, title, player_state, player_position_in_sec) -> None:
-        super().__init__(player_state, player_position_in_sec)
+    def __init__(self, title, player_state) -> None:
+        super().__init__(player_state)
         self.title = title
 
     def get_name(self):
@@ -44,8 +44,8 @@ class NetflixInfo(VideoInfo):
 class VlcInfo(VideoInfo):
     """For VLC Media Player"""
 
-    def __init__(self, file, folder, player_state, player_position_in_sec) -> None:
-        super().__init__(player_state, player_position_in_sec)
+    def __init__(self, file, folder, player_state) -> None:
+        super().__init__(player_state)
         self.file = file
         self.folder = folder
 
@@ -53,6 +53,4 @@ class VlcInfo(VideoInfo):
         return f"VLC: {self.file}"
 
     def __str__(self) -> str:
-        return (
-            f"{self.file}, {self.folder}, {self.player_state}, {self.player_position_in_sec}"
-        )
+        return f"{self.file}, {self.folder}, {self.player_state}"

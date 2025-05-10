@@ -82,7 +82,7 @@ class ActivityArbiter:
         When a program is opened, start a session for the program. And vice versa when it closes.
         """
         if isinstance(new_session, ProgramSession):
-            self.logger.log_white("[Arb]", new_session.window_title)
+            self.logger.log_white("[Exe]", new_session.window_title)
         else:
             self.logger.log_white("[Tab]", new_session.domain)
         assert not isinstance(new_session, dict), "Found an empty dictionary as session"
@@ -93,9 +93,9 @@ class ActivityArbiter:
 
             # end_time & duration is set inside the ASM
 
+            # FIXME: Should be concluded = self.machine.set_new(new_session)
             self.state_machine.set_new_session(new_session)
 
-            # FIXME: the sessions are unlinked by deepcopy so one session's ledger != the copy's ledger
             concluded_session = self.state_machine.get_concluded_session()
             # ### Start the first window
             self.notify_of_new_session(new_session)

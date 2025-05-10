@@ -158,26 +158,6 @@ class ChromeService:
 
         self.handle_session_ready_for_arbiter(initialized)
 
-        # if self.last_entry:
-        #     # ### Ensure both datetimes are timezone-naive
-        #     # Must be utc already since it is set up there
-        #     if self.last_entry.start_time is None:
-        #         raise ValueError(
-        #             "last_entry.start_time was None in Chrome Service")
-        #     concluding_start_time: datetime = self.last_entry.start_time.dt
-
-        #     next_session_start_time = initialized.start_time
-        #     if next_session_start_time is None:
-        #         raise ValueError(
-        #             "initialized.start_time was None in Chrome Service")
-
-        #     # duration_of_alt_tab   # used to be a thing
-        #     duration = next_session_start_time - concluding_start_time
-        #     if duration > timedelta(hours=1):
-        #         self.logger.log_red("## ## ## problem in chrome service")
-        #         raise SuspiciousDurationError("duration")
-        # self.last_entry = initialized
-
     def handle_session_ready_for_arbiter(self, session):
         session_copy = copy.deepcopy(session)
         # Leads to activityArbiter.set_tab_state

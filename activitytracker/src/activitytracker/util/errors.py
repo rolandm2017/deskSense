@@ -78,3 +78,7 @@ class DatabaseProtectionError(RuntimeError):
     """Custom exception for database protection violations."""
 
     pass
+
+
+class MustHaveUtcTzInfoError(Exception):
+    pass
