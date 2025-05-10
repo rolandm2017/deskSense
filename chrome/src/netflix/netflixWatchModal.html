@@ -22,9 +22,9 @@
 * - Prevents elements from being too large on small screens 
 -->
 
-<div id="desk-sense-modal">
+<div id="desksense-modal">
     <style>
-        #desk-sense-modal {
+        #desksense-modal {
             position: fixed;
             top: 0;
             left: 0;
@@ -37,12 +37,13 @@
             font-family: sans-serif;
         }
 
-        #desk-sense-modal h2 {
+        #desksense-modal h2 {
             font-size: 28px;
             color: black
         }
 
         #series-select {
+            height: 38px;
             border: 2px solid #6C33FF;
             color: #333; /* Text color for the selected option */
 
@@ -51,10 +52,12 @@
         }
         
         #series-select option {
+            height: 38px;
             color: #333; /* Text color for dropdown options */
             background-color: white; /* Background color for dropdown options */
             font-size: 14px;
-            padding: 8px;
+            /* padding: 8px; */
+            padding: 12px 8px; /* Increase top/bottom padding from 8px to 12px */
         }
         
         /* For hover effect on options */
@@ -64,7 +67,7 @@
             color: #000;
         }
 
-        #dropdown-selection {
+        #desksense-modal #dropdown-selection {
             border: 2px solid #6C33FF;
         }
 
@@ -119,13 +122,13 @@
             color: #555;
         }
 
-        .desk-sense-rounding {
+        .desksense-rounding {
             
             border-radius: 8px;
             border: 0;
         }
 
-        .desk-sense-button {
+        .desksense-button {
             padding: 12px;
             height: auto;
             width: auto;
@@ -137,7 +140,7 @@
     <div class="modal-box">
         <h2>What are you watching?</h2>
         <div id="dropdown-section">
-            <select id="series-select" class="desk-sense-rounding">
+            <select id="series-select" class="desksense-rounding">
                 <option>Hilda</option>
                 <option>The Three Body Problem</option>
                 <option>The Agency</option>
@@ -145,15 +148,15 @@
                 <option>The Hollow</option>
             </select>
             <p class="hint">Can't find your title?</p>
-            <button id="new-entry-btn" class="desk-sense-button desk-sense-rounding">New entry</button>
+            <button id="new-entry-btn" class="desksense-button desksense-rounding">New entry</button>
         </div>
         <div id="input-section" style="display: none;">
             <input type="text" id="series-input" placeholder="Enter series name">
-            <button id="cancel-entry-btn" class="desk-sense-button desk-sense-rounding">Cancel</button>
+            <button id="cancel-entry-btn" class="desksense-button desksense-rounding">Cancel</button>
         </div>
         <div class="modal-actions">
-            <button id="confirm-btn" class="desk-sense-button desk-sense-rounding">Confirm</button>
-            <button id="ignore-btn" class="desk-sense-button desk-sense-rounding">Don't ask again</button>
+            <button id="confirm-btn" class="desksense-button desksense-rounding">Confirm</button>
+            <button id="ignore-btn" class="desksense-button desksense-rounding">Don't ask again</button>
         </div>
     </div>
 </div>
