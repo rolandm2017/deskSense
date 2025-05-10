@@ -21,6 +21,7 @@
         "@types/chrome": "^0.0.315",
         "babel-loader": "^10.0.0",
         "happy-dom": "^17.4.4",
+        "html-loader": "^5.1.0",
         "ts-loader": "^9.5.2",
         "typescript": "^5.8.3",
         "vitest": "^3.1.1",

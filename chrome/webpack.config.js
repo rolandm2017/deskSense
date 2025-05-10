@@ -13,6 +13,7 @@ export default {
         // Add more entry points as needed
         videoListeners: "./src/videoListeners.ts",
         netflixBrowse: "./src/netflixBrowse.ts",
+        netflixWatch: "./src/netflix/netflixWatch.html",
     },
     output: {
         path: path.resolve(__dirname, "dist"),
@@ -37,6 +38,10 @@ export default {
                         presets: ["@babel/preset-env"],
                     },
                 },
+            },
+            {
+                test: /\.html$/, // Load HTML files into js
+                use: "html-loader",
             },
         ],
     },

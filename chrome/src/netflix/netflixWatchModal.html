@@ -1,0 +1,79 @@
+<div id="watch-tracker-modal">
+    <style>
+        #watch-tracker-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: sans-serif;
+        }
+
+        .modal-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 10001;
+            width: 300px;
+            text-align: center;
+        }
+
+        .modal-box select,
+        .modal-box input {
+            width: 100%;
+            padding: 6px;
+            margin-top: 10px;
+        }
+
+        .modal-actions {
+            margin-top: 15px;
+        }
+
+        .modal-actions button {
+            margin: 5px;
+        }
+
+        .hint {
+            font-size: 0.85em;
+            margin-top: 10px;
+            color: #555;
+        }
+    </style>
+    <div class="modal-backdrop"></div>
+    <div class="modal-box">
+        <h2>What are you watching?</h2>
+        <div id="dropdown-section">
+            <select id="series-select">
+                <option>Hilda</option>
+                <option>The Three Body Problem</option>
+                <option>The Agency</option>
+                <option>Lupin</option>
+                <option>The Hollow</option>
+            </select>
+            <p class="hint">Can't find your title?</p>
+            <button id="new-entry-btn">New entry</button>
+        </div>
+        <div id="input-section" style="display: none;">
+            <input type="text" id="series-input" placeholder="Enter series name">
+            <button id="cancel-entry-btn">Cancel</button>
+        </div>
+        <div class="modal-actions">
+            <button id="confirm-btn">Confirm</button>
+            <button id="ignore-btn">Don't ask again</button>
+        </div>
+    </div>
+</div>
+
