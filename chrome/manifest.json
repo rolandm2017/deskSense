@@ -19,7 +19,7 @@
     "content_scripts": [
         {
             "matches": ["https://www.youtube.com/watch*"],
-            "js": ["dist/videoPolling.bundle.js"],
+            "js": ["dist/videoListeners.bundle.js"],
             "run_at": "document_end"
         }
     ]
