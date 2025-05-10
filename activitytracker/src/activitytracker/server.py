@@ -12,7 +12,9 @@ from fastapi import (
     Request,
     status,
 )
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 import asyncio
@@ -213,6 +215,15 @@ async def health_check():
         return {"status": "healthy"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    print("VALIDATION ERROR:", exc.errors())
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()},
+    )
 
 
 @app.get("/api/dashboard/timeline", response_model=TimelineRows)

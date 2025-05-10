@@ -42,9 +42,9 @@ class SystemStatusDao(UtilityDaoMixin):
             self.logger.log_green("info: Writing program startup entry\n")
             self.add_activitytracker_started(current_time)
         else:
-            self.logger.log_green(
-                "info: continued session at " + current_time.dt.strftime("%H:%M:%S")
-            )
+            # self.logger.log_green(
+            #     "info: continued session at " + current_time.dt.strftime("%H:%M:%S")
+            # )
             self.add_new_log(current_time)
 
     def add_activitytracker_started(self, current_time) -> None:

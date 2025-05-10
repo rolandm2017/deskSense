@@ -73,13 +73,16 @@ class UtcDtTabChange(BaseModel):
 
 class YouTubeEvent(UtcDtTabChange):
     channel: str
-    player_state: PlayerState
-    player_position_in_sec: int
+    playerState: PlayerState
+    playerPositionInSec: int
 
     def __str__(self) -> str:
         """Custom string representation of the YouTubeEvent."""
         formatted_time = self.startTime.strftime("%Y-%m-%d %H:%M:%S")
-        return f"YouTubeEvent(tabTitle='{self.tabTitle}', url='{self.url}', chan='{self.channel}', startTime='{formatted_time}')"
+        return (
+            f"YouTubeEvent(tabTitle='{self.tabTitle}', url='{self.url}', chan='{self.channel}', startTime='{formatted_time}'"
+            + f"\n\tplayerState: {self.playerState}, playerPositionInSec={self.playerPositionInSec})"
+        )
 
 
 # Video recording stuff

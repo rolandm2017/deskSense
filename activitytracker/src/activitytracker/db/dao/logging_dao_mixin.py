@@ -1,22 +1,20 @@
-from sqlalchemy import select, or_
+from sqlalchemy import or_, select
 from sqlalchemy.orm import DeclarativeMeta
-
-from typing import TypeVar, Callable, Type
 
 from datetime import timedelta
 
-from activitytracker.db.models import DomainSummaryLog, ProgramSummaryLog
+from typing import Callable, Type, TypeVar
 
+from activitytracker.db.models import DomainSummaryLog, ProgramSummaryLog
 from activitytracker.tz_handling.time_formatting import (
+    attach_tz_to_all,
     convert_to_utc,
     get_start_of_day_from_datetime,
     get_start_of_day_from_ult,
-    attach_tz_to_all,
 )
-from activitytracker.util.log_dao_helper import group_logs_by_name
 from activitytracker.util.errors import ImpossibleToGetHereError
+from activitytracker.util.log_dao_helper import group_logs_by_name
 from activitytracker.util.time_wrappers import UserLocalTime
-
 
 T = TypeVar("T", bound=DeclarativeMeta)
 
@@ -48,6 +46,7 @@ class LoggingDaoMixin:
     ):
         finalized_duration = (session.end_time.dt - session.start_time.dt).total_seconds()
         if finalized_duration < 0:
+
             print("session:", session)
             print("log", log)
             raise ImpossibleToGetHereError("A negative duration is impossible")

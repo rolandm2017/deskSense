@@ -1,20 +1,19 @@
 from datetime import timedelta
 
-
-from activitytracker.object.classes import (
-    ChromeSession,
-    ProgramSession,
-    CompletedChromeSession,
-    CompletedProgramSession,
-)
 from activitytracker.object.arbiter_classes import (
-    ChromeInternalState,
     ApplicationInternalState,
+    ChromeInternalState,
     InternalState,
 )
-from activitytracker.util.program_tools import window_is_chrome
+from activitytracker.object.classes import (
+    ChromeSession,
+    CompletedChromeSession,
+    CompletedProgramSession,
+    ProgramSession,
+)
 from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.copy_util import snapshot_obj_for_tests
+from activitytracker.util.program_tools import window_is_chrome
 from activitytracker.util.time_wrappers import UserLocalTime
 
 
@@ -82,8 +81,13 @@ class ActivityStateMachine:
             return
 
         duration = incoming_session_start - state.session.start_time
+        print("concluding session: ", duration)
 
         session_copy = snapshot_obj_for_tests(state.session)
+
+        # FIXME: (1) This whole file can go. It's just a session container.
+        # FIXME: Durations are negative sometimes
+        # print(type(duration), duration.total_seconds(), "980ru")
 
         completed = session_copy.to_completed(incoming_session_start)
         completed.duration = duration
