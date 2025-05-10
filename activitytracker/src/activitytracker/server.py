@@ -552,7 +552,7 @@ async def receive_chrome_tab(
 ):
     logger.log_purple("[LOG] Chrome Tab Received")
     try:
-        field_has_utc_tzinfo_else_throw(tab_change_event)
+        field_has_utc_tzinfo_else_throw(tab_change_event.startTime)
         user_id = 1  # temp until i have more than 1 user
 
         # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
