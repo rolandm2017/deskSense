@@ -7,6 +7,7 @@ const DESKSENSE_BACKEND_URL = "http://localhost:8000";
 const chromeTabUrl = "/api/chrome/tab";
 const ignoredDomainUrl = "/api/chrome/ignored";
 const youTubeUrl = "/api/chrome/youtube/new";
+const youtubePlayerStateUrl = "/api/chrome/youtube/state";
 
 interface YouTubePayload {
     videoId: string;
@@ -26,14 +27,16 @@ class YouTubeApi {
         const payload = {
             videoId: videoId,
             tabTitle,
-            channelName,
+            channel: channelName,
+            playerState: "playing",
             // I don't think I care about the timestamp.
             // Like, what if they did a bunch of rewinding?
             // The timestamp would be messed and not representative of
             // their time spent watching content that day.
             // timestamp: 0
         };
-        console.log("The payload would be ", payload);
+        console.log("The play payload was be ", payload);
+        this.sendPayload(youtubePlayerStateUrl, payload);
     }
 
     sendPauseEvent({ videoId, tabTitle, channelName }: YouTubePayload) {
@@ -41,11 +44,13 @@ class YouTubeApi {
         const payload = {
             videoId,
             tabTitle,
-            channelName,
+            channel: channelName,
+            playerState: "paused",
             // timestamp: 0,
         };
 
-        console.log("The pause payload would be ", payload);
+        console.log("The pause payload was be ", payload);
+        this.sendPayload(youtubePlayerStateUrl, payload);
     }
 }
 
@@ -133,7 +138,15 @@ class ServerApi {
                 if (response.status === 204) {
                     // console.log("payload received")
                 } else if (response.status == 422) {
-                    console.log("Validation Error Details:", response.json());
+                    console.log("Retrieving error json");
+                    response.json().then((r) => {
+                        // Make sure we're logging the actual error data, not a pending Promise
+                        console.log(
+                            "[err response] Validation Error Details for " +
+                                targetUrl,
+                            JSON.stringify(r, null, 2)
+                        );
+                    });
                 } else {
                     throw new Error(
                         `Request failed with status ${response.status}`

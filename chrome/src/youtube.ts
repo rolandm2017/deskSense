@@ -61,10 +61,10 @@ export function extractChannelNameFromUrl(youTubeUrl: string) {
 
 export function getYouTubeVideoId(url: string) {
     let videoId = url.split("v=")[1]; // Extract video ID
-    console.log("VIDEO ID: ", videoId, videoId.includes("&t"));
+    // console.log("VIDEO ID: ", videoId, videoId.includes("&t"));
     if (videoId.includes("&t")) {
         videoId = videoId.split("&")[0];
-        console.log("And NOW it is: ", videoId);
+        // console.log("And NOW it is: ", videoId);
     }
     return videoId;
 }

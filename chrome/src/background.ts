@@ -61,17 +61,27 @@ function handleYouTubeUrl(
                         // TODO: Get the video player info
                         channelName = results[0].result;
                     }
+                    console.log(
+                        "Detected ",
+                        channelName,
+                        " In new page",
+                        tabTitle
+                    );
                     const youTubeVisit = new YouTubeViewing(
                         videoId,
                         tabTitle,
                         channelName
                     );
-                    youTubeVisit.sendInitialInfoToServer();
+                    // FIXME: You don't need to send the page notification.
+                    // FIXME: The parent func will send it for us
+                    // FIXME: "api.reportTabSwitch(domain, tab.title ? tab.title : "No title found");"
+                    // youTubeVisit.sendInitialInfoToServer();
                     viewingTracker.setCurrent(youTubeVisit);
                 }
             );
             // NOTE: ** do not change this 1500 ms delay **
-        }, 1500); // 1.5 second delay. The absolute minimum value.
+            // was 1500 but tha'ts too short
+        }, 2900); // 1.5 second delay. The absolute minimum value.
         // 1.0 sec delay still had the "prior channel reported as current" problem
     } else if (isOnSomeChannel(tab.url)) {
         // For channel pages, we can extract from the URL
@@ -92,12 +102,67 @@ function putTabIdIntoList(tabId: number) {
     tabsWithPollingList.push(tabId);
 }
 
+interface ProcessedUrlEntry {
+    timestamp: number;
+    url: string;
+}
+
+// FIXME: What to do when the user visits the same URL 2-3x on multiple tabs?
+const processedTabs = new Map<number, ProcessedUrlEntry>();
+
+const PAGE_LOAD_DEBOUNCE_DELAY = 4000;
+
 function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
-    console.log("Tab.url", tab.url);
-    if (tab.url === undefined) {
+    console.log("Tab.url and ID", tab.url, tab.id);
+
+    if (!tab.url) {
         console.error("No url found");
         return;
     }
+
+    const now = Date.now();
+
+    // Use tab ID-based debouncing if we have a tab ID
+    if (!tab.id) {
+        throw Error("A tab had no ID");
+    }
+    const tabId = tab.id!;
+
+    // Check if this tab with this URL was processed recently
+    const lastProcessed = processedTabs.get(tabId);
+    if (
+        lastProcessed &&
+        lastProcessed.url === tab.url &&
+        now - lastProcessed.timestamp < PAGE_LOAD_DEBOUNCE_DELAY
+    ) {
+        console.log(
+            "Skipping recently processed URL:",
+            tab.url,
+            "in tab:",
+            tabId
+        );
+        return;
+    }
+
+    // Mark this URL as processed for this tab
+    processedTabs.set(tabId, {
+        timestamp: now,
+        url: tab.url,
+    });
+
+    // Clean up old entries periodically
+    // 12 chosen because it seems to only happen on youtube and refreshed pages
+    if (processedTabs.size > 12) {
+        const tabsToDelete: number[] = [];
+        for (const [tabKey, entry] of processedTabs.entries()) {
+            if (now - entry.timestamp > 10000) {
+                // Remove entries older than 10 seconds
+                tabsToDelete.push(tabKey);
+            }
+        }
+        tabsToDelete.forEach((key) => processedTabs.delete(key));
+    }
+
     const domain = getDomainFromUrl(tab.url);
     if (domain) {
         const ignored = isDomainIgnored(domain, ignoredDomains.getAll());
@@ -112,7 +177,6 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
             handleYouTubeUrl(tab, putTabIdIntoList);
             return;
         }
-        console.log("New tab created:", domain, "\tTitle:", tab.title);
         api.reportTabSwitch(domain, tab.title ? tab.title : "No title found");
     } else {
         console.log("No domain found for ", tab.url);
@@ -120,11 +184,12 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
 }
 
 // New tab created
-chrome.tabs.onCreated.addListener((tab) => {
-    if (tab.url) {
-        getDomainFromUrlAndSubmit(tab);
-    }
-});
+// DISABLED May 9. Not sure it needs to run!
+// chrome.tabs.onCreated.addListener((tab) => {
+//     if (tab.url) {
+//         getDomainFromUrlAndSubmit(tab);
+//     }
+// });
 
 // runs when you shut a tab
 chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
@@ -230,7 +295,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 /*
- * Claude says:
+ * Claude says, re: onUpdated:
  *
  * The chrome.tabs.onUpdated event specifically triggers when any tab in the browser undergoes a state change. This event can fire for various reasons:
  *
@@ -244,7 +309,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Listen for any tab updates
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    // Chrome's onUpdated event can indeed fire multiple times for a single user action like a refresh
     if (changeInfo.status === "complete" && tab.url) {
+        console.log("onUpdated - getDomainFromUrl");
         getDomainFromUrlAndSubmit(tab);
     }
 });
@@ -253,6 +320,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 chrome.tabs.onActivated.addListener((activeInfo) => {
     chrome.tabs.get(activeInfo.tabId, (tab) => {
         if (tab.url) {
+            console.log("onActivated - getDomainFromUrl");
             getDomainFromUrlAndSubmit(tab);
         }
     });
