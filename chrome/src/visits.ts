@@ -1,5 +1,6 @@
 // visits.ts
-import { pollingInterval } from "./channelExtractor";
+
+import { api } from "./api";
 
 // A Visit: As in, A PageVisit
 // A Viewing: A window of time spent actively viewing the video.
@@ -14,9 +15,12 @@ function getTimeSpentWatching() {
     return 5;
 }
 
-class VisitPayloadTimer {
-    // a timer that tracks when to dispatch payload. KISS. Minimal.k
+class ViewingPayloadTimer {
+    // a timer that tracks when to dispatch payload. KISS. Minimal.
     dispatchTime: Date;
+
+    // TODO: Every two minutes send a KeepAlive signal: "Yep, still here"
+    // If no KeepAlive signal, end session after five minutes.
 
     constructor(dispatchTime: Date) {
         this.dispatchTime = dispatchTime;
@@ -44,29 +48,29 @@ class VisitPayloadTimer {
     }
 }
 
-class VisitTracker {
+class ViewingTracker {
     /*
-     * Class is a container enabling cross-file visit management.
+     * Class is a container enabling cross-file Viewing management.
      */
-    current: YouTubeVisit | NetflixVisit | undefined;
-    timer: VisitPayloadTimer;
+    current: YouTubeViewing | NetflixViewing | undefined;
+    timer: ViewingPayloadTimer;
 
     constructor() {
         this.current = undefined;
         const v = new Date();
         const timerDuration = getTimeSpentWatching();
         const temp = new Date();
-        this.timer = new VisitPayloadTimer(temp);
+        this.timer = new ViewingPayloadTimer(temp);
     }
 
-    setCurrent(current: YouTubeVisit | NetflixVisit) {
+    setCurrent(current: YouTubeViewing | NetflixViewing) {
         if (this.current) {
-            if (this.current instanceof YouTubeVisit) {
-                // report old Visit
-                console.log("[debug] Reporting YouTube Visit");
+            if (this.current instanceof YouTubeViewing) {
+                // report old Viewing
+                console.log("[debug] Reporting YouTube Viewing");
                 // api.reportYouTube("TODO", "TODO");
             } else {
-                console.log("[debug] Reporting Netflix Visit");
+                console.log("[debug] Reporting Netflix Viewing");
                 // api.reportNetflix("TODO", "TODO");
             }
         }
@@ -79,7 +83,7 @@ class VisitTracker {
         return true;
     }
 
-    endVisit() {
+    endViewing() {
         // used to report the final value on window close
         if (this.current) {
             this.current.conclude();
@@ -87,10 +91,10 @@ class VisitTracker {
     }
 }
 
-export const visitTracker = new VisitTracker();
+export const viewingTracker = new ViewingTracker();
 
 class Segment {
-    // A segment of time in a visit
+    // A segment of time in a Viewing
     start: number;
     end: number;
     timestamps: number[];
@@ -115,7 +119,7 @@ class Segment {
     }
 }
 
-class VideoContentVisit {
+class VideoContentViewing {
     //
     videoId: string;
     tabTitle: string;
@@ -133,6 +137,14 @@ class VideoContentVisit {
         this.playerState = "paused";
     }
 
+    startTimeTracking() {
+        throw new Error("Not yet implemented");
+    }
+
+    pauseTracking() {
+        throw new Error("Not yet implemented");
+    }
+
     sendInitialInfoToServer() {
         // delivers initial info
     }
@@ -142,17 +154,21 @@ class VideoContentVisit {
     }
 
     sufficientDurationForReport() {
-        // if the visit lasted 60 sec, report it and start fresh.
+        // if the Viewing lasted 60 sec, report it and start fresh.
     }
 
     // Can tell also *how long* player was paused for.
+
+    // TODO: If pause lasts only five sec, ignore that it was paused
+    //      -> do not send payload
+    //      -> do not even stop tracking time
 
     isStillPlaying() {
         const previous = this.timestamps.at(-2);
         const current = this.timestamps.at(-1);
         if (previous && current) {
             const gap = previous - current;
-            const stillPlaying = gap === pollingInterval;
+            const stillPlaying = gap === 2000;
             if (stillPlaying) {
                 // still playing
                 this.playerState = "playing";
@@ -173,7 +189,25 @@ class VideoContentVisit {
     }
 }
 
-export class NetflixVisit extends VideoContentVisit {
+export class YouTubeViewing extends VideoContentViewing {
+    channelName: string;
+
+    constructor(videoId: string, tabTitle: string, channelName: string) {
+        super(videoId, tabTitle);
+        this.channelName = channelName;
+        // timestamps arr in superclass
+    }
+
+    startTimeTracking() {
+        api.youtube.sendPlayEvent();
+    }
+
+    pauseTracking() {
+        api.youtube.sendPauseEvent();
+    }
+}
+
+export class NetflixViewing extends VideoContentViewing {
     // TODO
     contentTitle: string;
 
@@ -182,14 +216,12 @@ export class NetflixVisit extends VideoContentVisit {
         this.contentTitle = contentTitle;
         // timestamps arr in superclass
     }
-}
 
-export class YouTubeVisit extends VideoContentVisit {
-    channelName: string;
+    startTimeTracking() {
+        api.netflix.sendPlayEvent();
+    }
 
-    constructor(videoId: string, tabTitle: string, channelName: string) {
-        super(videoId, tabTitle);
-        this.channelName = channelName;
-        // timestamps arr in superclass
+    pauseTracking() {
+        api.netflix.sendPauseEvent();
     }
 }

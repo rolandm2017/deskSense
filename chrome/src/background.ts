@@ -10,7 +10,7 @@ import {
     watchingShorts,
 } from "./youtube";
 
-import { visitTracker, YouTubeVisit } from "./visits";
+import { viewingTracker, YouTubeViewing } from "./visits";
 
 import { ignoredDomains, isDomainIgnored, loadDomains } from "./ignoreList";
 
@@ -62,13 +62,13 @@ function handleYouTubeUrl(
                     } else {
                         channelName = "Unknown Channel";
                     }
-                    const youTubeVisit = new YouTubeVisit(
+                    const youTubeVisit = new YouTubeViewing(
                         videoId,
                         tabTitle,
                         channelName
                     );
                     youTubeVisit.sendInitialInfoToServer();
-                    visitTracker.setCurrent(youTubeVisit);
+                    viewingTracker.setCurrent(youTubeVisit);
                 }
             );
             // NOTE: ** do not change this 1500 ms delay **
@@ -120,6 +120,14 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
     }
 }
 
+// New tab created
+chrome.tabs.onCreated.addListener((tab) => {
+    if (tab.url) {
+        getDomainFromUrlAndSubmit(tab);
+    }
+});
+
+// runs when you shut a tab
 chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
     // Your code to run when a tab is closed
     console.log(`Tab ${tabId} was closed`);
@@ -130,27 +138,38 @@ chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
     const isYouTubeWatchPage = tabsWithPollingList.includes(tabId);
 
     // Perform any cleanup or final operations here
-    if (isYouTubeWatchPage && visitTracker.current) {
+    if (isYouTubeWatchPage && viewingTracker.current) {
         // send final data to server
-        visitTracker.endVisit();
+        viewingTracker.endViewing();
     }
 });
+
+function cancelPauseRecording(timeoutId: number) {
+    clearTimeout(timeoutId);
+}
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log(message, sender);
+    let endSessionTimeoutId;
     if (message.event === "play") {
+        if (endSessionTimeoutId) {
+            cancelPauseRecording(endSessionTimeoutId);
+        }
+        if (viewingTracker.current) {
+            viewingTracker.current.startTimeTracking();
+        }
         console.log("Play detected");
     } else if (message.event === "pause") {
         console.log("Pause detected");
+        if (viewingTracker.current) {
+            // TODO: Set delay to pause tracking
+
+            endSessionTimeoutId = setTimeout(() => {
+                viewingTracker.current.pauseTracking();
+            }, 3000);
+        }
     } else {
         console.log("Unknown event:", message);
-    }
-});
-
-// New tab created
-chrome.tabs.onCreated.addListener((tab) => {
-    if (tab.url) {
-        getDomainFromUrlAndSubmit(tab);
     }
 });
 

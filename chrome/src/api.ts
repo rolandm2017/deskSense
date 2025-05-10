@@ -8,7 +8,53 @@ const chromeTabUrl = "/api/chrome/tab";
 const ignoredDomainUrl = "/api/chrome/ignored";
 const youTubeUrl = "/api/chrome/youtube/new";
 
+class YouTubeApi {
+    sendPayload: Function;
+    constructor(sendPayload: Function) {
+        this.sendPayload = sendPayload;
+    }
+
+    sendPlayEvent() {
+        // The server knows which VideoSession it's modifying because
+        // the currently active tab deliverable, contained the ...
+        const payload = {
+            videoId: "",
+            timestamp: 0,
+        };
+    }
+
+    sendPauseEvent() {
+        const payload = {
+            videoId: "",
+            timestamp: 0,
+        };
+    }
+}
+
+class NetflixApi {
+    sendPayload: Function;
+    constructor(sendPayload: Function) {
+        this.sendPayload = sendPayload;
+    }
+
+    sendPlayEvent() {
+        //
+    }
+
+    sendPauseEvent() {
+        //
+    }
+}
+
 class ServerApi {
+    youtube: YouTubeApi;
+    netflix: NetflixApi;
+
+    constructor() {
+        this.youtube = new YouTubeApi(this.sendPayload.bind(this));
+        this.netflix = new NetflixApi(this.sendPayload.bind(this));
+    }
+
     reportTabSwitch(domain: string, tabTitle: string) {
         const payload = {
             url: domain, // Must match the pydantic definition
