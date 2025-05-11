@@ -350,3 +350,29 @@ chrome.runtime.onInstalled.addListener(() => {
 
     loadDomains();
 });
+
+/*
+ * Open the Netflix Watch modal when you click the icon
+ */
+
+chrome.action.onClicked.addListener(async (tab) => {
+    console.log("Action.Onclick ");
+    // First check if we're on any Netflix page
+    if (tab.id && tab.url && tab.url.includes("wikipedia")) {
+        // Inject the content script
+        await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ["dist/netflixWatch.bundle.js"],
+        });
+
+        // If your script needs to know it was triggered by the icon click,
+        // you can pass a message after injection
+        chrome.tabs.sendMessage(tab.id, { action: "extensionIconClicked" });
+    } else {
+        // Optionally, show a notification or take other action
+        console.log(
+            "Not on Netflix - script not injected. Tab ID was: ",
+            tab.id
+        );
+    }
+});

@@ -12,6 +12,7 @@
         "type": "module"
     },
     "host_permissions": ["http://localhost:8000/*", "*://*.youtube.com/*"],
+
     "options_ui": {
         "page": "src/options.html",
         "open_in_tab": true
@@ -29,6 +30,11 @@
         },
         {
             "matches": ["https://www.netflix.com/watch/*"],
+            "js": ["dist/netflixWatch.bundle.js"],
+            "run_at": "document_idle"
+        },
+        {
+            "matches": ["https://en.wikipedia.org/wiki/Main_Page"],
             "js": ["dist/netflixWatch.bundle.js"],
             "run_at": "document_idle"
         }

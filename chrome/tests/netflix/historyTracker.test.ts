@@ -13,6 +13,11 @@ import { pretendPreexistingHistory } from "./mockData";
 // TODO: Confirm you can delete an entry
 // TODO: Call it a day
 
+// TODO: get the first user input added in
+// TODO: prove that a user input makes it to the "addEntryToDb" function
+// TODO: 
+// 
+
 */
 
 describe("WatchHistoryTracker", () => {
@@ -39,4 +44,5 @@ describe("WatchHistoryTracker", () => {
         expect(historyTracker.saveHistory).toBeCalled();
         expect(historyTracker.cleanupOldHistory).toBeCalled();
     });
+    test("The sorting function");
 });

@@ -14,11 +14,21 @@ import modalHtml from "./netflixWatchModal.html";
 
 import { MissingComponentError } from "./errors";
 
-import { historyTracker } from "./historyTracker";
+import { historyTracker } from "./historyTrackerInit";
+
+import { EL_IDS } from "./constants";
+
+function getElementWithGivenIdOrThrow(id: string) {
+    const element = document.getElementById(id);
+    if (!element) {
+        throw new MissingComponentError(`Misspelled or missing element: ${id}`);
+    }
+    return element;
+}
 
 function injectModal() {
     // Don't inject if modal already exists
-    if (document.getElementById("watch-tracker-modal")) {
+    if (document.getElementById(EL_IDS.MODAL)) {
         return;
     }
 
@@ -29,6 +39,7 @@ function injectModal() {
     // Inject HTML
     const div = document.createElement("div");
     div.innerHTML = modalHtml;
+    // Append straight to the document body
     document.body.appendChild(div.firstElementChild!);
 
     // Wait for elements to be available
@@ -36,39 +47,42 @@ function injectModal() {
         selector: string,
         callback: (element: Element) => void
     ) => {
-        const element = document.querySelector(selector);
+        console.log("In waiting for el");
+        const element = document.getElementById(selector);
         if (element) {
+            console.log("El exists");
             callback(element);
         } else {
-            requestAnimationFrame(() => waitForElement(selector, callback));
+            console.log("No el found, requesting animation frfame");
+            setTimeout(() => {
+                requestAnimationFrame(() => waitForElement(selector, callback));
+            }, 2000);
         }
     };
-
-    waitForElement("#watch-tracker-modal", (modal) => {
+    console.log("Waiting for element");
+    waitForElement(EL_IDS.MODAL, (modal) => {
         // Now you can safely populate your dropdown
-        const dropdown = document.getElementById("series-select");
-        if (dropdown) {
-            // Populate dropdown options here
-            historyTracker.getTopFive().then((topFiveList) => {
-                topFiveList.forEach((item) => {
-                    const option = document.createElement("option");
-                    option.value = item;
-                    option.textContent = item;
-                    dropdown.appendChild(option);
-                });
+        console.log("Modal ready");
+        const dropdown = getElementWithGivenIdOrThrow(EL_IDS.SERIES_SELECT);
+        // Populate dropdown options here
+        historyTracker.getTopFive().then((topFiveList) => {
+            topFiveList.forEach((item) => {
+                const option = document.createElement("option");
+                option.value = item;
+                option.textContent = item;
+                dropdown.appendChild(option);
             });
-        } else {
-            throw new MissingComponentError("Missing series select");
-        }
-
+        });
+        console.log("Settin gup event listerners");
         // Add the rest of your event listeners
         setupEventListeners();
     });
 }
 
 function setupEventListeners() {
+    console.log("Injecting listeners in setupEventListeners");
     // Add event listeners
-    const modal = document.getElementById("watch-tracker-modal");
+    const modal = getElementWithGivenIdOrThrow(EL_IDS.MODAL);
 
     if (!modal) {
         throw new MissingComponentError("The whole modal");
@@ -76,14 +90,25 @@ function setupEventListeners() {
 
     document.body.appendChild(modal);
 
-    const dropdownSection = document.getElementById("dropdown-section");
-    const inputSection = document.getElementById("input-section");
-    const newEntryBtn = document.getElementById("new-entry-btn");
-    const cancelEntryBtn = document.getElementById("cancel-entry-btn");
+    const dropdownSection = getElementWithGivenIdOrThrow(
+        EL_IDS.DROPDOWN_SECTION_DIV
+    );
+    const inputSection = getElementWithGivenIdOrThrow(EL_IDS.INPUT_SECTION_DIV);
+    const newEntryBtn = getElementWithGivenIdOrThrow(EL_IDS.NEW_ENTRY_BTN);
+    const cancelEntryBtn = getElementWithGivenIdOrThrow(
+        EL_IDS.CANCEL_ENTRY_BTN
+    );
 
-    if (!newEntryBtn || !dropdownSection || !inputSection || !cancelEntryBtn) {
-        throw new MissingComponentError("Buttons or dropdown");
-    }
+    const confirmButton = getElementWithGivenIdOrThrow(EL_IDS.CONFIRM_BTN);
+    const ignoreButton = getElementWithGivenIdOrThrow(EL_IDS.CANCEL_ENTRY_BTN);
+
+    const seriesSelect = getElementWithGivenIdOrThrow(
+        EL_IDS.SERIES_SELECT
+    ) as HTMLSelectElement;
+
+    const seriesInput = getElementWithGivenIdOrThrow(
+        EL_IDS.SERIES_INPUT
+    ) as HTMLInputElement;
 
     newEntryBtn.onclick = () => {
         dropdownSection.style.display = "none";
@@ -95,28 +120,15 @@ function setupEventListeners() {
         dropdownSection.style.display = "block";
     };
 
-    const confirmButton = document.getElementById("confirm-btn");
-
-    if (!confirmButton) {
-        throw new MissingComponentError("Confirm button");
-    }
-
     confirmButton.onclick = () => {
+        console.log("In confirm btn onclick");
         const value =
             inputSection.style.display === "none"
-                ? (
-                      document.getElementById(
-                          "series-select"
-                      ) as HTMLSelectElement
-                  ).value
-                : (
-                      document.getElementById(
-                          "series-input"
-                      ) as HTMLInputElement
-                  ).value.trim();
+                ? seriesSelect.value
+                : seriesInput.value.trim();
 
         if (!value) return alert("Please enter or select a series name.");
-
+        console.log("Saving ", value);
         // Save value to chrome.storage.local
 
         historyTracker.recordEnteredValue(value);
@@ -124,19 +136,13 @@ function setupEventListeners() {
         modal.remove();
     };
 
-    const ignoreButton = document.getElementById("ignore-btn");
-
-    if (!ignoreButton) {
-        throw new MissingComponentError("Ignore button");
-    }
-
     ignoreButton.onclick = () => {
         // Get current video URL or ID to ignore
         const currentUrl = window.location.href;
         console.log("current URL", currentUrl);
 
         // Save video to ignore list
-        historyTracker.handleIgnoreUrl(currentUrl);
+        historyTracker.recordIgnoredUrl(currentUrl);
 
         modal.remove();
     };

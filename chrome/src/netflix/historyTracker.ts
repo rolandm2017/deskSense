@@ -11,14 +11,14 @@ export interface WatchEntry {
 }
 
 export class WatchHistoryTracker {
-    pastHistory: WatchEntry[];
+    allHistory: WatchEntry[];
     todayHistory: WatchEntry[];
     storageConnection: StorageInterface;
 
     constructor(storageConnection: StorageInterface) {
         this.storageConnection = storageConnection;
         this.todayHistory = [];
-        this.pastHistory = [];
+        this.allHistory = [];
         this.loadHistory();
         // this.setupEventListeners();
     }
@@ -43,37 +43,46 @@ export class WatchHistoryTracker {
             });
 
             // Keep only last 10 days of active data
-            await this.cleanupOldHistory();
-            await this.saveHistory();
+            // await this.cleanupOldHistory();
+            // await this.saveHistory();
         }
     }
 
     async getTopFive(): Promise<string[]> {
-        this.cleanupOldHistory();
-        return new Promise((resolve, reject) => {
-            resolve([
-                "Hilda",
-                "Lupin",
-                "The Three Body Problem",
-                "L'Agence",
-                "The Invisible Guest",
-            ]);
+        // this.cleanupOldHistory();
+        const topFiveStrings = this.allHistory
+            .map((h) => h.showName)
+            .slice(0, 5);
+
+        return new Promise((resolve) => {
+            resolve(topFiveStrings);
         });
+
+        // return new Promise((resolve, reject) => {
+        //     resolve([
+        //         "Hilda",
+        //         "Lupin",
+        //         "The Three Body Problem",
+        //         "L'Agence",
+        //         "The Invisible Guest",
+        //     ]);
+        // });
     }
 
     recordEnteredValue(title: string) {
-        console.log(title);
+        console.log("[tracker - recording]", title);
     }
 
-    handleIgnoreUrl(url: string) {
-        console.log(url);
+    recordIgnoredUrl(url: string) {
+        console.log("[tracker - ignoring]", url);
     }
 
     // Load history from Chrome storage
     async loadHistory() {
         // TODO
         this.storageConnection.readAll().then((days) => {
-            this.pastHistory = days;
+            console.log("Load history found: ", days);
+            this.allHistory = days;
 
             // FIXME: but how to get previous entries from today? maybe
             // go into the pastHistory and get the one for today
@@ -141,7 +150,7 @@ export class WatchHistoryTracker {
     // Remove entries older than 10 active days
     async cleanupOldHistory() {
         // TODO: Get just the dates, as a Set()
-        const pastHistoryDates = this.pastHistory.sort().reverse();
+        const pastHistoryDates = this.allHistory.sort().reverse();
 
         // Keep only the most recent 10 active days
         if (pastHistoryDates.length > 10) {
