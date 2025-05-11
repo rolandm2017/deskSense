@@ -14,7 +14,7 @@
         "lib": ["dom", "dom.iterable", "esnext"],
         "allowJs": true,
         "forceConsistentCasingInFileNames": true,
-        "jsx": "preserve" // Add this
+        "jsx": "preserve"
     },
     "include": ["src/**/*.ts", "src/options.js"],
     "exclude": ["node_modules", "dist"]
