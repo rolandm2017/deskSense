@@ -6,6 +6,15 @@ import { MockStorageApi } from "./mockStorageInterface";
 
 import { pretendPreexistingHistory } from "./mockData";
 
+/*
+
+// TODO: Confirm you can get a new entry into db,
+// TODO: Confirm you can get n entries out of the db
+// TODO: Confirm you can delete an entry
+// TODO: Call it a day
+
+*/
+
 describe("WatchHistoryTracker", () => {
     test("addWatchEntry", async () => {
         const mockStorageApi = new MockStorageApi();
