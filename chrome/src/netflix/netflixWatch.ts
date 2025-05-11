@@ -1,6 +1,20 @@
 // netflix/netflixWatch.ts
 
+/*
+ *
+ * This file adds the modal.
+ *
+ * The file makes it accept user input and show data from storage.
+ *
+ * A layer between the UI and the rest of the system.
+ *
+ */
+
 import modalHtml from "./netflixWatchModal.html";
+
+import { MissingComponentError } from "./errors";
+
+import { historyTracker } from "./historyTracker";
 
 function injectModal() {
     // Don't inject if modal already exists
@@ -17,11 +31,47 @@ function injectModal() {
     div.innerHTML = modalHtml;
     document.body.appendChild(div.firstElementChild!);
 
+    // Wait for elements to be available
+    const waitForElement = (
+        selector: string,
+        callback: (element: Element) => void
+    ) => {
+        const element = document.querySelector(selector);
+        if (element) {
+            callback(element);
+        } else {
+            requestAnimationFrame(() => waitForElement(selector, callback));
+        }
+    };
+
+    waitForElement("#watch-tracker-modal", (modal) => {
+        // Now you can safely populate your dropdown
+        const dropdown = document.getElementById("series-select");
+        if (dropdown) {
+            // Populate dropdown options here
+            historyTracker.getTopFive().then((topFiveList) => {
+                topFiveList.forEach((item) => {
+                    const option = document.createElement("option");
+                    option.value = item;
+                    option.textContent = item;
+                    dropdown.appendChild(option);
+                });
+            });
+        } else {
+            throw new MissingComponentError("Missing series select");
+        }
+
+        // Add the rest of your event listeners
+        setupEventListeners();
+    });
+}
+
+function setupEventListeners() {
     // Add event listeners
     const modal = document.getElementById("watch-tracker-modal");
 
     if (!modal) {
-        throw new Error("Null element");
+        throw new MissingComponentError("The whole modal");
     }
 
     document.body.appendChild(modal);
@@ -32,7 +82,7 @@ function injectModal() {
     const cancelEntryBtn = document.getElementById("cancel-entry-btn");
 
     if (!newEntryBtn || !dropdownSection || !inputSection || !cancelEntryBtn) {
-        throw new Error("Null element`");
+        throw new MissingComponentError("Buttons or dropdown");
     }
 
     newEntryBtn.onclick = () => {
@@ -45,9 +95,15 @@ function injectModal() {
         dropdownSection.style.display = "block";
     };
 
-    document.getElementById("confirm-btn")!.onclick = () => {
+    const confirmButton = document.getElementById("confirm-btn");
+
+    if (!confirmButton) {
+        throw new MissingComponentError("Confirm button");
+    }
+
+    confirmButton.onclick = () => {
         const value =
-            inputSection!.style.display === "none"
+            inputSection.style.display === "none"
                 ? (
                       document.getElementById(
                           "series-select"
@@ -62,28 +118,27 @@ function injectModal() {
         if (!value) return alert("Please enter or select a series name.");
 
         // Save value to chrome.storage.local
-        chrome.storage.local.set({ currentWatching: value }, () => {
-            console.log("Confirmed:", value);
-        });
 
-        document.getElementById("watch-tracker-modal")!.remove();
+        historyTracker.recordEnteredValue(value);
+
+        modal.remove();
     };
 
-    document.getElementById("ignore-btn")!.onclick = () => {
+    const ignoreButton = document.getElementById("ignore-btn");
+
+    if (!ignoreButton) {
+        throw new MissingComponentError("Ignore button");
+    }
+
+    ignoreButton.onclick = () => {
         // Get current video URL or ID to ignore
         const currentUrl = window.location.href;
         console.log("current URL", currentUrl);
 
         // Save video to ignore list
-        chrome.storage.local.get(["ignoredVideos"], (result) => {
-            const ignoredVideos = result.ignoredVideos || [];
-            ignoredVideos.push(currentUrl);
-            chrome.storage.local.set({ ignoredVideos }, () => {
-                console.log("Ignored this video:", currentUrl);
-            });
-        });
+        historyTracker.handleIgnoreUrl(currentUrl);
 
-        document.getElementById("watch-tracker-modal")!.remove();
+        modal.remove();
     };
 }
 
