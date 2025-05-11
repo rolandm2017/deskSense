@@ -10,18 +10,14 @@ export interface WatchEntry {
     watchCount: number; // count of times it was watched
 }
 
-export interface DayHistory {
-    [dateKey: string]: WatchEntry[];
-}
-
 export class WatchHistoryTracker {
-    pastHistory: DayHistory[];
-    todayHistory: DayHistory;
+    pastHistory: WatchEntry[];
+    todayHistory: WatchEntry[];
     storageConnection: StorageInterface;
 
     constructor(storageConnection: StorageInterface) {
         this.storageConnection = storageConnection;
-        this.todayHistory = {};
+        this.todayHistory = [];
         this.pastHistory = [];
         this.loadHistory();
         // this.setupEventListeners();
@@ -31,19 +27,14 @@ export class WatchHistoryTracker {
     async addWatchEntry(videoId: string, showName: string, url: string) {
         const today = this.getTodaysDate();
 
-        // Initialize today's array if it doesn't exist
-        if (!this.todayHistory[today]) {
-            this.todayHistory[today] = [];
-        }
-
         // Check if this video ID already exists for today
-        const existingEntry = this.todayHistory[today].find(
+        const existingEntry = this.todayHistory.find(
             (entry: WatchEntry) => entry.videoId === videoId
         );
 
         if (!existingEntry) {
             // Add new entry
-            this.todayHistory[today].push({
+            this.todayHistory.push({
                 videoId: videoId,
                 showName: showName,
                 url: url,
@@ -105,10 +96,8 @@ export class WatchHistoryTracker {
         const dates = Object.keys(this.todayHistory).sort().reverse();
 
         for (const date of dates) {
-            if (this.todayHistory[date] && this.todayHistory[date].length > 0) {
-                return this.todayHistory[date][
-                    this.todayHistory[date].length - 1
-                ].showName;
+            if (this.todayHistory && this.todayHistory.length > 0) {
+                return this.todayHistory[this.todayHistory.length - 1].showName;
             }
         }
 
@@ -122,8 +111,8 @@ export class WatchHistoryTracker {
         const showCounts: Record<string, number> = {};
 
         threeDaysData.forEach((date) => {
-            if (this.todayHistory[date]) {
-                this.todayHistory[date].forEach((entry: WatchEntry) => {
+            if (this.todayHistory) {
+                this.todayHistory.forEach((entry: WatchEntry) => {
                     showCounts[entry.showName] =
                         (showCounts[entry.showName] || 0) + 1;
                 });
@@ -142,10 +131,8 @@ export class WatchHistoryTracker {
     getAllShows(): string[] {
         const shows: Set<string> = new Set();
 
-        Object.values(this.todayHistory).forEach((dayData: WatchEntry[]) => {
-            dayData.forEach((entry: WatchEntry) => {
-                shows.add(entry.showName);
-            });
+        Object.values(this.todayHistory).forEach((entry: WatchEntry) => {
+            shows.add(entry.showName);
         });
 
         return Array.from(shows).sort();
@@ -153,15 +140,18 @@ export class WatchHistoryTracker {
 
     // Remove entries older than 10 active days
     async cleanupOldHistory() {
-        const dates = Object.keys(this.todayHistory).sort().reverse();
+        // TODO: Get just the dates, as a Set()
+        const pastHistoryDates = this.pastHistory.sort().reverse();
 
         // Keep only the most recent 10 active days
-        if (dates.length > 10) {
-            const daysToKeep = dates.slice(0, 10);
-            const newHistory: DayHistory = {};
+        if (pastHistoryDates.length > 10) {
+            const daysToKeep = pastHistoryDates.slice(0, 9);
+            const newHistory: WatchEntry[] = [];
 
-            daysToKeep.forEach((date: string) => {
-                newHistory[date] = this.todayHistory[date];
+            daysToKeep.forEach((entry: WatchEntry) => {
+                // get the pastHistoryDates for the
+                //
+                newHistory.push();
             });
 
             this.todayHistory = newHistory;

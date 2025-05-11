@@ -1,4 +1,4 @@
-import { DayHistory, WatchEntry } from "../../src/netflix/historyTracker";
+import { WatchEntry } from "../../src/netflix/historyTracker";
 
 function makeWatchEntry(
     videoId: string,
@@ -16,184 +16,164 @@ function makeWatchEntry(
     };
 }
 
-function makeDayHistory(
-    dateString: string,
-    watchEntryArr: WatchEntry[]
-): DayHistory {
-    return {
-        [dateString]: watchEntryArr,
-    };
-}
-
-export const pretendPreexistingHistory: DayHistory[] = [
+export const pretendPreexistingHistory: WatchEntry[] = [
     // Day 1: 1 entry
-    makeDayHistory("04-24-2025", [
-        makeWatchEntry(
-            "80019819",
-            "The Queen's Gambit",
-            "netflix.com/watch/80019819",
-            "2025-04-24T09:15:22.431Z",
-            2
-        ),
-    ]),
+
+    makeWatchEntry(
+        "80019819",
+        "The Queen's Gambit",
+        "netflix.com/watch/80019819",
+        "2025-04-24T09:15:22.431Z",
+        2
+    ),
 
     // Day 2: 7 entries
-    makeDayHistory("04-25-2025", [
-        makeWatchEntry(
-            "70264235",
-            "Stranger Things",
-            "netflix.com/watch/70264235",
-            "2025-04-25T08:30:15.123Z",
-            1
-        ),
-        makeWatchEntry(
-            "80192098",
-            "The Crown",
-            "netflix.com/watch/80192098",
-            "2025-04-25T10:45:33.892Z",
-            3
-        ),
-        makeWatchEntry(
-            "70153404",
-            "House of Cards",
-            "netflix.com/watch/70153404",
-            "2025-04-25T14:22:11.567Z",
-            1
-        ),
-        makeWatchEntry(
-            "70299043",
-            "Orange Is the New Black",
-            "netflix.com/watch/70299043",
-            "2025-04-25T16:18:45.234Z",
-            2
-        ),
-        makeWatchEntry(
-            "80199790",
-            "Mindhunter",
-            "netflix.com/watch/80199790",
-            "2025-04-25T18:33:09.678Z",
-            1
-        ),
-        makeWatchEntry(
-            "80175722",
-            "Bird Box",
-            "netflix.com/watch/80175722",
-            "2025-04-25T20:15:58.901Z",
-            4
-        ),
-        makeWatchEntry(
-            "80189221",
-            "The Irishman",
-            "netflix.com/watch/80189221",
-            "2025-04-25T22:48:27.345Z",
-            2
-        ),
-    ]),
+    makeWatchEntry(
+        "70264235",
+        "Stranger Things",
+        "netflix.com/watch/70264235",
+        "2025-04-25T08:30:15.123Z",
+        1
+    ),
+    makeWatchEntry(
+        "80192098",
+        "The Crown",
+        "netflix.com/watch/80192098",
+        "2025-04-25T10:45:33.892Z",
+        3
+    ),
+    makeWatchEntry(
+        "70153404",
+        "House of Cards",
+        "netflix.com/watch/70153404",
+        "2025-04-25T14:22:11.567Z",
+        1
+    ),
+    makeWatchEntry(
+        "70299043",
+        "Orange Is the New Black",
+        "netflix.com/watch/70299043",
+        "2025-04-25T16:18:45.234Z",
+        2
+    ),
+    makeWatchEntry(
+        "80199790",
+        "Mindhunter",
+        "netflix.com/watch/80199790",
+        "2025-04-25T18:33:09.678Z",
+        1
+    ),
+    makeWatchEntry(
+        "80175722",
+        "Bird Box",
+        "netflix.com/watch/80175722",
+        "2025-04-25T20:15:58.901Z",
+        4
+    ),
+    makeWatchEntry(
+        "80189221",
+        "The Irishman",
+        "netflix.com/watch/80189221",
+        "2025-04-25T22:48:27.345Z",
+        2
+    ),
 
     // Day 3: 6 entries
-    makeDayHistory("04-26-2025", [
-        makeWatchEntry(
-            "80063637",
-            "Breaking Bad",
-            "netflix.com/watch/80063637",
-            "2025-04-26T07:20:14.567Z",
-            5
-        ),
-        makeWatchEntry(
-            "81041900",
-            "Emily in Paris",
-            "netflix.com/watch/81041900",
-            "2025-04-26T09:45:22.891Z",
-            1
-        ),
-        makeWatchEntry(
-            "80102411",
-            "GLOW",
-            "netflix.com/watch/80102411",
-            "2025-04-26T12:30:55.234Z",
-            2
-        ),
-        makeWatchEntry(
-            "70259154",
-            "BoJack Horseman",
-            "netflix.com/watch/70259154",
-            "2025-04-26T15:15:18.678Z",
-            3
-        ),
-        makeWatchEntry(
-            "80186863",
-            "Roma",
-            "netflix.com/watch/80186863",
-            "2025-04-26T18:00:44.123Z",
-            1
-        ),
-        makeWatchEntry(
-            "81195050",
-            "Bridgerton",
-            "netflix.com/watch/81195050",
-            "2025-04-26T21:25:33.456Z",
-            4
-        ),
-    ]),
+    makeWatchEntry(
+        "80063637",
+        "Breaking Bad",
+        "netflix.com/watch/80063637",
+        "2025-04-26T07:20:14.567Z",
+        5
+    ),
+    makeWatchEntry(
+        "81041900",
+        "Emily in Paris",
+        "netflix.com/watch/81041900",
+        "2025-04-26T09:45:22.891Z",
+        1
+    ),
+    makeWatchEntry(
+        "80102411",
+        "GLOW",
+        "netflix.com/watch/80102411",
+        "2025-04-26T12:30:55.234Z",
+        2
+    ),
+    makeWatchEntry(
+        "70259154",
+        "BoJack Horseman",
+        "netflix.com/watch/70259154",
+        "2025-04-26T15:15:18.678Z",
+        3
+    ),
+    makeWatchEntry(
+        "80186863",
+        "Roma",
+        "netflix.com/watch/80186863",
+        "2025-04-26T18:00:44.123Z",
+        1
+    ),
+    makeWatchEntry(
+        "81195050",
+        "Bridgerton",
+        "netflix.com/watch/81195050",
+        "2025-04-26T21:25:33.456Z",
+        4
+    ),
 
     // Day 4: 1 entry
-    makeDayHistory("04-30-2025", [
-        makeWatchEntry(
-            "81312993",
-            "Wednesday",
-            "netflix.com/watch/81312993",
-            "2025-04-30T19:45:12.789Z",
-            1
-        ),
-    ]),
+    makeWatchEntry(
+        "81312993",
+        "Wednesday",
+        "netflix.com/watch/81312993",
+        "2025-04-30T19:45:12.789Z",
+        1
+    ),
 
     // Day 5: 4 entries
-    makeDayHistory("05-01-2025", [
-        makeWatchEntry(
-            "80014749",
-            "The Office (US)",
-            "netflix.com/watch/80014749",
-            "2025-05-01T08:15:31.234Z",
-            2
-        ),
-        makeWatchEntry(
-            "70300001",
-            "Friends",
-            "netflix.com/watch/70300001",
-            "2025-05-01T12:40:18.567Z",
-            3
-        ),
-        makeWatchEntry(
-            "70140425",
-            "Arrested Development",
-            "netflix.com/watch/70140425",
-            "2025-05-01T16:22:44.890Z",
-            1
-        ),
-        makeWatchEntry(
-            "81087914",
-            "Squid Game",
-            "netflix.com/watch/81087914",
-            "2025-05-01T20:55:09.123Z",
-            5
-        ),
-    ]),
+    makeWatchEntry(
+        "80014749",
+        "The Office (US)",
+        "netflix.com/watch/80014749",
+        "2025-05-01T08:15:31.234Z",
+        2
+    ),
+    makeWatchEntry(
+        "70300001",
+        "Friends",
+        "netflix.com/watch/70300001",
+        "2025-05-01T12:40:18.567Z",
+        3
+    ),
+    makeWatchEntry(
+        "70140425",
+        "Arrested Development",
+        "netflix.com/watch/70140425",
+        "2025-05-01T16:22:44.890Z",
+        1
+    ),
+    makeWatchEntry(
+        "81087914",
+        "Squid Game",
+        "netflix.com/watch/81087914",
+        "2025-05-01T20:55:09.123Z",
+        5
+    ),
 
     // Day 6: 0 entries (no entries provided)
-    makeDayHistory("05-02-2025", [
-        makeWatchEntry(
-            "81087914411",
-            "Lupin",
-            "netflix.com/watch/81087914",
-            "2025-05-01T20:55:09.123Z",
-            5
-        ),
-        makeWatchEntry(
-            "81087914422",
-            "L'Agernce",
-            "netflix.com/watch/81087914",
-            "2025-05-01T20:55:09.123Z",
-            2
-        ),
-    ]),
+    makeWatchEntry(
+        "81087914411",
+        "Lupin",
+        "netflix.com/watch/81087914",
+        "2025-05-01T20:55:09.123Z",
+        5
+    ),
+    makeWatchEntry(
+        "81087914422",
+        "L'Agernce",
+        "netflix.com/watch/81087914",
+        "2025-05-01T20:55:09.123Z",
+        2
+    ),
 ];

@@ -1,8 +1,8 @@
-import { DayHistory } from "./historyTracker";
+import { WatchEntry } from "./historyTracker";
 
 export interface StorageInterface {
-    saveDay(day: DayHistory): Promise<void>;
-    readAll(): Promise<DayHistory[]>;
+    saveDay(day: WatchEntry[]): Promise<void>;
+    readAll(): Promise<WatchEntry[]>;
     deleteSelected(dates: string[]): Promise<void>;
 }
 
@@ -11,7 +11,7 @@ class StorageApi implements StorageInterface {
         //
     }
 
-    async saveDay(day: DayHistory): Promise<void> {
+    async saveDay(day: WatchEntry[]): Promise<void> {
         return new Promise((resolve) => {
             chrome.storage.local.set(day, () => {
                 console.log("Saved day: ", Object.keys(day)[0]);
@@ -20,20 +20,21 @@ class StorageApi implements StorageInterface {
         });
     }
 
-    async readDay(dayString: string): Promise<DayHistory> {
+    async readDay(dayString: string): Promise<WatchEntry[]> {
         return new Promise((resolve) => {
-            chrome.storage.local.get([dayString], (result) => {
-                resolve(result);
+            chrome.storage.local.get(null, (result) => {
+                const savedDays: WatchEntry[] = Object.values(result);
+                resolve(savedDays);
             });
         });
     }
 
-    async readAll(): Promise<DayHistory[]> {
+    async readAll(): Promise<WatchEntry[]> {
         return new Promise((resolve) => {
             chrome.storage.local.get(null, (result) => {
                 console.log(result); // All stored data
                 // Convert the object to an array of DayHistory objects
-                const savedDays: DayHistory[] = Object.values(result);
+                const savedDays: WatchEntry[] = Object.values(result);
                 resolve(savedDays);
             });
         });
