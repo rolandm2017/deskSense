@@ -3,7 +3,8 @@
 import { StorageInterface } from "./storageApi";
 
 export interface WatchEntry {
-    videoId: string;
+    serverId: number; //
+    urlId: string;
     showName: string;
     url: string;
     timestamp: string; // new Date().isoString()
@@ -11,6 +12,14 @@ export interface WatchEntry {
 }
 
 export class WatchHistoryTracker {
+    /*
+        If you're tempted to add an edit feature, remember that
+        a well made top five priority algorithm will quickly derank 
+        a recently added entry that does not get used.
+
+        The user realizes their mistake, adds in the corrected version,
+        selects it, and goes on with their day. The mistake vanishes in a few hours.
+    */
     allHistory: WatchEntry[];
     todayHistory: WatchEntry[];
     storageConnection: StorageInterface;
@@ -24,18 +33,19 @@ export class WatchHistoryTracker {
     }
 
     // Add a new watch entry
-    async addWatchEntry(videoId: string, showName: string, url: string) {
+    async addWatchEntry(urlId: string, showName: string, url: string) {
         const today = this.getTodaysDate();
 
         // Check if this video ID already exists for today
         const existingEntry = this.todayHistory.find(
-            (entry: WatchEntry) => entry.videoId === videoId
+            (entry: WatchEntry) => entry.urlId === urlId
         );
 
         if (!existingEntry) {
             // Add new entry
             this.todayHistory.push({
-                videoId: videoId,
+                serverId: 1000, // temp
+                urlId: urlId,
                 showName: showName,
                 url: url,
                 timestamp: new Date().toISOString(),

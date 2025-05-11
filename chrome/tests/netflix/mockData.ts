@@ -1,14 +1,16 @@
 import { WatchEntry } from "../../src/netflix/historyTracker";
 
 function makeWatchEntry(
-    videoId: string,
+    serverId: number,
+    urlId: string,
     showName: string,
     url: string,
     timestamp: string,
     watchCount: number
 ): WatchEntry {
     return {
-        videoId,
+        serverId,
+        urlId,
         showName,
         url,
         timestamp,
@@ -20,6 +22,7 @@ export const pretendPreexistingHistory: WatchEntry[] = [
     // Day 1: 1 entry
 
     makeWatchEntry(
+        1001,
         "80019819",
         "The Queen's Gambit",
         "netflix.com/watch/80019819",
@@ -29,6 +32,7 @@ export const pretendPreexistingHistory: WatchEntry[] = [
 
     // Day 2: 7 entries
     makeWatchEntry(
+        1002,
         "70264235",
         "Stranger Things",
         "netflix.com/watch/70264235",
@@ -36,6 +40,7 @@ export const pretendPreexistingHistory: WatchEntry[] = [
         1
     ),
     makeWatchEntry(
+        1003,
         "80192098",
         "The Crown",
         "netflix.com/watch/80192098",
@@ -43,6 +48,7 @@ export const pretendPreexistingHistory: WatchEntry[] = [
         3
     ),
     makeWatchEntry(
+        1004,
         "70153404",
         "House of Cards",
         "netflix.com/watch/70153404",
@@ -50,6 +56,7 @@ export const pretendPreexistingHistory: WatchEntry[] = [
         1
     ),
     makeWatchEntry(
+        1005,
         "70299043",
         "Orange Is the New Black",
         "netflix.com/watch/70299043",
@@ -57,6 +64,7 @@ export const pretendPreexistingHistory: WatchEntry[] = [
         2
     ),
     makeWatchEntry(
+        1006,
         "80199790",
         "Mindhunter",
         "netflix.com/watch/80199790",
@@ -64,6 +72,7 @@ export const pretendPreexistingHistory: WatchEntry[] = [
         1
     ),
     makeWatchEntry(
+        1007,
         "80175722",
         "Bird Box",
         "netflix.com/watch/80175722",
@@ -71,6 +80,7 @@ export const pretendPreexistingHistory: WatchEntry[] = [
         4
     ),
     makeWatchEntry(
+        1008,
         "80189221",
         "The Irishman",
         "netflix.com/watch/80189221",
@@ -80,6 +90,7 @@ export const pretendPreexistingHistory: WatchEntry[] = [
 
     // Day 3: 6 entries
     makeWatchEntry(
+        1009,
         "80063637",
         "Breaking Bad",
         "netflix.com/watch/80063637",
@@ -87,6 +98,7 @@ export const pretendPreexistingHistory: WatchEntry[] = [
         5
     ),
     makeWatchEntry(
+        1010,
         "81041900",
         "Emily in Paris",
         "netflix.com/watch/81041900",
@@ -94,6 +106,7 @@ export const pretendPreexistingHistory: WatchEntry[] = [
         1
     ),
     makeWatchEntry(
+        1011,
         "80102411",
         "GLOW",
         "netflix.com/watch/80102411",
@@ -101,6 +114,7 @@ export const pretendPreexistingHistory: WatchEntry[] = [
         2
     ),
     makeWatchEntry(
+        1012,
         "70259154",
         "BoJack Horseman",
         "netflix.com/watch/70259154",
@@ -108,6 +122,7 @@ export const pretendPreexistingHistory: WatchEntry[] = [
         3
     ),
     makeWatchEntry(
+        1013,
         "80186863",
         "Roma",
         "netflix.com/watch/80186863",
@@ -115,6 +130,7 @@ export const pretendPreexistingHistory: WatchEntry[] = [
         1
     ),
     makeWatchEntry(
+        1014,
         "81195050",
         "Bridgerton",
         "netflix.com/watch/81195050",
@@ -124,6 +140,7 @@ export const pretendPreexistingHistory: WatchEntry[] = [
 
     // Day 4: 1 entry
     makeWatchEntry(
+        1015,
         "81312993",
         "Wednesday",
         "netflix.com/watch/81312993",
@@ -133,6 +150,7 @@ export const pretendPreexistingHistory: WatchEntry[] = [
 
     // Day 5: 4 entries
     makeWatchEntry(
+        1016,
         "80014749",
         "The Office (US)",
         "netflix.com/watch/80014749",
@@ -140,6 +158,7 @@ export const pretendPreexistingHistory: WatchEntry[] = [
         2
     ),
     makeWatchEntry(
+        1017,
         "70300001",
         "Friends",
         "netflix.com/watch/70300001",
@@ -147,6 +166,7 @@ export const pretendPreexistingHistory: WatchEntry[] = [
         3
     ),
     makeWatchEntry(
+        1018,
         "70140425",
         "Arrested Development",
         "netflix.com/watch/70140425",
@@ -154,6 +174,7 @@ export const pretendPreexistingHistory: WatchEntry[] = [
         1
     ),
     makeWatchEntry(
+        1019,
         "81087914",
         "Squid Game",
         "netflix.com/watch/81087914",
@@ -161,8 +182,9 @@ export const pretendPreexistingHistory: WatchEntry[] = [
         5
     ),
 
-    // Day 6: 0 entries (no entries provided)
+    // Day 6: 2 entries (no entries provided)
     makeWatchEntry(
+        1020,
         "81087914411",
         "Lupin",
         "netflix.com/watch/81087914",
@@ -170,6 +192,7 @@ export const pretendPreexistingHistory: WatchEntry[] = [
         5
     ),
     makeWatchEntry(
+        1021,
         "81087914422",
         "L'Agernce",
         "netflix.com/watch/81087914",
