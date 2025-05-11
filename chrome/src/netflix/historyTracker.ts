@@ -73,6 +73,9 @@ export class WatchHistoryTracker {
             // await this.saveHistory();
         }
     }
+    // so, i pick hilda, i watch hilda, i pick hilda again.
+    // does hilda now have two watchEntries in the history?
+    // I guess it does. repeat all the data? yes for now
 
     validateUrlId(urlId: string) {
         // checks that it is just a bunch of numbers.

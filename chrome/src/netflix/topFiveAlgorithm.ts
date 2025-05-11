@@ -1,4 +1,22 @@
-class TopFiveAlgorithm {
+import { WatchEntry } from "./historyTracker";
+
+const FREQUENCY_WEIGHT = 1.0;
+const RECENCY_WEIGHT = 5.0;
+const NOVELTY_BOOST = 50.0;
+const DECAY_RATE = 0.01; // tunes how fast recency fades
+
+/*
+
+I tried 0.005 for a decay rate. It was too low!
+I tried 0.02 for a decay rate. It was too high!
+
+0.01 looks just right. 
+
+Consider busting out a calculator if you want to adjust.
+
+*/
+
+export class TopFiveAlgorithm {
     /*
     
     For the purposes of this file(?), a series title and a movie title are the same.
@@ -26,5 +44,45 @@ class TopFiveAlgorithm {
 
     rank() {
         const sorted = [];
+    }
+
+    oneHourAsMilliseconds = 3600; // (1000 * 60 * 60)
+
+    computeRecencyScore(timestamps: number[], now = Date.now()) {
+        // timestamps: Array of Unix timestamps when the show was watched
+
+        // decayRate: Lower = slower decay. Try 0.05 for hourly, 0.005 for daily decay
+        // time-weighted frequency sum, where
+        // each individual viewing gets a score that decays with time
+        return timestamps.reduce((score, ts) => {
+            const hoursAgo = (now - ts) / this.oneHourAsMilliseconds;
+            console.log(hoursAgo, score, "52ru");
+            const decayedRating = this.exponentialDecay(hoursAgo);
+            return score + decayedRating;
+        }, 0);
+    }
+
+    exponentialDecay(hoursAgo: number) {
+        // Returns a time-decayed weight using exponential decay, where
+        // more recent events contribute more.
+        // Used to prioritize recent user activity in scoring algorithms.
+        return Math.exp(-DECAY_RATE * hoursAgo);
+    }
+
+    computeFrequencyScore(title: string, allHistory: WatchEntry[]) {
+        const frequencyScore =
+            FREQUENCY_WEIGHT *
+            this.countOccurrencesInHistory(title, allHistory);
+        return frequencyScore;
+    }
+
+    countOccurrencesInHistory(title: string, allHistory: WatchEntry[]) {
+        let counter = 0;
+        for (const entry of allHistory) {
+            if (title === entry.showName) {
+                counter++;
+            }
+        }
+        return counter;
     }
 }
