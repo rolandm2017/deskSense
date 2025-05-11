@@ -1,30 +1,8 @@
-import { DayHistory, WatchHistory } from "./historyTracker";
-
-function loadHistory() {
-    return new Promise((resolve) => {
-        chrome.storage.local.get(["watchHistory"], (result) => {
-            const currentHistory = result.watchHistory || {};
-            console.log("Loaded history:", currentHistory);
-            resolve(currentHistory);
-        });
-    });
-}
-
-// Save history to Chrome storage
-function saveHistory(historyInput: WatchHistory): Promise<void> {
-    return new Promise((resolve) => {
-        chrome.storage.local.set({ watchHistory: historyInput }, () => {
-            console.log("History saved");
-            resolve();
-        });
-    });
-}
+import { DayHistory } from "./historyTracker";
 
 export interface StorageInterface {
-    loadHistoryV2(): Promise<{ watchHistory: WatchHistory }>;
-    saveHistoryV2(historyInput: WatchHistory): Promise<void>;
     saveDay(day: DayHistory): Promise<void>;
-    readAll(): Promise<{ [key: string]: any }>;
+    readAll(): Promise<DayHistory[]>;
     deleteSelected(dates: string[]): Promise<void>;
 }
 
@@ -32,29 +10,6 @@ class StorageApi implements StorageInterface {
     constructor() {
         //
     }
-    async loadHistoryV2(): Promise<{ watchHistory: WatchHistory }> {
-        return new Promise((resolve) => {
-            chrome.storage.local.get(["watchHistory"], (result) => {
-                const currentHistory = result.watchHistory || {};
-                console.log("Loaded history:", currentHistory);
-                // FIXME: it doesn't resolve
-            });
-        });
-    }
-
-    // Save history to Chrome storage
-    async saveHistoryV2(historyInput: WatchHistory): Promise<void> {
-        return new Promise((resolve) => {
-            chrome.storage.local.set({ watchHistory: historyInput }, () => {
-                console.log("History saved");
-                resolve();
-            });
-        });
-    }
-
-    // // // --
-    // // // --
-    // // // --
 
     async saveDay(day: DayHistory): Promise<void> {
         return new Promise((resolve) => {
@@ -73,11 +28,13 @@ class StorageApi implements StorageInterface {
         });
     }
 
-    async readAll(): Promise<{ [key: string]: any }> {
+    async readAll(): Promise<DayHistory[]> {
         return new Promise((resolve) => {
             chrome.storage.local.get(null, (result) => {
                 console.log(result); // All stored data
-                resolve(result);
+                // Convert the object to an array of DayHistory objects
+                const savedDays: DayHistory[] = Object.values(result);
+                resolve(savedDays);
             });
         });
     }

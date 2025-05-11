@@ -1,20 +1,20 @@
 import { vi } from "vitest";
 import { StorageInterface } from "../../src/netflix/storageApi";
 
-import { DayHistory, WatchHistory } from "../../src/netflix/historyTracker";
+import { DayHistory } from "../../src/netflix/historyTracker";
 
 // storage/MockStorageApi.ts - For testing
 export class MockStorageApi implements StorageInterface {
     private mockData: Map<string, any> = new Map();
 
     // Optional: Make methods mockable
-    loadHistoryV2 = vi.fn(async (): Promise<{ watchHistory: WatchHistory }> => {
+    loadHistoryV2 = vi.fn(async (): Promise<{ watchHistory: DayHistory }> => {
         return {
             watchHistory: this.mockData.get("watchHistory") || {},
         };
     });
 
-    saveHistoryV2 = vi.fn(async (historyInput: WatchHistory): Promise<void> => {
+    saveHistoryV2 = vi.fn(async (historyInput: DayHistory): Promise<void> => {
         this.mockData.set("watchHistory", historyInput);
     });
 
@@ -24,8 +24,8 @@ export class MockStorageApi implements StorageInterface {
         });
     });
 
-    readAll = vi.fn(async (): Promise<{ [key: string]: any }> => {
-        const result = {};
+    readAll = vi.fn(async (): Promise<DayHistory[]> => {
+        const result = [];
         this.mockData.forEach((value, key) => {
             result[key] = value;
         });
