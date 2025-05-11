@@ -15,13 +15,15 @@ import { viewingTracker, YouTubeViewing } from "./visits";
 
 import { ignoredDomains, isDomainIgnored, loadDomains } from "./ignoreList";
 
+// Code that lets you open the options page when the icon is clicked
+// Disabled in favor of the modal
 function openOptionsOnClickIcon() {
     chrome.action.onClicked.addListener(() => {
         chrome.runtime.openOptionsPage();
     });
 }
 
-openOptionsOnClickIcon();
+// openOptionsOnClickIcon();
 
 // // Handle YouTube URL specifically
 function handleYouTubeUrl(
@@ -356,18 +358,19 @@ chrome.runtime.onInstalled.addListener(() => {
  */
 
 chrome.action.onClicked.addListener(async (tab) => {
-    console.log("Action.Onclick ");
+    console.log("Action.Onclick: ");
     // First check if we're on any Netflix page
-    if (tab.id && tab.url && tab.url.includes("wikipedia")) {
+    if (
+        tab.id &&
+        tab.url &&
+        (tab.url.includes("wikipedia") || tab.url.includes("netflix.com/watch"))
+    ) {
         // Inject the content script
-        await chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            files: ["dist/netflixWatch.bundle.js"],
-        });
+        await chrome.tabs.sendMessage(tab.id, { action: "openModal" });
 
         // If your script needs to know it was triggered by the icon click,
         // you can pass a message after injection
-        chrome.tabs.sendMessage(tab.id, { action: "extensionIconClicked" });
+        // chrome.tabs.sendMessage(tab.id, { action: "extensionIconClicked" });
     } else {
         // Optionally, show a notification or take other action
         console.log(

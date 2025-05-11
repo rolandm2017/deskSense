@@ -7,6 +7,9 @@ const __dirname = path.dirname(__filename);
 export default {
     mode: "production", // avoid eval-style source maps
     devtool: false,
+    optimization: {
+        minimize: false,
+    },
     entry: {
         options: "./src/options.js",
         background: "./src/background.ts",

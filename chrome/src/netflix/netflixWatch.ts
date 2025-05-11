@@ -151,6 +151,7 @@ function setupEventListeners() {
 let checkCount = 1;
 // Wait for Netflix page to load and inject modal
 const checkNetflixLoaded = () => {
+    console.log("checkNetflixLoaded");
     // You might want to add specific checks here for Netflix player
     if (document.readyState === "complete") {
         // Add a delay to ensure Netflix has fully loaded
@@ -164,3 +165,17 @@ const checkNetflixLoaded = () => {
 };
 
 checkNetflixLoaded();
+
+// Listen for messages from background script
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    console.log("Received message:", message);
+
+    if (message.action === "openModal") {
+        // Re-inject the modal
+        injectModal();
+        sendResponse({ success: true });
+    }
+
+    // Must return true to indicate you want to send a response asynchronously
+    return true;
+});
