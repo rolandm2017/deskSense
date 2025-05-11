@@ -23,4 +23,8 @@ class TopFiveAlgorithm {
     constructor() {
         //
     }
+
+    rank() {
+        const sorted = [];
+    }
 }

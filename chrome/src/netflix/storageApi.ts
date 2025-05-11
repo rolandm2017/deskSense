@@ -1,6 +1,8 @@
 import { WatchEntry } from "./historyTracker";
 
 export interface StorageInterface {
+    readWholeHistory(): Promise<WatchEntry[]>;
+    saveAll(entries: WatchEntry[]): Promise<void>;
     saveDay(day: WatchEntry[]): Promise<void>;
     readAll(): Promise<WatchEntry[]>;
     deleteSelected(dates: string[]): Promise<void>;
@@ -9,6 +11,15 @@ export interface StorageInterface {
 class StorageApi implements StorageInterface {
     constructor() {
         //
+    }
+
+    async saveAll(entries: WatchEntry[]): Promise<void> {
+        return new Promise((resolve) => {
+            chrome.storage.local.set({ wholeHistory: entries }, () => {
+                console.log("Saved all");
+                resolve();
+            });
+        });
     }
 
     async saveDay(day: WatchEntry[]): Promise<void> {
@@ -29,10 +40,22 @@ class StorageApi implements StorageInterface {
         });
     }
 
+    async readWholeHistory(): Promise<WatchEntry[]> {
+        return new Promise((resolve) => {
+            chrome.storage.local.get("wholeHistory", (result) => {
+                console.log("all stored data:", result); // All stored data
+                // Convert the object to an array of DayHistory objects
+                const savedEntries: WatchEntry[] = result.wholeHistory || [];
+                resolve(savedEntries);
+            });
+        });
+    }
+
     async readAll(): Promise<WatchEntry[]> {
+        console.log("In read all");
         return new Promise((resolve) => {
             chrome.storage.local.get(null, (result) => {
-                console.log(result); // All stored data
+                console.log("all stored data:", result); // All stored data
                 // Convert the object to an array of DayHistory objects
                 const savedDays: WatchEntry[] = Object.values(result);
                 resolve(savedDays);
@@ -54,6 +77,14 @@ class StorageApi implements StorageInterface {
                 resolve();
             });
         });
+    }
+
+    async deleteAll(safetySwitch?: boolean) {
+        if (safetySwitch) {
+            chrome.storage.local.clear(() => {
+                console.log("Storage cleared completely!");
+            });
+        }
     }
 }
 

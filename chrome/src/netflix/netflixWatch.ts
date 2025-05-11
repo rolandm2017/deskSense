@@ -56,17 +56,18 @@ function injectModal() {
             console.log("No el found, requesting animation frfame");
             setTimeout(() => {
                 requestAnimationFrame(() => waitForElement(selector, callback));
-            }, 2000);
+            }, 500);
         }
     };
-    console.log("Waiting for element");
+    console.log("Waiting for element", new Date().getSeconds());
     waitForElement(EL_IDS.MODAL, (modal) => {
         // Now you can safely populate your dropdown
-        console.log("Modal ready");
+        console.log("Modal ready", new Date().getSeconds());
         const dropdown = getElementWithGivenIdOrThrow(EL_IDS.SERIES_SELECT);
         // Populate dropdown options here
         historyTracker.getTopFive().then((topFiveList) => {
             topFiveList.forEach((item) => {
+                console.log("Top five list forEach", item);
                 const option = document.createElement("option");
                 option.value = item;
                 option.textContent = item;
@@ -122,16 +123,22 @@ function setupEventListeners() {
 
     confirmButton.onclick = () => {
         console.log("In confirm btn onclick");
-        const value =
+        const mediaTitle =
             inputSection.style.display === "none"
                 ? seriesSelect.value
                 : seriesInput.value.trim();
 
-        if (!value) return alert("Please enter or select a series name.");
-        console.log("Saving ", value);
-        // Save value to chrome.storage.local
+        if (!mediaTitle) return alert("Please enter or select a series name.");
+        console.log("Saving ", mediaTitle);
+        // Save mediaTitle to chrome.storage.local
 
-        historyTracker.recordEnteredValue(value);
+        const currentUrl = window.location.href;
+
+        // TEMP while testing on other pages:
+        const tempUrl =
+            "https://www.netflix.com/watch/81705696?trackId=272211954";
+
+        historyTracker.recordEnteredMediaTitle(mediaTitle, tempUrl);
 
         modal.remove();
     };
@@ -155,8 +162,8 @@ const checkNetflixLoaded = () => {
     // You might want to add specific checks here for Netflix player
     if (document.readyState === "complete") {
         // Add a delay to ensure Netflix has fully loaded
-        console.log("Injecting modal");
-        setTimeout(injectModal, 2000);
+        console.log("Injecting modal", new Date().getSeconds());
+        injectModal();
     } else {
         console.log("Checking again for check number", checkCount);
         checkCount++;

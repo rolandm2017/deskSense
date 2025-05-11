@@ -32,8 +32,22 @@ export class WatchHistoryTracker {
         // this.setupEventListeners();
     }
 
+    recordEnteredMediaTitle(title: string, url: string) {
+        let urlId = url.split("/watch/")[1];
+        console.log(urlId, url);
+        if (urlId.includes("?")) {
+            urlId = urlId.split("?")[0];
+        }
+        console.log("[tracker - recording]", title);
+        this.addWatchEntry(urlId, title, url);
+        this.saveHistory();
+    }
+
     // Add a new watch entry
     async addWatchEntry(urlId: string, showName: string, url: string) {
+        if (!this.validateUrlId(urlId)) {
+            console.warn("Received invalid URL ID: ", urlId);
+        }
         const today = this.getTodaysDate();
 
         // Check if this video ID already exists for today
@@ -43,14 +57,16 @@ export class WatchHistoryTracker {
 
         if (!existingEntry) {
             // Add new entry
-            this.todayHistory.push({
+            const newEntry: WatchEntry = {
                 serverId: 1000, // temp
-                urlId: urlId,
+                urlId: urlId, // still use the string anyway, valid or not
                 showName: showName,
                 url: url,
                 timestamp: new Date().toISOString(),
                 watchCount: 1,
-            });
+            };
+            this.todayHistory.push(newEntry);
+            this.allHistory.push(newEntry);
 
             // Keep only last 10 days of active data
             // await this.cleanupOldHistory();
@@ -58,11 +74,22 @@ export class WatchHistoryTracker {
         }
     }
 
+    validateUrlId(urlId: string) {
+        // checks that it is just a bunch of numbers.
+        // "234032" passes but "234o32" fails
+        const isNumeric = /^\d+$/.test(urlId);
+        return isNumeric;
+    }
+
     async getTopFive(): Promise<string[]> {
         // this.cleanupOldHistory();
-        const topFiveStrings = this.allHistory
-            .map((h) => h.showName)
-            .slice(0, 5);
+        console.log("In getTopFive", this.allHistory.length);
+        console.log(this.allHistory, "85ru");
+        const topFiveStrings = this.allHistory.map((h: WatchEntry) => {
+            console.log(h, h.showName, "87ru");
+            return h.showName;
+        });
+        console.log(topFiveStrings, "89ru");
 
         return new Promise((resolve) => {
             resolve(topFiveStrings);
@@ -79,10 +106,6 @@ export class WatchHistoryTracker {
         // });
     }
 
-    recordEnteredValue(title: string) {
-        console.log("[tracker - recording]", title);
-    }
-
     recordIgnoredUrl(url: string) {
         console.log("[tracker - ignoring]", url);
     }
@@ -90,19 +113,24 @@ export class WatchHistoryTracker {
     // Load history from Chrome storage
     async loadHistory() {
         // TODO
-        this.storageConnection.readAll().then((days) => {
-            console.log("Load history found: ", days);
-            this.allHistory = days;
+        this.storageConnection
+            .readWholeHistory()
+            .then((entries: WatchEntry[]) => {
+                console.log("Load history found: ", entries);
+                for (const d of entries) {
+                    console.log(d, "d in entries. should be watchHistory");
+                }
+                this.allHistory = entries;
 
-            // FIXME: but how to get previous entries from today? maybe
-            // go into the pastHistory and get the one for today
-        });
+                // FIXME: but how to get previous entries from today? maybe
+                // go into the pastHistory and get the one for today
+            });
     }
 
     // Save history to Chrome storage
     async saveHistory(): Promise<void> {
         // TODO
-        this.storageConnection.saveDay(this.todayHistory);
+        this.storageConnection.saveAll(this.todayHistory);
     }
 
     // Get today's date in YYYY-MM-DD format

@@ -9,6 +9,20 @@ export class MockStorageApi implements StorageInterface {
 
     // Optional: Make methods mockable
 
+    readWholeHistory = vi.fn(async (): Promise<WatchEntry[]> => {
+        const result = [];
+        this.mockData.forEach(([key, value]) => {
+            this.mockData.set(key, value);
+        });
+        return result;
+    });
+
+    saveAll = vi.fn(async (entries: WatchEntry[]): Promise<void> => {
+        Object.entries(entries).forEach(([key, value]) => {
+            this.mockData.set(key, value);
+        });
+    });
+
     saveDay = vi.fn(async (day: WatchEntry[]): Promise<void> => {
         Object.entries(day).forEach(([key, value]) => {
             this.mockData.set(key, value);
