@@ -1,6 +1,6 @@
 // history.ts
 
-import { storageApi, StorageInterface } from "./storageApi";
+import { StorageInterface } from "./storageApi";
 
 export interface WatchEntry {
     videoId: string;
@@ -168,6 +168,3 @@ export class WatchHistoryTracker {
         }
     }
 }
-
-// Initialize the tracker when popup loads
-export const historyTracker = new WatchHistoryTracker(storageApi);

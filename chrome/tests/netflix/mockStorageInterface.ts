@@ -8,15 +8,6 @@ export class MockStorageApi implements StorageInterface {
     private mockData: Map<string, any> = new Map();
 
     // Optional: Make methods mockable
-    loadHistoryV2 = vi.fn(async (): Promise<{ watchHistory: DayHistory }> => {
-        return {
-            watchHistory: this.mockData.get("watchHistory") || {},
-        };
-    });
-
-    saveHistoryV2 = vi.fn(async (historyInput: DayHistory): Promise<void> => {
-        this.mockData.set("watchHistory", historyInput);
-    });
 
     saveDay = vi.fn(async (day: DayHistory): Promise<void> => {
         Object.entries(day).forEach(([key, value]) => {

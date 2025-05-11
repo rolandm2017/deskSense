@@ -55,12 +55,10 @@ describe("[integration] The modal's key behaviors work", () => {
         const todayAsHistoryKey = historyTracker.getTodaysDate();
 
         expect(mockStorageApi.saveDay).toHaveBeenCalled();
-        expect(mockStorageApi.saveDay).toHaveBeenCalledWith(
-            expect.objectContaining({ todayAsHistoryKey: expect.any(Array) })
-        );
 
         const [dayHistory] = mockStorageApi.saveDay.mock.calls[0];
         const key = Object.keys(dayHistory)[0];
+        expect(key).toBe(todayAsHistoryKey);
         const value = dayHistory[key];
         expect(value.length).toBe(2);
     });
