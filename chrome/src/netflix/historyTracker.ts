@@ -2,6 +2,8 @@
 
 import { StorageInterface } from "./storageApi";
 
+import NetflixFacade from "./commonCodeFacade";
+
 export interface WatchEntry {
     serverId: number; //
     urlId: string;
@@ -24,12 +26,14 @@ export class WatchHistoryTracker {
     allHistory: WatchEntry[];
     todayHistory: WatchEntry[];
     storageConnection: StorageInterface;
+    facade: NetflixFacade;
 
     constructor(storageConnection: StorageInterface) {
         this.storageConnection = storageConnection;
         this.todayHistory = [];
         this.allHistory = [];
         this.loadHistory();
+        this.facade = new NetflixFacade();
         // this.setupEventListeners();
     }
 
