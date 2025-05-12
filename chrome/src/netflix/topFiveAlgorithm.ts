@@ -1,10 +1,5 @@
 import { WatchEntry } from "./historyTracker";
 
-const FREQUENCY_WEIGHT = 1.0;
-const RECENCY_WEIGHT = 5.0;
-const NOVELTY_BOOST = 50.0;
-const DECAY_RATE = 0.01; // tunes how fast recency fades
-
 /*
 
 I tried 0.005 for a decay rate. It was too low!
@@ -15,7 +10,14 @@ I tried 0.02 for a decay rate. It was too high!
 Consider busting out a calculator if you want to adjust.
 
 */
+const FREQUENCY_WEIGHT = 1.0;
+const RECENCY_WEIGHT = 5.0;
+const NOVELTY_BOOST = 50.0;
+const DECAY_RATE = 0.01; // tunes how fast recency fades
 
+export type TitleGroups = { [name: string]: WatchEntry[] };
+export type Scores = { score: number; recency: number };
+export type RankScores = { [name: string]: Scores };
 export class TopFiveAlgorithm {
     /*
     
@@ -37,6 +39,8 @@ export class TopFiveAlgorithm {
         - Followup idea is an exponential decay plus a mild offset.
                 • So y = (10 * (1/2)^x) + 2, so values around x = 5 still get the + 2.
         - Additionally the decay of 1/2 is probably too steep. 4/5 might be better.
+
+    NOTE that the above brain dump was only the initial plan.
     */
 
     toSort: WatchEntry[];
@@ -46,30 +50,13 @@ export class TopFiveAlgorithm {
 
     rank(): string[] {
         // outputs five titles
-        const topFiveTitles = [];
 
         // TODO: come up with a way to recalculate the top 5 less frequently.
 
-        const startedGroups: string[] = [];
-        const counts: { [name: string]: number } = {};
-        const groupedByTitle: { [name: string]: WatchEntry[] } = {};
+        const titleGroups = this.groupEntriesByTitle(this.toSort);
+        const scoring: RankScores = {};
 
-        let count = 0;
-
-        for (const entry of this.toSort) {
-            count++;
-            if (entry.showName in startedGroups) {
-                counts[entry.showName]++;
-                groupedByTitle[entry.showName].push(entry);
-            } else {
-                counts[entry.showName] = 1;
-                groupedByTitle[entry.showName] = [entry];
-
-                startedGroups.push(entry.showName);
-            }
-        }
-
-        for (const [mediaTitle, entries] of Object.entries(groupedByTitle)) {
+        for (const [mediaTitle, entries] of Object.entries(titleGroups)) {
             const timestamps = entries.map((entry) => entry.msTimestamp);
             const recencyScore = this.computeRecencyScore(timestamps);
             const frequencyScore = this.computeFrequencyScore(
@@ -78,26 +65,65 @@ export class TopFiveAlgorithm {
             );
 
             // TODO: Cram this all in "computeNovelty" so it looks nice
-            const firstSeenDate: Date = this.getFirstSeenDateFor(
-                mediaTitle,
-                this.toSort
-            );
-            const hoursElapsedSinceAdded = this.hoursBetween(
-                new Date(),
-                firstSeenDate
-            );
-
-            const noveltyProgress = this.getProgressThruNoveltyPeriod(
-                hoursElapsedSinceAdded
-            );
+            const noveltyProgress =
+                this.getProgressThruNoveltyPeriodForTitle(mediaTitle);
 
             const noveltyScore = this.computeNovelty(noveltyProgress);
+
+            const total = frequencyScore + recencyScore + noveltyScore;
+            scoring[mediaTitle] = { score: total, recency: recencyScore };
         }
 
-        return [];
+        const topFiveTitles = this.getTopFiveTitles(scoring);
+
+        return topFiveTitles;
     }
 
-    getProgressThruNoveltyPeriod(hoursSinceBeingAdded: number) {
+    groupEntriesByTitle(entries: WatchEntry[]): TitleGroups {
+        const groupedByTitle: TitleGroups = {};
+
+        for (const entry of entries) {
+            if (entry.showName in groupedByTitle) {
+                groupedByTitle[entry.showName].push(entry);
+            } else {
+                groupedByTitle[entry.showName] = [entry];
+            }
+        }
+
+        return groupedByTitle;
+    }
+
+    getTopFiveTitles(titleScores: RankScores): string[] {
+        return Object.entries(titleScores)
+            .map(([title, scores]) => ({ title, ...scores }))
+            .sort((a, b) => {
+                const scoreDiff = b.score - a.score;
+                if (scoreDiff !== 0) return scoreDiff;
+                // For ties, sort by recency (higher recency first)
+                return b.recency - a.recency;
+            })
+            .slice(0, 5)
+            .map((item) => item.title);
+    }
+
+    getProgressThruNoveltyPeriodForTitle(title: string) {
+        const firstSeenDate: Date = this.getFirstSeenDateFor(
+            title,
+            this.toSort
+        );
+        const hoursElapsedSinceAdded = this.hoursBetween(
+            new Date(),
+            firstSeenDate
+        );
+
+        const noveltyProgress = this.convertHoursSinceBeingAddedToPercentage(
+            hoursElapsedSinceAdded
+        );
+
+        return noveltyProgress;
+    }
+
+    convertHoursSinceBeingAddedToPercentage(hoursSinceBeingAdded: number) {
         const noveltyPeriodInHours = 72;
         return hoursSinceBeingAdded / noveltyPeriodInHours;
     }
@@ -133,10 +159,16 @@ export class TopFiveAlgorithm {
 
     computeFrequencyScore(title: string, allHistory: WatchEntry[]) {
         const frequencyScore =
-            (FREQUENCY_WEIGHT *
-                this.countOccurrencesInHistory(title, allHistory)) /
-            allHistory.length;
+            FREQUENCY_WEIGHT * this.getRawFrequencyScore(title, allHistory);
         return frequencyScore;
+    }
+
+    getRawFrequencyScore(title: string, allHistory: WatchEntry[]) {
+        // the raw value is between 0 and 1
+        return (
+            this.countOccurrencesInHistory(title, allHistory) /
+            allHistory.length
+        );
     }
 
     countOccurrencesInHistory(title: string, allHistory: WatchEntry[]) {

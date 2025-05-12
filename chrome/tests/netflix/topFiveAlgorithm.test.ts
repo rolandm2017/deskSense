@@ -1,11 +1,15 @@
 import { describe, expect, test } from "vitest";
 
-import { TopFiveAlgorithm } from "../../src/netflix/topFiveAlgorithm";
+import { WatchEntry } from "../../src/netflix/historyTracker";
+import {
+    RankScores,
+    TopFiveAlgorithm,
+} from "../../src/netflix/topFiveAlgorithm";
 
 describe("Top five algorithm", () => {
     describe("Recency scoring", () => {
         describe("The exponential decay function", () => {
-            const algorithm = new TopFiveAlgorithm();
+            const algorithm = new TopFiveAlgorithm([]);
             test("Zero hours ago", () => {
                 const d = algorithm.exponentialDecay(0);
                 expect(d).toBe(1);
@@ -37,7 +41,7 @@ describe("Top five algorithm", () => {
 
             test("Five hours ago", () => {
                 const showTimestamps = [now - oneHourAsMilliseconds * 5];
-                const score = new TopFiveAlgorithm().computeRecencyScore(
+                const score = new TopFiveAlgorithm([]).computeRecencyScore(
                     showTimestamps,
                     now
                 );
@@ -47,7 +51,7 @@ describe("Top five algorithm", () => {
             });
             test("Twenty-four hours ago", () => {
                 const showTimestamps = [now - oneHourAsMilliseconds * 24];
-                const score = new TopFiveAlgorithm().computeRecencyScore(
+                const score = new TopFiveAlgorithm([]).computeRecencyScore(
                     showTimestamps,
                     now
                 );
@@ -56,7 +60,7 @@ describe("Top five algorithm", () => {
             });
             test("Three days prior", () => {
                 const showTimestamps = [now - oneHourAsMilliseconds * 72];
-                const score = new TopFiveAlgorithm().computeRecencyScore(
+                const score = new TopFiveAlgorithm([]).computeRecencyScore(
                     showTimestamps,
                     now
                 );
@@ -67,7 +71,7 @@ describe("Top five algorithm", () => {
                 const showTimestamps = [
                     now - oneHourAsMilliseconds * 216, // 9 days ago
                 ];
-                const score = new TopFiveAlgorithm().computeRecencyScore(
+                const score = new TopFiveAlgorithm([]).computeRecencyScore(
                     showTimestamps,
                     now
                 );
@@ -81,7 +85,7 @@ describe("Top five algorithm", () => {
             const showTimestamps = [
                 now - oneHour * 216, // 9 days ago
             ];
-            const score = new TopFiveAlgorithm().computeRecencyScore(
+            const score = new TopFiveAlgorithm([]).computeRecencyScore(
                 showTimestamps,
                 now
             );
@@ -94,14 +98,14 @@ describe("Top five algorithm", () => {
             const oneHour = 1000 * 60 * 60;
             const showTimestamps = [
                 now - oneHour * 212, // 9 days ago
-                now - oneHour * 213, // 9 days ago
+                now - oneHour * 213, // 9 days ago and an hour
                 now - oneHour * 214, // 9 days ago
                 now - oneHour * 215, // 9 days ago
                 now - oneHour * 216, // 9 days ago
                 now - oneHour * 217, // 9 days ago
-                now - oneHour * 218, // 9 days ago
+                now - oneHour * 218, // 9 days ago and a few hours
             ];
-            const score = new TopFiveAlgorithm().computeRecencyScore(
+            const score = new TopFiveAlgorithm([]).computeRecencyScore(
                 showTimestamps,
                 now
             );
@@ -126,7 +130,7 @@ describe("Top five algorithm", () => {
                 now - oneHour * 27, // 1 day + 3 hours ago
                 now - oneHour * 28, // 1 day + 4 hours ago
             ];
-            const score = new TopFiveAlgorithm().computeRecencyScore(
+            const score = new TopFiveAlgorithm([]).computeRecencyScore(
                 showTimestamps,
                 now
             );
@@ -145,7 +149,7 @@ describe("Top five algorithm", () => {
                 now - oneHour * 216, // 9 days ago
             ];
 
-            const score = new TopFiveAlgorithm().computeRecencyScore(
+            const score = new TopFiveAlgorithm([]).computeRecencyScore(
                 showTimestamps,
                 now
             );
@@ -156,7 +160,7 @@ describe("Top five algorithm", () => {
         test("Scores increase with recency and frequency", () => {
             const now = Date.now();
             const oneHour = 1000 * 60 * 60;
-            const algo = new TopFiveAlgorithm();
+            const algo = new TopFiveAlgorithm([]);
 
             // Scenario 1: One viewing a week ago
             const timestamps1 = [now - oneHour * 216]; // 9 days ago
@@ -205,6 +209,176 @@ describe("Top five algorithm", () => {
     });
 
     describe("Frequency scoring", () => {
-        //
+        // If you ask why frequency scoring's tests are so short,
+        // it's because it's literally count / total.
+        const algorithm = new TopFiveAlgorithm([]);
+        test("One hit from two returns 0.5", () => {
+            const input = [
+                { showName: "Hilda" } as WatchEntry,
+                { showName: "Some Other Show" } as WatchEntry,
+            ];
+            const score = algorithm.getRawFrequencyScore("Hilda", input);
+            expect(score).toBe(0.5);
+        });
+        test("Two hits from five returns 0.4", () => {
+            const input = [
+                { showName: "Hilda" } as WatchEntry,
+                { showName: "Hilda" } as WatchEntry,
+                { showName: "Some Other Show" } as WatchEntry,
+                { showName: "Some Other Show" } as WatchEntry,
+                { showName: "Some Other Show" } as WatchEntry,
+            ];
+            const score = algorithm.getRawFrequencyScore("Hilda", input);
+            expect(score).toBe(0.4);
+        });
+        test("Five hits from twenty returns 0.25", () => {
+            const input = [
+                ...Array(5).fill({ showName: "Hilda" } as WatchEntry),
+                ...Array(15).fill({
+                    showName: "Some Other Show",
+                } as WatchEntry),
+            ];
+            const score = algorithm.getRawFrequencyScore("Hilda", input);
+            expect(score).toBe(0.25);
+        });
+    });
+    describe("hoursBetween", () => {
+        const algorithm = new TopFiveAlgorithm([]);
+        test("returns 0 for same date", () => {
+            const date = new Date("2025-05-11T12:00:00Z");
+            expect(algorithm.hoursBetween(date, date)).toBe(0);
+        });
+
+        test("returns 24 for dates 24 hours apart", () => {
+            const date1 = new Date("2025-05-11T12:00:00Z");
+            const date2 = new Date("2025-05-12T12:00:00Z");
+            expect(algorithm.hoursBetween(date1, date2)).toBe(24);
+        });
+
+        test("returns same result regardless of date order", () => {
+            const date1 = new Date("2025-05-11T12:00:00Z");
+            const date2 = new Date("2025-05-12T12:00:00Z");
+            expect(algorithm.hoursBetween(date1, date2)).toBe(
+                algorithm.hoursBetween(date2, date1)
+            );
+        });
+
+        test("handles fractional hours correctly", () => {
+            const date1 = new Date("2025-05-11T12:00:00Z");
+            const date2 = new Date("2025-05-11T15:30:00Z");
+            expect(algorithm.hoursBetween(date1, date2)).toBe(3.5);
+        });
+    });
+
+    describe("Group entries by title", () => {
+        const algo = new TopFiveAlgorithm([]);
+        test("Entries are grouped by title", () => {
+            const input = [
+                { showName: "Hilda" } as WatchEntry,
+                { showName: "Hilda" } as WatchEntry,
+                { showName: "Some Other Show" } as WatchEntry,
+                { showName: "Some Other Show" } as WatchEntry,
+                { showName: "Some Other Show" } as WatchEntry,
+                { showName: "Lupin" } as WatchEntry,
+                { showName: "Lupin" } as WatchEntry,
+                { showName: "Carmen San Diego" } as WatchEntry,
+                { showName: "Carmen San Diego" } as WatchEntry,
+            ];
+            const result = algo.groupEntriesByTitle(input);
+
+            expect(result).toEqual(
+                expect.objectContaining({
+                    Hilda: expect.arrayContaining([
+                        expect.objectContaining({ showName: "Hilda" }),
+                    ]),
+                    "Some Other Show": expect.arrayContaining([
+                        expect.objectContaining({
+                            showName: "Some Other Show",
+                        }),
+                    ]),
+                    Lupin: expect.arrayContaining([
+                        expect.objectContaining({ showName: "Lupin" }),
+                    ]),
+                    "Carmen San Diego": expect.arrayContaining([
+                        expect.objectContaining({
+                            showName: "Carmen San Diego",
+                        }),
+                    ]),
+                })
+            );
+
+            // Check array lengths
+            expect(result["Hilda"].length).toBe(2);
+            expect(result["Some Other Show"].length).toBe(3);
+            expect(result["Lupin"].length).toBe(2);
+            expect(result["Carmen San Diego"].length).toBe(2);
+        });
+        test("Grouping works with just one type of title", () => {
+            //
+        });
+        test("Grouping returns an empty obj for empty arrays", () => {
+            //
+        });
+    });
+    describe("Get top five titles", () => {
+        const algo = new TopFiveAlgorithm([]);
+
+        test("Actually gets the top five", () => {
+            const someScores: RankScores = {
+                Foo: { score: 1, recency: 0 },
+                Bar: { score: 2, recency: 0 },
+                Baz: { score: 3, recency: 0 },
+                Hilda: { score: 5, recency: 0 },
+                "The Hollow": { score: 6, recency: 0 },
+                "The Three Body Problem": { score: 10, recency: 0 },
+                "Carmen San Diego": { score: 11, recency: 0 },
+                Lupin: { score: 9, recency: 0 },
+                "L'Agence": { score: 8, recency: 0 },
+            };
+            const ranked = algo.getTopFiveTitles(someScores);
+            expect(ranked).toEqual([
+                "Carmen San Diego",
+                "The Three Body Problem",
+                "Lupin",
+                "L'Agence",
+                "The Hollow",
+            ]);
+        });
+
+        test("Breaks ties using recency score", () => {
+            const someScores: RankScores = {
+                Foo: { score: 1, recency: 0 },
+                Bar: { score: 2, recency: 0 },
+                Baz: { score: 3, recency: 0 },
+                Hilda: { score: 9, recency: 0.1 },
+                "The Three Body Problem": { score: 10, recency: 0 },
+                "L'Agence": { score: 9, recency: 0.4 },
+                Lupin: { score: 9, recency: 0.3 },
+                "The Hollow": { score: 9, recency: 0.2 },
+                "Carmen San Diego": { score: 11, recency: 0 },
+            };
+            const ranked = algo.getTopFiveTitles(someScores);
+            expect(ranked).toEqual([
+                "Carmen San Diego",
+                "The Three Body Problem",
+                "L'Agence", // These four all have score: 9,
+                "Lupin", // but are sorted by recency
+                "The Hollow", // in descending order
+            ]);
+        });
+
+        test("Works for only three inputs", () => {
+            const justThree: RankScores = {
+                Hilda: { score: 5, recency: 0 },
+                "The Three Body Problem": { score: 10, recency: 0 },
+                Lupin: { score: 9, recency: 0 },
+            };
+            const ranked = algo.getTopFiveTitles(justThree);
+            expect(ranked).toEqual([
+                "The Three Body Problem",
+                "Lupin",
+                "Hilda",
+            ]);
+        });
     });
 });
