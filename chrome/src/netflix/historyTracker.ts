@@ -93,12 +93,9 @@ export class WatchHistoryTracker {
     async getTopFive(): Promise<string[]> {
         // this.cleanupOldHistory();
         console.log("In getTopFive", this.allHistory.length);
-        console.log(this.allHistory, "85ru");
         const topFiveStrings = this.allHistory.map((h: WatchEntry) => {
-            console.log(h, h.showName, "87ru");
             return h.showName;
         });
-        console.log(topFiveStrings, "89ru");
 
         return new Promise((resolve) => {
             resolve(topFiveStrings);

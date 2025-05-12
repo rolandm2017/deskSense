@@ -199,19 +199,24 @@ export class YouTubeViewing extends VideoContentViewing {
 
 export class NetflixViewing extends VideoContentViewing {
     // TODO
-    contentTitle: string;
+    urlId: string;
+    showName: string;
+    url: string;
 
-    constructor(videoId: string, tabTitle: string, contentTitle: string) {
-        super(videoId, tabTitle);
-        this.contentTitle = contentTitle;
+    constructor(urlId: string, url: string, showName: string) {
+        super(urlId, "");
+        this.showName = showName;
+        this.urlId = urlId;
+        this.url = url;
+
         // timestamps arr in superclass
     }
 
     startTimeTracking() {
-        api.netflix.sendPlayEvent();
+        api.netflix.sendPlayEvent(this);
     }
 
     pauseTracking() {
-        api.netflix.sendPauseEvent();
+        api.netflix.sendPauseEvent(this);
     }
 }
