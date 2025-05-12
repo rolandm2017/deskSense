@@ -39,18 +39,18 @@
 
         #desksense-modal h2 {
             font-size: 28px;
-            color: black
+            color: black;
         }
 
         #series-select {
             height: 38px;
-            border: 2px solid #6C33FF;
+            border: 2px solid #6c33ff;
             color: #333; /* Text color for the selected option */
 
             font-size: 14px;
             background-color: white;
         }
-        
+
         #series-select option {
             height: 38px;
             color: #333; /* Text color for dropdown options */
@@ -59,7 +59,7 @@
             /* padding: 8px; */
             padding: 12px 8px; /* Increase top/bottom padding from 8px to 12px */
         }
-        
+
         /* For hover effect on options */
         #series-select option:hover {
             font-size: 14px;
@@ -68,19 +68,19 @@
         }
 
         #desksense-modal #dropdown-selection {
-            border: 2px solid #6C33FF;
+            border: 2px solid #6c33ff;
         }
 
         #new-entry-btn {
-            background-color: #FF6B3D;
+            background-color: #ff6b3d;
         }
 
         #confirm-btn {
-            background-color: #1A73E8;
+            background-color: #1a73e8;
         }
 
         #dont-ask-again-btn {
-            background-color: #E0E0E0;
+            background-color: #e0e0e0;
         }
 
         .modal-backdrop {
@@ -123,7 +123,6 @@
         }
 
         .desksense-rounding {
-            
             border-radius: 8px;
             border: 0;
         }
@@ -132,7 +131,7 @@
             padding: 12px;
             height: auto;
             width: auto;
-            background-color: #AAAAAA;
+            background-color: #aaaaaa;
             font-size: 1.55em;
         }
     </style>
@@ -149,17 +148,40 @@
                     <option>The Hollow</option> -->
                 </select>
                 <p class="hint">Can't find your title?</p>
-                <button id="new-entry-btn" class="desksense-button desksense-rounding">New entry</button>
+                <button
+                    id="new-entry-btn"
+                    class="desksense-button desksense-rounding"
+                >
+                    New entry
+                </button>
             </div>
-            <div id="input-section" style="display: none;">
-                <input type="text" id="series-input" placeholder="Enter series name">
-                <button id="cancel-entry-btn" class="desksense-button desksense-rounding">Cancel</button>
+            <div id="input-section" style="display: none">
+                <input
+                    type="text"
+                    id="series-input"
+                    placeholder="Enter series name"
+                />
+                <button
+                    id="cancel-entry-btn"
+                    class="desksense-button desksense-rounding"
+                >
+                    Cancel
+                </button>
             </div>
             <div class="modal-actions">
-                <button id="confirm-btn" class="desksense-button desksense-rounding">Confirm</button>
-                <button id="ignore-btn" class="desksense-button desksense-rounding">Don't ask again</button>
+                <button
+                    id="confirm-btn"
+                    class="desksense-button desksense-rounding"
+                >
+                    Confirm
+                </button>
+                <button
+                    id="ignore-btn"
+                    class="desksense-button desksense-rounding"
+                >
+                    Don't ask again
+                </button>
             </div>
         </div>
     </div>
 </div>
-
