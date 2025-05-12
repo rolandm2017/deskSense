@@ -24,6 +24,7 @@
 
 <div id="desksense-modal">
     <style>
+        /* Base modal styling with all selectors nested inside #desksense-modal */
         #desksense-modal {
             position: fixed;
             top: 0;
@@ -34,154 +35,175 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: sans-serif;
+            font-family: Arial, sans-serif;
         }
 
-        #desksense-modal h2 {
-            font-size: 28px;
-            color: black;
-        }
+        /* Nested selectors inside #desksense-modal */
+        #desksense-modal {
+            .modal-backdrop {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+            }
 
-        #series-select {
-            height: 38px;
-            border: 2px solid #6c33ff;
-            color: #333; /* Text color for the selected option */
+            .modal-box {
+                background: white;
+                padding: clamp(20px, 3vw, 30px);
+                border-radius: 10px;
+                z-index: 10001;
+                width: clamp(300px, 28vw, 420px);
+                text-align: center;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+            }
 
-            font-size: 14px;
-            background-color: white;
-        }
+            /* Typography */
+            h2 {
+                font-size: clamp(22px, 1.8vw, 28px);
+                color: #141414;
+                margin-top: 0;
+                margin-bottom: clamp(15px, 1.5vw, 20px);
+                font-weight: 600;
+            }
 
-        #series-select option {
-            height: 38px;
-            color: #333; /* Text color for dropdown options */
-            background-color: white; /* Background color for dropdown options */
-            font-size: 14px;
-            /* padding: 8px; */
-            padding: 12px 8px; /* Increase top/bottom padding from 8px to 12px */
-        }
+            .hint {
+                font-size: clamp(14px, 1.2vw, 18px);
+                margin-top: clamp(10px, 1.5vw, 15px);
+                margin-bottom: clamp(8px, 1vw, 12px);
+                color: #555;
+            }
 
-        /* For hover effect on options */
-        #series-select option:hover {
-            font-size: 14px;
-            background-color: #f0f0f0;
-            color: #000;
-        }
+            /* Form elements */
+            #series-select {
+                height: clamp(38px, 3vw, 45px);
+                border: 2px solid #6c33ff;
+                color: #333;
+                font-size: clamp(14px, 1.1vw, 16px);
+                background-color: white;
+                width: 100%;
+                padding: 0 10px;
+                margin-top: clamp(5px, 1vw, 10px);
+            }
 
-        #desksense-modal #dropdown-selection {
-            border: 2px solid #6c33ff;
-        }
+            #series-select option {
+                color: #333;
+                background-color: white;
+                font-size: clamp(14px, 1.1vw, 16px);
+                padding: 12px 8px;
+            }
 
-        #new-entry-btn {
-            background-color: #ff6b3d;
-        }
+            #series-select option:hover {
+                background-color: #f0f0f0;
+                color: #000;
+            }
 
-        #confirm-btn {
-            background-color: #1a73e8;
-        }
+            #series-input {
+                height: clamp(38px, 3vw, 45px);
+                border: 2px solid #6c33ff;
+                border-radius: 8px;
+                width: 100%;
+                font-size: clamp(14px, 1.1vw, 16px);
+                padding: 0 10px;
+                margin-bottom: clamp(10px, 1.5vw, 15px);
+            }
 
-        #dont-ask-again-btn {
-            background-color: #e0e0e0;
-        }
+            /* Buttons */
+            .desksense-button {
+                padding: clamp(10px, 1vw, 14px) clamp(15px, 1.5vw, 20px);
+                height: auto;
+                width: auto;
+                font-size: clamp(14px, 1.1vw, 16px);
+                font-weight: 500;
+                cursor: pointer;
+                margin: clamp(5px, 0.8vw, 8px);
+                transition: background-color 0.2s;
+            }
 
-        .modal-backdrop {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-        }
+            .desksense-rounding {
+                border-radius: 8px;
+                border: 0;
+            }
 
-        .modal-box {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            z-index: 10001;
-            width: 300px;
-            text-align: center;
-        }
+            #new-entry-btn {
+                background-color: #ff6b3d;
+                color: white;
+                margin-top: clamp(5px, 1vw, 10px);
+            }
 
-        .modal-box select,
-        .modal-box input {
-            width: 100%;
-            padding: 6px;
-            margin-top: 10px;
-        }
+            #new-entry-btn:hover {
+                background-color: #e85a2c;
+            }
 
-        .modal-actions {
-            margin-top: 15px;
-        }
+            #confirm-btn {
+                background-color: #1a73e8;
+                color: white;
+            }
 
-        .modal-actions button {
-            margin: 5px;
-        }
+            #confirm-btn:hover {
+                background-color: #1567d3;
+            }
 
-        .hint {
-            font-size: 1.85em;
-            margin-top: 10px;
-            color: #555;
-        }
+            #ignore-btn,
+            #close-modal-btn {
+                background-color: #e0e0e0;
+                color: #333;
+            }
 
-        .desksense-rounding {
-            border-radius: 8px;
-            border: 0;
-        }
+            #ignore-btn:hover,
+            #close-modal-btn:hover {
+                background-color: #cccccc;
+            }
 
-        .desksense-button {
-            padding: 12px;
-            height: auto;
-            width: auto;
-            background-color: #aaaaaa;
-            font-size: 1.55em;
+            #cancel-entry-btn {
+                background-color: #e0e0e0;
+                color: #333;
+            }
+
+            #cancel-entry-btn:hover {
+                background-color: #cccccc;
+            }
+
+            #change-title-btn {
+                background-color: #6c33ff;
+                color: white;
+            }
+
+            #change-title-btn:hover {
+                background-color: #5a29d8;
+            }
+
+            /* Layout sections */
+            .modal-actions {
+                margin-top: clamp(15px, 2vw, 25px);
+                display: flex;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            #current-title-target {
+                font-weight: 600;
+                color: #6c33ff;
+            }
+
+            #desksense-review-component p {
+                font-size: clamp(14px, 1.1vw, 16px);
+                color: #555;
+                margin-bottom: clamp(15px, 2vw, 20px);
+            }
+
+            #desksense-review-component div {
+                display: flex;
+                justify-content: center;
+                margin-top: clamp(10px, 1.5vw, 15px);
+            }
         }
     </style>
     <div class="modal-backdrop"></div>
     <div class="modal-box">
         <div id="desksense-state-target">
-            <h2>What are you watching?</h2>
-            <div id="dropdown-section">
-                <select id="series-select" class="desksense-rounding">
-                    <!-- <option>Hilda</option>
-                    <option>The Three Body Problem</option>
-                    <option>The Agency</option>
-                    <option>Lupin</option>
-                    <option>The Hollow</option> -->
-                </select>
-                <p class="hint">Can't find your title?</p>
-                <button
-                    id="new-entry-btn"
-                    class="desksense-button desksense-rounding"
-                >
-                    New entry
-                </button>
-            </div>
-            <div id="input-section" style="display: none">
-                <input
-                    type="text"
-                    id="series-input"
-                    placeholder="Enter series name"
-                />
-                <button
-                    id="cancel-entry-btn"
-                    class="desksense-button desksense-rounding"
-                >
-                    Cancel
-                </button>
-            </div>
-            <div class="modal-actions">
-                <button
-                    id="confirm-btn"
-                    class="desksense-button desksense-rounding"
-                >
-                    Confirm
-                </button>
-                <button
-                    id="ignore-btn"
-                    class="desksense-button desksense-rounding"
-                >
-                    Don't ask again
-                </button>
-            </div>
+            <!-- Content will be injected here by JavaScript -->
         </div>
     </div>
 </div>

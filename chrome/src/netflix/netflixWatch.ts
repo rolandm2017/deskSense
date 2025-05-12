@@ -107,7 +107,7 @@ function setCurrentReviewTitleIntoReviewComponent() {
     el.innerText = selectedTitleState;
 }
 
-function renderModal(stateTargetContainer: HTMLElement) {
+function renderModalContent(stateTargetContainer: HTMLElement) {
     if (currentModalState === "selecting") {
         stateTargetContainer.innerHTML = selectTitleComponent;
         attachSelectingTitleListeners();
@@ -154,6 +154,8 @@ function injectInitialStateModal() {
     };
     // console.log("Waiting for element", new Date().getSeconds());
     waitForElement(EL_IDS.MODAL, (modal) => {
+        const renderTarget = getElementWithGivenIdOrThrow(EL_IDS.STATE_TARGET);
+        renderModalContent(renderTarget);
         // Now you can safely populate your dropdown
         console.log("Modal ready", new Date().getSeconds());
         const dropdown = getElementWithGivenIdOrThrow(EL_IDS.SERIES_SELECT);
@@ -193,7 +195,7 @@ function attachConfirmedTitleListeners() {
         const stateChangeTarget = getElementWithGivenIdOrThrow(
             EL_IDS.STATE_TARGET
         );
-        renderModal(stateChangeTarget);
+        renderModalContent(stateChangeTarget);
     });
 
     // Setup "Close" listener

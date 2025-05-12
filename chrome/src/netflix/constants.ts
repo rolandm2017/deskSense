@@ -6,6 +6,11 @@
 export const EL_IDS = {
     MODAL: "desksense-modal",
     STATE_TARGET: "desksense-state-target",
+
+    // state change divs
+    SELECT_TITLE: "desksense-select-title-component",
+    REVIEW_TITLE: "desksense-review-component",
+
     // dropdown
     DROPDOWN_SECTION_DIV: "dropdown-section",
     SERIES_SELECT: "series-select",
