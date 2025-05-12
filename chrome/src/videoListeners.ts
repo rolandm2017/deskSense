@@ -64,7 +64,7 @@ function attachVideoListeners(retries = 0, maxRetries = 10) {
 
     const videoAutostarted = !video.paused;
     if (videoAutostarted) {
-        console.log("One-off autoplay on page load / refresh");
+        console.log("One-off auto-start for recording on page load / refresh");
         chrome.runtime.sendMessage({ event: "play" });
     }
 

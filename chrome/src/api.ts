@@ -6,13 +6,24 @@ const DESKSENSE_BACKEND_URL = "http://localhost:8000";
 
 const chromeTabUrl = "/api/chrome/tab";
 const ignoredDomainUrl = "/api/chrome/ignored";
+// youtube
 const youTubeUrl = "/api/chrome/youtube/new";
 const youtubePlayerStateUrl = "/api/chrome/youtube/state";
+// netflix
+const netflixUrl = "/api/chrome/netflix/new";
+const netflixPlayerStateUrl = "/api/chrome/netflix/state";
 
 interface YouTubePayload {
     videoId: string;
     tabTitle: string;
     channelName: string;
+}
+
+interface NetflixPayload {
+    urlId: string;
+    videoId: string;
+    showName: string;
+    url: string;
 }
 class YouTubeApi {
     sendPayload: Function;
@@ -60,12 +71,42 @@ class NetflixApi {
         this.sendPayload = sendPayload;
     }
 
-    sendPlayEvent() {
-        //
+    // TODO: If they select the wrong thing form the dropdown,
+    // TODO: AND they hit Confirm,
+    // then they can just open the modal again, select the right value,
+    // click Confirm. And the program will end the incorrect session,
+    // start them on the right one. They lose 2-3 min tracked in
+    // the wrong spot.
+    sendPlayEvent({ urlId, showName, url }: NetflixPayload) {
+        // The server knows which VideoSession it's modifying because
+        // the currently active tab deliverable, contained the ...
+        console.log("Would send play event for youtugbe");
+        const payload = {
+            urlId,
+            showName,
+            url,
+            playerState: "playing",
+            // I don't think I care about the timestamp.
+            // Like, what if they did a bunch of rewinding?
+            // The timestamp would be messed and not representative of
+            // their time spent watching content that day.
+            // timestamp: 0
+        };
+        console.log("The play payload was be ", payload);
+        this.sendPayload(youtubePlayerStateUrl, payload);
     }
 
-    sendPauseEvent() {
-        //
+    sendPauseEvent({ urlId, showName, url }: NetflixPayload) {
+        console.log("Would send pause event for youtube");
+        const payload = {
+            urlId,
+            showName,
+            url,
+            playerState: "paused",
+        };
+
+        console.log("The pause payload was be ", payload);
+        this.sendPayload(youtubePlayerStateUrl, payload);
     }
 }
 
@@ -88,6 +129,7 @@ class ServerApi {
         this.sendPayload(chromeTabUrl, payload);
     }
 
+    // TODO: Goes into the Youtube class
     reportYouTube(
         tabTitle: string | undefined,
         channel: string,
@@ -108,6 +150,7 @@ class ServerApi {
         this.sendPayload(youTubeUrl, payload);
     }
 
+    // TODO: Goes into the Netflix
     reportNetflix(foo: string, bar: string) {
         // TODO
         console.log("Reporting netflix is not supported yet");
