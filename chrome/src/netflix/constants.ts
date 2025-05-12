@@ -5,6 +5,7 @@
 
 export const EL_IDS = {
     MODAL: "desksense-modal",
+    STATE_TARGET: "desksense-state-target",
     // dropdown
     DROPDOWN_SECTION_DIV: "dropdown-section",
     SERIES_SELECT: "series-select",
@@ -18,6 +19,10 @@ export const EL_IDS = {
     // Input
     INPUT_SECTION_DIV: "input-section",
     SERIES_INPUT: "series-input",
+    // review state
+    CURRENT_TITLE_TARGET: "current-title-target",
+    CHANGE_TITLE_BTN: "change-title-btn",
+    CLOSE_BTN: "close-modal-btn",
 };
 
 export const CLASSES = {

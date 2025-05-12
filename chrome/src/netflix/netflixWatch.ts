@@ -12,11 +12,33 @@
 
 import modalHtml from "./netflixWatchModal.html";
 
+import reviewTitleComponent from "./reviewTitleComponent.html";
+import selectTitleComponent from "./selectTitleComponent.html";
+
 import { MissingComponentError } from "./errors";
 
 import { historyTracker } from "./historyTrackerInit";
 
 import { EL_IDS } from "./constants";
+
+/* NOTES on what could be: 
+
+* If you use the dropdown and feel like 5 entries isn't enough, 
+* you could increase it to 8.
+* 
+* The "Don't ask again" btn could be "Mark Leisure" or "Mark Productivity"
+* as a replacement for "Ignore". The server needs to categorize as one of the two.
+* 
+* KeepAlive can start right away.
+* 
+* Netflix and YouTube will share a lot of code.
+
+*/
+
+type ModalState = "selecting" | "confirmed";
+
+let currentModalState: ModalState = "selecting";
+let selectedTitleState: string | null = null;
 
 function getElementWithGivenIdOrThrow(id: string) {
     const element = document.getElementById(id);
@@ -26,11 +48,64 @@ function getElementWithGivenIdOrThrow(id: string) {
     return element;
 }
 
-function injectModal() {
+function closeModal(modal: HTMLElement) {
+    modal.remove();
+}
+
+function attachConfirmedTitleListeners() {
+    const changeTitleBtn = getElementWithGivenIdOrThrow(
+        EL_IDS.CHANGE_TITLE_BTN
+    );
+    const closeModalBtn = getElementWithGivenIdOrThrow(EL_IDS.CLOSE_BTN);
+
+    // Setup "Change title" listener
+    changeTitleBtn.addEventListener("click", () => {
+        //
+        console.log("changing back to the prior state");
+        // selectedTitleState = ""; // Don't change it yet. No point
+        currentModalState = "selecting";
+        const stateChangeTarget = getElementWithGivenIdOrThrow(
+            EL_IDS.STATE_TARGET
+        );
+        renderModal(stateChangeTarget);
+    });
+
+    // Setup "Close" listener
+    closeModalBtn.addEventListener("click", () => {
+        //
+        console.log("closing modal");
+        const modal = getElementWithGivenIdOrThrow(EL_IDS.MODAL);
+        closeModal(modal); //
+    });
+}
+
+function setCurrentReviewTitleIntoReviewComponent() {
+    // need to inject the name at the right place
+    const el = getElementWithGivenIdOrThrow(EL_IDS.CURRENT_TITLE_TARGET);
+    if (!selectedTitleState) {
+        throw new Error("Failed to set title upon selection");
+    }
+    el.innerText = selectedTitleState;
+}
+
+function renderModal(stateTargetContainer: HTMLElement) {
+    if (currentModalState === "selecting") {
+        stateTargetContainer.innerHTML = selectTitleComponent;
+        attachSelectingTitleListeners();
+    } else {
+        stateTargetContainer.innerHTML = reviewTitleComponent;
+        setCurrentReviewTitleIntoReviewComponent();
+        attachConfirmedTitleListeners();
+    }
+}
+
+function injectInitialStateModal() {
     // Don't inject if modal already exists
     if (document.getElementById(EL_IDS.MODAL)) {
         return;
     }
+
+    // TODO: If (userSetEntry) displayEntry()
 
     // Inject CSS
     const style = document.createElement("style");
@@ -74,13 +149,13 @@ function injectModal() {
                 dropdown.appendChild(option);
             });
         });
-        console.log("Settin gup event listerners");
+        console.log("Settin up event listeners");
         // Add the rest of your event listeners
-        setupEventListeners();
+        attachSelectingTitleListeners();
     });
 }
 
-function setupEventListeners() {
+function attachSelectingTitleListeners() {
     console.log("Injecting listeners in setupEventListeners");
     // Add event listeners
     const modal = getElementWithGivenIdOrThrow(EL_IDS.MODAL);
@@ -130,7 +205,15 @@ function setupEventListeners() {
 
         if (!mediaTitle) return alert("Please enter or select a series name.");
         console.log("Saving ", mediaTitle);
+        selectedTitleState = mediaTitle;
         // Save mediaTitle to chrome.storage.local
+
+        // TODO: If they select the wrong thing form the dropdown,
+        // TODO: AND they hit Confirm,
+        // then they can just open the modal again, select the right value,
+        // click Confirm. And the program will end the incorrect session,
+        // start them on the right one. They lose 2-3 min tracked in
+        // the wrong spot.
 
         const currentUrl = window.location.href;
 
@@ -163,7 +246,7 @@ const checkNetflixLoaded = () => {
     if (document.readyState === "complete") {
         // Add a delay to ensure Netflix has fully loaded
         console.log("Injecting modal", new Date().getSeconds());
-        injectModal();
+        injectInitialStateModal();
     } else {
         console.log("Checking again for check number", checkCount);
         checkCount++;
@@ -173,13 +256,18 @@ const checkNetflixLoaded = () => {
 
 checkNetflixLoaded();
 
+function openModal() {
+    //
+}
+
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log("Received message:", message);
 
     if (message.action === "openModal") {
         // Re-inject the modal
-        injectModal();
+        // injectModal
+        openModal();
         sendResponse({ success: true });
     }
 
