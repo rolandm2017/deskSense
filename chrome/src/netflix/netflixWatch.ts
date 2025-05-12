@@ -12,8 +12,8 @@
 
 import modalHtml from "./netflixWatchModal.html";
 
-import reviewTitleComponent from "./reviewTitleComponent.html";
-import selectTitleComponent from "./selectTitleComponent.html";
+import reviewTitleComponent from "./reviewTitle.html";
+import selectTitleComponent from "./selectTitle.html";
 
 import { MissingComponentError } from "./errors";
 
