@@ -8,6 +8,7 @@ export interface WatchEntry {
     showName: string;
     url: string;
     timestamp: string; // new Date().isoString()
+    msTimestamp: number; // generated automatically (by the code)
     watchCount: number; // count of times it was watched
 }
 
@@ -63,6 +64,7 @@ export class WatchHistoryTracker {
                 showName: showName,
                 url: url,
                 timestamp: new Date().toISOString(),
+                msTimestamp: Date.now(), // number of ms since Jan 1, 1970
                 watchCount: 1,
             };
             this.todayHistory.push(newEntry);
