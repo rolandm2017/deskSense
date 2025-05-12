@@ -46,7 +46,7 @@ export class TopFiveAlgorithm {
         const sorted = [];
     }
 
-    oneHourAsMilliseconds = 3600; // (1000 * 60 * 60)
+    oneHourAsMilliseconds = 3600000; // (1000 * 60 * 60)
 
     computeRecencyScore(timestamps: number[], now = Date.now()) {
         // timestamps: Array of Unix timestamps when the show was watched
@@ -54,9 +54,15 @@ export class TopFiveAlgorithm {
         // decayRate: Lower = slower decay. Try 0.05 for hourly, 0.005 for daily decay
         // time-weighted frequency sum, where
         // each individual viewing gets a score that decays with time
+        const rawScore = this.getRawRecencyScore(timestamps);
+        const maxPossibleScore = timestamps.length;
+        const normalizedScore = (rawScore / maxPossibleScore) * 100;
+        return normalizedScore;
+    }
+
+    getRawRecencyScore(timestamps: number[], now = Date.now()) {
         return timestamps.reduce((score, ts) => {
             const hoursAgo = (now - ts) / this.oneHourAsMilliseconds;
-            console.log(hoursAgo, score, "52ru");
             const decayedRating = this.exponentialDecay(hoursAgo);
             return score + decayedRating;
         }, 0);

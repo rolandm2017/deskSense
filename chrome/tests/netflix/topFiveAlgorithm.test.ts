@@ -30,6 +30,50 @@ describe("Top five algorithm", () => {
             expect(parseFloat(v.toFixed(3))).toBe(0.186);
         });
     });
+    describe("Single viewings passed to the full recency score method", () => {
+        const now = Date.now();
+        const oneHourAsMilliseconds = 3600000; // (1000 * 60 * 60)
+
+        test("Five hours ago", () => {
+            const showTimestamps = [now - oneHourAsMilliseconds * 5];
+            const score = new TopFiveAlgorithm().computeRecencyScore(
+                showTimestamps,
+                now
+            );
+            console.log(score.toFixed(2));
+
+            expect(parseFloat(score.toFixed(2))).toBe(95.12);
+        });
+        test("Twenty-four hours ago", () => {
+            const showTimestamps = [now - oneHourAsMilliseconds * 24];
+            const score = new TopFiveAlgorithm().computeRecencyScore(
+                showTimestamps,
+                now
+            );
+            console.log(score.toFixed(2));
+            expect(parseFloat(score.toFixed(2))).toBe(78.66);
+        });
+        test("Three days prior", () => {
+            const showTimestamps = [now - oneHourAsMilliseconds * 72];
+            const score = new TopFiveAlgorithm().computeRecencyScore(
+                showTimestamps,
+                now
+            );
+            console.log(score.toFixed(2));
+            expect(parseFloat(score.toFixed(2))).toBe(48.68);
+        });
+        test("Nine days prior", () => {
+            const showTimestamps = [
+                now - oneHourAsMilliseconds * 216, // 9 days ago
+            ];
+            const score = new TopFiveAlgorithm().computeRecencyScore(
+                showTimestamps,
+                now
+            );
+            console.log(score.toFixed(2));
+            expect(parseFloat(score.toFixed(2))).toBe(11.53);
+        });
+    });
     test("One viewing a week ago scores low", () => {
         const now = Date.now();
         const oneHour = 1000 * 60 * 60;
@@ -42,6 +86,7 @@ describe("Top five algorithm", () => {
         );
         console.log(score.toFixed(2));
         expect(score).toBeDefined();
+        expect(parseFloat(score.toFixed(2))).toBe(11.53);
     });
     test("Ten viewings a week ago scores higher", () => {
         const now = Date.now();
@@ -61,7 +106,9 @@ describe("Top five algorithm", () => {
         );
         console.log(score.toFixed(2));
         expect(score).toBeDefined();
+        expect(parseFloat(score.toFixed(2))).toBe(11.65);
     });
+
     test("Ten viewings a week ago and ten viewings yesterday scores really high", () => {
         const now = Date.now();
         const oneHour = 1000 * 60 * 60;
@@ -84,8 +131,9 @@ describe("Top five algorithm", () => {
         );
         console.log(score.toFixed(2));
         expect(score).toBeDefined();
+        expect(parseFloat(score.toFixed(2))).toBe(35.31);
     });
-    test("Whatever this is", () => {
+    test("Three quite recent viewings and two old viewings", () => {
         const now = Date.now();
         const oneHour = 1000 * 60 * 60;
         const showTimestamps = [
@@ -102,6 +150,7 @@ describe("Top five algorithm", () => {
         );
         console.log(score.toFixed(2));
         expect(score).toBeDefined();
+        expect(parseFloat(score.toFixed(2))).toBe(60.22);
     });
     test("Scores increase with recency and frequency", () => {
         const now = Date.now();
@@ -111,12 +160,14 @@ describe("Top five algorithm", () => {
         // Scenario 1: One viewing a week ago
         const timestamps1 = [now - oneHour * 216]; // 9 days ago
         const score1 = algo.computeRecencyScore(timestamps1, now);
+        expect(score1).toBeGreaterThan(0.01);
 
         // Scenario 2: Multiple viewings a week ago
         const timestamps2 = Array(7)
             .fill(0)
             .map((_, i) => now - oneHour * (212 + i));
         const score2 = algo.computeRecencyScore(timestamps2, now);
+        expect(score1).toBeGreaterThan(0.01);
 
         // Scenario 3: Viewings last week and yesterday
         const timestamps3 = [
@@ -124,6 +175,7 @@ describe("Top five algorithm", () => {
             ...[25, 26, 27, 28].map((h) => now - oneHour * h),
         ];
         const score3 = algo.computeRecencyScore(timestamps3, now);
+        expect(score1).toBeGreaterThan(0.01);
 
         // Scenario 4: Recent viewings (1-2 hours ago) + mixed
         const timestamps4 = [
@@ -134,6 +186,7 @@ describe("Top five algorithm", () => {
             now - oneHour * 216,
         ];
         const score4 = algo.computeRecencyScore(timestamps4, now);
+        expect(score1).toBeGreaterThan(0.01);
 
         // Assert progression
         expect(score1).toBeLessThan(score2);
