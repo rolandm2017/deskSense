@@ -14,6 +14,7 @@ function makeWatchEntry(
         showName,
         url,
         timestamp,
+        msTimestamp: new Date(timestamp).getTime(),
         watchCount,
     };
 }

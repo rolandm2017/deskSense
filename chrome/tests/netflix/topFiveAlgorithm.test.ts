@@ -35,7 +35,7 @@ describe("Top five algorithm", () => {
                 expect(parseFloat(v.toFixed(3))).toBe(0.186);
             });
         });
-        describe("Single viewings passed to the full recency score method", () => {
+        describe("Single viewings in the full recency method", () => {
             const now = Date.now();
             const oneHourAsMilliseconds = 3600000; // (1000 * 60 * 60)
 
@@ -242,31 +242,86 @@ describe("Top five algorithm", () => {
             expect(score).toBe(0.25);
         });
     });
-    describe("hoursBetween", () => {
-        const algorithm = new TopFiveAlgorithm([]);
-        test("returns 0 for same date", () => {
-            const date = new Date("2025-05-11T12:00:00Z");
-            expect(algorithm.hoursBetween(date, date)).toBe(0);
+    describe("Compute novelty", () => {
+        const algo = new TopFiveAlgorithm([]);
+        describe("Pure math utils", () => {
+            describe("getPositionOnCircle", () => {
+                // TODO: Refactor so it's really all in one, not two funcs
+                // Can check vals yourself using a calculator
+                // y = sqrt(1 - x^2)
+                test("Fifty percent gives y", () => {
+                    const expectedY = 0.8660254037844386;
+                    expect(algo.getPositionOnCircle(0.5)).toBe(expectedY);
+                });
+                test("Twenty-five percent gives y", () => {
+                    const expectedY = 0.9682458365518543;
+                    expect(algo.getPositionOnCircle(0.25)).toBe(expectedY);
+                });
+                test("Ten percent gives y", () => {
+                    const expectedY = 0.99498743710662;
+                    expect(algo.getPositionOnCircle(0.1)).toBe(expectedY);
+                });
+            });
+            test("getAdjustmentWithAverage", () => {
+                expect(algo.getAdjustmentWithAverage(8, 4)).toBe(6);
+                expect(algo.getAdjustmentWithAverage(0, 10)).toBe(5);
+            });
         });
-
-        test("returns 24 for dates 24 hours apart", () => {
-            const date1 = new Date("2025-05-11T12:00:00Z");
-            const date2 = new Date("2025-05-12T12:00:00Z");
-            expect(algorithm.hoursBetween(date1, date2)).toBe(24);
+        describe("getFirstSeenDateFor", () => {
+            test("Works with one entry", () => {
+                const title = "Hilda";
+                const now = new Date();
+                const oneFullDay = 86400000; // 24 * 60 * 60 * 1000
+                const dates = [
+                    new Date(now.getTime() - 3 * oneFullDay),
+                    new Date(now.getTime() - 5 * oneFullDay),
+                    new Date(now.getTime() - 8 * oneFullDay),
+                ];
+                const allHistory: WatchEntry[] = [
+                    {
+                        showName: title,
+                        timestamp: dates[0].toISOString(),
+                    } as WatchEntry,
+                    {
+                        showName: title,
+                        timestamp: dates[1].toISOString(),
+                    } as WatchEntry,
+                    {
+                        showName: title,
+                        timestamp: dates[2].toISOString(),
+                    } as WatchEntry,
+                ] as WatchEntry[];
+                expect(
+                    algo.getFirstSeenDateFor(title, allHistory)
+                ).toStrictEqual(dates[2]);
+            });
         });
+        describe("hoursBetween", () => {
+            const algorithm = new TopFiveAlgorithm([]);
+            test("returns 0 for same date", () => {
+                const date = new Date("2025-05-11T12:00:00Z");
+                expect(algorithm.hoursBetween(date, date)).toBe(0);
+            });
 
-        test("returns same result regardless of date order", () => {
-            const date1 = new Date("2025-05-11T12:00:00Z");
-            const date2 = new Date("2025-05-12T12:00:00Z");
-            expect(algorithm.hoursBetween(date1, date2)).toBe(
-                algorithm.hoursBetween(date2, date1)
-            );
-        });
+            test("returns 24 for dates 24 hours apart", () => {
+                const date1 = new Date("2025-05-11T12:00:00Z");
+                const date2 = new Date("2025-05-12T12:00:00Z");
+                expect(algorithm.hoursBetween(date1, date2)).toBe(24);
+            });
 
-        test("handles fractional hours correctly", () => {
-            const date1 = new Date("2025-05-11T12:00:00Z");
-            const date2 = new Date("2025-05-11T15:30:00Z");
-            expect(algorithm.hoursBetween(date1, date2)).toBe(3.5);
+            test("returns same result regardless of date order", () => {
+                const date1 = new Date("2025-05-11T12:00:00Z");
+                const date2 = new Date("2025-05-12T12:00:00Z");
+                expect(algorithm.hoursBetween(date1, date2)).toBe(
+                    algorithm.hoursBetween(date2, date1)
+                );
+            });
+
+            test("handles fractional hours correctly", () => {
+                const date1 = new Date("2025-05-11T12:00:00Z");
+                const date2 = new Date("2025-05-11T15:30:00Z");
+                expect(algorithm.hoursBetween(date1, date2)).toBe(3.5);
+            });
         });
     });
 

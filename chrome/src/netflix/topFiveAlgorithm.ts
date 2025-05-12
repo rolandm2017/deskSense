@@ -106,28 +106,6 @@ export class TopFiveAlgorithm {
             .map((item) => item.title);
     }
 
-    getProgressThruNoveltyPeriodForTitle(title: string) {
-        const firstSeenDate: Date = this.getFirstSeenDateFor(
-            title,
-            this.toSort
-        );
-        const hoursElapsedSinceAdded = this.hoursBetween(
-            new Date(),
-            firstSeenDate
-        );
-
-        const noveltyProgress = this.convertHoursSinceBeingAddedToPercentage(
-            hoursElapsedSinceAdded
-        );
-
-        return noveltyProgress;
-    }
-
-    convertHoursSinceBeingAddedToPercentage(hoursSinceBeingAdded: number) {
-        const noveltyPeriodInHours = 72;
-        return hoursSinceBeingAdded / noveltyPeriodInHours;
-    }
-
     oneHourAsMilliseconds = 3600000; // (1000 * 60 * 60)
 
     computeRecencyScore(timestampsFromGroup: number[], now = Date.now()) {
@@ -182,6 +160,7 @@ export class TopFiveAlgorithm {
     }
 
     computeNovelty(percentThruNoveltyPeriod: number) {
+        // TODO: Cram all the other stuff in here, that is downstream of mediaTitle
         // Progress as in, progress towards the end of the novelty period
         const rawScore = this.getPositionOnCircle(percentThruNoveltyPeriod);
         const lessAggroLine = this.getAdjustmentWithAverage(
@@ -201,12 +180,31 @@ export class TopFiveAlgorithm {
         return (rawScore + x) / 2;
     }
 
+    getProgressThruNoveltyPeriodForTitle(title: string) {
+        const firstSeenDate: Date = this.getFirstSeenDateFor(
+            title,
+            this.toSort
+        );
+        const hoursElapsedSinceAdded = this.hoursBetween(
+            new Date(),
+            firstSeenDate
+        );
+
+        const noveltyProgress = this.convertHoursSinceBeingAddedToPercentage(
+            hoursElapsedSinceAdded
+        );
+
+        return noveltyProgress;
+    }
+
     getFirstSeenDateFor(mediaTitle: string, allHistory: WatchEntry[]): Date {
         let firstSeenDate = new Date();
         for (const entry of allHistory) {
-            const timestampAsDate = new Date(entry.timestamp);
-            if (timestampAsDate < firstSeenDate) {
-                firstSeenDate = timestampAsDate;
+            if (mediaTitle == entry.showName) {
+                const timestampAsDate = new Date(entry.timestamp);
+                if (timestampAsDate < firstSeenDate) {
+                    firstSeenDate = timestampAsDate;
+                }
             }
         }
         return firstSeenDate;
@@ -214,5 +212,10 @@ export class TopFiveAlgorithm {
 
     hoursBetween(date1: Date, date2: Date) {
         return Math.abs(date2.getTime() - date1.getTime()) / (1000 * 60 * 60);
+    }
+
+    convertHoursSinceBeingAddedToPercentage(hoursSinceBeingAdded: number) {
+        const noveltyPeriodInHours = 72;
+        return hoursSinceBeingAdded / noveltyPeriodInHours;
     }
 }
