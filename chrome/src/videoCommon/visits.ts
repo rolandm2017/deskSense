@@ -1,6 +1,7 @@
 // visits.ts
 
-import { api } from "./api";
+import { api } from "../api";
+import { PlatformLogger } from "../logging";
 
 // A Visit: As in, A PageVisit
 // A Viewing: A window of time spent actively viewing the video.
@@ -58,33 +59,55 @@ class ViewingTracker {
     /*
      * Class is a container enabling cross-file Viewing management.
      */
-    current: YouTubeViewing | NetflixViewing | undefined;
-    timer: ViewingPayloadTimer;
+    currentMedia: YouTubeViewing | NetflixViewing | undefined;
+    youTubeApiLogger: PlatformLogger;
+    netflixApiLogger: PlatformLogger;
+    // timer: ViewingPayloadTimer;
 
     constructor() {
-        this.current = undefined;
+        this.currentMedia = undefined;
         const v = new Date();
+        this.youTubeApiLogger = new PlatformLogger("YouTube");
+        this.netflixApiLogger = new PlatformLogger("Netflix");
         // TODO: JUST ASSUME it's going to work with Play/Pause only, until
         // UNTIL you figure out otherwise.
-        const timerDuration = getTimeSpentWatching();
-        const temp = new Date();
-        this.timer = new ViewingPayloadTimer(temp);
+        // const timerDuration = getTimeSpentWatching();
+        // const temp = new Date();
+        // this.timer = new ViewingPayloadTimer(temp);
     }
 
     setCurrent(current: YouTubeViewing | NetflixViewing) {
-        this.current = current;
+        this.currentMedia = current;
+        if (current instanceof YouTubeViewing) {
+            console.log("Would report youtube here");
+            this.youTubeApiLogger.logLandOnPage();
+            // api.reportYouTubePage();
+        } else {
+            console.log("Would report netflix here");
+            this.netflixApiLogger.logLandOnPage();
+        }
     }
 
-    timerElapsed() {
-        //
-        this.timer;
-        return true;
+    markPlaying() {
+        if (this.currentMedia instanceof YouTubeViewing) {
+            this.youTubeApiLogger.logPlayEvent();
+        } else {
+            this.netflixApiLogger.logPlayEvent();
+        }
+    }
+
+    markPaused() {
+        if (this.currentMedia instanceof YouTubeViewing) {
+            this.youTubeApiLogger.logPauseEvent();
+        } else {
+            this.netflixApiLogger.logPauseEvent();
+        }
     }
 
     endViewing() {
         // used to report the final value on window close
-        if (this.current) {
-            this.current.conclude();
+        if (this.currentMedia) {
+            this.currentMedia.conclude();
         }
     }
 }
@@ -135,11 +158,11 @@ class VideoContentViewing {
         this.playerState = "paused";
     }
 
-    startTimeTracking() {
+    issuePlayEvent() {
         throw new Error("Not yet implemented");
     }
 
-    pauseTracking() {
+    issuePauseEvent() {
         throw new Error("Not yet implemented");
     }
 
@@ -189,42 +212,46 @@ class VideoContentViewing {
 
 export class YouTubeViewing extends VideoContentViewing {
     channelName: string;
+    youTubeApiLogger: PlatformLogger;
 
     constructor(videoId: string, tabTitle: string, channelName: string) {
         super(videoId, tabTitle);
         this.channelName = channelName;
+        this.youTubeApiLogger = new PlatformLogger("YouTube");
         // timestamps arr in superclass
     }
 
-    startTimeTracking() {
+    issuePlayEvent() {
+        this.youTubeApiLogger.logPlayEvent();
         api.youtube.sendPlayEvent(this);
     }
 
-    pauseTracking() {
+    issuePauseEvent() {
+        this.youTubeApiLogger.logPauseEvent();
         api.youtube.sendPauseEvent(this);
     }
 }
 
 export class NetflixViewing extends VideoContentViewing {
     // TODO
-    urlId: string;
-    showName: string;
-    url: string;
+    contentTitle: string;
+    netflixApiLogger: PlatformLogger;
 
-    constructor(urlId: string, url: string, showName: string) {
-        super(urlId, "");
-        this.showName = showName;
-        this.urlId = urlId;
-        this.url = url;
+    constructor(videoId: string, tabTitle: string, contentTitle: string) {
+        super(videoId, tabTitle);
+        this.contentTitle = contentTitle;
+        this.netflixApiLogger = new PlatformLogger("Netflix");
 
         // timestamps arr in superclass
     }
 
-    startTimeTracking() {
+    issuePlayEvent() {
+        this.netflixApiLogger.logPlayEvent();
         api.netflix.sendPlayEvent(this);
     }
 
-    pauseTracking() {
+    issuePauseEvent() {
+        this.netflixApiLogger.logPauseEvent();
         api.netflix.sendPauseEvent(this);
     }
 }

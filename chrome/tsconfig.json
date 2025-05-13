@@ -16,6 +16,6 @@
         "forceConsistentCasingInFileNames": true,
         "jsx": "preserve"
     },
-    "include": ["src/**/*.ts", "src/options.js"],
+    "include": ["src/**/*.ts", "src/optionsPage/options.js"],
     "exclude": ["node_modules", "dist"]
 }

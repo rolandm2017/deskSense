@@ -11,7 +11,7 @@ export default {
         minimize: false,
     },
     entry: {
-        options: "./src/options.js",
+        options: "./src/optionsPage/options.js",
         background: "./src/background.ts",
         // Add more entry points as needed
         videoListeners: "./src/videoListeners.ts",

@@ -1,18 +1,18 @@
 // background.ts
 import { api } from "./api";
 import { getDomainFromUrl } from "./urlTools";
-import { extractChannelInfoFromWatchPage } from "./youtube/channelExtractor";
 import {
-    extractChannelNameFromUrl,
-    getYouTubeVideoId,
-    isOnSomeChannel,
-    isWatchingVideo,
-    watchingShorts,
+    handleYouTubeUrl,
+    startSecondaryChannelExtractionScript,
 } from "./youtube/youtube";
 
-import { viewingTracker, YouTubeViewing } from "./visits";
+import { viewingTracker } from "./videoCommon/visits";
 
-import { ignoredDomains, isDomainIgnored, loadDomains } from "./ignoreList";
+import {
+    ignoredDomains,
+    isDomainIgnored,
+    setupIgnoredDomains,
+} from "./ignoreList";
 
 /*
 
@@ -33,75 +33,6 @@ function openOptionsOnClickIcon() {
 
 // openOptionsOnClickIcon();
 
-// // Handle YouTube URL specifically
-function handleYouTubeUrl(
-    tab: chrome.tabs.Tab,
-    tabsWithIntervalsRecorder: Function
-) {
-    if (!tab.url || !tab.id || !tab.title) {
-        console.warn("Missing required tab properties");
-        return;
-    }
-
-    if (isWatchingVideo(tab.url)) {
-        // YouTube does lots and lots of client side rendering, so
-        // a short delay ensures that the page has fully loaded
-        // Use executeScript to access the DOM on YouTube watch pages
-        const tabId = tab.id;
-        tabsWithIntervalsRecorder(tabId);
-        setTimeout(() => {
-            chrome.scripting.executeScript(
-                {
-                    target: { tabId: tabId },
-                    func: extractChannelInfoFromWatchPage,
-                },
-                (results) => {
-                    // TODO: Clean this up
-
-                    const tabTitle = tab.title ? tab.title : "Unknown Title";
-
-                    let videoId = getYouTubeVideoId(tab.url);
-
-                    let channelName = "Unknown Channel";
-                    if (results && results[0] && results[0].result) {
-                        // TODO: Get the video player info
-                        channelName = results[0].result;
-                    }
-                    console.log(
-                        "Detected ",
-                        channelName,
-                        " In new page",
-                        tabTitle
-                    );
-                    const youTubeVisit = new YouTubeViewing(
-                        videoId,
-                        tabTitle,
-                        channelName
-                    );
-                    // FIXME: You don't need to send the page notification.
-                    // FIXME: The parent func will send it for us
-                    // FIXME: "api.reportTabSwitch(domain, tab.title ? tab.title : "No title found");"
-                    // youTubeVisit.sendInitialInfoToServer();
-                    viewingTracker.setCurrent(youTubeVisit);
-                }
-            );
-            // NOTE: ** do not change this 1500 ms delay **
-            // was 1500 but tha'ts too short
-        }, 2900); // 1.5 second delay. The absolute minimum value.
-        // 1.0 sec delay still had the "prior channel reported as current" problem
-    } else if (isOnSomeChannel(tab.url)) {
-        // For channel pages, we can extract from the URL
-        const channelName = extractChannelNameFromUrl(tab.url);
-        api.reportYouTube(tab.title, channelName);
-    } else if (watchingShorts(tab.url)) {
-        // Avoids trying to extract the channel name from
-        // the YouTube Shorts page. The page's HTML changes often. Sisyphean task.
-        api.reportYouTube(tab.title, "Watching Shorts");
-    } else {
-        api.reportYouTube(tab.title, "YouTube Home");
-    }
-}
-
 const tabsWithPollingList: number[] = [];
 
 function putTabIdIntoPollingList(tabId: number) {
@@ -117,6 +48,8 @@ interface ProcessedUrlEntry {
 const processedTabs = new Map<number, ProcessedUrlEntry>();
 
 const PAGE_LOAD_DEBOUNCE_DELAY = 4000;
+
+// TODO: Make debounce stuff a class
 
 function cleanupOldTabReferences(now: number) {
     // "Now" from new Date().now()
@@ -232,7 +165,7 @@ chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
     const isYouTubeWatchPage = tabsWithPollingList.includes(tabId);
 
     // Perform any cleanup or final operations here
-    if (isYouTubeWatchPage && viewingTracker.current) {
+    if (isYouTubeWatchPage && viewingTracker.currentMedia) {
         // send final data to server
         // TODO: This actually ends THE VISIT because a visit is the time on a page!
         // The Viewing would be when the user hits Pause.
@@ -240,108 +173,112 @@ chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
     }
 });
 
-function cancelPauseRecording(timeoutId: ReturnType<typeof setTimeout>) {
-    clearTimeout(timeoutId);
-}
+class PlayPauseDispatch {
+    // TODO: This will have to exist one per video page
+    playCount: number;
+    pauseCount: number;
+    endSessionTimeoutId: ReturnType<typeof setTimeout> | undefined;
 
-let playCount = 0;
-let pauseCount = 0;
+    pauseStartTime: Date | undefined;
 
-function startGracePeriod(localTime: Date): ReturnType<typeof setTimeout> {
-    // User presses pause, and then resumes the video after only 2.9 seconds, then
-    // don't bother pausing tracking.
-    const timeoutId = setTimeout(() => {
-        const endOfIntervalTime = new Date();
-        console.log("[onMsg] Timer expired: pausing tracking");
-        console.log("[onMsg] THIS PRITNS");
-        console.log(
-            "[onMsg] DURATION 2: ",
-            endOfIntervalTime.getSeconds() - localTime.getSeconds()
-        );
-        if (viewingTracker.current) {
-            viewingTracker.current.pauseTracking();
-        }
-    }, 3000);
-    return timeoutId;
-}
+    constructor() {
+        this.playCount = 0;
+        this.pauseCount = 0;
+        this.endSessionTimeoutId = undefined;
+        this.pauseStartTime = undefined;
+    }
 
-let endSessionTimeoutId: ReturnType<typeof setTimeout> | undefined;
-let pauseStartTime: Date;
-
-function waitForHandleYouTubeUrl() {
-    //
-}
-
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log(message, sender);
-    /*
-     *   This only runs when the user presses play or pauses the video.
-     * Hence they're definitely on a page that already loaded
-     * somewhere else in the program.
-     */
-    if (message.event === "user_pressed_play") {
-        playCount++;
-        console.log("[onMsg] Play detected", playCount);
-        if (endSessionTimeoutId) {
-            // TODO: Clean this up
-
+    notePlayEvent(sender: chrome.runtime.MessageSender) {
+        this.playCount++;
+        console.log("[onMsg] Play detected", this.playCount);
+        if (this.endSessionTimeoutId) {
             console.log("[onMsg] Cancel pause viewing");
             const resumeDuration =
-                (new Date().getTime() - pauseStartTime.getTime()) / 1000;
+                (new Date().getTime() - this.pauseStartTime!.getTime()) / 1000;
             console.log(
                 "[onMsg] Video was paused for:",
                 resumeDuration,
                 "seconds"
             );
-            cancelPauseRecording(endSessionTimeoutId);
+            this.cancelSendPauseEvent(this.endSessionTimeoutId);
         }
-        if (viewingTracker.current) {
+        if (viewingTracker.currentMedia) {
             console.log("[onMsg] Starting time tracking");
-            viewingTracker.current.startTimeTracking();
+            viewingTracker.currentMedia.issuePlayEvent();
             return;
         } else {
             // it wasn't there yet because, the, the channel extractor
             // script didn't run yet but the "report playing video" code did
-            if (!sender.tab) {
-                // problem
-                return;
-            }
 
-            // TODO: Clean this up
-            const tab = sender.tab;
-            const tabUrl = tab.url;
-            const tabTitle = tab.title || "Unknown Title";
-            // const channelName = getChannelNameFromSomewhere();
-
-            // Extract video ID from URL
-            let videoId = getYouTubeVideoId(tabUrl);
-
-            // TODO: Get channel name from somewhere
-            const youTubeVisit = new YouTubeViewing(
-                videoId,
-                tabTitle,
-                "Unknown Channel"
-            );
-            youTubeVisit.sendInitialInfoToServer();
-            viewingTracker.setCurrent(youTubeVisit);
+            startSecondaryChannelExtractionScript(sender);
         }
-    } else if (message.event === "user_pressed_pause") {
-        pauseCount++;
-        console.log("[onMsg] Pause detected", pauseCount);
+    }
+
+    notePauseEvent() {
+        this.pauseCount++;
+        console.log("[onMsg] Pause detected", this.pauseCount);
         // TODO: Clean this up
 
-        if (viewingTracker.current) {
-            // TODO: Set delay to pause tracking
+        if (viewingTracker.currentMedia) {
             console.log("[onMsg] START pause timer");
 
-            pauseStartTime = new Date();
+            const startOfGracePeriod = new Date();
+            this.pauseStartTime = startOfGracePeriod;
 
-            endSessionTimeoutId = startGracePeriod(pauseStartTime);
+            this.endSessionTimeoutId =
+                this.startGracePeriod(startOfGracePeriod);
         }
-    } else {
-        console.warn("Unknown event:", message);
     }
-});
+
+    gracePeriodDelayInMs = 3000;
+
+    startGracePeriod(localTime: Date): ReturnType<typeof setTimeout> {
+        // User presses pause, and then resumes the video after only 2.9 seconds, then
+        // don't bother pausing tracking.
+        const timeoutId = setTimeout(() => {
+            const endOfIntervalTime = new Date();
+            console.log("[onMsg] Timer expired: pausing tracking");
+            console.log("[onMsg] THIS PRITNS");
+            console.log(
+                "[onMsg] DURATION 2: ",
+                endOfIntervalTime.getSeconds() - localTime.getSeconds()
+            );
+            if (viewingTracker.currentMedia) {
+                viewingTracker.currentMedia.issuePauseEvent();
+            }
+        }, this.gracePeriodDelayInMs);
+        return timeoutId;
+    }
+
+    cancelSendPauseEvent(timeoutId: ReturnType<typeof setTimeout>) {
+        clearTimeout(timeoutId);
+    }
+}
+
+function waitForHandleYouTubeUrl() {
+    //
+}
+
+const playPauseDispatch = new PlayPauseDispatch();
+
+chrome.runtime.onMessage.addListener(
+    (message, sender: chrome.runtime.MessageSender, sendResponse) => {
+        console.log(message, sender);
+        /*
+         *   This only runs when the user presses play or pauses the video.
+         * Hence they're definitely on a page that already loaded
+         * somewhere else in the program.
+         */
+        if (message.event === "user_pressed_play") {
+            // TODO: On close ... oh, i need one PER watch screen. what if user has 5 videos going?
+            playPauseDispatch.notePlayEvent(sender);
+        } else if (message.event === "user_pressed_pause") {
+            playPauseDispatch.notePauseEvent();
+        } else {
+            console.warn("Unknown event:", message);
+        }
+    }
+);
 
 /*
  * Claude says, re: onUpdated:
@@ -376,28 +313,34 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
 });
 
 chrome.runtime.onInstalled.addListener(() => {
-    // Make sure the service worker is ready before setting up listeners
-    if (chrome.storage) {
-        // Now it is safe to use chrome.storage
-        // Listen for storage changes
-        chrome.storage.onChanged.addListener((changes, area) => {
-            if (area === "local" && changes.ignoredDomains) {
-                console.log(
-                    "Changes in ignoredDomains:",
-                    changes.ignoredDomains
-                );
-                if (changes.ignoredDomains.newValue) {
-                    ignoredDomains.addNew(changes.ignoredDomains.newValue);
-                }
-            } else {
-                console.log("Other changes:", changes); // log other changes if needed
-            }
-        });
-    } else {
-        console.error("chrome.storage is not available!");
-    }
+    setupIgnoredDomains();
+});
 
-    loadDomains();
+/*
+ * Open the Netflix Watch modal when you click the icon on the right page
+ */
+
+chrome.action.onClicked.addListener(async (tab) => {
+    console.log("Action.Onclick: ");
+    // First check if we're on any Netflix page
+    if (
+        tab.id &&
+        tab.url &&
+        (tab.url.includes("wikipedia") || tab.url.includes("netflix.com/watch"))
+    ) {
+        // Inject the content script
+        await chrome.tabs.sendMessage(tab.id, { action: "openModal" });
+
+        // If your script needs to know it was triggered by the icon click,
+        // you can pass a message after injection
+        // chrome.tabs.sendMessage(tab.id, { action: "extensionIconClicked" });
+    } else {
+        // Optionally, show a notification or take other action
+        console.log(
+            "Not on Netflix - script not injected. Tab ID was: ",
+            tab.id
+        );
+    }
 });
 
 /*
