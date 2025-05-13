@@ -28,7 +28,35 @@ class IgnoredDomains {
 // Load domains when extension starts
 export let ignoredDomains: IgnoredDomains = new IgnoredDomains([]);
 
-export function loadDomains() {
+export function setupIgnoredDomains() {
+    // Make sure the service worker is ready before setting up listeners
+
+    // FIXME: are newly added ignored domains getting added?
+
+    if (chrome.storage) {
+        // Now it is safe to use chrome.storage
+        // Listen for storage changes
+        chrome.storage.onChanged.addListener((changes, area) => {
+            if (area === "local" && changes.ignoredDomains) {
+                console.log(
+                    "Changes in ignoredDomains:",
+                    changes.ignoredDomains
+                );
+                if (changes.ignoredDomains.newValue) {
+                    ignoredDomains.addNew(changes.ignoredDomains.newValue);
+                }
+            } else {
+                console.log("Other changes:", changes); // log other changes if needed
+            }
+        });
+    } else {
+        console.error("chrome.storage is not available!");
+    }
+
+    loadIgnoredDomains();
+}
+
+export function loadIgnoredDomains() {
     chrome.storage.local.get("ignoredDomains", (data) => {
         ignoredDomains = new IgnoredDomains(data.ignoredDomains || []);
     });

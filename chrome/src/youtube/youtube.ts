@@ -1,6 +1,7 @@
 // youtube.ts
 import { ChannelPageOnlyError } from "../errors";
 import { stripProtocol } from "../urlTools";
+import { YouTubeViewing, viewingTracker } from "../visits";
 import { extractChannelInfoFromWatchPage } from "./channelExtractor";
 
 import { api } from "../api";

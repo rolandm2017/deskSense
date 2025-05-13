@@ -5,7 +5,11 @@ import { getYouTubeVideoId, handleYouTubeUrl } from "./youtube/youtube";
 
 import { viewingTracker, YouTubeViewing } from "./visits";
 
-import { ignoredDomains, isDomainIgnored, loadDomains } from "./ignoreList";
+import {
+    ignoredDomains,
+    isDomainIgnored,
+    setupIgnoredDomains,
+} from "./ignoreList";
 
 /*
 
@@ -183,17 +187,15 @@ class PlayPauseDispatch {
         this.playCount++;
         console.log("[onMsg] Play detected", this.playCount);
         if (this.endSessionTimeoutId) {
-            // TODO: Clean this up
-
             console.log("[onMsg] Cancel pause viewing");
             const resumeDuration =
-                (new Date().getTime() - this.pauseStartTime.getTime()) / 1000;
+                (new Date().getTime() - this.pauseStartTime!.getTime()) / 1000;
             console.log(
                 "[onMsg] Video was paused for:",
                 resumeDuration,
                 "seconds"
             );
-            cancelPauseRecording(this.endSessionTimeoutId);
+            this.cancelPauseRecording(this.endSessionTimeoutId);
         }
         if (viewingTracker.current) {
             console.log("[onMsg] Starting time tracking");
@@ -262,10 +264,10 @@ class PlayPauseDispatch {
         }, this.gracePeriodDelayInMs);
         return timeoutId;
     }
-}
 
-function cancelPauseRecording(timeoutId: ReturnType<typeof setTimeout>) {
-    clearTimeout(timeoutId);
+    cancelPauseRecording(timeoutId: ReturnType<typeof setTimeout>) {
+        clearTimeout(timeoutId);
+    }
 }
 
 function waitForHandleYouTubeUrl() {
@@ -326,28 +328,7 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
 });
 
 chrome.runtime.onInstalled.addListener(() => {
-    // Make sure the service worker is ready before setting up listeners
-    if (chrome.storage) {
-        // Now it is safe to use chrome.storage
-        // Listen for storage changes
-        chrome.storage.onChanged.addListener((changes, area) => {
-            if (area === "local" && changes.ignoredDomains) {
-                console.log(
-                    "Changes in ignoredDomains:",
-                    changes.ignoredDomains
-                );
-                if (changes.ignoredDomains.newValue) {
-                    ignoredDomains.addNew(changes.ignoredDomains.newValue);
-                }
-            } else {
-                console.log("Other changes:", changes); // log other changes if needed
-            }
-        });
-    } else {
-        console.error("chrome.storage is not available!");
-    }
-
-    loadDomains();
+    setupIgnoredDomains();
 });
 
 /*
