@@ -11,6 +11,8 @@ export const EL_IDS = {
     SELECT_TITLE: "desksense-select-title-component",
     REVIEW_TITLE: "desksense-review-component",
 
+    NEW_ENTRY_DIV: "new-entry-container",
+
     // dropdown
     DROPDOWN_SECTION_DIV: "dropdown-section",
     SERIES_SELECT: "series-select",

@@ -253,6 +253,11 @@ function attachSelectingTitleListeners() {
     );
     const inputSection = getElementWithGivenIdOrThrow(EL_IDS.INPUT_SECTION_DIV);
     const newEntryBtn = getElementWithGivenIdOrThrow(EL_IDS.NEW_ENTRY_BTN);
+
+    const newEntryContainer = getElementWithGivenIdOrThrow(
+        EL_IDS.NEW_ENTRY_DIV
+    );
+
     const cancelEntryBtn = getElementWithGivenIdOrThrow(
         EL_IDS.CANCEL_ENTRY_BTN
     );
@@ -271,6 +276,7 @@ function attachSelectingTitleListeners() {
     newEntryBtn.onclick = () => {
         dropdownSection.style.display = "none";
         inputSection.style.display = "block";
+        newEntryContainer.style.display = "none";
     };
 
     cancelEntryBtn.onclick = () => {
