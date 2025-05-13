@@ -1,5 +1,11 @@
 // videoListeners.ts
 
+/*
+
+File is in just /src because it is common to YouTube and Netflix.
+
+*/
+
 // Note that this:
 //             "run_at": "document_start"
 // Would run way too early. As per Claude:

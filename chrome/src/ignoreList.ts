@@ -1,3 +1,9 @@
+/*
+
+* Feature is intended to enable user to ignore tracking of any domain they choose.
+
+*/
+
 class IgnoredDomains {
     /* Was previously just a string array in a let, but
      * moving it to its own file necessitated an object to be strict */
