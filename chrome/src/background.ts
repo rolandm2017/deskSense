@@ -26,6 +26,7 @@ This approach cannot work for Netflix. Much user input is needed there.
 // Code that lets you open the options page when the icon is clicked
 // Disabled in favor of the modal
 function openOptionsOnClickIcon() {
+    // Don't delete this code
     chrome.action.onClicked.addListener(() => {
         chrome.runtime.openOptionsPage();
     });
@@ -56,6 +57,8 @@ function handleYouTubeUrl(
                     func: extractChannelInfoFromWatchPage,
                 },
                 (results) => {
+                    // TODO: Clean this up
+
                     const tabTitle = tab.title ? tab.title : "Unknown Title";
 
                     let videoId;
@@ -108,7 +111,7 @@ function handleYouTubeUrl(
 
 const tabsWithPollingList: number[] = [];
 
-function putTabIdIntoList(tabId: number) {
+function putTabIdIntoPollingList(tabId: number) {
     tabsWithPollingList.push(tabId);
 }
 
@@ -137,6 +140,7 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
         throw Error("A tab had no ID");
     }
     const tabId = tab.id!;
+    // TODO: Clean this up - NAME the boolean(s)
 
     // Check if this tab with this URL was processed recently
     const lastProcessed = processedTabs.get(tabId);
@@ -184,7 +188,7 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
         if (isYouTube) {
             console.log("[info] on YouTube");
             // Use the dedicated function to handle YouTube URLs
-            handleYouTubeUrl(tab, putTabIdIntoList);
+            handleYouTubeUrl(tab, putTabIdIntoPollingList);
             return;
         }
         api.reportTabSwitch(domain, tab.title ? tab.title : "No title found");
@@ -236,6 +240,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         playCount++;
         console.log("[onMsg] Play detected", playCount);
         if (endSessionTimeoutId) {
+            // TODO: Clean this up
+
             console.log("[onMsg] Cancel pause viewing");
             const endOfIntervalTime = new Date();
             console.log(
@@ -252,6 +258,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             // it wasn't there yet because, the, the channel extractor
             // script didn't run yet but the "report playing video" code did
             if (sender.tab) {
+                // TODO: Clean this up
                 const tab = sender.tab;
                 const tabUrl = tab.url;
                 const tabTitle = tab.title || "Unknown Title";
@@ -279,6 +286,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     } else if (message.event === "pause") {
         pauseCount++;
         console.log("[onMsg] Pause detected", pauseCount);
+        // TODO: Clean this up
+
         if (viewingTracker.current) {
             // TODO: Set delay to pause tracking
             console.log("[onMsg]START pause timer");

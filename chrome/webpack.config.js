@@ -12,8 +12,8 @@ export default {
         background: "./src/background.ts",
         // Add more entry points as needed
         videoListeners: "./src/videoListeners.ts",
-        netflixBrowse: "./src/netflixBrowse.ts",
-        netflixWatch: "./src/netflix/netflixWatch.html",
+
+        netflixWatch: "./src/netflix/netflixWatch.ts",
     },
     output: {
         path: path.resolve(__dirname, "dist"),

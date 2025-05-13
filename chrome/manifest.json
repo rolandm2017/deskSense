@@ -23,11 +23,6 @@
             "run_at": "document_end"
         },
         {
-            "matches": ["https://www.netflix.com/browse"],
-            "js": ["dist/netflixBrowse.bundle.js"],
-            "run_at": "document_idle"
-        },
-        {
             "matches": ["https://www.netflix.com/watch/*"],
             "js": ["dist/netflixWatch.bundle.js"],
             "run_at": "document_idle"
