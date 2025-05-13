@@ -42,7 +42,12 @@ export class WatchHistoryTracker {
             urlId = urlId.split("?")[0];
         }
         console.log("[tracker - recording]", title);
-        this.addWatchEntry(urlId, title, url);
+        const latestEntryUpdate: WatchEntry = this.addWatchEntry(
+            urlId,
+            title,
+            url
+        );
+        this.facade.updateActiveTitle(latestEntryUpdate);
         this.saveHistory();
     }
 
@@ -62,6 +67,7 @@ export class WatchHistoryTracker {
             watchCount: 1,
         };
         this.allHistory.push(newEntry);
+        return newEntry;
     }
     // so, i pick hilda, i watch hilda, i pick hilda again.
     // does hilda now have two watchEntries in the history?
@@ -72,6 +78,22 @@ export class WatchHistoryTracker {
         // "234032" passes but "234o32" fails
         const isNumeric = /^\d+$/.test(urlId);
         return isNumeric;
+    }
+
+    recordPauseEvent() {
+        // TODO: So, the facade gets to know what the user's
+        // current watch page is.
+        // The facade also gets to know when they leave the page
+        // so it can issue a pause cmd. Or, perhaps the server will
+        // just know because the Chrome session changed.
+        // Anyweay, the facade knows the current Watch page title.
+        // So then, the video player state script is injected.
+        // It tells the facade, "Hey it's playing" Or "Hey it's paused"
+        // and behind the facade, something issues play, pause payloads
+        // as needed.
+        // use current state and tell the server it's paused
+        const currentMedia = this.allHistory.at(-1);
+        this.facade.sendPauseEventPayload(currentMedia);
     }
 
     async getTopFive(): Promise<string[]> {
@@ -133,17 +155,6 @@ export class WatchHistoryTracker {
         return new Date().toISOString().split("T")[0];
     }
 
-    // Get the most recently watched show
-    getLastWatchedShow() {
-        const dates = Object.keys(this.allHistory).sort().reverse();
-
-        if (this.allHistory && this.allHistory.length > 0) {
-            return this.allHistory[this.allHistory.length - 1].showName;
-        }
-
-        return null;
-    }
-
     // Get most frequently watched show in last 3 active days
     getMostWatchedShowLastThreeDays() {
         const dates = Object.keys(this.allHistory).sort().reverse();
@@ -178,24 +189,26 @@ export class WatchHistoryTracker {
         return Array.from(shows).sort();
     }
 
-    // Remove entries older than 15 active days
-
     async cleanupOldHistory() {
         // Keep the past 15 days of history, and
         // at least 100 entries.
+        const maxDaysAgo = 15;
+        const maxHistoryCount = 100;
         // TODO: Get just the dates, as a Set()
         const sortedHistory: WatchEntry[] = this.allHistory.sort().reverse();
 
         const countOfEntries = sortedHistory.length;
         const countAbove100 =
-            countOfEntries > 100 ? countOfEntries - 100 : null;
+            countOfEntries > maxHistoryCount
+                ? countOfEntries - maxHistoryCount
+                : null;
 
         if (countAbove100 === null) {
             return;
         }
 
         // Keep only the most recent 15 active days
-        function getRecentEntries(entries: WatchEntry[], maxDaysAgo = 15) {
+        function getRecentEntries(entries: WatchEntry[]) {
             const fifteenDaysAgo = new Date();
             fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - maxDaysAgo);
 

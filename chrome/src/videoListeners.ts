@@ -50,6 +50,7 @@ function attachVideoListeners(retries = 0, maxRetries = 10) {
     // Define handler functions and store references
     playHandler = () => {
         console.log("Sending play message");
+        // TODO: Distinguish between Netflix Play, YouTube Play
         chrome.runtime.sendMessage({ event: "play" });
     };
 
