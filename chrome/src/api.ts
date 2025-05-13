@@ -1,7 +1,5 @@
 // api.ts
-
 import { PlayerData } from "./interfaces";
-
 const DESKSENSE_BACKEND_URL = "http://localhost:8000";
 
 const chromeTabUrl = "/api/chrome/tab";
@@ -18,6 +16,26 @@ class YouTubeApi {
     sendPayload: Function;
     constructor(sendPayload: Function) {
         this.sendPayload = sendPayload;
+    }
+
+    reportYouTubePage(
+        tabTitle: string | undefined,
+        channel: string,
+        playerData?: PlayerData
+    ) {
+        /* Tab title must be undefined sometimes, says TS */
+        console.log("[info] Channel " + channel);
+        const payload = {
+            // Uses the YouTubeEvent pydantic definition
+            url: "www.youtube.com",
+            tabTitle,
+            channel,
+            startTime: new Date(),
+            playerPositionInSec: 1000,
+        };
+        console.log("Sending YouTube payload:", payload);
+        console.log(youTubeUrl, "is the youtube url");
+        this.sendPayload(youTubeUrl, payload);
     }
 
     sendPlayEvent({ videoId, tabTitle, channelName }: YouTubePayload) {
@@ -60,11 +78,16 @@ class NetflixApi {
         this.sendPayload = sendPayload;
     }
 
-    sendPlayEvent() {
+    reportNetflix(foo: string, bar: string) {
+        // TODO
+        console.log("Reporting netflix is not supported yet");
+    }
+
+    sendPlayEvent(todo: any) {
         //
     }
 
-    sendPauseEvent() {
+    sendPauseEvent(todo: any) {
         //
     }
 }
@@ -86,31 +109,6 @@ class ServerApi {
         };
         console.log("Sending payload:", payload);
         this.sendPayload(chromeTabUrl, payload);
-    }
-
-    reportYouTubePage(
-        tabTitle: string | undefined,
-        channel: string,
-        playerData?: PlayerData
-    ) {
-        /* Tab title must be undefined sometimes, says TS */
-        console.log("[info] Channel " + channel);
-        const payload = {
-            // Uses the YouTubeEvent pydantic definition
-            url: "www.youtube.com",
-            tabTitle,
-            channel,
-            startTime: new Date(),
-            playerPositionInSec: 1000,
-        };
-        console.log("Sending YouTube payload:", payload);
-        console.log(youTubeUrl, "is the youtube url");
-        this.sendPayload(youTubeUrl, payload);
-    }
-
-    reportNetflix(foo: string, bar: string) {
-        // TODO
-        console.log("Reporting netflix is not supported yet");
     }
 
     reportIgnoredUrl() {

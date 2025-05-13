@@ -78,13 +78,13 @@ export function handleYouTubeUrl(
     } else if (isOnSomeChannel(tab.url)) {
         // For channel pages, we can extract from the URL
         const channelName = extractChannelNameFromUrl(tab.url);
-        api.reportYouTubePage(tab.title, channelName);
+        api.youtube.reportYouTubePage(tab.title, channelName);
     } else if (watchingShorts(tab.url)) {
         // Avoids trying to extract the channel name from
         // the YouTube Shorts page. The page's HTML changes often. Sisyphean task.
-        api.reportYouTubePage(tab.title, "Watching Shorts");
+        api.youtube.reportYouTubePage(tab.title, "Watching Shorts");
     } else {
-        api.reportYouTubePage(tab.title, "YouTube Home");
+        api.youtube.reportYouTubePage(tab.title, "YouTube Home");
     }
 }
 

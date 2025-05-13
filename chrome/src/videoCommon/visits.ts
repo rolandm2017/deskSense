@@ -59,13 +59,13 @@ class ViewingTracker {
     /*
      * Class is a container enabling cross-file Viewing management.
      */
-    current: YouTubeViewing | NetflixViewing | undefined;
+    currentMedia: YouTubeViewing | NetflixViewing | undefined;
     youTubeApiLogger: PlatformLogger;
     netflixApiLogger: PlatformLogger;
     // timer: ViewingPayloadTimer;
 
     constructor() {
-        this.current = undefined;
+        this.currentMedia = undefined;
         const v = new Date();
         this.youTubeApiLogger = new PlatformLogger("YouTube");
         this.netflixApiLogger = new PlatformLogger("Netflix");
@@ -77,7 +77,7 @@ class ViewingTracker {
     }
 
     setCurrent(current: YouTubeViewing | NetflixViewing) {
-        this.current = current;
+        this.currentMedia = current;
         if (current instanceof YouTubeViewing) {
             console.log("Would report youtube here");
             this.youTubeApiLogger.logLandOnPage();
@@ -89,7 +89,7 @@ class ViewingTracker {
     }
 
     markPlaying() {
-        if (this.current instanceof YouTubeViewing) {
+        if (this.currentMedia instanceof YouTubeViewing) {
             this.youTubeApiLogger.logPlayEvent();
         } else {
             this.netflixApiLogger.logPlayEvent();
@@ -97,7 +97,7 @@ class ViewingTracker {
     }
 
     markPaused() {
-        if (this.current instanceof YouTubeViewing) {
+        if (this.currentMedia instanceof YouTubeViewing) {
             this.youTubeApiLogger.logPauseEvent();
         } else {
             this.netflixApiLogger.logPauseEvent();
@@ -106,8 +106,8 @@ class ViewingTracker {
 
     endViewing() {
         // used to report the final value on window close
-        if (this.current) {
-            this.current.conclude();
+        if (this.currentMedia) {
+            this.currentMedia.conclude();
         }
     }
 }
@@ -158,11 +158,11 @@ class VideoContentViewing {
         this.playerState = "paused";
     }
 
-    startTimeTracking() {
+    issuePlayEvent() {
         throw new Error("Not yet implemented");
     }
 
-    pauseTracking() {
+    issuePauseEvent() {
         throw new Error("Not yet implemented");
     }
 
@@ -212,18 +212,22 @@ class VideoContentViewing {
 
 export class YouTubeViewing extends VideoContentViewing {
     channelName: string;
+    youTubeApiLogger: PlatformLogger;
 
     constructor(videoId: string, tabTitle: string, channelName: string) {
         super(videoId, tabTitle);
         this.channelName = channelName;
+        this.youTubeApiLogger = new PlatformLogger("YouTube");
         // timestamps arr in superclass
     }
 
-    startTimeTracking() {
+    issuePlayEvent() {
+        this.youTubeApiLogger.logPlayEvent();
         api.youtube.sendPlayEvent(this);
     }
 
-    pauseTracking() {
+    issuePauseEvent() {
+        this.youTubeApiLogger.logPauseEvent();
         api.youtube.sendPauseEvent(this);
     }
 }
@@ -231,18 +235,23 @@ export class YouTubeViewing extends VideoContentViewing {
 export class NetflixViewing extends VideoContentViewing {
     // TODO
     contentTitle: string;
+    netflixApiLogger: PlatformLogger;
 
     constructor(videoId: string, tabTitle: string, contentTitle: string) {
         super(videoId, tabTitle);
         this.contentTitle = contentTitle;
+        this.netflixApiLogger = new PlatformLogger("Netflix");
+
         // timestamps arr in superclass
     }
 
-    startTimeTracking() {
-        api.netflix.sendPlayEvent();
+    issuePlayEvent() {
+        this.netflixApiLogger.logPlayEvent();
+        api.netflix.sendPlayEvent(this);
     }
 
-    pauseTracking() {
-        api.netflix.sendPauseEvent();
+    issuePauseEvent() {
+        this.netflixApiLogger.logPauseEvent();
+        api.netflix.sendPauseEvent(this);
     }
 }

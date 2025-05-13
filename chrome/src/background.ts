@@ -49,6 +49,8 @@ const processedTabs = new Map<number, ProcessedUrlEntry>();
 
 const PAGE_LOAD_DEBOUNCE_DELAY = 4000;
 
+// TODO: Make debounce stuff a class
+
 function cleanupOldTabReferences(now: number) {
     // "Now" from new Date().now()
     const tabsToDelete: number[] = [];
@@ -163,7 +165,7 @@ chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
     const isYouTubeWatchPage = tabsWithPollingList.includes(tabId);
 
     // Perform any cleanup or final operations here
-    if (isYouTubeWatchPage && viewingTracker.current) {
+    if (isYouTubeWatchPage && viewingTracker.currentMedia) {
         // send final data to server
         // TODO: This actually ends THE VISIT because a visit is the time on a page!
         // The Viewing would be when the user hits Pause.
@@ -198,11 +200,11 @@ class PlayPauseDispatch {
                 resumeDuration,
                 "seconds"
             );
-            this.cancelPauseRecording(this.endSessionTimeoutId);
+            this.cancelSendPauseEvent(this.endSessionTimeoutId);
         }
-        if (viewingTracker.current) {
+        if (viewingTracker.currentMedia) {
             console.log("[onMsg] Starting time tracking");
-            viewingTracker.current.startTimeTracking();
+            viewingTracker.currentMedia.issuePlayEvent();
             return;
         } else {
             // it wasn't there yet because, the, the channel extractor
@@ -217,7 +219,7 @@ class PlayPauseDispatch {
         console.log("[onMsg] Pause detected", this.pauseCount);
         // TODO: Clean this up
 
-        if (viewingTracker.current) {
+        if (viewingTracker.currentMedia) {
             console.log("[onMsg] START pause timer");
 
             const startOfGracePeriod = new Date();
@@ -241,14 +243,14 @@ class PlayPauseDispatch {
                 "[onMsg] DURATION 2: ",
                 endOfIntervalTime.getSeconds() - localTime.getSeconds()
             );
-            if (viewingTracker.current) {
-                viewingTracker.current.pauseTracking();
+            if (viewingTracker.currentMedia) {
+                viewingTracker.currentMedia.issuePauseEvent();
             }
         }, this.gracePeriodDelayInMs);
         return timeoutId;
     }
 
-    cancelPauseRecording(timeoutId: ReturnType<typeof setTimeout>) {
+    cancelSendPauseEvent(timeoutId: ReturnType<typeof setTimeout>) {
         clearTimeout(timeoutId);
     }
 }
