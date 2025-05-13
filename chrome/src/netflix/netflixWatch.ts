@@ -10,7 +10,7 @@
  *
  */
 
-import modalHtml from "./netflixWatchModal.html";
+import modalHtmlBase from "./netflixWatchModal.html";
 
 import reviewTitleComponent from "./reviewTitle.html";
 import selectTitleComponent from "./selectTitle.html";
@@ -107,14 +107,57 @@ function setCurrentReviewTitleIntoReviewComponent() {
     el.innerText = selectedTitleState;
 }
 
+function loadDropdownEntries() {
+    const dropdown = getElementWithGivenIdOrThrow(EL_IDS.SERIES_SELECT);
+    // Populate dropdown options here
+    historyTracker.getTopFive().then((topFiveList) => {
+        topFiveList.forEach((item) => {
+            console.log("Top five list forEach", item);
+            const option = document.createElement("option");
+            option.value = item;
+            option.textContent = item;
+            dropdown.appendChild(option);
+        });
+    });
+}
+
 function renderModalContent(stateTargetContainer: HTMLElement) {
     if (currentModalState === "selecting") {
         stateTargetContainer.innerHTML = selectTitleComponent;
         attachSelectingTitleListeners();
+        loadDropdownEntries();
     } else {
         stateTargetContainer.innerHTML = reviewTitleComponent;
         setCurrentReviewTitleIntoReviewComponent();
         attachConfirmedTitleListeners();
+    }
+}
+
+function injectModalBase() {
+    // Inject CSS
+    const style = document.createElement("style");
+    document.head.appendChild(style);
+
+    // Inject HTML
+    const div = document.createElement("div");
+    div.innerHTML = modalHtmlBase;
+    // Append straight to the document body
+    document.body.appendChild(div.firstElementChild!);
+}
+
+function waitForElement(
+    selector: string,
+    callback: (element: Element) => void
+) {
+    const element = document.getElementById(selector);
+    if (element) {
+        console.log("El exists");
+        callback(element);
+    } else {
+        console.log("No el found, requesting animation frfame");
+        setTimeout(() => {
+            requestAnimationFrame(() => waitForElement(selector, callback));
+        }, 500);
     }
 }
 
@@ -127,48 +170,40 @@ function injectInitialStateModal() {
     // TODO: If (userSetEntry) displayEntry()
 
     // Inject CSS
-    const style = document.createElement("style");
-    document.head.appendChild(style);
+    // const style = document.createElement("style");
+    // document.head.appendChild(style);
 
-    // Inject HTML
-    const div = document.createElement("div");
-    div.innerHTML = modalHtml;
-    // Append straight to the document body
-    document.body.appendChild(div.firstElementChild!);
+    // // Inject HTML
+    // const div = document.createElement("div");
+    // div.innerHTML = modalHtmlBase;
+    // // Append straight to the document body
+    // document.body.appendChild(div.firstElementChild!);
 
-    // Wait for elements to be available
-    const waitForElement = (
-        selector: string,
-        callback: (element: Element) => void
-    ) => {
-        const element = document.getElementById(selector);
-        if (element) {
-            console.log("El exists");
-            callback(element);
-        } else {
-            console.log("No el found, requesting animation frfame");
-            setTimeout(() => {
-                requestAnimationFrame(() => waitForElement(selector, callback));
-            }, 500);
-        }
-    };
+    injectModalBase();
+
+    // // Wait for elements to be available
+    // const waitForElement = (
+    //     selector: string,
+    //     callback: (element: Element) => void
+    // ) => {
+    //     const element = document.getElementById(selector);
+    //     if (element) {
+    //         console.log("El exists");
+    //         callback(element);
+    //     } else {
+    //         console.log("No el found, requesting animation frfame");
+    //         setTimeout(() => {
+    //             requestAnimationFrame(() => waitForElement(selector, callback));
+    //         }, 500);
+    //     }
+    // };
     // console.log("Waiting for element", new Date().getSeconds());
     waitForElement(EL_IDS.MODAL, (modal) => {
         const renderTarget = getElementWithGivenIdOrThrow(EL_IDS.STATE_TARGET);
         renderModalContent(renderTarget);
         // Now you can safely populate your dropdown
         console.log("Modal ready", new Date().getSeconds());
-        const dropdown = getElementWithGivenIdOrThrow(EL_IDS.SERIES_SELECT);
-        // Populate dropdown options here
-        historyTracker.getTopFive().then((topFiveList) => {
-            topFiveList.forEach((item) => {
-                // console.log("Top five list forEach", item);
-                const option = document.createElement("option");
-                option.value = item;
-                option.textContent = item;
-                dropdown.appendChild(option);
-            });
-        });
+        loadDropdownEntries();
         // Add the rest of your event listeners
         attachSelectingTitleListeners();
     });
@@ -309,20 +344,20 @@ const checkNetflixLoaded = () => {
 
 checkNetflixLoaded();
 
-function openSelectingTitleModal() {
-    injectInitialStateModal();
-}
+function injectReviewTitleModal() {
+    if (document.getElementById(EL_IDS.MODAL)) {
+        return;
+    }
+    // const style = document.createElement("style");
+    // document.head.appendChild(style);
 
-function openReviewTitleModal() {
-    const style = document.createElement("style");
-    document.head.appendChild(style);
-
-    // Inject HTML
-    const div = document.createElement("div");
-    console.log("Putting modalHtml into reviewTitleModal");
-    div.innerHTML = modalHtml;
-    // Append straight to the document body
-    document.body.appendChild(div.firstElementChild!);
+    // // Inject HTML
+    // const div = document.createElement("div");
+    // console.log("Putting modalHtml into reviewTitleModal");
+    // div.innerHTML = modalHtmlBase;
+    // // Append straight to the document body
+    // document.body.appendChild(div.firstElementChild!);
+    injectModalBase();
 
     const stateTargetContainer = getElementWithGivenIdOrThrow(
         EL_IDS.STATE_TARGET
@@ -335,9 +370,9 @@ function openReviewTitleModal() {
 
 function openModal() {
     if (currentModalState === "selecting") {
-        openSelectingTitleModal();
+        injectInitialStateModal();
     } else {
-        openReviewTitleModal();
+        injectReviewTitleModal();
     }
 }
 
