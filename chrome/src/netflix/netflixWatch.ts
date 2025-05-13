@@ -311,6 +311,12 @@ function attachSelectingTitleListeners() {
 let checkCount = 1;
 // Wait for Netflix page to load and inject modal
 const checkNetflixLoaded = () => {
+    // TODO: I land on the /watch page, then what happens? HOW does the server know the page was landed on?
+    // viewingTracker.reportWatchPage()
+    const currentUrl = window.location.href;
+    const tempUrl = "https://www.netflix.com/watch/81705696?trackId=272211954";
+    historyTracker.sendPageDetailsToViewingTracker(tempUrl);
+
     // console.log("checkNetflixLoaded: " + checkCount, checkCount);
     // You might want to add specific checks here for Netflix player
     if (document.readyState === "complete") {

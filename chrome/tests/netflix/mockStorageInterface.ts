@@ -1,7 +1,7 @@
 import { vi } from "vitest";
 import { StorageInterface } from "../../src/netflix/storageApi";
 
-import { WatchEntry } from "../../src/netflix/historyTracker";
+import { WatchEntry } from "../../src/interface/interfaces";
 
 // storage/MockStorageApi.ts - For testing
 export class MockStorageApi implements StorageInterface {

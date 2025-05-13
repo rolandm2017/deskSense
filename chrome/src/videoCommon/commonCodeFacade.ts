@@ -1,6 +1,6 @@
-import { WatchEntry } from "./historyTracker";
+import { WatchEntry } from "../interface/interfaces";
 
-class NetflixFacade {
+class NetflixActiveTitleFacade {
     constructor() {}
 
     updateActiveTitle(title: WatchEntry) {
@@ -22,4 +22,4 @@ class NetflixFacade {
     }
 }
 
-export default NetflixFacade;
+export default NetflixActiveTitleFacade;

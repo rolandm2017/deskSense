@@ -82,7 +82,7 @@ class NetflixApi {
         this.sendPayload = sendPayload;
     }
 
-    reportNetflix(foo: string, bar: string) {
+    reportNetflixPage(foo: string) {
         // TODO
         console.log("Reporting netflix is not supported yet");
     }
@@ -126,7 +126,7 @@ class NetflixApi {
     }
 }
 
-class ServerApi {
+export class ServerApi {
     youtube: YouTubeApi;
     netflix: NetflixApi;
 

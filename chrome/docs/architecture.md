@@ -22,14 +22,18 @@ The endpoint notifies the server that the user started/stopped the video.
 
 ### Differences
 
-##### YouTube
+#### YouTube
 
 On YouTube, they present the channel name and video title plainly. All you need to do is wait for React to finish rendering the content and it's there.
 So something called the ChannelExtractor runs, looks at the DOM, gets the channel name out of the element located right below the video.
 The video title comes plainly from the tab's title. It's "just there."
 
-##### Netflix
+#### Netflix
 
 Netflix makes every effort to obscure information from all kinds of scraping and programmatic access.
 
 Trying to extract the info programmatically is a losing battle. Hence the user is asked via modal what the content title is.
+
+###### History
+
+Netflix is additionally complicated by the modal dropdown needing a usage history to be populated intelligently.

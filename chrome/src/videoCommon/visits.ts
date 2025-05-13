@@ -1,6 +1,7 @@
 // visits.ts
 
-import { api } from "../api";
+import { ServerApi } from "../api";
+import { WatchEntry } from "../interface/interfaces";
 import { PlatformLogger } from "../logging";
 
 // A Visit: As in, A PageVisit
@@ -16,57 +17,22 @@ function getTimeSpentWatching() {
     return 5;
 }
 
-class ViewingPayloadTimer {
-    // a timer that tracks when to dispatch payload. KISS. Minimal.
-    dispatchTime: Date;
-
-    // TODO: Every two minutes send a KeepAlive signal: "Yep, still here"
-    // If no KeepAlive signal, end session after five minutes.
-
-    /*
-
-    YouTube is a mixture of play/pause plus polling.
-
-    */
-
-    constructor(dispatchTime: Date) {
-        this.dispatchTime = dispatchTime;
-    }
-
-    timerHasElapsed(currentTime: Date) {
-        const hoursElapsed =
-            currentTime.getHours() >= this.dispatchTime.getHours();
-        if (hoursElapsed) {
-            // if the hours has elapsed, the rest is irrelevant
-            return true;
-        }
-        const minutesElapsed =
-            currentTime.getMinutes() >= this.dispatchTime.getMinutes();
-        if (minutesElapsed) {
-            // if the minutes has elapsed, the seconds are irrelevant
-            return true;
-        }
-        const secondsElapsed =
-            currentTime.getSeconds() >= this.dispatchTime.getSeconds();
-        if (secondsElapsed) {
-            return true;
-        }
-        return false;
-    }
-}
-
-class ViewingTracker {
+export class ViewingTracker {
     /*
      * Class is a container enabling cross-file Viewing management.
      */
     currentMedia: YouTubeViewing | NetflixViewing | undefined;
     youTubeApiLogger: PlatformLogger;
     netflixApiLogger: PlatformLogger;
+    api: ServerApi;
+
+    partialNetflixDescriptor: string | undefined;
     // timer: ViewingPayloadTimer;
 
-    constructor() {
+    constructor(api: ServerApi) {
         this.currentMedia = undefined;
-        const v = new Date();
+        this.partialNetflixDescriptor = undefined;
+        this.api = api;
         this.youTubeApiLogger = new PlatformLogger("YouTube");
         this.netflixApiLogger = new PlatformLogger("Netflix");
         // TODO: JUST ASSUME it's going to work with Play/Pause only, until
@@ -77,6 +43,7 @@ class ViewingTracker {
     }
 
     setCurrent(current: YouTubeViewing | NetflixViewing) {
+        console.log("In setCurrent", current);
         this.currentMedia = current;
         if (current instanceof YouTubeViewing) {
             console.log("Would report youtube here");
@@ -88,26 +55,54 @@ class ViewingTracker {
         }
     }
 
+    reportNetflixWatchPage(watchPageId: string) {
+        // Netflix pages show their eventual url in an instant, but the program
+        // must wait for the user to tell the program which media it is.
+        // Hence a "reportWatchPage" from Netflix can only reliably contain
+        // the videoId from the URL.
+        const partiallyDescribedMedia: string = watchPageId;
+        this.partialNetflixDescriptor = partiallyDescribedMedia;
+        this.api;
+    }
+
+    reportYouTubeWatchPage() {
+        if (this.currentMedia instanceof YouTubeViewing) {
+            this.youTubeApiLogger.logLandOnPage();
+            this.api.youtube.reportYouTubePage(
+                this.currentMedia.mediaTitle,
+                this.currentMedia.channelName
+            );
+            return;
+        }
+        throw new Error("Incorrect media type for YouTube reporting");
+    }
+
     markPlaying() {
         if (this.currentMedia instanceof YouTubeViewing) {
             this.youTubeApiLogger.logPlayEvent();
+            this.api.youtube.sendPlayEvent(this.currentMedia);
         } else {
             this.netflixApiLogger.logPlayEvent();
+            this.api.netflix.sendPlayEvent(this.currentMedia);
         }
     }
 
     markPaused() {
         if (this.currentMedia instanceof YouTubeViewing) {
             this.youTubeApiLogger.logPauseEvent();
+            this.api.youtube.sendPauseEvent(this.currentMedia);
         } else {
             this.netflixApiLogger.logPauseEvent();
+            this.api.netflix.sendPauseEvent(this.currentMedia);
         }
     }
 
     endViewing() {
         // used to report the final value on window close
         if (this.currentMedia) {
-            this.currentMedia.conclude();
+            // conclude. something like:
+            // this.api.platform.sendClosePage() // does wrapup
+            // this.currentMedia.conclude();
         }
     }
 }
@@ -125,58 +120,20 @@ class Segment {
         this.end = end;
         this.timestamps = [];
     }
-
-    addTimestamp(timestamp: number) {
-        this.timestamps.push(timestamp);
-        this.end = timestamp;
-    }
-
-    getDuration() {
-        return this.end - this.start;
-    }
-
-    isFull() {
-        return true;
-    }
 }
 
 class VideoContentViewing {
-    //
+    // Note that these property names must work for Netflix & YouTube both.
+    // Probably want to send a payload every 3 minutes or so, max.
+}
+
+export class YouTubeViewing {
     videoId: string;
-    tabTitle: string;
+    mediaTitle: string;
     timestamps: number[];
     playerState: "playing" | "paused";
-
-    maxTimestampCount: number = 40;
-
-    // probably want to send a payload every 3 minutes or so, max.
-
-    constructor(videoId: string, tabTitle: string) {
-        this.videoId = videoId;
-        this.tabTitle = tabTitle;
-        this.timestamps = [];
-        this.playerState = "paused";
-    }
-
-    issuePlayEvent() {
-        throw new Error("Not yet implemented");
-    }
-
-    issuePauseEvent() {
-        throw new Error("Not yet implemented");
-    }
-
-    sendInitialInfoToServer() {
-        // delivers initial info
-    }
-
-    addTimestamp(timestamp: number) {
-        this.timestamps.push(timestamp);
-    }
-
-    sufficientDurationForReport() {
-        // if the Viewing lasted 60 sec, report it and start fresh.
-    }
+    // unique to this class
+    channelName: string;
 
     // Can tell also *how long* player was paused for.
 
@@ -184,74 +141,27 @@ class VideoContentViewing {
     //      -> do not send payload
     //      -> do not even stop tracking time
 
-    isStillPlaying() {
-        const previous = this.timestamps.at(-2);
-        const current = this.timestamps.at(-1);
-        if (previous && current) {
-            const gap = previous - current;
-            const stillPlaying = gap === 2000;
-            if (stillPlaying) {
-                // still playing
-                this.playerState = "playing";
-            } else {
-                // paused
-                this.playerState = "paused";
-            }
-        }
-    }
-
-    finishIfFull() {
-        const full = true;
-    }
-
-    conclude() {
-        // delivers final data
-        // api.sendPayload
-    }
-}
-
-export class YouTubeViewing extends VideoContentViewing {
-    channelName: string;
-    youTubeApiLogger: PlatformLogger;
-
     constructor(videoId: string, tabTitle: string, channelName: string) {
-        super(videoId, tabTitle);
+        this.videoId = videoId;
+        this.mediaTitle = tabTitle;
         this.channelName = channelName;
-        this.youTubeApiLogger = new PlatformLogger("YouTube");
-        // timestamps arr in superclass
-    }
-
-    issuePlayEvent() {
-        this.youTubeApiLogger.logPlayEvent();
-        api.youtube.sendPlayEvent(this);
-    }
-
-    issuePauseEvent() {
-        this.youTubeApiLogger.logPauseEvent();
-        api.youtube.sendPauseEvent(this);
+        this.timestamps = [];
+        this.playerState = "paused";
     }
 }
 
-export class NetflixViewing extends VideoContentViewing {
+export class NetflixViewing {
+    videoId: string;
+    mediaTitle: string;
+    timestamps: number[];
+    playerState: "playing" | "paused";
     // TODO
-    contentTitle: string;
-    netflixApiLogger: PlatformLogger;
-
-    constructor(videoId: string, tabTitle: string, contentTitle: string) {
-        super(videoId, tabTitle);
-        this.contentTitle = contentTitle;
-        this.netflixApiLogger = new PlatformLogger("Netflix");
-
-        // timestamps arr in superclass
-    }
-
-    issuePlayEvent() {
-        this.netflixApiLogger.logPlayEvent();
-        api.netflix.sendPlayEvent(this);
-    }
-
-    issuePauseEvent() {
-        this.netflixApiLogger.logPauseEvent();
-        api.netflix.sendPauseEvent(this);
+    constructor(watchEntry: WatchEntry) {
+        // the Url ID becomes the VideoID.
+        this.videoId = watchEntry.urlId;
+        // the showName becomes the mediaTitle.
+        this.mediaTitle = watchEntry.showName;
+        this.timestamps = [];
+        this.playerState = "paused";
     }
 }

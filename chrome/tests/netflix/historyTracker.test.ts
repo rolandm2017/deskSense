@@ -37,8 +37,8 @@ describe("WatchHistoryTracker", () => {
 
         await historyTracker.addWatchEntry(videoId, showName, url);
 
-        const key = Object.keys(historyTracker.todayHistory)[0];
-        const historyEntries = historyTracker.todayHistory[key];
+        const key = Object.keys(historyTracker.allHistory)[0];
+        const historyEntries = historyTracker.allHistory[key];
 
         expect(historyEntries.length).toBe(1);
         expect(historyTracker.saveHistory).toBeCalled();

@@ -204,7 +204,7 @@ class PlayPauseDispatch {
         }
         if (viewingTracker.currentMedia) {
             console.log("[onMsg] Starting time tracking");
-            viewingTracker.currentMedia.issuePlayEvent();
+            viewingTracker.markPlaying();
             return;
         } else {
             // it wasn't there yet because, the, the channel extractor
@@ -244,7 +244,7 @@ class PlayPauseDispatch {
                 endOfIntervalTime.getSeconds() - localTime.getSeconds()
             );
             if (viewingTracker.currentMedia) {
-                viewingTracker.currentMedia.issuePauseEvent();
+                viewingTracker.markPaused();
             }
         }, this.gracePeriodDelayInMs);
         return timeoutId;

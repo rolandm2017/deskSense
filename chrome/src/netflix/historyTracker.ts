@@ -2,18 +2,11 @@
 
 import { StorageInterface } from "./storageApi";
 
-import NetflixFacade from "./commonCodeFacade";
+import { WatchEntry } from "../interface/interfaces";
 
-export interface WatchEntry {
-    serverId: number; //
-    urlId: string;
-    showName: string;
-    url: string;
-    timestamp: string; // new Date().isoString()
-    msTimestamp: number; // generated automatically (by the code)
-    watchCount: number; // count of times it was watched
-}
+import { NetflixViewing, ViewingTracker } from "../videoCommon/visits";
 
+// TODO: Rename to HistoryRecorder. One less "tracker" naming conflict
 export class WatchHistoryTracker {
     /*
         If you're tempted to add an edit feature, remember that
@@ -25,29 +18,48 @@ export class WatchHistoryTracker {
     */
     allHistory: WatchEntry[];
     storageConnection: StorageInterface;
-    facade: NetflixFacade;
+    viewingTracker: ViewingTracker;
+    // facade: NetflixFacade;
 
-    constructor(storageConnection: StorageInterface) {
+    constructor(
+        viewingTracker: ViewingTracker,
+        storageConnection: StorageInterface
+    ) {
         this.storageConnection = storageConnection;
         this.allHistory = [];
         this.loadHistory();
-        this.facade = new NetflixFacade();
+        this.viewingTracker = viewingTracker;
+        // this.facade = new NetflixFacade();
         // this.setupEventListeners();
     }
 
-    recordEnteredMediaTitle(title: string, url: string) {
+    makeUrlId(url: string) {
         let urlId = url.split("/watch/")[1];
-        console.log(urlId, url);
         if (urlId.includes("?")) {
             urlId = urlId.split("?")[0];
         }
+        return urlId;
+    }
+
+    sendPageDetailsToViewingTracker(url: string) {
+        const watchPageId = this.makeUrlId(url);
+        this.viewingTracker.reportNetflixWatchPage(watchPageId);
+    }
+
+    recordEnteredMediaTitle(title: string, url: string) {
+        console.log("In recordEnteredMedia");
+        let urlId = this.makeUrlId(url);
         console.log("[tracker - recording]", title);
         const latestEntryUpdate: WatchEntry = this.addWatchEntry(
             urlId,
             title,
             url
         );
-        this.facade.updateActiveTitle(latestEntryUpdate);
+        console.log(latestEntryUpdate, "entry to update 49ru");
+        const viewingToTrack: NetflixViewing =
+            this.formatWatchEntryAsViewing(latestEntryUpdate);
+        // NOTE that play/pause occurs thru background.ts in "onMessage"
+        this.viewingTracker.setCurrent(viewingToTrack);
         this.saveHistory();
     }
 
@@ -80,21 +92,26 @@ export class WatchHistoryTracker {
         return isNumeric;
     }
 
-    recordPauseEvent() {
-        // TODO: So, the facade gets to know what the user's
-        // current watch page is.
-        // The facade also gets to know when they leave the page
-        // so it can issue a pause cmd. Or, perhaps the server will
-        // just know because the Chrome session changed.
-        // Anyweay, the facade knows the current Watch page title.
-        // So then, the video player state script is injected.
-        // It tells the facade, "Hey it's playing" Or "Hey it's paused"
-        // and behind the facade, something issues play, pause payloads
-        // as needed.
-        // use current state and tell the server it's paused
-        const currentMedia = this.allHistory.at(-1);
-        this.facade.sendPauseEventPayload(currentMedia);
+    formatWatchEntryAsViewing(entry: WatchEntry): NetflixViewing {
+        const viewing = new NetflixViewing(entry);
+        return viewing;
     }
+
+    /*  Why there is no recordPauseEvent, recordPlayEvent on this class:
+    // 
+    //      So, the facade gets to know what the user's
+    // currently watched media is.
+    // The facade also gets to know when they leave the page
+    // so it can issue a pause cmd. Or, perhaps the server will
+    // just know because the Chrome session changed.
+    // Anyweay, the facade knows the current Watch page title.
+    // So then, the video player state script is injected.
+    // It tells the facade, "Hey it's playing" Or "Hey it's paused"
+    // and behind the facade, something issues play, pause payloads
+    // as needed.
+    // use current state and tell the server it's paused
+    // }
+    */
 
     async getTopFive(): Promise<string[]> {
         // this.cleanupOldHistory();

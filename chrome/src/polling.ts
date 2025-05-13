@@ -8,6 +8,45 @@ import { TrackerInitializationError } from "./errors";
 
 */
 
+class ViewingPayloadTimer {
+    // a timer that tracks when to dispatch payload. KISS. Minimal.
+    dispatchTime: Date;
+
+    // TODO: Every two minutes send a KeepAlive signal: "Yep, still here"
+    // If no KeepAlive signal, end session after five minutes.
+
+    /*
+
+    YouTube is a mixture of play/pause plus polling.
+
+    */
+
+    constructor(dispatchTime: Date) {
+        this.dispatchTime = dispatchTime;
+    }
+
+    timerHasElapsed(currentTime: Date) {
+        const hoursElapsed =
+            currentTime.getHours() >= this.dispatchTime.getHours();
+        if (hoursElapsed) {
+            // if the hours has elapsed, the rest is irrelevant
+            return true;
+        }
+        const minutesElapsed =
+            currentTime.getMinutes() >= this.dispatchTime.getMinutes();
+        if (minutesElapsed) {
+            // if the minutes has elapsed, the seconds are irrelevant
+            return true;
+        }
+        const secondsElapsed =
+            currentTime.getSeconds() >= this.dispatchTime.getSeconds();
+        if (secondsElapsed) {
+            return true;
+        }
+        return false;
+    }
+}
+
 function executeTimeTrackingScript(tabId: number) {
     // used to run in handleYoutubeUrl
     chrome.scripting.executeScript(

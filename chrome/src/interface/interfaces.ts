@@ -14,3 +14,13 @@ export interface NetflixPayload {
     showName: string;
     url: string;
 }
+
+export interface WatchEntry {
+    serverId: number; //
+    urlId: string;
+    showName: string;
+    url: string;
+    timestamp: string; // new Date().isoString()
+    msTimestamp: number; // generated automatically (by the code)
+    watchCount: number; // count of times it was watched
+}
