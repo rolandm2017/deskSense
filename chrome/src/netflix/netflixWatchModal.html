@@ -83,6 +83,8 @@
                 font-size: clamp(14px, 1.1vw, 16px);
                 background-color: white;
                 width: 100%;
+                max-width: 100%; /* Add this to prevent overflow */
+                box-sizing: border-box; /* Add this to include padding and border in width calculation */
                 padding: 0 10px;
                 margin-top: clamp(5px, 1vw, 10px);
             }
@@ -104,9 +106,17 @@
                 border: 2px solid #6c33ff;
                 border-radius: 8px;
                 width: 100%;
+                max-width: 100%;
+                box-sizing: border-box;
                 font-size: clamp(14px, 1.1vw, 16px);
                 padding: 0 10px;
                 margin-bottom: clamp(10px, 1.5vw, 15px);
+            }
+
+            #dropdown-section,
+            #input-section {
+                width: 100%;
+                max-width: 100%;
             }
 
             /* Buttons */
