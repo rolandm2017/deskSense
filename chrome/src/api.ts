@@ -88,7 +88,7 @@ class ServerApi {
         this.sendPayload(chromeTabUrl, payload);
     }
 
-    reportYouTube(
+    reportYouTubePage(
         tabTitle: string | undefined,
         channel: string,
         playerData?: PlayerData

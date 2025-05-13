@@ -1,7 +1,10 @@
 // background.ts
 import { api } from "./api";
 import { getDomainFromUrl } from "./urlTools";
-import { handleYouTubeUrl } from "./youtube/youtube";
+import {
+    handleYouTubeUrl,
+    startSecondaryChannelExtractionScript,
+} from "./youtube/youtube";
 
 import { viewingTracker } from "./videoCommon/visits";
 

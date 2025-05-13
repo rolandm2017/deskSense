@@ -1,6 +1,7 @@
 // visits.ts
 
 import { api } from "../api";
+import { PlatformLogger } from "../logging";
 
 // A Visit: As in, A PageVisit
 // A Viewing: A window of time spent actively viewing the video.
@@ -59,26 +60,48 @@ class ViewingTracker {
      * Class is a container enabling cross-file Viewing management.
      */
     current: YouTubeViewing | NetflixViewing | undefined;
-    timer: ViewingPayloadTimer;
+    youTubeApiLogger: PlatformLogger;
+    netflixApiLogger: PlatformLogger;
+    // timer: ViewingPayloadTimer;
 
     constructor() {
         this.current = undefined;
         const v = new Date();
+        this.youTubeApiLogger = new PlatformLogger("YouTube");
+        this.netflixApiLogger = new PlatformLogger("Netflix");
         // TODO: JUST ASSUME it's going to work with Play/Pause only, until
         // UNTIL you figure out otherwise.
-        const timerDuration = getTimeSpentWatching();
-        const temp = new Date();
-        this.timer = new ViewingPayloadTimer(temp);
+        // const timerDuration = getTimeSpentWatching();
+        // const temp = new Date();
+        // this.timer = new ViewingPayloadTimer(temp);
     }
 
     setCurrent(current: YouTubeViewing | NetflixViewing) {
         this.current = current;
+        if (current instanceof YouTubeViewing) {
+            console.log("Would report youtube here");
+            this.youTubeApiLogger.logLandOnPage();
+            // api.reportYouTubePage();
+        } else {
+            console.log("Would report netflix here");
+            this.netflixApiLogger.logLandOnPage();
+        }
     }
 
-    timerElapsed() {
-        //
-        this.timer;
-        return true;
+    markPlaying() {
+        if (this.current instanceof YouTubeViewing) {
+            this.youTubeApiLogger.logPlayEvent();
+        } else {
+            this.netflixApiLogger.logPlayEvent();
+        }
+    }
+
+    markPaused() {
+        if (this.current instanceof YouTubeViewing) {
+            this.youTubeApiLogger.logPauseEvent();
+        } else {
+            this.netflixApiLogger.logPauseEvent();
+        }
     }
 
     endViewing() {
