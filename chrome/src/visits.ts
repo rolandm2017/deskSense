@@ -64,6 +64,8 @@ class ViewingTracker {
     constructor() {
         this.current = undefined;
         const v = new Date();
+        // TODO: JUST ASSUME it's going to work with Play/Pause only, until
+        // UNTIL you figure out otherwise.
         const timerDuration = getTimeSpentWatching();
         const temp = new Date();
         this.timer = new ViewingPayloadTimer(temp);

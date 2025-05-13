@@ -94,6 +94,23 @@ class ActivityArbiter:
             # end_time & duration is set inside the ASM
 
             # FIXME: Should be concluded = self.machine.set_new(new_session)
+            # TODO: the Extension should be able to swap out the
+            # keepAliveEngine video player state from play -> pause -> play.
+            # When the video is paused, the video session is ended,
+            # video summary recording stops, and the session becomes just
+            # a regular Netflix/YouTube domain session.
+            # Maybe it says which channel/media is paused in the notes.
+            # KeepAlive is paused for a brief moment while the video session is ended.
+            # TODO: Clear out the junk code from that state machine th ing.
+            # It's more like a container for the current session now.
+            # Use your tests for it to confirm that it retains it's desired function
+            # while you remove the useless code from it.
+            # TODO: There needs to be a way for a "still there?" signal to
+            # come in from the client. Or does there?
+            # "ServerOutOfSyncError" -> log info about how it came to be.
+            # But also YAGNI? SO try it without polling first, until
+            # you discover a problem.
+            # TODO: VLC player can surely be left with just play, pause.
             self.state_machine.set_new_session(new_session)
 
             concluded_session = self.state_machine.get_concluded_session()
