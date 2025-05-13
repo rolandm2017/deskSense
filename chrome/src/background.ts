@@ -240,18 +240,40 @@ chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
     }
 });
 
-function cancelPauseRecording(timeoutId: number) {
+function cancelPauseRecording(timeoutId: ReturnType<typeof setTimeout>) {
     clearTimeout(timeoutId);
 }
-
-let tempTimerVar = new Date();
 
 let playCount = 0;
 let pauseCount = 0;
 
+function startGracePeriod(localTime: Date): ReturnType<typeof setTimeout> {
+    // User presses pause, and then resumes the video after only 2.9 seconds, then
+    // don't bother pausing tracking.
+    const timeoutId = setTimeout(() => {
+        const endOfIntervalTime = new Date();
+        console.log("[onMsg] Timer expired: pausing tracking");
+        console.log("[onMsg] THIS PRITNS");
+        console.log(
+            "[onMsg] DURATION 2: ",
+            endOfIntervalTime.getSeconds() - localTime.getSeconds()
+        );
+        if (viewingTracker.current) {
+            viewingTracker.current.pauseTracking();
+        }
+    }, 3000);
+    return timeoutId;
+}
+
+let endSessionTimeoutId: ReturnType<typeof setTimeout> | undefined;
+let pauseStartTime: Date;
+
+function waitForHandleYouTubeUrl() {
+    //
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log(message, sender);
-    let endSessionTimeoutId;
     /*
      *   This only runs when the user presses play or pauses the video.
      * Hence they're definitely on a page that already loaded
@@ -264,10 +286,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             // TODO: Clean this up
 
             console.log("[onMsg] Cancel pause viewing");
-            const endOfIntervalTime = new Date();
+            const resumeDuration =
+                (new Date().getTime() - pauseStartTime.getTime()) / 1000;
             console.log(
-                "[onMsg] DURATION: ",
-                endOfIntervalTime.getSeconds() - tempTimerVar.getSeconds()
+                "[onMsg] Video was paused for:",
+                resumeDuration,
+                "seconds"
             );
             cancelPauseRecording(endSessionTimeoutId);
         }
@@ -308,26 +332,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         if (viewingTracker.current) {
             // TODO: Set delay to pause tracking
-            console.log("[onMsg]START pause timer");
-            tempTimerVar = new Date();
+            console.log("[onMsg] START pause timer");
 
-            const localTime = new Date();
+            pauseStartTime = new Date();
 
-            endSessionTimeoutId = setTimeout(() => {
-                const endOfIntervalTime = new Date();
-                console.log("[onMsg] Timer expired: pausing tracking");
-                console.log("[onMsg] THIS PRITNS");
-                console.log(
-                    "[onMsg] DURATION 2: ",
-                    endOfIntervalTime.getSeconds() - localTime.getSeconds()
-                );
-                if (viewingTracker.current) {
-                    viewingTracker.current.pauseTracking();
-                }
-            }, 3000);
+            endSessionTimeoutId = startGracePeriod(pauseStartTime);
         }
     } else {
-        console.log("Unknown event:", message);
+        console.warn("Unknown event:", message);
     }
 });
 
@@ -386,4 +398,31 @@ chrome.runtime.onInstalled.addListener(() => {
     }
 
     loadDomains();
+});
+
+/*
+ * Open the Netflix Watch modal when you click the icon on the right page
+ */
+
+chrome.action.onClicked.addListener(async (tab) => {
+    console.log("Action.Onclick: ");
+    // First check if we're on any Netflix page
+    if (
+        tab.id &&
+        tab.url &&
+        (tab.url.includes("wikipedia") || tab.url.includes("netflix.com/watch"))
+    ) {
+        // Inject the content script
+        await chrome.tabs.sendMessage(tab.id, { action: "openModal" });
+
+        // If your script needs to know it was triggered by the icon click,
+        // you can pass a message after injection
+        // chrome.tabs.sendMessage(tab.id, { action: "extensionIconClicked" });
+    } else {
+        // Optionally, show a notification or take other action
+        console.log(
+            "Not on Netflix - script not injected. Tab ID was: ",
+            tab.id
+        );
+    }
 });
