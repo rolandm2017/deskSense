@@ -1,7 +1,7 @@
 // youtube.ts
+import { ChannelPageOnlyError } from "../errors";
+import { stripProtocol } from "../urlTools";
 import { extractChannelInfoFromWatchPage } from "./channelExtractor";
-import { ChannelPageOnlyError } from "./errors";
-import { stripProtocol } from "./urlTools";
 
 /*
  * For YouTube, some channels are productive; others are not.

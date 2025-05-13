@@ -22,6 +22,12 @@ class ViewingPayloadTimer {
     // TODO: Every two minutes send a KeepAlive signal: "Yep, still here"
     // If no KeepAlive signal, end session after five minutes.
 
+    /*
+
+    YouTube is a mixture of play/pause plus polling.
+
+    */
+
     constructor(dispatchTime: Date) {
         this.dispatchTime = dispatchTime;
     }
