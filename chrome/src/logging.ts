@@ -3,7 +3,7 @@ import chalk from "chalk";
 import { PlatformType } from "./types/general.types";
 
 console.log();
-console.log(chalk.magenta("[Netflix]"), "⏸️ pause");
+console.log(chalk.magenta("[Netflix]"), "⏸️  pause");
 
 export class PlatformLogger {
     platform: PlatformType;
@@ -22,17 +22,26 @@ export class PlatformLogger {
         }
     }
 
-    logLandOnPage() {
+    logLandOnPage(tabTitle: string) {
         // TODO: Make Netflix magenta
-        console.log(this.chalkColor(this.insert), "On page");
+        console.log(
+            this.chalkColor(this.insert),
+            "[info] On page: " + tabTitle
+        );
     }
 
-    logPlayEvent() {
-        console.log(this.chalkColor(this.insert), "▶️ play");
+    logPlayEvent(mediaTitle?: string) {
+        console.log(
+            this.chalkColor(this.insert),
+            "▶️  play " + mediaTitle ? ":: " + mediaTitle : ""
+        );
     }
 
-    logPauseEvent() {
-        console.log(this.chalkColor(this.insert), "⏸️ pause");
+    logPauseEvent(mediaTitle?: string) {
+        console.log(
+            this.chalkColor(this.insert),
+            "⏸️  pause " + mediaTitle ? ":: " + mediaTitle : ""
+        );
     }
 }
 

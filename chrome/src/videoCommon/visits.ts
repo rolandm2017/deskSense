@@ -53,14 +53,6 @@ export class ViewingTracker {
     setCurrent(current: YouTubeViewing | NetflixViewing) {
         console.log("In setCurrent", current);
         this.currentMedia = current;
-        if (current instanceof YouTubeViewing) {
-            console.log("Would report youtube here");
-            this.youTubeApiLogger.logLandOnPage();
-            // api.reportYouTubePage();
-        } else {
-            console.log("Would report netflix here");
-            this.netflixApiLogger.logLandOnPage();
-        }
     }
 
     reportNetflixWatchPage(watchPageId: string) {
@@ -75,7 +67,7 @@ export class ViewingTracker {
 
     reportYouTubeWatchPage() {
         if (this.currentMedia instanceof YouTubeViewing) {
-            this.youTubeApiLogger.logLandOnPage();
+            // this.youTubeApiLogger.logLandOnPage(this.currentMedia.mediaTitle);
             this.api.youtube.reportYouTubePage(
                 this.currentMedia.mediaTitle,
                 this.currentMedia.channelName

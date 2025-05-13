@@ -4,6 +4,7 @@ import {
     PlayerData,
     YouTubePayload,
 } from "./interface/interfaces";
+import { PlatformLogger } from "./logging";
 
 const DESKSENSE_BACKEND_URL = "http://localhost:8000";
 
@@ -18,8 +19,11 @@ const netflixPlayerStateUrl = "/api/chrome/netflix/state";
 
 class YouTubeApi {
     sendPayload: Function;
+    logger: PlatformLogger;
+
     constructor(sendPayload: Function) {
         this.sendPayload = sendPayload;
+        this.logger = new PlatformLogger("YouTube");
     }
 
     reportYouTubePage(
@@ -28,7 +32,7 @@ class YouTubeApi {
         playerData?: PlayerData
     ) {
         /* Tab title must be undefined sometimes, says TS */
-        console.log("[info] Channel " + channel);
+        this.logger.logLandOnPage(tabTitle ?? "Unknown Tab");
         const payload = {
             // Uses the YouTubeEvent pydantic definition
             url: "www.youtube.com",
@@ -45,7 +49,6 @@ class YouTubeApi {
     sendPlayEvent({ videoId, tabTitle, channelName }: YouTubePayload) {
         // The server knows which VideoSession it's modifying because
         // the currently active tab deliverable, contained the ...
-        console.log("Would send play event for youtugbe");
         const payload = {
             videoId: videoId,
             tabTitle,
@@ -62,7 +65,6 @@ class YouTubeApi {
     }
 
     sendPauseEvent({ videoId, tabTitle, channelName }: YouTubePayload) {
-        console.log("Would send pause event for youtube");
         const payload = {
             videoId,
             tabTitle,
@@ -78,13 +80,17 @@ class YouTubeApi {
 
 class NetflixApi {
     sendPayload: Function;
+    logger: PlatformLogger;
+
     constructor(sendPayload: Function) {
         this.sendPayload = sendPayload;
+        this.logger = new PlatformLogger("Netflix");
     }
 
-    reportNetflixPage(foo: string) {
+    reportNetflixPage(mediaTitle: string) {
         // TODO
-        console.log("Reporting netflix is not supported yet", foo);
+        this.logger.logLandOnPage(mediaTitle ?? "Unknown Media");
+        console.log("Reporting netflix is not supported yet", mediaTitle);
     }
 
     // TODO: If they select the wrong thing form the dropdown,
@@ -122,6 +128,7 @@ class NetflixApi {
         };
 
         console.log("The pause payload was be ", payload);
+        this.logger.logPauseEvent(showName);
         this.sendPayload(youtubePlayerStateUrl, payload);
     }
 }
@@ -129,8 +136,10 @@ class NetflixApi {
 export class ServerApi {
     youtube: YouTubeApi;
     netflix: NetflixApi;
+    sendRealPayloads: boolean;
 
     constructor() {
+        this.sendRealPayloads = false;
         this.youtube = new YouTubeApi(this.sendPayload.bind(this));
         this.netflix = new NetflixApi(this.sendPayload.bind(this));
     }
@@ -156,6 +165,9 @@ export class ServerApi {
     }
 
     private sendPayload(targetUrl: string, payload: object) {
+        if (this.sendRealPayloads === false) {
+            return;
+        }
         fetch(DESKSENSE_BACKEND_URL + targetUrl, {
             method: "POST",
             headers: {

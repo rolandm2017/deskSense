@@ -255,10 +255,6 @@ class PlayPauseDispatch {
     }
 }
 
-function waitForHandleYouTubeUrl() {
-    //
-}
-
 const playPauseDispatch = new PlayPauseDispatch();
 
 chrome.runtime.onMessage.addListener(
