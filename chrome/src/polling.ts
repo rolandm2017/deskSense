@@ -1,4 +1,4 @@
-import { viewingTracker } from "./visits";
+import { viewingTracker } from "./videoCommon/visits";
 
 import { TrackerInitializationError } from "./errors";
 

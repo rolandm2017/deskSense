@@ -3,7 +3,7 @@ import { api } from "./api";
 import { getDomainFromUrl } from "./urlTools";
 import { getYouTubeVideoId, handleYouTubeUrl } from "./youtube/youtube";
 
-import { viewingTracker, YouTubeViewing } from "./visits";
+import { viewingTracker, YouTubeViewing } from "./videoCommon/visits";
 
 import {
     ignoredDomains,

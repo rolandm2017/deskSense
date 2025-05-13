@@ -1,6 +1,6 @@
 // visits.ts
 
-import { api } from "./api";
+import { api } from "../api";
 
 // A Visit: As in, A PageVisit
 // A Viewing: A window of time spent actively viewing the video.
