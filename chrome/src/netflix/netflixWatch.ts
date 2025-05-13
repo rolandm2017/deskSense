@@ -167,18 +167,6 @@ function injectInitialStateModal() {
         return;
     }
 
-    // TODO: If (userSetEntry) displayEntry()
-
-    // Inject CSS
-    // const style = document.createElement("style");
-    // document.head.appendChild(style);
-
-    // // Inject HTML
-    // const div = document.createElement("div");
-    // div.innerHTML = modalHtmlBase;
-    // // Append straight to the document body
-    // document.body.appendChild(div.firstElementChild!);
-
     injectModalBase();
 
     // // Wait for elements to be available
@@ -186,24 +174,13 @@ function injectInitialStateModal() {
     //     selector: string,
     //     callback: (element: Element) => void
     // ) => {
-    //     const element = document.getElementById(selector);
-    //     if (element) {
-    //         console.log("El exists");
-    //         callback(element);
-    //     } else {
-    //         console.log("No el found, requesting animation frfame");
-    //         setTimeout(() => {
-    //             requestAnimationFrame(() => waitForElement(selector, callback));
-    //         }, 500);
-    //     }
-    // };
+
     // console.log("Waiting for element", new Date().getSeconds());
     waitForElement(EL_IDS.MODAL, (modal) => {
         const renderTarget = getElementWithGivenIdOrThrow(EL_IDS.STATE_TARGET);
         renderModalContent(renderTarget);
         // Now you can safely populate your dropdown
         console.log("Modal ready", new Date().getSeconds());
-        loadDropdownEntries();
         // Add the rest of your event listeners
         attachSelectingTitleListeners();
     });
@@ -242,7 +219,7 @@ function attachConfirmedTitleListeners() {
 }
 
 function attachSelectingTitleListeners() {
-    console.log("Injecting listeners in setupEventListeners");
+    // console.log("Injecting listeners in setupEventListeners");
     // Add event listeners
     const modal = getElementWithGivenIdOrThrow(EL_IDS.MODAL);
 
@@ -334,8 +311,7 @@ function attachSelectingTitleListeners() {
 let checkCount = 1;
 // Wait for Netflix page to load and inject modal
 const checkNetflixLoaded = () => {
-    console.log("checkNetflixLoaded: " + checkCount, checkCount);
-    console.log("check count: ", checkCount + checkCount, "foo");
+    // console.log("checkNetflixLoaded: " + checkCount, checkCount);
     // You might want to add specific checks here for Netflix player
     if (document.readyState === "complete") {
         // Add a delay to ensure Netflix has fully loaded
@@ -354,15 +330,7 @@ function injectReviewTitleModal() {
     if (document.getElementById(EL_IDS.MODAL)) {
         return;
     }
-    // const style = document.createElement("style");
-    // document.head.appendChild(style);
 
-    // // Inject HTML
-    // const div = document.createElement("div");
-    // console.log("Putting modalHtml into reviewTitleModal");
-    // div.innerHTML = modalHtmlBase;
-    // // Append straight to the document body
-    // document.body.appendChild(div.firstElementChild!);
     injectModalBase();
 
     const stateTargetContainer = getElementWithGivenIdOrThrow(

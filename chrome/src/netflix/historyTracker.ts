@@ -97,8 +97,15 @@ export class WatchHistoryTracker {
             return h.showName;
         });
 
+        const seen = new Set();
+        const uniqueByShowName = topFiveStrings.filter((item) => {
+            if (seen.has(item)) return false;
+            seen.add(item);
+            return true;
+        });
+
         return new Promise((resolve) => {
-            resolve(topFiveStrings);
+            resolve(uniqueByShowName);
         });
 
         // return new Promise((resolve, reject) => {
@@ -123,10 +130,19 @@ export class WatchHistoryTracker {
             .readWholeHistory()
             .then((entries: WatchEntry[]) => {
                 console.log("Load history found: ", entries);
+                const todaysEntries = [];
+                const today = new Date().toDateString();
                 for (const d of entries) {
-                    console.log(d, "d in entries. should be watchHistory");
+                    console.log(d.showName, "d in entries");
+                    if (today == new Date(d.timestamp).toDateString()) {
+                        todaysEntries.push(d);
+                    }
                 }
                 this.allHistory = entries;
+
+                this.todayHistory = todaysEntries;
+
+                // find today's history among allHistory, put it into todayHistory
 
                 // FIXME: but how to get previous entries from today? maybe
                 // go into the pastHistory and get the one for today
