@@ -24,13 +24,11 @@ export class WatchHistoryTracker {
         selects it, and goes on with their day. The mistake vanishes in a few hours.
     */
     allHistory: WatchEntry[];
-    todayHistory: WatchEntry[];
     storageConnection: StorageInterface;
     facade: NetflixFacade;
 
     constructor(storageConnection: StorageInterface) {
         this.storageConnection = storageConnection;
-        this.todayHistory = [];
         this.allHistory = [];
         this.loadHistory();
         this.facade = new NetflixFacade();
@@ -49,35 +47,21 @@ export class WatchHistoryTracker {
     }
 
     // Add a new watch entry
-    async addWatchEntry(urlId: string, showName: string, url: string) {
+    addWatchEntry(urlId: string, showName: string, url: string) {
         if (!this.validateUrlId(urlId)) {
             console.warn("Received invalid URL ID: ", urlId);
         }
-        const today = this.getTodaysDate();
 
-        // Check if this video ID already exists for today
-        const existingEntry = this.todayHistory.find(
-            (entry: WatchEntry) => entry.urlId === urlId
-        );
-
-        if (!existingEntry) {
-            // Add new entry
-            const newEntry: WatchEntry = {
-                serverId: 1000, // temp
-                urlId: urlId, // still use the string anyway, valid or not
-                showName: showName,
-                url: url,
-                timestamp: new Date().toISOString(),
-                msTimestamp: Date.now(), // number of ms since Jan 1, 1970
-                watchCount: 1,
-            };
-            this.todayHistory.push(newEntry);
-            this.allHistory.push(newEntry);
-
-            // Keep only last 10 days of active data
-            // await this.cleanupOldHistory();
-            // await this.saveHistory();
-        }
+        const newEntry: WatchEntry = {
+            serverId: 1000, // temp
+            urlId: urlId, // still use the string anyway, valid or not
+            showName: showName,
+            url: url,
+            timestamp: new Date().toISOString(),
+            msTimestamp: Date.now(), // number of ms since Jan 1, 1970
+            watchCount: 1,
+        };
+        this.allHistory.push(newEntry);
     }
     // so, i pick hilda, i watch hilda, i pick hilda again.
     // does hilda now have two watchEntries in the history?
@@ -130,29 +114,18 @@ export class WatchHistoryTracker {
             .readWholeHistory()
             .then((entries: WatchEntry[]) => {
                 console.log("Load history found: ", entries);
-                const todaysEntries = [];
-                const today = new Date().toDateString();
-                for (const d of entries) {
-                    console.log(d.showName, "d in entries");
-                    if (today == new Date(d.timestamp).toDateString()) {
-                        todaysEntries.push(d);
-                    }
-                }
+
                 this.allHistory = entries;
-
-                this.todayHistory = todaysEntries;
-
-                // find today's history among allHistory, put it into todayHistory
-
-                // FIXME: but how to get previous entries from today? maybe
-                // go into the pastHistory and get the one for today
             });
     }
 
     // Save history to Chrome storage
     async saveHistory(): Promise<void> {
         // TODO
-        this.storageConnection.saveAll(this.todayHistory);
+        for (const v of this.allHistory) {
+            console.log("Saving ", v.showName);
+        }
+        this.storageConnection.saveAll(this.allHistory);
     }
 
     // Get today's date in YYYY-MM-DD format
@@ -162,12 +135,10 @@ export class WatchHistoryTracker {
 
     // Get the most recently watched show
     getLastWatchedShow() {
-        const dates = Object.keys(this.todayHistory).sort().reverse();
+        const dates = Object.keys(this.allHistory).sort().reverse();
 
-        for (const date of dates) {
-            if (this.todayHistory && this.todayHistory.length > 0) {
-                return this.todayHistory[this.todayHistory.length - 1].showName;
-            }
+        if (this.allHistory && this.allHistory.length > 0) {
+            return this.allHistory[this.allHistory.length - 1].showName;
         }
 
         return null;
@@ -175,13 +146,13 @@ export class WatchHistoryTracker {
 
     // Get most frequently watched show in last 3 active days
     getMostWatchedShowLastThreeDays() {
-        const dates = Object.keys(this.todayHistory).sort().reverse();
+        const dates = Object.keys(this.allHistory).sort().reverse();
         const threeDaysData = dates.slice(0, 3);
         const showCounts: Record<string, number> = {};
 
         threeDaysData.forEach((date) => {
-            if (this.todayHistory) {
-                this.todayHistory.forEach((entry: WatchEntry) => {
+            if (this.allHistory) {
+                this.allHistory.forEach((entry: WatchEntry) => {
                     showCounts[entry.showName] =
                         (showCounts[entry.showName] || 0) + 1;
                 });
@@ -200,30 +171,41 @@ export class WatchHistoryTracker {
     getAllShows(): string[] {
         const shows: Set<string> = new Set();
 
-        Object.values(this.todayHistory).forEach((entry: WatchEntry) => {
+        Object.values(this.allHistory).forEach((entry: WatchEntry) => {
             shows.add(entry.showName);
         });
 
         return Array.from(shows).sort();
     }
 
-    // Remove entries older than 10 active days
+    // Remove entries older than 15 active days
+
     async cleanupOldHistory() {
+        // Keep the past 15 days of history, and
+        // at least 100 entries.
         // TODO: Get just the dates, as a Set()
-        const pastHistoryDates = this.allHistory.sort().reverse();
+        const sortedHistory: WatchEntry[] = this.allHistory.sort().reverse();
 
-        // Keep only the most recent 10 active days
-        if (pastHistoryDates.length > 10) {
-            const daysToKeep = pastHistoryDates.slice(0, 9);
-            const newHistory: WatchEntry[] = [];
+        const countOfEntries = sortedHistory.length;
+        const countAbove100 =
+            countOfEntries > 100 ? countOfEntries - 100 : null;
 
-            daysToKeep.forEach((entry: WatchEntry) => {
-                // get the pastHistoryDates for the
-                //
-                newHistory.push();
-            });
-
-            this.todayHistory = newHistory;
+        if (countAbove100 === null) {
+            return;
         }
+
+        // Keep only the most recent 15 active days
+        function getRecentEntries(entries: WatchEntry[], maxDaysAgo = 15) {
+            const fifteenDaysAgo = new Date();
+            fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - maxDaysAgo);
+
+            return entries.filter(
+                (entry: WatchEntry) =>
+                    new Date(entry.timestamp) >= fifteenDaysAgo
+            );
+        }
+
+        const entriesToKeep = getRecentEntries(sortedHistory);
+        this.allHistory = entriesToKeep;
     }
 }

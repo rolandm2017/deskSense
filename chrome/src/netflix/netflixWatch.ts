@@ -112,7 +112,7 @@ function loadDropdownEntries() {
     // Populate dropdown options here
     historyTracker.getTopFive().then((topFiveList) => {
         topFiveList.forEach((item) => {
-            console.log("Top five list forEach", item);
+            console.log("Top 5 loop", item);
             const option = document.createElement("option");
             option.value = item;
             option.textContent = item;
@@ -180,7 +180,7 @@ function injectInitialStateModal() {
         const renderTarget = getElementWithGivenIdOrThrow(EL_IDS.STATE_TARGET);
         renderModalContent(renderTarget);
         // Now you can safely populate your dropdown
-        console.log("Modal ready", new Date().getSeconds());
+        // console.log("Modal ready", new Date().getSeconds());
         // Add the rest of your event listeners
         attachSelectingTitleListeners();
     });
@@ -201,7 +201,7 @@ function attachConfirmedTitleListeners() {
     // Setup "Change title" listener
     changeTitleBtn.addEventListener("click", () => {
         //
-        console.log("changing back to the prior state");
+        // console.log("changing back to the prior state");
         // selectedTitleState = ""; // Don't change it yet. No point
         currentModalState = "selecting";
         const stateChangeTarget = getElementWithGivenIdOrThrow(
@@ -262,7 +262,7 @@ function attachSelectingTitleListeners() {
     };
 
     confirmButton.onclick = () => {
-        console.log("In confirm btn onclick");
+        // console.log("In confirm btn onclick");
         const mediaTitle =
             inputSection.style.display === "none"
                 ? seriesSelect.value
@@ -315,7 +315,7 @@ const checkNetflixLoaded = () => {
     // You might want to add specific checks here for Netflix player
     if (document.readyState === "complete") {
         // Add a delay to ensure Netflix has fully loaded
-        console.log("Injecting modal", new Date().getSeconds());
+        // console.log("Injecting modal", new Date().getSeconds());
         injectInitialStateModal();
     } else {
         console.log("Checking document state again. Retry number:", checkCount);

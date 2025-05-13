@@ -16,7 +16,7 @@ class StorageApi implements StorageInterface {
     async saveAll(entries: WatchEntry[]): Promise<void> {
         return new Promise((resolve) => {
             chrome.storage.local.set({ wholeHistory: entries }, () => {
-                console.log("Saved all");
+                console.log("Saved all " + entries.length + "  entries");
                 resolve();
             });
         });
@@ -43,9 +43,9 @@ class StorageApi implements StorageInterface {
     async readWholeHistory(): Promise<WatchEntry[]> {
         return new Promise((resolve) => {
             chrome.storage.local.get("wholeHistory", (result) => {
-                console.log("all stored data:", result); // All stored data
                 // Convert the object to an array of DayHistory objects
                 const savedEntries: WatchEntry[] = result.wholeHistory || [];
+                console.log("all stored data:", savedEntries); // All stored data
                 resolve(savedEntries);
             });
         });
