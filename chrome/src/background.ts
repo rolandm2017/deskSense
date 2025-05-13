@@ -1,19 +1,27 @@
 // background.ts
 import { api } from "./api";
-import { extractChannelInfoFromWatchPage } from "./channelExtractor";
 import { MissingUrlError } from "./errors";
 import { getDomainFromUrl } from "./urlTools";
+import { extractChannelInfoFromWatchPage } from "./youtube/channelExtractor";
 import {
     extractChannelNameFromUrl,
     getYouTubeVideoId,
     isOnSomeChannel,
     isWatchingVideo,
     watchingShorts,
-} from "./youtube";
+} from "./youtube/youtube";
 
 import { viewingTracker, YouTubeViewing } from "./visits";
 
 import { ignoredDomains, isDomainIgnored, loadDomains } from "./ignoreList";
+
+/*
+
+YouTube code, a lot of it lives here, because YouTube is monitored
+from the background.ts script itself. 
+This approach cannot work for Netflix. Much user input is needed there.
+
+*/
 
 // Code that lets you open the options page when the icon is clicked
 // Disabled in favor of the modal
