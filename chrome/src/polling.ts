@@ -2,6 +2,12 @@ import { viewingTracker } from "./visits";
 
 import { TrackerInitializationError } from "./errors";
 
+/*
+
+* Some old code that could be used for a polling approach to tracking watch time.
+
+*/
+
 function executeTimeTrackingScript(tabId: number) {
     // used to run in handleYoutubeUrl
     chrome.scripting.executeScript(
