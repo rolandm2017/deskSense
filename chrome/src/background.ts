@@ -1,9 +1,9 @@
 // background.ts
 import { api } from "./api";
 import { getDomainFromUrl } from "./urlTools";
-import { getYouTubeVideoId, handleYouTubeUrl } from "./youtube/youtube";
+import { handleYouTubeUrl } from "./youtube/youtube";
 
-import { viewingTracker, YouTubeViewing } from "./videoCommon/visits";
+import { viewingTracker } from "./videoCommon/visits";
 
 import {
     ignoredDomains,
@@ -204,28 +204,8 @@ class PlayPauseDispatch {
         } else {
             // it wasn't there yet because, the, the channel extractor
             // script didn't run yet but the "report playing video" code did
-            if (!sender.tab) {
-                // problem
-                return;
-            }
 
-            // TODO: Clean this up
-            const tab = sender.tab;
-            const tabUrl = tab.url;
-            const tabTitle = tab.title || "Unknown Title";
-            // const channelName = getChannelNameFromSomewhere();
-
-            // Extract video ID from URL
-            let videoId = getYouTubeVideoId(tabUrl);
-
-            // TODO: Get channel name from somewhere
-            const youTubeVisit = new YouTubeViewing(
-                videoId,
-                tabTitle,
-                "Unknown Channel"
-            );
-            youTubeVisit.sendInitialInfoToServer();
-            viewingTracker.setCurrent(youTubeVisit);
+            startSecondaryChannelExtractionScript(sender);
         }
     }
 

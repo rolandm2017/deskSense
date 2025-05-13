@@ -16,6 +16,8 @@ import { MissingUrlError } from "../errors";
  * The extension must be able to tell which channel is active.
  */
 
+let runningExtractChannelInfoScript = false;
+
 // // Handle YouTube URL specifically
 export function handleYouTubeUrl(
     tab: chrome.tabs.Tab,
@@ -32,6 +34,7 @@ export function handleYouTubeUrl(
         // Use executeScript to access the DOM on YouTube watch pages
         const tabId = tab.id;
         tabsWithIntervalsRecorder(tabId);
+        runningExtractChannelInfoScript = true;
         setTimeout(() => {
             chrome.scripting.executeScript(
                 {
@@ -75,14 +78,44 @@ export function handleYouTubeUrl(
     } else if (isOnSomeChannel(tab.url)) {
         // For channel pages, we can extract from the URL
         const channelName = extractChannelNameFromUrl(tab.url);
-        api.reportYouTube(tab.title, channelName);
+        api.reportYouTubePage(tab.title, channelName);
     } else if (watchingShorts(tab.url)) {
         // Avoids trying to extract the channel name from
         // the YouTube Shorts page. The page's HTML changes often. Sisyphean task.
-        api.reportYouTube(tab.title, "Watching Shorts");
+        api.reportYouTubePage(tab.title, "Watching Shorts");
     } else {
-        api.reportYouTube(tab.title, "YouTube Home");
+        api.reportYouTubePage(tab.title, "YouTube Home");
     }
+}
+
+export function startSecondaryChannelExtractionScript(
+    sender: chrome.runtime.MessageSender
+) {
+    if (!sender.tab) {
+        // unhandled problem
+        return;
+    }
+    if (runningExtractChannelInfoScript) {
+        // just wait for it; it'll do al this stuff too
+        return;
+    }
+    // TODO: Clean this up
+    const tab = sender.tab;
+    const tabUrl = tab.url;
+    const tabTitle = tab.title || "Unknown Title";
+    // const channelName = getChannelNameFromSomewhere();
+
+    // Extract video ID from URL
+    let videoId = getYouTubeVideoId(tabUrl);
+
+    // TODO: Get channel name from somewhere
+    const youTubeVisit = new YouTubeViewing(
+        videoId,
+        tabTitle,
+        "Unknown Channel"
+    );
+    // youTubeVisit.sendInitialInfoToServer();
+    viewingTracker.setCurrent(youTubeVisit);
 }
 
 export function getYouTubeChannel(youTubeUrl: string) {
