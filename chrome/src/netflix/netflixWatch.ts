@@ -110,8 +110,8 @@ function setCurrentReviewTitleIntoReviewComponent() {
 function loadDropdownEntries() {
     const dropdown = getElementWithGivenIdOrThrow(EL_IDS.SERIES_SELECT);
     // Populate dropdown options here
-    historyRecorder.getTopFive().then((topFiveList) => {
-        topFiveList.forEach((item) => {
+    historyRecorder.getTopFive().then((topFiveList: string[]) => {
+        topFiveList.forEach((item: string) => {
             console.log("Top 5 loop", item);
             const option = document.createElement("option");
             option.value = item;

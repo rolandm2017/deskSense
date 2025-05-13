@@ -13,6 +13,11 @@ import { MockStorageApi } from "./mockStorageInterface";
 
 describe("The Netflix tracker works as intended", () => {
     //
+    function assertMocksNotCalled(arr) {
+        for (const fn of arr) {
+            expect(fn).not.toHaveBeenCalled();
+        }
+    }
     test("The historyRecorder deposits titles in the ViewingTracker and notifies the server", () => {
         const serverConn = new ServerApi();
         // turn off send payloads
@@ -36,15 +41,11 @@ describe("The Netflix tracker works as intended", () => {
         tracker.sendPageDetailsToViewingTracker(pretendShow.url);
         tracker.recordEnteredMediaTitle(pretendShow.showName, pretendShow.url);
         // Expect the show to be in the viewing tracker
-        const youtubeFns = [
+        assertMocksNotCalled([
             (serverConn.youtube.reportYouTubePage = vi.fn()),
             (serverConn.youtube.sendPlayEvent = vi.fn()),
             (serverConn.youtube.sendPauseEvent = vi.fn()),
-        ];
-
-        for (const fn of youtubeFns) {
-            expect(fn).not.toHaveBeenCalled();
-        }
+        ]);
 
         const media = viewingTrackerInit.currentMedia;
         expect(media).toBeDefined();
@@ -60,67 +61,77 @@ describe("The Netflix tracker works as intended", () => {
         // tracker.netflix.reportNewPage().wasCalled()
         expect(serverConn.netflix.reportNetflixPage).toHaveBeenCalledOnce();
     });
-    // test("A currently active show has it's play event forwarded to the server", () => {
-    //     const serverConn = new ServerApi();
-    //     // turn off send payload
-    //     serverConn.youtube.reportYouTubePage = vi.fn();
-    //     serverConn.youtube.sendPlayEvent = vi.fn();
-    //     serverConn.youtube.sendPauseEvent = vi.fn();
-    //     serverConn.netflix.reportNetflixPage = vi.fn();
-    //     serverConn.netflix.sendPlayEvent = vi.fn();
-    //     serverConn.netflix.sendPauseEvent = vi.fn();
+    test("A currently active show has it's play event forwarded to the server", () => {
+        const serverConn = new ServerApi();
+        // turn off send payload
+        serverConn.youtube.reportYouTubePage = vi.fn();
+        serverConn.youtube.sendPlayEvent = vi.fn();
+        serverConn.youtube.sendPauseEvent = vi.fn();
+        serverConn.netflix.reportNetflixPage = vi.fn();
+        serverConn.netflix.sendPlayEvent = vi.fn();
+        serverConn.netflix.sendPauseEvent = vi.fn();
 
-    //     const viewingTrackerInit = new ViewingTracker(serverConn);
-    //     const unused = new MockStorageApi();
-    //     const tracker = new HistoryRecorder(viewingTrackerInit, unused);
+        const viewingTrackerInit = new ViewingTracker(serverConn);
+        const unused = new MockStorageApi();
+        const tracker = new HistoryRecorder(viewingTrackerInit, unused);
 
-    //     const pretendShow = {
-    //         urlId: "2345",
-    //         showName: "Hilda",
-    //         url: "netflix.com/watch/2345",
-    //     };
-    //     tracker.addWatchEntry(
-    //         pretendShow.urlId,
-    //         pretendShow.showName,
-    //         pretendShow.url
-    //     );
+        const pretendShow = {
+            urlId: "2345",
+            showName: "Hilda",
+            url: "netflix.com/watch/2345",
+        };
+        tracker.sendPageDetailsToViewingTracker(pretendShow.url);
+        tracker.recordEnteredMediaTitle(pretendShow.showName, pretendShow.url);
 
-    //     viewingTrackerInit.markPlaying();
+        viewingTrackerInit.markPlaying();
 
-    //     expect(viewingTrackerInit.currentMedia?.playerState).toBe("playing");
-    //     expect(serverConn.youtube.sendPlayEvent).toHaveBeenCalledOnce();
+        assertMocksNotCalled([
+            (serverConn.youtube.reportYouTubePage = vi.fn()),
+            (serverConn.youtube.sendPlayEvent = vi.fn()),
+            (serverConn.youtube.sendPauseEvent = vi.fn()),
+        ]);
 
-    //     //
-    // });
-    // test("A playing show can be paused, and the server hears about it", () => {
-    //     const serverConn = new ServerApi();
-    //     // turn off send payload
-    //     serverConn.youtube.reportYouTubePage = vi.fn();
-    //     serverConn.youtube.sendPlayEvent = vi.fn();
-    //     serverConn.youtube.sendPauseEvent = vi.fn();
-    //     serverConn.netflix.reportNetflixPage = vi.fn();
-    //     serverConn.netflix.sendPlayEvent = vi.fn();
-    //     serverConn.netflix.sendPauseEvent = vi.fn();
+        expect(viewingTrackerInit.currentMedia).toBeDefined();
+        expect(viewingTrackerInit.currentMedia?.playerState).toBe("playing");
+        expect(serverConn.netflix.sendPlayEvent).toHaveBeenCalledOnce();
 
-    //     const viewingTrackerInit = new ViewingTracker(serverConn);
-    //     const unused = new MockStorageApi();
-    //     const tracker = new HistoryRecorder(viewingTrackerInit, unused);
+        //
+    });
+    test("A playing show can be paused, and the server hears about it", () => {
+        const serverConn = new ServerApi();
+        // turn off send payload
+        serverConn.youtube.reportYouTubePage = vi.fn();
+        serverConn.youtube.sendPlayEvent = vi.fn();
+        serverConn.youtube.sendPauseEvent = vi.fn();
+        serverConn.netflix.reportNetflixPage = vi.fn();
+        serverConn.netflix.sendPlayEvent = vi.fn();
+        serverConn.netflix.sendPauseEvent = vi.fn();
 
-    //     const pretendShow = {
-    //         urlId: "2345",
-    //         showName: "Hilda",
-    //         url: "netflix.com/watch/2345",
-    //     };
-    //     tracker.addWatchEntry(
-    //         pretendShow.urlId,
-    //         pretendShow.showName,
-    //         pretendShow.url
-    //     );
+        const viewingTrackerInit = new ViewingTracker(serverConn);
+        const unused = new MockStorageApi();
+        const tracker = new HistoryRecorder(viewingTrackerInit, unused);
 
-    //     viewingTrackerInit.markPlaying();
-    //     viewingTrackerInit.markPaused();
+        const pretendShow = {
+            urlId: "2345",
+            showName: "Hilda",
+            url: "netflix.com/watch/2345",
+        };
+        tracker.sendPageDetailsToViewingTracker(pretendShow.url);
 
-    //     expect(viewingTrackerInit.currentMedia?.playerState).toBe("paused");
-    //     expect(serverConn.youtube.sendPauseEvent).toHaveBeenCalledOnce();
-    // });
+        tracker.recordEnteredMediaTitle(pretendShow.showName, pretendShow.url);
+
+        viewingTrackerInit.markPlaying();
+        viewingTrackerInit.markPaused();
+
+        assertMocksNotCalled([
+            (serverConn.youtube.reportYouTubePage = vi.fn()),
+            (serverConn.youtube.sendPlayEvent = vi.fn()),
+            (serverConn.youtube.sendPauseEvent = vi.fn()),
+        ]);
+
+        expect(viewingTrackerInit.currentMedia).toBeDefined();
+
+        expect(viewingTrackerInit.currentMedia?.playerState).toBe("paused");
+        expect(serverConn.netflix.sendPauseEvent).toHaveBeenCalledOnce();
+    });
 });

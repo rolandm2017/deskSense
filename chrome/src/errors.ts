@@ -31,9 +31,17 @@ class MissingUrlError extends Error {
     }
 }
 
+class MissingMediaError extends Error {
+    constructor(message = "Media not found when it was supposed to be") {
+        super(message);
+        this.name = "MissingMediaError";
+    }
+}
+
 export {
     ChannelPageOnlyError,
     ImpossibleToGetHereError,
+    MissingMediaError,
     MissingUrlError,
     TrackerInitializationError,
 };

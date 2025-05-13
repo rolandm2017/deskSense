@@ -1,7 +1,15 @@
 // visits.ts
 
 import { ServerApi } from "../api";
-import { WatchEntry } from "../interface/interfaces";
+import { MissingMediaError } from "../errors";
+import {
+    INetflixViewing,
+    IYouTubeViewing,
+    NetflixPayload,
+    WatchEntry,
+    YouTubePayload,
+} from "../interface/interfaces";
+
 import { PlatformLogger } from "../logging";
 
 // A Visit: As in, A PageVisit
@@ -78,22 +86,35 @@ export class ViewingTracker {
     }
 
     markPlaying() {
+        if (!this.currentMedia) {
+            throw new MissingMediaError();
+        }
+        this.currentMedia.playerState = "playing";
         if (this.currentMedia instanceof YouTubeViewing) {
             this.youTubeApiLogger.logPlayEvent();
-            this.api.youtube.sendPlayEvent(this.currentMedia);
+            const asYouTubePayload = this.currentMedia.convertToPayload();
+            this.api.youtube.sendPlayEvent(asYouTubePayload);
         } else {
             this.netflixApiLogger.logPlayEvent();
-            this.api.netflix.sendPlayEvent(this.currentMedia);
+            const asNetflixPayload = this.currentMedia.convertToPayload();
+            this.api.netflix.sendPlayEvent(asNetflixPayload);
         }
     }
 
     markPaused() {
+        if (!this.currentMedia) {
+            throw new MissingMediaError();
+        }
+        this.currentMedia.playerState = "paused";
+
         if (this.currentMedia instanceof YouTubeViewing) {
             this.youTubeApiLogger.logPauseEvent();
-            this.api.youtube.sendPauseEvent(this.currentMedia);
+            const asYouTubePayload = this.currentMedia.convertToPayload();
+            this.api.youtube.sendPauseEvent(asYouTubePayload);
         } else {
             this.netflixApiLogger.logPauseEvent();
-            this.api.netflix.sendPauseEvent(this.currentMedia);
+            const asNetflixPayload = this.currentMedia.convertToPayload();
+            this.api.netflix.sendPauseEvent(asNetflixPayload);
         }
     }
 
@@ -107,7 +128,9 @@ export class ViewingTracker {
     }
 }
 
-export const viewingTracker = new ViewingTracker();
+const serverApi = new ServerApi();
+
+export const viewingTracker = new ViewingTracker(serverApi);
 
 class Segment {
     // A segment of time in a Viewing
@@ -127,7 +150,7 @@ class VideoContentViewing {
     // Probably want to send a payload every 3 minutes or so, max.
 }
 
-export class YouTubeViewing {
+export class YouTubeViewing implements IYouTubeViewing {
     videoId: string;
     mediaTitle: string;
     timestamps: number[];
@@ -148,9 +171,17 @@ export class YouTubeViewing {
         this.timestamps = [];
         this.playerState = "paused";
     }
+
+    convertToPayload(): YouTubePayload {
+        return {
+            videoId: this.videoId,
+            tabTitle: this.mediaTitle,
+            channelName: this.channelName,
+        };
+    }
 }
 
-export class NetflixViewing {
+export class NetflixViewing implements INetflixViewing {
     videoId: string;
     mediaTitle: string;
     timestamps: number[];
@@ -163,5 +194,14 @@ export class NetflixViewing {
         this.mediaTitle = watchEntry.showName;
         this.timestamps = [];
         this.playerState = "paused";
+    }
+
+    convertToPayload(): NetflixPayload {
+        return {
+            urlId: this.videoId,
+            showName: this.mediaTitle,
+            url: "TODO",
+            videoId: this.videoId,
+        };
     }
 }
