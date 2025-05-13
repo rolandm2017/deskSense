@@ -13,6 +13,7 @@
 export {}; // make ts ignore declaring global here
 
 declare global {
+    // Don't move this from this file
     interface Window {
         __videoElement: HTMLVideoElement | null;
     }
@@ -50,12 +51,13 @@ function attachVideoListeners(retries = 0, maxRetries = 10) {
     // Define handler functions and store references
     playHandler = () => {
         console.log("Sending play message");
-        chrome.runtime.sendMessage({ event: "play" });
+        // TODO: Distinguish between Netflix Play, YouTube Play
+        chrome.runtime.sendMessage({ event: "user_pressed_play" });
     };
 
     pauseHandler = () => {
         console.log("Sending *pause message");
-        chrome.runtime.sendMessage({ event: "pause" });
+        chrome.runtime.sendMessage({ event: "user_pressed_pause" });
     };
 
     // Attach listeners
@@ -64,8 +66,8 @@ function attachVideoListeners(retries = 0, maxRetries = 10) {
 
     const videoAutostarted = !video.paused;
     if (videoAutostarted) {
-        console.log("One-off autoplay on page load / refresh");
-        chrome.runtime.sendMessage({ event: "play" });
+        console.log("One-off auto-start for recording on page load / refresh");
+        chrome.runtime.sendMessage({ event: "user_pressed_play" });
     }
 
     window.__videoElement = video;

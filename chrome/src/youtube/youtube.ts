@@ -3,6 +3,8 @@ import { ChannelPageOnlyError } from "../errors";
 import { stripProtocol } from "../urlTools";
 import { extractChannelInfoFromWatchPage } from "./channelExtractor";
 
+import { MissingUrlError } from "../errors";
+
 /*
  * For YouTube, some channels are productive; others are not.
  *
@@ -59,12 +61,23 @@ export function extractChannelNameFromUrl(youTubeUrl: string) {
     throw new ChannelPageOnlyError("Was not on a channel page");
 }
 
-export function getYouTubeVideoId(url: string) {
+function splitToGetYouTubeVideoId(url: string) {
     let videoId = url.split("v=")[1]; // Extract video ID
     // console.log("VIDEO ID: ", videoId, videoId.includes("&t"));
     if (videoId.includes("&t")) {
         videoId = videoId.split("&")[0];
         // console.log("And NOW it is: ", videoId);
+    }
+    return videoId;
+}
+
+export function getYouTubeVideoId(url: string | undefined) {
+    let videoId;
+    if (url) {
+        videoId = splitToGetYouTubeVideoId(url);
+    } else {
+        videoId = "Missing URL";
+        throw new MissingUrlError();
     }
     return videoId;
 }

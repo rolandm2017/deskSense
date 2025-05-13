@@ -41,6 +41,7 @@ export const pollingInterval = 3000;
 // Could be YAGNI and KISS though.
 
 declare global {
+    // Keep this in this window
     interface Window {
         videoTimeTrackerId?: number;
         __videoTimeIntervalStarted?: boolean;
