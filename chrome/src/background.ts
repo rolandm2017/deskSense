@@ -1,6 +1,5 @@
 // background.ts
 import { api } from "./api";
-import { MissingUrlError } from "./errors";
 import { getDomainFromUrl } from "./urlTools";
 import { extractChannelInfoFromWatchPage } from "./youtube/channelExtractor";
 import {
@@ -61,13 +60,7 @@ function handleYouTubeUrl(
 
                     const tabTitle = tab.title ? tab.title : "Unknown Title";
 
-                    let videoId;
-                    if (tab.url) {
-                        videoId = getYouTubeVideoId(tab.url);
-                    } else {
-                        videoId = "Missing URL";
-                        throw new MissingUrlError();
-                    }
+                    let videoId = getYouTubeVideoId(tab.url);
 
                     let channelName = "Unknown Channel";
                     if (results && results[0] && results[0].result) {
@@ -125,7 +118,35 @@ const processedTabs = new Map<number, ProcessedUrlEntry>();
 
 const PAGE_LOAD_DEBOUNCE_DELAY = 4000;
 
+function cleanupOldTabReferences(now: number) {
+    // "Now" from new Date().now()
+    const tabsToDelete: number[] = [];
+    for (const [tabKey, entry] of processedTabs.entries()) {
+        if (now - entry.timestamp > 10000) {
+            // Remove entries older than 10 seconds
+            tabsToDelete.push(tabKey);
+        }
+    }
+    tabsToDelete.forEach((key) => processedTabs.delete(key));
+}
+
+function markTabProcessed() {
+    //
+}
+
 function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
+    /*
+
+    This function has a debounce timer barring entry into it.
+    Prior to the existence of the debounce, the function would
+    gather info about a newly created tab, or a tab that was
+    just switched to, two times or I think even four times.
+    So the debounce was added to prevent the same tab that was
+    just created being gathered multiple times.
+
+    Note, it might be a problem if the user switches back and forth quickly.
+
+    */
     console.log("Tab.url and ID", tab.url, tab.id);
 
     if (!tab.url) {
@@ -139,27 +160,29 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
     if (!tab.id) {
         throw Error("A tab had no ID");
     }
-    const tabId = tab.id!;
-    // TODO: Clean this up - NAME the boolean(s)
 
     // Check if this tab with this URL was processed recently
-    const lastProcessed = processedTabs.get(tabId);
-    if (
-        lastProcessed &&
-        lastProcessed.url === tab.url &&
-        now - lastProcessed.timestamp < PAGE_LOAD_DEBOUNCE_DELAY
-    ) {
-        console.log(
-            "Skipping recently processed URL:",
-            tab.url,
-            "in tab:",
-            tabId
-        );
-        return;
+    const lastProcessedTab = processedTabs.get(tab.id);
+    const currentTabWasRecentlyProcessed =
+        lastProcessedTab && lastProcessedTab.url === tab.url;
+
+    if (currentTabWasRecentlyProcessed) {
+        // must use a nested if here because otherwise TS complains re: undefined
+        const tabWasSeenRecently =
+            now - lastProcessedTab.timestamp < PAGE_LOAD_DEBOUNCE_DELAY;
+        if (tabWasSeenRecently) {
+            console.log(
+                "Skipping recently processed URL:",
+                tab.url,
+                "in tab:",
+                tab.id
+            );
+            return;
+        }
     }
 
     // Mark this URL as processed for this tab
-    processedTabs.set(tabId, {
+    processedTabs.set(tab.id, {
         timestamp: now,
         url: tab.url,
     });
@@ -167,14 +190,7 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
     // Clean up old entries periodically
     // 12 chosen because it seems to only happen on youtube and refreshed pages
     if (processedTabs.size > 12) {
-        const tabsToDelete: number[] = [];
-        for (const [tabKey, entry] of processedTabs.entries()) {
-            if (now - entry.timestamp > 10000) {
-                // Remove entries older than 10 seconds
-                tabsToDelete.push(tabKey);
-            }
-        }
-        tabsToDelete.forEach((key) => processedTabs.delete(key));
+        cleanupOldTabReferences(now);
     }
 
     const domain = getDomainFromUrl(tab.url);
@@ -236,7 +252,12 @@ let pauseCount = 0;
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log(message, sender);
     let endSessionTimeoutId;
-    if (message.event === "play") {
+    /*
+     *   This only runs when the user presses play or pauses the video.
+     * Hence they're definitely on a page that already loaded
+     * somewhere else in the program.
+     */
+    if (message.event === "user_pressed_play") {
         playCount++;
         console.log("[onMsg] Play detected", playCount);
         if (endSessionTimeoutId) {
@@ -257,33 +278,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } else {
             // it wasn't there yet because, the, the channel extractor
             // script didn't run yet but the "report playing video" code did
-            if (sender.tab) {
-                // TODO: Clean this up
-                const tab = sender.tab;
-                const tabUrl = tab.url;
-                const tabTitle = tab.title || "Unknown Title";
-
-                // Extract video ID from URL
-                let videoId;
-                if (tabUrl) {
-                    // Handle any additional parameters after the video ID
-                    videoId = getYouTubeVideoId(tabUrl);
-                } else {
-                    videoId = "Missing URL";
-                    console.error("URL doesn't contain video ID parameter");
-                }
-
-                // TODO: Get channel name from somewhere
-                const youTubeVisit = new YouTubeViewing(
-                    videoId,
-                    tabTitle,
-                    "Unknown Channel"
-                );
-                youTubeVisit.sendInitialInfoToServer();
-                viewingTracker.setCurrent(youTubeVisit);
+            if (!sender.tab) {
+                // problem
+                return;
             }
+
+            // TODO: Clean this up
+            const tab = sender.tab;
+            const tabUrl = tab.url;
+            const tabTitle = tab.title || "Unknown Title";
+            // const channelName = getChannelNameFromSomewhere();
+
+            // Extract video ID from URL
+            let videoId = getYouTubeVideoId(tabUrl);
+
+            // TODO: Get channel name from somewhere
+            const youTubeVisit = new YouTubeViewing(
+                videoId,
+                tabTitle,
+                "Unknown Channel"
+            );
+            youTubeVisit.sendInitialInfoToServer();
+            viewingTracker.setCurrent(youTubeVisit);
         }
-    } else if (message.event === "pause") {
+    } else if (message.event === "user_pressed_pause") {
         pauseCount++;
         console.log("[onMsg] Pause detected", pauseCount);
         // TODO: Clean this up
