@@ -1,5 +1,10 @@
 // api.ts
-import { PlayerData } from "./interfaces";
+import {
+    NetflixPayload,
+    PlayerData,
+    YouTubePayload,
+} from "./interface/interfaces";
+
 const DESKSENSE_BACKEND_URL = "http://localhost:8000";
 
 const chromeTabUrl = "/api/chrome/tab";
@@ -11,18 +16,6 @@ const youtubePlayerStateUrl = "/api/chrome/youtube/state";
 const netflixUrl = "/api/chrome/netflix/new";
 const netflixPlayerStateUrl = "/api/chrome/netflix/state";
 
-interface YouTubePayload {
-    videoId: string;
-    tabTitle: string;
-    channelName: string;
-}
-
-interface NetflixPayload {
-    urlId: string;
-    videoId: string;
-    showName: string;
-    url: string;
-}
 class YouTubeApi {
     sendPayload: Function;
     constructor(sendPayload: Function) {
