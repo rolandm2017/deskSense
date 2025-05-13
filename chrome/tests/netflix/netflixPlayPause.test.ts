@@ -11,7 +11,9 @@ import { NetflixViewing, ViewingTracker } from "../../src/videoCommon/visits";
 
 import { MockStorageApi } from "./mockStorageInterface";
 
-describe("The Netflix tracker works as intended", () => {
+import { replaceAllMethodsWithMocks } from "../helper";
+
+describe("The tracker works as intended for Netflix", () => {
     //
     function assertMocksNotCalled(arr) {
         for (const fn of arr) {
@@ -21,13 +23,7 @@ describe("The Netflix tracker works as intended", () => {
     test("The historyRecorder deposits titles in the ViewingTracker and notifies the server", () => {
         const serverConn = new ServerApi();
         // turn off send payloads
-        serverConn.netflix.reportNetflixPage = vi.fn();
-        serverConn.netflix.sendPlayEvent = vi.fn();
-        serverConn.netflix.sendPauseEvent = vi.fn();
-
-        serverConn.youtube.reportYouTubePage = vi.fn();
-        serverConn.youtube.sendPlayEvent = vi.fn();
-        serverConn.youtube.sendPauseEvent = vi.fn();
+        replaceAllMethodsWithMocks(serverConn);
 
         const viewingTrackerInit = new ViewingTracker(serverConn);
         const unused = new MockStorageApi();
@@ -64,12 +60,7 @@ describe("The Netflix tracker works as intended", () => {
     test("A currently active show has it's play event forwarded to the server", () => {
         const serverConn = new ServerApi();
         // turn off send payload
-        serverConn.youtube.reportYouTubePage = vi.fn();
-        serverConn.youtube.sendPlayEvent = vi.fn();
-        serverConn.youtube.sendPauseEvent = vi.fn();
-        serverConn.netflix.reportNetflixPage = vi.fn();
-        serverConn.netflix.sendPlayEvent = vi.fn();
-        serverConn.netflix.sendPauseEvent = vi.fn();
+        replaceAllMethodsWithMocks(serverConn);
 
         const viewingTrackerInit = new ViewingTracker(serverConn);
         const unused = new MockStorageApi();
@@ -100,12 +91,7 @@ describe("The Netflix tracker works as intended", () => {
     test("A playing show can be paused, and the server hears about it", () => {
         const serverConn = new ServerApi();
         // turn off send payload
-        serverConn.youtube.reportYouTubePage = vi.fn();
-        serverConn.youtube.sendPlayEvent = vi.fn();
-        serverConn.youtube.sendPauseEvent = vi.fn();
-        serverConn.netflix.reportNetflixPage = vi.fn();
-        serverConn.netflix.sendPlayEvent = vi.fn();
-        serverConn.netflix.sendPauseEvent = vi.fn();
+        replaceAllMethodsWithMocks(serverConn);
 
         const viewingTrackerInit = new ViewingTracker(serverConn);
         const unused = new MockStorageApi();
