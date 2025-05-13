@@ -84,7 +84,7 @@ class NetflixApi {
 
     reportNetflixPage(foo: string) {
         // TODO
-        console.log("Reporting netflix is not supported yet");
+        console.log("Reporting netflix is not supported yet", foo);
     }
 
     // TODO: If they select the wrong thing form the dropdown,

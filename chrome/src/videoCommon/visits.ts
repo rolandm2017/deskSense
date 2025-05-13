@@ -62,7 +62,7 @@ export class ViewingTracker {
         // the videoId from the URL.
         const partiallyDescribedMedia: string = watchPageId;
         this.partialNetflixDescriptor = partiallyDescribedMedia;
-        this.api;
+        this.api.netflix.reportNetflixPage(partiallyDescribedMedia);
     }
 
     reportYouTubeWatchPage() {

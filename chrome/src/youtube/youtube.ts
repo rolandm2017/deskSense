@@ -69,7 +69,7 @@ export function handleYouTubeUrl(
                     // FIXME: "api.reportTabSwitch(domain, tab.title ? tab.title : "No title found");"
                     // youTubeVisit.sendInitialInfoToServer();
                     viewingTracker.setCurrent(youTubeVisit);
-                    viewingTracker.reportWatchPage();
+                    viewingTracker.reportYouTubeWatchPage();
                 }
             );
             // NOTE: ** do not change this 1500 ms delay **

@@ -6,14 +6,14 @@
 import { describe, expect, test, vi } from "vitest";
 
 import { ServerApi } from "../../src/api";
-import { WatchHistoryTracker } from "../../src/netflix/historyTracker";
+import { HistoryRecorder } from "../../src/netflix/historyRecorder";
 import { NetflixViewing, ViewingTracker } from "../../src/videoCommon/visits";
 
 import { MockStorageApi } from "./mockStorageInterface";
 
 describe("The Netflix tracker works as intended", () => {
     //
-    test("The historyTracker deposits titles in the ViewingTracker and notifies the server", () => {
+    test("The historyRecorder deposits titles in the ViewingTracker and notifies the server", () => {
         const serverConn = new ServerApi();
         // turn off send payloads
         serverConn.netflix.reportNetflixPage = vi.fn();
@@ -26,13 +26,14 @@ describe("The Netflix tracker works as intended", () => {
 
         const viewingTrackerInit = new ViewingTracker(serverConn);
         const unused = new MockStorageApi();
-        const tracker = new WatchHistoryTracker(viewingTrackerInit, unused);
+        const tracker = new HistoryRecorder(viewingTrackerInit, unused);
 
         const pretendShow = {
             urlId: "2345",
             showName: "Hilda",
             url: "netflix.com/watch/2345",
         };
+        tracker.sendPageDetailsToViewingTracker(pretendShow.url);
         tracker.recordEnteredMediaTitle(pretendShow.showName, pretendShow.url);
         // Expect the show to be in the viewing tracker
         const youtubeFns = [
@@ -71,7 +72,7 @@ describe("The Netflix tracker works as intended", () => {
 
     //     const viewingTrackerInit = new ViewingTracker(serverConn);
     //     const unused = new MockStorageApi();
-    //     const tracker = new WatchHistoryTracker(viewingTrackerInit, unused);
+    //     const tracker = new HistoryRecorder(viewingTrackerInit, unused);
 
     //     const pretendShow = {
     //         urlId: "2345",
@@ -103,7 +104,7 @@ describe("The Netflix tracker works as intended", () => {
 
     //     const viewingTrackerInit = new ViewingTracker(serverConn);
     //     const unused = new MockStorageApi();
-    //     const tracker = new WatchHistoryTracker(viewingTrackerInit, unused);
+    //     const tracker = new HistoryRecorder(viewingTrackerInit, unused);
 
     //     const pretendShow = {
     //         urlId: "2345",

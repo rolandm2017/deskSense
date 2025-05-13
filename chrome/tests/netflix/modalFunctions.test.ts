@@ -1,9 +1,6 @@
 import { describe, expect, test, vi } from "vitest";
 
-import {
-    WatchEntry,
-    WatchHistoryTracker,
-} from "../../src/netflix/historyTracker";
+import { HistoryRecorder, WatchEntry } from "../../src/netflix/historyRecorder";
 
 import { MockStorageApi } from "./mockStorageInterface";
 
@@ -34,25 +31,25 @@ describe("[integration] The modal's key behaviors work", () => {
         mockStorageApi.readAll.mockReturnValueOnce(
             Promise.resolve(pretendPreexistingHistory)
         );
-        const historyTracker = new WatchHistoryTracker(mockStorageApi);
+        const historyRecorder = new HistoryRecorder(mockStorageApi);
 
-        const topFiveResponse = await historyTracker.getTopFive();
+        const topFiveResponse = await historyRecorder.getTopFive();
         expect(topFiveResponse.length).toBe(5);
     });
     test("Selecting a dropdown entry updates the db", async () => {
         const mockStorageApi = new MockStorageApi();
 
         mockStorageApi.saveDay = vi.fn();
-        const historyTracker = new WatchHistoryTracker(mockStorageApi);
+        const historyRecorder = new HistoryRecorder(mockStorageApi);
 
         const videoId = "9423432";
         const showName = "Carmen San Diego";
         const url = "netflix.com/watch/85239432";
         // TODO: Make it have a day already, 2025-05-12
 
-        await historyTracker.addWatchEntry(videoId, showName, url);
+        await historyRecorder.addWatchEntry(videoId, showName, url);
 
-        const todayAsHistoryKey = historyTracker.getTodaysDate();
+        const todayAsHistoryKey = historyRecorder.getTodaysDate();
 
         expect(mockStorageApi.saveDay).toHaveBeenCalled();
 
@@ -70,11 +67,11 @@ describe("[integration] The modal's key behaviors work", () => {
         mockStorageApi.readAll.mockReturnValueOnce(
             Promise.resolve(pretendPreexistingHistory)
         );
-        const historyTracker = new WatchHistoryTracker(mockStorageApi);
-        historyTracker.cleanupOldHistory = vi.fn();
+        const historyRecorder = new HistoryRecorder(mockStorageApi);
+        historyRecorder.cleanupOldHistory = vi.fn();
 
-        await historyTracker.getTopFive();
+        await historyRecorder.getTopFive();
 
-        expect(historyTracker.cleanupOldHistory).toHaveBeenCalled();
+        expect(historyRecorder.cleanupOldHistory).toHaveBeenCalled();
     });
 });

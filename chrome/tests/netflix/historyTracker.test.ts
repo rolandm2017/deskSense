@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from "vitest";
 
-import { WatchHistoryTracker } from "../../src/netflix/historyTracker";
+import { HistoryRecorder } from "../../src/netflix/historyRecorder";
 
 import { MockStorageApi } from "./mockStorageInterface";
 
@@ -20,29 +20,29 @@ import { pretendPreexistingHistory } from "./mockData";
 
 */
 
-describe("WatchHistoryTracker", () => {
+describe("HistoryRecorder", () => {
     test("addWatchEntry", async () => {
         const mockStorageApi = new MockStorageApi();
         mockStorageApi.readAll.mockReturnValueOnce(
             Promise.resolve(pretendPreexistingHistory)
         );
-        const historyTracker = new WatchHistoryTracker(mockStorageApi);
+        const historyRecorder = new HistoryRecorder(mockStorageApi);
 
-        historyTracker.saveHistory = vi.fn();
-        historyTracker.cleanupOldHistory = vi.fn();
+        historyRecorder.saveHistory = vi.fn();
+        historyRecorder.cleanupOldHistory = vi.fn();
 
         const videoId = "39084324";
         const showName = "Black Mirror";
         const url = "netflix.com/watch/39084324";
 
-        await historyTracker.addWatchEntry(videoId, showName, url);
+        await historyRecorder.addWatchEntry(videoId, showName, url);
 
-        const key = Object.keys(historyTracker.allHistory)[0];
-        const historyEntries = historyTracker.allHistory[key];
+        const key = Object.keys(historyRecorder.allHistory)[0];
+        const historyEntries = historyRecorder.allHistory[key];
 
         expect(historyEntries.length).toBe(1);
-        expect(historyTracker.saveHistory).toBeCalled();
-        expect(historyTracker.cleanupOldHistory).toBeCalled();
+        expect(historyRecorder.saveHistory).toBeCalled();
+        expect(historyRecorder.cleanupOldHistory).toBeCalled();
     });
     test("The sorting function");
 });

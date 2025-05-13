@@ -7,7 +7,7 @@ import { WatchEntry } from "../interface/interfaces";
 import { NetflixViewing, ViewingTracker } from "../videoCommon/visits";
 
 // TODO: Rename to HistoryRecorder. One less "tracker" naming conflict
-export class WatchHistoryTracker {
+export class HistoryRecorder {
     /*
         If you're tempted to add an edit feature, remember that
         a well made top five priority algorithm will quickly derank 
@@ -43,6 +43,7 @@ export class WatchHistoryTracker {
 
     sendPageDetailsToViewingTracker(url: string) {
         const watchPageId = this.makeUrlId(url);
+        console.log("Sending watch page ID", watchPageId);
         this.viewingTracker.reportNetflixWatchPage(watchPageId);
     }
 

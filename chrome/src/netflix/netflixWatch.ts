@@ -17,7 +17,7 @@ import selectTitleComponent from "./selectTitle.html";
 
 import { MissingComponentError } from "./errors";
 
-import { historyTracker } from "./historyTrackerInit";
+import { historyRecorder } from "./historyRecorderInit";
 
 import { EL_IDS } from "./constants";
 
@@ -110,7 +110,7 @@ function setCurrentReviewTitleIntoReviewComponent() {
 function loadDropdownEntries() {
     const dropdown = getElementWithGivenIdOrThrow(EL_IDS.SERIES_SELECT);
     // Populate dropdown options here
-    historyTracker.getTopFive().then((topFiveList) => {
+    historyRecorder.getTopFive().then((topFiveList) => {
         topFiveList.forEach((item) => {
             console.log("Top 5 loop", item);
             const option = document.createElement("option");
@@ -285,7 +285,7 @@ function attachSelectingTitleListeners() {
         // TEMP while testing on other pages:
         const tempUrl =
             "https://www.netflix.com/watch/81705696?trackId=272211954";
-        historyTracker.recordEnteredMediaTitle(mediaTitle, tempUrl);
+        historyRecorder.recordEnteredMediaTitle(mediaTitle, tempUrl);
 
         // update for next time
         currentModalState = "review";
@@ -299,7 +299,7 @@ function attachSelectingTitleListeners() {
         console.log("current URL", currentUrl);
 
         // Save video to ignore list
-        historyTracker.recordIgnoredUrl(currentUrl);
+        historyRecorder.recordIgnoredUrl(currentUrl);
 
         modal.remove();
     };
@@ -311,11 +311,11 @@ function attachSelectingTitleListeners() {
 let checkCount = 1;
 // Wait for Netflix page to load and inject modal
 const checkNetflixLoaded = () => {
-    // TODO: I land on the /watch page, then what happens? HOW does the server know the page was landed on?
-    // viewingTracker.reportWatchPage()
+    // I land on the /watch page, then what happens?
+    // How does the server know the page was landed on?
     const currentUrl = window.location.href;
     const tempUrl = "https://www.netflix.com/watch/81705696?trackId=272211954";
-    historyTracker.sendPageDetailsToViewingTracker(tempUrl);
+    historyRecorder.sendPageDetailsToViewingTracker(tempUrl);
 
     // console.log("checkNetflixLoaded: " + checkCount, checkCount);
     // You might want to add specific checks here for Netflix player

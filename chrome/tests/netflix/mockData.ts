@@ -1,4 +1,4 @@
-import { WatchEntry } from "../../src/netflix/historyTracker";
+import { WatchEntry } from "../../src/netflix/historyRecorder";
 
 function makeWatchEntry(
     serverId: number,

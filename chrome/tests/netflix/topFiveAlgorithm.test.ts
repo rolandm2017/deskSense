@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { WatchEntry } from "../../src/netflix/historyTracker";
+import { WatchEntry } from "../../src/netflix/historyRecorder";
 import {
     RankScores,
     TopFiveAlgorithm,
