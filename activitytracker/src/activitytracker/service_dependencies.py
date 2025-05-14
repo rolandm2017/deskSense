@@ -23,6 +23,7 @@ from activitytracker.facade.facade_singletons import (
 )
 from activitytracker.services.chrome_service import ChromeService
 from activitytracker.services.tiny_services import (
+    CaptureSessionService,
     KeyboardService,
     MouseService,
     TimezoneService,
@@ -75,6 +76,12 @@ async def get_timezone_service() -> TimezoneService:
     from activitytracker.services.tiny_services import TimezoneService
 
     return TimezoneService()
+
+
+async def get_capture_service() -> CaptureSessionService:
+    from activitytracker.services.tiny_services import CaptureSessionService
+
+    return CaptureSessionService()
 
 
 async def get_keyboard_service(

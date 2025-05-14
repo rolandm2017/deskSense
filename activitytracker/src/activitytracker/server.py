@@ -68,6 +68,7 @@ from activitytracker.object.pydantic_dto import (
 from activitytracker.routes.report_routes import router as report_router
 from activitytracker.service_dependencies import (
     get_activity_arbiter,
+    get_capture_service,
     get_chrome_service,
     get_dashboard_service,
     get_keyboard_service,
@@ -76,7 +77,10 @@ from activitytracker.service_dependencies import (
 )
 from activitytracker.services.chrome_service import ChromeService
 from activitytracker.services.dashboard_service import DashboardService
-from activitytracker.services.tiny_services import TimezoneService
+from activitytracker.services.tiny_services import (
+    CaptureSessionService,
+    TimezoneService,
+)
 from activitytracker.surveillance_manager import FacadeInjector, SurveillanceManager
 from activitytracker.util.clock import UserFacingClock
 from activitytracker.util.console_logger import ConsoleLogger
@@ -661,6 +665,20 @@ async def receive_ignored_tab(
     except Exception as e:
         raise HTTPException(
             status_code=500, detail="A problem occurred in Chrome Service's Ignored Route"
+        )
+
+
+@app.get("/api/capture/start")
+async def get_capture_session_start_time(
+    capture_session_service: CaptureSessionService = Depends(get_capture_service),
+):
+    logger.log_yellow("[Capture] Getting session start time")
+    try:
+        capture_session_start = capture_session_service.get_capture_start()
+        return {"captureSessionStartTime": capture_session_start}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail="A problem occurred in get_capture_session_start_time"
         )
 
 

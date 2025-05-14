@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 
 from sqlalchemy import engine_from_config, pool
 
-from activitytracker.db.database import Base
 from alembic import context
 
 load_dotenv()

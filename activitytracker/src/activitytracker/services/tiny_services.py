@@ -98,6 +98,14 @@ class TimezoneService:
         return tab_change_with_time_zone
 
 
+class CaptureSessionService:
+    def __init__(self):
+        pass
+
+    def get_capture_start(self):
+        return datetime(2025, 2, 2, 2, 2, 2)
+
+
 class KeyboardService:
     def __init__(self, clock, dao: KeyboardDao = Depends()):
         self.clock = clock
