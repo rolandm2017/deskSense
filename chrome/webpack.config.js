@@ -14,7 +14,7 @@ export default {
         options: "./src/optionsPage/options.js",
         background: "./src/background.ts",
         // Add more entry points as needed
-        videoListeners: "./src/videoListeners.ts",
+        videoListeners: "./src/videoCommon/videoListeners.ts",
         netflixWatch: "./src/netflix/netflixWatch.ts",
     },
     output: {

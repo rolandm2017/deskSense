@@ -1,3 +1,5 @@
+import { RECORDING_INPUT } from "../config";
+
 interface UserAction {
     playerStateChange?: string;
 }
@@ -19,7 +21,7 @@ interface CaptureEvent {
     };
 }
 
-class SystemInputLogger {
+export class SystemInputLogger {
     // "A canonical semantic event is a clean, standardized representation of
     // what the user is trying to do, regardless of the technical messiness underneath"
     // Capture video play, pause
@@ -37,8 +39,10 @@ class SystemInputLogger {
         //
     }
 
-    capture(event: CaptureEvent) {
-        this.events.push(event);
+    captureIfEnabled(event: CaptureEvent) {
+        if (RECORDING_INPUT.enabled) {
+            this.events.push(event);
+        }
     }
 
     pushNewActivityToStorage(activity: string) {

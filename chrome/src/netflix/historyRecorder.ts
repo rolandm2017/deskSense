@@ -44,7 +44,7 @@ export class HistoryRecorder {
     }
 
     sendPageDetailsToViewingTracker(url: string) {
-        systemInputCapture.capture({
+        systemInputCapture.captureIfEnabled({
             type: "NETFLIX_PAGE_LOADED",
             data: { url: url, watchPageId: this.makeUrlId(url) },
             metadata: {
@@ -60,7 +60,7 @@ export class HistoryRecorder {
     }
 
     recordEnteredMediaTitle(title: string, url: string) {
-        systemInputCapture.capture({
+        systemInputCapture.captureIfEnabled({
             type: "CHOOSE_NETFLIX_MEDIA",
             data: { title, url },
             metadata: {
@@ -167,7 +167,7 @@ export class HistoryRecorder {
 
     recordIgnoredUrl(url: string) {
         // TODO
-        // systemInputCapture.capture({})
+        // systemInputCapture.captureIfEnabled({})
         console.log("[tracker - ignoring]", url);
     }
 

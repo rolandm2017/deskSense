@@ -64,9 +64,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === "VIDEO_TIME") {
         console.log("Video timestamp:", message.time);
         // store, sync, or process time here
-        if (viewingTracker.current) {
-            viewingTracker.current.addTimestamp(message.time);
-            const ready = viewingTracker.timerElapsed();
+        if (viewingTracker.currentMedia) {
+            // viewingTracker.currentMedia.addTimestamp(message.time);
+            // const ready = viewingTracker.timerElapsed();
+            const ready = "temp";
             if (ready) {
                 viewingTracker.endViewing();
             }

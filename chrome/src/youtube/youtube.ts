@@ -63,8 +63,8 @@ export function handleYouTubeUrl(
                         tabTitle,
                         channelName
                     );
-
-                    systemInputCapture.capture({
+                    // no-op if recording disabled
+                    systemInputCapture.captureIfEnabled({
                         type: "youtube_vist",
                         data: youTubeVisit,
                         metadata: {
@@ -86,7 +86,8 @@ export function handleYouTubeUrl(
     } else if (isOnSomeChannel(tab.url)) {
         // For channel pages, we can extract from the URL
         const channelName = extractChannelNameFromUrl(tab.url);
-        systemInputCapture.capture({
+        // no-op if recording disabled
+        systemInputCapture.captureIfEnabled({
             type: "on_some_channel",
             data: { channelName },
             metadata: {
@@ -133,7 +134,7 @@ export function startSecondaryChannelExtractionScript(
         "Unknown Channel"
     );
     // youTubeVisit.sendInitialInfoToServer();
-    systemInputCapture.capture({
+    systemInputCapture.captureIfEnabled({
         type: "youtube_vist",
         data: youTubeVisit,
         metadata: {

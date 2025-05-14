@@ -21,10 +21,6 @@ import { PlatformLogger } from "../logging";
  * before a tab change ...
  */
 
-function getTimeSpentWatching() {
-    return 5;
-}
-
 export class ViewingTracker {
     /*
      * Class is a container enabling cross-file Viewing management.

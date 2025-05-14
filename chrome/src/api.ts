@@ -17,6 +17,8 @@ const youtubePlayerStateUrl = "/api/chrome/youtube/state";
 const netflixUrl = "/api/chrome/netflix/new";
 const netflixPlayerStateUrl = "/api/chrome/netflix/state";
 
+const captureSessionStartUrl = "/api/capture/start";
+
 class YouTubeApi {
     sendPayload: Function;
     logger: PlatformLogger;
@@ -198,7 +200,21 @@ export class ServerApi {
         this.sendPayload(ignoredDomainUrl, payload);
     };
 
+    checkForCaptureSession(setStartTimeCallback: Function) {
+        fetch(DESKSENSE_BACKEND_URL + captureSessionStartUrl, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        }).then((response) => {
+            setStartTimeCallback(response);
+        });
+    }
+
     private sendPayload = (targetUrl: string, payload: object) => {
+        console.log("DEBUG: Start of sendPayload method");
+        console.log("DEBUG: this =", this);
+        console.log("DEBUG: this.disablePayloads =", this.disablePayloads);
         console.log("In sendPayload,", this.disablePayloads);
         if (this.disablePayloads) {
             console.log("Sending payloads is disabled");

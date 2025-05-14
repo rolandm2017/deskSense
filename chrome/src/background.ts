@@ -13,6 +13,7 @@ import {
     isDomainIgnored,
     setupIgnoredDomains,
 } from "./ignoreList";
+import { InputCaptureManager } from "./inputLogger/inputCaptureManager";
 import { systemInputCapture } from "./inputLogger/systemInputLogger";
 import { endpointLoggingDownload } from "./logging";
 
@@ -26,7 +27,7 @@ This approach cannot work for Netflix. Much user input is needed there.
 
 // enable logging file download
 (self as any).writeInputLogsToJson = systemInputCapture.writeLogsToJson;
-(self as any).writeEndpointLogsToJsona = endpointLoggingDownload;
+(self as any).writeEndpointLogsToJson = endpointLoggingDownload;
 // Code that lets you open the options page when the icon is clicked
 // Disabled in favor of the modal
 function openOptionsOnClickIcon() {
@@ -37,6 +38,15 @@ function openOptionsOnClickIcon() {
 }
 
 // openOptionsOnClickIcon();
+
+const captureManager = new InputCaptureManager(systemInputCapture, api);
+// Periodically check if a recording session has started
+function runCheckOnRecordingSessionStart() {
+    //
+    captureManager.startPolling();
+}
+
+runCheckOnRecordingSessionStart;
 
 const tabsWithPollingList: number[] = [];
 
@@ -131,7 +141,8 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
         cleanupOldTabReferences(now);
     }
 
-    systemInputCapture.capture({
+    // no-op if recording disabled
+    systemInputCapture.captureIfEnabled({
         type: "TAB_CHANGE",
         data: {
             tabUrl: tab.url,
@@ -175,7 +186,7 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
 chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
     // Your code to run when a tab is closed
     console.log(`Tab ${tabId} was closed`);
-    systemInputCapture.capture({
+    systemInputCapture.captureIfEnabled({
         type: "TAB_CLOSURE",
         data: { tabId },
         metadata: {
@@ -217,7 +228,7 @@ class PlayPauseDispatch {
 
     notePlayEvent(sender: chrome.runtime.MessageSender) {
         this.playCount++;
-        systemInputCapture.capture({
+        systemInputCapture.captureIfEnabled({
             type: "PLAY_EVENT",
             data: {},
             metadata: {
@@ -244,7 +255,8 @@ class PlayPauseDispatch {
 
     notePauseEvent() {
         this.pauseCount++;
-        systemInputCapture.capture({
+        // no-op if recording disabled
+        systemInputCapture.captureIfEnabled({
             type: "PAUSE_EVENT",
             data: {},
             metadata: {
