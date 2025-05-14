@@ -25,17 +25,8 @@ This approach cannot work for Netflix. Much user input is needed there.
 */
 
 // enable logging file download
-declare global {
-    interface Window {
-        writeInputLogsToJson: () => void;
-        writeEndpointLogsToJson: () => void;
-    }
-}
-
-// Implementation example
-window.writeInputLogsToJson = systemInputCapture.writeLogsToJson;
-window.writeEndpointLogsToJson = endpointLoggingDownload;
-
+(self as any).writeInputLogsToJson = systemInputCapture.writeLogsToJson;
+(self as any).writeEndpointLogsToJsona = endpointLoggingDownload;
 // Code that lets you open the options page when the icon is clicked
 // Disabled in favor of the modal
 function openOptionsOnClickIcon() {

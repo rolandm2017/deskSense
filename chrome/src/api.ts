@@ -166,17 +166,17 @@ class NetflixApi {
 export class ServerApi {
     youtube: YouTubeApi;
     netflix: NetflixApi;
-    sendRealPayloads: boolean;
+    disablePayloads: boolean;
     logger: DomainLogger;
 
     constructor() {
-        this.sendRealPayloads = false;
+        this.disablePayloads = true;
         this.youtube = new YouTubeApi(this.sendPayload.bind(this));
         this.netflix = new NetflixApi(this.sendPayload.bind(this));
         this.logger = new DomainLogger();
     }
 
-    reportTabSwitch(domain: string, tabTitle: string) {
+    reportTabSwitch = (domain: string, tabTitle: string) => {
         const payload = {
             url: domain, // Must match the pydantic definition
             tabTitle: tabTitle,
@@ -185,9 +185,9 @@ export class ServerApi {
         console.log("Sending payload:", payload);
         this.logger.logPayload("reportTabSwitch", chromeTabUrl, payload);
         this.sendPayload(chromeTabUrl, payload);
-    }
+    };
 
-    reportIgnoredUrl() {
+    reportIgnoredUrl = () => {
         const payload = {
             url: "ignored", // Must match the pydantic definition
             tabTitle: "ignored",
@@ -196,12 +196,16 @@ export class ServerApi {
         console.log("Sending payload:", payload);
         this.logger.logPayload("reportIgnoredUrl", ignoredDomainUrl, payload);
         this.sendPayload(ignoredDomainUrl, payload);
-    }
+    };
 
-    private sendPayload(targetUrl: string, payload: object) {
-        if (this.sendRealPayloads === false) {
+    private sendPayload = (targetUrl: string, payload: object) => {
+        console.log("In sendPayload,", this.disablePayloads);
+        if (this.disablePayloads) {
+            console.log("Sending payloads is disabled");
             return;
         }
+        console.log(this.disablePayloads, "207ru");
+
         fetch(DESKSENSE_BACKEND_URL + targetUrl, {
             method: "POST",
             headers: {
@@ -232,7 +236,7 @@ export class ServerApi {
                 }
             })
             .catch((error) => console.error("Error:", error));
-    }
+    };
 }
 
 export const api = new ServerApi();
