@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from activitytracker.db.database import get_db
-from activitytracker.db.test_session_manager import test_schema_manager
+from activitytracker.db.test_schema_manager import test_schema_manager
 
 router = APIRouter(prefix="/api/test", tags=["testing"])
 

@@ -13,7 +13,7 @@ import time
 
 from typing import AsyncGenerator, Optional
 
-from activitytracker.db.database import async_session_maker, sync_engine
+from activitytracker.db.database import async_session_maker, engine
 
 load_dotenv()
 
@@ -190,7 +190,7 @@ test_schema_manager = TestSchemaManager()
 
 
 # SQLAlchemy connection event to set search_path
-@event.listens_for(sync_engine, "connect")
+@event.listens_for(engine, "connect")
 def set_search_path(dbapi_connection, connection_record):
     """Set the search_path for newly created connections."""
     if test_schema_manager.current_schema:
