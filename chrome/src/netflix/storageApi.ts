@@ -1,4 +1,6 @@
-import { WatchEntry } from "./historyRecorder";
+// storageApi.ts
+
+import { WatchEntry } from "../interface/interfaces";
 
 export interface StorageInterface {
     readWholeHistory(): Promise<WatchEntry[]>;

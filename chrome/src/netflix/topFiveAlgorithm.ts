@@ -1,4 +1,4 @@
-import { WatchEntry } from "./historyRecorder";
+import { WatchEntry } from "../interface/interfaces";
 
 /*
 

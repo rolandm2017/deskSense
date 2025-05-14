@@ -1,4 +1,4 @@
-// visits.ts
+// videoCommon/visits.ts
 
 import { ServerApi } from "../api";
 import { MissingMediaError } from "../errors";

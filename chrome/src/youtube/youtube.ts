@@ -7,6 +7,7 @@ import { extractChannelInfoFromWatchPage } from "./channelExtractor";
 import { api } from "../api";
 
 import { MissingUrlError } from "../errors";
+import { systemInputCapture } from "../inputLogger/systemInputLogger";
 
 /*
  * For YouTube, some channels are productive; others are not.
@@ -42,8 +43,6 @@ export function handleYouTubeUrl(
                     func: extractChannelInfoFromWatchPage,
                 },
                 (results) => {
-                    // TODO: Clean this up
-
                     const tabTitle = tab.title ? tab.title : "Unknown Title";
 
                     let videoId = getYouTubeVideoId(tab.url);
@@ -64,10 +63,18 @@ export function handleYouTubeUrl(
                         tabTitle,
                         channelName
                     );
-                    // FIXME: You don't need to send the page notification.
-                    // FIXME: The parent func will send it for us
-                    // FIXME: "api.reportTabSwitch(domain, tab.title ? tab.title : "No title found");"
-                    // youTubeVisit.sendInitialInfoToServer();
+
+                    systemInputCapture.capture({
+                        type: "youtube_vist",
+                        data: youTubeVisit,
+                        metadata: {
+                            source: "handleYouTubeUrl",
+                            method: "user_input",
+                            location: "youtube.ts",
+                            timestamp: Date.now(),
+                        },
+                    });
+
                     viewingTracker.setCurrent(youTubeVisit);
                     viewingTracker.reportYouTubeWatchPage();
                 }
@@ -79,6 +86,16 @@ export function handleYouTubeUrl(
     } else if (isOnSomeChannel(tab.url)) {
         // For channel pages, we can extract from the URL
         const channelName = extractChannelNameFromUrl(tab.url);
+        systemInputCapture.capture({
+            type: "on_some_channel",
+            data: { channelName },
+            metadata: {
+                source: "isOnSomeChannel",
+                method: "user_input",
+                location: "youtube.ts",
+                timestamp: Date.now(),
+            },
+        });
         api.youtube.reportYouTubePage(tab.title, channelName);
     } else if (watchingShorts(tab.url)) {
         // Avoids trying to extract the channel name from
@@ -116,6 +133,16 @@ export function startSecondaryChannelExtractionScript(
         "Unknown Channel"
     );
     // youTubeVisit.sendInitialInfoToServer();
+    systemInputCapture.capture({
+        type: "youtube_vist",
+        data: youTubeVisit,
+        metadata: {
+            source: "startSecondaryChannelExtractionScript",
+            method: "user_input",
+            location: "youtube.ts",
+            timestamp: Date.now(),
+        },
+    });
     viewingTracker.setCurrent(youTubeVisit);
 }
 

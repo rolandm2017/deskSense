@@ -13,6 +13,7 @@ import {
     isDomainIgnored,
     setupIgnoredDomains,
 } from "./ignoreList";
+import { systemInputCapture } from "./inputLogger/systemInputLogger";
 
 /*
 
@@ -126,6 +127,18 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
         cleanupOldTabReferences(now);
     }
 
+    systemInputCapture.capture({
+        type: "TAB_CHANGE",
+        data: {
+            tabUrl: tab.url,
+        },
+        metadata: {
+            source: "getDomainFromUrlAndSubmit",
+            method: "user_input",
+            location: "background.ts",
+            timestamp: Date.now(),
+        },
+    });
     const domain = getDomainFromUrl(tab.url);
     if (domain) {
         const ignored = isDomainIgnored(domain, ignoredDomains.getAll());
@@ -158,6 +171,16 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
 chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
     // Your code to run when a tab is closed
     console.log(`Tab ${tabId} was closed`);
+    systemInputCapture.capture({
+        type: "TAB_CLOSURE",
+        data: { tabId },
+        metadata: {
+            source: "onRemoved.addListener",
+            method: "user_input",
+            location: "background.ts",
+            timestamp: Date.now(),
+        },
+    });
 
     // removeInfo contains additional information
     console.log("Window was closed:", removeInfo.isWindowClosing);
@@ -190,38 +213,45 @@ class PlayPauseDispatch {
 
     notePlayEvent(sender: chrome.runtime.MessageSender) {
         this.playCount++;
-        console.log("[onMsg] Play detected", this.playCount);
+        systemInputCapture.capture({
+            type: "PLAY_EVENT",
+            data: {},
+            metadata: {
+                source: "notePlayEvent",
+                method: "user_input",
+                location: "background.ts",
+                timestamp: Date.now(),
+            },
+        });
         if (this.endSessionTimeoutId) {
-            console.log("[onMsg] Cancel pause viewing");
             const resumeDuration =
                 (new Date().getTime() - this.pauseStartTime!.getTime()) / 1000;
-            console.log(
-                "[onMsg] Video was paused for:",
-                resumeDuration,
-                "seconds"
-            );
             this.cancelSendPauseEvent(this.endSessionTimeoutId);
         }
         if (viewingTracker.currentMedia) {
-            console.log("[onMsg] Starting time tracking");
             viewingTracker.markPlaying();
             return;
         } else {
             // it wasn't there yet because, the, the channel extractor
             // script didn't run yet but the "report playing video" code did
-
             startSecondaryChannelExtractionScript(sender);
         }
     }
 
     notePauseEvent() {
         this.pauseCount++;
-        console.log("[onMsg] Pause detected", this.pauseCount);
-        // TODO: Clean this up
+        systemInputCapture.capture({
+            type: "PAUSE_EVENT",
+            data: {},
+            metadata: {
+                source: "notePauseEvent",
+                method: "user_input",
+                location: "background.ts",
+                timestamp: Date.now(),
+            },
+        });
 
         if (viewingTracker.currentMedia) {
-            console.log("[onMsg] START pause timer");
-
             const startOfGracePeriod = new Date();
             this.pauseStartTime = startOfGracePeriod;
 
@@ -237,12 +267,6 @@ class PlayPauseDispatch {
         // don't bother pausing tracking.
         const timeoutId = setTimeout(() => {
             const endOfIntervalTime = new Date();
-            console.log("[onMsg] Timer expired: pausing tracking");
-            console.log("[onMsg] THIS PRITNS");
-            console.log(
-                "[onMsg] DURATION 2: ",
-                endOfIntervalTime.getSeconds() - localTime.getSeconds()
-            );
             if (viewingTracker.currentMedia) {
                 viewingTracker.markPaused();
             }

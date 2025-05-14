@@ -273,8 +273,8 @@ function attachSelectingTitleListeners() {
         selectedTitleState = mediaTitle;
         // Save mediaTitle to chrome.storage.local
 
-        // TODO: If they select the wrong thing form the dropdown,
-        // TODO: AND they hit Confirm,
+        // If they select the wrong thing form the dropdown,
+        // AND they hit Confirm,
         // then they can just open the modal again, select the right value,
         // click Confirm. And the program will end the incorrect session,
         // start them on the right one. They lose 2-3 min tracked in

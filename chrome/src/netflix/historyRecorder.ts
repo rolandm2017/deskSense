@@ -1,10 +1,12 @@
-// history.ts
+// historyRecorder.ts
 
 import { StorageInterface } from "./storageApi";
 
 import { WatchEntry } from "../interface/interfaces";
 
 import { NetflixViewing, ViewingTracker } from "../videoCommon/visits";
+
+import { systemInputCapture } from "../inputLogger/systemInputLogger";
 
 // TODO: Rename to HistoryRecorder. One less "tracker" naming conflict
 export class HistoryRecorder {
@@ -42,12 +44,32 @@ export class HistoryRecorder {
     }
 
     sendPageDetailsToViewingTracker(url: string) {
+        systemInputCapture.capture({
+            type: "NETFLIX_PAGE_LOADED",
+            data: { url: url, watchPageId: this.makeUrlId(url) },
+            metadata: {
+                source: "sendPageDetailsToViewingTracker",
+                method: "event_listener",
+                location: "historyRecorder.ts",
+                timestamp: Date.now(),
+            },
+        });
         const watchPageId = this.makeUrlId(url);
         console.log("Sending watch page ID", watchPageId);
         this.viewingTracker.reportNetflixWatchPage(watchPageId);
     }
 
     recordEnteredMediaTitle(title: string, url: string) {
+        systemInputCapture.capture({
+            type: "CHOOSE_NETFLIX_MEDIA",
+            data: { title, url },
+            metadata: {
+                source: "recordEnteredMediaTitle",
+                method: "user_input",
+                location: "historyRecorder.ts",
+                timestamp: Date.now(),
+            },
+        });
         console.log("In recordEnteredMedia");
         let urlId = this.makeUrlId(url);
         console.log("[tracker - recording]", title);
@@ -144,6 +166,8 @@ export class HistoryRecorder {
     }
 
     recordIgnoredUrl(url: string) {
+        // TODO
+        // systemInputCapture.capture({})
         console.log("[tracker - ignoring]", url);
     }
 
