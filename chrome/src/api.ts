@@ -4,7 +4,7 @@ import {
     PlayerData,
     YouTubePayload,
 } from "./interface/interfaces";
-import { PlatformLogger } from "./logging";
+import { DomainLogger, PlatformLogger } from "./logging";
 
 const DESKSENSE_BACKEND_URL = "http://localhost:8000";
 
@@ -43,12 +43,18 @@ class YouTubeApi {
         };
         console.log("Sending YouTube payload:", payload);
         console.log(youTubeUrl, "is the youtube url");
+        this.logger.logPayloadToStorage(
+            "reportYouTubePage",
+            youTubeUrl,
+            payload
+        );
         this.sendPayload(youTubeUrl, payload);
     }
 
     sendPlayEvent({ videoId, tabTitle, channelName }: YouTubePayload) {
         // The server knows which VideoSession it's modifying because
         // the currently active tab deliverable, contained the ...
+        this.logger.logPlayEvent(tabTitle);
         const payload = {
             videoId: videoId,
             tabTitle,
@@ -61,10 +67,16 @@ class YouTubeApi {
             // timestamp: 0
         };
         console.log("The play payload was be ", payload);
+        this.logger.logPayloadToStorage(
+            "sendPlayEvent",
+            youtubePlayerStateUrl,
+            payload
+        );
         this.sendPayload(youtubePlayerStateUrl, payload);
     }
 
     sendPauseEvent({ videoId, tabTitle, channelName }: YouTubePayload) {
+        this.logger.logPauseEvent(tabTitle);
         const payload = {
             videoId,
             tabTitle,
@@ -72,8 +84,12 @@ class YouTubeApi {
             playerState: "paused",
             // timestamp: 0,
         };
-
-        console.log("The pause payload was be ", payload);
+        this.logger.logPayloadToStorage(
+            "sendPause",
+            youtubePlayerStateUrl,
+            payload
+        );
+        // console.log("The pause payload was be ", payload);
         this.sendPayload(youtubePlayerStateUrl, payload);
     }
 }
@@ -91,6 +107,10 @@ class NetflixApi {
         // TODO
         this.logger.logLandOnPage(mediaTitle ?? "Unknown Media");
         console.log("Reporting netflix is not supported yet", mediaTitle);
+
+        this.logger.logPayloadToStorage("reportNetflixPage", netflixUrl, {
+            mediaTitle,
+        });
     }
 
     // TODO: If they select the wrong thing form the dropdown,
@@ -102,7 +122,7 @@ class NetflixApi {
     sendPlayEvent({ urlId, showName, url }: NetflixPayload) {
         // The server knows which VideoSession it's modifying because
         // the currently active tab deliverable, contained the ...
-        console.log("Would send play event for youtugbe");
+        console.log("Would send play event for Netflix");
         const payload = {
             urlId,
             showName,
@@ -116,10 +136,16 @@ class NetflixApi {
         };
         console.log("The play payload was be ", payload);
         this.sendPayload(youtubePlayerStateUrl, payload);
+        this.logger.logPayloadToStorage(
+            "sendPlayEvent",
+            netflixPlayerStateUrl,
+            payload
+        );
     }
 
     sendPauseEvent({ urlId, showName, url }: NetflixPayload) {
-        console.log("Would send pause event for youtube");
+        this.logger.logPauseEvent(showName);
+        console.log("Would send pause event for Netflix");
         const payload = {
             urlId,
             showName,
@@ -128,7 +154,11 @@ class NetflixApi {
         };
 
         console.log("The pause payload was be ", payload);
-        this.logger.logPauseEvent(showName);
+        this.logger.logPayloadToStorage(
+            "sendPlayEvent",
+            netflixPlayerStateUrl,
+            payload
+        );
         this.sendPayload(youtubePlayerStateUrl, payload);
     }
 }
@@ -137,11 +167,13 @@ export class ServerApi {
     youtube: YouTubeApi;
     netflix: NetflixApi;
     sendRealPayloads: boolean;
+    logger: DomainLogger;
 
     constructor() {
         this.sendRealPayloads = false;
         this.youtube = new YouTubeApi(this.sendPayload.bind(this));
         this.netflix = new NetflixApi(this.sendPayload.bind(this));
+        this.logger = new DomainLogger();
     }
 
     reportTabSwitch(domain: string, tabTitle: string) {
@@ -151,6 +183,7 @@ export class ServerApi {
             startTime: new Date(),
         };
         console.log("Sending payload:", payload);
+        this.logger.logPayload("reportTabSwitch", chromeTabUrl, payload);
         this.sendPayload(chromeTabUrl, payload);
     }
 
@@ -161,6 +194,7 @@ export class ServerApi {
             startTime: new Date(),
         };
         console.log("Sending payload:", payload);
+        this.logger.logPayload("reportIgnoredUrl", ignoredDomainUrl, payload);
         this.sendPayload(ignoredDomainUrl, payload);
     }
 

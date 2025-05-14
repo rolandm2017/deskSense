@@ -42,7 +42,7 @@ class SystemInputLogger {
     }
 
     pushNewActivityToStorage(activity: string) {
-        chrome.storage.local.get(["userActivity"], function (result) {
+        chrome.storage.local.get(["userActivityCapture"], function (result) {
             // Get current array or initialize empty array if it doesn't exist
             const currentActivity = result.userActivity || [];
 
@@ -60,14 +60,16 @@ class SystemInputLogger {
     }
 
     writeLogsToJson() {
-        chrome.storage.local.get("writeLog", (res) => {
+        chrome.storage.local.get("userActivityCapture", (res) => {
             const blob = new Blob([JSON.stringify(res.writeLog, null, 2)], {
                 type: "application/json",
             });
+            const dateForTag = new Date();
+            const dateString = dateForTag.toDateString();
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = "write-log.json";
+            a.download = `user-activity-capture-${dateString}.json`;
             a.click();
         });
     }
