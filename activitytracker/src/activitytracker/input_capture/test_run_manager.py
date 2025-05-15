@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from activitytracker.config.definitions import program_environment
-from activitytracker.db.database import async_session_maker
+from activitytracker.db.database import regular_session_maker
 
 
 def get_timestamp_string():
@@ -62,7 +62,7 @@ class TestRunManager:
         random_suffix = uuid.uuid4().hex[:6]
         return f"run_{timestamp}_{random_suffix}"
 
-    async def initialize(
+    def initialize(
         self, input_capture_file: str, test_name: str = "Activity Tracking Test"
     ) -> str:
         """Initialize a new test run with a dedicated schema.
@@ -75,7 +75,7 @@ class TestRunManager:
             The unique run ID for this test
         """
         # Create a new test schema
-        schema_name = await self.schema_manager.create_schema(
+        schema_name = self.schema_manager.create_schema(
             test_name=test_name, input_file=input_capture_file
         )
 
@@ -84,12 +84,12 @@ class TestRunManager:
         self.current_run_id = run_id
 
         # Create test run tables in the schema
-        async with async_session_maker() as session:
+        with regular_session_maker() as session:
             # Set search path
-            await self.schema_manager.set_schema(schema_name)
+            self.schema_manager.set_schema(schema_name)
 
             # Create results table
-            await session.execute(
+            session.execute(
                 text(
                     f"""
                 CREATE TABLE IF NOT EXISTS "{schema_name}".{self.results_table} (
@@ -105,7 +105,7 @@ class TestRunManager:
             )
 
             # Store run metadata
-            await session.execute(
+            session.execute(
                 text(
                     f"""
                 INSERT INTO "{schema_name}".{self.metadata_table} (key, value)
@@ -123,11 +123,11 @@ class TestRunManager:
                 },
             )
 
-            await session.commit()
+            session.commit()
 
         return run_id
 
-    async def record_event(
+    def record_event(
         self, event_type: str, data: Dict[str, Any], source: str = "test_runner"
     ) -> int:
         """Record a test event in the current run.
@@ -143,12 +143,12 @@ class TestRunManager:
         if not self.schema_manager.current_schema:
             raise ValueError("No active test schema. Call initialize() first")
 
-        async with async_session_maker() as session:
+        with regular_session_maker() as session:
             # Set search path
-            await self.schema_manager.set_async_search_path(session)
+            self.schema_manager.set_async_search_path(session)
 
             # Insert the event
-            result = await session.execute(
+            result = session.execute(
                 text(
                     f"""
                 INSERT INTO {self.results_table} (event_type, data, source)
@@ -160,11 +160,11 @@ class TestRunManager:
             )
 
             event_id = result.scalar_one()
-            await session.commit()
+            session.commit()
 
             return event_id
 
-    async def freeze(self, status: str, notes: str | None = None) -> bool:
+    def freeze(self, status: str, notes: str | None = None) -> bool:
         """Mark the current test run as complete with a status.
 
         Args:
@@ -178,15 +178,15 @@ class TestRunManager:
             return False
 
         # Update both the schema metadata and run metadata
-        schema_updated = await self.schema_manager.mark_schema_status(status, notes)
+        schema_updated = self.schema_manager.mark_schema_status(status, notes)
 
-        async with async_session_maker() as session:
+        with regular_session_maker() as session:
             # Set search path
-            await self.schema_manager.set_async_search_path(session)
+            self.schema_manager.set_async_search_path(session)
 
             # Update run metadata
             try:
-                await session.execute(
+                session.execute(
                     text(
                         f"""
                     UPDATE {self.metadata_table}
@@ -203,12 +203,12 @@ class TestRunManager:
                     {
                         "status": f'"{status}"',
                         "completed_at": f'"{time.time()}"',
-                        "duration": f'"{time.time() - float(await self._get_start_time())}"',
+                        "duration": f'"{time.time() - float(self._get_start_time())}"',
                     },
                 )
 
                 if notes:
-                    await session.execute(
+                    session.execute(
                         text(
                             f"""
                         UPDATE {self.metadata_table}
@@ -219,20 +219,20 @@ class TestRunManager:
                         {"notes": f'"{notes}"'},
                     )
 
-                await session.commit()
+                session.commit()
                 return True
             except Exception as e:
-                await session.rollback()
+                session.rollback()
                 print(f"Error freezing test run: {e}")
                 return False
 
-    async def _get_start_time(self) -> str:
+    def _get_start_time(self) -> str:
         """Helper to retrieve the start time of the current run."""
-        async with async_session_maker() as session:
+        with regular_session_maker() as session:
             # Set search path
-            await self.schema_manager.set_async_search_path(session)
+            self.schema_manager.set_async_search_path(session)
 
-            result = await session.execute(
+            result = session.execute(
                 text(
                     f"""
                 SELECT value->>'started_at' FROM {self.metadata_table}
@@ -244,7 +244,7 @@ class TestRunManager:
             start_time = result.scalar_one_or_none() or "0"
             return start_time
 
-    async def get_run_details(self, run_id: str | None = None) -> Optional[Dict[str, Any]]:
+    def get_run_details(self, run_id: str | None = None) -> Optional[Dict[str, Any]]:
         """Get details about a specific test run.
 
         Args:
@@ -257,16 +257,16 @@ class TestRunManager:
         if not run_id:
             return None
 
-        async with async_session_maker() as session:
+        with regular_session_maker() as session:
             # Find the schema containing this run
-            schemas = await self.schema_manager.list_test_schemas()
+            schemas = self.schema_manager.list_test_schemas()
 
             for schema in schemas:
                 schema_name = schema["schema_name"]
 
                 # Check if this schema contains our run
                 try:
-                    result = await session.execute(
+                    result = session.execute(
                         text(
                             f"""
                         SELECT value FROM "{schema_name}".{self.metadata_table}
@@ -279,7 +279,7 @@ class TestRunManager:
                     run_info = result.scalar_one_or_none()
                     if run_info:
                         # Get event summary
-                        events_result = await session.execute(
+                        events_result = session.execute(
                             text(
                                 f"""
                             SELECT 
@@ -304,21 +304,21 @@ class TestRunManager:
 
             return None
 
-    async def list_runs(self) -> List[Dict[str, Any]]:
+    def list_runs(self) -> List[Dict[str, Any]]:
         """List all test runs across all schemas.
 
         Returns:
             List of dictionaries with run information
         """
         runs = []
-        schemas = await self.schema_manager.list_test_schemas()
+        schemas = self.schema_manager.list_test_schemas()
 
-        async with async_session_maker() as session:
+        with regular_session_maker() as session:
             for schema in schemas:
                 schema_name = schema["schema_name"]
 
                 try:
-                    result = await session.execute(
+                    result = session.execute(
                         text(
                             f"""
                         SELECT value FROM "{schema_name}".{self.metadata_table}
@@ -345,7 +345,7 @@ class TestRunManager:
 
         return runs
 
-    async def compare_runs(self, run_id1: str, run_id2: str) -> Dict[str, Any]:
+    def compare_runs(self, run_id1: str, run_id2: str) -> Dict[str, Any]:
         """Compare two test runs to identify differences.
 
         Args:
@@ -355,8 +355,8 @@ class TestRunManager:
         Returns:
             Dictionary with comparison results
         """
-        run1 = await self.get_run_details(run_id1)
-        run2 = await self.get_run_details(run_id2)
+        run1 = self.get_run_details(run_id1)
+        run2 = self.get_run_details(run_id2)
 
         if not run1 or not run2:
             missing = []
@@ -370,9 +370,9 @@ class TestRunManager:
         schema2 = run2["schema_name"]
 
         # Compare database tables across the two schemas
-        async with async_session_maker() as session:
+        with regular_session_maker() as session:
             # Get list of tables in schema1
-            tables_result = await session.execute(
+            tables_result = session.execute(
                 text(
                     f"""
                 SELECT table_name 
@@ -393,7 +393,7 @@ class TestRunManager:
             differences = []
             for table_name in tables:
                 # Compare row counts
-                count_result = await session.execute(
+                count_result = session.execute(
                     text(
                         f"""
                     SELECT 
@@ -419,7 +419,7 @@ class TestRunManager:
 
                 # If row counts match, check for content differences
                 # This is just a simple check - you might want more sophisticated comparisons
-                diff_count_result = await session.execute(
+                diff_count_result = session.execute(
                     text(
                         f"""
                     SELECT COUNT(*) 

@@ -209,7 +209,7 @@ async def set_async_search_path(session):
 
 
 # Modified get_db to include schema setting
-async def get_db() -> Generator[Session, None]:
+def get_db() -> Generator[Session]:
     with regular_session_maker() as session:
         try:
             # Set schema if we're in test mode
