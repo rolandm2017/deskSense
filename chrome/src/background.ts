@@ -1,10 +1,7 @@
 // background.ts
 import { api } from "./api";
 import { getDomainFromUrl } from "./urlTools";
-import {
-    handleYouTubeUrl,
-    startSecondaryChannelExtractionScript,
-} from "./youtube/youtube";
+import { handleYouTubeUrl } from "./youtube/youtube";
 
 import { viewingTracker } from "./videoCommon/visits";
 
@@ -67,34 +64,65 @@ interface ProcessedUrlEntry {
     url: string;
 }
 
-// FIXME: What to do when the user visits the same URL 2-3x on multiple tabs?
-const processedTabs = new Map<number, ProcessedUrlEntry>();
-
 const PAGE_LOAD_DEBOUNCE_DELAY = 4000;
 
-// TODO: Make debounce stuff a class
-
 class DebounceTimer {
+    processedTabs: Map<number, ProcessedUrlEntry>;
     constructor() {
-        //
+        this.processedTabs = new Map<number, ProcessedUrlEntry>();
     }
-}
 
-function cleanupOldTabReferences(now: number) {
-    // "Now" from new Date().now()
-    const tabsToDelete: number[] = [];
-    for (const [tabKey, entry] of processedTabs.entries()) {
-        if (now - entry.timestamp > 10000) {
-            // Remove entries older than 10 seconds
-            tabsToDelete.push(tabKey);
+    isTabBeingProcessed(tab: chrome.tabs.Tab) {
+        if (!tab.id) {
+            throw new Error("A tab had no ID");
         }
+        if (!tab.url) {
+            throw new Error("No url found");
+        }
+
+        const now = Date.now();
+
+        const lastProcessedTab = this.processedTabs.get(tab.id);
+        const tabExistsInMap =
+            lastProcessedTab && lastProcessedTab.url === tab.url;
+
+        if (tabExistsInMap) {
+            // must use a nested if here because otherwise TS complains re: undefined
+            const tabWasSeenRecently =
+                now - lastProcessedTab.timestamp < PAGE_LOAD_DEBOUNCE_DELAY;
+            if (tabWasSeenRecently) {
+                return true;
+            }
+        }
+
+        // Mark this URL as processed for this tab
+        this.processedTabs.set(tab.id, {
+            timestamp: now,
+            url: tab.url,
+        });
+
+        // Clean up old entries periodically
+        // 12 chosen because it seems to only happen on youtube and refreshed pages
+        if (this.processedTabs.size > 12) {
+            this.cleanupOldTabReferences(now);
+        }
+        return false;
     }
-    tabsToDelete.forEach((key) => processedTabs.delete(key));
+
+    cleanupOldTabReferences(now: number) {
+        // "Now" from new Date().now()
+        const tabsToDelete: number[] = [];
+        for (const [tabKey, entry] of this.processedTabs.entries()) {
+            if (now - entry.timestamp > 10000) {
+                // Remove entries older than 10 seconds
+                tabsToDelete.push(tabKey);
+            }
+        }
+        tabsToDelete.forEach((key) => this.processedTabs.delete(key));
+    }
 }
 
-function markTabProcessed() {
-    //
-}
+const debounce = new DebounceTimer();
 
 function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
     /*
@@ -116,43 +144,17 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
         return;
     }
 
-    const now = Date.now();
-
     // Use tab ID-based debouncing if we have a tab ID
     if (!tab.id) {
-        throw Error("A tab had no ID");
+        throw new Error("A tab had no ID");
     }
 
     // Check if this tab with this URL was processed recently
-    const lastProcessedTab = processedTabs.get(tab.id);
-    const currentTabWasRecentlyProcessed =
-        lastProcessedTab && lastProcessedTab.url === tab.url;
+    const recentlySeenTab = debounce.isTabBeingProcessed(tab);
+    if (recentlySeenTab) {
+        // FIXME: What to do when the user visits the same URL 2-3x on multiple tabs?
 
-    if (currentTabWasRecentlyProcessed) {
-        // must use a nested if here because otherwise TS complains re: undefined
-        const tabWasSeenRecently =
-            now - lastProcessedTab.timestamp < PAGE_LOAD_DEBOUNCE_DELAY;
-        if (tabWasSeenRecently) {
-            console.log(
-                "Skipping recently processed URL:",
-                tab.url,
-                "in tab:",
-                tab.id
-            );
-            return;
-        }
-    }
-
-    // Mark this URL as processed for this tab
-    processedTabs.set(tab.id, {
-        timestamp: now,
-        url: tab.url,
-    });
-
-    // Clean up old entries periodically
-    // 12 chosen because it seems to only happen on youtube and refreshed pages
-    if (processedTabs.size > 12) {
-        cleanupOldTabReferences(now);
+        return;
     }
 
     // no-op if recording disabled
@@ -261,11 +263,13 @@ class PlayPauseDispatch {
         if (viewingTracker.currentMedia) {
             viewingTracker.markPlaying();
             return;
-        } else {
-            // it wasn't there yet because, the, the channel extractor
-            // script didn't run yet but the "report playing video" code did
-            startSecondaryChannelExtractionScript(sender);
         }
+        // else {
+        //     // it wasn't there yet because, the, the channel extractor
+        //     // script didn't run yet but the "report playing video" code did
+        //     // FIXME: THIS RAN ON NETFLIX
+        //     startSecondaryChannelExtractionScript(sender);
+        // }
     }
 
     notePauseEvent() {
@@ -297,7 +301,6 @@ class PlayPauseDispatch {
         // User presses pause, and then resumes the video after only 2.9 seconds, then
         // don't bother pausing tracking.
         const timeoutId = setTimeout(() => {
-            const endOfIntervalTime = new Date();
             if (viewingTracker.currentMedia) {
                 viewingTracker.markPaused();
             }
