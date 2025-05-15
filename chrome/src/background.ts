@@ -13,9 +13,11 @@ import {
     isDomainIgnored,
     setupIgnoredDomains,
 } from "./ignoreList";
-import { InputCaptureManager } from "./inputLogger/inputCaptureManager";
 import { systemInputCapture } from "./inputLogger/systemInputLogger";
 import { endpointLoggingDownload } from "./logging";
+
+import { RECORDING_INPUT } from "./config";
+import { captureManager } from "./inputLogger/initInputCapture";
 
 /*
 
@@ -39,14 +41,20 @@ function openOptionsOnClickIcon() {
 
 // openOptionsOnClickIcon();
 
-const captureManager = new InputCaptureManager(systemInputCapture, api);
+// const captureManager = new InputCaptureManager(systemInputCapture, api);
 // Periodically check if a recording session has started
 function runCheckOnRecordingSessionStart() {
     //
     captureManager.startPolling();
 }
 
-runCheckOnRecordingSessionStart;
+// runCheckOnRecordingSessionStart();
+
+function logExtensionState() {
+    console.log("recording input: ", RECORDING_INPUT);
+}
+
+logExtensionState();
 
 const tabsWithPollingList: number[] = [];
 
@@ -65,6 +73,12 @@ const processedTabs = new Map<number, ProcessedUrlEntry>();
 const PAGE_LOAD_DEBOUNCE_DELAY = 4000;
 
 // TODO: Make debounce stuff a class
+
+class DebounceTimer {
+    constructor() {
+        //
+    }
+}
 
 function cleanupOldTabReferences(now: number) {
     // "Now" from new Date().now()
@@ -142,6 +156,7 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
     }
 
     // no-op if recording disabled
+    console.log("HERE, at captureIfEnabled, '146ru");
     systemInputCapture.captureIfEnabled({
         type: "TAB_CHANGE",
         data: {
@@ -299,7 +314,7 @@ const playPauseDispatch = new PlayPauseDispatch();
 
 chrome.runtime.onMessage.addListener(
     (message, sender: chrome.runtime.MessageSender, sendResponse) => {
-        console.log(message, sender);
+        console.log(message.event, sender);
         /*
          *   This only runs when the user presses play or pauses the video.
          * Hence they're definitely on a page that already loaded

@@ -283,9 +283,9 @@ function attachSelectingTitleListeners() {
         const currentUrl = window.location.href;
 
         // TEMP while testing on other pages:
-        const tempUrl =
-            "https://www.netflix.com/watch/81705696?trackId=272211954";
-        historyRecorder.recordEnteredMediaTitle(mediaTitle, tempUrl);
+        // const currentUrl =
+        //     "https://www.netflix.com/watch/81705696?trackId=272211954";
+        historyRecorder.recordEnteredMediaTitle(mediaTitle, currentUrl);
 
         // update for next time
         currentModalState = "review";
@@ -314,8 +314,8 @@ const checkNetflixLoaded = () => {
     // I land on the /watch page, then what happens?
     // How does the server know the page was landed on?
     const currentUrl = window.location.href;
-    const tempUrl = "https://www.netflix.com/watch/81705696?trackId=272211954";
-    historyRecorder.sendPageDetailsToViewingTracker(tempUrl);
+    // const tempUrl = "https://www.netflix.com/watch/81705696?trackId=272211954";
+    historyRecorder.sendPageDetailsToViewingTracker(currentUrl);
 
     // console.log("checkNetflixLoaded: " + checkCount, checkCount);
     // You might want to add specific checks here for Netflix player

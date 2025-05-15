@@ -1,8 +1,6 @@
-//  videoCommon/videoListeners.ts
+//  videoCommon/youTubeVideoListeners.ts
 
 /*
-
-File is in just /src because it is common to YouTube and Netflix.
 
 */
 

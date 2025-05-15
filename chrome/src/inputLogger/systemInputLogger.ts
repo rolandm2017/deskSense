@@ -40,6 +40,12 @@ export class SystemInputLogger {
     }
 
     captureIfEnabled(event: CaptureEvent) {
+        console.log(event);
+        console.log(
+            "Pushing event data: ",
+            event.data,
+            RECORDING_INPUT.enabled
+        );
         if (RECORDING_INPUT.enabled) {
             this.events.push(event);
         }

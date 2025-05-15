@@ -5,13 +5,37 @@ import { PlatformType } from "./types/general.types";
 console.log();
 console.log(chalk.magenta("[Netflix]"), "⏸️  pause");
 
+class LoggerStorageWriter {
+    savePayload(eventType: string, serverUrl: string, payload: object) {
+        // TODO: log to json file
+        chrome.storage.local.get(["endpointActivity"], function (result) {
+            // Get current array or initialize empty array if it doesn't exist
+            const currentActivity = result.endpointActivity || [];
+
+            // Push the new item to the array
+            currentActivity.push({ eventType, serverUrl, payload });
+
+            // Save the updated array back to storage
+            chrome.storage.local.set(
+                { endpointActivity: currentActivity },
+                function () {
+                    console.log("Array updated successfully");
+                }
+            );
+        });
+    }
+}
+
 export class PlatformLogger {
     platform: PlatformType;
     insert: string;
     chalkColor: Function;
 
+    storageWriter: LoggerStorageWriter;
+
     constructor(platform: PlatformType) {
         this.platform = platform;
+        this.storageWriter = new LoggerStorageWriter();
 
         if (platform === "YouTube") {
             this.chalkColor = chalk.red;
@@ -46,21 +70,7 @@ export class PlatformLogger {
 
     logPayloadToStorage(eventType: string, serverUrl: string, payload: object) {
         // TODO: log to json file
-        chrome.storage.local.get(["endpointActivity"], function (result) {
-            // Get current array or initialize empty array if it doesn't exist
-            const currentActivity = result.endpointActivity || [];
-
-            // Push the new item to the array
-            currentActivity.push({ eventType, serverUrl, payload });
-
-            // Save the updated array back to storage
-            chrome.storage.local.set(
-                { endpointActivity: currentActivity },
-                function () {
-                    console.log("Array updated successfully");
-                }
-            );
-        });
+        this.storageWriter.savePayload(eventType, serverUrl, payload);
     }
 
     writeLogsToJson() {
@@ -69,14 +79,19 @@ export class PlatformLogger {
 }
 
 export class DomainLogger {
-    constructor() {}
+    storageWriter: LoggerStorageWriter;
+
+    constructor() {
+        this.storageWriter = new LoggerStorageWriter();
+    }
 
     logTabSwitch() {
         console.log("🌐 [API] 🌍  Switched to domain: youtube.com");
     }
 
-    logPayload(eventType: string, serverUrl: string, payload: object) {
+    logPayloadToStorage(eventType: string, serverUrl: string, payload: object) {
         // TODO: log to json file
+        this.storageWriter.savePayload(eventType, serverUrl, payload);
     }
 }
 
