@@ -14,7 +14,11 @@ import time
 
 from typing import AsyncGenerator, Optional
 
-from activitytracker.db.database import async_session_maker, engine
+from activitytracker.db.database import (
+    async_session_maker,
+    simulation_async_engine,
+    simulation_sync_engine,
+)
 
 load_dotenv()
 
@@ -192,17 +196,33 @@ class TestSchemaManager:
 test_schema_manager = TestSchemaManager()
 
 
-# SQLAlchemy connection event to set search_path
-@event.listens_for(engine, "connect")
-def set_search_path(dbapi_connection, connection_record):
-    """Set the search_path for newly created connections."""
+# Register for async engine (needs special handling)
+@event.listens_for(sync_engine, "connect")
+def set_search_path_regular(dbapi_connection, connection_record):
+    """Set the search_path for newly created regular connections."""
     if test_schema_manager.current_schema:
         cursor = dbapi_connection.cursor()
         cursor.execute(f'SET search_path TO "{test_schema_manager.current_schema}", public')
         cursor.close()
 
 
-# Async version for set_schema_path
+@event.listens_for(simulation_sync_engine, "connect")
+def set_search_path_simulation(dbapi_connection, connection_record):
+    """Set the search_path for newly created simulation connections."""
+    if test_schema_manager.current_schema:
+        cursor = dbapi_connection.cursor()
+        cursor.execute(f'SET search_path TO "{test_schema_manager.current_schema}", public')
+        cursor.close()
+
+
+def set_sync_search_path(session):
+    """Set the search_path for a synchronous session."""
+    if test_schema_manager.current_schema:
+        session.execute(
+            text(f'SET search_path TO "{test_schema_manager.current_schema}", public')
+        )
+
+
 async def set_async_search_path(session):
     """Set the search_path for an async session."""
     if test_schema_manager.current_schema:

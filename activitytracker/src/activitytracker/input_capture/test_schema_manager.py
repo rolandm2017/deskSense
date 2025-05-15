@@ -218,7 +218,8 @@ def register_connection_event(engine):
 
 
 if program_environment.development:
-    register_connection_event(simulation_sync_engine)
+    # No need
+    print("Passing on connection registration")
 else:
     register_connection_event(simulation_sync_engine)
 

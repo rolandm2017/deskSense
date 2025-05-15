@@ -11,7 +11,11 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from activitytracker.config.definitions import program_environment
-from activitytracker.db.database import simulation_regular_session_maker
+from activitytracker.db.database import (
+    Base,
+    simulation_regular_session_maker,
+    simulation_sync_engine,
+)
 
 
 def get_timestamp_string():
@@ -19,16 +23,9 @@ def get_timestamp_string():
     now = datetime.now()
     return now.strftime("%Y-%m-%d_%H-%M-%S")
 
-    # TODO: Should be single source of truth about the enviromment being capture or not
-    # SO it needs to go into the database.py file, OR the db.py file needs to show up here
     # TODO: I need to show that i got the inputs and the outputs
-    # TODO: I need the db schema to increment automatically
-
-    # TODO: Get the database setup
 
 
-# TODO: IMPORTANT: Just get the session id from the server to the ext.
-# TODO: IMPORTANT: Just get the session id from the server to the ext.
 # TODO: IMPORTANT: Just get the session id from the server to the ext.
 
 
@@ -50,7 +47,7 @@ class TestRunManager:
         self.session_active = program_environment.data_capture_session
 
         self.schema_manager = schema_manager or test_schema_manager
-        self.duration_in_minutes = 1
+        self.duration_in_minutes = 2
         self.test_end_time = None
         self.current_run_id: Optional[str] = None
         self.metadata_table = "test_run_metadata"
@@ -79,12 +76,10 @@ class TestRunManager:
             print(now, "82ru")
             if now > self.test_end_time:
                 # Close session
-                program_environment.data_capture_session = (
-                    False  # Will reset on server restart
-                )
                 self.conclude_capture_session()
 
     def conclude_capture_session(self):
+        program_environment.data_capture_session = False  # Will reset on server restart
         # Freeze the schema so no more modifications
         self.freeze("PASSED")
 
@@ -158,6 +153,19 @@ class TestRunManager:
             )
 
             session.commit()
+
+        conn = simulation_sync_engine.connect().execution_options(
+            schema_translate_map={"": schema_name}
+        )
+
+        # Make sure all your models are imported and registered with Base
+        # Import your models here if they're not already imported
+
+        # Now create all tables with the schema explicitly specified
+        # Create all the usual (development) tables in the schema
+        Base.metadata.create_all(bind=conn)
+
+        print("Models registered with Base:", Base.metadata.tables.keys())
 
         return run_id
 

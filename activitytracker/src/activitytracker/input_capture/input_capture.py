@@ -77,6 +77,7 @@ class InputCapture:
     def log_to_output_file(self):
         # Create a custom encoder if your objects have __str__ but not a standard JSON representation
         if self.test_run_manager.session_active:
+            print("Logging InputCapture output to json")
             # Write to the file using the custom encoder
             with open(self.filename, "w") as f:
                 json.dump(self.events, f, cls=EventEncoder, indent=4)
