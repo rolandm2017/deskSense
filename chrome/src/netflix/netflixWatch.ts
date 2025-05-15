@@ -218,6 +218,46 @@ function attachConfirmedTitleListeners() {
     });
 }
 
+/**
+ * Netflix-specific function to find the video player element
+ * Netflix's player can be in different DOM locations
+ */
+function findNetflixVideoElement(): HTMLVideoElement | null {
+    console.log("[Netflix] Searching for video element");
+
+    // Try multiple selector strategies for Netflix's player
+    const selectors = [
+        "video", // Basic video tag
+        ".watch-video--player-view video", // Netflix player view
+        ".NFPlayer video", // Netflix player container
+        "#appMountPoint video", // App mount point
+        ".nf-player-container video", // Player container
+        "#netflix-player video", // Netflix player ID
+        "[data-uia='player'] video", // Player by data attribute
+        ".VideoContainer video", // Video container
+    ];
+
+    for (const selector of selectors) {
+        const element = document.querySelector(selector) as HTMLVideoElement;
+        if (element && element instanceof HTMLVideoElement) {
+            console.log(
+                `[Netflix] Found video element using selector: ${selector}`
+            );
+            return element;
+        }
+    }
+
+    // If selectors don't work, try finding any video element in the DOM
+    const allVideos = document.getElementsByTagName("video");
+    if (allVideos.length > 0) {
+        console.log(`[Netflix] Found video element using getElementsByTagName`);
+        return allVideos[0];
+    }
+
+    console.log("[Netflix] No video element found with any selector");
+    return null;
+}
+
 function attachSelectingTitleListeners() {
     // console.log("Injecting listeners in setupEventListeners");
     // Add event listeners
@@ -282,10 +322,17 @@ function attachSelectingTitleListeners() {
 
         const currentUrl = window.location.href;
 
+        const videoPlayer = findNetflixVideoElement();
+        const playerState = videoPlayer?.paused ? "paused" : "playing";
+
         // TEMP while testing on other pages:
         // const currentUrl =
         //     "https://www.netflix.com/watch/81705696?trackId=272211954";
-        historyRecorder.recordEnteredMediaTitle(mediaTitle, currentUrl);
+        historyRecorder.recordEnteredMediaTitle(
+            mediaTitle,
+            currentUrl,
+            playerState
+        );
 
         // update for next time
         currentModalState = "review";

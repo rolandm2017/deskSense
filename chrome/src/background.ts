@@ -3,7 +3,7 @@ import { api } from "./api";
 import { getDomainFromUrl } from "./urlTools";
 import { handleYouTubeUrl } from "./youtube/youtube";
 
-import { viewingTracker } from "./videoCommon/visits";
+import { NetflixViewing, viewingTracker } from "./videoCommon/visits";
 
 import { endpointLoggingDownload } from "./endpointLogging";
 import {
@@ -27,6 +27,10 @@ This approach cannot work for Netflix. Much user input is needed there.
 function deskSenseLogs() {
     systemInputCapture.writeLogsToJson();
     endpointLoggingDownload();
+}
+
+function clearDeskSenseLogs() {
+    //
 }
 
 // enable logging file download
@@ -143,7 +147,6 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
     Note, it might be a problem if the user switches back and forth quickly.
 
     */
-    console.log("Tab.url and ID", tab.url, tab.id);
 
     if (!tab.url) {
         console.error("No url found");
@@ -161,6 +164,7 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
         // FIXME: What to do when the user visits the same URL 2-3x on multiple tabs?
         return;
     }
+    console.log("Tab.url and ID", tab.url, tab.id);
 
     // no-op if recording disabled
     systemInputCapture.captureIfEnabled({
@@ -264,6 +268,7 @@ class PlayPauseDispatch {
                 (new Date().getTime() - this.pauseStartTime!.getTime()) / 1000;
             this.cancelSendPauseEvent(this.endSessionTimeoutId);
         }
+        console.log("[play] ", viewingTracker.currentMedia);
         if (viewingTracker.currentMedia) {
             viewingTracker.markPlaying();
             return;
@@ -290,6 +295,7 @@ class PlayPauseDispatch {
             },
         });
 
+        console.log("[pause] ", viewingTracker.currentMedia);
         if (viewingTracker.currentMedia) {
             const startOfGracePeriod = new Date();
             this.pauseStartTime = startOfGracePeriod;
@@ -401,29 +407,26 @@ chrome.action.onClicked.addListener(async (tab) => {
     }
 });
 
-/*
- * Open the Netflix Watch modal when you click the icon on the right page
- */
-
-chrome.action.onClicked.addListener(async (tab) => {
-    console.log("Action.Onclick: ");
-    // First check if we're on any Netflix page
-    if (
-        tab.id &&
-        tab.url &&
-        (tab.url.includes("wikipedia") || tab.url.includes("netflix.com/watch"))
-    ) {
-        // Inject the content script
-        await chrome.tabs.sendMessage(tab.id, { action: "openModal" });
-
-        // If your script needs to know it was triggered by the icon click,
-        // you can pass a message after injection
-        // chrome.tabs.sendMessage(tab.id, { action: "extensionIconClicked" });
-    } else {
-        // Optionally, show a notification or take other action
-        console.log(
-            "Not on Netflix - script not injected. Tab ID was: ",
-            tab.id
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.event === "netflix_media_selected") {
+        // Create a new instance in this context with the same data
+        const partialWatchEntry = {
+            urlId: message.media.videoId,
+            showName: message.media.mediaTitle,
+            playerState: message.media.playerState,
+        };
+        const recreatedMedia = new NetflixViewing(
+            partialWatchEntry.urlId,
+            partialWatchEntry.showName,
+            partialWatchEntry.playerState
         );
+        viewingTracker.setCurrent(recreatedMedia);
+        console.log(
+            "Background received media state:",
+            viewingTracker.currentMedia
+        );
+    } else if (message.event === "netflix_page_opened") {
+        viewingTracker.reportNetflixWatchPage(message.media.pageId);
     }
+    // Other existing message handling...
 });
