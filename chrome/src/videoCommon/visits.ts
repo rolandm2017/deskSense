@@ -10,7 +10,7 @@ import {
     YouTubePayload,
 } from "../interface/interfaces";
 
-import { PlatformLogger } from "../logging";
+import { PlatformLogger } from "../endpointLogging";
 
 // A Visit: As in, A PageVisit
 // A Viewing: A window of time spent actively viewing the video.

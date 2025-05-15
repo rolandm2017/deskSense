@@ -1,10 +1,10 @@
 // api.ts
+import { DomainLogger, PlatformLogger } from "./endpointLogging";
 import {
     NetflixPayload,
     PlayerData,
     YouTubePayload,
 } from "./interface/interfaces";
-import { DomainLogger, PlatformLogger } from "./logging";
 
 const DESKSENSE_BACKEND_URL = "http://localhost:8000";
 

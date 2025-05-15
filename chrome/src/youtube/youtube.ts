@@ -71,7 +71,7 @@ export function handleYouTubeUrl(
                             source: "handleYouTubeUrl",
                             method: "user_input",
                             location: "youtube.ts",
-                            timestamp: Date.now(),
+                            timestamp: new Date().toISOString(),
                         },
                     });
 
@@ -94,7 +94,7 @@ export function handleYouTubeUrl(
                 source: "isOnSomeChannel",
                 method: "user_input",
                 location: "youtube.ts",
-                timestamp: Date.now(),
+                timestamp: new Date().toISOString(),
             },
         });
         api.youtube.reportYouTubePage(tab.title, channelName);
@@ -141,7 +141,7 @@ export function startSecondaryChannelExtractionScript(
             source: "startSecondaryChannelExtractionScript",
             method: "user_input",
             location: "youtube.ts",
-            timestamp: Date.now(),
+            timestamp: new Date().toISOString(),
         },
     });
     viewingTracker.setCurrent(youTubeVisit);

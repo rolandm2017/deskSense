@@ -51,7 +51,7 @@ export class HistoryRecorder {
                 source: "sendPageDetailsToViewingTracker",
                 method: "event_listener",
                 location: "historyRecorder.ts",
-                timestamp: Date.now(),
+                timestamp: new Date().toISOString(),
             },
         });
         const watchPageId = this.makeUrlId(url);
@@ -67,7 +67,7 @@ export class HistoryRecorder {
                 source: "recordEnteredMediaTitle",
                 method: "user_input",
                 location: "historyRecorder.ts",
-                timestamp: Date.now(),
+                timestamp: new Date().toISOString(),
             },
         });
         console.log("In recordEnteredMedia");

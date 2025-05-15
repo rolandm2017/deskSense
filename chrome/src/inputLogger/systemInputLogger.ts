@@ -17,7 +17,7 @@ interface CaptureEvent {
         source: string;
         method: string;
         location: string;
-        timestamp: number;
+        timestamp: string;
     };
 }
 
@@ -48,20 +48,24 @@ export class SystemInputLogger {
         );
         if (RECORDING_INPUT.enabled) {
             this.events.push(event);
+            if (this.events.length % 5 == 0) {
+                this.pushNewActivityToStorage(this.events);
+            }
         }
     }
 
-    pushNewActivityToStorage(activity: string) {
+    pushNewActivityToStorage(activities: CaptureEvent[]) {
+        console.log("Pushing new activity to storage");
         chrome.storage.local.get(["userActivityCapture"], function (result) {
             // Get current array or initialize empty array if it doesn't exist
             const currentActivity = result.userActivity || [];
 
             // Push the new item to the array
-            currentActivity.push(activity);
+            // currentActivity.push(activity);
 
             // Save the updated array back to storage
             chrome.storage.local.set(
-                { userActivity: currentActivity },
+                { userActivityCapture: activities },
                 function () {
                     console.log("Array updated successfully");
                 }
@@ -71,16 +75,21 @@ export class SystemInputLogger {
 
     writeLogsToJson() {
         chrome.storage.local.get("userActivityCapture", (res) => {
-            const blob = new Blob([JSON.stringify(res.writeLog, null, 2)], {
-                type: "application/json",
+            console.log(res, "RES for userActivityCapture");
+
+            const jsonString = JSON.stringify(res.userActivityCapture, null, 2);
+            const dataUrl =
+                "data:application/json;charset=utf-8," +
+                encodeURIComponent(jsonString);
+
+            const dateString = new Date().toDateString();
+
+            // Use chrome.downloads API instead of the anchor trick
+            chrome.downloads.download({
+                url: dataUrl,
+                filename: `user-activity-capture-${dateString}.json`,
+                saveAs: true,
             });
-            const dateForTag = new Date();
-            const dateString = dateForTag.toDateString();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `user-activity-capture-${dateString}.json`;
-            a.click();
         });
     }
 }

@@ -5,13 +5,13 @@ import { handleYouTubeUrl } from "./youtube/youtube";
 
 import { viewingTracker } from "./videoCommon/visits";
 
+import { endpointLoggingDownload } from "./endpointLogging";
 import {
     ignoredDomains,
     isDomainIgnored,
     setupIgnoredDomains,
 } from "./ignoreList";
 import { systemInputCapture } from "./inputLogger/systemInputLogger";
-import { endpointLoggingDownload } from "./logging";
 
 import { RECORDING_INPUT } from "./config";
 import { captureManager } from "./inputLogger/initInputCapture";
@@ -24,7 +24,13 @@ This approach cannot work for Netflix. Much user input is needed there.
 
 */
 
+function deskSenseLogs() {
+    systemInputCapture.writeLogsToJson();
+    endpointLoggingDownload();
+}
+
 // enable logging file download
+(self as any).deskSenseLogs = deskSenseLogs;
 (self as any).writeInputLogsToJson = systemInputCapture.writeLogsToJson;
 (self as any).writeEndpointLogsToJson = endpointLoggingDownload;
 // Code that lets you open the options page when the icon is clicked
@@ -153,12 +159,10 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
     const recentlySeenTab = debounce.isTabBeingProcessed(tab);
     if (recentlySeenTab) {
         // FIXME: What to do when the user visits the same URL 2-3x on multiple tabs?
-
         return;
     }
 
     // no-op if recording disabled
-    console.log("HERE, at captureIfEnabled, '146ru");
     systemInputCapture.captureIfEnabled({
         type: "TAB_CHANGE",
         data: {
@@ -168,7 +172,7 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
             source: "getDomainFromUrlAndSubmit",
             method: "user_input",
             location: "background.ts",
-            timestamp: Date.now(),
+            timestamp: new Date().toISOString(),
         },
     });
     const domain = getDomainFromUrl(tab.url);
@@ -210,7 +214,7 @@ chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
             source: "onRemoved.addListener",
             method: "user_input",
             location: "background.ts",
-            timestamp: Date.now(),
+            timestamp: new Date().toISOString(),
         },
     });
 
@@ -252,7 +256,7 @@ class PlayPauseDispatch {
                 source: "notePlayEvent",
                 method: "user_input",
                 location: "background.ts",
-                timestamp: Date.now(),
+                timestamp: new Date().toISOString(),
             },
         });
         if (this.endSessionTimeoutId) {
@@ -282,7 +286,7 @@ class PlayPauseDispatch {
                 source: "notePauseEvent",
                 method: "user_input",
                 location: "background.ts",
-                timestamp: Date.now(),
+                timestamp: new Date().toISOString(),
             },
         });
 

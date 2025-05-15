@@ -7,13 +7,21 @@ console.log(chalk.magenta("[Netflix]"), "⏸️  pause");
 
 class LoggerStorageWriter {
     savePayload(eventType: string, serverUrl: string, payload: object) {
+        // gather metadata
+        const metadata = {
+            source: eventType,
+            method: "POST",
+            location: "api.ts",
+            timestamp: new Date().toISOString(),
+        };
         // TODO: log to json file
         chrome.storage.local.get(["endpointActivity"], function (result) {
             // Get current array or initialize empty array if it doesn't exist
             const currentActivity = result.endpointActivity || [];
 
+            console.log("Writing payload with metadata", metadata);
             // Push the new item to the array
-            currentActivity.push({ eventType, serverUrl, payload });
+            currentActivity.push({ eventType, serverUrl, payload, metadata });
 
             // Save the updated array back to storage
             chrome.storage.local.set(
@@ -97,14 +105,20 @@ export class DomainLogger {
 
 export function endpointLoggingDownload() {
     chrome.storage.local.get("endpointActivity", (res) => {
-        const blob = new Blob([JSON.stringify(res.writeLog, null, 2)], {
-            type: "application/json",
-        });
+        // Create a data URL instead of using createObjectURL
+        console.log(res, "endpointActivity RES");
+        const jsonString = JSON.stringify(res.endpointActivity, null, 2);
+        const dataUrl =
+            "data:application/json;charset=utf-8," +
+            encodeURIComponent(jsonString);
+
         const dateString = new Date().toDateString();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `endpoint-activity-${dateString}.json`;
-        a.click();
+
+        // Use chrome.downloads API instead of the anchor trick
+        chrome.downloads.download({
+            url: dataUrl,
+            filename: `endpoint-activity-${dateString}.json`,
+            saveAs: true,
+        });
     });
 }

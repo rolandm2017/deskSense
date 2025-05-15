@@ -240,7 +240,7 @@ function attachSelectingTitleListeners() {
     );
 
     const confirmButton = getElementWithGivenIdOrThrow(EL_IDS.CONFIRM_BTN);
-    const ignoreButton = getElementWithGivenIdOrThrow(EL_IDS.CANCEL_ENTRY_BTN);
+    const ignoreButton = getElementWithGivenIdOrThrow(EL_IDS.IGNORE_BTN);
 
     const seriesSelect = getElementWithGivenIdOrThrow(
         EL_IDS.SERIES_SELECT
@@ -294,6 +294,7 @@ function attachSelectingTitleListeners() {
     };
 
     ignoreButton.onclick = () => {
+        console.log("In 'don't ask again' btn listener");
         // Get current video URL or ID to ignore
         const currentUrl = window.location.href;
         console.log("current URL", currentUrl);
