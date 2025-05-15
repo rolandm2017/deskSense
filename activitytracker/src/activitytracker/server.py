@@ -110,6 +110,8 @@ class ActivityTrackerState:
         self.tracking_task: Optional[asyncio.Task] = None
         self.input_capture_run_id: Optional[str] = None
         self.input_capture_start_time: Optional[datetime] = None
+        self.input_capture_end_time: Optional[datetime] = None
+        self.schema_for_run: Optional[str] = None
         self.is_running: bool = False
         self.db_session = None
 
@@ -149,10 +151,12 @@ async def lifespan(app: FastAPI):
         get_keyboard_facade_instance, get_mouse_facade_instance, choose_program_facade
     )
 
-    test_run = TestRunManager()  # TODO: Initialize in one spot, and import initialized class
-    run_id = test_run.initialize(test_run.filename)
+    test_run_manager = TestRunManager()
+    run_id = test_run_manager.initialize(test_run_manager.filename)
     activity_tracker_state.input_capture_run_id = run_id
-    activity_tracker_state.input_capture_start_time = test_run.run_start_time
+    activity_tracker_state.input_capture_start_time = test_run_manager.run_start_time
+    activity_tracker_state.input_capture_end_time = test_run_manager.test_end_time
+    activity_tracker_state.schema_for_run = test_run_manager.schema_manager.current_schema
 
     message_receiver = MessageReceiver("tcp://127.0.0.1:5555")
     activity_tracker_state.manager = SurveillanceManager(
@@ -163,6 +167,7 @@ async def lifespan(app: FastAPI):
         arbiter,
         facades,
         message_receiver,
+        test_run_manager,
     )
     activity_tracker_state.manager.print_sys_status_info()
     activity_tracker_state.manager.start_trackers()
@@ -684,8 +689,23 @@ async def get_capture_session_start_time(
     try:
         # capture_session_start = capture_session_service.get_capture_start()
         capture_session_start = activity_tracker_state.input_capture_start_time
+        capture_end = activity_tracker_state.input_capture_end_time
         run_id = activity_tracker_state.input_capture_run_id
-        return {"captureSessionStartTime": capture_session_start, "runId": run_id}
+        if capture_session_start and capture_end:
+            return {
+                "captureSessionStartTime": capture_session_start,
+                "runId": run_id,
+                "humanFriendly": capture_session_start.strftime("%m-%d %H:%M:%S"),
+                "endTime": capture_end.strftime("%m-%d %H:%M:%S"),
+                "schemaForRun": activity_tracker_state.schema_for_run,
+            }
+        return {
+            "captureSessionStartTime": "error",
+            "runId": "error",
+            "humanFriendly": capture_session_start,
+            "endTime": capture_end,
+            "schemaForRun": activity_tracker_state.schema_for_run,
+        }
     except Exception as e:
         raise HTTPException(
             status_code=500, detail="A problem occurred in get_capture_session_start_time"
