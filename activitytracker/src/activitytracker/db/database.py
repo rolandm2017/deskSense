@@ -37,41 +37,50 @@ logger = ConsoleLogger()
 
 if program_environment.development:
     logger.log_white("Using Development environment")
-    engine = create_engine(SYNCHRONOUS_DB_URL)
+#     engine = create_engine(SYNCHRONOUS_DB_URL)
 
-    async_engine = create_async_engine(
-        ASYNC_DB_URL,
-        echo=False,  # Set to True for SQL query logging
-    )
-    logger.log_white(f"Connected to database: {SYNCHRONOUS_DB_URL.split('/')[-1]}")
-    logger.log_white(f"Connected to async database: {ASYNC_DB_URL.split('/')[-1]}")
+#     async_engine = create_async_engine(
+#         ASYNC_DB_URL,
+#         echo=False,  # Set to True for SQL query logging
+#     )
+#     logger.log_white(f"Connected to database: {SYNCHRONOUS_DB_URL.split('/')[-1]}")
+#     logger.log_white(f"Connected to async database: {ASYNC_DB_URL.split('/')[-1]}")
 
 elif program_environment.data_capture_session:
     logger.log_yellow("Using user input capture session database")
-    logger.log_yellow(f"Connected to database: {SIMULATION_CAPTURE_DB_URL.split('/')[-1]}")
-    logger.log_yellow(
-        f"Connected to async database: {ASYNC_SIMULATION_CAPTURE_DB_URL.split('/')[-1]}"
-    )
+#     logger.log_yellow(f"Connected to database: {SIMULATION_CAPTURE_DB_URL.split('/')[-1]}")
+#     logger.log_yellow(
+#         f"Connected to async database: {ASYNC_SIMULATION_CAPTURE_DB_URL.split('/')[-1]}"
+#     )
 
-    engine = create_engine(SIMULATION_CAPTURE_DB_URL)
-    async_engine = create_async_engine(ASYNC_SIMULATION_CAPTURE_DB_URL, echo=False)
+#     engine = create_engine(SIMULATION_CAPTURE_DB_URL)
+#     async_engine = create_async_engine(ASYNC_SIMULATION_CAPTURE_DB_URL, echo=False)
 else:
     raise RuntimeError("Unexpected environment")
-
-
-regular_session_maker = sessionmaker(engine, class_=Session, expire_on_commit=False)
-
-async_session_maker = async_sessionmaker(
-    async_engine, class_=AsyncSession, expire_on_commit=False
-)
 
 
 # Keep references to all engines for potential direct access
 development_sync_engine = create_engine(SYNCHRONOUS_DB_URL)
 development_async_engine = create_async_engine(ASYNC_DB_URL, echo=False)
 
+
+regular_session_maker = sessionmaker(
+    development_sync_engine, class_=Session, expire_on_commit=False
+)
+
+async_session_maker = async_sessionmaker(
+    development_async_engine, class_=AsyncSession, expire_on_commit=False
+)
+
 simulation_sync_engine = create_engine(SIMULATION_CAPTURE_DB_URL)
 simulation_async_engine = create_async_engine(ASYNC_SIMULATION_CAPTURE_DB_URL, echo=False)
+
+simulation_regular_session_maker = sessionmaker(
+    simulation_sync_engine, class_=Session, expire_on_commit=False
+)
+simulation_async_session_maker = async_sessionmaker(
+    simulation_async_engine, class_=AsyncSession, expire_on_commit=False
+)
 
 
 Base = declarative_base()
@@ -81,14 +90,20 @@ Base = declarative_base()
 
 # Modified get_db to include schema setting
 def get_db() -> Generator[Session, None, None]:
-    with regular_session_maker() as session:
-        try:
-            # Set schema if we're in test mode
-            if test_schema_manager.current_schema:
+    if program_environment.development:
+        with regular_session_maker() as session:
+            try:
+                yield session
+            finally:
+                session.close()
+    else:
+        with simulation_regular_session_maker() as session:
+            try:
+                # Set schema for the test mode run
                 set_search_path(session)
-            yield session
-        finally:
-            session.close()
+                yield session
+            finally:
+                session.close()
 
 
 # async def get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -101,8 +116,8 @@ def get_db() -> Generator[Session, None, None]:
 
 async def init_db() -> None:
     """Initialize the database by creating all tables if they don't exist."""
-    async with async_engine.begin() as conn:
-        # No longer doing automatic create_all
-        # as it takes the db out of sync with Alembic
-        await conn.run_sync(Base.metadata.create_all)
-        pass
+    # async with async_engine.begin() as conn:
+    #     # No longer doing automatic create_all
+    #     # as it takes the db out of sync with Alembic
+    #     # await conn.run_sync(Base.metadata.create_all)
+    #     pass

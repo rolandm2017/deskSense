@@ -20,6 +20,7 @@ from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
 from activitytracker.facade.receive_messages import MessageReceiver
 from activitytracker.input_capture.input_capture import InputCapture
+from activitytracker.input_capture.test_run_manager import TestRunManager
 from activitytracker.trackers.keyboard_tracker import KeyboardTrackerCore
 from activitytracker.trackers.mouse_tracker import MouseTrackerCore
 from activitytracker.trackers.program_tracker import ProgramTrackerCore
@@ -48,6 +49,7 @@ class SurveillanceManager:
         arbiter: ActivityArbiter,
         facades,
         message_receiver: MessageReceiver,
+        test_run_manager: TestRunManager,
         is_test=False,
     ):
         """
@@ -124,7 +126,7 @@ class SurveillanceManager:
         self.cancelled_tasks = 0
 
         self.logger = ConsoleLogger()
-        self.input_capture = InputCapture()
+        self.input_capture = InputCapture(test_run_manager)
 
     def start_trackers(self):
         self.is_running = True

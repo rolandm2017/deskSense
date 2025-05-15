@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from activitytracker.config.definitions import program_environment
-from activitytracker.db.database import regular_session_maker
+from activitytracker.db.database import simulation_regular_session_maker
 
 
 def get_timestamp_string():
@@ -19,7 +19,7 @@ def get_timestamp_string():
     now = datetime.now()
     return now.strftime("%Y-%m-%d_%H-%M-%S")
 
-    # TODO: Should be single source of truth about the enviromment being capture
+    # TODO: Should be single source of truth about the enviromment being capture or not
     # SO it needs to go into the database.py file, OR the db.py file needs to show up here
     # TODO: I need to show that i got the inputs and the outputs
     # TODO: I need the db schema to increment automatically
@@ -27,11 +27,6 @@ def get_timestamp_string():
     # TODO: Get the database setup
 
 
-# TODO: IMPORTANT: Just get the session id from the server to the ext.
-# TODO: IMPORTANT: Just get the session id from the server to the ext.
-# TODO: IMPORTANT: Just get the session id from the server to the ext.
-# TODO: IMPORTANT: Just get the session id from the server to the ext.
-# TODO: IMPORTANT: Just get the session id from the server to the ext.
 # TODO: IMPORTANT: Just get the session id from the server to the ext.
 # TODO: IMPORTANT: Just get the session id from the server to the ext.
 # TODO: IMPORTANT: Just get the session id from the server to the ext.
@@ -55,12 +50,14 @@ class TestRunManager:
         self.session_active = program_environment.data_capture_session
 
         self.schema_manager = schema_manager or test_schema_manager
-        self.duration_in_minutes = 5
+        self.duration_in_minutes = 1
         self.test_end_time = None
         self.current_run_id: Optional[str] = None
         self.metadata_table = "test_run_metadata"
         self.results_table = "test_run_results"
         self.filename = self.make_filename()
+
+    # TODO: a conclude() called in if_test_is_over
 
     def make_filename(self):
         logs_dir = os.path.join(".", "logs")
@@ -77,13 +74,19 @@ class TestRunManager:
 
     def check_if_test_is_over(self):
         now = datetime.now()
+        print(self.test_end_time, "80ru")
         if self.test_end_time:
+            print(now, "82ru")
             if now > self.test_end_time:
                 # Close session
                 program_environment.data_capture_session = (
                     False  # Will reset on server restart
                 )
-                pass
+                self.conclude_capture_session()
+
+    def conclude_capture_session(self):
+        # Freeze the schema so no more modifications
+        self.freeze("PASSED")
 
     def initialize(
         self, input_capture_file: str, test_name: str = "Activity Tracking Test"
@@ -101,12 +104,17 @@ class TestRunManager:
         schema_name = self.schema_manager.create_schema(
             test_name=test_name, input_file=input_capture_file
         )
+        print("schema name:", schema_name)
 
         # Generate run ID
         run_id = self.generate_run_id()
         self.current_run_id = run_id
         run_start_as_float = time.time()
         self.run_start_time = datetime.fromtimestamp(run_start_as_float)
+
+        test_end_time = self.run_start_time + timedelta(minutes=self.duration_in_minutes)
+        print("Setting test end time", test_end_time)
+        self.test_end_time = test_end_time
 
         json_dump_of_test_info = json.dumps(
             {
@@ -117,10 +125,8 @@ class TestRunManager:
             }
         )
 
-        print(json_dump_of_test_info, "108ru")
-
         # Create test run tables in the schema
-        with regular_session_maker() as session:
+        with simulation_regular_session_maker() as session:
             # Set search path
             self.schema_manager.set_schema(schema_name)
 
@@ -171,7 +177,7 @@ class TestRunManager:
         if not self.schema_manager.current_schema:
             raise ValueError("No active test schema. Call initialize() first")
 
-        with regular_session_maker() as session:
+        with simulation_regular_session_maker() as session:
             # Set search path
             self.set_sync_search_path(session)
 
@@ -208,7 +214,7 @@ class TestRunManager:
         # Update both the schema metadata and run metadata
         schema_updated = self.schema_manager.mark_schema_status(status, notes)
 
-        with regular_session_maker() as session:
+        with simulation_regular_session_maker() as session:
             # Set search path
             self.set_sync_search_path(session)
 
@@ -256,7 +262,7 @@ class TestRunManager:
 
     def _get_start_time(self) -> str:
         """Helper to retrieve the start time of the current run."""
-        with regular_session_maker() as session:
+        with simulation_regular_session_maker() as session:
             # Set search path
             self.set_sync_search_path(session)
 
@@ -285,7 +291,7 @@ class TestRunManager:
         if not run_id:
             return None
 
-        with regular_session_maker() as session:
+        with simulation_regular_session_maker() as session:
             # Find the schema containing this run
             schemas = self.schema_manager.list_test_schemas()
 
@@ -341,7 +347,7 @@ class TestRunManager:
         runs = []
         schemas = self.schema_manager.list_test_schemas()
 
-        with regular_session_maker() as session:
+        with simulation_regular_session_maker() as session:
             for schema in schemas:
                 schema_name = schema["schema_name"]
 
@@ -398,7 +404,7 @@ class TestRunManager:
         schema2 = run2["schema_name"]
 
         # Compare database tables across the two schemas
-        with regular_session_maker() as session:
+        with simulation_regular_session_maker() as session:
             # Get list of tables in schema1
             tables_result = session.execute(
                 text(

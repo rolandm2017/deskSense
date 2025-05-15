@@ -13,7 +13,10 @@ import time
 from typing import Generator, Optional
 
 from activitytracker.config.definitions import program_environment
-from activitytracker.db.database import regular_session_maker, simulation_sync_engine
+from activitytracker.db.database import (
+    simulation_regular_session_maker,
+    simulation_sync_engine,
+)
 
 load_dotenv()
 
@@ -46,7 +49,7 @@ class TestSchemaManager:
             }
         )
 
-        with regular_session_maker() as session:
+        with simulation_regular_session_maker() as session:
             # Create the schema
             session.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"'))
 
@@ -81,7 +84,7 @@ class TestSchemaManager:
     def set_schema(self, schema_name: str) -> bool:
         """Set the current schema for database operations."""
         # Verify schema exists
-        with regular_session_maker() as session:
+        with simulation_regular_session_maker() as session:
             result = session.execute(
                 text(
                     "SELECT schema_name FROM information_schema.schemata WHERE schema_name = :schema_name"
@@ -100,7 +103,7 @@ class TestSchemaManager:
         if not self.current_schema:
             return False
 
-        with regular_session_maker() as session:
+        with simulation_regular_session_maker() as session:
             session.execute(
                 text(
                     f"""
@@ -136,7 +139,7 @@ class TestSchemaManager:
 
     def list_test_schemas(self):
         """List all test schemas and their metadata."""
-        with regular_session_maker() as session:
+        with simulation_regular_session_maker() as session:
             # Get all schemas with the test_ prefix
             result = session.execute(
                 text(
@@ -177,7 +180,7 @@ class TestSchemaManager:
         if self.current_schema == schema_name:
             self.current_schema = None
 
-        with regular_session_maker() as session:
+        with simulation_regular_session_maker() as session:
             try:
                 session.execute(text(f'DROP SCHEMA "{schema_name}" CASCADE'))
                 session.commit()
@@ -214,7 +217,10 @@ def register_connection_event(engine):
     return None  # Optional: can return None or the engine for method chaining
 
 
-register_connection_event(simulation_sync_engine)
+if program_environment.development:
+    register_connection_event(simulation_sync_engine)
+else:
+    register_connection_event(simulation_sync_engine)
 
 
 def set_sync_search_path(session):

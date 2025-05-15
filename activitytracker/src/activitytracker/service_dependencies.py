@@ -8,6 +8,7 @@ from typing import Callable
 from activitytracker.arbiter.activity_arbiter import ActivityArbiter
 from activitytracker.arbiter.activity_recorder import ActivityRecorder
 from activitytracker.arbiter.session_polling import ThreadedEngineContainer
+from activitytracker.config.definitions import program_environment
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
@@ -15,7 +16,11 @@ from activitytracker.db.dao.queuing.keyboard_dao import KeyboardDao
 from activitytracker.db.dao.queuing.mouse_dao import MouseDao
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
-from activitytracker.db.database import async_session_maker, regular_session_maker
+from activitytracker.db.database import (
+    async_session_maker,
+    regular_session_maker,
+    simulation_regular_session_maker,
+)
 from activitytracker.debug.ui_notifier import UINotifier
 from activitytracker.facade.facade_singletons import (
     get_keyboard_facade_instance,
@@ -34,8 +39,16 @@ from activitytracker.util.clock import SystemClock, UserFacingClock
 system_clock = SystemClock()
 user_facing_clock = UserFacingClock()
 
-_program_logging_dao = ProgramLoggingDao(regular_session_maker)
-_chrome_logging_dao = ChromeLoggingDao(regular_session_maker)
+chosen_session_maker = None
+
+if program_environment.development:
+    chosen_session_maker = regular_session_maker
+else:
+    chosen_session_maker = simulation_regular_session_maker
+
+
+_program_logging_dao = ProgramLoggingDao(chosen_session_maker)
+_chrome_logging_dao = ChromeLoggingDao(chosen_session_maker)
 
 
 async def get_keyboard_dao() -> KeyboardDao:
@@ -51,11 +64,11 @@ async def get_timeline_dao() -> TimelineEntryDao:
 
 
 async def get_program_summary_dao() -> ProgramSummaryDao:
-    return ProgramSummaryDao(_program_logging_dao, regular_session_maker)
+    return ProgramSummaryDao(_program_logging_dao, chosen_session_maker)
 
 
 async def get_chrome_summary_dao() -> ChromeSummaryDao:
-    return ChromeSummaryDao(_chrome_logging_dao, regular_session_maker)
+    return ChromeSummaryDao(_chrome_logging_dao, chosen_session_maker)
 
 
 async def get_program_logging_dao() -> ProgramLoggingDao:
@@ -137,11 +150,11 @@ async def get_activity_arbiter():
     from activitytracker.debug.debug_overlay import Overlay
 
     user_facing_clock = UserFacingClock()
-    chrome_logging_dao = ChromeLoggingDao(regular_session_maker)
-    program_logging_dao = ProgramLoggingDao(regular_session_maker)
+    chrome_logging_dao = ChromeLoggingDao(chosen_session_maker)
+    program_logging_dao = ProgramLoggingDao(chosen_session_maker)
 
-    program_summary_dao = ProgramSummaryDao(program_logging_dao, regular_session_maker)
-    chrome_summary_dao = ChromeSummaryDao(chrome_logging_dao, regular_session_maker)
+    program_summary_dao = ProgramSummaryDao(program_logging_dao, chosen_session_maker)
+    chrome_summary_dao = ChromeSummaryDao(chrome_logging_dao, chosen_session_maker)
 
     container = ThreadedEngineContainer(1)
 

@@ -1,3 +1,4 @@
+# input_capture.py
 import json
 import os
 
@@ -59,9 +60,9 @@ class EventEncoder(json.JSONEncoder):
 
 
 class InputCapture:
-    def __init__(self) -> None:
+    def __init__(self, test_run_manager) -> None:
         # TODO: Initialize in one spot, and import initialized class
-        self.test_run_manager = TestRunManager()
+        self.test_run_manager = test_run_manager
         self.events = []
 
         # Save to logs directory with .json extension
@@ -69,13 +70,13 @@ class InputCapture:
 
     def capture_if_active(self, event: ProgramSession):
         if self.test_run_manager.session_active:
-            print("Capturing event")
+            print("Capturing event", event)
             self.events.append(event)
             self.test_run_manager.check_if_test_is_over()
 
     def log_to_output_file(self):
         # Create a custom encoder if your objects have __str__ but not a standard JSON representation
-
-        # Write to the file using the custom encoder
-        with open(self.filename, "w") as f:
-            json.dump(self.events, f, cls=EventEncoder, indent=4)
+        if self.test_run_manager.session_active:
+            # Write to the file using the custom encoder
+            with open(self.filename, "w") as f:
+                json.dump(self.events, f, cls=EventEncoder, indent=4)
