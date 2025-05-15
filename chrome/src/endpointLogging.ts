@@ -122,3 +122,9 @@ export function endpointLoggingDownload() {
         });
     });
 }
+
+export function clearEndpointLoggingStorage() {
+    chrome.storage.local.set({ endpointActivity: [] }, function () {
+        console.log("Everything deleted in endpointActivity");
+    });
+}

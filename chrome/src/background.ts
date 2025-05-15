@@ -5,7 +5,10 @@ import { handleYouTubeUrl } from "./youtube/youtube";
 
 import { NetflixViewing, viewingTracker } from "./videoCommon/visits";
 
-import { endpointLoggingDownload } from "./endpointLogging";
+import {
+    clearEndpointLoggingStorage,
+    endpointLoggingDownload,
+} from "./endpointLogging";
 import {
     ignoredDomains,
     isDomainIgnored,
@@ -16,25 +19,24 @@ import { systemInputCapture } from "./inputLogger/systemInputLogger";
 import { RECORDING_INPUT } from "./config";
 import { captureManager } from "./inputLogger/initInputCapture";
 
-/*
-
-YouTube code, a lot of it lives here, because YouTube is monitored
-from the background.ts script itself. 
-This approach cannot work for Netflix. Much user input is needed there.
-
-*/
-
 function deskSenseLogs() {
     systemInputCapture.writeLogsToJson();
     endpointLoggingDownload();
 }
 
 function clearDeskSenseLogs() {
-    //
+    systemInputCapture.clearStorage();
+    clearEndpointLoggingStorage();
+}
+
+function checkIfCaptureSessionStarted() {
+    captureManager.getTestStartTime();
 }
 
 // enable logging file download
 (self as any).deskSenseLogs = deskSenseLogs;
+(self as any).clearDeskSenseLogs = clearDeskSenseLogs;
+(self as any).deskSenseCaptureCheck = checkIfCaptureSessionStarted;
 (self as any).writeInputLogsToJson = systemInputCapture.writeLogsToJson;
 (self as any).writeEndpointLogsToJson = endpointLoggingDownload;
 // Code that lets you open the options page when the icon is clicked
@@ -50,10 +52,10 @@ function openOptionsOnClickIcon() {
 
 // const captureManager = new InputCaptureManager(systemInputCapture, api);
 // Periodically check if a recording session has started
-function runCheckOnRecordingSessionStart() {
-    //
-    captureManager.startPolling();
-}
+// function runCheckOnRecordingSessionStart() {
+//     //
+//     captureManager.startPolling();
+// }
 
 // runCheckOnRecordingSessionStart();
 

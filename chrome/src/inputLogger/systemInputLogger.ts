@@ -92,6 +92,12 @@ export class SystemInputLogger {
             });
         });
     }
+
+    clearStorage() {
+        chrome.storage.local.set({ userActivityCapture: [] }, function () {
+            console.log("userActivityCapture reset successfully");
+        });
+    }
 }
 
 export const systemInputCapture = new SystemInputLogger();

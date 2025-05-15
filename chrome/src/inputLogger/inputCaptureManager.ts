@@ -78,13 +78,15 @@ export class InputCaptureManager {
                 );
 
                 // Stop polling once we've found a session
-                this.stopPolling();
+                // this.stopPolling();
 
                 // Start the capture session
                 this.startCaptureSession();
 
                 // Start checking for session end
                 this.startSessionEndChecking();
+            } else {
+                console.log("Nothing yet");
             }
         });
     }
@@ -103,15 +105,6 @@ export class InputCaptureManager {
         }, 60000); // Check every minute
 
         console.log("Session end checking started");
-    }
-
-    // Stop checking for session end
-    stopSessionEndChecking() {
-        if (this.sessionEndCheckIntervalId !== null) {
-            window.clearInterval(this.sessionEndCheckIntervalId);
-            this.sessionEndCheckIntervalId = null;
-        }
-        console.log("Session end checking stopped");
     }
 
     checkForSessionEnd() {
@@ -137,9 +130,18 @@ export class InputCaptureManager {
         }
     }
 
+    // Stop checking for session end
+    stopSessionEndChecking() {
+        if (this.sessionEndCheckIntervalId !== null) {
+            window.clearInterval(this.sessionEndCheckIntervalId);
+            this.sessionEndCheckIntervalId = null;
+        }
+        console.log("Session end checking stopped");
+    }
+
     // Reset everything
     reset() {
-        this.stopPolling();
+        // this.stopPolling();
         this.stopSessionEndChecking();
         this.captureSessionStartTime = undefined;
         RECORDING_INPUT.enabled = false;

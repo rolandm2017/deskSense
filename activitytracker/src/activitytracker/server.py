@@ -43,7 +43,6 @@ from activitytracker.facade.facade_singletons import (
     get_mouse_facade_instance,
 )
 from activitytracker.facade.receive_messages import MessageReceiver
-from activitytracker.input_capture.capture_manager import CaptureManager
 from activitytracker.input_capture.test_run_manager import TestRunManager
 from activitytracker.object.classes import TabChangeEventWithLtz
 from activitytracker.object.dashboard_dto import (
