@@ -7,7 +7,7 @@ from sqlalchemy import Boolean, Column, DateTime, Integer, String, create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Generator
 
 from activitytracker.config.definitions import program_environment
 from activitytracker.util.console_logger import ConsoleLogger
@@ -69,6 +69,7 @@ async_session_maker = async_sessionmaker(
 # Keep references to all engines for potential direct access
 development_sync_engine = create_engine(SYNCHRONOUS_DB_URL)
 development_async_engine = create_async_engine(ASYNC_DB_URL, echo=False)
+
 simulation_sync_engine = create_engine(SIMULATION_CAPTURE_DB_URL)
 simulation_async_engine = create_async_engine(ASYNC_SIMULATION_CAPTURE_DB_URL, echo=False)
 
@@ -78,12 +79,24 @@ Base = declarative_base()
 # Dependency for FastAPI endpoints
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    async with async_session_maker() as session:
+# Modified get_db to include schema setting
+def get_db() -> Generator[Session, None, None]:
+    with regular_session_maker() as session:
         try:
+            # Set schema if we're in test mode
+            if test_schema_manager.current_schema:
+                set_search_path(session)
             yield session
         finally:
-            await session.close()
+            session.close()
+
+
+# async def get_db() -> AsyncGenerator[AsyncSession, None]:
+#     async with async_session_maker() as session:
+#         try:
+#             yield session
+#         finally:
+#             await session.close()
 
 
 async def init_db() -> None:

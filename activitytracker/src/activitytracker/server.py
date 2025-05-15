@@ -109,7 +109,7 @@ class ActivityTrackerState:
         self.manager: Optional[SurveillanceManager] = None
         self.tracking_task: Optional[asyncio.Task] = None
         self.input_capture_run_id: Optional[str] = None
-        self.input_capture_start_time: Optional[str] = None
+        self.input_capture_start_time: Optional[datetime] = None
         self.is_running: bool = False
         self.db_session = None
 
@@ -682,7 +682,8 @@ async def get_capture_session_start_time(
 ):
     logger.log_yellow("[Capture] Getting session start time")
     try:
-        capture_session_start = capture_session_service.get_capture_start()
+        # capture_session_start = capture_session_service.get_capture_start()
+        capture_session_start = activity_tracker_state.input_capture_start_time
         run_id = activity_tracker_state.input_capture_run_id
         return {"captureSessionStartTime": capture_session_start, "runId": run_id}
     except Exception as e:

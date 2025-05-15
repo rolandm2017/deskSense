@@ -1,8 +1,8 @@
 # test_run_manager.py
+import json
 import os
 import uuid
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import text
 
 import time
@@ -48,13 +48,15 @@ class TestRunManager:
                             a reference to the global test_schema_manager will be used.
         """
         # Import here to avoid circular imports
-        from .test_schema_manager import test_schema_manager
+        from .test_schema_manager import set_sync_search_path, test_schema_manager
 
+        self.set_sync_search_path = set_sync_search_path
         self.run_id = self.generate_run_id()
         self.session_active = program_environment.data_capture_session
 
         self.schema_manager = schema_manager or test_schema_manager
         self.duration_in_minutes = 5
+        self.test_end_time = None
         self.current_run_id: Optional[str] = None
         self.metadata_table = "test_run_metadata"
         self.results_table = "test_run_results"
@@ -72,6 +74,16 @@ class TestRunManager:
         timestamp = int(time.time())
         random_suffix = uuid.uuid4().hex[:6]
         return f"run_{timestamp}_{random_suffix}"
+
+    def check_if_test_is_over(self):
+        now = datetime.now()
+        if self.test_end_time:
+            if now > self.test_end_time:
+                # Close session
+                program_environment.data_capture_session = (
+                    False  # Will reset on server restart
+                )
+                pass
 
     def initialize(
         self, input_capture_file: str, test_name: str = "Activity Tracking Test"
@@ -95,6 +107,17 @@ class TestRunManager:
         self.current_run_id = run_id
         run_start_as_float = time.time()
         self.run_start_time = datetime.fromtimestamp(run_start_as_float)
+
+        json_dump_of_test_info = json.dumps(
+            {
+                "name": test_name,
+                "input_file": input_capture_file,
+                "created_at": str(time.time()),
+                "status": "CREATED",
+            }
+        )
+
+        print(json_dump_of_test_info, "108ru")
 
         # Create test run tables in the schema
         with regular_session_maker() as session:
@@ -125,15 +148,7 @@ class TestRunManager:
                 VALUES ('run_info', :run_info)
             """
                 ),
-                {
-                    "run_info": {
-                        "id": run_id,
-                        "schema_name": schema_name,
-                        "input_file": input_capture_file,
-                        "started_at": run_start_as_float,
-                        "status": "INITIALIZED",
-                    }
-                },
+                {"run_info": json_dump_of_test_info},
             )
 
             session.commit()
@@ -158,7 +173,7 @@ class TestRunManager:
 
         with regular_session_maker() as session:
             # Set search path
-            self.schema_manager.set_async_search_path(session)
+            self.set_sync_search_path(session)
 
             # Insert the event
             result = session.execute(
@@ -195,7 +210,7 @@ class TestRunManager:
 
         with regular_session_maker() as session:
             # Set search path
-            self.schema_manager.set_async_search_path(session)
+            self.set_sync_search_path(session)
 
             # Update run metadata
             try:
@@ -243,7 +258,7 @@ class TestRunManager:
         """Helper to retrieve the start time of the current run."""
         with regular_session_maker() as session:
             # Set search path
-            self.schema_manager.set_async_search_path(session)
+            self.set_sync_search_path(session)
 
             result = session.execute(
                 text(

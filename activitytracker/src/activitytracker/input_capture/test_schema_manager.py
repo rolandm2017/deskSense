@@ -1,19 +1,19 @@
-# database.py
+# test_schema_manager.py
+import json
 import os
 import uuid
 
 from dotenv import load_dotenv
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String, create_engine, event
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import Session, declarative_base, sessionmaker
+from sqlalchemy import event
 from sqlalchemy.sql import text
 
 import time
 
 from typing import Generator, Optional
 
-from activitytracker.db.database import engine, regular_session_maker
+from activitytracker.config.definitions import program_environment
+from activitytracker.db.database import regular_session_maker, simulation_sync_engine
 
 load_dotenv()
 
@@ -36,6 +36,15 @@ class TestSchemaManager:
     def create_schema(self, test_name: str, input_file: str | None = None) -> str:
         """Create a new schema for a test run and return its name."""
         schema_name = self.generate_schema_name()
+
+        test_info = json.dumps(
+            {
+                "name": test_name,
+                "input_file": input_file,
+                "created_at": str(time.time()),
+                "status": "CREATED",
+            }
+        )
 
         with regular_session_maker() as session:
             # Create the schema
@@ -61,14 +70,7 @@ class TestSchemaManager:
                 VALUES ('test_info', :test_info)
             """
                 ),
-                {
-                    "test_info": {
-                        "name": test_name,
-                        "input_file": input_file,
-                        "created_at": str(time.time()),
-                        "status": "CREATED",
-                    }
-                },
+                {"test_info": test_info},
             )
 
             session.commit()
@@ -185,18 +187,42 @@ class TestSchemaManager:
                 return False
 
 
-# Create a global instance of the schema manager
+# Create a global instance
 test_schema_manager = TestSchemaManager()
+
+if program_environment.data_capture_session:
+    print("Capture")
 
 
 # SQLAlchemy connection event to set search_path
-@event.listens_for(engine, "connect")
-def set_search_path(dbapi_connection, connection_record):
-    """Set the search_path for newly created connections."""
+def register_connection_event(engine):
+    """Register a connection event listener that sets the search_path for the given engine."""
+    from sqlalchemy import event
+
+    def set_search_path(dbapi_connection, connection_record):
+        """Set the search_path for newly created connections."""
+        if test_schema_manager.current_schema:
+            cursor = dbapi_connection.cursor()
+            cursor.execute(
+                f'SET search_path TO "{test_schema_manager.current_schema}", public'
+            )
+            cursor.close()
+
+    # Register the event listener directly
+    event.listen(engine, "connect", set_search_path)
+
+    return None  # Optional: can return None or the engine for method chaining
+
+
+register_connection_event(simulation_sync_engine)
+
+
+def set_sync_search_path(session):
+    """Set the search_path for a synchronous session."""
     if test_schema_manager.current_schema:
-        cursor = dbapi_connection.cursor()
-        cursor.execute(f'SET search_path TO "{test_schema_manager.current_schema}", public')
-        cursor.close()
+        session.execute(
+            text(f'SET search_path TO "{test_schema_manager.current_schema}", public')
+        )
 
 
 # Async version for set_schema_path
@@ -206,22 +232,3 @@ async def set_async_search_path(session):
         await session.execute(
             text(f'SET search_path TO "{test_schema_manager.current_schema}", public')
         )
-
-
-# Modified get_db to include schema setting
-def get_db() -> Generator[Session, None, None]:
-    with regular_session_maker() as session:
-        try:
-            # Set schema if we're in test mode
-            if test_schema_manager.current_schema:
-                set_search_path(session)
-            yield session
-        finally:
-            session.close()
-
-
-# Initialize database
-async def init_db() -> None:
-    """Initialize the database by creating all tables if they don't exist."""
-    # This function is now only for initial setup, not test schemas
-    pass
