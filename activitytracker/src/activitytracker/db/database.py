@@ -51,9 +51,16 @@ if environment.development:
         ASYNC_DB_URL,
         echo=False,  # Set to True for SQL query logging
     )
+    logger.log_white(f"Connected to database: {SYNCHRONOUS_DB_URL.split('/')[-1]}")
+    logger.log_white(f"Connected to async database: {ASYNC_DB_URL.split('/')[-1]}")
 
 elif environment.data_capture_session:
     logger.log_yellow("Using user input capture session database")
+    logger.log_yellow(f"Connected to database: {SIMULATION_CAPTURE_DB_URL.split('/')[-1]}")
+    logger.log_yellow(
+        f"Connected to async database: {ASYNC_SIMULATION_CAPTURE_DB_URL.split('/')[-1]}"
+    )
+
     engine = create_engine(SIMULATION_CAPTURE_DB_URL)
     async_engine = create_async_engine(ASYNC_SIMULATION_CAPTURE_DB_URL, echo=False)
 else:
@@ -89,8 +96,8 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 async def init_db() -> None:
     """Initialize the database by creating all tables if they don't exist."""
-    async with engine.begin() as conn:
-        pass
+    async with async_engine.begin() as conn:
         # No longer doing automatic create_all
         # as it takes the db out of sync with Alembic
-        # await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(Base.metadata.create_all)
+        pass

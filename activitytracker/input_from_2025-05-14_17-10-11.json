@@ -1,0 +1,132 @@
+[
+    {
+        "start_time": {
+            "dt": "2025-05-14T17:10:13.031293-07:00",
+            "timezone": {
+                "__zoneinfo__": true,
+                "key": "America/Los_Angeles"
+            },
+            "__class__": "UserLocalTime"
+        },
+        "productive": false,
+        "ledger": {
+            "total": 0,
+            "name": "Alt-tab",
+            "open": true,
+            "DEBUG": false,
+            "__class__": "SessionLedger"
+        },
+        "exe_path": "Unknown",
+        "process_name": "Alt-tab",
+        "window_title": "Alt-tab window",
+        "detail": "No space-dash-space combo found",
+        "video_info": null,
+        "end_time": null,
+        "duration": null,
+        "__class__": "ProgramSession"
+    },
+    {
+        "start_time": {
+            "dt": "2025-05-14T17:10:13.648140-07:00",
+            "timezone": {
+                "__zoneinfo__": true,
+                "key": "America/Los_Angeles"
+            },
+            "__class__": "UserLocalTime"
+        },
+        "productive": false,
+        "ledger": {
+            "total": 0,
+            "name": "code",
+            "open": true,
+            "DEBUG": false,
+            "__class__": "SessionLedger"
+        },
+        "exe_path": "/snap/code/192/usr/share/code/code",
+        "process_name": "code",
+        "window_title": "Visual Studio Code",
+        "detail": "input_capture.py - deskSense",
+        "video_info": null,
+        "end_time": null,
+        "duration": null,
+        "__class__": "ProgramSession"
+    },
+    {
+        "start_time": {
+            "dt": "2025-05-14T17:10:14.542539-07:00",
+            "timezone": {
+                "__zoneinfo__": true,
+                "key": "America/Los_Angeles"
+            },
+            "__class__": "UserLocalTime"
+        },
+        "productive": false,
+        "ledger": {
+            "total": 0,
+            "name": "gnome-terminal-server",
+            "open": true,
+            "DEBUG": false,
+            "__class__": "SessionLedger"
+        },
+        "exe_path": "/usr/libexec/gnome-terminal-server",
+        "process_name": "gnome-terminal-server",
+        "window_title": "rlm@kingdom: ~/Code/deskSense/activitytracker",
+        "detail": "No space-dash-space combo found",
+        "video_info": null,
+        "end_time": null,
+        "duration": null,
+        "__class__": "ProgramSession"
+    },
+    {
+        "start_time": {
+            "dt": "2025-05-14T17:10:15.409568-07:00",
+            "timezone": {
+                "__zoneinfo__": true,
+                "key": "America/Los_Angeles"
+            },
+            "__class__": "UserLocalTime"
+        },
+        "productive": false,
+        "ledger": {
+            "total": 0,
+            "name": "code",
+            "open": true,
+            "DEBUG": false,
+            "__class__": "SessionLedger"
+        },
+        "exe_path": "/snap/code/192/usr/share/code/code",
+        "process_name": "code",
+        "window_title": "Visual Studio Code",
+        "detail": "input_capture.py - deskSense",
+        "video_info": null,
+        "end_time": null,
+        "duration": null,
+        "__class__": "ProgramSession"
+    },
+    {
+        "start_time": {
+            "dt": "2025-05-14T17:10:16.264153-07:00",
+            "timezone": {
+                "__zoneinfo__": true,
+                "key": "America/Los_Angeles"
+            },
+            "__class__": "UserLocalTime"
+        },
+        "productive": false,
+        "ledger": {
+            "total": 0,
+            "name": "gnome-terminal-server",
+            "open": true,
+            "DEBUG": false,
+            "__class__": "SessionLedger"
+        },
+        "exe_path": "/usr/libexec/gnome-terminal-server",
+        "process_name": "gnome-terminal-server",
+        "window_title": "rlm@kingdom: ~/Code/deskSense/activitytracker",
+        "detail": "No space-dash-space combo found",
+        "video_info": null,
+        "end_time": null,
+        "duration": null,
+        "__class__": "ProgramSession"
+    }
+]

@@ -19,6 +19,7 @@ from activitytracker.db.dao.queuing.mouse_dao import MouseDao
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
 from activitytracker.facade.receive_messages import MessageReceiver
+from activitytracker.input_capture.input_capture import InputCapture
 from activitytracker.trackers.keyboard_tracker import KeyboardTrackerCore
 from activitytracker.trackers.mouse_tracker import MouseTrackerCore
 from activitytracker.trackers.program_tracker import ProgramTrackerCore
@@ -123,6 +124,7 @@ class SurveillanceManager:
         self.cancelled_tasks = 0
 
         self.logger = ConsoleLogger()
+        self.input_capture = InputCapture()
 
     def start_trackers(self):
         self.is_running = True
@@ -172,12 +174,15 @@ class SurveillanceManager:
         self.loop.create_task(self.mouse_dao.create_from_window(event))
 
     def handle_window_change(self, event):
+        self.input_capture.capture_if_active(event)
         # Deep copy to enable testing of object state before/after this line
+
         copy_of_event = snapshot_obj_for_tests(event)
         self.arbiter.set_program_state(copy_of_event)  # type: ignore
 
     def shutdown_handler(self):
         try:
+            self.input_capture.log_to_output_file()
             self.chrome_service.shutdown()  # works despite the lack of highlighting
             self.arbiter.shutdown()
         except Exception as e:
