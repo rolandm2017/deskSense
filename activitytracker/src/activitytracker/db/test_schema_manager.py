@@ -1,4 +1,5 @@
-# database.py
+# test_schema_manager.py
+import json
 import os
 import uuid
 
@@ -62,12 +63,14 @@ class TestSchemaManager:
             """
                 ),
                 {
-                    "test_info": {
-                        "name": test_name,
-                        "input_file": input_file,
-                        "created_at": str(time.time()),
-                        "status": "CREATED",
-                    }
+                    "test_info": json.dumps(
+                        {
+                            "name": test_name,
+                            "input_file": input_file,
+                            "created_at": str(time.time()),
+                            "status": "CREATED",
+                        }
+                    )
                 },
             )
 

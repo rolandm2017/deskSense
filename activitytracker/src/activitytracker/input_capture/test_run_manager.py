@@ -27,6 +27,16 @@ def get_timestamp_string():
     # TODO: Get the database setup
 
 
+# TODO: IMPORTANT: Just get the session id from the server to the ext.
+# TODO: IMPORTANT: Just get the session id from the server to the ext.
+# TODO: IMPORTANT: Just get the session id from the server to the ext.
+# TODO: IMPORTANT: Just get the session id from the server to the ext.
+# TODO: IMPORTANT: Just get the session id from the server to the ext.
+# TODO: IMPORTANT: Just get the session id from the server to the ext.
+# TODO: IMPORTANT: Just get the session id from the server to the ext.
+# TODO: IMPORTANT: Just get the session id from the server to the ext.
+
+
 class TestRunManager:
     """Manages test runs and their execution within isolated database schemas."""
 
@@ -38,12 +48,13 @@ class TestRunManager:
                             a reference to the global test_schema_manager will be used.
         """
         # Import here to avoid circular imports
-        from .test_schema import test_schema_manager
+        from .test_schema_manager import test_schema_manager
 
         self.run_id = self.generate_run_id()
         self.session_active = program_environment.data_capture_session
 
         self.schema_manager = schema_manager or test_schema_manager
+        self.duration_in_minutes = 5
         self.current_run_id: Optional[str] = None
         self.metadata_table = "test_run_metadata"
         self.results_table = "test_run_results"
@@ -82,6 +93,8 @@ class TestRunManager:
         # Generate run ID
         run_id = self.generate_run_id()
         self.current_run_id = run_id
+        run_start_as_float = time.time()
+        self.run_start_time = datetime.fromtimestamp(run_start_as_float)
 
         # Create test run tables in the schema
         with regular_session_maker() as session:
@@ -117,7 +130,7 @@ class TestRunManager:
                         "id": run_id,
                         "schema_name": schema_name,
                         "input_file": input_capture_file,
-                        "started_at": time.time(),
+                        "started_at": run_start_as_float,
                         "status": "INITIALIZED",
                     }
                 },

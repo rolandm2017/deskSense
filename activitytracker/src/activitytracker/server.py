@@ -108,6 +108,8 @@ class ActivityTrackerState:
     def __init__(self):
         self.manager: Optional[SurveillanceManager] = None
         self.tracking_task: Optional[asyncio.Task] = None
+        self.input_capture_run_id: Optional[str] = None
+        self.input_capture_start_time: Optional[str] = None
         self.is_running: bool = False
         self.db_session = None
 
@@ -148,7 +150,9 @@ async def lifespan(app: FastAPI):
     )
 
     test_run = TestRunManager()  # TODO: Initialize in one spot, and import initialized class
-    run_id = await test_run.initialize(test_run.filename)
+    run_id = test_run.initialize(test_run.filename)
+    activity_tracker_state.input_capture_run_id = run_id
+    activity_tracker_state.input_capture_start_time = test_run.run_start_time
 
     message_receiver = MessageReceiver("tcp://127.0.0.1:5555")
     activity_tracker_state.manager = SurveillanceManager(
@@ -679,7 +683,8 @@ async def get_capture_session_start_time(
     logger.log_yellow("[Capture] Getting session start time")
     try:
         capture_session_start = capture_session_service.get_capture_start()
-        return {"captureSessionStartTime": capture_session_start}
+        run_id = activity_tracker_state.input_capture_run_id
+        return {"captureSessionStartTime": capture_session_start, "runId": run_id}
     except Exception as e:
         raise HTTPException(
             status_code=500, detail="A problem occurred in get_capture_session_start_time"
