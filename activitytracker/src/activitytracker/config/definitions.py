@@ -1,7 +1,22 @@
 import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
+
+
+class Environment:
+    def __init__(self) -> None:
+        self.development = False
+        self.data_capture_session = True
+        self.simulated_usage = False
+        if self.development and self.data_capture_session:
+            raise ValueError("Cannot set multiple states")
+        if self.development and self.simulated_usage:
+            raise ValueError("Cannot set multiple states")
+
+
+program_environment = Environment()
 
 LOCAL_TIME_ZONE = os.getenv("LOCAL_TIME_ZONE")
 

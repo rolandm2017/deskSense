@@ -5,13 +5,8 @@ from datetime import datetime, timedelta
 
 from typing import TypedDict
 
+from activitytracker.input_capture.test_run_manager import TestRunManager
 from activitytracker.object.classes import ProgramSession
-
-
-def get_timestamp_string():
-    """Returns current time as YYYY-MM-DD_HH-MM-SS string for file naming."""
-    now = datetime.now()
-    return now.strftime("%Y-%m-%d_%H-%M-%S")
 
 
 class MetadataDict(TypedDict):
@@ -65,18 +60,16 @@ class EventEncoder(json.JSONEncoder):
 
 class InputCapture:
     def __init__(self) -> None:
+        self.capture_manager = TestRunManager()
         self.events = []
-        logs_dir = os.path.join(".", "logs")
-        os.makedirs(logs_dir, exist_ok=True)
 
         # Save to logs directory with .json extension
-        self.filename = os.path.join(
-            logs_dir, "input_from_" + get_timestamp_string() + ".json"
-        )
+        self.filename = self.capture_manager.filename
 
     def capture_if_active(self, event: ProgramSession):
-        print("Capturing event")
-        self.events.append(event)
+        if self.capture_manager.session_active:
+            print("Capturing event")
+            self.events.append(event)
 
     def log_to_output_file(self):
         # Create a custom encoder if your objects have __str__ but not a standard JSON representation

@@ -64,7 +64,6 @@ class ProgramLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
             exe_path_as_id=session.exe_path,
             process_name=session.process_name,
             program_name=session.window_title,
-            # Assumes (10 - n) sec will be deducted later
             # FIXME: all time additions should happen thru KeepAlive
             hours_spent=0,
             start_time=initializer.base_start_time_as_utc,

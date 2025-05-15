@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 from typing import AsyncGenerator
 
+from activitytracker.config.definitions import program_environment
 from activitytracker.util.console_logger import ConsoleLogger
 
 load_dotenv()
@@ -34,16 +35,7 @@ if ASYNC_SIMULATION_CAPTURE_DB_URL is None:
 logger = ConsoleLogger()
 
 
-class Environment:
-    def __init__(self) -> None:
-        self.development = False
-        self.data_capture_session = True
-        self.simulated_usage = False
-
-
-environment = Environment()
-
-if environment.development:
+if program_environment.development:
     logger.log_white("Using Development environment")
     engine = create_engine(SYNCHRONOUS_DB_URL)
 
@@ -54,7 +46,7 @@ if environment.development:
     logger.log_white(f"Connected to database: {SYNCHRONOUS_DB_URL.split('/')[-1]}")
     logger.log_white(f"Connected to async database: {ASYNC_DB_URL.split('/')[-1]}")
 
-elif environment.data_capture_session:
+elif program_environment.data_capture_session:
     logger.log_yellow("Using user input capture session database")
     logger.log_yellow(f"Connected to database: {SIMULATION_CAPTURE_DB_URL.split('/')[-1]}")
     logger.log_yellow(
