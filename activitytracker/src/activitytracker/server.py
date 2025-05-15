@@ -44,6 +44,7 @@ from activitytracker.facade.facade_singletons import (
 )
 from activitytracker.facade.receive_messages import MessageReceiver
 from activitytracker.input_capture.capture_manager import CaptureManager
+from activitytracker.input_capture.test_run_manager import TestRunManager
 from activitytracker.object.classes import TabChangeEventWithLtz
 from activitytracker.object.dashboard_dto import (
     ChromeBarChartContent,
@@ -147,7 +148,8 @@ async def lifespan(app: FastAPI):
         get_keyboard_facade_instance, get_mouse_facade_instance, choose_program_facade
     )
 
-    capture_manager = CaptureManager()
+    test_run = TestRunManager()  # TODO: Initialize in one spot, and import initialized class
+    run_id = await test_run.initialize(test_run.filename)
 
     message_receiver = MessageReceiver("tcp://127.0.0.1:5555")
     activity_tracker_state.manager = SurveillanceManager(

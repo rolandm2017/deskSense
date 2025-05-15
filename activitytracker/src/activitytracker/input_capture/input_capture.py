@@ -60,6 +60,7 @@ class EventEncoder(json.JSONEncoder):
 
 class InputCapture:
     def __init__(self) -> None:
+        # TODO: Initialize in one spot, and import initialized class
         self.capture_manager = TestRunManager()
         self.events = []
 

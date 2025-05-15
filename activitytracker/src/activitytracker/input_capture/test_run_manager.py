@@ -47,15 +47,14 @@ class TestRunManager:
         self.current_run_id: Optional[str] = None
         self.metadata_table = "test_run_metadata"
         self.results_table = "test_run_results"
+        self.filename = self.make_filename()
 
     def make_filename(self):
         logs_dir = os.path.join(".", "logs")
 
         os.makedirs(logs_dir, exist_ok=True)
 
-        self.filename = os.path.join(
-            logs_dir, "input_from_" + get_timestamp_string() + ".json"
-        )
+        return os.path.join(logs_dir, "input_from_" + get_timestamp_string() + ".json")
 
     def generate_run_id(self) -> str:
         """Generate a unique ID for a test run."""
