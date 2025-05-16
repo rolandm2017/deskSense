@@ -70,7 +70,7 @@ class InputCapture:
 
     def capture_if_active(self, event: ProgramSession):
         if self.capture_run_manager.session_active:
-            print("Capturing event", event)
+            # print("Capturing event", event)
             self.events.append(event)
             self.capture_run_manager.check_if_test_is_over()
 

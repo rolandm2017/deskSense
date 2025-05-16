@@ -24,8 +24,11 @@ class TestRunner:
 # When running tests:
 def run_test(test_run_manager):
     # 1. Create test schema
-    schema_name = test_schema_manager.create_schema(
-        test_name="Netflix Viewing Test", input_file="captured_events_2025_05_15.json"
+    schema_name = test_schema_manager.generate_schema_name()
+    test_schema_manager.create_schema(
+        schema_name,
+        test_name="Netflix Viewing Test",
+        input_file="captured_events_2025_05_15.json",
     )
 
     # 2. Run test against captured inputs

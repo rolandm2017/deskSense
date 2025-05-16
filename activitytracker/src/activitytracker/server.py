@@ -120,6 +120,7 @@ class ActivityTrackerState:
 activity_tracker_state = ActivityTrackerState()
 
 
+# server.py
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Initialize application-wide resources

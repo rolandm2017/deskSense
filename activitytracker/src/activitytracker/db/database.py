@@ -73,33 +73,6 @@ Base = declarative_base()
 
 # Dependency for FastAPI endpoints
 
-
-# Modified get_db to include schema setting
-def get_db() -> Generator[Session, None, None]:
-    if program_environment.development:
-        with regular_session_maker() as session:
-            try:
-                yield session
-            finally:
-                session.close()
-    else:
-        # Use get_simulation_db directly if in data capture session
-        yield from get_simulation_db()
-
-
-async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
-    if program_environment.development:
-        async with async_session_maker() as session:
-            try:
-                yield session
-            finally:
-                await session.close()
-    else:
-        # Use get_async_simulation_db directly
-        async for session in get_async_simulation_db():
-            yield session
-
-
 # async def init_db() -> None:
 #     """Initialize the database by creating all tables if they don't exist."""
 #     pass

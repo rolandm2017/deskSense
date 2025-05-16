@@ -127,7 +127,7 @@ class SurveillanceManager:
         self.cancelled_tasks = 0
 
         self.logger = ConsoleLogger()
-        self.input_capture = InputCapture(test_run_manager)
+        self.input_capture = InputCapture(capture_run_manager)
 
     def start_trackers(self):
         self.is_running = True

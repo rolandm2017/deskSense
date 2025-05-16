@@ -3,6 +3,8 @@ import json
 import os
 import uuid
 
+from sqlalchemy import MetaData
+from sqlalchemy.schema import CreateTable
 from sqlalchemy.sql import text
 
 import time
@@ -56,7 +58,7 @@ class CaptureRunManager:
             self.schema_manager = test_schema_manager
         else:
             self.schema_manager = schema_manager
-        self.duration_in_minutes = 2
+        self.duration_in_minutes = 1
         self.test_end_time = None
         self.current_run_id: Optional[str] = None
         self.metadata_table = "test_run_metadata"
@@ -106,10 +108,21 @@ class CaptureRunManager:
             The unique run ID for this test
         """
         # Create a new test schema
-        schema_name = self.schema_manager.create_schema(
-            test_name=test_name, input_file=input_capture_file
-        )
+        schema_name = self.schema_manager.generate_schema_name()
         print("schema name:", schema_name)
+        # import activitytracker.db.models lives here for a reason: registering with Base
+        import activitytracker.db.models  # package where your models live
+
+        conn = simulation_sync_engine.connect().execution_options(
+            schema_translate_map={None: schema_name}
+        )
+
+        self.schema_manager.create_schema_with_conn(
+            schema_name, conn, test_name=test_name, input_file=input_capture_file
+        )
+        # schema_name = self.schema_manager.create_schema(
+        #     schema_name, test_name=test_name, input_file=input_capture_file
+        # )
 
         # Generate run ID
         run_id = self.generate_run_id()
@@ -134,11 +147,55 @@ class CaptureRunManager:
         )
 
         # Create test run tables in the schema
-        with simulation_regular_session_maker() as session:
-            # Set search path
-            self.schema_manager.set_schema(schema_name)
+        self.create_test_run_tables(schema_name, json_dump_of_test_info)
 
-            # Create results table
+        self.create_all_model_tables(schema_name)
+
+        # Make sure all your models are imported and registered with Base
+        # Import your models here if they're not already imported
+
+        # Now create all tables with the schema explicitly specified
+        # Create all the usual (development) tables in the schema
+        self.logger.log_white("Creating all tables for schema " + schema_name)
+        self.logger.log_white("Creating all tables")
+        self.logger.log_white("Creating all tables")
+
+        # The key fix: Use a schema-specific MetaData instance for table creation
+        metadata = MetaData(schema=schema_name)
+        for table in Base.metadata.tables.values():
+            # Create a copy of the table with the new schema
+            table.schema = schema_name
+            # This effectively clones each table definition but with the new schema
+
+        # Base.metadata.create_all(bind=conn)
+
+        print("Models registered with Base:", Base.metadata.tables.keys())
+
+        # for table in Base.metadata.tables.values():
+        #     print(f"{table.fullname} -> schema: {table.schema}")
+        # for table in Base.metadata.sorted_tables:
+        #     print(f"Table: {table.name}, schema: {table.schema}")
+
+        # Only for debugging: Update the schema in metadata to maintain consistency
+        for table in Base.metadata.tables.values():
+            table.schema = schema_name
+            print(f"{table.fullname} -> schema: {table.schema}")
+
+        # Set the current schema for future operations
+        self.schema_manager.set_schema(schema_name)
+
+        # Verify tables were created
+        self.verify_tables(schema_name)
+
+        return run_id
+
+    def create_test_run_tables(self, schema_name, test_info_json_dump):
+        # Create test run tables in the schema
+        with simulation_regular_session_maker() as session:
+            # Set search path for this session
+            session.execute(text(f'SET search_path TO "{schema_name}", public'))
+
+            # Create results table directly using SQL (more reliable)
             session.execute(
                 text(
                     f"""
@@ -150,7 +207,7 @@ class CaptureRunManager:
                     source TEXT,
                     status TEXT DEFAULT 'SUCCESS'
                 )
-            """
+                """
                 )
             )
 
@@ -160,30 +217,54 @@ class CaptureRunManager:
                     f"""
                 INSERT INTO "{schema_name}".{self.metadata_table} (key, value)
                 VALUES ('run_info', :run_info)
-            """
+                """
                 ),
-                {"run_info": json_dump_of_test_info},
+                {"run_info": test_info_json_dump},
             )
 
             session.commit()
 
-        conn = simulation_sync_engine.connect().execution_options(
-            schema_translate_map={"": schema_name}
-        )
+    def create_all_model_tables(self, schema_name):
+        # The important part: Explicitly create all model tables in the schema
+        with simulation_sync_engine.connect() as conn:
+            # Set search path for this connection
+            conn.execute(text(f'SET search_path TO "{schema_name}", public'))
 
-        # Make sure all your models are imported and registered with Base
-        # Import your models here if they're not already imported
+            # Create model tables one by one with explicit schema
+            for table_name in [
+                "daily_program_summaries",
+                "daily_chrome_summaries",
+                "program_logs",
+                "domain_logs",
+                "typing_sessions",
+                "mouse_moves",
+                "client_timeline_entries",
+                "precomputed_timelines",
+                "system_status",
+            ]:
+                # Get the table definition from Base.metadata
+                table = Base.metadata.tables[table_name]
 
-        # Now create all tables with the schema explicitly specified
-        # Create all the usual (development) tables in the schema
-        self.logger.log_white("Creating all tables for schema " + schema_name)
-        self.logger.log_white("Creating all tables")
-        self.logger.log_white("Creating all tables")
-        Base.metadata.create_all(bind=conn)
+                # Explicitly set the schema for this table
+                table.schema = schema_name
 
-        print("Models registered with Base:", Base.metadata.tables.keys())
+                # Create the table DDL
+                create_stmt = str(
+                    CreateTable(table).compile(
+                        dialect=conn.dialect,
+                    )
+                )
 
-        return run_id
+                # Execute the create statement
+                self.logger.log_white(f"Creating table {schema_name}.{table_name}")
+                conn.execute(text(create_stmt))
+
+            conn.commit()
+
+            # Log completion
+            self.logger.log_white(
+                f"Successfully created all tables in schema: {schema_name}"
+            )
 
     def record_event(
         self, event_type: str, data: Dict[str, Any], source: str = "test_runner"
@@ -512,3 +593,280 @@ class CaptureRunManager:
     async def cleanup(self) -> None:
         """Reset the current run state without deleting the schema."""
         self.current_run_id = None
+
+    def verify_tables(self, schema_name):
+        """Verify that tables were actually created in the database."""
+        with simulation_sync_engine.connect() as conn:
+            # Check if key tables exist
+            for table_name in ["system_status", "program_logs", "daily_program_summaries"]:
+                result = conn.execute(
+                    text(
+                        f"""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = '{schema_name}' AND table_name = '{table_name}'
+                    )
+                    """
+                    )
+                )
+                exists = result.scalar()
+                self.logger.log_white(f"Table {schema_name}.{table_name} exists: {exists}")
+
+                if not exists:
+                    self.logger.log_yellow(
+                        f"WARNING: Table {schema_name}.{table_name} was not created!"
+                    )
+
+                    # Try to create it again
+                    self.logger.log_yellow(f"Attempting to recreate {table_name}...")
+                    try:
+                        if table_name == "system_status":
+                            conn.execute(
+                                text(
+                                    f"""
+                                CREATE TABLE IF NOT EXISTS "{schema_name}".system_status (
+                                    id SERIAL PRIMARY KEY,
+                                    status TEXT NOT NULL,
+                                    created_at TIMESTAMPTZ NOT NULL
+                                )
+                                """
+                                )
+                            )
+                        elif table_name == "program_logs":
+                            conn.execute(
+                                text(
+                                    f"""
+                                CREATE TABLE IF NOT EXISTS "{schema_name}".program_logs (
+                                    id SERIAL PRIMARY KEY,
+                                    hours_spent FLOAT NOT NULL,
+                                    start_time TIMESTAMPTZ NOT NULL,
+                                    end_time TIMESTAMPTZ NOT NULL,
+                                    start_time_local TIMESTAMP NOT NULL,
+                                    end_time_local TIMESTAMP NOT NULL,
+                                    duration_in_sec FLOAT,
+                                    gathering_date TIMESTAMPTZ NOT NULL,
+                                    gathering_date_local TIMESTAMP NOT NULL,
+                                    created_at TIMESTAMPTZ,
+                                    exe_path_as_id TEXT NOT NULL,
+                                    process_name TEXT NOT NULL,
+                                    program_name TEXT NOT NULL
+                                )
+                                """
+                                )
+                            )
+                        elif table_name == "daily_program_summaries":
+                            conn.execute(
+                                text(
+                                    f"""
+                                CREATE TABLE IF NOT EXISTS "{schema_name}".daily_program_summaries (
+                                    id SERIAL PRIMARY KEY,
+                                    hours_spent FLOAT NOT NULL,
+                                    gathering_date TIMESTAMPTZ NOT NULL,
+                                    gathering_date_local TIMESTAMP NOT NULL,
+                                    exe_path_as_id TEXT NOT NULL,
+                                    process_name TEXT NOT NULL,
+                                    program_name TEXT NOT NULL
+                                )
+                                """
+                                )
+                            )
+
+                        conn.commit()
+                        self.logger.log_white(
+                            f"Successfully recreated {schema_name}.{table_name}"
+                        )
+                    except Exception as e:
+                        self.logger.log_yellow(f"Failed to recreate {table_name}: {e}")
+
+            # Extra verification - try to actually insert and query data
+            try:
+                # Insert a test record
+                conn.execute(
+                    text(
+                        f"""
+                    INSERT INTO "{schema_name}".system_status (status, created_at) 
+                    VALUES ('test_startup', NOW())
+                    """
+                    )
+                )
+                conn.commit()
+
+                # Try to query it
+                result = conn.execute(
+                    text(
+                        f"""
+                    SELECT COUNT(*) FROM "{schema_name}".system_status
+                    """
+                    )
+                )
+                count = result.scalar()
+                self.logger.log_white(
+                    f"Inserted and verified system_status table works: {count} records"
+                )
+            except Exception as e:
+                self.logger.log_yellow(f"Verification insert/query failed: {e}")
+
+                # Last resort: run VACUUM ANALYZE to update planner statistics
+                try:
+                    conn.execute(text(f'VACUUM ANALYZE "{schema_name}"."system_status"'))
+                    self.logger.log_white("Ran VACUUM ANALYZE on system_status table")
+                except Exception as vacuum_error:
+                    self.logger.log_yellow(f"VACUUM ANALYZE failed: {vacuum_error}")
+
+    def create_tables_with_direct_sql(self, schema_name):
+        # Create tables using direct SQL - guaranteed to work
+        with simulation_sync_engine.connect() as conn:
+            # Use AUTOCOMMIT for DDL
+            conn = conn.execution_options(isolation_level="AUTOCOMMIT")
+
+            # Create the system_status table
+            conn.execute(
+                text(
+                    f"""
+            CREATE TABLE IF NOT EXISTS "{schema_name}".system_status (
+                id SERIAL PRIMARY KEY,
+                status TEXT NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL
+            )
+            """
+                )
+            )
+
+            # Create daily_program_summaries table
+            conn.execute(
+                text(
+                    f"""
+            CREATE TABLE IF NOT EXISTS "{schema_name}".daily_program_summaries (
+                id SERIAL PRIMARY KEY,
+                hours_spent FLOAT NOT NULL,
+                gathering_date TIMESTAMPTZ NOT NULL,
+                gathering_date_local TIMESTAMP NOT NULL,
+                exe_path_as_id TEXT NOT NULL,
+                process_name TEXT NOT NULL,
+                program_name TEXT NOT NULL
+            )
+            """
+                )
+            )
+
+            # Create daily_chrome_summaries table
+            conn.execute(
+                text(
+                    f"""
+            CREATE TABLE IF NOT EXISTS "{schema_name}".daily_chrome_summaries (
+                id SERIAL PRIMARY KEY,
+                hours_spent FLOAT NOT NULL,
+                gathering_date TIMESTAMPTZ NOT NULL,
+                gathering_date_local TIMESTAMP NOT NULL,
+                domain_name TEXT NOT NULL
+            )
+            """
+                )
+            )
+
+            # Create program_logs table
+            conn.execute(
+                text(
+                    f"""
+            CREATE TABLE IF NOT EXISTS "{schema_name}".program_logs (
+                id SERIAL PRIMARY KEY,
+                hours_spent FLOAT NOT NULL,
+                start_time TIMESTAMPTZ NOT NULL,
+                end_time TIMESTAMPTZ NOT NULL,
+                start_time_local TIMESTAMP NOT NULL,
+                end_time_local TIMESTAMP NOT NULL,
+                duration_in_sec FLOAT,
+                gathering_date TIMESTAMPTZ NOT NULL,
+                gathering_date_local TIMESTAMP NOT NULL,
+                created_at TIMESTAMPTZ,
+                exe_path_as_id TEXT NOT NULL,
+                process_name TEXT NOT NULL,
+                program_name TEXT NOT NULL
+            )
+            """
+                )
+            )
+
+            # Create domain_logs table
+            conn.execute(
+                text(
+                    f"""
+            CREATE TABLE IF NOT EXISTS "{schema_name}".domain_logs (
+                id SERIAL PRIMARY KEY,
+                hours_spent FLOAT NOT NULL,
+                start_time TIMESTAMPTZ NOT NULL,
+                end_time TIMESTAMPTZ NOT NULL,
+                start_time_local TIMESTAMP NOT NULL,
+                end_time_local TIMESTAMP NOT NULL,
+                duration_in_sec FLOAT,
+                gathering_date TIMESTAMPTZ NOT NULL,
+                gathering_date_local TIMESTAMP NOT NULL,
+                created_at TIMESTAMPTZ,
+                domain_name TEXT NOT NULL
+            )
+            """
+                )
+            )
+
+            # Create typing_sessions table
+            conn.execute(
+                text(
+                    f"""
+            CREATE TABLE IF NOT EXISTS "{schema_name}".typing_sessions (
+                id SERIAL PRIMARY KEY,
+                start_time TIMESTAMPTZ NOT NULL,
+                end_time TIMESTAMPTZ NOT NULL
+            )
+            """
+                )
+            )
+
+            # Create mouse_moves table
+            conn.execute(
+                text(
+                    f"""
+            CREATE TABLE IF NOT EXISTS "{schema_name}".mouse_moves (
+                id SERIAL PRIMARY KEY,
+                start_time TIMESTAMPTZ NOT NULL,
+                end_time TIMESTAMPTZ NOT NULL
+            )
+            """
+                )
+            )
+
+            # Create client_timeline_entries table
+            conn.execute(
+                text(
+                    f"""
+            CREATE TABLE IF NOT EXISTS "{schema_name}".client_timeline_entries (
+                id SERIAL PRIMARY KEY,
+                "clientFacingId" TEXT GENERATED ALWAYS AS 
+                    (CASE WHEN "group" = 'MOUSE' THEN 'mouse-' || id ELSE 'keyboard-' || id END) STORED,
+                "group" TEXT NOT NULL,
+                content TEXT GENERATED ALWAYS AS 
+                    (CASE WHEN "group" = 'MOUSE' THEN 'Mouse Event ' || id ELSE 'Typing Session ' || id END) STORED,
+                start TIMESTAMPTZ NOT NULL,
+                "end" TIMESTAMPTZ NOT NULL
+            )
+            """
+                )
+            )
+
+            # Create precomputed_timelines table
+            conn.execute(
+                text(
+                    f"""
+            CREATE TABLE IF NOT EXISTS "{schema_name}".precomputed_timelines (
+                id SERIAL PRIMARY KEY,
+                "clientFacingId" TEXT NOT NULL,
+                "group" TEXT NOT NULL,
+                content TEXT NOT NULL,
+                start TIMESTAMPTZ NOT NULL,
+                "end" TIMESTAMPTZ NOT NULL,
+                "eventCount" INTEGER NOT NULL
+            )
+            """
+                )
+            )
+
+            self.logger.log_white(f"All tables successfully created in schema {schema_name}")

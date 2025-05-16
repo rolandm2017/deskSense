@@ -37,6 +37,8 @@ class DailyProgramSummary(DailySummaryBase):
     A summation of every instance of time spent on a program
     """
 
+    # __table_args__ = {"schema": None}  # Required for schema_translate_map={"": schema_name}
+
     __tablename__ = "daily_program_summaries"
 
     exe_path_as_id: Mapped[str] = mapped_column(String)  # unique identifier
@@ -61,6 +63,8 @@ class DailyDomainSummary(DailySummaryBase):
     """
 
     __tablename__ = "daily_chrome_summaries"
+
+    # __table_args__ = {"schema": None}
 
     domain_name: Mapped[str] = mapped_column(String)
 
@@ -106,6 +110,8 @@ class ProgramSummaryLog(SummaryLogBase):
 
     __tablename__ = "program_logs"
 
+    # __table_args__ = {"schema": None}  # Required for schema_translate_map={"": schema_name}
+
     exe_path_as_id: Mapped[str] = mapped_column(String)  # unique identifier
     process_name: Mapped[str] = mapped_column(String)
     program_name: Mapped[str] = mapped_column(String)
@@ -124,6 +130,8 @@ class ProgramSummaryLog(SummaryLogBase):
 class DomainSummaryLog(SummaryLogBase):
     __tablename__ = "domain_logs"
 
+    # __table_args__ = {"schema": None}  # Required for schema_translate_map={"": schema_name}
+
     domain_name: Mapped[str] = mapped_column(String)
 
     def get_name(self):
@@ -139,6 +147,8 @@ class DomainSummaryLog(SummaryLogBase):
 
 class TypingSession(Base):
     __tablename__ = "typing_sessions"
+
+    # __table_args__ = {"schema": None}  # Required for schema_translate_map={"": schema_name}
     # It is unclear if this model needs a start_time_local, end_time_local, so I'm leaving it
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -150,6 +160,7 @@ class TypingSession(Base):
 
 class MouseMove(Base):
     __tablename__ = "mouse_moves"
+    # __table_args__ = {"schema": None}  # Required for schema_translate_map={"": schema_name}
     # It is unclear if this model needs a start_time_local, end_time_local, so I'm leaving it
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -170,6 +181,7 @@ class TimelineEntryObj(Base):
     """
 
     __tablename__ = "client_timeline_entries"
+    # __table_args__ = {"schema": None}  # Required for schema_translate_map={"": schema_name}
 
     id = Column(Integer, primary_key=True, index=True)
 
@@ -225,6 +237,8 @@ class PrecomputedTimelineEntry(Base):
 
     __tablename__ = "precomputed_timelines"
 
+    # __table_args__ = {"schema": None}  # Required for schema_translate_map={"": schema_name}
+
     id = Column(Integer, primary_key=True, index=True)
 
     clientFacingId: Union[str, SQLAlchemyColumn[str]] = Column(String)
@@ -266,6 +280,8 @@ class SystemStatus(Base):
     """
 
     __tablename__ = "system_status"
+
+    # __table_args__ = {"schema": None}  # Required for schema_translate_map={"": schema_name}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     status: Mapped[SystemStatusType] = mapped_column(

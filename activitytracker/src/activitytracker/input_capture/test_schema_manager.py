@@ -44,9 +44,10 @@ class TestSchemaManager:
         random_suffix = uuid.uuid4().hex[:6]
         return f"{prefix}{timestamp}_{random_suffix}"
 
-    def create_schema(self, test_name: str, input_file: str | None = None) -> str:
+    def create_schema(
+        self, schema_name: str, test_name: str, input_file: str | None = None
+    ) -> None:
         """Create a new schema for a test run and return its name."""
-        schema_name = self.generate_schema_name()
 
         test_info = json.dumps(
             {
@@ -87,7 +88,47 @@ class TestSchemaManager:
             session.commit()
 
         self.current_schema = schema_name
-        return schema_name
+
+    def create_schema_with_conn(
+        self, schema_name: str, conn, test_name: str, input_file: str | None = None
+    ):
+
+        test_info = json.dumps(
+            {
+                "name": test_name,
+                "input_file": input_file,
+                "created_at": str(time.time()),
+                "status": "CREATED",
+            }
+        )
+
+        # Create the schema
+        conn.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"'))
+
+        # Create metadata table in the new schema
+        conn.execute(
+            text(
+                f"""
+            CREATE TABLE IF NOT EXISTS "{schema_name}".{self._test_metadata_table} (
+                key TEXT PRIMARY KEY,
+                value JSONB
+            )
+        """
+            )
+        )
+
+        # Store test metadata
+        conn.execute(
+            text(
+                f"""
+            INSERT INTO "{schema_name}".{self._test_metadata_table} (key, value)
+            VALUES ('test_info', :test_info)
+        """
+            ),
+            {"test_info": test_info},
+        )
+
+        conn.commit()
 
     def set_schema(self, schema_name: str) -> bool:
         """Set the current schema for database operations."""
@@ -282,8 +323,11 @@ async def get_async_simulation_db() -> AsyncGenerator[AsyncSession, None]:
 
 def setup_test():
     # Create a schema for this test run
-    schema_name = test_schema_manager.create_schema(
-        test_name="Netflix Viewing Test", input_file="captured_inputs_2025_05_15.json"
+    schema_name = test_schema_manager.generate_schema_name()
+    test_schema_manager.create_schema(
+        schema_name,
+        test_name="Netflix Viewing Test",
+        input_file="captured_inputs_2025_05_15.json",
     )
     print(f"Created test schema: {schema_name}")
     return schema_name
