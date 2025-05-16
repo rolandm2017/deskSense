@@ -110,22 +110,23 @@ class TestSchemaManager:
         """Update the status of the current test schema."""
         if not self.current_schema:
             return False
-
+        print(self.current_schema)
+        print(self._test_metadata_table)
         with simulation_regular_session_maker() as session:
             session.execute(
                 text(
                     f"""
                 UPDATE "{self.current_schema}".{self._test_metadata_table}
                 SET value = jsonb_set(
-                    jsonb_set(value, '{{status}}', :status::jsonb),
-                    '{{completed_at}}', :completed_at::jsonb
+                    jsonb_set(value, '{{status}}', to_jsonb(:status)),
+                    '{{completed_at}}', to_jsonb(:completed_at)
                 )
                 WHERE key = 'test_info'
             """
                 ),
                 {
-                    "status": f'"{status}"',
-                    "completed_at": f'"{time.time()}"',
+                    "status": status,
+                    "completed_at": str(time.time()),
                 },
             )
 
@@ -134,11 +135,11 @@ class TestSchemaManager:
                     text(
                         f"""
                     UPDATE "{self.current_schema}".{self._test_metadata_table}
-                    SET value = jsonb_set(value, '{{notes}}', :notes::jsonb)
+                    SET value = jsonb_set(value, '{{notes}}', to_jsonb(:notes))
                     WHERE key = 'test_info'
                 """
                     ),
-                    {"notes": f'"{notes}"'},
+                    {"notes": notes},  # Pass the raw string value
                 )
 
             session.commit()
