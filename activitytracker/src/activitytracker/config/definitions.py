@@ -7,8 +7,8 @@ load_dotenv()
 
 class Environment:
     def __init__(self) -> None:
-        self.development = False
-        self.data_capture_session = True
+        self.development = True
+        self.data_capture_session = False
         self.simulated_usage = False
         if self.development and self.data_capture_session:
             raise ValueError("Cannot set multiple states")

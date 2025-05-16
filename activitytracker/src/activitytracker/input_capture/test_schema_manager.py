@@ -256,6 +256,7 @@ def register_connection_event(engine):
         """Set the search_path for newly created connections."""
         if test_schema_manager.current_schema:
             cursor = dbapi_connection.cursor()
+            print("Setting cursor search path")
             cursor.execute(
                 f'SET search_path TO "{test_schema_manager.current_schema}", public'
             )

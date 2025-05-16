@@ -20,6 +20,8 @@ class SystemStatusType(Enum):
     SHUTDOWN = "shutdown"
     # If the row is a shutdown, obviously the
     # next read did not show up to make it a "continued_use"
+    # Type four: A capture session starting.
+    TEST_STARTUP = "test_startup"
 
 
 class PlayerState(Enum):

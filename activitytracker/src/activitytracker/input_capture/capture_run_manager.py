@@ -171,6 +171,10 @@ class CaptureRunManager:
 
         print("Models registered with Base:", Base.metadata.tables.keys())
 
+        # TODO: Insert the string enums also
+        # TODO: Insert the string enums also
+        # TODO: Insert the string enums also
+
         # for table in Base.metadata.tables.values():
         #     print(f"{table.fullname} -> schema: {table.schema}")
         # for table in Base.metadata.sorted_tables:
@@ -229,6 +233,23 @@ class CaptureRunManager:
         with simulation_sync_engine.connect() as conn:
             # Set search path for this connection
             conn.execute(text(f'SET search_path TO "{schema_name}", public'))
+
+            # Create ENUM types first
+            conn.execute(
+                text(
+                    f"""
+                CREATE TYPE "{schema_name}"."systemstatustype" AS ENUM ('program_started', 'online', 'shutdown', 'test_startup');
+            """
+                )
+            )
+
+            conn.execute(
+                text(
+                    f"""
+                CREATE TYPE "{schema_name}"."charteventtype" AS ENUM ('MOUSE', 'KEYBOARD');
+            """
+                )
+            )
 
             # Create model tables one by one with explicit schema
             for table_name in [

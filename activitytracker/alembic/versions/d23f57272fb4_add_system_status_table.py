@@ -5,16 +5,19 @@ Revises: f249814dcabc
 Create Date: 2025-05-06 19:22:52.182187
 
 """
-from typing import Sequence, Union
 from enum import Enum
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import text
+
+from typing import Sequence, Union
+
+from alembic import op
 
 # Define the enum type - needed in the migration
 
 
+# NOTE that the enums were created by hand, without Sqlalchemy translating this into an enum
 class SystemStatusType(Enum):
     PROGRAM_STARTED = "program_started"
     ONLINE = "online"
@@ -31,6 +34,8 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade():
     conn = op.get_bind()
     enum_name = "systemstatustype"
+    # NOTE that the enums were created by hand, without Sqlalchemy translating the class into an enum
+
     enum_values = ["program_started", "online", "shutdown"]
 
     # Drop old tables if they exist

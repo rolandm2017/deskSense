@@ -285,7 +285,11 @@ class SystemStatus(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     status: Mapped[SystemStatusType] = mapped_column(
-        SQLAlchemyEnum("program_started", "online", "shutdown", name="systemstatustype")
+        # May 16: Why are they literally like that, typed out strings, and
+        #  not just SystemStatusType? I don't know. I guess it failed
+        SQLAlchemyEnum(
+            "program_started", "online", "shutdown", "test_startup", name="systemstatustype"
+        )
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True)
