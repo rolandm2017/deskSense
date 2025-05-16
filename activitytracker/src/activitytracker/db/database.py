@@ -83,27 +83,27 @@ def get_db() -> Generator[Session, None, None]:
             finally:
                 session.close()
     else:
-        with simulation_regular_session_maker() as session:
+        # Use get_simulation_db directly if in data capture session
+        yield from get_simulation_db()
+
+
+async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
+    if program_environment.development:
+        async with async_session_maker() as session:
             try:
-                # Set schema for the test mode run
-                set_search_path(session)
                 yield session
             finally:
-                session.close()
+                await session.close()
+    else:
+        # Use get_async_simulation_db directly
+        async for session in get_async_simulation_db():
+            yield session
 
 
-# async def get_db() -> AsyncGenerator[AsyncSession, None]:
-#     async with async_session_maker() as session:
-#         try:
-#             yield session
-#         finally:
-#             await session.close()
-
-
-async def init_db() -> None:
-    """Initialize the database by creating all tables if they don't exist."""
-    pass
-    # async with async_engine.begin() as conn:
-    # No longer doing automatic create_all
-    # as it takes the db out of sync with Alembic
-    # await conn.run_sync(Base.metadata.create_all)
+# async def init_db() -> None:
+#     """Initialize the database by creating all tables if they don't exist."""
+#     pass
+#     # async with async_engine.begin() as conn:
+#     # No longer doing automatic create_all
+#     # as it takes the db out of sync with Alembic
+#     # await conn.run_sync(Base.metadata.create_all)

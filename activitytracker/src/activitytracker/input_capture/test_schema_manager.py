@@ -6,14 +6,17 @@ import uuid
 from dotenv import load_dotenv
 
 from sqlalchemy import event
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import Session, declarative_base, sessionmaker
 from sqlalchemy.sql import text
 
 import time
 
-from typing import Generator, Optional
+from typing import AsyncGenerator, Generator, Optional
 
 from activitytracker.config.definitions import program_environment
 from activitytracker.db.database import (
+    simulation_async_session_maker,
     simulation_regular_session_maker,
     simulation_sync_engine,
 )
@@ -232,10 +235,60 @@ def set_sync_search_path(session):
         )
 
 
-# Async version for set_schema_path
 async def set_async_search_path(session):
     """Set the search_path for an async session."""
     if test_schema_manager.current_schema:
         await session.execute(
             text(f'SET search_path TO "{test_schema_manager.current_schema}", public')
         )
+
+
+# Session getters for simulation DB only
+def get_simulation_db() -> Generator[Session, None, None]:
+    with simulation_regular_session_maker() as session:
+        try:
+            # Set schema if we're in test mode
+            if test_schema_manager.current_schema:
+                set_sync_search_path(session)
+            yield session
+        finally:
+            session.close()
+
+
+async def get_async_simulation_db() -> AsyncGenerator[AsyncSession, None]:
+    async with simulation_async_session_maker() as session:
+        try:
+            # Set schema if we're in test mode
+            if test_schema_manager.current_schema:
+                await set_async_search_path(session)
+            yield session
+        finally:
+            await session.close()
+
+
+# --
+# --
+# --
+# Example code:
+# --
+# --
+
+
+def setup_test():
+    # Create a schema for this test run
+    schema_name = test_schema_manager.create_schema(
+        test_name="Netflix Viewing Test", input_file="captured_inputs_2025_05_15.json"
+    )
+    print(f"Created test schema: {schema_name}")
+    return schema_name
+
+
+def run_test(schema_name):
+    # Make sure the correct schema is active
+    test_schema_manager.set_schema(schema_name)
+
+    # Now run your test...
+    # Any database operations will use this schema
+
+    # When done, mark the schema as complete
+    test_schema_manager.mark_schema_status("COMPLETED", "Test ran successfully")
