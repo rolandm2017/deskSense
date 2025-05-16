@@ -28,11 +28,9 @@ from time import time
 # import time
 from typing import List, Optional
 
-from activitytracker.db.database import (
-    async_session_maker,
-    init_db,
-    regular_session_maker,
-)
+# Database imports
+from activitytracker.db.database import async_session_maker, regular_session_maker
+from activitytracker.db.db_session import get_async_db, get_db  # Use the new module
 from activitytracker.db.models import (
     DailyDomainSummary,
     DailyProgramSummary,
@@ -43,7 +41,10 @@ from activitytracker.facade.facade_singletons import (
     get_mouse_facade_instance,
 )
 from activitytracker.facade.receive_messages import MessageReceiver
-from activitytracker.input_capture.test_run_manager import TestRunManager
+
+# Test capture imports
+# --
+from activitytracker.input_capture.capture_run_manager import CaptureRunManager
 from activitytracker.object.classes import TabChangeEventWithLtz
 from activitytracker.object.dashboard_dto import (
     ChromeBarChartContent,
@@ -122,7 +123,6 @@ activity_tracker_state = ActivityTrackerState()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Initialize application-wide resources
-    await init_db()
 
     # If you need to note when the computer starts up,
     # consider that the server will likely auto-run on startup
@@ -151,12 +151,12 @@ async def lifespan(app: FastAPI):
         get_keyboard_facade_instance, get_mouse_facade_instance, choose_program_facade
     )
 
-    test_run_manager = TestRunManager()
-    run_id = test_run_manager.initialize(test_run_manager.filename)
+    capture_run_manager = CaptureRunManager()
+    run_id = capture_run_manager.initialize(capture_run_manager.filename)
     activity_tracker_state.input_capture_run_id = run_id
-    activity_tracker_state.input_capture_start_time = test_run_manager.run_start_time
-    activity_tracker_state.input_capture_end_time = test_run_manager.test_end_time
-    activity_tracker_state.schema_for_run = test_run_manager.schema_manager.current_schema
+    activity_tracker_state.input_capture_start_time = capture_run_manager.run_start_time
+    activity_tracker_state.input_capture_end_time = capture_run_manager.test_end_time
+    activity_tracker_state.schema_for_run = capture_run_manager.schema_manager.current_schema
 
     message_receiver = MessageReceiver("tcp://127.0.0.1:5555")
     activity_tracker_state.manager = SurveillanceManager(
@@ -167,7 +167,7 @@ async def lifespan(app: FastAPI):
         arbiter,
         facades,
         message_receiver,
-        test_run_manager,
+        capture_run_manager,
     )
     activity_tracker_state.manager.print_sys_status_info()
     activity_tracker_state.manager.start_trackers()

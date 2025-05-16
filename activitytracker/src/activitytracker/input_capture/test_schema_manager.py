@@ -15,7 +15,12 @@ import time
 from typing import AsyncGenerator, Generator, Optional
 
 from activitytracker.config.definitions import program_environment
+
+# Import only what you need from database.py
 from activitytracker.db.database import (
+    Base,
+    async_session_maker,
+    simulation_async_engine,
     simulation_async_session_maker,
     simulation_regular_session_maker,
     simulation_sync_engine,

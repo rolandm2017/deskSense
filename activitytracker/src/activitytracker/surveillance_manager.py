@@ -19,8 +19,8 @@ from activitytracker.db.dao.queuing.mouse_dao import MouseDao
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
 from activitytracker.facade.receive_messages import MessageReceiver
+from activitytracker.input_capture.capture_run_manager import CaptureRunManager
 from activitytracker.input_capture.input_capture import InputCapture
-from activitytracker.input_capture.test_run_manager import TestRunManager
 from activitytracker.trackers.keyboard_tracker import KeyboardTrackerCore
 from activitytracker.trackers.mouse_tracker import MouseTrackerCore
 from activitytracker.trackers.program_tracker import ProgramTrackerCore
@@ -40,6 +40,7 @@ class FacadeInjector:
 
 
 class SurveillanceManager:
+
     def __init__(
         self,
         clock: UserFacingClock,
@@ -49,7 +50,7 @@ class SurveillanceManager:
         arbiter: ActivityArbiter,
         facades,
         message_receiver: MessageReceiver,
-        test_run_manager: TestRunManager,
+        capture_run_manager: CaptureRunManager,
         is_test=False,
     ):
         """

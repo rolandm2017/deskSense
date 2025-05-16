@@ -1,4 +1,4 @@
-# test_run_manager.py
+# capture_run_manager.py
 import json
 import os
 import uuid
@@ -16,6 +16,7 @@ from activitytracker.db.database import (
     simulation_regular_session_maker,
     simulation_sync_engine,
 )
+from activitytracker.util.console_logger import ConsoleLogger
 
 
 def get_timestamp_string():
@@ -29,7 +30,7 @@ def get_timestamp_string():
 # TODO: IMPORTANT: Just get the session id from the server to the ext.
 
 
-class TestRunManager:
+class CaptureRunManager:
     """Manages test runs and their execution within isolated database schemas."""
 
     def __init__(self, schema_manager=None):
@@ -46,13 +47,22 @@ class TestRunManager:
         self.run_id = self.generate_run_id()
         self.session_active = program_environment.data_capture_session
 
-        self.schema_manager = schema_manager or test_schema_manager
+        # Import here to avoid circular imports
+        if not schema_manager:
+            from activitytracker.input_capture.test_schema_manager import (
+                test_schema_manager,
+            )
+
+            self.schema_manager = test_schema_manager
+        else:
+            self.schema_manager = schema_manager
         self.duration_in_minutes = 2
         self.test_end_time = None
         self.current_run_id: Optional[str] = None
         self.metadata_table = "test_run_metadata"
         self.results_table = "test_run_results"
         self.filename = self.make_filename()
+        self.logger = ConsoleLogger()
 
     # TODO: a conclude() called in if_test_is_over
 
@@ -110,6 +120,9 @@ class TestRunManager:
         test_end_time = self.run_start_time + timedelta(minutes=self.duration_in_minutes)
         print("Setting test end time", test_end_time)
         self.test_end_time = test_end_time
+        self.logger.log_yellow(
+            f"Test will end at: " + self.test_end_time.strftime("%H:%M:%S")
+        )
 
         json_dump_of_test_info = json.dumps(
             {
@@ -163,6 +176,9 @@ class TestRunManager:
 
         # Now create all tables with the schema explicitly specified
         # Create all the usual (development) tables in the schema
+        self.logger.log_white("Creating all tables for schema " + schema_name)
+        self.logger.log_white("Creating all tables")
+        self.logger.log_white("Creating all tables")
         Base.metadata.create_all(bind=conn)
 
         print("Models registered with Base:", Base.metadata.tables.keys())

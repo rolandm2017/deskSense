@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 from typing import TypedDict
 
-from activitytracker.input_capture.test_run_manager import TestRunManager
+from activitytracker.input_capture.capture_run_manager import CaptureRunManager
 from activitytracker.object.classes import ProgramSession
 
 
@@ -60,23 +60,23 @@ class EventEncoder(json.JSONEncoder):
 
 
 class InputCapture:
-    def __init__(self, test_run_manager) -> None:
+    def __init__(self, capture_run_manager) -> None:
         # TODO: Initialize in one spot, and import initialized class
-        self.test_run_manager = test_run_manager
+        self.capture_run_manager = capture_run_manager
         self.events = []
 
         # Save to logs directory with .json extension
-        self.filename = self.test_run_manager.filename
+        self.filename = self.capture_run_manager.filename
 
     def capture_if_active(self, event: ProgramSession):
-        if self.test_run_manager.session_active:
+        if self.capture_run_manager.session_active:
             print("Capturing event", event)
             self.events.append(event)
-            self.test_run_manager.check_if_test_is_over()
+            self.capture_run_manager.check_if_test_is_over()
 
     def log_to_output_file(self):
         # Create a custom encoder if your objects have __str__ but not a standard JSON representation
-        if self.test_run_manager.session_active:
+        if self.capture_run_manager.session_active:
             print("Logging InputCapture output to json")
             # Write to the file using the custom encoder
             with open(self.filename, "w") as f:
