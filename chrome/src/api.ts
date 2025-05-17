@@ -1,10 +1,10 @@
 // api.ts
+import { DomainLogger, PlatformLogger } from "./endpointLogging";
 import {
     NetflixPayload,
     PlayerData,
     YouTubePayload,
 } from "./interface/interfaces";
-import { DomainLogger, PlatformLogger } from "./logging";
 
 const DESKSENSE_BACKEND_URL = "http://localhost:8000";
 
@@ -185,7 +185,11 @@ export class ServerApi {
             startTime: new Date(),
         };
         console.log("Sending payload:", payload);
-        this.logger.logPayload("reportTabSwitch", chromeTabUrl, payload);
+        this.logger.logPayloadToStorage(
+            "reportTabSwitch",
+            chromeTabUrl,
+            payload
+        );
         this.sendPayload(chromeTabUrl, payload);
     };
 
@@ -196,7 +200,11 @@ export class ServerApi {
             startTime: new Date(),
         };
         console.log("Sending payload:", payload);
-        this.logger.logPayload("reportIgnoredUrl", ignoredDomainUrl, payload);
+        this.logger.logPayloadToStorage(
+            "reportIgnoredUrl",
+            ignoredDomainUrl,
+            payload
+        );
         this.sendPayload(ignoredDomainUrl, payload);
     };
 
@@ -212,10 +220,6 @@ export class ServerApi {
     }
 
     private sendPayload = (targetUrl: string, payload: object) => {
-        console.log("DEBUG: Start of sendPayload method");
-        console.log("DEBUG: this =", this);
-        console.log("DEBUG: this.disablePayloads =", this.disablePayloads);
-        console.log("In sendPayload,", this.disablePayloads);
         if (this.disablePayloads) {
             console.log("Sending payloads is disabled");
             return;

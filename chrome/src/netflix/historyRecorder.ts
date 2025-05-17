@@ -1,14 +1,33 @@
-// historyRecorder.ts
+// netflix/historyRecorder.ts
 
 import { StorageInterface } from "./storageApi";
 
 import { WatchEntry } from "../interface/interfaces";
 
-import { NetflixViewing, ViewingTracker } from "../videoCommon/visits";
+import { NetflixViewing } from "../videoCommon/visits";
 
 import { systemInputCapture } from "../inputLogger/systemInputLogger";
 
-// TODO: Rename to HistoryRecorder. One less "tracker" naming conflict
+function alertTrackerOfNetflixViewing(viewingToTrack: NetflixViewing) {
+    chrome.runtime.sendMessage({
+        event: "netflix_media_selected",
+        media: {
+            videoId: viewingToTrack.videoId,
+            mediaTitle: viewingToTrack.mediaTitle,
+            playerState: viewingToTrack.playerState,
+        },
+    });
+}
+
+function alertTrackerOfNetflixPage(pageId: string) {
+    chrome.runtime.sendMessage({
+        event: "netflix_page_opened",
+        media: {
+            pageId: pageId,
+        },
+    });
+}
+
 export class HistoryRecorder {
     /*
         If you're tempted to add an edit feature, remember that
@@ -20,17 +39,14 @@ export class HistoryRecorder {
     */
     allHistory: WatchEntry[];
     storageConnection: StorageInterface;
-    viewingTracker: ViewingTracker;
+
     // facade: NetflixFacade;
 
-    constructor(
-        viewingTracker: ViewingTracker,
-        storageConnection: StorageInterface
-    ) {
+    constructor(storageConnection: StorageInterface) {
         this.storageConnection = storageConnection;
         this.allHistory = [];
         this.loadHistory();
-        this.viewingTracker = viewingTracker;
+
         // this.facade = new NetflixFacade();
         // this.setupEventListeners();
     }
@@ -51,23 +67,27 @@ export class HistoryRecorder {
                 source: "sendPageDetailsToViewingTracker",
                 method: "event_listener",
                 location: "historyRecorder.ts",
-                timestamp: Date.now(),
+                timestamp: new Date().toISOString(),
             },
         });
         const watchPageId = this.makeUrlId(url);
         console.log("Sending watch page ID", watchPageId);
-        this.viewingTracker.reportNetflixWatchPage(watchPageId);
+        alertTrackerOfNetflixPage(watchPageId);
     }
 
-    recordEnteredMediaTitle(title: string, url: string) {
+    recordEnteredMediaTitle(
+        title: string,
+        url: string,
+        playerState: "playing" | "paused"
+    ) {
         systemInputCapture.captureIfEnabled({
             type: "CHOOSE_NETFLIX_MEDIA",
-            data: { title, url },
+            data: { title, url, playerState },
             metadata: {
                 source: "recordEnteredMediaTitle",
                 method: "user_input",
                 location: "historyRecorder.ts",
-                timestamp: Date.now(),
+                timestamp: new Date().toISOString(),
             },
         });
         console.log("In recordEnteredMedia");
@@ -82,7 +102,12 @@ export class HistoryRecorder {
         const viewingToTrack: NetflixViewing =
             this.formatWatchEntryAsViewing(latestEntryUpdate);
         // NOTE that play/pause occurs thru background.ts in "onMessage"
-        this.viewingTracker.setCurrent(viewingToTrack);
+        console.log("SET CURRENT", viewingToTrack);
+        console.log("SET CURRENT", viewingToTrack);
+        console.log("SET CURRENT", viewingToTrack);
+        console.log("SET CURRENT", viewingToTrack);
+        console.log("SET CURRENT", viewingToTrack);
+        alertTrackerOfNetflixViewing(viewingToTrack);
         this.saveHistory();
     }
 
@@ -116,7 +141,11 @@ export class HistoryRecorder {
     }
 
     formatWatchEntryAsViewing(entry: WatchEntry): NetflixViewing {
-        const viewing = new NetflixViewing(entry);
+        const viewing = new NetflixViewing(
+            entry.urlId,
+            entry.showName,
+            "paused"
+        );
         return viewing;
     }
 

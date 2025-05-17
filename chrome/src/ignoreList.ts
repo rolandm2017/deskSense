@@ -45,8 +45,6 @@ export function setupIgnoredDomains() {
                 if (changes.ignoredDomains.newValue) {
                     ignoredDomains.addNew(changes.ignoredDomains.newValue);
                 }
-            } else {
-                console.log("Other changes:", changes); // log other changes if needed
             }
         });
     } else {

@@ -71,7 +71,7 @@ export function handleYouTubeUrl(
                             source: "handleYouTubeUrl",
                             method: "user_input",
                             location: "youtube.ts",
-                            timestamp: Date.now(),
+                            timestamp: new Date().toISOString(),
                         },
                     });
 
@@ -94,7 +94,7 @@ export function handleYouTubeUrl(
                 source: "isOnSomeChannel",
                 method: "user_input",
                 location: "youtube.ts",
-                timestamp: Date.now(),
+                timestamp: new Date().toISOString(),
             },
         });
         api.youtube.reportYouTubePage(tab.title, channelName);
@@ -141,7 +141,7 @@ export function startSecondaryChannelExtractionScript(
             source: "startSecondaryChannelExtractionScript",
             method: "user_input",
             location: "youtube.ts",
-            timestamp: Date.now(),
+            timestamp: new Date().toISOString(),
         },
     });
     viewingTracker.setCurrent(youTubeVisit);
@@ -195,20 +195,27 @@ export function extractChannelNameFromUrl(youTubeUrl: string) {
     throw new ChannelPageOnlyError("Was not on a channel page");
 }
 
-function splitToGetYouTubeVideoId(url: string) {
-    let videoId = url.split("v=")[1]; // Extract video ID
-    // console.log("VIDEO ID: ", videoId, videoId.includes("&t"));
-    if (videoId.includes("&t")) {
-        videoId = videoId.split("&")[0];
-        // console.log("And NOW it is: ", videoId);
+function splitYouTubeUrlFromVideoId(url: string) {
+    try {
+        let videoId = url.split("v=")[1]; // Extract video ID
+        // console.log("VIDEO ID: ", videoId, videoId.includes("&t"));
+        if (videoId.includes("&t")) {
+            videoId = videoId.split("&")[0];
+            // console.log("And NOW it is: ", videoId);
+        }
+        return videoId;
+    } catch (e) {
+        console.error("Error in splitYouTubeUrlFromVideoId");
+        console.log(url);
+        console.log(e);
+        return "Unknown ID";
     }
-    return videoId;
 }
 
 export function getYouTubeVideoId(url: string | undefined) {
     let videoId;
     if (url) {
-        videoId = splitToGetYouTubeVideoId(url);
+        videoId = splitYouTubeUrlFromVideoId(url);
     } else {
         videoId = "Missing URL";
         throw new MissingUrlError();

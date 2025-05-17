@@ -6,11 +6,10 @@ import {
     INetflixViewing,
     IYouTubeViewing,
     NetflixPayload,
-    WatchEntry,
     YouTubePayload,
 } from "../interface/interfaces";
 
-import { PlatformLogger } from "../logging";
+import { PlatformLogger } from "../endpointLogging";
 
 // A Visit: As in, A PageVisit
 // A Viewing: A window of time spent actively viewing the video.
@@ -81,10 +80,12 @@ export class ViewingTracker {
         if (this.currentMedia instanceof YouTubeViewing) {
             this.youTubeApiLogger.logPlayEvent();
             const asYouTubePayload = this.currentMedia.convertToPayload();
+            console.log("sending play event");
             this.api.youtube.sendPlayEvent(asYouTubePayload);
         } else {
             this.netflixApiLogger.logPlayEvent();
             const asNetflixPayload = this.currentMedia.convertToPayload();
+            console.log("sending play event");
             this.api.netflix.sendPlayEvent(asNetflixPayload);
         }
     }
@@ -98,10 +99,12 @@ export class ViewingTracker {
         if (this.currentMedia instanceof YouTubeViewing) {
             this.youTubeApiLogger.logPauseEvent();
             const asYouTubePayload = this.currentMedia.convertToPayload();
+            console.log("sending pause event");
             this.api.youtube.sendPauseEvent(asYouTubePayload);
         } else {
             this.netflixApiLogger.logPauseEvent();
             const asNetflixPayload = this.currentMedia.convertToPayload();
+            console.log("sending pause event");
             this.api.netflix.sendPauseEvent(asNetflixPayload);
         }
     }
@@ -175,13 +178,17 @@ export class NetflixViewing implements INetflixViewing {
     timestamps: number[];
     playerState: "playing" | "paused";
     // TODO
-    constructor(watchEntry: WatchEntry) {
+    constructor(
+        videoId: string,
+        showName: string,
+        playerState: "playing" | "paused"
+    ) {
         // the Url ID becomes the VideoID.
-        this.videoId = watchEntry.urlId;
+        this.videoId = videoId;
         // the showName becomes the mediaTitle.
-        this.mediaTitle = watchEntry.showName;
+        this.mediaTitle = showName;
         this.timestamps = [];
-        this.playerState = "paused";
+        this.playerState = playerState;
     }
 
     convertToPayload(): NetflixPayload {

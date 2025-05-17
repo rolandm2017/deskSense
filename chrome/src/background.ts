@@ -1,31 +1,42 @@
 // background.ts
 import { api } from "./api";
 import { getDomainFromUrl } from "./urlTools";
+import { handleYouTubeUrl } from "./youtube/youtube";
+
+import { NetflixViewing, viewingTracker } from "./videoCommon/visits";
+
 import {
-    handleYouTubeUrl,
-    startSecondaryChannelExtractionScript,
-} from "./youtube/youtube";
-
-import { viewingTracker } from "./videoCommon/visits";
-
+    clearEndpointLoggingStorage,
+    endpointLoggingDownload,
+} from "./endpointLogging";
 import {
     ignoredDomains,
     isDomainIgnored,
     setupIgnoredDomains,
 } from "./ignoreList";
-import { InputCaptureManager } from "./inputLogger/inputCaptureManager";
 import { systemInputCapture } from "./inputLogger/systemInputLogger";
-import { endpointLoggingDownload } from "./logging";
 
-/*
+import { RECORDING_INPUT } from "./config";
+import { captureManager } from "./inputLogger/initInputCapture";
 
-YouTube code, a lot of it lives here, because YouTube is monitored
-from the background.ts script itself. 
-This approach cannot work for Netflix. Much user input is needed there.
+function deskSenseLogs() {
+    systemInputCapture.writeLogsToJson();
+    endpointLoggingDownload();
+}
 
-*/
+function clearDeskSenseLogs() {
+    systemInputCapture.clearStorage();
+    clearEndpointLoggingStorage();
+}
+
+function checkIfCaptureSessionStarted() {
+    captureManager.getTestStartTime();
+}
 
 // enable logging file download
+(self as any).deskSenseLogs = deskSenseLogs;
+(self as any).clearDeskSenseLogs = clearDeskSenseLogs;
+(self as any).deskSenseCaptureCheck = checkIfCaptureSessionStarted;
 (self as any).writeInputLogsToJson = systemInputCapture.writeLogsToJson;
 (self as any).writeEndpointLogsToJson = endpointLoggingDownload;
 // Code that lets you open the options page when the icon is clicked
@@ -39,14 +50,20 @@ function openOptionsOnClickIcon() {
 
 // openOptionsOnClickIcon();
 
-const captureManager = new InputCaptureManager(systemInputCapture, api);
+// const captureManager = new InputCaptureManager(systemInputCapture, api);
 // Periodically check if a recording session has started
-function runCheckOnRecordingSessionStart() {
-    //
-    captureManager.startPolling();
+// function runCheckOnRecordingSessionStart() {
+//     //
+//     captureManager.startPolling();
+// }
+
+// runCheckOnRecordingSessionStart();
+
+function logExtensionState() {
+    console.log("recording input: ", RECORDING_INPUT);
 }
 
-runCheckOnRecordingSessionStart;
+logExtensionState();
 
 const tabsWithPollingList: number[] = [];
 
@@ -59,28 +76,65 @@ interface ProcessedUrlEntry {
     url: string;
 }
 
-// FIXME: What to do when the user visits the same URL 2-3x on multiple tabs?
-const processedTabs = new Map<number, ProcessedUrlEntry>();
-
 const PAGE_LOAD_DEBOUNCE_DELAY = 4000;
 
-// TODO: Make debounce stuff a class
-
-function cleanupOldTabReferences(now: number) {
-    // "Now" from new Date().now()
-    const tabsToDelete: number[] = [];
-    for (const [tabKey, entry] of processedTabs.entries()) {
-        if (now - entry.timestamp > 10000) {
-            // Remove entries older than 10 seconds
-            tabsToDelete.push(tabKey);
-        }
+class DebounceTimer {
+    processedTabs: Map<number, ProcessedUrlEntry>;
+    constructor() {
+        this.processedTabs = new Map<number, ProcessedUrlEntry>();
     }
-    tabsToDelete.forEach((key) => processedTabs.delete(key));
+
+    isTabBeingProcessed(tab: chrome.tabs.Tab) {
+        if (!tab.id) {
+            throw new Error("A tab had no ID");
+        }
+        if (!tab.url) {
+            throw new Error("No url found");
+        }
+
+        const now = Date.now();
+
+        const lastProcessedTab = this.processedTabs.get(tab.id);
+        const tabExistsInMap =
+            lastProcessedTab && lastProcessedTab.url === tab.url;
+
+        if (tabExistsInMap) {
+            // must use a nested if here because otherwise TS complains re: undefined
+            const tabWasSeenRecently =
+                now - lastProcessedTab.timestamp < PAGE_LOAD_DEBOUNCE_DELAY;
+            if (tabWasSeenRecently) {
+                return true;
+            }
+        }
+
+        // Mark this URL as processed for this tab
+        this.processedTabs.set(tab.id, {
+            timestamp: now,
+            url: tab.url,
+        });
+
+        // Clean up old entries periodically
+        // 12 chosen because it seems to only happen on youtube and refreshed pages
+        if (this.processedTabs.size > 12) {
+            this.cleanupOldTabReferences(now);
+        }
+        return false;
+    }
+
+    cleanupOldTabReferences(now: number) {
+        // "Now" from new Date().now()
+        const tabsToDelete: number[] = [];
+        for (const [tabKey, entry] of this.processedTabs.entries()) {
+            if (now - entry.timestamp > 10000) {
+                // Remove entries older than 10 seconds
+                tabsToDelete.push(tabKey);
+            }
+        }
+        tabsToDelete.forEach((key) => this.processedTabs.delete(key));
+    }
 }
 
-function markTabProcessed() {
-    //
-}
+const debounce = new DebounceTimer();
 
 function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
     /*
@@ -95,51 +149,24 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
     Note, it might be a problem if the user switches back and forth quickly.
 
     */
-    console.log("Tab.url and ID", tab.url, tab.id);
 
     if (!tab.url) {
         console.error("No url found");
         return;
     }
 
-    const now = Date.now();
-
     // Use tab ID-based debouncing if we have a tab ID
     if (!tab.id) {
-        throw Error("A tab had no ID");
+        throw new Error("A tab had no ID");
     }
 
     // Check if this tab with this URL was processed recently
-    const lastProcessedTab = processedTabs.get(tab.id);
-    const currentTabWasRecentlyProcessed =
-        lastProcessedTab && lastProcessedTab.url === tab.url;
-
-    if (currentTabWasRecentlyProcessed) {
-        // must use a nested if here because otherwise TS complains re: undefined
-        const tabWasSeenRecently =
-            now - lastProcessedTab.timestamp < PAGE_LOAD_DEBOUNCE_DELAY;
-        if (tabWasSeenRecently) {
-            console.log(
-                "Skipping recently processed URL:",
-                tab.url,
-                "in tab:",
-                tab.id
-            );
-            return;
-        }
+    const recentlySeenTab = debounce.isTabBeingProcessed(tab);
+    if (recentlySeenTab) {
+        // FIXME: What to do when the user visits the same URL 2-3x on multiple tabs?
+        return;
     }
-
-    // Mark this URL as processed for this tab
-    processedTabs.set(tab.id, {
-        timestamp: now,
-        url: tab.url,
-    });
-
-    // Clean up old entries periodically
-    // 12 chosen because it seems to only happen on youtube and refreshed pages
-    if (processedTabs.size > 12) {
-        cleanupOldTabReferences(now);
-    }
+    console.log("Tab.url and ID", tab.url, tab.id);
 
     // no-op if recording disabled
     systemInputCapture.captureIfEnabled({
@@ -151,7 +178,7 @@ function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
             source: "getDomainFromUrlAndSubmit",
             method: "user_input",
             location: "background.ts",
-            timestamp: Date.now(),
+            timestamp: new Date().toISOString(),
         },
     });
     const domain = getDomainFromUrl(tab.url);
@@ -193,7 +220,7 @@ chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
             source: "onRemoved.addListener",
             method: "user_input",
             location: "background.ts",
-            timestamp: Date.now(),
+            timestamp: new Date().toISOString(),
         },
     });
 
@@ -235,7 +262,7 @@ class PlayPauseDispatch {
                 source: "notePlayEvent",
                 method: "user_input",
                 location: "background.ts",
-                timestamp: Date.now(),
+                timestamp: new Date().toISOString(),
             },
         });
         if (this.endSessionTimeoutId) {
@@ -243,14 +270,17 @@ class PlayPauseDispatch {
                 (new Date().getTime() - this.pauseStartTime!.getTime()) / 1000;
             this.cancelSendPauseEvent(this.endSessionTimeoutId);
         }
+        console.log("[play] ", viewingTracker.currentMedia);
         if (viewingTracker.currentMedia) {
             viewingTracker.markPlaying();
             return;
-        } else {
-            // it wasn't there yet because, the, the channel extractor
-            // script didn't run yet but the "report playing video" code did
-            startSecondaryChannelExtractionScript(sender);
         }
+        // else {
+        //     // it wasn't there yet because, the, the channel extractor
+        //     // script didn't run yet but the "report playing video" code did
+        //     // FIXME: THIS RAN ON NETFLIX
+        //     startSecondaryChannelExtractionScript(sender);
+        // }
     }
 
     notePauseEvent() {
@@ -263,10 +293,11 @@ class PlayPauseDispatch {
                 source: "notePauseEvent",
                 method: "user_input",
                 location: "background.ts",
-                timestamp: Date.now(),
+                timestamp: new Date().toISOString(),
             },
         });
 
+        console.log("[pause] ", viewingTracker.currentMedia);
         if (viewingTracker.currentMedia) {
             const startOfGracePeriod = new Date();
             this.pauseStartTime = startOfGracePeriod;
@@ -282,7 +313,6 @@ class PlayPauseDispatch {
         // User presses pause, and then resumes the video after only 2.9 seconds, then
         // don't bother pausing tracking.
         const timeoutId = setTimeout(() => {
-            const endOfIntervalTime = new Date();
             if (viewingTracker.currentMedia) {
                 viewingTracker.markPaused();
             }
@@ -299,7 +329,7 @@ const playPauseDispatch = new PlayPauseDispatch();
 
 chrome.runtime.onMessage.addListener(
     (message, sender: chrome.runtime.MessageSender, sendResponse) => {
-        console.log(message, sender);
+        console.log(message.event, sender);
         /*
          *   This only runs when the user presses play or pauses the video.
          * Hence they're definitely on a page that already loaded
@@ -379,29 +409,26 @@ chrome.action.onClicked.addListener(async (tab) => {
     }
 });
 
-/*
- * Open the Netflix Watch modal when you click the icon on the right page
- */
-
-chrome.action.onClicked.addListener(async (tab) => {
-    console.log("Action.Onclick: ");
-    // First check if we're on any Netflix page
-    if (
-        tab.id &&
-        tab.url &&
-        (tab.url.includes("wikipedia") || tab.url.includes("netflix.com/watch"))
-    ) {
-        // Inject the content script
-        await chrome.tabs.sendMessage(tab.id, { action: "openModal" });
-
-        // If your script needs to know it was triggered by the icon click,
-        // you can pass a message after injection
-        // chrome.tabs.sendMessage(tab.id, { action: "extensionIconClicked" });
-    } else {
-        // Optionally, show a notification or take other action
-        console.log(
-            "Not on Netflix - script not injected. Tab ID was: ",
-            tab.id
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.event === "netflix_media_selected") {
+        // Create a new instance in this context with the same data
+        const partialWatchEntry = {
+            urlId: message.media.videoId,
+            showName: message.media.mediaTitle,
+            playerState: message.media.playerState,
+        };
+        const recreatedMedia = new NetflixViewing(
+            partialWatchEntry.urlId,
+            partialWatchEntry.showName,
+            partialWatchEntry.playerState
         );
+        viewingTracker.setCurrent(recreatedMedia);
+        console.log(
+            "Background received media state:",
+            viewingTracker.currentMedia
+        );
+    } else if (message.event === "netflix_page_opened") {
+        viewingTracker.reportNetflixWatchPage(message.media.pageId);
     }
+    // Other existing message handling...
 });
