@@ -4,30 +4,10 @@ import { StorageInterface } from "./storageApi";
 
 import { WatchEntry } from "../interface/interfaces";
 
-import { NetflixViewing } from "../videoCommon/visits";
+import { NetflixViewingSansState } from "../videoCommon/visits";
 
 import { systemInputCapture } from "../inputLogger/systemInputLogger";
 import { TopFiveAlgorithm } from "./topFiveAlgorithm";
-
-// function alertTrackerOfNetflixViewing(viewingToTrack: NetflixViewing) {
-//     chrome.runtime.sendMessage({
-//         event: "netflix_media_selected",
-//         media: {
-//             videoId: viewingToTrack.videoId,
-//             mediaTitle: viewingToTrack.mediaTitle,
-//             playerState: viewingToTrack.playerState,
-//         },
-//     });
-// }
-
-// function alertTrackerOfNetflixPage(pageId: string) {
-//     chrome.runtime.sendMessage({
-//         event: "netflix_page_opened",
-//         media: {
-//             pageId: pageId,
-//         },
-//     });
-// }
 
 export class MessageRelay {
     constructor() {
@@ -35,13 +15,12 @@ export class MessageRelay {
     }
 
     // NOTE that play/pause occurs thru background.ts in "onMessage"
-    alertTrackerOfNetflixViewing(viewingToTrack: NetflixViewing) {
+    alertTrackerOfNetflixMediaInfo(viewingToTrack: NetflixViewingSansState) {
         chrome.runtime.sendMessage({
             event: "netflix_media_selected",
             media: {
                 videoId: viewingToTrack.videoId,
                 mediaTitle: viewingToTrack.mediaTitle,
-                playerState: viewingToTrack.playerState,
             },
         });
     }
@@ -144,10 +123,10 @@ export class HistoryRecorder {
             url
         );
         console.log(latestEntryUpdate, "entry to update 49ru");
-        const viewingToTrack: NetflixViewing =
+        const viewingToTrack: NetflixViewingSansState =
             this.formatWatchEntryAsViewing(latestEntryUpdate);
         // NOTE that play/pause occurs thru background.ts in "onMessage"
-        this.relay.alertTrackerOfNetflixViewing(viewingToTrack);
+        this.relay.alertTrackerOfNetflixMediaInfo(viewingToTrack);
         this.saveHistory();
     }
 
@@ -181,11 +160,10 @@ export class HistoryRecorder {
         return isNumeric;
     }
 
-    formatWatchEntryAsViewing(entry: WatchEntry): NetflixViewing {
-        const viewing = new NetflixViewing(
+    formatWatchEntryAsViewing(entry: WatchEntry): NetflixViewingSansState {
+        const viewing = new NetflixViewingSansState(
             entry.urlId,
-            entry.showName,
-            "paused"
+            entry.showName
         );
         return viewing;
     }

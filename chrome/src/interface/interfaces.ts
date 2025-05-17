@@ -36,9 +36,11 @@ export interface IYouTubeViewing {
     channelName: string;
 }
 
-export interface INetflixViewing {
+export interface IStatelessNetflixViewing {
     videoId: string;
     mediaTitle: string;
-    timestamps: number[];
+}
+
+export interface INetflixViewing extends IStatelessNetflixViewing {
     playerState: "playing" | "paused";
 }

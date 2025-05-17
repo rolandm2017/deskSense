@@ -4,6 +4,7 @@ import { ServerApi } from "../api";
 import { MissingMediaError } from "../errors";
 import {
     INetflixViewing,
+    IStatelessNetflixViewing,
     IYouTubeViewing,
     NetflixPayload,
     YouTubePayload,
@@ -172,10 +173,23 @@ export class YouTubeViewing implements IYouTubeViewing {
     }
 }
 
-export class NetflixViewing implements INetflixViewing {
+export class NetflixViewingSansState implements IStatelessNetflixViewing {
     videoId: string;
     mediaTitle: string;
-    timestamps: number[];
+    constructor(videoId: string, showName: string) {
+        // the Url ID becomes the VideoID.
+        this.videoId = videoId;
+        // the showName becomes the mediaTitle.
+        this.mediaTitle = showName;
+    }
+}
+
+export class NetflixViewing
+    extends NetflixViewingSansState
+    implements INetflixViewing
+{
+    videoId: string;
+    mediaTitle: string;
     playerState: "playing" | "paused";
     // TODO
     constructor(
@@ -183,11 +197,11 @@ export class NetflixViewing implements INetflixViewing {
         showName: string,
         playerState: "playing" | "paused"
     ) {
+        super(videoId, showName);
         // the Url ID becomes the VideoID.
         this.videoId = videoId;
         // the showName becomes the mediaTitle.
         this.mediaTitle = showName;
-        this.timestamps = [];
         this.playerState = playerState;
     }
 

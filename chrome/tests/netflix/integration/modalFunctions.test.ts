@@ -28,7 +28,7 @@ describe("[integration] The modal's key behaviors work", () => {
 
         // Highly useful pattern for testing with mocks in TS
         const mockAlertTracker = vi.fn<(arg: NetflixViewing) => void>();
-        relay.alertTrackerOfNetflixViewing = mockAlertTracker;
+        relay.alertTrackerOfNetflixMediaInfo = mockAlertTracker;
 
         const historyRecorder = new HistoryRecorder(mockStorageApi, relay);
 
@@ -48,7 +48,7 @@ describe("[integration] The modal's key behaviors work", () => {
 
         // Highly useful pattern for testing with mocks in TS
         const mockAlertTracker = vi.fn<(arg: NetflixViewing) => void>();
-        relay.alertTrackerOfNetflixViewing = mockAlertTracker;
+        relay.alertTrackerOfNetflixMediaInfo = mockAlertTracker;
 
         const historyRecorder = new HistoryRecorder(mockStorageApi, relay);
 
@@ -82,7 +82,7 @@ describe("[integration] The modal's key behaviors work", () => {
 
         // Highly useful pattern for testing with mocks in TS
         const mockAlertTracker = vi.fn<(arg: NetflixViewing) => void>();
-        relay.alertTrackerOfNetflixViewing = mockAlertTracker;
+        relay.alertTrackerOfNetflixMediaInfo = mockAlertTracker;
 
         const historyRecorder = new HistoryRecorder(mockStorageApi, relay);
         historyRecorder.cleanupOldHistory = vi.fn();

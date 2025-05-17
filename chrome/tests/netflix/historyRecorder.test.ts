@@ -11,20 +11,6 @@ import { MockStorageApi } from "./mockStorageInterface";
 
 import { pretendPreexistingHistory } from "./mockData";
 
-/*
-
-// TODO: Confirm you can get a new entry into db,
-// TODO: Confirm you can get n entries out of the db
-// TODO: Confirm you can delete an entry
-// TODO: Call it a day
-
-// TODO: get the first user input added in
-// TODO: prove that a user input makes it to the "addEntryToDb" function
-// TODO: 
-// 
-
-*/
-
 describe("HistoryRecorder", () => {
     test("recordEnteredMediaTitle", () => {
         const mockStorageApi = new MockStorageApi();
@@ -37,7 +23,7 @@ describe("HistoryRecorder", () => {
 
         // Highly useful pattern for testing with mocks in TS
         const mockAlertTracker = vi.fn<(arg: NetflixViewing) => void>();
-        relay.alertTrackerOfNetflixViewing = mockAlertTracker;
+        relay.alertTrackerOfNetflixMediaInfo = mockAlertTracker;
 
         const historyRecorder = new HistoryRecorder(mockStorageApi, relay);
         historyRecorder.saveHistory = vi.fn();
@@ -48,7 +34,7 @@ describe("HistoryRecorder", () => {
 
         historyRecorder.recordEnteredMediaTitle(showTitle, url, "playing");
 
-        expect(relay.alertTrackerOfNetflixViewing).toHaveBeenCalledOnce();
+        expect(relay.alertTrackerOfNetflixMediaInfo).toHaveBeenCalledOnce();
 
         expect(mockAlertTracker).toHaveBeenCalledOnce();
         const firstArgument = mockAlertTracker.mock.calls[0][0];
@@ -65,7 +51,7 @@ describe("HistoryRecorder", () => {
 
         const relay = new MessageRelay();
         relay.alertTrackerOfNetflixPage = vi.fn();
-        relay.alertTrackerOfNetflixViewing = vi.fn();
+        relay.alertTrackerOfNetflixMediaInfo = vi.fn();
         const historyRecorder = new HistoryRecorder(mockStorageApi, relay);
 
         historyRecorder.saveHistory = vi.fn();
@@ -84,5 +70,34 @@ describe("HistoryRecorder", () => {
 
         expect(result).toBeDefined();
         expect(result.showName).toBe(showName);
+    });
+    test("The historyRecorder sends titles from new pages to the ViewingTracker via onMessage", () => {
+        const unused = new MockStorageApi();
+
+        const relay = new MessageRelay();
+
+        const mockOnPageLoad = vi.fn<(arg: string) => void>();
+        relay.alertTrackerOfNetflixPage = mockOnPageLoad;
+
+        // Highly useful pattern for testing with mocks in TS
+        const mockOnViewing = vi.fn<(arg: NetflixViewing) => void>();
+        relay.alertTrackerOfNetflixMediaInfo = mockOnViewing;
+
+        const tracker = new HistoryRecorder(unused, relay);
+
+        const pretendShow = {
+            urlId: "2345",
+            showName: "Hilda",
+            url: "netflix.com/watch/2345",
+        };
+        tracker.sendPageDetailsToViewingTracker(pretendShow.url);
+        tracker.recordEnteredMediaTitle(
+            pretendShow.showName,
+            pretendShow.url,
+            "paused"
+        );
+
+        const pageTitle = mockOnPageLoad.mock.calls[0][0];
+        expect(pageTitle).toBe(pretendShow.urlId);
     });
 });

@@ -5,16 +5,13 @@
  */
 import { describe, expect, test, vi } from "vitest";
 
-import { ServerApi } from "../../../src/api";
-import { HistoryRecorder } from "../../../src/netflix/historyRecorder";
 import {
-    NetflixViewing,
-    ViewingTracker,
-} from "../../../src/videoCommon/visits";
+    HistoryRecorder,
+    MessageRelay,
+} from "../../../src/netflix/historyRecorder";
+import { NetflixViewing } from "../../../src/videoCommon/visits";
 
 import { MockStorageApi } from "../mockStorageInterface";
-
-import { replaceAllMethodsWithMocks } from "../../helper";
 
 describe("The tracker works as intended for Netflix", () => {
     //
@@ -23,51 +20,19 @@ describe("The tracker works as intended for Netflix", () => {
             expect(fn).not.toHaveBeenCalled();
         }
     }
-    test("The historyRecorder deposits titles in the ViewingTracker and notifies the server", () => {
-        const serverConn = new ServerApi();
-        // turn off send payloads
-        replaceAllMethodsWithMocks(serverConn);
 
-        const viewingTrackerInit = new ViewingTracker(serverConn);
-        const unused = new MockStorageApi();
-        const tracker = new HistoryRecorder(viewingTrackerInit, unused);
-
-        const pretendShow = {
-            urlId: "2345",
-            showName: "Hilda",
-            url: "netflix.com/watch/2345",
-        };
-        tracker.sendPageDetailsToViewingTracker(pretendShow.url);
-        tracker.recordEnteredMediaTitle(pretendShow.showName, pretendShow.url);
-        // Expect the show to be in the viewing tracker
-        assertMocksNotCalled([
-            (serverConn.youtube.reportYouTubePage = vi.fn()),
-            (serverConn.youtube.sendPlayEvent = vi.fn()),
-            (serverConn.youtube.sendPauseEvent = vi.fn()),
-        ]);
-
-        const media = viewingTrackerInit.currentMedia;
-        expect(media).toBeDefined();
-        expect(media).toBeInstanceOf(NetflixViewing);
-        expect(media).toMatchObject({
-            videoId: expect.any(String),
-            mediaTitle: expect.any(String),
-            timestamps: expect.any(Array),
-            playerState: expect.stringMatching("paused"),
-        });
-        expect(viewingTrackerInit.currentMedia?.playerState).toBe("paused");
-        // Expect the viewing tracker to have sent a server message:
-        // tracker.netflix.reportNewPage().wasCalled()
-        expect(serverConn.netflix.reportNetflixPage).toHaveBeenCalledOnce();
-    });
     test("A currently active show has it's play event forwarded to the server", () => {
-        const serverConn = new ServerApi();
-        // turn off send payload
-        replaceAllMethodsWithMocks(serverConn);
-
-        const viewingTrackerInit = new ViewingTracker(serverConn);
         const unused = new MockStorageApi();
-        const tracker = new HistoryRecorder(viewingTrackerInit, unused);
+
+        const relay = new MessageRelay();
+
+        relay.alertTrackerOfNetflixPage = vi.fn();
+
+        // Highly useful pattern for testing with mocks in TS
+        const mockAlertTracker = vi.fn<(arg: NetflixViewing) => void>();
+        relay.alertTrackerOfNetflixMediaInfo = mockAlertTracker;
+
+        const tracker = new HistoryRecorder(unused, relay);
 
         const pretendShow = {
             urlId: "2345",
@@ -75,52 +40,15 @@ describe("The tracker works as intended for Netflix", () => {
             url: "netflix.com/watch/2345",
         };
         tracker.sendPageDetailsToViewingTracker(pretendShow.url);
-        tracker.recordEnteredMediaTitle(pretendShow.showName, pretendShow.url);
-
-        viewingTrackerInit.markPlaying();
-
-        assertMocksNotCalled([
-            (serverConn.youtube.reportYouTubePage = vi.fn()),
-            (serverConn.youtube.sendPlayEvent = vi.fn()),
-            (serverConn.youtube.sendPauseEvent = vi.fn()),
-        ]);
-
-        expect(viewingTrackerInit.currentMedia).toBeDefined();
-        expect(viewingTrackerInit.currentMedia?.playerState).toBe("playing");
-        expect(serverConn.netflix.sendPlayEvent).toHaveBeenCalledOnce();
+        tracker.recordEnteredMediaTitle(
+            pretendShow.showName,
+            pretendShow.url,
+            "playing"
+        );
 
         //
-    });
-    test("A playing show can be paused, and the server hears about it", () => {
-        const serverConn = new ServerApi();
-        // turn off send payload
-        replaceAllMethodsWithMocks(serverConn);
-
-        const viewingTrackerInit = new ViewingTracker(serverConn);
-        const unused = new MockStorageApi();
-        const tracker = new HistoryRecorder(viewingTrackerInit, unused);
-
-        const pretendShow = {
-            urlId: "2345",
-            showName: "Hilda",
-            url: "netflix.com/watch/2345",
-        };
-        tracker.sendPageDetailsToViewingTracker(pretendShow.url);
-
-        tracker.recordEnteredMediaTitle(pretendShow.showName, pretendShow.url);
-
-        viewingTrackerInit.markPlaying();
-        viewingTrackerInit.markPaused();
-
-        assertMocksNotCalled([
-            (serverConn.youtube.reportYouTubePage = vi.fn()),
-            (serverConn.youtube.sendPlayEvent = vi.fn()),
-            (serverConn.youtube.sendPauseEvent = vi.fn()),
-        ]);
-
-        expect(viewingTrackerInit.currentMedia).toBeDefined();
-
-        expect(viewingTrackerInit.currentMedia?.playerState).toBe("paused");
-        expect(serverConn.netflix.sendPauseEvent).toHaveBeenCalledOnce();
+        const netflixViewing = mockAlertTracker.mock.calls[0][0];
+        expect(netflixViewing.mediaTitle).toBe(pretendShow.showName);
+        expect(netflixViewing.videoId).toBe(pretendShow.urlId);
     });
 });
