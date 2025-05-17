@@ -8,24 +8,51 @@ import { NetflixViewing } from "../videoCommon/visits";
 
 import { systemInputCapture } from "../inputLogger/systemInputLogger";
 
-function alertTrackerOfNetflixViewing(viewingToTrack: NetflixViewing) {
-    chrome.runtime.sendMessage({
-        event: "netflix_media_selected",
-        media: {
-            videoId: viewingToTrack.videoId,
-            mediaTitle: viewingToTrack.mediaTitle,
-            playerState: viewingToTrack.playerState,
-        },
-    });
-}
+// function alertTrackerOfNetflixViewing(viewingToTrack: NetflixViewing) {
+//     chrome.runtime.sendMessage({
+//         event: "netflix_media_selected",
+//         media: {
+//             videoId: viewingToTrack.videoId,
+//             mediaTitle: viewingToTrack.mediaTitle,
+//             playerState: viewingToTrack.playerState,
+//         },
+//     });
+// }
 
-function alertTrackerOfNetflixPage(pageId: string) {
-    chrome.runtime.sendMessage({
-        event: "netflix_page_opened",
-        media: {
-            pageId: pageId,
-        },
-    });
+// function alertTrackerOfNetflixPage(pageId: string) {
+//     chrome.runtime.sendMessage({
+//         event: "netflix_page_opened",
+//         media: {
+//             pageId: pageId,
+//         },
+//     });
+// }
+
+export class MessageRelay {
+    constructor() {
+        //
+    }
+
+    // NOTE that play/pause occurs thru background.ts in "onMessage"
+    alertTrackerOfNetflixViewing(viewingToTrack: NetflixViewing) {
+        chrome.runtime.sendMessage({
+            event: "netflix_media_selected",
+            media: {
+                videoId: viewingToTrack.videoId,
+                mediaTitle: viewingToTrack.mediaTitle,
+                playerState: viewingToTrack.playerState,
+            },
+        });
+    }
+
+    alertTrackerOfNetflixPage(pageId: string) {
+        chrome.runtime.sendMessage({
+            event: "netflix_page_opened",
+            media: {
+                pageId: pageId,
+            },
+        });
+    }
 }
 
 export class HistoryRecorder {
@@ -39,16 +66,18 @@ export class HistoryRecorder {
     */
     allHistory: WatchEntry[];
     storageConnection: StorageInterface;
+    relay: MessageRelay;
 
     // facade: NetflixFacade;
 
-    constructor(storageConnection: StorageInterface) {
+    constructor(
+        storageConnection: StorageInterface,
+        backgroundScriptRelay: MessageRelay
+    ) {
         this.storageConnection = storageConnection;
         this.allHistory = [];
+        this.relay = backgroundScriptRelay;
         this.loadHistory();
-
-        // this.facade = new NetflixFacade();
-        // this.setupEventListeners();
     }
 
     makeUrlId(url: string) {
@@ -72,7 +101,7 @@ export class HistoryRecorder {
         });
         const watchPageId = this.makeUrlId(url);
         console.log("Sending watch page ID", watchPageId);
-        alertTrackerOfNetflixPage(watchPageId);
+        this.relay.alertTrackerOfNetflixPage(watchPageId);
     }
 
     recordEnteredMediaTitle(
@@ -102,12 +131,7 @@ export class HistoryRecorder {
         const viewingToTrack: NetflixViewing =
             this.formatWatchEntryAsViewing(latestEntryUpdate);
         // NOTE that play/pause occurs thru background.ts in "onMessage"
-        console.log("SET CURRENT", viewingToTrack);
-        console.log("SET CURRENT", viewingToTrack);
-        console.log("SET CURRENT", viewingToTrack);
-        console.log("SET CURRENT", viewingToTrack);
-        console.log("SET CURRENT", viewingToTrack);
-        alertTrackerOfNetflixViewing(viewingToTrack);
+        this.relay.alertTrackerOfNetflixViewing(viewingToTrack);
         this.saveHistory();
     }
 
@@ -168,6 +192,7 @@ export class HistoryRecorder {
     async getTopFive(): Promise<string[]> {
         // this.cleanupOldHistory();
         console.log("In getTopFive", this.allHistory.length);
+        // TODO: Clearly, this intends to go thru the Top Five algorithm first
         const topFiveStrings = this.allHistory.map((h: WatchEntry) => {
             return h.showName;
         });
@@ -221,8 +246,8 @@ export class HistoryRecorder {
         this.storageConnection.saveAll(this.allHistory);
     }
 
-    // Get today's date in YYYY-MM-DD format
     getTodaysDate() {
+        // Get today's date in YYYY-MM-DD format
         return new Date().toISOString().split("T")[0];
     }
 
