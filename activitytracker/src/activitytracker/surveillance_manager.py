@@ -50,7 +50,7 @@ class SurveillanceManager:
         is_test=False,
     ):
         """
-        Facades argument is DI for testability.
+        Facades argument is DI for testability. Actually all DI here is for testability.
         """
         self.is_running = False
         self.is_test = is_test

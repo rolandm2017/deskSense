@@ -3,13 +3,7 @@ from curses import window
 import time
 from datetime import datetime
 
-from activitytracker.config.definitions import (
-    no_space_dash_space,
-    productive_apps,
-    productive_categories,
-    productive_sites,
-    unproductive_apps,
-)
+from activitytracker.config.definitions import no_space_dash_space
 from activitytracker.facade.program_facade_base import ProgramFacadeInterface
 from activitytracker.object.classes import ProgramSession
 from activitytracker.object.video_classes import VlcInfo

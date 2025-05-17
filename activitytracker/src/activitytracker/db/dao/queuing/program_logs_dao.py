@@ -1,31 +1,30 @@
-from sqlalchemy import select, or_
+from sqlalchemy import or_, select
 from sqlalchemy.orm import sessionmaker
-from datetime import timedelta, datetime, date, timezone
+
+from datetime import date, datetime, timedelta, timezone
+
 from typing import List
 
-from activitytracker.db.dao.utility_dao_mixin import UtilityDaoMixin
 from activitytracker.db.dao.logging_dao_mixin import LoggingDaoMixin
+from activitytracker.db.dao.utility_dao_mixin import UtilityDaoMixin
 from activitytracker.db.models import ProgramSummaryLog
-
+from activitytracker.object.classes import CompletedProgramSession, ProgramSession
 from activitytracker.tz_handling.dao_objects import LogTimeConverter
-from activitytracker.object.classes import ProgramSession, CompletedProgramSession
-
-from activitytracker.util.console_logger import ConsoleLogger
-from activitytracker.util.errors import ImpossibleToGetHereError
-from activitytracker.util.arg_type_wrapper import validate_session, guarantee_start_time
-from activitytracker.util.log_dao_helper import (
-    convert_start_end_times_to_hours,
-    convert_duration_to_hours,
-)
 from activitytracker.tz_handling.time_formatting import (
+    attach_tz_to_all,
     convert_to_utc,
     get_start_of_day_from_datetime,
-    attach_tz_to_all,
 )
+from activitytracker.util.arg_type_wrapper import guarantee_start_time, validate_session
+from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.const import ten_sec_as_pct_of_hour
+from activitytracker.util.errors import ImpossibleToGetHereError
+from activitytracker.util.log_dao_helper import (
+    convert_duration_to_hours,
+    convert_start_end_times_to_hours,
+    group_logs_by_name,
+)
 from activitytracker.util.time_wrappers import UserLocalTime
-from activitytracker.util.log_dao_helper import group_logs_by_name
-
 
 #
 # #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #
@@ -67,7 +66,7 @@ class ProgramLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
             program_name=session.window_title,
             # Assumes (10 - n) sec will be deducted later
             # FIXME: all time additions should happen thru KeepAlive
-            hours_spent=ten_sec_as_pct_of_hour,
+            hours_spent=0,
             start_time=initializer.base_start_time_as_utc,
             start_time_local=session.start_time.dt,
             end_time=initializer.base_start_window_end,
