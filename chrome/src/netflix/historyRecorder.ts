@@ -7,6 +7,7 @@ import { WatchEntry } from "../interface/interfaces";
 import { NetflixViewing } from "../videoCommon/visits";
 
 import { systemInputCapture } from "../inputLogger/systemInputLogger";
+import { TopFiveAlgorithm } from "./topFiveAlgorithm";
 
 // function alertTrackerOfNetflixViewing(viewingToTrack: NetflixViewing) {
 //     chrome.runtime.sendMessage({
@@ -67,6 +68,7 @@ export class HistoryRecorder {
     allHistory: WatchEntry[];
     storageConnection: StorageInterface;
     relay: MessageRelay;
+    dbLoaded: Promise<void>;
 
     // facade: NetflixFacade;
 
@@ -77,7 +79,21 @@ export class HistoryRecorder {
         this.storageConnection = storageConnection;
         this.allHistory = [];
         this.relay = backgroundScriptRelay;
-        this.loadHistory();
+        this.dbLoaded = this.loadHistory();
+    }
+
+    static async create(
+        storageConnection: StorageInterface,
+        backgroundScriptRelay: MessageRelay
+    ): Promise<HistoryRecorder> {
+        // Use this to make new HistoryRecorders.
+        // const recorder = await HistoryRecorder.create(storageConnection, relay);
+        const instance = new HistoryRecorder(
+            storageConnection,
+            backgroundScriptRelay
+        );
+        await instance.loadHistory();
+        return instance;
     }
 
     makeUrlId(url: string) {
@@ -137,6 +153,7 @@ export class HistoryRecorder {
 
     // Add a new watch entry
     addWatchEntry(urlId: string, showName: string, url: string) {
+        // This function is NOT an entrypoint into the class!
         if (!this.validateUrlId(urlId)) {
             console.warn("Received invalid URL ID: ", urlId);
         }
@@ -189,34 +206,24 @@ export class HistoryRecorder {
     // }
     */
 
-    async getTopFive(): Promise<string[]> {
-        // this.cleanupOldHistory();
-        console.log("In getTopFive", this.allHistory.length);
-        // TODO: Clearly, this intends to go thru the Top Five algorithm first
-        const topFiveStrings = this.allHistory.map((h: WatchEntry) => {
-            return h.showName;
-        });
+    async loadDropdown(): Promise<string[]> {
+        // TODO: Decide when and where you want to have historyCleanup performed!
+        // This function is just a suggestion.
+        await this.dbLoaded;
+        this.cleanupOldHistory();
+        return this.getTopFive();
+    }
 
-        const seen = new Set();
-        const uniqueByShowName = topFiveStrings.filter((item) => {
-            if (seen.has(item)) return false;
-            seen.add(item);
-            return true;
-        });
+    async getTopFive(): Promise<string[]> {
+        console.log("In getTopFive", this.allHistory.length);
+        await this.dbLoaded;
+
+        const topFiveAlgorithm = new TopFiveAlgorithm(this.allHistory);
+        const topFiveRanked = topFiveAlgorithm.rank();
 
         return new Promise((resolve) => {
-            resolve(uniqueByShowName);
+            resolve(topFiveRanked);
         });
-
-        // return new Promise((resolve, reject) => {
-        //     resolve([
-        //         "Hilda",
-        //         "Lupin",
-        //         "The Three Body Problem",
-        //         "L'Agence",
-        //         "The Invisible Guest",
-        //     ]);
-        // });
     }
 
     recordIgnoredUrl(url: string) {
@@ -227,14 +234,7 @@ export class HistoryRecorder {
 
     // Load history from Chrome storage
     async loadHistory() {
-        // TODO
-        this.storageConnection
-            .readWholeHistory()
-            .then((entries: WatchEntry[]) => {
-                console.log("Load history found: ", entries);
-
-                this.allHistory = entries;
-            });
+        this.allHistory = await this.storageConnection.readWholeHistory();
     }
 
     // Save history to Chrome storage

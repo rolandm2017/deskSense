@@ -5,13 +5,16 @@
  */
 import { describe, expect, test, vi } from "vitest";
 
-import { ServerApi } from "../../src/api";
-import { HistoryRecorder } from "../../src/netflix/historyRecorder";
-import { NetflixViewing, ViewingTracker } from "../../src/videoCommon/visits";
+import { ServerApi } from "../../../src/api";
+import { HistoryRecorder } from "../../../src/netflix/historyRecorder";
+import {
+    NetflixViewing,
+    ViewingTracker,
+} from "../../../src/videoCommon/visits";
 
-import { MockStorageApi } from "./mockStorageInterface";
+import { MockStorageApi } from "../mockStorageInterface";
 
-import { replaceAllMethodsWithMocks } from "../helper";
+import { replaceAllMethodsWithMocks } from "../../helper";
 
 describe("The tracker works as intended for Netflix", () => {
     //
