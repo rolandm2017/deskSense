@@ -4,7 +4,7 @@ import { stripProtocol } from "../urlTools";
 import { YouTubeViewing, viewingTracker } from "../videoCommon/visits";
 import { extractChannelInfoFromWatchPage } from "./channelExtractor";
 
-import { api } from "../api";
+import { initializedServerApi } from "../api";
 
 import { MissingUrlError } from "../errors";
 import { systemInputCapture } from "../inputLogger/systemInputLogger";
@@ -97,13 +97,19 @@ export function handleYouTubeUrl(
                 timestamp: new Date().toISOString(),
             },
         });
-        api.youtube.reportYouTubePage(tab.title, channelName);
+        initializedServerApi.youtube.reportYouTubePage(tab.title, channelName);
     } else if (watchingShorts(tab.url)) {
         // Avoids trying to extract the channel name from
         // the YouTube Shorts page. The page's HTML changes often. Sisyphean task.
-        api.youtube.reportYouTubePage(tab.title, "Watching Shorts");
+        initializedServerApi.youtube.reportYouTubePage(
+            tab.title,
+            "Watching Shorts"
+        );
     } else {
-        api.youtube.reportYouTubePage(tab.title, "YouTube Home");
+        initializedServerApi.youtube.reportYouTubePage(
+            tab.title,
+            "YouTube Home"
+        );
     }
 }
 

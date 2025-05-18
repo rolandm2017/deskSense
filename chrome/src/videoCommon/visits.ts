@@ -1,6 +1,6 @@
 // videoCommon/visits.ts
 
-import { ServerApi } from "../api";
+import { initializedServerApi, ServerApi } from "../api";
 import { MissingMediaError } from "../errors";
 import {
     INetflixViewing,
@@ -115,9 +115,7 @@ export class ViewingTracker {
     }
 }
 
-const serverApi = new ServerApi();
-
-export const viewingTracker = new ViewingTracker(serverApi);
+export const viewingTracker = new ViewingTracker(initializedServerApi);
 
 export class YouTubeViewing implements IYouTubeViewing {
     videoId: string;

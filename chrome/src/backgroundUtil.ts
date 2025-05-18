@@ -1,4 +1,4 @@
-import { api } from "./api";
+import { initializedServerApi } from "./api";
 import { ignoredDomains, isDomainIgnored } from "./ignoreList";
 import { getDomainFromUrl } from "./urlTools";
 import { viewingTracker, ViewingTracker } from "./videoCommon/visits";
@@ -61,7 +61,7 @@ export function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
     if (domain) {
         const ignored = isDomainIgnored(domain, ignoredDomains.getAll());
         if (ignored) {
-            api.reportIgnoredUrl();
+            initializedServerApi.reportIgnoredUrl();
             return;
         }
         const isYouTube = domain.includes("youtube.com");
@@ -71,7 +71,10 @@ export function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
             handleYouTubeUrl(tab, putTabIdIntoPollingList);
             return;
         }
-        api.reportTabSwitch(domain, tab.title ? tab.title : "No title found");
+        initializedServerApi.reportTabSwitch(
+            domain,
+            tab.title ? tab.title : "No title found"
+        );
     } else {
         console.log("No domain found for ", tab.url);
     }

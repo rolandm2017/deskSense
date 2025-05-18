@@ -8,14 +8,14 @@ import {
 
 const DESKSENSE_BACKEND_URL = "http://localhost:8000";
 
-export const chromeTabUrl = "/api/chrome/tab";
-export const ignoredDomainUrl = "/api/chrome/ignored";
+export const chromeTabUrl = "/api/chrome/video/tab";
+export const ignoredDomainUrl = "/api/chrome/video/ignored";
 // youtube
-export const youTubeUrl = "/api/chrome/youtube/new";
-export const youtubePlayerStateUrl = "/api/chrome/youtube/state";
+export const youTubeUrl = "/api/chrome/video/youtube/new";
+export const youtubePlayerStateUrl = "/api/chrome/video/youtube/state";
 // netflix
-export const netflixUrl = "/api/chrome/netflix/new";
-export const netflixPlayerStateUrl = "/api/chrome/netflix/state";
+export const netflixUrl = "/api/chrome/video/netflix/new";
+export const netflixPlayerStateUrl = "/api/chrome/video/netflix/state";
 
 export const captureSessionStartUrl = "/api/capture/start";
 
@@ -193,6 +193,9 @@ export class ServerApi {
     constructor(disablePayloads: boolean = true) {
         // Must set disablePayloads = false, deliberately. To protect testers
         this.disablePayloads = disablePayloads;
+        if (this.disablePayloads === false) {
+            console.log("Payloads are enabled");
+        }
         this.logging = false;
         this.youtube = new YouTubeApi(
             this.sendPayload.bind(this),
@@ -296,4 +299,4 @@ export class ServerApi {
     }
 }
 
-export const api = new ServerApi();
+export const initializedServerApi = new ServerApi(false);
