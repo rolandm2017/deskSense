@@ -99,7 +99,8 @@ export class DomainLogger {
 
     logPayloadToStorage(eventType: string, serverUrl: string, payload: object) {
         // TODO: log to json file
-        this.storageWriter.savePayload(eventType, serverUrl, payload);
+        // Consider it turned off if it's commented out
+        // this.storageWriter.savePayload(eventType, serverUrl, payload);
     }
 }
 

@@ -14,7 +14,6 @@ import { PlatformLogger } from "../endpointLogging";
 
 // A Visit: As in, A PageVisit
 // A Viewing: A window of time spent actively viewing the video.
-// A Segment: A bundle of timestamps from your viewing. A viewing can have multiple segments.
 
 /*
  * Server assumes that if Extension didn't send a "video ended" payload
@@ -31,7 +30,6 @@ export class ViewingTracker {
     api: ServerApi;
 
     partialNetflixDescriptor: string | undefined;
-    // timer: ViewingPayloadTimer;
 
     constructor(api: ServerApi) {
         this.currentMedia = undefined;
@@ -39,11 +37,8 @@ export class ViewingTracker {
         this.api = api;
         this.youTubeApiLogger = new PlatformLogger("YouTube");
         this.netflixApiLogger = new PlatformLogger("Netflix");
-        // TODO: JUST ASSUME it's going to work with Play/Pause only, until
-        // UNTIL you figure out otherwise.
-        // const timerDuration = getTimeSpentWatching();
-        // const temp = new Date();
-        // this.timer = new ViewingPayloadTimer(temp);
+        // TODO: JUST ASSUME it's going to work with Play/Pause only,
+        // until you figure out otherwise.
     }
 
     setCurrent(current: YouTubeViewing | NetflixViewing) {
@@ -110,6 +105,7 @@ export class ViewingTracker {
     }
 
     endViewing() {
+        // TODO: handle the user closing the tab
         // used to report the final value on window close
         if (this.currentMedia) {
             // conclude. something like:
@@ -122,24 +118,6 @@ export class ViewingTracker {
 const serverApi = new ServerApi();
 
 export const viewingTracker = new ViewingTracker(serverApi);
-
-class Segment {
-    // A segment of time in a Viewing
-    start: number;
-    end: number;
-    timestamps: number[];
-
-    constructor(start: number, end: number) {
-        this.start = start;
-        this.end = end;
-        this.timestamps = [];
-    }
-}
-
-class VideoContentViewing {
-    // Note that these property names must work for Netflix & YouTube both.
-    // Probably want to send a payload every 3 minutes or so, max.
-}
 
 export class YouTubeViewing implements IYouTubeViewing {
     videoId: string;
