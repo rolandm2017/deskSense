@@ -82,7 +82,36 @@ export function getBaseDomainViaUrl(hostname: string) {
     const url = new URL(hostname);
 }
 
+export function startsWithProtocol(s: string) {
+    return s.startsWith("http://") || s.startsWith("https://");
+}
+
+export function removeProtocol(s: string) {
+    if (s.startsWith("http://")) {
+        return s.slice(6);
+    } else if (s.startsWith("https://")) {
+        return s.slice(7);
+    } else {
+        return s;
+    }
+}
+
+export function startsWithWww(s: string) {
+    return s.startsWith("www");
+}
+
+export function hasPath(s: string) {
+    // assumes protocol was removed
+    return s.includes("/");
+}
+
+export function getPartBeforePath(s: string) {
+    // assumes s is a url with a path and no protocol
+    return s.split("/")[0];
+}
+
 export function getBaseDomain(hostname: string) {
+    // Function is a replacement for PSL.
     // www case is standard
     const atypicalDomainFormat = hostname.includes("www");
     if (atypicalDomainFormat) {
@@ -110,7 +139,7 @@ export function getBaseDomain(hostname: string) {
         // https://www.youtube.com
         const pathRemoved = parts[2].split("/", 1)[0];
         parts[2] = pathRemoved;
-        return parts.slice(-3).join(".");
+        // return parts.slice(-3).join(".");
     }
 
     if (tlds.includes(lastTwoJoined)) {
