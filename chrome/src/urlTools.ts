@@ -100,6 +100,10 @@ export function startsWithWww(s: string) {
     return s.startsWith("www");
 }
 
+export function removeWww(s: string) {
+    return s.slice(4);
+}
+
 export function hasPath(s: string) {
     // assumes protocol was removed
     return s.includes("/");
@@ -109,6 +113,47 @@ export function getPartBeforePath(s: string) {
     // assumes s is a url with a path and no protocol
     return s.split("/")[0];
 }
+
+export function isNormalizedFormatWithSubdomain(s: string) {
+    if (s.includes("/")) {
+        return false; // Can't be normalized if the protocol or path are on it
+    }
+    const pieces = s.split(".");
+
+    const invalidInput = pieces.length != 3;
+    if (invalidInput) {
+        return false; // A normalized subdomain URL would have two .'s
+    }
+
+    return true;
+}
+
+export function startsWithSubdomain(s: string) {
+    // Test assumes inputs are actual domains with a subdomain.
+    // If you feed it "google.com" it won't work, it'll be a false positive
+    if (s.includes("/")) {
+        throw new Error("Expecting a removed protocol, and no path");
+    }
+    const pieces = s.split(".");
+
+    const invalidInput = pieces.length != 3;
+    if (invalidInput) {
+        throw new Error("Expected subdomain dot domain dot TLD");
+    }
+    const subdomainAndDomainRegex =
+        /^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$/;
+
+    return pieces[0].match(subdomainAndDomainRegex);
+}
+
+export function removeSubdomain(s: string) {
+    console.log("Removing subdomain", s);
+    const pieces = s.split(".");
+    const output = pieces[1] + "." + pieces[2];
+    return output;
+}
+
+// export function normalizeUrl
 
 export function getBaseDomain(hostname: string) {
     // Function is a replacement for PSL.
@@ -120,12 +165,28 @@ export function getBaseDomain(hostname: string) {
             const subdomainAndDomainEtc = hostname.split("://")[1];
             const pathIsPresent = subdomainAndDomainEtc.includes("/");
             if (pathIsPresent) {
+                console.log(subdomainAndDomainEtc, "127ru");
                 const relevantPart = subdomainAndDomainEtc.split("/", 1)[0];
+                console.log(relevantPart, "124ru");
+                if (startsWithWww(relevantPart)) {
+                    const normalizedInput = removeWww(relevantPart);
+                    return normalizedInput;
+                }
+
                 return relevantPart;
             }
         }
     }
+    console.log(hostname, "128ru");
 
+    const normalizedUrl = normalizeUrl(hostname);
+    console.log(normalizedUrl, "180ru");
+    if (
+        isNormalizedFormatWithSubdomain(normalizedUrl) &&
+        startsWithSubdomain(normalizedUrl)
+    ) {
+        return removeSubdomain(normalizedUrl);
+    }
     const parts = hostname.toLowerCase().split(".");
     if (parts.length <= 2) return hostname;
     const tlds = ["co.uk", "ac.uk", "gov.uk", "com.au", "co.jp"]; // add more if you want to be precise

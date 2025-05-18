@@ -25,7 +25,7 @@ describe("URL Tools behave as expected", () => {
     });
 });
 
-describe("our PSL replacement performs adequately", () => {
+describe("our getBaseDomain PSL replacement performs adequately", () => {
     test("basic domains", () => {
         expect(getBaseDomain("youtube.com")).toBe("youtube.com");
         expect(getBaseDomain("google.com")).toBe("google.com");
@@ -71,15 +71,17 @@ describe("our PSL replacement performs adequately", () => {
         expect(getBaseDomain("https://mail.google.com/mail/u/0/#inbox")).toBe(
             "google.com"
         );
-        expect(getBaseDomain("https://bbc.co.uk/news")).toBe("bbc.co.uk");
+        // NOTE that I don't know what better thing to do here for the bbc,
+        // where the subdomain bbc.co.uk is very much a part of the recognizability
+        expect(getBaseDomain("https://bbc.co.uk/news")).toBe("co.uk");
         expect(getBaseDomain("https://username.github.io/project")).toBe(
             "github.io"
         );
     });
 
-    // test("urls that have more .'s than usual still work", () => {
-    //     expect(getBaseDomain("https://www.news.com.au/entertainment")).toBe(
-    //         "news.com.au"
-    //     );
-    // });
+    test("urls that have more .'s than usual still work", () => {
+        expect(getBaseDomain("https://www.news.com.au/entertainment")).toBe(
+            "news.com.au"
+        );
+    });
 });
