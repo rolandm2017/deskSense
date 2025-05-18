@@ -66,6 +66,7 @@ from activitytracker.object.pydantic_dto import (
     YouTubeTabChange,
 )
 from activitytracker.routes.report_routes import router as report_router
+from activitytracker.routes.video_routes import router as video_router
 from activitytracker.service_dependencies import (
     get_activity_arbiter,
     get_capture_service,
@@ -206,6 +207,7 @@ app.add_middleware(
 )
 
 app.include_router(report_router)
+app.include_router(video_router)
 
 
 class HealthResponse(BaseModel):

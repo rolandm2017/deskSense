@@ -1,27 +1,24 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
+
 from typing import List
 
-from activitytracker.object.pydantic_dto import (
+from activitytracker.object.pydantic_report_dto import (
     KeyboardReport,
     MouseReport,
     ProgramActivityReport,
 )
-
-from activitytracker.services.tiny_services import KeyboardService, MouseService
-
 from activitytracker.service_dependencies import (
+    get_chrome_service,
     get_keyboard_service,
     get_mouse_service,
-    get_chrome_service,
 )
-
+from activitytracker.services.tiny_services import KeyboardService, MouseService
+from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.pydantic_factory import (
     make_keyboard_log,
     make_mouse_log,
     make_program_log,
 )
-
-from activitytracker.util.console_logger import ConsoleLogger
 
 # Create a logger
 logger = ConsoleLogger()

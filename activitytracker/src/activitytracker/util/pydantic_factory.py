@@ -1,19 +1,21 @@
 from typing import List
 
-from activitytracker.object.pydantic_dto import KeyboardLog, MouseLog, ProgramActivityLog
-from activitytracker.object.dto import TypingSessionDto, MouseMoveDto, ProgramDto
-
-from activitytracker.db.models import DailyProgramSummary, DailyDomainSummary
-
+from activitytracker.db.models import DailyDomainSummary, DailyProgramSummary
 from activitytracker.object.dashboard_dto import (
-    ProductivityBreakdown,
-    DailyProgramSummarySchema,
-    DailyDomainSummarySchema,
-    WeeklyProgramContent,
-    DayOfProgramContent,
-    DayOfChromeContent,
     ChromeBarChartContent,
+    DailyDomainSummarySchema,
+    DailyProgramSummarySchema,
+    DayOfChromeContent,
+    DayOfProgramContent,
+    ProductivityBreakdown,
     ProgramBarChartContent,
+    WeeklyProgramContent,
+)
+from activitytracker.object.dto import MouseMoveDto, ProgramDto, TypingSessionDto
+from activitytracker.object.pydantic_report_dto import (
+    KeyboardLog,
+    MouseLog,
+    ProgramActivityLog,
 )
 
 

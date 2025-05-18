@@ -16,12 +16,10 @@ from activitytracker.object.pydantic_dto import (
     NetflixPlayerChange,
     NetflixTabChange,
     UtcDtTabChange,
-    YouTubePageEvent,
     YouTubePlayerChange,
-    YouTubePlayerEvent,
     YouTubeTabChange,
 )
-from activitytracker.object.video_classes import YouTubeInfo, NetflixInfo
+from activitytracker.object.video_classes import NetflixInfo, YouTubeInfo
 from activitytracker.tz_handling.time_formatting import convert_to_timezone
 from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.time_wrappers import UserLocalTime
@@ -32,12 +30,12 @@ class YouTubeTimezoneService:
         self.parent_service = parent_service
 
     def convert_tz_for_tab_change(self, tab_event: YouTubeTabChange, new_tz: str):
-        youtube_info = YouTubeInfo("paused", tab_event.pageEvent.channel)
+        youtube_info = YouTubeInfo(tab_event.pageEvent.channel, "paused")
         return self._make_tab_change_event_with_youtube_info(tab_event, youtube_info, new_tz)
 
     def convert_tz_for_state_change(self, tab_event: YouTubePlayerChange, new_tz: str):
         youtube_info = YouTubeInfo(
-            tab_event.playerEvent.playerState, tab_event.playerEvent.channel
+            tab_event.playerEvent.channel, tab_event.playerEvent.playerState
         )
         return self._make_tab_change_event_with_youtube_info(tab_event, youtube_info, new_tz)
 
@@ -59,14 +57,16 @@ class NetflixTimezoneService:
         self.parent_service = parent_service
 
     def convert_tz_for_tab_change(self, tab_event: NetflixTabChange, new_tz: str):
-        netflix_info = NetflixInfo(tab_event.playerEvent.videoId)
+        netflix_info = NetflixInfo(tab_event.playerEvent.videoId, "paused")
         return self._make_tab_change_event_with_netflix_info(tab_event, netflix_info, new_tz)
 
     def convert_tz_for_state_change(self, tab_event: NetflixPlayerChange, new_tz: str):
-        netflix_info = NetflixInfo(tab_event.playerEvent.playerState, tab_event.playerEvent.videoId)
+        netflix_info = NetflixInfo(
+            tab_event.playerEvent.videoId, tab_event.playerEvent.playerState
+        )
         return self._make_tab_change_event_with_netflix_info(tab_event, netflix_info, new_tz)
-    
-      def _make_tab_change_event_with_netflix_info(
+
+    def _make_tab_change_event_with_netflix_info(
         self, tab_event, netflix_info: NetflixInfo, new_tz: str
     ):
         new_datetime_with_tz: datetime = convert_to_timezone(tab_event.startTime, new_tz)

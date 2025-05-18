@@ -33,10 +33,9 @@ class YouTubeInfo(VideoInfo):
 
 class NetflixInfo(VideoInfo):
 
-    def __init__(self, title, player_state) -> None:
+    def __init__(self, video_id, player_state) -> None:
         super().__init__(player_state)
-        self.video_id = 
-        self.title = title
+        self.video_id = video_id
 
     def get_name(self):
         return f"Netflix: {self.title}"
