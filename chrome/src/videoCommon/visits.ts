@@ -47,7 +47,6 @@ export class ViewingTracker {
     }
 
     setCurrent(current: YouTubeViewing | NetflixViewing) {
-        console.log("In setCurrent", current);
         this.currentMedia = current;
     }
 

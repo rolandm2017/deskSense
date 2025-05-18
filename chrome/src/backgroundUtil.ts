@@ -6,7 +6,7 @@ import { handleYouTubeUrl } from "./youtube/youtube";
 
 import { systemInputCapture } from "./inputLogger/systemInputLogger";
 
-const tabsWithPollingList: number[] = [];
+export const tabsWithPollingList: number[] = [];
 
 function putTabIdIntoPollingList(tabId: number) {
     tabsWithPollingList.push(tabId);
@@ -152,12 +152,15 @@ export class PlayPauseDispatch {
 
     tracker: ViewingTracker;
 
+    gracePeriodDelayInMs: number;
+
     constructor(tracker: ViewingTracker) {
         this.playCount = 0;
         this.pauseCount = 0;
         this.endSessionTimeoutId = undefined;
         this.pauseStartTime = undefined;
         this.tracker = tracker;
+        this.gracePeriodDelayInMs = 3000;
     }
 
     notePlayEvent(sender: chrome.runtime.MessageSender) {
@@ -211,8 +214,6 @@ export class PlayPauseDispatch {
                 this.startGracePeriod(startOfGracePeriod);
         }
     }
-
-    gracePeriodDelayInMs = 3000;
 
     startGracePeriod(localTime: Date): ReturnType<typeof setTimeout> {
         // User presses pause, and then resumes the video after only 2.9 seconds, then

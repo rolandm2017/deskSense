@@ -92,6 +92,7 @@ export function getBaseDomain(hostname: string) {
             const pathIsPresent = subdomainAndDomainEtc.includes("/");
             if (pathIsPresent) {
                 const relevantPart = subdomainAndDomainEtc.split("/", 1)[0];
+                return relevantPart;
             }
         }
     }
@@ -109,6 +110,7 @@ export function getBaseDomain(hostname: string) {
         // https://www.youtube.com
         const pathRemoved = parts[2].split("/", 1)[0];
         parts[2] = pathRemoved;
+        return parts.slice(-3).join(".");
     }
 
     if (tlds.includes(lastTwoJoined)) {

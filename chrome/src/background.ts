@@ -1,6 +1,10 @@
 // background.ts
 
-import { playPauseDispatch } from "./backgroundUtil";
+import {
+    getDomainFromUrlAndSubmit,
+    playPauseDispatch,
+    tabsWithPollingList,
+} from "./backgroundUtil";
 
 import { NetflixViewing, viewingTracker } from "./videoCommon/visits";
 

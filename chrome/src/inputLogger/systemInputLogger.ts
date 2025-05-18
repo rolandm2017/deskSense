@@ -40,13 +40,13 @@ export class SystemInputLogger {
     }
 
     captureIfEnabled(event: CaptureEvent) {
-        console.log(event);
-        console.log(
-            "Pushing event data: ",
-            event.data,
-            RECORDING_INPUT.enabled
-        );
         if (RECORDING_INPUT.enabled) {
+            console.log(event);
+            console.log(
+                "Pushing event data: ",
+                event.data,
+                RECORDING_INPUT.enabled
+            );
             this.events.push(event);
             if (this.events.length % 5 == 0) {
                 this.pushNewActivityToStorage(this.events);
