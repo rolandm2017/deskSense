@@ -16,7 +16,11 @@ from typing import List
 from activitytracker.arbiter.activity_arbiter import ActivityArbiter
 from activitytracker.config.definitions import productive_sites
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from activitytracker.object.classes import ChromeSession, TabChangeEventWithLtz
+from activitytracker.object.classes import (
+    ChromeSession,
+    PlayerStateChangeEventWithLtz,
+    TabChangeEventWithLtz,
+)
 from activitytracker.object.pydantic_dto import UtcDtTabChange
 from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.errors import SuspiciousDurationError
@@ -34,7 +38,10 @@ class TabQueue:
         self.debounce_timer = None
         self.log_tab_event = log_tab_event
 
-    def add_to_arrival_queue(self, tab_change_event: TabChangeEventWithLtz):
+    def add_to_arrival_queue(
+        self, tab_change_event: TabChangeEventWithLtz | PlayerStateChangeEventWithLtz
+    ):
+        # TODO: Handle PlayerStateChangeEventWithLtz being added. Think you need to do a switch or polymorphism
         print("appending to queue")
         self.append_to_queue(tab_change_event)
         MAX_QUEUE_LEN = 40

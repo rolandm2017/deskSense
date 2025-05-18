@@ -45,6 +45,7 @@ class ActivityRecorder:
 
     def on_new_session(self, session: ProgramSession | ChromeSession):
         # TODO: do an audit of logging time and summary time.
+        print(session.video_info, "48ru")
         if session.video_info:
             self.logger.log_blue(
                 f"video info made it to recorder: " + session.video_info.get_name()
@@ -87,6 +88,8 @@ class ActivityRecorder:
             session.ledger.add_ten_sec()
 
         # Window push now finds session based on start_time
+        print(session.video_info, "91ru")
+
         if session.video_info:
             self.logger.log_blue(
                 f"video info made it to recorder: " + session.video_info.get_name()
@@ -117,6 +120,8 @@ class ActivityRecorder:
             session.ledger.extend_by_n(duration_in_sec)
         if duration_in_sec == 0:
             return  # Nothing to add
+
+        print(session.video_info, "124ru")
 
         if session.video_info:
             self.logger.log_blue(

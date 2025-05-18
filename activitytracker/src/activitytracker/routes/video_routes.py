@@ -33,7 +33,10 @@ from activitytracker.db.models import (
     ProgramSummaryLog,
 )
 from activitytracker.facade.receive_messages import MessageReceiver
-from activitytracker.object.classes import TabChangeEventWithLtz
+from activitytracker.object.classes import (
+    PlayerStateChangeEventWithLtz,
+    TabChangeEventWithLtz,
+)
 from activitytracker.object.pydantic_dto import (
     NetflixPlayerChange,
     NetflixTabChange,
@@ -62,7 +65,7 @@ from activitytracker.util.time_wrappers import UserLocalTime
 logger = ConsoleLogger()
 
 # Create a router
-router = APIRouter(prefix="/chrome/video", tags=["video"])
+router = APIRouter(prefix="/api/chrome/video", tags=["video"])
 
 
 # TODO: Make these endpoints be /chrome/video/netflix/new
@@ -89,7 +92,7 @@ async def receive_youtube_event(
         updated_tab_change_event: TabChangeEventWithLtz = (
             timezone_service.youtube.convert_tz_for_tab_change(tab_change_event, tz_for_user)
         )
-
+        print(updated_tab_change_event, "92ru")
         chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
         return  # Returns 204 No Content
     except Exception as e:
@@ -108,7 +111,7 @@ async def receive_youtube_player_state(
     logger.log_purple("[LOG] Chrome Tab Received")
     try:
         print("State received", tab_change_event.playerEvent.playerState)
-        field_has_utc_tzinfo_else_throw(tab_change_event.startTime)
+        field_has_utc_tzinfo_else_throw(tab_change_event.eventTime)
         user_id = 1  # temp until i have more than 1 user
 
         # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
@@ -118,11 +121,13 @@ async def receive_youtube_player_state(
         # TODO: One way to solve getting the YouTubeEvent into the Arbiter,
         # is to attach it to a ChromeSession, because well, it is a chrome session.
         # And then assume that the transit makes it through OK.
-        updated_tab_change_event: TabChangeEventWithLtz = (
+        updated_tab_change_event: PlayerStateChangeEventWithLtz = (
             timezone_service.youtube.convert_tz_for_state_change(
                 tab_change_event, tz_for_user
             )
         )
+        print(updated_tab_change_event, "127ru")
+        # FIXME: BUT, it ISN'T a tab change event. It's a PlayerStateChangeEvent
 
         chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
         return  # Returns 204 No Content
@@ -171,7 +176,7 @@ async def receive_netflix_player_state(
     logger.log_purple("[LOG] Chrome Tab Received")
     try:
         print("State received", tab_change_event.playerEvent.showName)
-        field_has_utc_tzinfo_else_throw(tab_change_event.startTime)
+        field_has_utc_tzinfo_else_throw(tab_change_event.eventTime)
         user_id = 1  # temp until i have more than 1 user
 
         # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
@@ -181,7 +186,7 @@ async def receive_netflix_player_state(
         # TODO: One way to solve getting the NetflixEvent into the Arbiter,
         # is to attach it to a ChromeSession, because well, it is a chrome session.
         # And then assume that the transit makes it through OK.
-        updated_tab_change_event: TabChangeEventWithLtz = (
+        updated_tab_change_event: PlayerStateChangeEventWithLtz = (
             timezone_service.netflix.convert_tz_for_state_change(
                 tab_change_event, tz_for_user
             )

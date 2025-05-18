@@ -19,6 +19,17 @@ class UtcDtTabChange(BaseModel):
         return f"TabChangeEvent(tabTitle='{self.tabTitle}', url='{self.url}', startTime='{formatted_time}')"
 
 
+class UtcDtStateChange(BaseModel):
+    tabTitle: str
+    url: str
+    eventTime: datetime
+
+    def __str__(self) -> str:
+        """Custom string representation of the UtcDtStateChange."""
+        formatted_time = self.startTime.strftime("%Y-%m-%d %H:%M:%S")
+        return f"UtcDtStateChange(tabTitle='{self.tabTitle}', url='{self.url}', startTime='{formatted_time}')"
+
+
 class VideoContentEvent(BaseModel):
     """Lives here to make everything that inherits from it a VideoContentEvent"""
 
@@ -36,7 +47,7 @@ class YouTubeTabChange(UtcDtTabChange):
     pageEvent: YouTubePageEvent
 
 
-class YouTubePlayerChange(UtcDtTabChange):
+class YouTubePlayerChange(UtcDtStateChange):
     class YouTubePlayerEvent(VideoContentEvent):
         videoId: str
         tabTitle: str
@@ -62,7 +73,7 @@ class NetflixTabChange(UtcDtTabChange):
     pageEvent: NetflixPageEvent
 
 
-class NetflixPlayerChange(UtcDtTabChange):
+class NetflixPlayerChange(UtcDtStateChange):
     class NetflixPlayerEvent(VideoContentEvent):
         # videoId aka urlId
         videoId: str

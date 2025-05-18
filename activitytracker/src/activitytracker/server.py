@@ -231,10 +231,24 @@ async def health_check():
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
-    print("VALIDATION ERROR:", exc.errors())
+    # print("VALIDATION ERROR:", exc.errors())
+    path = request.url.path
+    simplified_errors = []
+    for error in exc.errors():
+        simplified_errors.append(
+            {
+                "field": ".".join(str(loc) for loc in error["loc"] if loc != "body"),
+                "issue": error["msg"],
+            }
+        )
+    print(f"Validation error on {path}:")
+    for error in simplified_errors:
+        print(error)
+
+    # You can also include this info in the response if desired
     return JSONResponse(
         status_code=422,
-        content={"detail": exc.errors()},
+        content={"endpoint": path, "errors": simplified_errors},
     )
 
 

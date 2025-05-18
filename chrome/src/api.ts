@@ -8,14 +8,17 @@ import {
 
 const DESKSENSE_BACKEND_URL = "http://localhost:8000";
 
-export const chromeTabUrl = "/api/chrome/video/tab";
-export const ignoredDomainUrl = "/api/chrome/video/ignored";
+const baseChromeUrl = "/api/chrome";
+
+export const chromeTabUrl = baseChromeUrl + "/tab";
+export const ignoredDomainUrl = baseChromeUrl + "/ignored";
+
 // youtube
-export const youTubeUrl = "/api/chrome/video/youtube/new";
-export const youtubePlayerStateUrl = "/api/chrome/video/youtube/state";
+export const youTubeUrl = baseChromeUrl + "/video/youtube/new";
+export const youtubePlayerStateUrl = baseChromeUrl + "/video/youtube/state";
 // netflix
-export const netflixUrl = "/api/chrome/video/netflix/new";
-export const netflixPlayerStateUrl = "/api/chrome/video/netflix/state";
+export const netflixUrl = baseChromeUrl + "/video/netflix/new";
+export const netflixPlayerStateUrl = baseChromeUrl + "/video/netflix/state";
 
 export const captureSessionStartUrl = "/api/capture/start";
 
@@ -64,6 +67,8 @@ class YouTubeApi {
             videoId: videoId,
             tabTitle,
             channel: channelName,
+            eventTime: new Date(),
+
             playerState: "playing",
             // I don't think I care about the timestamp.
             // Like, what if they did a bunch of rewinding?
@@ -88,6 +93,7 @@ class YouTubeApi {
             videoId,
             tabTitle,
             channel: channelName,
+            eventTime: new Date(),
             playerState: "paused",
             // timestamp: 0,
         };
@@ -143,6 +149,8 @@ class NetflixApi {
             urlId,
             showName,
             url,
+            eventTime: new Date(),
+
             playerState: "playing",
             // I don't think I care about the timestamp.
             // Like, what if they did a bunch of rewinding?
@@ -168,6 +176,8 @@ class NetflixApi {
             urlId,
             showName,
             url,
+            eventTime: new Date(),
+
             playerState: "paused",
         };
 

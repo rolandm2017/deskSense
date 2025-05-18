@@ -321,11 +321,37 @@ class TabChangeEventWithLtz:
             self.netflix_info = video_info
 
     def __str__(self) -> str:
-        """Custom string representation of the TabChangeEvent."""
+        """Custom string representation of the TabChangeEventWithLtz."""
         formatted_time = self.start_time_with_tz.strftime("%Y-%m-%d %H:%M:%S.%f")[
             :-3
         ]  # Truncate to milliseconds
-        return f"TabChangeEvent(tabTitle='{self.tab_title}', url='{self.url}', startTime='{formatted_time}')"
+        return f"TabChangeEventWithLtz(tabTitle='{self.tab_title}', url='{self.url}', startTime='{formatted_time}', \n\tyoutube_info='{self.youtube_info}', netflix_info='{self.netflix_info}')"
+
+
+class PlayerStateChangeEventWithLtz:
+    tab_title: str
+    url: str
+    event_time_with_tz: UserLocalTime
+    youtube_info: Optional[YouTubeInfo]
+    netflix_info: Optional[NetflixInfo]
+
+    def __init__(self, tab_title, url, event_time_with_tz, video_info=None):
+        self.tab_title = tab_title
+        self.url = url
+        self.event_time_with_tz = event_time_with_tz
+        if isintance(video_info, YouTubeInfo):
+            self.youtube_info = video_info
+            self.netflix_info = None
+        elif isinstance(video_info, NetflixInfo):
+            self.youtube_info = None
+            self.netflix_info = video_info
+
+    def __str__(self) -> str:
+        """Custom string representation of the PlayerStateChangeEventWithLtz."""
+        formatted_time = self.event_time_with_tz.strftime("%Y-%m-%d %H:%M:%S.%f")[
+            :-3
+        ]  # Truncate to milliseconds
+        return f"PlayerStateChangeEventWithLtz(tabTitle='{self.tab_title}', url='{self.url}', startTime='{formatted_time}', \n\tyoutube_info='{self.youtube_info}', netflix_info='{self.netflix_info}')"
 
 
 class MouseEvent(TypedDict):
