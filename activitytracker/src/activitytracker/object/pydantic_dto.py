@@ -51,7 +51,6 @@ class ProgramActivityReport(BaseModel):
 
 class VideoContentEvent(BaseModel):
     videoId: str
-    tabTitle: str
     # url: str  # These objects don't care about URL. That's just the ID.
     # These objs do not track startTime.
     # They only care about play, pause.
@@ -63,6 +62,7 @@ class VideoContentEvent(BaseModel):
 
 
 class YouTubePageEvent(VideoContentEvent):
+    tabTitle: str
     channel: str
 
     def __str__(self) -> str:
@@ -71,6 +71,7 @@ class YouTubePageEvent(VideoContentEvent):
 
 
 class YouTubePlayerEvent(VideoContentEvent):
+    tabTitle: str
     channel: str
     playerState: str  # Will be "paused" or "playing"
 
@@ -82,15 +83,15 @@ class YouTubePlayerEvent(VideoContentEvent):
         )
 
 
-class TabChangeEventWithUnknownTz(BaseModel):
-    tabTitle: str
-    url: str
-    startTime: datetime
+class NetflixPageEvent(VideoContentEvent):
+    # Nothing different but the name
 
-    def __str__(self) -> str:
-        """Custom string representation of the TabChangeEvent."""
-        formatted_time = self.startTime.strftime("%Y-%m-%d %H:%M:%S")
-        return f"TabChangeEvent(tabTitle='{self.tabTitle}', url='{self.url}', startTime='{formatted_time}')"
+
+class NetflixPlayerEvent(VideoContentEvent):
+    # videoId aka urlId on VideoContentEvent
+    url: str  # full url - is this really needed?
+    showName: str
+
 
 
 class UtcDtTabChange(BaseModel):
@@ -110,3 +111,24 @@ class YouTubeTabChange(UtcDtTabChange):
 
 class YouTubePlayerChange(UtcDtTabChange):
     playerEvent: YouTubePlayerEvent
+
+
+class NetflixTabChange(UtcDtTabChange):
+    # At the time a user lands on the Netflix Watch page, the only info
+    # the program will have is the videoId, until the user inputs media info by hand.
+    pageEvent: NetflixPageEvent
+
+
+class NetflixPlayerChange(UtcDtTabChange):
+    playerEvent: NetflixPlayerEvent
+
+class TabChangeEventWithUnknownTz(BaseModel):
+    tabTitle: str
+    url: str
+    startTime: datetime
+
+    def __str__(self) -> str:
+        """Custom string representation of the TabChangeEvent."""
+        formatted_time = self.startTime.strftime("%Y-%m-%d %H:%M:%S")
+        return f"TabChangeEvent(tabTitle='{self.tabTitle}', url='{self.url}', startTime='{formatted_time}')"
+

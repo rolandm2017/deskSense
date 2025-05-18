@@ -1,35 +1,42 @@
 # database.py
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, create_engine
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import declarative_base, sessionmaker, Session
-from typing import AsyncGenerator
-from dotenv import load_dotenv
 import os
+
+from dotenv import load_dotenv
+
+from sqlalchemy import Boolean, Column, DateTime, Integer, String, create_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import Session, declarative_base, sessionmaker
+
+from typing import AsyncGenerator
 
 load_dotenv()
 
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
+SYNCHRONOUS_DB_URL = os.getenv("SYNCHRONOUS_DB_URL")
 
-SYNCHRONOUS_DB_URL = os.getenv("SYSTEM_TABLE_DB_URL")
+ASYNC_DB_URL = os.getenv("ASYNC_DATABASE_URL")
 
-if SQLALCHEMY_DATABASE_URL is None:
-    raise ValueError("Failed to load SqlAlchemy database URL")
 
 if SYNCHRONOUS_DB_URL is None:
     raise ValueError("Failed to load system power table URL")
+if ASYNC_DB_URL is None:
+    raise ValueError("Failed to load SqlAlchemy database URL")
 
-# Create async engine
-engine = create_async_engine(
-    SQLALCHEMY_DATABASE_URL,
-    echo=False,  # Set to True for SQL query logging
-)
 
 sync_engine = create_engine(SYNCHRONOUS_DB_URL)
 
-# Create async session maker
-async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+async_engine = create_async_engine(
+    ASYNC_DB_URL,
+    echo=False,  # Set to True for SQL query logging
+)
+
 
 regular_session_maker = sessionmaker(sync_engine, class_=Session, expire_on_commit=False)
+
+# Create async session maker
+async_session_maker = async_sessionmaker(
+    async_engine, class_=AsyncSession, expire_on_commit=False
+)
 
 Base = declarative_base()
 
@@ -46,7 +53,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 async def init_db() -> None:
     """Initialize the database by creating all tables if they don't exist."""
-    async with engine.begin() as conn:
+    async with async_engine.begin() as conn:
         pass
         # No longer doing automatic create_all
         # as it takes the db out of sync with Alembic

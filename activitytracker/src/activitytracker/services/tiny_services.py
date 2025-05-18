@@ -13,21 +13,76 @@ from activitytracker.db.models import MouseMove
 from activitytracker.object.classes import TabChangeEventWithLtz
 from activitytracker.object.dto import TypingSessionDto
 from activitytracker.object.pydantic_dto import (
+    NetflixPlayerChange,
+    NetflixTabChange,
     UtcDtTabChange,
     YouTubePageEvent,
     YouTubePlayerChange,
     YouTubePlayerEvent,
     YouTubeTabChange,
 )
-from activitytracker.object.video_classes import YouTubeInfo
+from activitytracker.object.video_classes import YouTubeInfo, NetflixInfo
 from activitytracker.tz_handling.time_formatting import convert_to_timezone
 from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.time_wrappers import UserLocalTime
 
 
+class YouTubeTimezoneService:
+    def __init__(self, parent_service):
+        self.parent_service = parent_service
+
+    def convert_tz_for_tab_change(self, tab_event: YouTubeTabChange, new_tz: str):
+        youtube_info = YouTubeInfo("paused", tab_event.pageEvent.channel)
+        return self._make_tab_change_event_with_youtube_info(tab_event, youtube_info, new_tz)
+
+    def convert_tz_for_state_change(self, tab_event: YouTubePlayerChange, new_tz: str):
+        youtube_info = YouTubeInfo(
+            tab_event.playerEvent.playerState, tab_event.playerEvent.channel
+        )
+        return self._make_tab_change_event_with_youtube_info(tab_event, youtube_info, new_tz)
+
+    def _make_tab_change_event_with_youtube_info(
+        self, tab_event, youtube_info: YouTubeInfo, new_tz: str
+    ):
+        new_datetime_with_tz: datetime = convert_to_timezone(tab_event.startTime, new_tz)
+        tab_change_with_time_zone = TabChangeEventWithLtz(
+            tab_event.tabTitle,
+            tab_event.url,
+            UserLocalTime(new_datetime_with_tz),
+            youtube_info,
+        )
+        return tab_change_with_time_zone
+
+
+class NetflixTimezoneService:
+    def __init__(self, parent_service):
+        self.parent_service = parent_service
+
+    def convert_tz_for_tab_change(self, tab_event: NetflixTabChange, new_tz: str):
+        netflix_info = NetflixInfo(tab_event.playerEvent.videoId)
+        return self._make_tab_change_event_with_netflix_info(tab_event, netflix_info, new_tz)
+
+    def convert_tz_for_state_change(self, tab_event: NetflixPlayerChange, new_tz: str):
+        netflix_info = NetflixInfo(tab_event.playerEvent.playerState, tab_event.playerEvent.videoId)
+        return self._make_tab_change_event_with_netflix_info(tab_event, netflix_info, new_tz)
+    
+      def _make_tab_change_event_with_netflix_info(
+        self, tab_event, netflix_info: NetflixInfo, new_tz: str
+    ):
+        new_datetime_with_tz: datetime = convert_to_timezone(tab_event.startTime, new_tz)
+        tab_change_with_time_zone = TabChangeEventWithLtz(
+            tab_event.tabTitle,
+            tab_event.url,
+            UserLocalTime(new_datetime_with_tz),
+            netflix_info,
+        )
+        return tab_change_with_time_zone
+
+
 class TimezoneService:
     def __init__(self):
-        pass
+        self.youtube = YouTubeTimezoneService(self)
+        self.netflix = NetflixTimezoneService(self)
 
     def get_tz_for_user(self, user_id):
         # TODO: In the future, read from a cache of recently active users.
@@ -58,18 +113,6 @@ class TimezoneService:
         user_tz_str = self.get_tz_for_user(1)
         user_tz = pytz.timezone(user_tz_str)
         return user_tz.localize(dt)
-
-    def convert_tz_for_youtube_tab_change(self, tab_event: YouTubeTabChange, new_tz: str):
-        youtube_info = YouTubeInfo("paused", tab_event.pageEvent.channel)
-        return self.make_tab_change_event_with_youtube_info(tab_event, youtube_info, new_tz)
-
-    def convert_tz_for_youtube_state_change(
-        self, tab_event: YouTubePlayerChange, new_tz: str
-    ):
-        youtube_info = YouTubeInfo(
-            tab_event.playerEvent.playerState, tab_event.playerEvent.channel
-        )
-        return self.make_tab_change_event_with_youtube_info(tab_event, youtube_info, new_tz)
 
     def make_tab_change_event_with_youtube_info(
         self, tab_event, youtube_info: YouTubeInfo, tz

@@ -307,12 +307,18 @@ class TabChangeEventWithLtz:
     url: str
     start_time_with_tz: UserLocalTime
     youtube_info: Optional[YouTubeInfo]
+    netflix_info: Optional[NetflixInfo]
 
-    def __init__(self, tab_title, url, start_time_with_tz, youtube_info):
+    def __init__(self, tab_title, url, start_time_with_tz, video_info=None):
         self.tab_title = tab_title
         self.url = url
         self.start_time_with_tz = start_time_with_tz
-        self.youtube_info = youtube_info
+        if isintance(video_info, YouTubeInfo):
+            self.youtube_info = video_info
+            self.netflix_info = None
+        elif isinstance(video_info, NetflixInfo):
+            self.youtube_info = None
+            self.netflix_info = video_info
 
     def __str__(self) -> str:
         """Custom string representation of the TabChangeEvent."""

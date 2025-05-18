@@ -151,7 +151,6 @@ class NetflixApi {
             // timestamp: 0
         };
         console.log("The play payload was be ", payload);
-        this.sendPayload(youtubePlayerStateUrl, payload);
         if (this.logging) {
             this.logger.logPayloadToStorage(
                 "sendPlayEvent",
@@ -159,6 +158,7 @@ class NetflixApi {
                 payload
             );
         }
+        this.sendPayload(netflixPlayerStateUrl, payload);
     }
 
     sendPauseEvent({ urlId, showName, url }: NetflixPayload) {
@@ -179,7 +179,7 @@ class NetflixApi {
                 payload
             );
         }
-        this.sendPayload(youtubePlayerStateUrl, payload);
+        this.sendPayload(netflixPlayerStateUrl, payload);
     }
 }
 

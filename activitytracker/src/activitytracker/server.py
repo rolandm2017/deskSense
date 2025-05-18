@@ -84,6 +84,7 @@ from activitytracker.services.tiny_services import (
 from activitytracker.surveillance_manager import FacadeInjector, SurveillanceManager
 from activitytracker.util.clock import UserFacingClock
 from activitytracker.util.console_logger import ConsoleLogger
+from activitytracker.util.endpoint_util import field_has_utc_tzinfo_else_throw
 from activitytracker.util.errors import MustHaveUtcTzInfoError
 from activitytracker.util.pydantic_factory import (
     DtoMapper,
@@ -542,12 +543,6 @@ async def get_chrome_report(chrome_service: ChromeService = Depends(get_chrome_s
     return reports
 
 
-def field_has_utc_tzinfo_else_throw(start_time_field):
-    utc_dt = start_time_field.tzinfo == timezone.utc
-    if not utc_dt:
-        raise MustHaveUtcTzInfoError()
-
-
 @app.post("/api/chrome/tab", status_code=status.HTTP_204_NO_CONTENT)
 async def receive_chrome_tab(
     tab_change_event: UtcDtTabChange,
@@ -575,69 +570,69 @@ async def receive_chrome_tab(
         )
 
 
-@app.post("/api/chrome/youtube/new", status_code=status.HTTP_204_NO_CONTENT)
-async def receive_youtube_event(
-    tab_change_event: YouTubeTabChange,
-    chrome_service: ChromeService = Depends(get_chrome_service),
-    timezone_service: TimezoneService = Depends(get_timezone_service),
-):
-    logger.log_purple("[LOG] Chrome Tab Received")
-    try:
-        print(
-            f"received {tab_change_event.pageEvent.channel} with id {tab_change_event.pageEvent.videoId}"
-        )
-        field_has_utc_tzinfo_else_throw(tab_change_event.startTime)
+# @app.post("/api/chrome/youtube/new", status_code=status.HTTP_204_NO_CONTENT)
+# async def receive_youtube_event(
+#     tab_change_event: YouTubeTabChange,
+#     chrome_service: ChromeService = Depends(get_chrome_service),
+#     timezone_service: TimezoneService = Depends(get_timezone_service),
+# ):
+#     logger.log_purple("[LOG] Chrome Tab Received")
+#     try:
+#         print(
+#             f"received {tab_change_event.pageEvent.channel} with id {tab_change_event.pageEvent.videoId}"
+#         )
+#         field_has_utc_tzinfo_else_throw(tab_change_event.startTime)
 
-        user_id = 1  # temp until i have more than 1 user
+#         user_id = 1  # temp until i have more than 1 user
 
-        # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
-        # capture_chrome_data_for_tests(tab_change_event)
-        tz_for_user = timezone_service.get_tz_for_user(user_id)
-        updated_tab_change_event: TabChangeEventWithLtz = (
-            timezone_service.convert_tz_for_youtube_tab_change(tab_change_event, tz_for_user)
-        )
+#         # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
+#         # capture_chrome_data_for_tests(tab_change_event)
+#         tz_for_user = timezone_service.get_tz_for_user(user_id)
+#         updated_tab_change_event: TabChangeEventWithLtz = (
+#             timezone_service.convert_tz_for_youtube_tab_change(tab_change_event, tz_for_user)
+#         )
 
-        chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
-        return  # Returns 204 No Content
-    except Exception as e:
-        print(e)
-        raise HTTPException(
-            status_code=500, detail="A problem occurred in Chrome Service's YouTube endpoint"
-        )
+#         chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
+#         return  # Returns 204 No Content
+#     except Exception as e:
+#         print(e)
+#         raise HTTPException(
+#             status_code=500, detail="A problem occurred in Chrome Service's YouTube endpoint"
+#         )
 
 
-@app.post("/api/chrome/youtube/state", status_code=status.HTTP_204_NO_CONTENT)
-async def receive_youtube_player_state(
-    tab_change_event: YouTubePlayerChange,
-    chrome_service: ChromeService = Depends(get_chrome_service),
-    timezone_service: TimezoneService = Depends(get_timezone_service),
-):
-    logger.log_purple("[LOG] Chrome Tab Received")
-    try:
-        print("State received", tab_change_event.playerEvent.playerState)
-        field_has_utc_tzinfo_else_throw(tab_change_event.startTime)
-        user_id = 1  # temp until i have more than 1 user
+# @app.post("/api/chrome/youtube/state", status_code=status.HTTP_204_NO_CONTENT)
+# async def receive_youtube_player_state(
+#     tab_change_event: YouTubePlayerChange,
+#     chrome_service: ChromeService = Depends(get_chrome_service),
+#     timezone_service: TimezoneService = Depends(get_timezone_service),
+# ):
+#     logger.log_purple("[LOG] Chrome Tab Received")
+#     try:
+#         print("State received", tab_change_event.playerEvent.playerState)
+#         field_has_utc_tzinfo_else_throw(tab_change_event.startTime)
+#         user_id = 1  # temp until i have more than 1 user
 
-        # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
-        # capture_chrome_data_for_tests(tab_change_event)
-        tz_for_user = timezone_service.get_tz_for_user(user_id)
+#         # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
+#         # capture_chrome_data_for_tests(tab_change_event)
+#         tz_for_user = timezone_service.get_tz_for_user(user_id)
 
-        # TODO: One way to solve getting the YouTubeEvent into the Arbiter,
-        # is to attach it to a ChromeSession, because well, it is a chrome session.
-        # And then assume that the transit makes it through OK.
-        updated_tab_change_event: TabChangeEventWithLtz = (
-            timezone_service.convert_tz_for_youtube_state_change(
-                tab_change_event, tz_for_user
-            )
-        )
+#         # TODO: One way to solve getting the YouTubeEvent into the Arbiter,
+#         # is to attach it to a ChromeSession, because well, it is a chrome session.
+#         # And then assume that the transit makes it through OK.
+#         updated_tab_change_event: TabChangeEventWithLtz = (
+#             timezone_service.convert_tz_for_youtube_state_change(
+#                 tab_change_event, tz_for_user
+#             )
+#         )
 
-        chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
-        return  # Returns 204 No Content
-    except Exception as e:
-        print(e)
-        raise HTTPException(
-            status_code=500, detail="A problem occurred in Chrome Service's YouTube endpoint"
-        )
+#         chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
+#         return  # Returns 204 No Content
+#     except Exception as e:
+#         print(e)
+#         raise HTTPException(
+#             status_code=500, detail="A problem occurred in Chrome Service's YouTube endpoint"
+#         )
 
 
 @app.post("/api/chrome/ignored", status_code=status.HTTP_204_NO_CONTENT)
