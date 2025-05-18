@@ -122,7 +122,6 @@ export class HistoryRecorder {
             title,
             url
         );
-        console.log(latestEntryUpdate, "entry to update 49ru");
         const viewingToTrack: NetflixViewingSansState =
             this.formatWatchEntryAsViewing(latestEntryUpdate);
         // NOTE that play/pause occurs thru background.ts in "onMessage"

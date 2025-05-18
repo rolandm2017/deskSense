@@ -165,9 +165,7 @@ export function getBaseDomain(hostname: string) {
             const subdomainAndDomainEtc = hostname.split("://")[1];
             const pathIsPresent = subdomainAndDomainEtc.includes("/");
             if (pathIsPresent) {
-                console.log(subdomainAndDomainEtc, "127ru");
                 const relevantPart = subdomainAndDomainEtc.split("/", 1)[0];
-                console.log(relevantPart, "124ru");
                 if (startsWithWww(relevantPart)) {
                     const normalizedInput = removeWww(relevantPart);
                     return normalizedInput;
@@ -177,10 +175,8 @@ export function getBaseDomain(hostname: string) {
             }
         }
     }
-    console.log(hostname, "128ru");
 
     const normalizedUrl = normalizeUrl(hostname);
-    console.log(normalizedUrl, "180ru");
     if (
         isNormalizedFormatWithSubdomain(normalizedUrl) &&
         startsWithSubdomain(normalizedUrl)

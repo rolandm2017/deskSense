@@ -8,16 +8,16 @@ import {
 
 const DESKSENSE_BACKEND_URL = "http://localhost:8000";
 
-const chromeTabUrl = "/api/chrome/tab";
-const ignoredDomainUrl = "/api/chrome/ignored";
+export const chromeTabUrl = "/api/chrome/tab";
+export const ignoredDomainUrl = "/api/chrome/ignored";
 // youtube
-const youTubeUrl = "/api/chrome/youtube/new";
-const youtubePlayerStateUrl = "/api/chrome/youtube/state";
+export const youTubeUrl = "/api/chrome/youtube/new";
+export const youtubePlayerStateUrl = "/api/chrome/youtube/state";
 // netflix
-const netflixUrl = "/api/chrome/netflix/new";
-const netflixPlayerStateUrl = "/api/chrome/netflix/state";
+export const netflixUrl = "/api/chrome/netflix/new";
+export const netflixPlayerStateUrl = "/api/chrome/netflix/state";
 
-const captureSessionStartUrl = "/api/capture/start";
+export const captureSessionStartUrl = "/api/capture/start";
 
 class YouTubeApi {
     sendPayload: Function;
@@ -115,17 +115,18 @@ class NetflixApi {
         this.logger = new PlatformLogger("Netflix");
     }
 
-    reportNetflixPage(mediaTitle: string) {
+    reportNetflixPage(videoId: string) {
         // TODO
 
         if (this.logging) {
-            this.logger.logLandOnPage(mediaTitle ?? "Unknown Media");
-            console.log("Reporting netflix is not supported yet", mediaTitle);
+            this.logger.logLandOnPage(videoId ?? "Unknown Media");
+            console.log("Reporting netflix is not supported yet", videoId);
 
             this.logger.logPayloadToStorage("reportNetflixPage", netflixUrl, {
-                mediaTitle,
+                videoId,
             });
         }
+        this.sendPayload(netflixUrl, { videoId });
     }
 
     // TODO: If they select the wrong thing form the dropdown,
@@ -254,7 +255,6 @@ export class ServerApi {
             console.log("Sending payloads is disabled");
             return;
         }
-        console.log(this.disablePayloads, "207ru");
 
         fetch(DESKSENSE_BACKEND_URL + targetUrl, {
             method: "POST",
