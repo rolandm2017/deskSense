@@ -1,4 +1,4 @@
-import { RECORDING_INPUT } from "../config";
+export const RECORDING_INPUT = { enabled: false };
 
 interface UserAction {
     playerStateChange?: string;

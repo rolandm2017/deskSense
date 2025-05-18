@@ -1,7 +1,7 @@
 import { ServerApi } from "../api";
-import { RECORDING_INPUT } from "../config";
 import { SystemInputLogger } from "./systemInputLogger";
 
+const RECORDING_INPUT = { enabled: false };
 class InputCaptureSession {
     constructor() {
         // foo
