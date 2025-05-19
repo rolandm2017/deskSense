@@ -48,7 +48,8 @@ class ActivityRecorder:
         print(session.video_info, "-- in on new session 48ru")
         if session.video_info:
             self.logger.log_blue(
-                f"video info made it to recorder: " + session.video_info.get_name()
+                f"[on_new_session] video info made it to recorder: "
+                + session.video_info.get_name()
             )
         if isinstance(session, ProgramSession):
             # Regardless of the session being brand new today or a repeat,
@@ -92,7 +93,7 @@ class ActivityRecorder:
 
         if session.video_info:
             self.logger.log_blue(
-                f"video info made it to recorder: " + session.video_info.get_name()
+                f"[add_ten_sec_to_end_time] video info: " + session.video_info.get_name()
             )
 
         if isinstance(session, ProgramSession):
@@ -125,7 +126,7 @@ class ActivityRecorder:
 
         if session.video_info:
             self.logger.log_blue(
-                f"video info made it to recorder: " + session.video_info.get_name()
+                f"[add_partial_window] video info: " + session.video_info.get_name()
             )
 
         if isinstance(session, ProgramSession):

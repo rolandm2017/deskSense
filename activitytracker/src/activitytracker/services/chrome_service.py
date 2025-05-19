@@ -22,6 +22,7 @@ from activitytracker.object.classes import (
     TabChangeEventWithLtz,
 )
 from activitytracker.object.pydantic_dto import UtcDtTabChange
+from activitytracker.object.video_classes import NetflixInfo, YouTubeInfo
 from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.errors import SuspiciousDurationError
 from activitytracker.util.time_wrappers import UserLocalTime
@@ -49,11 +50,8 @@ class TabQueue:
         self.debounce_timer = None
         self.log_tab_event = log_tab_event
 
-    def add_to_arrival_queue(
-        self, tab_change_event: TabChangeEventWithLtz | PlayerStateChangeEventWithLtz
-    ):
-        # TODO: Handle PlayerStateChangeEventWithLtz being added. Think you need to do a switch or polymorphism
-        print(tab_change_event, "45ru")
+    def add_to_arrival_queue(self, tab_change_event: TabChangeEventWithLtz):
+
         print("appending to queue")
         self.append_to_queue(tab_change_event)
         MAX_QUEUE_LEN = 40
@@ -177,8 +175,34 @@ class ChromeService:
 
         self.handle_session_ready_for_arbiter(initialized)
 
-    def log_player_state_event(self, state_deliverable: PlayerStateChangeEventWithLtz):
-        pass
+    def log_player_state_event(self, deliverable: PlayerStateChangeEventWithLtz):
+        """
+        Player state changes go right to the Arbiter. Whether
+        the user was paused for 20,000 ms or 20 ms, is not relevant.
+        """
+        print(deliverable, "45ru")
+        title = deliverable.tab_title
+        # is_productive = deliverable.url in productive_sites
+        # TODO: develop per-channel or per-media user input
+        # re: productive YouTube channels, productive Netflix media
+        is_productive = True
+
+        start_time = UserLocalTime(deliverable.event_time_with_tz)
+
+        if deliverable.youtube_info:
+            url = "www.youtube.com"
+            video_info = deliverable.youtube_info
+        else:
+            # FIXME: But HOW does it know what the particular media is?
+            url = "www.netflix.com"
+            video_info = deliverable.netflix_info
+
+        initialized: ChromeSession = ChromeSession(
+            url, title, start_time, is_productive, video_info
+        )
+        self.logger.log_yellow(initialized)
+
+        self.handle_session_ready_for_arbiter(initialized)
 
     def handle_session_ready_for_arbiter(self, session):
         session_copy = copy.deepcopy(session)

@@ -81,7 +81,9 @@ async def receive_youtube_event(
 ):
     logger.log_purple("[LOG] Chrome Tab Received")
     try:
-        print(f"received {tab_change_event.channel} with id {tab_change_event.videoId}")
+        print(
+            f"received {tab_change_event.channel} with tabTitle {tab_change_event.tabTitle}"
+        )
         field_has_utc_tzinfo_else_throw(tab_change_event.startTime)
 
         user_id = 1  # temp until i have more than 1 user
@@ -132,7 +134,7 @@ async def receive_youtube_player_state(
         print(updated_tab_change_event, " in video routes 127ru")
         # FIXME: BUT, it ISN'T a tab change event. It's a PlayerStateChangeEvent
 
-        chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
+        chrome_service.log_player_state_event(updated_tab_change_event)
         return  # Returns 204 No Content
     except Exception as e:
         print(e)
@@ -202,7 +204,7 @@ async def receive_netflix_player_state(
             )
         )
 
-        chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
+        chrome_service.log_player_state_event(updated_tab_change_event)
         return  # Returns 204 No Content
     except Exception as e:
         print(e)
