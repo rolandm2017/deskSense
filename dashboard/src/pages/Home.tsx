@@ -29,13 +29,9 @@ function Home() {
         useState<DailyProgramSummaries | null>(null);
     const [chromeSummaries, setChromeSummaries] =
         useState<DailyChromeSummaries | null>(null);
-    // const [timeline, setTimeline] = useState<TimelineRows | null>(null);
 
     const [programTimelines, setProgramTimelines] =
         useState<WeeklyProgramTimelines | null>(null);
-
-    // const [aggregatedTimeline, setAggregatedTimeline] =
-    // useState<WeeklyTimelineAggregate | null>(null);
 
     const [presentWeekRawTimeline, setRawTimeline] =
         useState<PartiallyAggregatedWeeklyTimeline | null>(null);

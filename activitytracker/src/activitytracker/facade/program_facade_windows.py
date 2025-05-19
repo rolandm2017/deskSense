@@ -32,6 +32,7 @@ class WindowsProgramFacadeCore(ProgramFacadeInterface):
         # setting up a Windows event hook
         self.previous_window = self.win32gui.GetForegroundWindow()
 
+        # TODO: Change to a hook
         while True:
             time.sleep(0.5)  # Check every half second
 

@@ -1,13 +1,13 @@
 import psutil
-from Xlib import display, X
+from Xlib import X, display
 from Xlib.error import BadWindow
 
-from typing import Dict, Optional, Generator
-
-from .program_facade_base import ProgramFacadeInterface
+from typing import Dict, Generator, Optional
 
 from activitytracker.object.classes import ProgramSessionDict
 from activitytracker.util.console_logger import ConsoleLogger
+
+from .program_facade_base import ProgramFacadeInterface
 
 
 class UbuntuProgramFacadeCore(ProgramFacadeInterface):
@@ -25,6 +25,7 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
         root = d.screen().root
 
         # Listen for focus change events
+        # TODO: Change to a hook
 
         root.change_attributes(event_mask=self.X.FocusChangeMask | self.X.PropertyChangeMask)
 

@@ -21,13 +21,13 @@ class UtcDtTabChange(BaseModel):
 
 class UtcDtStateChange(BaseModel):
     tabTitle: str
-    url: str
     eventTime: datetime
 
     def __str__(self) -> str:
         """Custom string representation of the UtcDtStateChange."""
         formatted_time = self.startTime.strftime("%Y-%m-%d %H:%M:%S")
-        return f"UtcDtStateChange(tabTitle='{self.tabTitle}', url='{self.url}', startTime='{formatted_time}')"
+        # TODO: Align inputs definitions in chrome/api and server.py
+        return f"UtcDtStateChange(tabTitle='{self.tabTitle}', startTime='{formatted_time}')"
 
 
 class VideoContentEvent(BaseModel):

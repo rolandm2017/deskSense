@@ -10,10 +10,9 @@ export interface YouTubePayload {
 }
 
 export interface NetflixPayload {
-    urlId: string;
     videoId: string;
+    urlId: string;
     showName: string;
-    url: string;
 }
 
 export interface WatchEntry {

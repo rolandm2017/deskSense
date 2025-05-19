@@ -184,7 +184,6 @@ export class NetflixViewing
         return {
             urlId: this.videoId,
             showName: this.mediaTitle,
-            url: "TODO",
             videoId: this.videoId,
         };
     }

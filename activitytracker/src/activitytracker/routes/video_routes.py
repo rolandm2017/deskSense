@@ -108,6 +108,8 @@ async def receive_youtube_player_state(
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service),
 ):
+    # TODO: Align inputs definitions in chrome/api and server.py
+
     logger.log_purple("[LOG] Chrome Tab Received")
     try:
         print("State received", tab_change_event.playerEvent.playerState)
@@ -146,6 +148,8 @@ async def receive_netflix_event(
 ):
     logger.log_purple("[LOG] Chrome Tab Received")
     try:
+        # TODO: Align inputs definitions in chrome/api and server.py
+
         print(f"received {tab_change_event.pageEvent.videoId}")
         field_has_utc_tzinfo_else_throw(tab_change_event.startTime)
 
@@ -175,6 +179,8 @@ async def receive_netflix_player_state(
 ):
     logger.log_purple("[LOG] Chrome Tab Received")
     try:
+        # TODO: Align inputs definitions in chrome/api and server.py
+
         print("State received", tab_change_event.playerEvent.showName)
         field_has_utc_tzinfo_else_throw(tab_change_event.eventTime)
         user_id = 1  # temp until i have more than 1 user

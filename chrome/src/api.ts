@@ -141,14 +141,13 @@ class NetflixApi {
     // click Confirm. And the program will end the incorrect session,
     // start them on the right one. They lose 2-3 min tracked in
     // the wrong spot.
-    sendPlayEvent({ urlId, showName, url }: NetflixPayload) {
+    sendPlayEvent({ urlId, showName }: NetflixPayload) {
         // The server knows which VideoSession it's modifying because
         // the currently active tab deliverable, contained the ...
         console.log("Would send play event for Netflix");
         const payload = {
             urlId,
             showName,
-            url,
             eventTime: new Date(),
 
             playerState: "playing",
@@ -169,13 +168,14 @@ class NetflixApi {
         this.sendPayload(netflixPlayerStateUrl, payload);
     }
 
-    sendPauseEvent({ urlId, showName, url }: NetflixPayload) {
+    sendPauseEvent({ urlId, showName }: NetflixPayload) {
+        // TODO: Align inputs definitions in chrome/api and server.py
+
         this.logger.logPauseEvent(showName);
         console.log("Would send pause event for Netflix");
         const payload = {
             urlId,
             showName,
-            url,
             eventTime: new Date(),
 
             playerState: "paused",
