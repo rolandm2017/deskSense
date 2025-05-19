@@ -1,4 +1,6 @@
 # server.py
+import traceback
+
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -79,9 +81,7 @@ async def receive_youtube_event(
 ):
     logger.log_purple("[LOG] Chrome Tab Received")
     try:
-        print(
-            f"received {tab_change_event.pageEvent.channel} with id {tab_change_event.pageEvent.videoId}"
-        )
+        print(f"received {tab_change_event.channel} with id {tab_change_event.videoId}")
         field_has_utc_tzinfo_else_throw(tab_change_event.startTime)
 
         user_id = 1  # temp until i have more than 1 user
@@ -97,6 +97,7 @@ async def receive_youtube_event(
         return  # Returns 204 No Content
     except Exception as e:
         print(e)
+        traceback.print_exc()
         raise HTTPException(
             status_code=500, detail="A problem occurred in Chrome Service's YouTube endpoint"
         )
@@ -112,7 +113,7 @@ async def receive_youtube_player_state(
 
     logger.log_purple("[LOG] Chrome Tab Received")
     try:
-        print("State received", tab_change_event.playerEvent.playerState)
+        print("State received", tab_change_event.playerState)
         field_has_utc_tzinfo_else_throw(tab_change_event.eventTime)
         user_id = 1  # temp until i have more than 1 user
 
@@ -128,13 +129,14 @@ async def receive_youtube_player_state(
                 tab_change_event, tz_for_user
             )
         )
-        print(updated_tab_change_event, "127ru")
+        print(updated_tab_change_event, " in video routes 127ru")
         # FIXME: BUT, it ISN'T a tab change event. It's a PlayerStateChangeEvent
 
         chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
         return  # Returns 204 No Content
     except Exception as e:
         print(e)
+        traceback.print_exc()
         raise HTTPException(
             status_code=500, detail="A problem occurred in Chrome Service's YouTube endpoint"
         )
@@ -150,7 +152,7 @@ async def receive_netflix_event(
     try:
         # TODO: Align inputs definitions in chrome/api and server.py
 
-        print(f"received {tab_change_event.pageEvent.videoId}")
+        print(f"received {tab_change_event.videoId}")
         field_has_utc_tzinfo_else_throw(tab_change_event.startTime)
 
         user_id = 1  # temp until i have more than 1 user
@@ -166,6 +168,8 @@ async def receive_netflix_event(
         return  # Returns 204 No Content
     except Exception as e:
         print(e)
+        traceback.print_exc()
+
         raise HTTPException(
             status_code=500, detail="A problem occurred in Chrome Service's Netflix endpoint"
         )
@@ -181,7 +185,7 @@ async def receive_netflix_player_state(
     try:
         # TODO: Align inputs definitions in chrome/api and server.py
 
-        print("State received", tab_change_event.playerEvent.showName)
+        print("State received", tab_change_event.showName)
         field_has_utc_tzinfo_else_throw(tab_change_event.eventTime)
         user_id = 1  # temp until i have more than 1 user
 
@@ -202,6 +206,7 @@ async def receive_netflix_player_state(
         return  # Returns 204 No Content
     except Exception as e:
         print(e)
+        traceback.print_exc()
         raise HTTPException(
             status_code=500, detail="A problem occurred in Chrome Service's YouTube endpoint"
         )

@@ -25,8 +25,7 @@ export function handleYouTubeUrl(
     tabsWithIntervalsRecorder: Function
 ) {
     if (!tab.url || !tab.id || !tab.title) {
-        console.warn("Missing required tab properties");
-        return;
+        throw new Error("Missing required tab properties");
     }
 
     if (isWatchingVideo(tab.url)) {

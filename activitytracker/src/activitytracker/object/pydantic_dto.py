@@ -20,14 +20,7 @@ class UtcDtTabChange(BaseModel):
 
 
 class UtcDtStateChange(BaseModel):
-    tabTitle: str
-    eventTime: datetime
-
-    def __str__(self) -> str:
-        """Custom string representation of the UtcDtStateChange."""
-        formatted_time = self.startTime.strftime("%Y-%m-%d %H:%M:%S")
-        # TODO: Align inputs definitions in chrome/api and server.py
-        return f"UtcDtStateChange(tabTitle='{self.tabTitle}', startTime='{formatted_time}')"
+    """Lives here to make everything that inherits from it a UtcDtStateChange"""
 
 
 class VideoContentEvent(BaseModel):
@@ -35,52 +28,38 @@ class VideoContentEvent(BaseModel):
 
 
 class YouTubeTabChange(UtcDtTabChange):
-    class YouTubePageEvent(VideoContentEvent):
-        videoId: str
-        tabTitle: str
-        channel: str
+    """Documents the user using a YouTube Watch page."""
 
-        def __str__(self) -> str:
-            formatted_time = self.startTime.strftime("%Y-%m-%d %H:%M:%S")
-            return f"YouTubePageEvent(tabTitle='{self.tabTitle}', url='{self.url}', chan='{self.channel}', startTime='{formatted_time}')"
+    # NOTE that on May 19, this TabChange event meant ANY YouTube page.
 
-    pageEvent: YouTubePageEvent
+    videoId: str
+    tabTitle: str
+    channel: str
 
 
-class YouTubePlayerChange(UtcDtStateChange):
-    class YouTubePlayerEvent(VideoContentEvent):
-        videoId: str
-        tabTitle: str
-        channel: str
-        playerState: str  # Will be "paused" or "playing"
-
-        def __str__(self) -> str:
-            formatted_time = self.startTime.strftime("%Y-%m-%d %H:%M:%S")
-            return (
-                f"YouTubePlayerEvent(videoId='{self.videoId}', tabTitle='{self.tabTitle}', url='{self.url}', chan='{self.channel}', startTime='{formatted_time}'"
-                + f"\n\tplayerState: {self.playerState})"
-            )
-
-    playerEvent: YouTubePlayerEvent
+class YouTubePlayerChange(BaseModel):
+    tabTitle: str
+    eventTime: datetime
+    videoId: str
+    tabTitle: str
+    channel: str
+    playerState: str  # Will be "paused" or "playing"
 
 
 class NetflixTabChange(UtcDtTabChange):
-    class NetflixPageEvent(VideoContentEvent):
-        videoId: str
+    """Documents the user using a Netflix Watch page."""
 
     # At the time a user lands on the Netflix Watch page, the only info
     # the program will have is the videoId, until the user inputs media info by hand.
-    pageEvent: NetflixPageEvent
+    videoId: str
 
 
-class NetflixPlayerChange(UtcDtStateChange):
-    class NetflixPlayerEvent(VideoContentEvent):
-        # videoId aka urlId
-        videoId: str
-        url: str  # full url - is this really needed?
-        showName: str
-
-    playerEvent: NetflixPlayerEvent
+class NetflixPlayerChange(BaseModel):
+    tabTitle: str
+    eventTime: datetime
+    videoId: str
+    url: str  # full url - is this really needed?
+    showName: str
 
 
 class TabChangeEventWithUnknownTz(BaseModel):

@@ -8,35 +8,29 @@ import {
 
 import { NetflixViewing, viewingTracker } from "./videoCommon/visits";
 
-import {
-    clearEndpointLoggingStorage,
-    endpointLoggingDownload,
-} from "./endpointLogging";
 import { setupIgnoredDomains } from "./ignoreList";
 import { systemInputCapture } from "./inputLogger/systemInputLogger";
 
-import { captureManager } from "./inputLogger/initInputCapture";
+// function deskSenseLogs() {
+//     systemInputCapture.writeLogsToJson();
+//     endpointLoggingDownload();
+// }
 
-function deskSenseLogs() {
-    systemInputCapture.writeLogsToJson();
-    endpointLoggingDownload();
-}
+// function clearDeskSenseLogs() {
+//     systemInputCapture.clearStorage();
+//     clearEndpointLoggingStorage();
+// }
 
-function clearDeskSenseLogs() {
-    systemInputCapture.clearStorage();
-    clearEndpointLoggingStorage();
-}
+// function checkIfCaptureSessionStarted() {
+//     captureManager.getTestStartTime();
+// }
 
-function checkIfCaptureSessionStarted() {
-    captureManager.getTestStartTime();
-}
-
-// enable logging file download
-(self as any).deskSenseLogs = deskSenseLogs;
-(self as any).clearDeskSenseLogs = clearDeskSenseLogs;
-(self as any).deskSenseCaptureCheck = checkIfCaptureSessionStarted;
-(self as any).writeInputLogsToJson = systemInputCapture.writeLogsToJson;
-(self as any).writeEndpointLogsToJson = endpointLoggingDownload;
+// // enable logging file download
+// (self as any).deskSenseLogs = deskSenseLogs;
+// (self as any).clearDeskSenseLogs = clearDeskSenseLogs;
+// (self as any).deskSenseCaptureCheck = checkIfCaptureSessionStarted;
+// (self as any).writeInputLogsToJson = systemInputCapture.writeLogsToJson;
+// (self as any).writeEndpointLogsToJson = endpointLoggingDownload;
 // Code that lets you open the options page when the icon is clicked
 // Disabled in favor of the modal
 function openOptionsOnClickIcon() {

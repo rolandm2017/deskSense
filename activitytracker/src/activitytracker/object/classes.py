@@ -313,7 +313,7 @@ class TabChangeEventWithLtz:
         self.tab_title = tab_title
         self.url = url
         self.start_time_with_tz = start_time_with_tz
-        if isintance(video_info, YouTubeInfo):
+        if isinstance(video_info, YouTubeInfo):
             self.youtube_info = video_info
             self.netflix_info = None
         elif isinstance(video_info, NetflixInfo):
@@ -325,21 +325,21 @@ class TabChangeEventWithLtz:
         formatted_time = self.start_time_with_tz.strftime("%Y-%m-%d %H:%M:%S.%f")[
             :-3
         ]  # Truncate to milliseconds
-        return f"TabChangeEventWithLtz(tabTitle='{self.tab_title}', url='{self.url}', startTime='{formatted_time}', \n\tyoutube_info='{self.youtube_info}', netflix_info='{self.netflix_info}')"
+        return f"TabChangeEventWithLtz(tabTitle='{self.tab_title}', startTime='{formatted_time}', \n\tyoutube_info='{self.youtube_info}', netflix_info='{self.netflix_info}')"
 
 
 class PlayerStateChangeEventWithLtz:
     tab_title: str
-    url: str
+    # url: str
     event_time_with_tz: UserLocalTime
     youtube_info: Optional[YouTubeInfo]
     netflix_info: Optional[NetflixInfo]
 
-    def __init__(self, tab_title, url, event_time_with_tz, video_info=None):
+    def __init__(self, tab_title, event_time_with_tz, video_info=None):
         self.tab_title = tab_title
-        self.url = url
+        # self.url = url
         self.event_time_with_tz = event_time_with_tz
-        if isintance(video_info, YouTubeInfo):
+        if isinstance(video_info, YouTubeInfo):
             self.youtube_info = video_info
             self.netflix_info = None
         elif isinstance(video_info, NetflixInfo):
@@ -351,7 +351,7 @@ class PlayerStateChangeEventWithLtz:
         formatted_time = self.event_time_with_tz.strftime("%Y-%m-%d %H:%M:%S.%f")[
             :-3
         ]  # Truncate to milliseconds
-        return f"PlayerStateChangeEventWithLtz(tabTitle='{self.tab_title}', url='{self.url}', startTime='{formatted_time}', \n\tyoutube_info='{self.youtube_info}', netflix_info='{self.netflix_info}')"
+        return f"PlayerStateChangeEventWithLtz(\n\ttabTitle='{self.tab_title}', startTime='{formatted_time}', \n\tyoutube_info='{self.youtube_info}', \n\tnetflix_info='{self.netflix_info}')"
 
 
 class MouseEvent(TypedDict):

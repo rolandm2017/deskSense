@@ -28,7 +28,7 @@ class YouTubeInfo(VideoInfo):
         self.channel_name = channel_name
 
     def get_name(self):
-        return f"YouTube: {self.channel_name}"
+        return f"YouTubeInfo: {self.channel_name}"
 
 
 class NetflixInfo(VideoInfo):
@@ -38,7 +38,7 @@ class NetflixInfo(VideoInfo):
         self.video_id = video_id
 
     def get_name(self):
-        return f"Netflix: {self.title}"
+        return f"NetflixInfo: {self.title}"
 
 
 class VlcInfo(VideoInfo):

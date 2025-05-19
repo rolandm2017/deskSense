@@ -64,12 +64,22 @@ export function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
             initializedServerApi.reportIgnoredUrl();
             return;
         }
+        // TODO: "If Netflix, use regular ReportTabSwitch.
+        //  Unless WatchPage, then report NetflixWatchPage"
         const isYouTube = domain.includes("youtube.com");
         if (isYouTube) {
             console.log("[info] on YouTube");
             // Use the dedicated function to handle YouTube URLs
             handleYouTubeUrl(tab, putTabIdIntoPollingList);
             return;
+        }
+        const isNetflix = domain.includes("netflix.com");
+        if (isNetflix) {
+            const isNetflixWatch = domain.includes("netflix.com/watch");
+            if (isNetflixWatch) {
+                // ViewingTracker will handle it via onMessage
+                return;
+            }
         }
         initializedServerApi.reportTabSwitch(
             domain,

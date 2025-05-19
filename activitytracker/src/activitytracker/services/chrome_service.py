@@ -28,6 +28,17 @@ from activitytracker.util.time_wrappers import UserLocalTime
 
 
 class TabQueue:
+    """
+    On May 19 this class is about three, four months old.
+
+    AFAIK the purpose of the class is to eliminate transient tabs, before
+    they enter the Arbiter. A transient tab being, some tab the user tabbed
+    past on their way from tab n to tab (n - 10). Like they hold Ctrl and
+    spam Page Down until they get to their desired tab. The Chrome extension
+    sends in a report of ten tabs, but they absolutely weren't on the
+    transient ones long enough for it to matter. So why record it?
+    """
+
     def __init__(self, log_tab_event, debounce_delay=2.0, transience_time_in_ms=300):
         self.last_entry = None
         self.message_queue: list[TabChangeEventWithLtz] = []
@@ -42,6 +53,7 @@ class TabQueue:
         self, tab_change_event: TabChangeEventWithLtz | PlayerStateChangeEventWithLtz
     ):
         # TODO: Handle PlayerStateChangeEventWithLtz being added. Think you need to do a switch or polymorphism
+        print(tab_change_event, "45ru")
         print("appending to queue")
         self.append_to_queue(tab_change_event)
         MAX_QUEUE_LEN = 40
@@ -164,6 +176,9 @@ class ChromeService:
         # initialized.start_time = url_deliverable.startTime
 
         self.handle_session_ready_for_arbiter(initialized)
+
+    def log_player_state_event(self, state_deliverable: PlayerStateChangeEventWithLtz):
+        pass
 
     def handle_session_ready_for_arbiter(self, session):
         session_copy = copy.deepcopy(session)
