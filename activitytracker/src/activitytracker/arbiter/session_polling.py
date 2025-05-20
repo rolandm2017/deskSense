@@ -131,6 +131,7 @@ class ThreadedEngineContainer:
         """
         if not self.is_running:
             print("HERE 131ru")
+            self.stop_event.clear()  # Clear the stop event instead of creating a new one
 
             self.hook_thread = threading.Thread(target=self._iterate_loop)
             self.hook_thread.daemon = True
@@ -160,11 +161,9 @@ class ThreadedEngineContainer:
             self.engine.conclude()
             # Swap the engine
             self.engine = new_engine
-            self.stop_event = threading.Event()
         else:
             # If the thread isn't running, just set the new engine
             self.engine = new_engine
-            self.stop_event = threading.Event()
 
     def stop(self):
         """
