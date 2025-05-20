@@ -1,11 +1,13 @@
 import threading
+
 import time
 
-from activitytracker.config.definitions import keep_alive_cycle_length, window_push_length
-from activitytracker.object.classes import ProgramSession, ChromeSession
-
-from activitytracker.util.errors import MissingEngineError, FullWindowError
-
+from activitytracker.config.definitions import (
+    keep_alive_cycle_length,
+    window_push_length,
+)
+from activitytracker.object.classes import ChromeSession, ProgramSession
+from activitytracker.util.errors import FullWindowError, MissingEngineError
 
 """
 A class responsible for updating the end_time value of the latest Program or Chrome session.
@@ -52,6 +54,11 @@ class KeepAliveEngine:
     def iterate_loop(self):
         # TODO: Change so that it relies on datetime.now() having 10 sec elapsed.
         self.amount_used += 1  # not
+        print(f"in loop {self.amount_used} of 10 for {self.session.get_name()}")
+        if self.session.video_info:
+            print(
+                "[polling for video] Iterating loop for", self.session.video_info.get_name()
+            )
         if self._hit_max_window():
             self._pulse_add_ten()
             self.amount_used = 0
@@ -123,15 +130,20 @@ class ThreadedEngineContainer:
         Starts updates on the current session
         """
         if not self.is_running:
+            print("HERE 131ru")
+
             self.hook_thread = threading.Thread(target=self._iterate_loop)
             self.hook_thread.daemon = True
             self.hook_thread.start()
             self.is_running = True
 
     def _iterate_loop(self):
+        print(self.engine, "139ru")
         if self.engine is None:
             raise MissingEngineError()
+        print("while not stop event is set?", self.stop_event.is_set())
         while not self.stop_event.is_set():
+            print("HERE 140ru")
             self.engine.iterate_loop()  # a second has been used
             self.sleep_fn(self.interval)  # Sleep for 1 second
 
@@ -148,9 +160,11 @@ class ThreadedEngineContainer:
             self.engine.conclude()
             # Swap the engine
             self.engine = new_engine
+            self.stop_event = threading.Event()
         else:
             # If the thread isn't running, just set the new engine
             self.engine = new_engine
+            self.stop_event = threading.Event()
 
     def stop(self):
         """

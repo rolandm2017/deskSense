@@ -124,7 +124,7 @@ class ActivityArbiter:
             new_keep_alive_engine = self.engine_class(new_session, self.activity_recorder)
 
             self.current_pulse.replace_engine(new_keep_alive_engine)
-
+            print("Starting pulse in regular loop")
             self.current_pulse.start()
 
             if self.state_machine.is_initialization_session(concluded_session):
@@ -140,6 +140,7 @@ class ActivityArbiter:
             new_keep_alive_engine = self.engine_class(new_session, self.activity_recorder)
 
             self.current_pulse.add_first_engine(new_keep_alive_engine)
+            print("Starting pulse in init loop")
 
             self.current_pulse.start()
 
