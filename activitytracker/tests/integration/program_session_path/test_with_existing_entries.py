@@ -86,7 +86,8 @@ async def test_program_path_with_existing_sessions(
             self.yield_count = 0  # Initialize the counter
             self.MAX_EVENTS = len(test_data_clone)
             self.test_program_dicts = [
-                convert_back_to_dict(x, made_up_pids[i]) for i, x in enumerate(test_data_clone)
+                convert_back_to_dict(x, made_up_pids[i])
+                for i, x in enumerate(test_data_clone)
             ]
 
         def listen_for_window_changes(self):
@@ -108,7 +109,9 @@ async def test_program_path_with_existing_sessions(
     mock_program_facade = MockProgramFacade()
 
     # Spy on listen_for_window_changes
-    spy_on_listen_for_window = Mock(side_effect=mock_program_facade.listen_for_window_changes)
+    spy_on_listen_for_window = Mock(
+        side_effect=mock_program_facade.listen_for_window_changes
+    )
     mock_program_facade.listen_for_window_changes = spy_on_listen_for_window
 
     def choose_program_facade(current_os):
@@ -142,7 +145,9 @@ async def test_program_path_with_existing_sessions(
 
     activity_arbiter = ActivityArbiter(mock_user_facing_clock, mock_container, engine_type)
 
-    asm_set_new_session_spy = Mock(side_effect=activity_arbiter.state_machine.set_new_session)
+    asm_set_new_session_spy = Mock(
+        side_effect=activity_arbiter.state_machine.set_new_session
+    )
     activity_arbiter.state_machine.set_new_session = asm_set_new_session_spy
 
     p_logging_dao = ProgramLoggingDao(regular_session_maker)
@@ -198,9 +203,9 @@ async def test_program_path_with_existing_sessions(
     # return [s1,s2,s3,s4]
 
     pretend_sums_from_db = group_of_preexisting_summaries(
-        made_up_pids, starting_hours_spent_in_db
+        test_data_clone, made_up_pids, starting_hours_spent_in_db
     )
-    pretend_logs_from_db = group_of_preexisting_logs(made_up_pids)
+    pretend_logs_from_db = group_of_preexisting_logs(test_data_clone, made_up_pids)
 
     #
     # Summary methods
@@ -258,7 +263,10 @@ async def test_program_path_with_existing_sessions(
                 # Try for up to 10 iterations
                 for _ in range(len(test_data_clone)):
                     if mock_program_facade.yield_count == 4:
-                        print(mock_program_facade.yield_count, "stop signal ++ \n ++ \n ++ \n ++")
+                        print(
+                            mock_program_facade.yield_count,
+                            "stop signal ++ \n ++ \n ++ \n ++",
+                        )
                         break
                     # Seems 1.3 is the minimum wait to get this done
                     await asyncio.sleep(1.3)  # Short sleep between checks ("short")
@@ -304,7 +312,9 @@ async def test_program_path_with_existing_sessions(
                 == count_of_events - active_entry
             )
 
-        def assert_all_spy_args_were_sessions(spy_from_mock, expected_loops: int, spy_name: str):
+        def assert_all_spy_args_were_sessions(
+            spy_from_mock, expected_loops: int, spy_name: str
+        ):
             logger.log_yellow(
                 f"Asserting against {spy_name} with count {len(spy_from_mock.call_args_list)}"
             )
@@ -402,7 +412,9 @@ async def test_program_path_with_existing_sessions(
 
         assert_all_start_new_session_spy_args_received_correct_time(event_count)
 
-        assert_all_spy_args_were_sessions(window_change_spy, event_count, "Window change spy")
+        assert_all_spy_args_were_sessions(
+            window_change_spy, event_count, "Window change spy"
+        )
 
         assert_all_window_change_args_match_src_material(window_change_calls)
 
@@ -457,7 +469,8 @@ async def test_program_path_with_existing_sessions(
 
         # Count is 4 here becasuse it's used in on_new_session as of 04/26
         assert (
-            len(summary_dao_spies["push_window_ahead_ten_sec_spy"].call_args_list) == total_pushes
+            len(summary_dao_spies["push_window_ahead_ten_sec_spy"].call_args_list)
+            == total_pushes
         )
 
         def assert_sessions_form_a_chain():

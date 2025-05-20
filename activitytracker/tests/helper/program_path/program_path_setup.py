@@ -10,8 +10,6 @@ from activitytracker.tz_handling.time_formatting import (
 from activitytracker.util.const import SECONDS_PER_HOUR, ten_sec_as_pct_of_hour
 from activitytracker.util.time_wrappers import UserLocalTime
 
-from ...data.program_session_path import session1, session2, session3, session4
-
 # --
 # -- Existing entries mocks
 # --
@@ -30,11 +28,11 @@ def make_preexisting_summary(session, id_for_session, summary_starting_hours):
     )
 
 
-def group_of_preexisting_summaries(made_up_pids, summary_starting_hours):
-    yield make_preexisting_summary(session1, made_up_pids[0], summary_starting_hours)
-    yield make_preexisting_summary(session2, made_up_pids[1], summary_starting_hours)
-    yield make_preexisting_summary(session3, made_up_pids[2], summary_starting_hours)
-    yield make_preexisting_summary(session4, made_up_pids[3], summary_starting_hours)
+def group_of_preexisting_summaries(sessions, made_up_pids, summary_starting_hours):
+    yield make_preexisting_summary(sessions[0], made_up_pids[0], summary_starting_hours)
+    yield make_preexisting_summary(sessions[1], made_up_pids[1], summary_starting_hours)
+    yield make_preexisting_summary(sessions[2], made_up_pids[2], summary_starting_hours)
+    yield make_preexisting_summary(sessions[3], made_up_pids[3], summary_starting_hours)
     # return [s1,s2,s3,s4]
 
 
@@ -61,11 +59,11 @@ def make_preexisting_log(session, id_for_log):
     )
 
 
-def group_of_preexisting_logs(made_up_pids):
-    yield make_preexisting_log(session1, made_up_pids[0])
-    yield make_preexisting_log(session2, made_up_pids[1])
-    yield make_preexisting_log(session3, made_up_pids[2])
-    yield make_preexisting_log(session4, made_up_pids[3])
+def group_of_preexisting_logs(sessions, made_up_pids):
+    yield make_preexisting_log(sessions[0], made_up_pids[0])
+    yield make_preexisting_log(sessions[1], made_up_pids[1])
+    yield make_preexisting_log(sessions[2], made_up_pids[2])
+    yield make_preexisting_log(sessions[3], made_up_pids[3])
 
 
 # --
@@ -96,7 +94,7 @@ def make_log_from_session(session):
     )
 
 
-def make_mock_db_rows_for_test_data():
+def make_mock_db_rows_for_test_data(sessions):
     """
     The test "just made" these logs during the test. They're mocks but
     if it really did run with the db attached, the find_session method
@@ -105,10 +103,10 @@ def make_mock_db_rows_for_test_data():
     # FIXME: you MUST account for find_session() being hit more than four times.
     # FIXME: push_window_ahead_ten_sec hits it, finalize_log hits it.
     # for now cook it by hand
-    yield make_log_from_session(session1)
-    yield make_log_from_session(session2)
-    yield make_log_from_session(session3)
-    yield make_log_from_session(session4)
+    yield make_log_from_session(sessions[0])
+    yield make_log_from_session(sessions[1])
+    yield make_log_from_session(sessions[2])
+    yield make_log_from_session(sessions[3])
 
 
 def setup_recorder_spies(recorder):

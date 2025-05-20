@@ -1,17 +1,18 @@
 import pytest
-from datetime import datetime
+
 import pytz
+from datetime import datetime
 
 from activitytracker.object.classes import (
-    ProgramSession,
     ChromeSession,
-    CompletedProgramSession,
     CompletedChromeSession,
+    CompletedProgramSession,
+    ProgramSession,
     SessionLedger,
 )
-from activitytracker.util.time_wrappers import UserLocalTime
+from activitytracker.object.video_classes import VlcInfo
 from activitytracker.util.errors import SessionClosedError
-
+from activitytracker.util.time_wrappers import UserLocalTime
 
 tz_for_test = "Asia/Tokyo"
 tokyo_tz = pytz.timezone(tz_for_test)
@@ -123,10 +124,20 @@ def test_add_duration_for_tests():
     start_time = UserLocalTime(tokyo_tz.localize(datetime(2025, 4, 29, 10, 23, 0)))
     end_time = UserLocalTime(tokyo_tz.localize(datetime(2025, 4, 29, 10, 25, 55)))
 
+    video_info = VlcInfo("file.mov", "C:/movies", "playing")
+
     premade_duration = end_time.dt - start_time.dt
 
     session = CompletedProgramSession(
-        path, process, window_title, detail, start_time, end_time, True, premade_duration
+        path,
+        process,
+        window_title,
+        detail,
+        video_info,
+        start_time,
+        end_time,
+        True,
+        premade_duration,
     )
 
     assert session.duration.total_seconds() == premade_duration.total_seconds()

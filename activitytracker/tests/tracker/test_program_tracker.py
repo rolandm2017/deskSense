@@ -10,6 +10,7 @@ from activitytracker.config.definitions import (
 )
 from activitytracker.object.classes import CompletedProgramSession, ProgramSession
 from activitytracker.trackers.program_tracker import ProgramTrackerCore
+from activitytracker.util.time_wrappers import UserLocalTime
 
 from ..mocks.mock_clock import MockClock
 
@@ -98,7 +99,7 @@ def test_start_new_session():
         "exe_path": "H:/some/path.exe",
         "window_title": "program_tracker.py - deskSense - Visual Studio Code",
     }
-    current_time = tracker.user_facing_clock.now()
+    current_time = UserLocalTime(tracker.user_facing_clock.now())
     new_session = tracker.start_new_session(window_change, current_time)
 
     # Assert
@@ -111,7 +112,9 @@ def test_start_new_session():
 
     assert new_session.window_title == "Visual Studio Code"
     assert new_session.detail == "program_tracker.py - deskSense"
-    assert new_session.start_time.dt is current_time
+    assert isinstance(new_session.start_time, UserLocalTime)
+    assert new_session.start_time.dt.hour is current_time.dt.hour
+    assert new_session.start_time.dt.minute is current_time.dt.minute
 
 
 def test_window_change_triggers_handler():
@@ -206,7 +209,7 @@ def test_handle_alt_tab_window():
         "window_title": "Alt-tab window",
     }
 
-    time = clock.now()
+    time = UserLocalTime(clock.now())
 
     session = tracker.start_new_session(window_change_dict=example, start_time=time)
 
@@ -249,7 +252,9 @@ def test_a_series_of_programs():
     tracker.run_tracking_loop()  # 1
 
     # ### Assert
-    assert tracker.current_session is not None, "Tracker wasn't initialized when it should be"
+    assert (
+        tracker.current_session is not None
+    ), "Tracker wasn't initialized when it should be"
     assert tracker.current_session.window_title == program1["window_title"]
     assert tracker.current_session.detail == no_space_dash_space
 

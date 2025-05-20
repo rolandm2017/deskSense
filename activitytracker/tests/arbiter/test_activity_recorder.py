@@ -1,19 +1,19 @@
 import pytest
-
 from unittest.mock import AsyncMock, MagicMock
 
-from datetime import datetime, timedelta
 import pytz
+from datetime import datetime, timedelta
 
 from activitytracker.arbiter.activity_recorder import ActivityRecorder
-
-from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-
-from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-
-from activitytracker.object.classes import CompletedProgramSession, CompletedChromeSession
+from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from activitytracker.object.classes import (
+    CompletedChromeSession,
+    CompletedProgramSession,
+)
+from activitytracker.object.video_classes import NetflixInfo, VlcInfo
 from activitytracker.util.time_wrappers import UserLocalTime
 
 timezone_for_test = "Asia/Tokyo"  # UTC+9
@@ -23,6 +23,9 @@ tokyo_tz = pytz.timezone(timezone_for_test)
 
 # Test implementations with proper session object instantiation
 
+null_VLC_video_info = VlcInfo("magic.mov", "C:/MagicContent", "playing")
+null_netflix_info = NetflixInfo("23456", "playing")
+
 
 @pytest.fixture
 def program_session():
@@ -31,6 +34,7 @@ def program_session():
         "Code.exe",
         "Visual Studio Code",
         "main.py",
+        null_VLC_video_info,
         UserLocalTime(datetime(2023, 1, 1, 12, 0, 0, tzinfo=tokyo_tz)),
         UserLocalTime(datetime(2023, 1, 1, 12, 10, 0, tzinfo=tokyo_tz)),
         True,
@@ -43,6 +47,7 @@ def chrome_session():
     return CompletedChromeSession(
         "github.com",
         "DeepSeek Chat Repository",
+        null_netflix_info,
         UserLocalTime(datetime(2023, 1, 1, 12, 0, 0, tzinfo=tokyo_tz)),
         UserLocalTime(datetime(2023, 1, 1, 12, 5, 0, tzinfo=tokyo_tz)),
         productive=True,

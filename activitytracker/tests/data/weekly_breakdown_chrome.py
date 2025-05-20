@@ -1,8 +1,10 @@
 import pytz
 from datetime import datetime, timedelta, timezone
+
 from typing import List, Optional
 
 from activitytracker.object.classes import CompletedChromeSession
+from activitytracker.object.video_classes import YouTubeInfo
 from activitytracker.util.time_wrappers import UserLocalTime
 
 from .weekly_breakdown_programs import march_2_2025, march_3_2025, weekly_breakdown_tz
@@ -31,6 +33,7 @@ def add_time_and_tz(base_date, hours=0, minutes=0, seconds=0):
 # grep -o '\.domain = "[^TEST"]*"' activitytracker/tests/data/weekly_breakdown.py | sort | uniq | wc -l
 # 10
 
+null_video_info = YouTubeInfo("someYouTubeChannel", "playing")
 
 # Define the base dates
 feb_23_2025 = datetime(2025, 2, 23, tzinfo=timezone.utc)
@@ -45,6 +48,7 @@ def chrome_feb_23() -> List[CompletedChromeSession]:
     github_session = CompletedChromeSession(
         "github.comTEST",
         "Repository setup and initial commits",
+        null_video_info,
         UserLocalTime(add_time_and_tz(feb_23_2025, 9, 30, 0)),
         UserLocalTime(add_time_and_tz(feb_23_2025, 10, 45, 0)),
         productive=True,
@@ -57,6 +61,7 @@ def chrome_feb_23() -> List[CompletedChromeSession]:
     stackoverflow_session = CompletedChromeSession(
         "stackoverflow.comTEST",
         "Research on async database access",
+        null_video_info,
         UserLocalTime(add_time_and_tz(feb_23_2025, 15, 45, 0)),
         UserLocalTime(add_time_and_tz(feb_23_2025, 16, 30, 0)),
         productive=True,
@@ -75,6 +80,7 @@ def chrome_feb_24() -> List[CompletedChromeSession]:
     docs_session = CompletedChromeSession(
         "docs.python.orgTEST",
         "Reviewing SQLAlchemy documentation",
+        null_video_info,
         UserLocalTime(add_time_and_tz(feb_24_2025, 11, 20, 0)),
         UserLocalTime(add_time_and_tz(feb_24_2025, 12, 15, 0)),
         productive=True,
@@ -87,6 +93,7 @@ def chrome_feb_24() -> List[CompletedChromeSession]:
     youtube_session = CompletedChromeSession(
         "youtube.comTEST",
         "Video tutorial on database optimization",
+        null_video_info,
         UserLocalTime(add_time_and_tz(feb_24_2025, 16, 0, 0)),
         UserLocalTime(add_time_and_tz(feb_24_2025, 16, 40, 0)),
         productive=True,
@@ -105,6 +112,7 @@ def chrome_feb_26() -> List[CompletedChromeSession]:
     github_session = CompletedChromeSession(
         "github.comTEST",
         "Code review and PR discussions",
+        null_video_info,
         UserLocalTime(add_time_and_tz(feb_26_2025, 9, 15, 0)),
         UserLocalTime(add_time_and_tz(feb_26_2025, 10, 30, 0)),
         productive=True,
@@ -117,6 +125,7 @@ def chrome_feb_26() -> List[CompletedChromeSession]:
     chatgpt_session = CompletedChromeSession(
         "chat.openai.comTEST",
         "Getting help with test data generation",
+        null_video_info,
         UserLocalTime(add_time_and_tz(feb_26_2025, 14, 0, 0)),
         UserLocalTime(add_time_and_tz(feb_26_2025, 15, 15, 0)),
         productive=True,
@@ -147,6 +156,7 @@ def chrome_march_2nd() -> List[CompletedChromeSession]:
     github_session = CompletedChromeSession(
         "github.comTEST",
         "Pull request review",
+        null_video_info,
         UserLocalTime(add_time_and_tz(march_2_2025, 9, 15, 0)),
         UserLocalTime(add_time_and_tz(march_2_2025, 9, 30, 0)),
         productive=True,
@@ -159,6 +169,7 @@ def chrome_march_2nd() -> List[CompletedChromeSession]:
     stackoverflow_session = CompletedChromeSession(
         "stackoverflow.comTEST",
         "Researching SQLAlchemy async issues",
+        null_video_info,
         UserLocalTime(add_time_and_tz(march_2_2025, 11, 5, 0)),
         UserLocalTime(add_time_and_tz(march_2_2025, 11, 59, 0)),
         productive=True,
@@ -171,6 +182,7 @@ def chrome_march_2nd() -> List[CompletedChromeSession]:
     youtube_session = CompletedChromeSession(
         "youtube.comTEST",
         "Python async tutorials",
+        null_video_info,
         UserLocalTime(add_time_and_tz(march_2_2025, 13, 0, 0)),
         UserLocalTime(add_time_and_tz(march_2_2025, 13, 30, 0)),
         productive=True,
@@ -183,6 +195,7 @@ def chrome_march_2nd() -> List[CompletedChromeSession]:
     python_docs_session = CompletedChromeSession(
         "docs.python.orgTEST",
         "Reading asyncio documentation",
+        null_video_info,
         UserLocalTime(add_time_and_tz(march_2_2025, 14, 0, 0)),
         UserLocalTime(add_time_and_tz(march_2_2025, 14, 45, 0)),
         productive=True,
@@ -195,6 +208,7 @@ def chrome_march_2nd() -> List[CompletedChromeSession]:
     gmail_session = CompletedChromeSession(
         "mail.google.comTEST",
         "Checking work emails",
+        null_video_info,
         UserLocalTime(add_time_and_tz(march_2_2025, 15, 0, 0)),
         UserLocalTime(add_time_and_tz(march_2_2025, 15, 24, 0)),
         productive=True,
@@ -207,6 +221,7 @@ def chrome_march_2nd() -> List[CompletedChromeSession]:
     chatgpt_session = CompletedChromeSession(
         "chat.openai.comTEST",
         "Debugging code issues",
+        null_video_info,
         UserLocalTime(add_time_and_tz(march_2_2025, 16, 0, 0)),
         UserLocalTime(add_time_and_tz(march_2_2025, 16, 6, 0)),
         productive=True,
@@ -226,6 +241,7 @@ def chrome_march_3rd() -> List[CompletedChromeSession]:
     github_session2 = CompletedChromeSession(
         "github.comTEST",
         "Code review and commits",
+        null_video_info,
         UserLocalTime(add_time_and_tz(march_3_2025, 9, 0, 0)),
         UserLocalTime(add_time_and_tz(march_3_2025, 9, 16, 0)),
         productive=True,
@@ -238,6 +254,7 @@ def chrome_march_3rd() -> List[CompletedChromeSession]:
     jira_session = CompletedChromeSession(
         "jira.company.comTEST",
         "Task management and updates",
+        null_video_info,
         UserLocalTime(add_time_and_tz(march_3_2025, 11, 15, 0)),
         UserLocalTime(add_time_and_tz(march_3_2025, 11, 45, 0)),
         productive=True,
@@ -250,6 +267,7 @@ def chrome_march_3rd() -> List[CompletedChromeSession]:
     aws_session = CompletedChromeSession(
         "aws.amazon.comTEST",
         "EC2 instance management",
+        null_video_info,
         UserLocalTime(add_time_and_tz(march_3_2025, 13, 30, 0)),
         UserLocalTime(add_time_and_tz(march_3_2025, 14, 21, 0)),
         productive=True,
@@ -262,6 +280,7 @@ def chrome_march_3rd() -> List[CompletedChromeSession]:
     confluence_session = CompletedChromeSession(
         "confluence.company.comTEST",
         "Documentation updates",
+        null_video_info,
         UserLocalTime(add_time_and_tz(march_3_2025, 14, 30, 0)),
         UserLocalTime(add_time_and_tz(march_3_2025, 15, 6, 0)),
         productive=True,
@@ -274,6 +293,7 @@ def chrome_march_3rd() -> List[CompletedChromeSession]:
     youtube_break_session = CompletedChromeSession(
         "youtube.comTEST",
         "Short break watching videos",
+        null_video_info,
         UserLocalTime(add_time_and_tz(march_3_2025, 15, 15, 0)),
         UserLocalTime(add_time_and_tz(march_3_2025, 15, 33, 0)),
         productive=False,
@@ -286,6 +306,7 @@ def chrome_march_3rd() -> List[CompletedChromeSession]:
     chatgpt_session2 = CompletedChromeSession(
         "chat.openai.comTEST",
         "Generating test data",
+        null_video_info,
         UserLocalTime(add_time_and_tz(march_3_2025, 16, 50, 0)),
         UserLocalTime(add_time_and_tz(march_3_2025, 17, 24, 0)),
         productive=True,
@@ -305,6 +326,7 @@ def duplicates_chrome_march_2() -> List[CompletedChromeSession]:
     chatgpt_session_dup = CompletedChromeSession(
         "chat.openai.comTEST",
         "Asking for coding help",
+        null_video_info,
         UserLocalTime(add_time_and_tz(march_2_2025, 15, 30, 0)),
         UserLocalTime(add_time_and_tz(march_2_2025, 16, 15, 0)),
         productive=True,
@@ -317,6 +339,7 @@ def duplicates_chrome_march_2() -> List[CompletedChromeSession]:
     stackoverflow_session_dup = CompletedChromeSession(
         "stackoverflow.comTEST",
         "Finding solutions to SQLAlchemy issues",
+        null_video_info,
         UserLocalTime(add_time_and_tz(march_2_2025, 16, 30, 0)),
         UserLocalTime(add_time_and_tz(march_2_2025, 17, 15, 0)),
         productive=True,
@@ -335,6 +358,7 @@ def duplicates_chrome_march_3rd() -> List[CompletedChromeSession]:
     github_session_dup = CompletedChromeSession(
         "github.comTEST",
         "Repository browsing",
+        null_video_info,
         UserLocalTime(add_time_and_tz(march_3_2025, 14, 0, 0)),
         UserLocalTime(add_time_and_tz(march_3_2025, 14, 45, 0)),
         productive=True,
@@ -347,6 +371,7 @@ def duplicates_chrome_march_3rd() -> List[CompletedChromeSession]:
     youtube_session_dup = CompletedChromeSession(
         "youtube.comTEST",
         "Watching programming tutorials",
+        null_video_info,
         UserLocalTime(add_time_and_tz(march_3_2025, 16, 0, 0)),
         UserLocalTime(add_time_and_tz(march_3_2025, 16, 45, 0)),
         productive=True,

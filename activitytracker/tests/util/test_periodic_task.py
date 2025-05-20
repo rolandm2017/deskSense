@@ -20,6 +20,9 @@ class MockSystemStatusDao:
 
 @pytest.mark.asyncio
 async def test_periodic_task():
+    """
+    This test tests both .start() and .stop()
+    """
     mock_dao = MockSystemStatusDao()
 
     run_polling_loop_mock = Mock()
@@ -45,12 +48,14 @@ async def test_periodic_task():
     assert not periodic_task.current_task.cancelled()
     assert str(periodic_task.current_task).startswith("<Task pending")
 
-    periodic_task.stop()
+    # A big deal:
+    assert mock_dao.run_polling_loop.call_count == cycle_count
+
+    assert periodic_task.current_task is not None
+
+    await periodic_task.stop()
 
     assert periodic_task.is_running is False
-
-    # The task is in the process of cancelling but not cancelled
-    assert "cancelling" in str(periodic_task.current_task).lower()
 
     # wait for the task to fully cancel
     await asyncio.sleep(0.03)

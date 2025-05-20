@@ -121,7 +121,9 @@ async def test_program_path_with_fresh_sessions(
     mock_program_facade = MockProgramFacade(test_two_data_clone)
 
     # Spy on listen_for_window_changes
-    spy_on_listen_for_window = Mock(side_effect=mock_program_facade.listen_for_window_changes)
+    spy_on_listen_for_window = Mock(
+        side_effect=mock_program_facade.listen_for_window_changes
+    )
     mock_program_facade.listen_for_window_changes = spy_on_listen_for_window
 
     def choose_program_facade(current_os):
@@ -157,7 +159,9 @@ async def test_program_path_with_fresh_sessions(
 
     activity_arbiter = ActivityArbiter(mock_user_facing_clock, mock_container, engine_type)
 
-    asm_set_new_session_spy = Mock(side_effect=activity_arbiter.state_machine.set_new_session)
+    asm_set_new_session_spy = Mock(
+        side_effect=activity_arbiter.state_machine.set_new_session
+    )
     activity_arbiter.state_machine.set_new_session = asm_set_new_session_spy
 
     p_logging_dao = ProgramLoggingDao(regular_session_maker)
@@ -224,7 +228,7 @@ async def test_program_path_with_fresh_sessions(
     # Logger methods
     #
 
-    just_made_logs = make_mock_db_rows_for_test_data()
+    just_made_logs = make_mock_db_rows_for_test_data(test_two_data_clone)
 
     logger_add_new_item_spy = Mock()
     p_logging_dao.add_new_item = logger_add_new_item_spy
@@ -261,7 +265,10 @@ async def test_program_path_with_fresh_sessions(
                 # Try for up to 10 iterations
                 for _ in range(len(test_two_data_clone)):
                     if mock_program_facade.yield_count == 4:
-                        print(mock_program_facade.yield_count, "stop signal ++ \n ++ \n ++ \n ++")
+                        print(
+                            mock_program_facade.yield_count,
+                            "stop signal ++ \n ++ \n ++ \n ++",
+                        )
                         break
                     # Seems 1.5 is the minimum wait to get this done. Below 1.5, it works only sometimes
                     await asyncio.sleep(1.5)  # Short sleep between checks ("short")
@@ -293,7 +300,9 @@ async def test_program_path_with_fresh_sessions(
             assert recorder_spies["on_new_session_spy"].call_count == count_of_events
 
             # Test stopped before first pulse
-            assert summary_dao_spies["push_window_ahead_ten_sec_spy"].call_count == total_pushes
+            assert (
+                summary_dao_spies["push_window_ahead_ten_sec_spy"].call_count == total_pushes
+            )
 
             # The final entry here is holding the window push open
             assert finalize_log_spy.call_count == count_of_events - trailing_entry
@@ -302,7 +311,9 @@ async def test_program_path_with_fresh_sessions(
                 == count_of_events - trailing_entry
             )
 
-        def assert_all_spy_args_were_sessions(spy_from_mock, expected_loops: int, spy_name: str):
+        def assert_all_spy_args_were_sessions(
+            spy_from_mock, expected_loops: int, spy_name: str
+        ):
             logger.log_yellow(
                 f"Asserting against {spy_name} with count {len(spy_from_mock.call_args_list)}"
             )
@@ -314,7 +325,8 @@ async def test_program_path_with_fresh_sessions(
                 print("Actual:", some_session.start_time)
                 # print(test_two_data_clone[i], "954ru")
                 print(
-                    str(some_session.start_time.dt) == str(test_two_data_clone[i].start_time.dt)
+                    str(some_session.start_time.dt)
+                    == str(test_two_data_clone[i].start_time.dt)
                 )
             print("end of debug segment 956ru")
             for i in range(0, expected_loops):
@@ -389,7 +401,9 @@ async def test_program_path_with_fresh_sessions(
             len(window_change_calls) == 4
         ), "The number of sessions is three, so the calls should be three"
 
-        assert window_change_spy.call_count == second_test_event_count  # Deliberately redundant
+        assert (
+            window_change_spy.call_count == second_test_event_count
+        )  # Deliberately redundant
 
         # Deliberately redundant
         assert spy_on_set_program_state.call_count == second_test_event_count
@@ -404,7 +418,10 @@ async def test_program_path_with_fresh_sessions(
 
         def assert_sqlalchemy_layer_went_as_expected():
             """Covers only stuff that obscures sqlalchemy code."""
-            assert sum_dao_execute_and_read_one_or_none_spy.call_count == second_test_event_count
+            assert (
+                sum_dao_execute_and_read_one_or_none_spy.call_count
+                == second_test_event_count
+            )
 
             concluded_sessions = second_test_event_count - trailing_entry
 
@@ -426,7 +443,8 @@ async def test_program_path_with_fresh_sessions(
         assert_sqlalchemy_layer_went_as_expected()
 
         assert (
-            len(summary_dao_spies["push_window_ahead_ten_sec_spy"].call_args_list) == total_pushes
+            len(summary_dao_spies["push_window_ahead_ten_sec_spy"].call_args_list)
+            == total_pushes
         )
 
         def assert_sessions_form_a_chain():

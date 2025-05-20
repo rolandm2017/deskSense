@@ -105,7 +105,9 @@ async def setup_parts(regular_session_maker, async_engine_and_asm):
     # If your DAOs have close methods, you could call them here
 
 
-def setup_program_writes_for_group(group_of_test_data, program_summary_dao, must_be_from_month):
+def setup_program_writes_for_group(
+    group_of_test_data, program_summary_dao, must_be_from_month
+):
     """"""
     for dummy_program_session in group_of_test_data:
         assert isinstance(dummy_program_session, CompletedProgramSession)
@@ -128,12 +130,16 @@ def setup_program_writes_for_group(group_of_test_data, program_summary_dao, must
             program_summary_dao.start_session(dummy_program_session)
 
 
-def setup_chrome_writes_for_group(group_of_test_data, chrome_summary_dao, must_be_from_month):
+def setup_chrome_writes_for_group(
+    group_of_test_data, chrome_summary_dao, must_be_from_month
+):
     for dummy_chrome_session in group_of_test_data:
         assert isinstance(dummy_chrome_session, CompletedChromeSession)
         assert must_be_from_month == dummy_chrome_session.end_time.dt.month
 
-        session_from_today = chrome_summary_dao.find_todays_entry_for_domain(dummy_chrome_session)
+        session_from_today = chrome_summary_dao.find_todays_entry_for_domain(
+            dummy_chrome_session
+        )
         if session_from_today:
             print(f"Already added: ", dummy_chrome_session.domain)
             chrome_summary_dao.push_window_ahead_ten_sec(dummy_chrome_session)
@@ -182,8 +188,12 @@ async def setup_with_populated_db(setup_parts):
     #
 
     february = 2
+    print("Populating Feb programs")
     setup_program_writes_for_group(test_data_feb_programs, program_summary_dao, february)
 
+    print("Populating Feb Chrome")
+    for event in test_data_feb_chrome:
+        print(event, "196ru")
     setup_chrome_writes_for_group(test_data_feb_chrome, chrome_summary_dao, february)
 
     assert all(
@@ -208,8 +218,10 @@ async def setup_with_populated_db(setup_parts):
     #
     #
     march = 3
+    print("Populating March programs")
     setup_program_writes_for_group(test_data_march_programs, program_summary_dao, march)
 
+    print("Populating March Chrome")
     setup_chrome_writes_for_group(test_data_march_chrome, chrome_summary_dao, march)
 
     test_programs_and_domains = {
@@ -239,12 +251,15 @@ async def test_read_all(setup_with_populated_db):
     # it was wrote on march 2 or 3. Because PST -> UTC or vice versa causes days to change
     print(len(all_programs_for_verification), "vvv")
 
-    just_retrieved_program_names_from_db = [x.program_name for x in all_programs_for_verification]
+    just_retrieved_program_names_from_db = [
+        x.program_name for x in all_programs_for_verification
+    ]
 
     print("just_retrieved_program_names:", just_retrieved_program_names_from_db)
 
     test_programs = (
-        test_programs_and_domains["feb_programs"] + test_programs_and_domains["march_programs"]
+        test_programs_and_domains["feb_programs"]
+        + test_programs_and_domains["march_programs"]
     )
 
     for dummy_data in test_programs:
@@ -316,7 +331,9 @@ async def test_read_all(setup_with_populated_db):
     # feb_24_read_by_day = program_summary_dao.read_day(UserLocalTime(feb_24_2025)),
     # feb_26_read_by_day = program_summary_dao.read_day(UserLocalTime(feb_26_2025))
 
-    assert len(feb_vals_from_db) == feb_program_count, "Count did not match expected, February"
+    assert (
+        len(feb_vals_from_db) == feb_program_count
+    ), "Count did not match expected, February"
 
     # NOTE that "assert_has_only_unique_strings(feb_vals_from_db)" is nonsense!
     # The feb vals span multiple days, so of course there are duplicates.
@@ -405,7 +422,9 @@ async def test_reading_individual_days(setup_with_populated_db):
 
     # ### Continue asserting that expected domains, programs are all in there
 
-    march_3_modified = UserLocalTime(march_3_2025 + timedelta(hours=1, minutes=9, seconds=33))
+    march_3_modified = UserLocalTime(
+        march_3_2025 + timedelta(hours=1, minutes=9, seconds=33)
+    )
 
     daily_program_summaries_2: List[DailyProgramSummary] = program_summary_dao.read_day(
         march_3_modified
@@ -417,7 +436,9 @@ async def test_reading_individual_days(setup_with_populated_db):
     assert (
         len(daily_program_summaries_2) == march_3_program_count
     ), "A program session didn't load"
-    assert len(daily_chrome_summaries_2) == march_3_chrome_count, "A Chrome session didn't load"
+    assert (
+        len(daily_chrome_summaries_2) == march_3_chrome_count
+    ), "A Chrome session didn't load"
 
     count_of_march_2 = march_2_program_count + march_2_chrome_count
     count_of_march_3 = march_3_program_count + march_3_chrome_count
@@ -425,7 +446,9 @@ async def test_reading_individual_days(setup_with_populated_db):
     assert len(daily_program_summaries) + len(daily_chrome_summaries) == count_of_march_2
     assert len(daily_program_summaries_2) + len(daily_chrome_summaries_2) == count_of_march_3
 
-    zero_pop_day_programs: List[DailyProgramSummary] = program_summary_dao.read_day(test_day_3)
+    zero_pop_day_programs: List[DailyProgramSummary] = program_summary_dao.read_day(
+        test_day_3
+    )
     zero_pop_day_chrome: List[DailyDomainSummary] = chrome_summary_dao.read_day(test_day_3)
 
     assert len(zero_pop_day_programs) + len(zero_pop_day_chrome) == 0
