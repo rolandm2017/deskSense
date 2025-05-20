@@ -73,7 +73,10 @@ function attachVideoListeners(retries = 0, maxRetries = 10) {
         console.log("One-off auto-start for recording on page load / refresh");
         // Don't be tempted to merge Netflix Autoplay, YouTube Autoplay.
         // They are not the same thing.
-        chrome.runtime.sendMessage({ event: "youtube_autoplay" });
+        chrome.runtime.sendMessage({
+            event: "youtube_autoplay",
+            source: "youtube",
+        });
     }
 
     window.__videoElement = video;

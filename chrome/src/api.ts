@@ -47,7 +47,7 @@ class YouTubeApi {
             startTime: new Date(),
             playerPositionInSec: 1000,
         };
-        // console.log("Sending YouTube Page payload:", payload);
+        console.log("Sending YouTube Page payload:", payload);
         // console.log(youTubeUrl, "is the youtube url");
         if (this.logging) {
             this.logger.logLandOnPage(tabTitle ?? "Unknown Tab");
@@ -59,6 +59,15 @@ class YouTubeApi {
         }
         this.sendPayload(youTubeUrl, payload);
     }
+    // TODO:
+    // Refreshing a Youtube Watch page should be something like,
+    // (1) First, something tries to get the channel, AND/OR
+    // end up calling the reportYouTubePage function.
+    // (2) Simultaneously, it expects the playing state to arrive momentarily.
+    // Only when (1) and (2) are both satisfied, THEN a POST is sent,
+    // saying "here is the page and btw it's playing"
+    // PROBLEM: Can't have Player State, then Page. Bad! Will cause problems.
+    // Page, then Player State might be ok. With like a 300 ms delay.
 
     sendPlayEvent({ videoId, tabTitle, channelName }: YouTubePayload) {
         // The server knows which VideoSession it's modifying because
@@ -76,7 +85,7 @@ class YouTubeApi {
             // their time spent watching content that day.
             // timestamp: 0
         };
-        // console.log("The play payload was be ", payload);
+        console.log("The play payload was be ", payload);
         if (this.logging) {
             this.logger.logPlayEvent(tabTitle);
             this.logger.logPayloadToStorage(
@@ -105,7 +114,7 @@ class YouTubeApi {
                 payload
             );
         }
-        // console.log("The pause payload was be ", payload);
+        console.log("The pause payload was be ", payload);
         this.sendPayload(youtubePlayerStateUrl, payload);
     }
 }
@@ -157,7 +166,7 @@ class NetflixApi {
             // their time spent watching content that day.
             // timestamp: 0
         };
-        // console.log("The play payload was be ", payload);
+        console.log("The play payload was be ", payload);
         if (this.logging) {
             this.logger.logPayloadToStorage(
                 "sendPlayEvent",
@@ -181,7 +190,7 @@ class NetflixApi {
             playerState: "paused",
         };
 
-        // console.log("The pause payload was be ", payload);
+        console.log("The pause payload was be ", payload);
         if (this.logging) {
             this.logger.logPayloadToStorage(
                 "sendPlayEvent",

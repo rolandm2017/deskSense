@@ -31,27 +31,6 @@ function helpDeveloperNoticeMissingNpmRunBuild() {
 
 helpDeveloperNoticeMissingNpmRunBuild();
 
-// function deskSenseLogs() {
-//     systemInputCapture.writeLogsToJson();
-//     endpointLoggingDownload();
-// }
-
-// function clearDeskSenseLogs() {
-//     systemInputCapture.clearStorage();
-//     clearEndpointLoggingStorage();
-// }
-
-// function checkIfCaptureSessionStarted() {
-//     captureManager.getTestStartTime();
-// }
-
-// // enable logging file download
-// (self as any).deskSenseLogs = deskSenseLogs;
-// (self as any).clearDeskSenseLogs = clearDeskSenseLogs;
-// (self as any).deskSenseCaptureCheck = checkIfCaptureSessionStarted;
-// (self as any).writeInputLogsToJson = systemInputCapture.writeLogsToJson;
-// (self as any).writeEndpointLogsToJson = endpointLoggingDownload;
-// Code that lets you open the options page when the icon is clicked
 // Disabled in favor of the modal
 function openOptionsOnClickIcon() {
     // Don't delete this code
@@ -114,6 +93,7 @@ chrome.runtime.onMessage.addListener(
             origin: "https://www.youtube.com"
             tab : {active: true, title, url},
             url: "https://www.youtube.com/watch?v=Pt2Pj3JZ9Ow&t=300s"
+            * PROBABLY also has the "source" field
         */
         console.log("top of onMessage listener", message.event);
         /*
@@ -131,6 +111,7 @@ chrome.runtime.onMessage.addListener(
             playPauseDispatch.notePauseEvent();
         } else if (message.event === "youtube_autoplay") {
             console.log("[autoplay] youtube");
+            playPauseDispatch.notePlayEvent(sender);
             // TODO
         } else if (message.event === "netflix_autoplay") {
             console.log("[autoplay] netflix");

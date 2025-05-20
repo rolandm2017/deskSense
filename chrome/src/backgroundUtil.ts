@@ -195,7 +195,6 @@ export class PlayPauseDispatch {
             this.cancelSendPauseEvent(this.endSessionTimeoutId);
         }
         console.log("[play event] ", this.tracker.currentMedia);
-        console.log("EXPECT defined value:", this.tracker.currentMedia);
         if (this.tracker.currentMedia) {
             this.tracker.markPlaying();
             return;
@@ -205,6 +204,9 @@ export class PlayPauseDispatch {
             // It wasn't there yet because, the, the channel extractor
             // script didn't run yet but the "report playing video" code did.
             const isYouTube = "TODO";
+            console.log(this.tracker.currentMedia, "207ru");
+
+            throw new Error("ShouldntBeAbleToGetHereError");
             if (isYouTube) {
                 // FIXME: THIS RAN ON NETFLIX
                 startSecondaryChannelExtractionScript(sender);
@@ -228,7 +230,6 @@ export class PlayPauseDispatch {
         });
 
         console.log("[pause] ", this.tracker.currentMedia);
-        console.log("EXPECT defined value:", this.tracker.currentMedia);
         if (this.tracker.currentMedia) {
             const startOfGracePeriod = new Date();
             this.pauseStartTime = startOfGracePeriod;
@@ -236,7 +237,9 @@ export class PlayPauseDispatch {
             this.endSessionTimeoutId =
                 this.startGracePeriod(startOfGracePeriod);
         } else {
+            console.log(this.tracker.currentMedia, "238ru");
             console.warn("Somehow paused the media while it was undefined");
+            throw new Error("ShouldntBeAbleToGetHereError");
         }
     }
 

@@ -56,6 +56,9 @@ export class ViewingTracker {
     }
 
     reportYouTubeWatchPage() {
+        // FIXME: It's the case that, when you refresh, the
+        // NewPageLoad event (this thing) goes off, BUT the video is playing!
+        // And there is no notification of it BEING playing! No indication.
         if (this.currentMedia instanceof YouTubeViewing) {
             // this.youTubeApiLogger.logLandOnPage(this.currentMedia.mediaTitle);
             this.api.youtube.reportYouTubePage(
