@@ -79,7 +79,7 @@ async def receive_youtube_event(
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service),
 ):
-    logger.log_purple("[LOG] Chrome Tab Received")
+    logger.log_purple("[LOG] New YouTube received")
     try:
         print(
             f"received {tab_change_event.channel} with tabTitle {tab_change_event.tabTitle}"
@@ -113,7 +113,7 @@ async def receive_youtube_player_state(
 ):
     # TODO: Align inputs definitions in chrome/api and server.py
 
-    logger.log_purple("[LOG] Chrome Tab Received")
+    logger.log_purple("[LOG] YouTube state received")
     try:
         print("State received", tab_change_event.playerState)
         field_has_utc_tzinfo_else_throw(tab_change_event.eventTime)
@@ -150,7 +150,7 @@ async def receive_netflix_event(
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service),
 ):
-    logger.log_purple("[LOG] Chrome Tab Received")
+    logger.log_purple("[LOG] New Netflix received")
     try:
         # TODO: Align inputs definitions in chrome/api and server.py
 
@@ -183,7 +183,7 @@ async def receive_netflix_player_state(
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service),
 ):
-    logger.log_purple("[LOG] Chrome Tab Received")
+    logger.log_purple("[LOG] Netflix state received")
     try:
         # TODO: Align inputs definitions in chrome/api and server.py
 

@@ -42,6 +42,7 @@ class YouTubeTimezoneService:
         new_datetime_with_tz: datetime = convert_to_timezone(tab_event.startTime, new_tz)
         tab_change_with_time_zone = TabChangeEventWithLtz(
             tab_event.tabTitle,
+            tab_event.url,
             UserLocalTime(new_datetime_with_tz),
             youtube_info,
         )
@@ -74,11 +75,12 @@ class NetflixTimezoneService:
         return self._make_tab_change_event_with_netflix_info(tab_event, netflix_info, new_tz)
 
     def _make_tab_change_event_with_netflix_info(
-        self, tab_event, netflix_info: NetflixInfo, new_tz: str
+        self, tab_event: NetflixTabChange, netflix_info: NetflixInfo, new_tz: str
     ):
         new_datetime_with_tz: datetime = convert_to_timezone(tab_event.startTime, new_tz)
         tab_change_with_time_zone = TabChangeEventWithLtz(
             tab_event.tabTitle,
+            tab_event.url,
             UserLocalTime(new_datetime_with_tz),
             netflix_info,
         )

@@ -73,12 +73,14 @@ export class ViewingTracker {
         }
         this.currentMedia.playerState = "playing";
         if (this.currentMedia instanceof YouTubeViewing) {
-            this.youTubeApiLogger.logPlayEvent();
+            console.log("Media is YouTubeViewing");
+            // this.youTubeApiLogger.logPlayEvent();
             const asYouTubePayload = this.currentMedia.convertToPayload();
             console.log("sending play event");
             this.api.youtube.sendPlayEvent(asYouTubePayload);
         } else {
-            this.netflixApiLogger.logPlayEvent();
+            console.log("Media is NetflixViewing");
+            // this.netflixApiLogger.logPlayEvent();
             const asNetflixPayload = this.currentMedia.convertToPayload();
             console.log("sending play event");
             this.api.netflix.sendPlayEvent(asNetflixPayload);
@@ -92,12 +94,12 @@ export class ViewingTracker {
         this.currentMedia.playerState = "paused";
 
         if (this.currentMedia instanceof YouTubeViewing) {
-            this.youTubeApiLogger.logPauseEvent();
+            // this.youTubeApiLogger.logPauseEvent();
             const asYouTubePayload = this.currentMedia.convertToPayload();
             console.log("sending pause event");
             this.api.youtube.sendPauseEvent(asYouTubePayload);
         } else {
-            this.netflixApiLogger.logPauseEvent();
+            // this.netflixApiLogger.logPauseEvent();
             const asNetflixPayload = this.currentMedia.convertToPayload();
             console.log("sending pause event");
             this.api.netflix.sendPauseEvent(asNetflixPayload);
