@@ -47,8 +47,8 @@ class YouTubeApi {
             startTime: new Date(),
             playerPositionInSec: 1000,
         };
-        console.log("Sending YouTube payload:", payload);
-        console.log(youTubeUrl, "is the youtube url");
+        // console.log("Sending YouTube Page payload:", payload);
+        // console.log(youTubeUrl, "is the youtube url");
         if (this.logging) {
             this.logger.logLandOnPage(tabTitle ?? "Unknown Tab");
             this.logger.logPayloadToStorage(
@@ -76,7 +76,7 @@ class YouTubeApi {
             // their time spent watching content that day.
             // timestamp: 0
         };
-        console.log("The play payload was be ", payload);
+        // console.log("The play payload was be ", payload);
         if (this.logging) {
             this.logger.logPlayEvent(tabTitle);
             this.logger.logPayloadToStorage(
@@ -157,7 +157,7 @@ class NetflixApi {
             // their time spent watching content that day.
             // timestamp: 0
         };
-        console.log("The play payload was be ", payload);
+        // console.log("The play payload was be ", payload);
         if (this.logging) {
             this.logger.logPayloadToStorage(
                 "sendPlayEvent",
@@ -181,7 +181,7 @@ class NetflixApi {
             playerState: "paused",
         };
 
-        console.log("The pause payload was be ", payload);
+        // console.log("The pause payload was be ", payload);
         if (this.logging) {
             this.logger.logPayloadToStorage(
                 "sendPlayEvent",
@@ -224,7 +224,7 @@ export class ServerApi {
             tabTitle: tabTitle,
             startTime: new Date(),
         };
-        console.log("Sending payload:", payload);
+        console.log("Sending tab switch payload:", payload);
         if (this.logging) {
             this.logger.logPayloadToStorage(
                 "reportTabSwitch",
@@ -241,7 +241,7 @@ export class ServerApi {
             tabTitle: "ignored",
             startTime: new Date(),
         };
-        console.log("Sending payload:", payload);
+        console.log("Sending ignoredUrl payload:", payload);
         if (this.logging) {
             this.logger.logPayloadToStorage(
                 "reportIgnoredUrl",
@@ -309,4 +309,4 @@ export class ServerApi {
     }
 }
 
-export const initializedServerApi = new ServerApi(false);
+export const initializedServerApi = new ServerApi(true);

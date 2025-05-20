@@ -118,7 +118,9 @@ function attachNetflixVideoListeners(retries = 0, maxRetries = 15) {
             "[Netflix] One-off auto-start for recording on page load / refresh"
         );
         chrome.runtime.sendMessage({
-            event: "user_pressed_play",
+            // Don't be tempted to merge Netflix Autoplay, YouTube Autoplay.
+            // They are not the same thing.
+            event: "netflix_autoplay",
             source: "netflix",
         });
     }

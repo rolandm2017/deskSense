@@ -56,6 +56,7 @@ export class PlatformLogger {
 
     logLandOnPage(tabTitle: string) {
         // TODO: Make Netflix magenta
+        console.log(tabTitle, "59ru");
         console.log(
             this.chalkColor(this.insert),
             "[info] On page: " + tabTitle
@@ -63,17 +64,17 @@ export class PlatformLogger {
     }
 
     logPlayEvent(mediaTitle?: string) {
-        console.log(
-            this.chalkColor(this.insert),
-            "▶️  play " + mediaTitle ? ":: " + mediaTitle : ""
-        );
+        console.log(mediaTitle, "66ru");
+
+        const identifier = mediaTitle ? ":: " + mediaTitle : "";
+        console.log(this.chalkColor(this.insert), "▶️  play " + identifier);
     }
 
     logPauseEvent(mediaTitle?: string) {
-        console.log(
-            this.chalkColor(this.insert),
-            "⏸️  pause " + mediaTitle ? ":: " + mediaTitle : ""
-        );
+        console.log(mediaTitle, "71ru");
+        const identifier = mediaTitle ? ":: " + mediaTitle : "";
+
+        console.log(this.chalkColor(this.insert), "⏸️  pause " + identifier);
     }
 
     logPayloadToStorage(eventType: string, serverUrl: string, payload: object) {

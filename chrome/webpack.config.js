@@ -1,6 +1,8 @@
 import path from "path";
 import { fileURLToPath } from "url";
 
+import webpack from "webpack";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -10,6 +12,13 @@ export default {
     optimization: {
         minimize: false,
     },
+    plugins: [
+        new webpack.DefinePlugin({
+            "process.env.BUILD_TIMESTAMP": JSON.stringify(
+                new Date().toISOString()
+            ),
+        }),
+    ],
     entry: {
         options: "./src/optionsPage/options.js",
         background: "./src/background.ts",

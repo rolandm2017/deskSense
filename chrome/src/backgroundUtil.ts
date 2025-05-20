@@ -2,7 +2,10 @@ import { initializedServerApi } from "./api";
 import { ignoredDomains, isDomainIgnored } from "./ignoreList";
 import { getDomainFromUrl } from "./urlTools";
 import { viewingTracker, ViewingTracker } from "./videoCommon/visits";
-import { handleYouTubeUrl } from "./youtube/youtube";
+import {
+    handleYouTubeUrl,
+    startSecondaryChannelExtractionScript,
+} from "./youtube/youtube";
 
 import { systemInputCapture } from "./inputLogger/systemInputLogger";
 
@@ -191,17 +194,23 @@ export class PlayPauseDispatch {
         if (this.endSessionTimeoutId) {
             this.cancelSendPauseEvent(this.endSessionTimeoutId);
         }
-        console.log("[play] ", this.tracker.currentMedia);
+        console.log("[play event] ", this.tracker.currentMedia);
+        console.log("EXPECT defined value:", this.tracker.currentMedia);
         if (this.tracker.currentMedia) {
             this.tracker.markPlaying();
             return;
+        } else {
+            console.warn("ShouldntBeAbleToGetHereError");
+            // NOTE that the user LIKELY refreshed the page to get here.
+            // It wasn't there yet because, the, the channel extractor
+            // script didn't run yet but the "report playing video" code did.
+            const isYouTube = "TODO";
+            if (isYouTube) {
+                // FIXME: THIS RAN ON NETFLIX
+                startSecondaryChannelExtractionScript(sender);
+                // After the channel extractor runs, then you can fwd the play event
+            }
         }
-        // else {
-        //     // it wasn't there yet because, the, the channel extractor
-        //     // script didn't run yet but the "report playing video" code did
-        //     // FIXME: THIS RAN ON NETFLIX
-        //     startSecondaryChannelExtractionScript(sender);
-        // }
     }
 
     notePauseEvent() {
@@ -219,12 +228,15 @@ export class PlayPauseDispatch {
         });
 
         console.log("[pause] ", this.tracker.currentMedia);
+        console.log("EXPECT defined value:", this.tracker.currentMedia);
         if (this.tracker.currentMedia) {
             const startOfGracePeriod = new Date();
             this.pauseStartTime = startOfGracePeriod;
 
             this.endSessionTimeoutId =
                 this.startGracePeriod(startOfGracePeriod);
+        } else {
+            console.warn("Somehow paused the media while it was undefined");
         }
     }
 

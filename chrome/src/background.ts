@@ -11,6 +11,26 @@ import { NetflixViewing, viewingTracker } from "./videoCommon/visits";
 import { setupIgnoredDomains } from "./ignoreList";
 import { systemInputCapture } from "./inputLogger/systemInputLogger";
 
+function helpDeveloperNoticeMissingNpmRunBuild() {
+    const lastBuiltTimestampString = process.env.BUILD_TIMESTAMP as string;
+
+    if (lastBuiltTimestampString === undefined) {
+        throw new Error("Failed to get the Build Timestamp");
+    }
+
+    const lastBuiltTimestamp = new Date(lastBuiltTimestampString);
+    const now = new Date();
+
+    // Cast to number to satisfy TypeScript
+    const hoursSinceBuild = Math.round(
+        (now.getTime() - lastBuiltTimestamp.getTime()) / (1000 * 60 * 60)
+    );
+
+    console.log(`Loading build from ${hoursSinceBuild} hours ago`);
+}
+
+helpDeveloperNoticeMissingNpmRunBuild();
+
 // function deskSenseLogs() {
 //     systemInputCapture.writeLogsToJson();
 //     endpointLoggingDownload();
@@ -90,17 +110,32 @@ chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
 
 chrome.runtime.onMessage.addListener(
     (message, sender: chrome.runtime.MessageSender, sendResponse) => {
-        console.log(message.event, sender);
+        /* BTW the sender object has:
+            origin: "https://www.youtube.com"
+            tab : {active: true, title, url},
+            url: "https://www.youtube.com/watch?v=Pt2Pj3JZ9Ow&t=300s"
+        */
+        console.log("top of onMessage listener", message.event);
         /*
          *   This only runs when the user presses play or pauses the video.
          * Hence they're definitely on a page that already loaded
          * somewhere else in the program.
          */
         if (message.event === "user_pressed_play") {
+            console.log(message.event, "!! 100ru");
+            // FIXME: User is able to press pause, somehow, before .setCurrent is called
             // TODO: On close ... oh, i need one PER watch screen. what if user has 5 videos going?
             playPauseDispatch.notePlayEvent(sender);
         } else if (message.event === "user_pressed_pause") {
+            console.log(message.event, "!! 105ru");
             playPauseDispatch.notePauseEvent();
+        } else if (message.event === "youtube_autoplay") {
+            console.log("[autoplay] youtube");
+            // TODO
+        } else if (message.event === "netflix_autoplay") {
+            console.log("[autoplay] netflix");
+            // TODO
+            console.warn("Netflix autoplay not yet handled");
         } else {
             console.warn("Unknown event:", message);
         }
