@@ -33,7 +33,6 @@ class YouTubeTabChange(UtcDtTabChange):
     # NOTE that on May 19, this TabChange event meant ANY YouTube page.
 
     # videoId: str  # The VideoID cannot be known. There is no VideoID.
-    tabTitle: str
     channel: str
     playerState: PlayerState
 
@@ -62,6 +61,7 @@ class NetflixPlayerChange(BaseModel):
     videoId: str
     # url: str  # full url - is this really needed?
     showName: str
+    playerState: PlayerState
 
 
 class TabChangeEventWithUnknownTz(BaseModel):
