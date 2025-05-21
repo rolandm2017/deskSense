@@ -171,6 +171,7 @@ export function extractChannelNameFromUrl(youTubeUrl: string) {
 }
 
 function splitYouTubeUrlFromVideoId(url: string) {
+    // TODO: Put some examples here
     try {
         let videoId = url.split("v=")[1]; // Extract video ID
         // console.log("VIDEO ID: ", videoId, videoId.includes("&t"));
@@ -188,6 +189,7 @@ function splitYouTubeUrlFromVideoId(url: string) {
 }
 
 export function getYouTubeVideoId(url: string | undefined) {
+    console.log(url, "192ru");
     let videoId;
     if (url) {
         videoId = splitYouTubeUrlFromVideoId(url);

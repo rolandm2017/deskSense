@@ -182,6 +182,8 @@ export class PlayPauseDispatch {
                 // FIXME: THIS RAN ON NETFLIX
                 startSecondaryChannelExtractionScript(sender);
                 // After the channel extractor runs, then you can fwd the play event
+            } else {
+                // is netflix
             }
         }
     }
@@ -202,6 +204,7 @@ export class PlayPauseDispatch {
             this.tracker.markAutoplayEventWaiting();
         }
         // https://www.youtube.com/watch?v=Pt2Pj3JZ9Ow&t=300s exists on sender obj
+        console.log(sender, "205ru");
         const senderVideoId = getYouTubeVideoId(sender.tab?.url);
         const pageEventAlreadyReported =
             this.pageAlreadyReported(senderVideoId);

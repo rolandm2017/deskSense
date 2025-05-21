@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { ServerApi } from "../src/api.ts";
 import { PlayPauseDispatch } from "../src/backgroundUtil.ts";
 import { NetflixViewing, ViewingTracker } from "../src/videoCommon/visits.ts";
@@ -17,17 +17,8 @@ describe("Background Util", () => {
     });
 
     describe("PlayPauseDispatch", () => {
-        beforeEach(() => {
-            // Setup fake timers in Vitest
-            vi.useFakeTimers();
-        });
-
-        afterEach(() => {
-            // Restore real timers
-            vi.useRealTimers();
-        });
         test("Note Play Event marks the tracker media as playing", () => {
-            const api = new ServerApi();
+            const api = new ServerApi("disable");
             // turn off send payloads
             replaceAllMethodsWithMocks(api);
             const tracker = new ViewingTracker(api);
@@ -45,8 +36,8 @@ describe("Background Util", () => {
 
             expect(tracker.markPlaying).toHaveBeenCalledOnce();
         });
-        test("Note Pause Event marks the tracker media as paused after a short delay", () => {
-            const api = new ServerApi();
+        test("Note Pause Event marks the tracker media as paused", () => {
+            const api = new ServerApi("disable");
             // turn off send payloads
             replaceAllMethodsWithMocks(api);
             const tracker = new ViewingTracker(api);
@@ -59,28 +50,15 @@ describe("Background Util", () => {
             tracker.markPlaying = vi.fn();
             tracker.markPaused = vi.fn();
 
-            const muchShorterDelay = 10;
-
             const dispatch = new PlayPauseDispatch(tracker);
-            dispatch.gracePeriodDelayInMs = muchShorterDelay;
-
-            vi.spyOn(global, "setTimeout");
 
             dispatch.notePauseEvent();
-
-            expect(setTimeout).toHaveBeenCalledTimes(1);
-            expect(setTimeout).toHaveBeenLastCalledWith(
-                expect.any(Function),
-                dispatch.gracePeriodDelayInMs
-            );
-
-            // Fast-forward time
-            vi.advanceTimersByTime(muchShorterDelay);
 
             expect(tracker.markPaused).toHaveBeenCalledOnce();
         });
         test("If the viewing tracker has no current media, nothing happens", () => {
-            const api = new ServerApi();
+            const api = new ServerApi("disable");
+
             // turn off send payloads
             replaceAllMethodsWithMocks(api);
             const tracker = new ViewingTracker(api);

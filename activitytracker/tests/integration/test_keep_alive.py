@@ -194,11 +194,6 @@ def test_five_runs(dao_connection):
     engine = KeepAliveEngine(session, dao_connection)
     durations_for_test = [63, 0, 10, 9, 23]
 
-    # 0 and 10, deduct 10
-    # 9 deducts 1.
-    # What deducts 0?
-    # This code is broken.
-
     # 0 is secretly 10.
     # If it ends on 0, withdraw the window push that just happened.
 
@@ -356,7 +351,8 @@ def test_full_test_sessions(activity_arbiter_and_setup, mock_recorder):
 
     def assert_final_partial_is_from_final_test_data():
         assert (
-            mock_recorder.partial_window_history[-1][0].get_name() == test_sessions[-1].get_name()
+            mock_recorder.partial_window_history[-1][0].get_name()
+            == test_sessions[-1].get_name()
         )
 
     assert_final_partial_is_from_final_test_data()

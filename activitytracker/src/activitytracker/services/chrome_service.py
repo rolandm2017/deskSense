@@ -180,7 +180,6 @@ class ChromeService:
         Player state changes go right to the Arbiter. Whether
         the user was paused for 20,000 ms or 20 ms, is not relevant.
         """
-        print(deliverable, "45ru")
         title = deliverable.tab_title
         # is_productive = deliverable.url in productive_sites
         # TODO: develop per-channel or per-media user input
@@ -193,7 +192,8 @@ class ChromeService:
             url = "www.youtube.com"
             video_info = deliverable.youtube_info
         else:
-            # FIXME: But HOW does it know what the particular media is?
+            # How does it know what the particular media is?
+            # For Netflix and YouTube both, the answers is the .tab_title field
             url = "www.netflix.com"
             video_info = deliverable.netflix_info
 

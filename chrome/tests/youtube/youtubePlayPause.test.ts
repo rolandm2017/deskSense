@@ -14,7 +14,7 @@ import { replaceAllMethodsWithMocks } from "../helper";
 describe("The YouTube tracker works as intended", () => {
     //
     test("A page update is sent to the server when the channel name arrives", () => {
-        const api = new ServerApi();
+        const api = new ServerApi("disable");
         // turn off send payloads
         replaceAllMethodsWithMocks(api);
         const viewingTrackerInit = new ViewingTracker(api);
@@ -31,10 +31,11 @@ describe("The YouTube tracker works as intended", () => {
         );
         viewingTrackerInit.setCurrent(youTubeVisit);
         viewingTrackerInit.reportYouTubeWatchPage();
-        expect(api.youtube.reportYouTubePage).toHaveBeenCalledOnce();
+        expect(api.youtube.reportYouTubeWatchPage).toHaveBeenCalledOnce();
     });
     test("A play event is sent to the server when it occurs", () => {
-        const api = new ServerApi();
+        const api = new ServerApi("disable");
+
         // turn off send payloads
         replaceAllMethodsWithMocks(api);
 
@@ -58,7 +59,8 @@ describe("The YouTube tracker works as intended", () => {
         expect(api.youtube.sendPlayEvent).toHaveBeenCalledOnce();
     });
     test("A pause event is sent to the server when it occurs", () => {
-        const api = new ServerApi();
+        const api = new ServerApi("disable");
+
         // turn off send payloads
         replaceAllMethodsWithMocks(api);
 
