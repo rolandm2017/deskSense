@@ -1,10 +1,6 @@
 // api.ts
 import { DomainLogger, PlatformLogger } from "./endpointLogging";
-import {
-    NetflixPayload,
-    PlayerData,
-    YouTubePayload,
-} from "./interface/interfaces";
+import { NetflixPayload, YouTubePayload } from "./interface/interfaces";
 
 const DESKSENSE_BACKEND_URL = "http://localhost:8000";
 
@@ -36,7 +32,7 @@ class YouTubeApi {
     reportYouTubePage(
         tabTitle: string | undefined,
         channel: string,
-        playerData?: PlayerData
+        playerData?: "playing" | "paused"
     ) {
         /* Tab title must be undefined sometimes, says TS */
         const payload = {
@@ -45,7 +41,7 @@ class YouTubeApi {
             tabTitle,
             channel,
             startTime: new Date(),
-            playerPositionInSec: 1000,
+            playerData,
         };
         console.log("Sending YouTube Page payload:", payload);
         // console.log(youTubeUrl, "is the youtube url");

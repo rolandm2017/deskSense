@@ -25,6 +25,8 @@ export class ViewingTracker {
      * Class is a container enabling cross-file Viewing management.
      */
     currentMedia: YouTubeViewing | NetflixViewing | undefined;
+    mostRecentReport: YouTubeViewing | undefined;
+    autoplayWaiting: boolean;
     youTubeApiLogger: PlatformLogger;
     netflixApiLogger: PlatformLogger;
     api: ServerApi;
@@ -32,9 +34,11 @@ export class ViewingTracker {
     partialNetflixDescriptor: string | undefined;
 
     constructor(api: ServerApi) {
+        this.api = api;
+        this.mostRecentReport = undefined;
+        this.autoplayWaiting = false;
         this.currentMedia = undefined;
         this.partialNetflixDescriptor = undefined;
-        this.api = api;
         this.youTubeApiLogger = new PlatformLogger("YouTube");
         this.netflixApiLogger = new PlatformLogger("Netflix");
         // TODO: JUST ASSUME it's going to work with Play/Pause only,
@@ -45,6 +49,32 @@ export class ViewingTracker {
         this.currentMedia = current;
     }
 
+    markAutoplayEventWaiting() {
+        // Don't send the play event right away like usual.
+        // Instead, note that one is waiting to be delivered,
+        // and bundle it in with the Watch Page report.
+        this.autoplayWaiting = true;
+    }
+
+    reportYouTubeWatchPage() {
+        // FIXME: It's the case that, when you refresh, the
+        // NewPageLoad event (this thing) goes off, BUT the video is playing!
+        // And there is no notification of it BEING playing! No indication.
+
+        if (this.currentMedia instanceof YouTubeViewing) {
+            this.mostRecentReport = this.currentMedia;
+            // this.youTubeApiLogger.logLandOnPage(this.currentMedia.mediaTitle);
+
+            this.api.youtube.reportYouTubePage(
+                this.currentMedia.mediaTitle,
+                this.currentMedia.channelName,
+                this.autoplayWaiting ? "playing" : "paused"
+            );
+            return;
+        }
+        throw new Error("Incorrect media type for YouTube reporting");
+    }
+
     reportNetflixWatchPage(watchPageId: string) {
         // Netflix pages show their eventual url in an instant, but the program
         // must wait for the user to tell the program which media it is.
@@ -53,21 +83,6 @@ export class ViewingTracker {
         const partiallyDescribedMedia: string = watchPageId;
         this.partialNetflixDescriptor = partiallyDescribedMedia;
         this.api.netflix.reportNetflixPage(partiallyDescribedMedia);
-    }
-
-    reportYouTubeWatchPage() {
-        // FIXME: It's the case that, when you refresh, the
-        // NewPageLoad event (this thing) goes off, BUT the video is playing!
-        // And there is no notification of it BEING playing! No indication.
-        if (this.currentMedia instanceof YouTubeViewing) {
-            // this.youTubeApiLogger.logLandOnPage(this.currentMedia.mediaTitle);
-            this.api.youtube.reportYouTubePage(
-                this.currentMedia.mediaTitle,
-                this.currentMedia.channelName
-            );
-            return;
-        }
-        throw new Error("Incorrect media type for YouTube reporting");
     }
 
     markPlaying() {
@@ -112,6 +127,7 @@ export class ViewingTracker {
     endViewing() {
         // TODO: handle the user closing the tab
         // used to report the final value on window close
+        this.mostRecentReport = undefined;
         if (this.currentMedia) {
             // conclude. something like:
             // this.api.platform.sendClosePage() // does wrapup

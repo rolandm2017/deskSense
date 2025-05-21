@@ -1,8 +1,4 @@
 // interfaces.ts
-export interface PlayerData {
-    timestamp: number;
-    state: "playing" | "paused";
-}
 export interface YouTubePayload {
     videoId: string;
     tabTitle: string;

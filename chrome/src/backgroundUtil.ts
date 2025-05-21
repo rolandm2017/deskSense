@@ -3,6 +3,7 @@ import { ignoredDomains, isDomainIgnored } from "./ignoreList";
 import { getDomainFromUrl } from "./urlTools";
 import { viewingTracker, ViewingTracker } from "./videoCommon/visits";
 import {
+    getYouTubeVideoId,
     handleYouTubeUrl,
     startSecondaryChannelExtractionScript,
 } from "./youtube/youtube";
@@ -212,6 +213,31 @@ export class PlayPauseDispatch {
                 startSecondaryChannelExtractionScript(sender);
                 // After the channel extractor runs, then you can fwd the play event
             }
+        }
+    }
+
+    pageAlreadyReported(senderVideoId: string) {
+        // this.mostRecentPageReport = this.currentMedia
+        return this.tracker.mostRecentReport?.videoId === senderVideoId;
+    }
+
+    pageNotYetLoaded() {
+        return this.tracker.currentMedia === undefined;
+    }
+
+    noteAutoPlayEvent(sender: chrome.runtime.MessageSender) {
+        //
+        if (this.pageNotYetLoaded()) {
+            // wait for the page event to go out, attach "playing" to it
+            this.tracker.markAutoplayEventWaiting();
+        }
+        // https://www.youtube.com/watch?v=Pt2Pj3JZ9Ow&t=300s exists on sender obj
+        const senderVideoId = getYouTubeVideoId(sender.tab?.url);
+        const pageEventAlreadyReported =
+            this.pageAlreadyReported(senderVideoId);
+        if (pageEventAlreadyReported) {
+            this.tracker.markPlaying();
+            this.tracker.mostRecentReport = undefined;
         }
     }
 
