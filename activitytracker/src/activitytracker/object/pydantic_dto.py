@@ -35,6 +35,7 @@ class YouTubeTabChange(UtcDtTabChange):
     # videoId: str  # The VideoID cannot be known. There is no VideoID.
     tabTitle: str
     channel: str
+    playerState: str
 
 
 class YouTubePlayerChange(BaseModel):

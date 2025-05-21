@@ -14,8 +14,15 @@ export default {
     },
     plugins: [
         new webpack.DefinePlugin({
-            "process.env.BUILD_TIMESTAMP": JSON.stringify(
-                new Date().toISOString()
+            // Use a function that gets evaluated on every build
+            "process.env.BUILD_TIMESTAMP": webpack.DefinePlugin.runtimeValue(
+                () => JSON.stringify(new Date().toISOString()),
+                // This tells webpack to invalidate when any file changes
+                {
+                    fileDependencies: [
+                        path.resolve(__dirname, "src/background.ts"),
+                    ],
+                }
             ),
         }),
     ],

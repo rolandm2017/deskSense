@@ -8,8 +8,6 @@ import {
     startSecondaryChannelExtractionScript,
 } from "./youtube/youtube";
 
-import { systemInputCapture } from "./inputLogger/systemInputLogger";
-
 export const tabsWithPollingList: number[] = [];
 
 function putTabIdIntoPollingList(tabId: number) {
@@ -48,19 +46,6 @@ export function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
     }
     console.log("Tab.url and ID", tab.url, tab.id);
 
-    // no-op if recording disabled
-    systemInputCapture.captureIfEnabled({
-        type: "TAB_CHANGE",
-        data: {
-            tabUrl: tab.url,
-        },
-        metadata: {
-            source: "getDomainFromUrlAndSubmit",
-            method: "user_input",
-            location: "background.ts",
-            timestamp: new Date().toISOString(),
-        },
-    });
     const domain = getDomainFromUrl(tab.url);
     if (domain) {
         const ignored = isDomainIgnored(domain, ignoredDomains.getAll());
@@ -182,16 +167,7 @@ export class PlayPauseDispatch {
 
     notePlayEvent(sender: chrome.runtime.MessageSender) {
         this.playCount++;
-        systemInputCapture.captureIfEnabled({
-            type: "PLAY_EVENT",
-            data: {},
-            metadata: {
-                source: "notePlayEvent",
-                method: "user_input",
-                location: "background.ts",
-                timestamp: new Date().toISOString(),
-            },
-        });
+
         if (this.endSessionTimeoutId) {
             this.cancelSendPauseEvent(this.endSessionTimeoutId);
         }
@@ -243,17 +219,6 @@ export class PlayPauseDispatch {
 
     notePauseEvent() {
         this.pauseCount++;
-        // no-op if recording disabled
-        systemInputCapture.captureIfEnabled({
-            type: "PAUSE_EVENT",
-            data: {},
-            metadata: {
-                source: "notePauseEvent",
-                method: "user_input",
-                location: "background.ts",
-                timestamp: new Date().toISOString(),
-            },
-        });
 
         console.log("[pause] ", this.tracker.currentMedia);
         if (this.tracker.currentMedia) {

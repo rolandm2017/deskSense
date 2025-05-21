@@ -33,7 +33,7 @@ class YouTubeTimezoneService:
         self.parent_service = parent_service
 
     def convert_tz_for_tab_change(self, tab_event: YouTubeTabChange, new_tz: str):
-        youtube_info = YouTubeInfo(tab_event.channel, "paused")
+        youtube_info = YouTubeInfo(tab_event.channel, tab_event.playerState)
         return self._make_tab_change_event_with_youtube_info(tab_event, youtube_info, new_tz)
 
     def _make_tab_change_event_with_youtube_info(

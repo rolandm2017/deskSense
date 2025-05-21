@@ -7,7 +7,6 @@ import { extractChannelInfoFromWatchPage } from "./channelExtractor";
 import { initializedServerApi } from "../api";
 
 import { MissingUrlError } from "../errors";
-import { systemInputCapture } from "../inputLogger/systemInputLogger";
 
 /*
  * For YouTube, some channels are productive; others are not.
@@ -62,17 +61,6 @@ export function handleYouTubeUrl(
                         tabTitle,
                         channelName
                     );
-                    // no-op if recording disabled
-                    systemInputCapture.captureIfEnabled({
-                        type: "youtube_vist",
-                        data: youTubeVisit,
-                        metadata: {
-                            source: "handleYouTubeUrl",
-                            method: "user_input",
-                            location: "youtube.ts",
-                            timestamp: new Date().toISOString(),
-                        },
-                    });
 
                     viewingTracker.setCurrent(youTubeVisit);
                     viewingTracker.reportYouTubeWatchPage();
@@ -86,16 +74,7 @@ export function handleYouTubeUrl(
         // For channel pages, we can extract from the URL
         const channelName = extractChannelNameFromUrl(tab.url);
         // no-op if recording disabled
-        systemInputCapture.captureIfEnabled({
-            type: "on_some_channel",
-            data: { channelName },
-            metadata: {
-                source: "isOnSomeChannel",
-                method: "user_input",
-                location: "youtube.ts",
-                timestamp: new Date().toISOString(),
-            },
-        });
+
         initializedServerApi.youtube.reportYouTubePage(tab.title, channelName);
     } else if (watchingShorts(tab.url)) {
         // Avoids trying to extract the channel name from
@@ -139,16 +118,7 @@ export function startSecondaryChannelExtractionScript(
         "Unknown Channel"
     );
     // youTubeVisit.sendInitialInfoToServer();
-    systemInputCapture.captureIfEnabled({
-        type: "youtube_vist",
-        data: youTubeVisit,
-        metadata: {
-            source: "startSecondaryChannelExtractionScript",
-            method: "user_input",
-            location: "youtube.ts",
-            timestamp: new Date().toISOString(),
-        },
-    });
+
     viewingTracker.setCurrent(youTubeVisit);
 }
 

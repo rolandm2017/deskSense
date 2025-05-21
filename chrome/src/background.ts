@@ -9,7 +9,6 @@ import {
 import { NetflixViewing, viewingTracker } from "./videoCommon/visits";
 
 import { setupIgnoredDomains } from "./ignoreList";
-import { systemInputCapture } from "./inputLogger/systemInputLogger";
 
 function helpDeveloperNoticeMissingNpmRunBuild() {
     const lastBuiltTimestampString = process.env.BUILD_TIMESTAMP as string;
@@ -62,16 +61,6 @@ function openOptionsOnClickIcon() {
 chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
     // Your code to run when a tab is closed
     console.log(`Tab ${tabId} was closed`);
-    systemInputCapture.captureIfEnabled({
-        type: "TAB_CLOSURE",
-        data: { tabId },
-        metadata: {
-            source: "onRemoved.addListener",
-            method: "user_input",
-            location: "background.ts",
-            timestamp: new Date().toISOString(),
-        },
-    });
 
     // removeInfo contains additional information
     console.log("Window was closed:", removeInfo.isWindowClosing);

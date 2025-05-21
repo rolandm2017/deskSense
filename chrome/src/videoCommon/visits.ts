@@ -56,6 +56,19 @@ export class ViewingTracker {
         this.autoplayWaiting = true;
     }
 
+    reportYouTubePage() {
+        if (this.currentMedia instanceof YouTubeViewing) {
+            this.mostRecentReport = this.currentMedia;
+            // this.youTubeApiLogger.logLandOnPage(this.currentMedia.mediaTitle);
+            this.api.youtube.reportYouTubePage(
+                this.currentMedia.mediaTitle,
+                this.currentMedia.channelName
+            );
+            return;
+        }
+        throw new Error("Incorrect media type for YouTube reporting");
+    }
+
     reportYouTubeWatchPage() {
         // FIXME: It's the case that, when you refresh, the
         // NewPageLoad event (this thing) goes off, BUT the video is playing!
@@ -64,12 +77,12 @@ export class ViewingTracker {
         if (this.currentMedia instanceof YouTubeViewing) {
             this.mostRecentReport = this.currentMedia;
             // this.youTubeApiLogger.logLandOnPage(this.currentMedia.mediaTitle);
-
-            this.api.youtube.reportYouTubePage(
+            this.api.youtube.reportYouTubeWatchPage(
                 this.currentMedia.mediaTitle,
                 this.currentMedia.channelName,
                 this.autoplayWaiting ? "playing" : "paused"
             );
+            this.autoplayWaiting = false;
             return;
         }
         throw new Error("Incorrect media type for YouTube reporting");

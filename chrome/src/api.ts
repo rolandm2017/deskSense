@@ -29,10 +29,23 @@ class YouTubeApi {
         this.logger = new PlatformLogger("YouTube");
     }
 
-    reportYouTubePage(
+    reportYouTubePage(tabTitle: string | undefined, channel: string) {
+        /* Tab title must be undefined sometimes, says TS */
+        const payload = {
+            url: "www.youtube.com",
+            tabTitle,
+            channel,
+            startTime: new Date(),
+        };
+        console.log("Sending YouTube Page payload:", payload);
+        // console.log(youTubeUrl, "is the youtube url");
+        this.sendPayload(youTubeUrl, payload);
+    }
+
+    reportYouTubeWatchPage(
         tabTitle: string | undefined,
         channel: string,
-        playerData?: "playing" | "paused"
+        initialPlayerState: "playing" | "paused"
     ) {
         /* Tab title must be undefined sometimes, says TS */
         const payload = {
@@ -41,18 +54,10 @@ class YouTubeApi {
             tabTitle,
             channel,
             startTime: new Date(),
-            playerData,
+            playerState: initialPlayerState,
         };
-        console.log("Sending YouTube Page payload:", payload);
+        console.log("Sending YouTube Watch Page payload:", payload);
         // console.log(youTubeUrl, "is the youtube url");
-        if (this.logging) {
-            this.logger.logLandOnPage(tabTitle ?? "Unknown Tab");
-            this.logger.logPayloadToStorage(
-                "reportYouTubePage",
-                youTubeUrl,
-                payload
-            );
-        }
         this.sendPayload(youTubeUrl, payload);
     }
     // TODO:
@@ -82,14 +87,6 @@ class YouTubeApi {
             // timestamp: 0
         };
         console.log("The play payload was be ", payload);
-        if (this.logging) {
-            this.logger.logPlayEvent(tabTitle);
-            this.logger.logPayloadToStorage(
-                "sendPlayEvent",
-                youtubePlayerStateUrl,
-                payload
-            );
-        }
         this.sendPayload(youtubePlayerStateUrl, payload);
     }
 
@@ -102,14 +99,6 @@ class YouTubeApi {
             playerState: "paused",
             // timestamp: 0,
         };
-        if (this.logging) {
-            this.logger.logPauseEvent(tabTitle);
-            this.logger.logPayloadToStorage(
-                "sendPause",
-                youtubePlayerStateUrl,
-                payload
-            );
-        }
         console.log("The pause payload was be ", payload);
         this.sendPayload(youtubePlayerStateUrl, payload);
     }
@@ -129,14 +118,6 @@ class NetflixApi {
     reportNetflixPage(videoId: string) {
         // TODO
 
-        if (this.logging) {
-            this.logger.logLandOnPage(videoId ?? "Unknown Media");
-            console.log("Reporting netflix is not supported yet", videoId);
-
-            this.logger.logPayloadToStorage("reportNetflixPage", netflixUrl, {
-                videoId,
-            });
-        }
         this.sendPayload(netflixUrl, { videoId });
     }
 
@@ -163,13 +144,6 @@ class NetflixApi {
             // timestamp: 0
         };
         console.log("The play payload was be ", payload);
-        if (this.logging) {
-            this.logger.logPayloadToStorage(
-                "sendPlayEvent",
-                netflixPlayerStateUrl,
-                payload
-            );
-        }
         this.sendPayload(netflixPlayerStateUrl, payload);
     }
 
@@ -187,13 +161,6 @@ class NetflixApi {
         };
 
         console.log("The pause payload was be ", payload);
-        if (this.logging) {
-            this.logger.logPayloadToStorage(
-                "sendPlayEvent",
-                netflixPlayerStateUrl,
-                payload
-            );
-        }
         this.sendPayload(netflixPlayerStateUrl, payload);
     }
 }
@@ -201,14 +168,14 @@ class NetflixApi {
 export class ServerApi {
     youtube: YouTubeApi;
     netflix: NetflixApi;
-    disablePayloads: boolean;
+    enablePayloads: boolean;
     logger: DomainLogger;
     logging: boolean;
 
-    constructor(disablePayloads: boolean = true) {
+    constructor(enablePayloads: "enable" | "disable") {
         // Must set disablePayloads = false, deliberately. To protect testers
-        this.disablePayloads = disablePayloads;
-        if (this.disablePayloads === false) {
+        this.enablePayloads = enablePayloads === "enable";
+        if (this.enablePayloads) {
             console.log("Payloads are enabled");
         }
         this.logging = false;
@@ -230,13 +197,6 @@ export class ServerApi {
             startTime: new Date(),
         };
         console.log("Sending tab switch payload:", payload);
-        if (this.logging) {
-            this.logger.logPayloadToStorage(
-                "reportTabSwitch",
-                chromeTabUrl,
-                payload
-            );
-        }
         this.sendPayload(chromeTabUrl, payload);
     };
 
@@ -247,13 +207,6 @@ export class ServerApi {
             startTime: new Date(),
         };
         console.log("Sending ignoredUrl payload:", payload);
-        if (this.logging) {
-            this.logger.logPayloadToStorage(
-                "reportIgnoredUrl",
-                ignoredDomainUrl,
-                payload
-            );
-        }
         this.sendPayload(ignoredDomainUrl, payload);
     };
 
@@ -269,7 +222,7 @@ export class ServerApi {
     }
 
     sendPayload = (targetUrl: string, payload: object) => {
-        if (this.disablePayloads) {
+        if (!this.enablePayloads) {
             console.log("Sending payloads is disabled");
             return;
         }
@@ -314,4 +267,4 @@ export class ServerApi {
     }
 }
 
-export const initializedServerApi = new ServerApi(true);
+export const initializedServerApi = new ServerApi("enable");

@@ -6,7 +6,6 @@ import { WatchEntry } from "../interface/interfaces";
 
 import { NetflixViewingSansState } from "../videoCommon/visits";
 
-import { systemInputCapture } from "../inputLogger/systemInputLogger";
 import { TopFiveAlgorithm } from "./topFiveAlgorithm";
 
 export class MessageRelay {
@@ -84,16 +83,6 @@ export class HistoryRecorder {
     }
 
     sendPageDetailsToViewingTracker(url: string) {
-        systemInputCapture.captureIfEnabled({
-            type: "NETFLIX_PAGE_LOADED",
-            data: { url: url, watchPageId: this.makeUrlId(url) },
-            metadata: {
-                source: "sendPageDetailsToViewingTracker",
-                method: "event_listener",
-                location: "historyRecorder.ts",
-                timestamp: new Date().toISOString(),
-            },
-        });
         const watchPageId = this.makeUrlId(url);
         console.log("Sending watch page ID", watchPageId);
         this.relay.alertTrackerOfNetflixPage(watchPageId);
@@ -104,16 +93,6 @@ export class HistoryRecorder {
         url: string,
         playerState: "playing" | "paused"
     ) {
-        systemInputCapture.captureIfEnabled({
-            type: "CHOOSE_NETFLIX_MEDIA",
-            data: { title, url, playerState },
-            metadata: {
-                source: "recordEnteredMediaTitle",
-                method: "user_input",
-                location: "historyRecorder.ts",
-                timestamp: new Date().toISOString(),
-            },
-        });
         console.log("In recordEnteredMedia");
         let urlId = this.makeUrlId(url);
         console.log("[tracker - recording]", title);
@@ -205,7 +184,6 @@ export class HistoryRecorder {
 
     recordIgnoredUrl(url: string) {
         // TODO
-        // systemInputCapture.captureIfEnabled({})
         console.log("[tracker - ignoring]", url);
     }
 
