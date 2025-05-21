@@ -148,29 +148,23 @@ export class PlayPauseDispatch {
     // TODO: This will have to exist one per video page
     playCount: number;
     pauseCount: number;
-    endSessionTimeoutId: ReturnType<typeof setTimeout> | undefined;
 
     pauseStartTime: Date | undefined;
 
     tracker: ViewingTracker;
 
-    gracePeriodDelayInMs: number;
+    // gracePeriodDelayInMs: number;
 
     constructor(tracker: ViewingTracker) {
         this.playCount = 0;
         this.pauseCount = 0;
-        this.endSessionTimeoutId = undefined;
         this.pauseStartTime = undefined;
         this.tracker = tracker;
-        this.gracePeriodDelayInMs = 3000;
     }
 
     notePlayEvent(sender: chrome.runtime.MessageSender) {
         this.playCount++;
 
-        if (this.endSessionTimeoutId) {
-            this.cancelSendPauseEvent(this.endSessionTimeoutId);
-        }
         console.log("[play event] ", this.tracker.currentMedia);
         if (this.tracker.currentMedia) {
             this.tracker.markPlaying();
@@ -222,11 +216,7 @@ export class PlayPauseDispatch {
 
         console.log("[pause] ", this.tracker.currentMedia);
         if (this.tracker.currentMedia) {
-            const startOfGracePeriod = new Date();
-            this.pauseStartTime = startOfGracePeriod;
-
-            this.endSessionTimeoutId =
-                this.startGracePeriod(startOfGracePeriod);
+            this.tracker.markPaused();
         } else {
             console.log(this.tracker.currentMedia, "238ru");
             console.warn("Somehow paused the media while it was undefined");
@@ -234,16 +224,19 @@ export class PlayPauseDispatch {
         }
     }
 
-    startGracePeriod(localTime: Date): ReturnType<typeof setTimeout> {
-        // User presses pause, and then resumes the video after only 2.9 seconds, then
-        // don't bother pausing tracking.
-        const timeoutId = setTimeout(() => {
-            if (this.tracker.currentMedia) {
-                this.tracker.markPaused();
-            }
-        }, this.gracePeriodDelayInMs);
-        return timeoutId;
-    }
+    /* NOTE that a grace period before the pause event is set
+    yields complexities: What if the user pauses, alt tabs into VSCode a second later?
+    
+    The Alt Tab into VSCode yields a Program state, but then the pause countdown 
+    finishes, the pause event is sent, and now the Program state is bumped off by
+    an erroneous Chrome x YouTube state.
+    
+    It would work if a new Program state or a new Tab state superceded any incoming
+    Chrome x YouTube pause event. Like, "Blocked it from entering." But that adds
+    complexity. Unnecessary complexity.
+
+    Further, it's a PITA to develop while waiting 3 sec to see your Pause event register.
+    */
 
     cancelSendPauseEvent(timeoutId: ReturnType<typeof setTimeout>) {
         clearTimeout(timeoutId);

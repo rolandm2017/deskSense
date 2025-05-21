@@ -24,8 +24,15 @@ function helpDeveloperNoticeMissingNpmRunBuild() {
     const hoursSinceBuild = Math.round(
         (now.getTime() - lastBuiltTimestamp.getTime()) / (1000 * 60 * 60)
     );
+    const minutesSinceBuild = Math.round(
+        (now.getTime() - lastBuiltTimestamp.getTime()) / (1000 * 60)
+    );
 
-    console.log(`Loading build from ${hoursSinceBuild} hours ago`);
+    if (hoursSinceBuild === 0) {
+        console.log(`Loading build from ${minutesSinceBuild} minutes ago`);
+    } else {
+        console.log(`Loading build from ${hoursSinceBuild} hours ago`);
+    }
 }
 
 helpDeveloperNoticeMissingNpmRunBuild();

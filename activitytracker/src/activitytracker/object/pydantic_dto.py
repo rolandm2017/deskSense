@@ -35,7 +35,7 @@ class YouTubeTabChange(UtcDtTabChange):
     # videoId: str  # The VideoID cannot be known. There is no VideoID.
     tabTitle: str
     channel: str
-    playerState: str
+    playerState: PlayerState
 
 
 class YouTubePlayerChange(BaseModel):
@@ -45,7 +45,7 @@ class YouTubePlayerChange(BaseModel):
     # url: str
     tabTitle: str
     channel: str
-    playerState: str  # Will be "paused" or "playing"
+    playerState: PlayerState  # Will be "paused" or "playing"
 
 
 class NetflixTabChange(UtcDtTabChange):
