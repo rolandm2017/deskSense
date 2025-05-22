@@ -47,12 +47,13 @@ class ActivityRecorder:
         # TODO: do an audit of logging time and summary time.
         print(session.video_info, "-- in on new session 48ru")
         if session.video_info:
-            self.logger.log_blue(
-                f"[on_new_session] video info made it to recorder: "
-                + session.video_info.get_name()
-                + " and state: "
-                + session.video_info.player_state.value
-            )
+            self.logger.log_video_info("on_new_session", session.video_info)
+            # self.logger.log_blue(
+            #     f"[on_new_session] video info made it to recorder: "
+            #     + session.video_info.get_name()
+            #     + " and state: "
+            #     + session.video_info.player_state.value
+            # )
         if isinstance(session, ProgramSession):
             # Regardless of the session being brand new today or a repeat,
             # must start a new logging session, to note the time being added to the summary.
@@ -94,12 +95,13 @@ class ActivityRecorder:
         print(session.video_info, "-- in add ten sec 91ru")
 
         if session.video_info:
-            self.logger.log_blue(
-                f"[add_ten_sec_to_end_time] video info: "
-                + session.video_info.get_name()
-                + " and state: "
-                + session.video_info.player_state.value
-            )
+            self.logger.log_video_info("add_ten_sec_to_end_time", session.video_info)
+            # self.logger.log_blue(
+            #     f"[add_ten_sec_to_end_time] video info: "
+            #     + session.video_info.get_name()
+            #     + " and state: "
+            #     + session.video_info.player_state.value
+            # )
 
         if isinstance(session, ProgramSession):
             self.program_logging_dao.push_window_ahead_ten_sec(session)
@@ -130,12 +132,13 @@ class ActivityRecorder:
         print(session.video_info, "-- in add partial window. 124ru")
 
         if session.video_info:
-            self.logger.log_blue(
-                f"[add_partial_window] video info: "
-                + session.video_info.get_name()
-                + " and state: "
-                + session.video_info.player_state.value
-            )
+            self.logger.log_video_info("add_partial_window", session.video_info)
+            # self.logger.log_blue(
+            #     f"[add_partial_window] video info: "
+            #     + session.video_info.get_name()
+            #     + " and state: "
+            #     + session.video_info.player_state.value
+            # )
 
         if isinstance(session, ProgramSession):
             self.program_summary_dao.add_used_time(session, duration_in_sec)
