@@ -101,8 +101,9 @@ class ActivityArbiter:
         # since, like, 8 hours of inactivity?" via the StatusDao
 
         looks_like_sleep_occurred, time_before_lg_gap = (
-            self.status_dao.detect_awaken_from_sleep()
+            self.status_dao.detect_awakening_from_sleep()
         )
+        print("** ** detect sleep results:", looks_like_sleep_occurred, time_before_lg_gap)
 
         if looks_like_sleep_occurred:
             self.flush_and_reset(time_before_lg_gap)
@@ -153,6 +154,7 @@ class ActivityArbiter:
             self.notify_summary_dao(concluded_session)
         else:
             self.logger.log_white("in arbiter init")
+            self.initialize_loop(new_session)
 
             self.notify_of_new_session(new_session)
             self.state_machine.set_new_session(new_session, None)
@@ -163,6 +165,10 @@ class ActivityArbiter:
             print("Starting pulse in init loop")
 
             self.current_pulse.start()
+
+    def initialize_loop(self, first_session):
+        """Exists so it's more testable"""
+        pass
 
     def flush_and_reset(self, last_status_before_sleep):
         """Interrupts the current loop of transition_state to shut it down early."""

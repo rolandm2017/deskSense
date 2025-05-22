@@ -112,7 +112,7 @@ class SystemStatusDao(UtilityDaoMixin):
                 session.rollback()
                 self.logger.log_yellow(f"Error updating status record: {str(e)}")
 
-    def detect_awaken_from_sleep(self):
+    def detect_awakening_from_sleep(self):
         return self.a_large_gap_exists_between_pulses()
 
     def a_large_gap_exists_between_pulses(self):
@@ -133,8 +133,13 @@ class SystemStatusDao(UtilityDaoMixin):
         measured_gaps = self._measure_gaps_between_pulses()
         for gap in measured_gaps:
             if gap["duration"] > acceptable_duration:
+                self._avoid_detecting_same_gap_twice()
                 return True, gap["start_of_gap"]
         return False, None
+
+    def _avoid_detecting_same_gap_twice(self):
+        """Resets the queue so the same gap can't be detected twice"""
+        self.logs_queue = deque(maxlen=self.logs_queue.maxlen)
 
     def _measure_gaps_between_pulses(self):
         gaps = []

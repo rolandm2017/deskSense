@@ -27,7 +27,6 @@ class StateMachine:
         self.user_facing_clock = user_facing_clock
         self.current_state: InternalState | None = None
         self.prior_state: InternalState | None = None
-        self.transition_state = self._initialize_state_machine()
         self.state_listeners = []
         self.logger = ConsoleLogger()
 
@@ -40,7 +39,7 @@ class StateMachine:
         # FIXME: Existing just to do, "end_time - start_time" and such
         next_session = snapshot_obj_for_tests(next_session)
         if self.current_state:
-            updated_state = self.transition_state.compute_next_state(next_session)
+            updated_state = InternalState(None, None, next_session)
             if next_session.start_time:
                 # Need: self.current_state.session. Nothin' else
                 self._conclude_session(
@@ -91,7 +90,7 @@ class StateMachine:
                 latest_status_write.dt - incoming_session_start.dt
             ).total_seconds() / 60
             self.logger.log_yellow(
-                f"[warn] latest status write was {time_since_latest_write} ago"
+                f"[warn] latest status write was {time_since_latest_write:2f} min ago"
             )
             # TODO: Put this block way up there. Should be a totally different concluder method.
 
@@ -128,11 +127,6 @@ class StateMachine:
             )
         return updated_state
 
-    @staticmethod
-    def _initialize_state_machine():
-        start_state = ApplicationInternalState("", "", {})
-        return TransitionStatesMachine(start_state)
-
     def get_concluded_session(
         self,
     ) -> CompletedProgramSession | CompletedChromeSession | None:
@@ -161,17 +155,3 @@ class StateMachine:
         session_for_daos = self.current_state.session
         self.current_state = None  # Reset for power back on
         return session_for_daos
-
-
-class TransitionStatesMachine:
-    def __init__(self, current_state):
-        if not isinstance(current_state, ApplicationInternalState):
-            raise TypeError(
-                "TransitionFromProgramMachine requires an ApplicationInternalState"
-            )
-        self.current_state = current_state
-
-    def compute_next_state(
-        self, next_state: ProgramSession | ChromeSession
-    ) -> InternalState:
-        return InternalState(None, None, next_state)

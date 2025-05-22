@@ -161,3 +161,33 @@ class TestStateMachine:
 
         assert asm.current_state.session.window_title == fifth.window_title
         assert asm.current_state.session.start_time == fifth.start_time
+
+    def test_conclude_without_replacement_at_time(self):
+        t1 = datetime.now().astimezone()
+        t2 = t1 + timedelta(seconds=6)
+        times = [t2]
+
+        clock = MockClock(times)
+
+        state_machine = StateMachine(clock)
+
+        given_conclude_time = UserLocalTime(t2)
+
+        s1_latest = UserLocalTime(t1)
+        session1 = ProgramSession(
+            "some/path/to/an/exe.exe",
+            "exe.exe",
+            "Visual Studio Code",
+            "myfile.py",
+            UserLocalTime(t1),
+        )
+
+        # arranging still
+        state_machine.set_new_session(session1, s1_latest)
+
+        # act
+        concluded_session = state_machine.conclude_without_replacement_at_time(
+            given_conclude_time
+        )
+
+        assert concluded_session.end_time == given_conclude_time

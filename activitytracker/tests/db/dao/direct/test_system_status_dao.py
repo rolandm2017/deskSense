@@ -220,6 +220,49 @@ def test_has_large_gaps_in_pulses(db_session_in_mem):
     assert starting_side_of_gap == dt7
 
 
+# TODO: Test that sleep detector "moves on" after it detects a sleep event
+def test_large_gap_detection_detects_gap_once(db_session_in_mem):
+    dt1 = tokyo_tz.localize(datetime.now() - timedelta(seconds=20))
+    dt2 = UserLocalTime(dt1 + timedelta(seconds=1))
+    dt3 = UserLocalTime(dt1 + timedelta(seconds=2))
+    dt4 = UserLocalTime(dt1 + timedelta(seconds=3))
+    dt5 = UserLocalTime(dt1 + timedelta(seconds=1200))
+    dt6 = UserLocalTime(dt1 + timedelta(seconds=1205))
+    dt7 = UserLocalTime(dt1 + timedelta(seconds=1206))
+    dt8 = UserLocalTime(dt1 + timedelta(seconds=1207))
+    times = [dt2, dt3, dt4, dt5, dt6, dt7, dt8]
+    clock = UserLocalTimeMockClock(times)
+
+    dao = SystemStatusDao(cast(UserFacingClock, clock), 10, db_session_in_mem)
+
+    dao.run_polling_loop()
+    dao.run_polling_loop()
+    dao.run_polling_loop()
+
+    large_gap_exists, starting_side_of_gap = dao.a_large_gap_exists_between_pulses()
+
+    assert large_gap_exists is False
+    assert starting_side_of_gap is None
+
+    # Move across the gap:
+    dao.run_polling_loop()
+
+    large_gap_exists, starting_side_of_gap = dao.a_large_gap_exists_between_pulses()
+
+    assert large_gap_exists is True
+    assert starting_side_of_gap is dt4
+
+    # Move beyond the gap:
+    dao.run_polling_loop()
+    dao.run_polling_loop()
+    dao.run_polling_loop()
+
+    large_gap_exists, starting_side_of_gap = dao.a_large_gap_exists_between_pulses()
+
+    assert large_gap_exists is False
+    assert starting_side_of_gap is None
+
+
 def test_sleep_detector(db_session_in_mem):
     dt1 = tokyo_tz.localize(datetime.now() - timedelta(seconds=20))
     dt2 = UserLocalTime(dt1 + timedelta(seconds=1))

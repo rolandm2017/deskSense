@@ -62,7 +62,7 @@ u2 = u1 + timedelta(seconds=10)
 u3 = u1 + timedelta(seconds=20)
 # Final time before the gap to be used to conclude
 # the session just before the sleep occurred
-u4 = u1 + timedelta(seconds=30)
+u4a = u1 + timedelta(seconds=30)
 # t5: just after the sleep event
 u5 = t5
 u6 = u5 + timedelta(seconds=10)
@@ -71,8 +71,9 @@ times_for_status_dao_clock = [
     UserLocalTime(u1),
     UserLocalTime(u2),
     UserLocalTime(u3),
-    UserLocalTime(u4),
+    UserLocalTime(u4a),
     UserLocalTime(u5),
+    UserLocalTime(u6),
 ]
 
 test_events_elapsed_time_in_sec = (t7 - t1).total_seconds()

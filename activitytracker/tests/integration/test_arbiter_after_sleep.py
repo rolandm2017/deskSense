@@ -75,6 +75,23 @@ def activity_arbiter_and_setup(db_session_in_mem):
     )
     arbiter = ActivityArbiter(clock, threaded_container, KeepAliveEngine)
 
+    flush_and_reset_spy = Mock(side_effect=arbiter.flush_and_reset)
+    arbiter.flush_and_reset = flush_and_reset_spy
+
+    initialize_loop_spy = Mock(side_effect=arbiter.initialize_loop)
+    arbiter.initialize_loop = initialize_loop_spy
+
+    conclude_at_time_spy = Mock(
+        side_effect=arbiter.state_machine.conclude_without_replacement_at_time
+    )
+    arbiter.state_machine.conclude_without_replacement_at_time = conclude_at_time_spy
+
+    spies = {
+        "flush_and_reset_spy": flush_and_reset_spy,
+        "initialize_loop_spy": initialize_loop_spy,
+        "conclude_at_time_spy": conclude_at_time_spy,
+    }
+
     # Add UI listener
     arbiter.add_ui_listener(ui_layer.on_state_changed)
 
@@ -102,6 +119,22 @@ def activity_arbiter_and_setup(db_session_in_mem):
         cast(UserFacingClock, status_dao_clock), 10, db_session_in_mem
     )
 
+    # Arranging Status Dao start state:
+    status_dao.run_polling_loop()
+    status_dao.run_polling_loop()
+    status_dao.run_polling_loop()
+    status_dao.run_polling_loop()
+
+    assert len(status_dao.logs_queue) == 4
+
+    detect_awakening_from_sleep_spy = Mock(
+        side_effect=status_dao.detect_awakening_from_sleep
+    )
+
+    status_dao.detect_awakening_from_sleep = detect_awakening_from_sleep_spy
+
+    spies["detect_awakening_from_sleep_spy"] = detect_awakening_from_sleep_spy
+
     # TODO: Cook status dao return values. Needs to be, a fixed say, four.
     # THEN, the run_polling_loop() adds a new one, about an hour after the prev.
     # AND the times need to come from the sessions, like, align with them.
@@ -111,7 +144,7 @@ def activity_arbiter_and_setup(db_session_in_mem):
 
     assert arbiter.activity_recorder == recorder_spy, "Test setup conditions failed"
 
-    return arbiter, events, recorder_spy, copied_test_data, durations, status_dao
+    return arbiter, events, recorder_spy, copied_test_data, durations, status_dao, spies
 
 
 #
@@ -128,11 +161,12 @@ def activity_arbiter_and_setup(db_session_in_mem):
 
 def test_arbiter_after_sleep(activity_arbiter_and_setup):
     arbiter = activity_arbiter_and_setup[0]
-    events_from_on_state_changed_handler = activity_arbiter_and_setup[1]
+    state_changed_handler_events = activity_arbiter_and_setup[1]
     mock_activity_recorder = activity_arbiter_and_setup[2]
     sleep_test_events = activity_arbiter_and_setup[3]
     durations_between_events_from_setup = activity_arbiter_and_setup[4]
     status_dao = activity_arbiter_and_setup[5]
+    spies = activity_arbiter_and_setup[6]
 
     """
     Cooking hard to organize the right SystemStatusDao events
@@ -147,15 +181,43 @@ def test_arbiter_after_sleep(activity_arbiter_and_setup):
     status_dao.run_polling_loop()
 
     arbiter.transition_state(sleep_test_events[3])
+
+    # Move on past the sleep event
+    status_dao.run_polling_loop()
+
     arbiter.transition_state(sleep_test_events[4])
     arbiter.transition_state(sleep_test_events[5])
 
-    event_three = events_from_on_state_changed_handler[2]
-    event_four = events_from_on_state_changed_handler[3]
+    event_three = state_changed_handler_events[2]
+    event_four = state_changed_handler_events[3]
+
+    # -- Very basic debugging assertions
+
+    assert len(state_changed_handler_events) == len(sleep_test_events) - 1
+    assert spies["detect_awakening_from_sleep_spy"].call_count == len(sleep_test_events)
+
+    assert spies["flush_and_reset_spy"].call_count == 1
+    assert spies["initialize_loop_spy"].call_count == 2
+
+    session1 = spies["initialize_loop_spy"].call_args_list[0]
+
+    assert session1.get_name() == sleep_test_events[0].get_name()
+    assert session1.start_time == sleep_test_events[0].start_time
+    assert session1.end_time == sleep_test_events[1].start_time
+
+    session2 = spies["initialize_loop_spy"].call_args_list[1]
+    assert session2.get_name() == sleep_test_events[3].get_name()
+    assert session2.start_time == sleep_test_events[3].start_time
+    assert session2.end_time == sleep_test_events[4].start_time
+
+    # -- The core of the test
 
     def event_three_concluded_around_correct_time():
         """Checks that the event concluded at the time right before the gap"""
-        return event_three.end_time == times_for_status_dao_clock[-2]
+        print("event 3 end time:   ", event_three.end_time)
+        print("just before the gap:", times_for_status_dao_clock[-3])
+        time_just_before_the_gap = times_for_status_dao_clock[-3]
+        return event_three.end_time == time_just_before_the_gap
 
     def event_four_started_around_right_time():
         """Checks that the event started at it's stated start time"""
@@ -169,7 +231,13 @@ def test_arbiter_after_sleep(activity_arbiter_and_setup):
         Is a big deal because it's here that a malformed end time
         would add huge time by mistake.
         """
-        pass
+        v1 = state_changed_handler_events[0].end_time == sleep_test_events[1].start_time
+        v2 = state_changed_handler_events[1].end_time == sleep_test_events[2].start_time
+        v3 = state_changed_handler_events[3].end_time == sleep_test_events[4].start_time
+        v4 = state_changed_handler_events[4].end_time == sleep_test_events[5].start_time
+        return v1 and v2 and v3 and v4
+
+    assert on_state_changed_saw_correct_times()
 
     # --
     # -- Usual stuff:
