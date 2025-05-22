@@ -11,8 +11,8 @@ from activitytracker.object.classes import (
 from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.copy_util import snapshot_obj_for_tests
 
-from .activity_state_machine import ActivityStateMachine
 from .session_polling import KeepAliveEngine, ThreadedEngineContainer
+from .state_machine import StateMachine
 
 
 class ActivityArbiter:
@@ -34,7 +34,7 @@ class ActivityArbiter:
         the current program is Chrome & do such and such if it is or isn't.
         i.e. "chrome_event_update" and "self.current_is_chrome" before e22d5badb15
         """
-        self.state_machine = ActivityStateMachine(user_facing_clock)
+        self.state_machine = StateMachine(user_facing_clock)
         self.engine_class = engine_class
         # Threaded container must receive the pulse interval outside of here.
         # The engine is then set using the add and replace methods.
@@ -94,6 +94,9 @@ class ActivityArbiter:
             if new_session.video_info:
                 self.logger.log_white("[vid]", new_session.video_info)
         assert not isinstance(new_session, dict), "Found an empty dictionary as session"
+
+        # TODO: Check in here, "Is this session the first one
+        # since, like, 8 hours of inactivity?" via the StatusDao
         self.notify_display_update(new_session)
         if self.state_machine.current_state:
             if self.current_pulse is None:

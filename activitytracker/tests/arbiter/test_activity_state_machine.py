@@ -5,15 +5,8 @@ import pytest
 import time
 from datetime import datetime, timedelta
 
-from activitytracker.arbiter.activity_state_machine import (
-    ActivityStateMachine,
-    TransitionFromChromeMachine,
-    TransitionFromProgramMachine,
-)
-from activitytracker.object.arbiter_classes import (
-    ApplicationInternalState,
-    ChromeInternalState,
-)
+from activitytracker.arbiter.state_machine import StateMachine
+from activitytracker.object.arbiter_classes import InternalState
 from activitytracker.object.classes import ChromeSession, ProgramSession
 from activitytracker.util.clock import SystemClock
 from activitytracker.util.time_wrappers import UserLocalTime
@@ -21,7 +14,7 @@ from activitytracker.util.time_wrappers import UserLocalTime
 from ..mocks.mock_clock import MockClock
 
 
-class TestActivityStateMachine:
+class TestStateMachine:
     def test_load_first_state(self):
 
         t1 = datetime.now().astimezone()
@@ -31,7 +24,7 @@ class TestActivityStateMachine:
         times = [t2, t3]
         clock = MockClock(times)
 
-        asm = ActivityStateMachine(clock)
+        asm = StateMachine(clock)
         now = t1
         slightly_later = t2
 
@@ -84,7 +77,7 @@ class TestActivityStateMachine:
 
         clock = MockClock(times)
 
-        asm = ActivityStateMachine(clock)
+        asm = StateMachine(clock)
 
         s1_latest = UserLocalTime(t1)
         session1 = ProgramSession(
@@ -162,7 +155,7 @@ class TestActivityStateMachine:
         # Verify that the internal stuff is as expected for the unfinished section
         assert asm.current_state is not None
         assert asm.prior_state is not None
-        assert isinstance(asm.prior_state, ApplicationInternalState)
+        assert isinstance(asm.prior_state, InternalState)
         assert asm.prior_state.session.window_title == fourth.window_title
         assert asm.prior_state.session.start_time == t4
 
