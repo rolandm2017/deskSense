@@ -116,7 +116,11 @@ class NetflixApi {
         this.logger = new PlatformLogger("Netflix");
     }
 
-    reportPartialNetflixPage(fullUrl: string, watchPageId: string) {
+    reportPartialNetflixPage(
+        fullUrl: string,
+        watchPageId: string,
+        playerState: "playing" | "paused"
+    ) {
         // It's only the watchPageId because that's the only
         // thing that doesn't require waiting for user input.
         const payload = {
@@ -124,6 +128,7 @@ class NetflixApi {
             url: fullUrl,
             videoId: watchPageId,
             startTime: new Date(),
+            playerState,
         };
         this.sendPayload(netflixUrl, payload);
     }
@@ -137,7 +142,7 @@ class NetflixApi {
             tabTitle: mediaTitle,
             videoId,
             url: "https://www.netflix.com/watch/" + videoId,
-            playerState,
+            playerState: playerState,
             startTime: new Date(),
         };
         // I guess if the server receives an update, it can propagate the

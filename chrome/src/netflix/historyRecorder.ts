@@ -6,6 +6,7 @@ import { WatchEntry } from "../interface/interfaces";
 
 import { NetflixViewingSansState } from "../videoCommon/visits";
 
+import { makeNetflixWatchPageId } from "./netflixUrlTool";
 import { TopFiveAlgorithm } from "./topFiveAlgorithm";
 
 export class MessageRelay {
@@ -76,16 +77,8 @@ export class HistoryRecorder {
         return instance;
     }
 
-    makeUrlId(url: string) {
-        let urlId = url.split("/watch/")[1];
-        if (urlId.includes("?")) {
-            urlId = urlId.split("?")[0];
-        }
-        return urlId;
-    }
-
     sendPageDetailsToViewingTracker(url: string) {
-        const watchPageId = this.makeUrlId(url);
+        const watchPageId = makeNetflixWatchPageId(url);
         console.log("Sending watch page ID", watchPageId);
         this.relay.alertTrackerOfNetflixPage(url, watchPageId);
     }
@@ -96,10 +89,10 @@ export class HistoryRecorder {
         playerState: "playing" | "paused"
     ) {
         console.log("In recordEnteredMedia");
-        let urlId = this.makeUrlId(url);
+        let watchPageId = makeNetflixWatchPageId(url);
         console.log("[tracker - recording]", title);
         const latestEntryUpdate: WatchEntry = this.addWatchEntry(
-            urlId,
+            watchPageId,
             title,
             url
         );

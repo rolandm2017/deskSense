@@ -97,8 +97,10 @@ export class ViewingTracker {
         this.partialNetflixDescriptor = partiallyDescribedMedia;
         this.api.netflix.reportPartialNetflixPage(
             fullUrl,
-            partiallyDescribedMedia
+            partiallyDescribedMedia,
+            this.autoplayWaiting ? "playing" : "paused"
         );
+        this.autoplayWaiting = false;
     }
 
     reportFilledNetflixWatch(netflixMedia: NetflixViewing) {
@@ -123,6 +125,15 @@ export class ViewingTracker {
             console.log("sending play event");
             this.api.netflix.sendPlayEvent(asNetflixPayload);
         }
+    }
+
+    silentlyMarkPlaying() {
+        // silentlyMarkPlaying does not alert the server of the play event,
+        // because the server heard about the play event in the page payload.
+        if (!this.currentMedia) {
+            throw new MissingMediaError();
+        }
+        this.currentMedia.playerState = "playing";
     }
 
     markPaused() {

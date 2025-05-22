@@ -1,5 +1,6 @@
 import { initializedServerApi } from "./api";
 import { ignoredDomains, isDomainIgnored } from "./ignoreList";
+import { makeNetflixWatchPageId } from "./netflix/netflixUrlTool";
 import { getDomainFromUrl } from "./urlTools";
 import { viewingTracker, ViewingTracker } from "./videoCommon/visits";
 import {
@@ -197,8 +198,7 @@ export class PlayPauseDispatch {
         return this.tracker.currentMedia === undefined;
     }
 
-    noteAutoPlayEvent(sender: chrome.runtime.MessageSender) {
-        //
+    noteYouTubeAutoPlayEvent(sender: chrome.runtime.MessageSender) {
         if (this.pageNotYetLoaded()) {
             // wait for the page event to go out, attach "playing" to it
             this.tracker.markAutoplayEventWaiting();
@@ -206,6 +206,32 @@ export class PlayPauseDispatch {
         // https://www.youtube.com/watch?v=Pt2Pj3JZ9Ow&t=300s exists on sender obj
         console.log(sender, "205ru");
         const senderVideoId = getYouTubeVideoId(sender.tab?.url);
+        const pageEventAlreadyReported =
+            this.pageAlreadyReported(senderVideoId);
+        if (pageEventAlreadyReported) {
+            this.tracker.markPlaying();
+            this.tracker.mostRecentReport = undefined;
+        }
+    }
+
+    noteNetflixAutoPlayEvent(sender: chrome.runtime.MessageSender) {
+        if (this.pageNotYetLoaded()) {
+            // wait for the page event to go out, attach "playing" to it
+            this.tracker.markAutoplayEventWaiting();
+        }
+        // https://www.youtube.com/watch?v=Pt2Pj3JZ9Ow&t=300s exists on sender obj
+        console.log(sender, "226ru");
+        let senderVideoId;
+        if (!sender.tab || !sender.tab.url) {
+            console.warn(
+                "Chrome had a missing 'tab' or 'tab.url' property in MessageSender: ",
+                sender.tab
+            );
+            senderVideoId = "Unknown Video ID";
+        } else {
+            senderVideoId = makeNetflixWatchPageId(sender.tab?.url);
+        }
+
         const pageEventAlreadyReported =
             this.pageAlreadyReported(senderVideoId);
         if (pageEventAlreadyReported) {
@@ -240,10 +266,6 @@ export class PlayPauseDispatch {
 
     Further, it's a PITA to develop while waiting 3 sec to see your Pause event register.
     */
-
-    cancelSendPauseEvent(timeoutId: ReturnType<typeof setTimeout>) {
-        clearTimeout(timeoutId);
-    }
 }
 
 export const playPauseDispatch = new PlayPauseDispatch(viewingTracker);

@@ -117,12 +117,10 @@ chrome.runtime.onMessage.addListener(
             console.log("[autoplay] youtube");
             // IF trySendPlayEvent, BUT no page event report yet,
             // THEN bundle them.
-            playPauseDispatch.noteAutoPlayEvent(sender);
-            // TODO
+            playPauseDispatch.noteYouTubeAutoPlayEvent(sender);
         } else if (message.event === "netflix_autoplay") {
             console.log("[autoplay] netflix");
-            // TODO
-            console.warn("Netflix autoplay not yet handled");
+            playPauseDispatch.noteNetflixAutoPlayEvent(sender);
         }
     }
 );
