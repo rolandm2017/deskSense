@@ -137,7 +137,6 @@ class ThreadedEngineContainer:
         Starts updates on the current session
         """
         if not self.is_running:
-            # print("HERE 131ru")
             self.stop_event.clear()  # Clear the stop event instead of creating a new one
 
             self.hook_thread = threading.Thread(target=self._iterate_loop)
@@ -146,12 +145,10 @@ class ThreadedEngineContainer:
             self.is_running = True
 
     def _iterate_loop(self):
-        # print(self.engine, "139ru")
         if self.engine is None:
             raise MissingEngineError()
         # print("while not stop event is set?", self.stop_event.is_set())
         thread_id = threading.get_ident()
-        # print(f"Thread {thread_id}: {self.engine}, 139ru")
         while not self.stop_event.is_set():
             # print(f"Thread {thread_id}")
             self.engine.iterate_loop()  # a second has been used

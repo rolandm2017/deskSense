@@ -58,6 +58,8 @@ class VideoLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
     def start_session(self, session: VideoSession):
         """
         A session of using a domain. End_time here is like, "when did the user tab away from the program?"
+
+        Remember that Video is double counted on purpose!
         """
 
         initializer = LogTimeConverter(session.start_time)

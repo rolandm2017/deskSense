@@ -94,7 +94,6 @@ async def receive_youtube_tab_change_event(
         updated_tab_change_event: TabChangeEventWithLtz = (
             timezone_service.youtube.convert_tz_for_tab_change(tab_change_event, tz_for_user)
         )
-        print(updated_tab_change_event, "92ru")
         chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
         return  # Returns 204 No Content
     except Exception as e:
@@ -131,8 +130,6 @@ async def receive_youtube_player_state(
                 tab_change_event, tz_for_user
             )
         )
-        print(updated_tab_change_event, " in video routes 127ru")
-        # FIXME: BUT, it ISN'T a tab change event. It's a PlayerStateChangeEvent
 
         chrome_service.log_player_state_event(updated_tab_change_event)
         return  # Returns 204 No Content

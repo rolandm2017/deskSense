@@ -71,7 +71,6 @@ class ProgramTrackerCore:
                 is_vlc = self.window_is_vlc(window_change)
                 if is_vlc:
                     video_details = self.ask_vlc_player_for_info()
-                    print(video_details, "81ru")
                     new_session = self.start_new_video_session(
                         window_change, current_time, video_details
                     )

@@ -44,7 +44,10 @@ class VideoSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
         self.model = DailyVideoSummary
 
     def start_session(self, video_session: VideoSession):
-        """Creating the initial session for the summary"""
+        """Creating the initial session for the summary
+
+        Remember that Video is double counted on purpose!
+        """
         self._create(video_session, video_session.start_time.dt)
 
     def _create(self, session: VideoSession, start_time: datetime):

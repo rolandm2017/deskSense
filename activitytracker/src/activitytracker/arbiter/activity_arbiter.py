@@ -147,7 +147,7 @@ class ActivityArbiter:
                     self.logger.log_yellow(
                         f"[warn] latest status write was {time_since_latest_write:2f} min ago"
                     )
-            self.state_machine.set_new_session(new_session, latest_status_write)
+            self.state_machine.set_new_session(new_session)
 
             concluded_session = self.state_machine.get_concluded_session()
             self.notify_of_new_session(new_session)
@@ -169,7 +169,7 @@ class ActivityArbiter:
             self.initialize_loop(new_session)
 
             self.notify_of_new_session(new_session)
-            self.state_machine.set_new_session(new_session, None)
+            self.state_machine.set_new_session(new_session)
 
             new_keep_alive_engine = self.engine_class(new_session, self.activity_recorder)
 
