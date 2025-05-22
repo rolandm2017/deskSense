@@ -189,6 +189,7 @@ class SurveillanceManager:
 
     async def cancel_pending_tasks(self):
         """Safely cancel all pending tasks created by this manager."""
+        debug_prints = False
         if not self.is_test:
             await self.program_online_polling.stop()
         # Get all tasks from the event loop except the current one
@@ -196,7 +197,8 @@ class SurveillanceManager:
         all_tasks = [task for task in asyncio.all_tasks() if task is not current_task]
 
         # Print detailed information about all tasks
-        print(f"Found {len(all_tasks)} total asyncio tasks")
+        if debug_prints:
+            print(f"Found {len(all_tasks)} total asyncio tasks")
 
         # Look for uvicorn related tasks specifically
         uvicorn_tasks = []
@@ -220,7 +222,8 @@ class SurveillanceManager:
             except Exception:
                 frame_info = "Not available"
 
-            print(f"Task: {task_name} | Status: {task_status} | Source: {frame_info}")
+            if debug_prints:
+                print(f"Task: {task_name} | Status: {task_status} | Source: {frame_info}")
 
             # Separate tasks by category for better handling
             if "uvicorn" in frame_info.lower() or "starlette" in frame_info.lower():
@@ -244,7 +247,8 @@ class SurveillanceManager:
         # Only cancel our manager tasks, not FastAPI framework tasks
         cancelled_count = 0
         if manager_tasks:
-            print(f"\nCancelling {len(manager_tasks)} manager-related tasks:")
+            if debug_prints:
+                print(f"\nCancelling {len(manager_tasks)} manager-related tasks:")
             for task in manager_tasks:
                 if not task.done():
                     stack = task.get_stack()
@@ -254,7 +258,8 @@ class SurveillanceManager:
                         if task_frame
                         else "Unknown"
                     )
-                    print(f"Cancelling task: '{task.get_name()}' from '{frame_info}'")
+                    if debug_prints:
+                        print(f"Cancelling task: '{task.get_name()}' from '{frame_info}'")
                     task.cancel()
                     cancelled_count += 1
 

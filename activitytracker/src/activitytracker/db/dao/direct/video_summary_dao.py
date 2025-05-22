@@ -51,7 +51,7 @@ class VideoSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
         today_start = get_start_of_day_from_datetime(start_time)
 
         new_entry = DailyVideoSummary(
-            media_title=session.media_title,
+            media_name=session.media_title,
             # TODO: If YouTube, insert the channel name.
             # If Netflix, insert the movie name or series title.
             # If VLC, insert the movie name or series title.

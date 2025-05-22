@@ -40,16 +40,12 @@ class StateMachine:
         next_session = snapshot_obj_for_tests(next_session)
         if self.current_state:
             updated_state = InternalState(None, None, next_session)
-            if next_session.start_time:
-                # Need: self.current_state.session. Nothin' else
-                self._conclude_session(
-                    self.current_state, next_session.start_time, latest_status_write
-                )
-                self.prior_state = self.current_state
-                self.current_state = updated_state
-            else:
-                print("Error:", next_session)
-                raise ValueError("Session start time was None")
+            # Need: self.current_state.session. Nothin' else
+            self._conclude_session(
+                self.current_state, next_session.start_time, latest_status_write
+            )
+            self.prior_state = self.current_state
+            self.current_state = updated_state
 
         else:
             # No current state yet, this is initialization:
@@ -76,18 +72,23 @@ class StateMachine:
             return
 
         # TODO: something like, "systemStatus.check_latest_write_time" here
-
-        if (
-            latest_status_write
-            and latest_status_write.dt < incoming_session_start + timedelta(minutes=2)
-        ):
-            time_since_latest_write = (
-                latest_status_write.dt - incoming_session_start.dt
-            ).total_seconds() / 60
-            self.logger.log_yellow(
-                f"[warn] latest status write was {time_since_latest_write:2f} min ago"
+        if latest_status_write:
+            # Problem statement: After sleeping the PC, the
+            # So if the latest_status_write is more than ten sec ago,
+            # it likely means this incoming session is from right after a sleep,
+            # and so the duration of the outgoing session will include
+            # the time the computer was asleep!
+            suspicious_write_time = (
+                latest_status_write.dt < incoming_session_start - timedelta(minutes=2)
             )
-            # TODO: Put this block way up there. Should be a totally different concluder method.
+            if suspicious_write_time:
+                time_since_latest_write = (
+                    latest_status_write.dt - incoming_session_start.dt
+                ).total_seconds() / 60
+                self.logger.log_yellow(
+                    f"[warn] latest status write was {time_since_latest_write:2f} min ago"
+                )
+                # TODO: Put this block way up there. Should be a totally different concluder method.
 
         duration = incoming_session_start - state.session.start_time
         # FIXME: "concluding session:  9:42:51.327057" after overnight sleep

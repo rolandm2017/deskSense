@@ -279,16 +279,12 @@ class VideoSession(ActivitySession):
     media_title: str
     channel_info: str
     # start_time: UserLocalTime  # exists in ActivitySession
-    end_time: Optional[UserLocalTime]
-    duration: Optional[timedelta]
     video_info: YouTubeInfo | NetflixInfo | VlcInfo
 
     def __init__(self, media_title, channel_info, video_info, start_time, productive, name):
         super().__init__(start_time, productive, name)
         self.media_title = media_title
         self.channel_info = channel_info  # Or FolderName or Series?
-        self.duration = None
-        self.end_time = None
         self.video_info = video_info
 
     @staticmethod
@@ -298,11 +294,12 @@ class VideoSession(ActivitySession):
         and even media info (title, season) live nicely in one terse package.
         """
         if isinstance(session, ProgramSession):
-            return self.from_program_session(session)
+            return VideoSession.from_program_session(session)
         else:
-            return self.from_chrome_session(session)
+            return VideoSession.from_chrome_session(session)
 
-    def from_program_session(self, session: ProgramSession):
+    @staticmethod
+    def from_program_session(session: ProgramSession):
         """Works with a VLC Info object"""
         return VideoSession(
             session.video_info.file,
@@ -313,7 +310,8 @@ class VideoSession(ActivitySession):
             session.video_info.get_name(),
         )
 
-    def from_chrome_session(self, session: ChromeSession):
+    @staticmethod
+    def from_chrome_session(session: ChromeSession):
         return VideoSession(
             session.video_info.get_name(),
             # FIXME: How does Netflix media title get in here?
@@ -329,6 +327,7 @@ class VideoSession(ActivitySession):
         completed = CompletedVideoSession(
             media_title=self.media_title,
             channel_info=self.channel_info,
+            video_info=self.video_info,
             #
             start_time=self.start_time,
             end_time=end_time,

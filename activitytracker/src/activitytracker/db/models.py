@@ -163,7 +163,7 @@ class DomainSummaryLog(SummaryLogBase):
 
 
 class VideoSummaryLog(SummaryLogBase):
-    __tablename__ = "video_Qlogs"
+    __tablename__ = "video_logs"
 
     media_name: Mapped[str] = mapped_column(String)
     # YouTube only

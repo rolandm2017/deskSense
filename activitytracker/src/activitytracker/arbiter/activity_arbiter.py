@@ -97,9 +97,11 @@ class ActivityArbiter:
         looks_like_sleep_occurred, time_before_lg_gap = (
             self.sleep_detector.detect_awakening_from_sleep()
         )
-        print("** ** detect sleep results:", looks_like_sleep_occurred, time_before_lg_gap)
 
         if looks_like_sleep_occurred:
+            self.logger.log_yellow_multiple(
+                "[warn] detect sleep results:", looks_like_sleep_occurred, time_before_lg_gap
+            )
             self.flush_and_reset(time_before_lg_gap)
 
         self.notify_display_update(new_session)
@@ -129,6 +131,22 @@ class ActivityArbiter:
             # you discover a problem.
             # TODO: VLC player can surely be left with just play, pause.
             latest_status_write = self.sleep_detector.get_latest_write_time()
+            if latest_status_write:
+                # Problem statement: After sleeping the PC, the
+                # So if the latest_status_write is more than ten sec ago,
+                # it likely means this incoming session is from right after a sleep,
+                # and so the duration of the outgoing session will include
+                # the time the computer was asleep!
+                suspicious_write_time = (
+                    latest_status_write.dt < new_session.start_time - timedelta(minutes=2)
+                )
+                if suspicious_write_time:
+                    time_since_latest_write = (
+                        latest_status_write.dt - incoming_session_start.dt
+                    ).total_seconds() / 60
+                    self.logger.log_yellow(
+                        f"[warn] latest status write was {time_since_latest_write:2f} min ago"
+                    )
             self.state_machine.set_new_session(new_session, latest_status_write)
 
             concluded_session = self.state_machine.get_concluded_session()
