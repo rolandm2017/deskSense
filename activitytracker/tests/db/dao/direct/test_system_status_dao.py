@@ -35,7 +35,7 @@ def test_add_program_started(db_session_in_mem):
     times = [dt2, dt3]
     clock = UserLocalTimeMockClock(times)
 
-    dao = SystemStatusDao(cast(UserFacingClock, clock), db_session_in_mem)
+    dao = SystemStatusDao(cast(UserFacingClock, clock), 10, db_session_in_mem)
 
     add_new_item_spy = Mock(side_effect=dao.add_new_item)
     dao.add_new_item = add_new_item_spy
@@ -68,7 +68,7 @@ def test_add_new_log(db_session_in_mem):
     times = [dt2, dt3]
     clock = UserLocalTimeMockClock(times)
 
-    dao = SystemStatusDao(cast(UserFacingClock, clock), db_session_in_mem)
+    dao = SystemStatusDao(cast(UserFacingClock, clock), 10, db_session_in_mem)
 
     test_id = 43
 
@@ -121,7 +121,7 @@ def test_run_polling_loop(db_session_in_mem):
     times = [dt2, dt3, dt4, dt5]
     clock = UserLocalTimeMockClock(times)
 
-    dao = SystemStatusDao(cast(UserFacingClock, clock), db_session_in_mem)
+    dao = SystemStatusDao(cast(UserFacingClock, clock), 10, db_session_in_mem)
 
     add_activitytracker_started_spy = Mock(side_effect=dao.add_activitytracker_started)
     dao.add_activitytracker_started = add_activitytracker_started_spy
@@ -171,3 +171,86 @@ def test_run_polling_loop(db_session_in_mem):
     dao.run_polling_loop()
     # -- Assert
     assert add_new_log_spy.call_count == 2
+
+
+def test_measure_gaps_between_pulses(db_session_in_mem):
+    dt1 = tokyo_tz.localize(datetime.now() - timedelta(seconds=20))
+    dt2 = UserLocalTime(dt1 + timedelta(seconds=1))
+    dt3 = UserLocalTime(dt1 + timedelta(seconds=2))
+    dt4 = UserLocalTime(dt1 + timedelta(seconds=3))
+    dt5 = UserLocalTime(dt1 + timedelta(seconds=4))
+    dt6 = UserLocalTime(dt1 + timedelta(seconds=5))
+    dt7 = UserLocalTime(dt1 + timedelta(seconds=6))
+    dt8 = UserLocalTime(dt1 + timedelta(seconds=1200))
+    times = [dt2, dt3, dt4, dt5, dt6, dt7, dt8]
+    clock = UserLocalTimeMockClock(times)
+
+    dao = SystemStatusDao(cast(UserFacingClock, clock), 10, db_session_in_mem)
+
+    for _ in range(7):
+        dao.run_polling_loop()
+
+    gaps = dao._measure_gaps_between_pulses()
+
+    assert all([x == 1 for x in gaps[:-1]])
+
+    assert gaps[-1] == 1200 - 6
+
+
+def test_has_large_gaps_in_pulses(db_session_in_mem):
+    dt1 = tokyo_tz.localize(datetime.now() - timedelta(seconds=20))
+    dt2 = UserLocalTime(dt1 + timedelta(seconds=1))
+    dt3 = UserLocalTime(dt1 + timedelta(seconds=2))
+    dt4 = UserLocalTime(dt1 + timedelta(seconds=3))
+    dt5 = UserLocalTime(dt1 + timedelta(seconds=4))
+    dt6 = UserLocalTime(dt1 + timedelta(seconds=5))
+    dt7 = UserLocalTime(dt1 + timedelta(seconds=6))
+    dt8 = UserLocalTime(dt1 + timedelta(seconds=1200))
+    times = [dt2, dt3, dt4, dt5, dt6, dt7, dt8]
+    clock = UserLocalTimeMockClock(times)
+
+    dao = SystemStatusDao(cast(UserFacingClock, clock), 10, db_session_in_mem)
+
+    for _ in range(7):
+        dao.run_polling_loop()
+
+    large_gap_exists = dao.a_large_gap_exists_between_pulses()
+
+    assert large_gap_exists is True
+
+
+def test_sleep_detector(db_session_in_mem):
+    dt1 = tokyo_tz.localize(datetime.now() - timedelta(seconds=20))
+    dt2 = UserLocalTime(dt1 + timedelta(seconds=1))
+    dt3 = UserLocalTime(dt1 + timedelta(seconds=2))
+    dt4 = UserLocalTime(dt1 + timedelta(seconds=3))
+    dt5 = UserLocalTime(dt1 + timedelta(seconds=4))
+    dt6 = UserLocalTime(dt1 + timedelta(seconds=5))
+    dt7 = UserLocalTime(dt1 + timedelta(seconds=6))
+    dt8 = UserLocalTime(dt1 + timedelta(seconds=1200))
+    times = [dt2, dt3, dt4, dt5, dt6, dt7, dt8]
+    clock = UserLocalTimeMockClock(times)
+
+    dao = SystemStatusDao(cast(UserFacingClock, clock), 10, db_session_in_mem)
+
+    dao.run_polling_loop()
+    dao.run_polling_loop()
+    dao.run_polling_loop()
+    dao.run_polling_loop()
+
+    assert len(dao.logs_queue) == 4
+
+    assert dao.a_large_gap_exists_between_pulses() is False
+
+    dao.run_polling_loop()
+    dao.run_polling_loop()
+
+    assert dao.a_large_gap_exists_between_pulses() is False
+
+    dao.run_polling_loop()  # 20 minute gap
+
+    gaps = dao._measure_gaps_between_pulses()
+
+    print(gaps)
+
+    assert dao.a_large_gap_exists_between_pulses() is True

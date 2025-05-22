@@ -1,3 +1,5 @@
+from collections import deque
+
 from sqlalchemy import select, update
 from sqlalchemy.orm import sessionmaker
 
@@ -28,10 +30,19 @@ class SystemStatusDao(UtilityDaoMixin):
     Intent is to create an auditable time to check summaries against.
     """
 
-    def __init__(self, clock: UserFacingClock, sync_session_maker: sessionmaker):
+    def __init__(
+        self,
+        clock: UserFacingClock,
+        polling_interval: int | float,
+        sync_session_maker: sessionmaker,
+    ):
         """Exists mostly for debugging."""
         self.clock = clock  # Must exist via constructor injection
         self.regular_session = sync_session_maker
+        self.polling_interval_in_sec = (
+            polling_interval  # Must be the same as Periodic Task's
+        )
+        self.logs_queue = deque(maxlen=20)
         self.latest_id = None
         self.latest_write_time = None
         self.logger = ConsoleLogger()
@@ -39,6 +50,7 @@ class SystemStatusDao(UtilityDaoMixin):
     def run_polling_loop(self):
         on_first_iteration = self.latest_id is None
         current_time = self.clock.now()
+        self.push_pulse_time_to_history(current_time)
         self.latest_write_time = current_time
         if on_first_iteration:
             self.logger.log_green("info: Writing program startup entry\n")
@@ -99,6 +111,46 @@ class SystemStatusDao(UtilityDaoMixin):
             except Exception as e:
                 session.rollback()
                 self.logger.log_yellow(f"Error updating status record: {str(e)}")
+
+    def a_large_gap_exists_between_pulses(self):
+        """
+        Intends to detect times when the computer was asleep.
+
+        Problem statement: A session is open and the user sleeps the machine
+        for 6 hours. On awakening, the program will then perceive a session
+        that lasted for 6 whole hours. In fact the session was like a minute
+        long, but the program can't perceive sleep events.
+
+        Solution statement: Record pulse times. Assume a large gap
+        is the computer being asleep, program stored in memory.
+        """
+        # 30 sec gap from 10, highly unusual
+        acceptable_duration = self.polling_interval_in_sec * 3
+
+        measured_gaps = self._measure_gaps_between_pulses()
+        for gap in measured_gaps:
+            if gap > acceptable_duration:
+                return True
+        return False
+
+    def _measure_gaps_between_pulses(self):
+        gaps = []
+        prev = None
+        for i, item in enumerate(self.logs_queue):
+            if i == 0:
+                prev = item
+                continue
+            current = item
+            duration = current - prev
+            duration = duration.total_seconds()
+            gaps.append(duration)
+
+            prev = current
+
+        return gaps
+
+    def push_pulse_time_to_history(self, time):
+        self.logs_queue.append(time)
 
     def read_highest_id(self) -> int | None:
         """

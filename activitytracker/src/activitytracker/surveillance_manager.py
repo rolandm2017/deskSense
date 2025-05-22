@@ -78,14 +78,20 @@ class SurveillanceManager:
             program_summary_logger, chrome_summary_logger, self.async_session_maker
         )
 
-        self.system_status_dao = SystemStatusDao(clock, self.regular_session)
+        polling_interval = 10  # sec
+
+        self.system_status_dao = SystemStatusDao(
+            clock, polling_interval, self.regular_session
+        )
 
         self.arbiter.add_status_listener(self.system_status_dao)
 
         if is_test:
             pass
         else:
-            self.program_online_polling = AsyncPeriodicTask(self.system_status_dao)
+            self.program_online_polling = AsyncPeriodicTask(
+                self.system_status_dao, polling_interval
+            )
             self.program_online_polling.start()
 
         self.mouse_dao = MouseDao(self.async_session_maker)
