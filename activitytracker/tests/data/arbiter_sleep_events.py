@@ -57,23 +57,23 @@ times_for_system_clock = [t2, t3, t5, t6, t7]
 
 just_before_sleep = tokyo_tz.localize
 
-u1 = t3
-u2 = u1 + timedelta(seconds=10)
-u3 = u1 + timedelta(seconds=20)
+t3a_1 = t3
+t3a_2 = t3a_1 + timedelta(seconds=10)
+t3a_3 = t3a_1 + timedelta(seconds=20)
 # Final time before the gap to be used to conclude
 # the session just before the sleep occurred
-u4a = u1 + timedelta(seconds=30)
+t3a_4_before_gap = t3a_1 + timedelta(seconds=30)
 # t5: just after the sleep event
-u5 = t5
-u6 = u5 + timedelta(seconds=10)
+t5_a1_post_gap = t5
+t5_a2 = t5_a1_post_gap + timedelta(seconds=10)
 
 times_for_status_dao_clock = [
-    UserLocalTime(u1),
-    UserLocalTime(u2),
-    UserLocalTime(u3),
-    UserLocalTime(u4a),
-    UserLocalTime(u5),
-    UserLocalTime(u6),
+    UserLocalTime(t3a_1),
+    UserLocalTime(t3a_2),
+    UserLocalTime(t3a_3),
+    UserLocalTime(t3a_4_before_gap),
+    UserLocalTime(t5_a1_post_gap),
+    UserLocalTime(t5_a2),
 ]
 
 test_events_elapsed_time_in_sec = (t7 - t1).total_seconds()

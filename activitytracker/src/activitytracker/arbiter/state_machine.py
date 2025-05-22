@@ -64,11 +64,6 @@ class StateMachine:
                 )
             self.current_state = updated_state
 
-    @staticmethod
-    def is_initialization_session(some_dict):
-        """Asks 'is it an empty dict?'"""
-        return isinstance(some_dict, dict) and not some_dict
-
     def _conclude_session(
         self,
         state: InternalState,
@@ -113,20 +108,6 @@ class StateMachine:
 
         state.session = completed
 
-    @staticmethod
-    def _initialize(first_session):
-        if isinstance(first_session, ProgramSession):
-            is_chrome = window_is_chrome(first_session.window_title)
-            updated_state = ApplicationInternalState(
-                first_session.window_title, is_chrome, first_session
-            )
-        else:
-            assert isinstance(first_session, ChromeSession)
-            updated_state = ChromeInternalState(
-                "Chrome", True, first_session.domain, first_session
-            )
-        return updated_state
-
     def get_concluded_session(
         self,
     ) -> CompletedProgramSession | CompletedChromeSession | None:
@@ -155,3 +136,22 @@ class StateMachine:
         session_for_daos = self.current_state.session
         self.current_state = None  # Reset for power back on
         return session_for_daos
+
+    @staticmethod
+    def is_initialization_session(some_dict):
+        """Asks 'is it an empty dict?'"""
+        return isinstance(some_dict, dict) and not some_dict
+
+    @staticmethod
+    def _initialize(first_session):
+        if isinstance(first_session, ProgramSession):
+            is_chrome = window_is_chrome(first_session.window_title)
+            updated_state = ApplicationInternalState(
+                first_session.window_title, is_chrome, first_session
+            )
+        else:
+            assert isinstance(first_session, ChromeSession)
+            updated_state = ChromeInternalState(
+                "Chrome", True, first_session.domain, first_session
+            )
+        return updated_state

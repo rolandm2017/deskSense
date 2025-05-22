@@ -160,6 +160,12 @@ def activity_arbiter_and_setup(db_session_in_mem):
 
 
 def test_arbiter_after_sleep(activity_arbiter_and_setup):
+    """
+    Test exists to ensure that the Arbiter and Status Dao work together to
+    conclude the session that was active before the computer went to sleep
+    at the right time. And that the first session after awakening receives
+    the correct start time.
+    """
     arbiter = activity_arbiter_and_setup[0]
     state_changed_handler_events = activity_arbiter_and_setup[1]
     mock_activity_recorder = activity_arbiter_and_setup[2]
@@ -173,20 +179,32 @@ def test_arbiter_after_sleep(activity_arbiter_and_setup):
     in the right order, at the right time.
     """
 
-    arbiter.transition_state(sleep_test_events[0])
-    arbiter.transition_state(sleep_test_events[1])
-    arbiter.transition_state(sleep_test_events[2])
+    def run_pre_sleep_events():
+        arbiter.transition_state(sleep_test_events[0])
+        arbiter.transition_state(sleep_test_events[1])
+        arbiter.transition_state(sleep_test_events[2])
 
-    # To put the post-sleep log into queue
+    run_pre_sleep_events()
+
+    # Put the post-sleep log into queue:
     status_dao.run_polling_loop()
 
-    arbiter.transition_state(sleep_test_events[3])
+    def run_post_sleep_events():
+        # Add the first event after waking up:
+        arbiter.transition_state(sleep_test_events[3])
 
-    # Move on past the sleep event
-    status_dao.run_polling_loop()
+        # Move on past the sleep event
+        status_dao.run_polling_loop()
 
-    arbiter.transition_state(sleep_test_events[4])
-    arbiter.transition_state(sleep_test_events[5])
+        arbiter.transition_state(sleep_test_events[4])
+        arbiter.transition_state(sleep_test_events[5])
+
+    run_post_sleep_events()
+
+    # --
+    # --
+    # -- Assert
+    # --
 
     event_three = state_changed_handler_events[2]
     event_four = state_changed_handler_events[3]
@@ -194,37 +212,28 @@ def test_arbiter_after_sleep(activity_arbiter_and_setup):
     # -- Very basic debugging assertions
 
     assert len(state_changed_handler_events) == len(sleep_test_events) - 1
+
+    # All state changed handler events had an end time:
+    for event in state_changed_handler_events:
+        assert event.end_time is not None
+
     assert spies["detect_awakening_from_sleep_spy"].call_count == len(sleep_test_events)
 
     assert spies["flush_and_reset_spy"].call_count == 1
     assert spies["initialize_loop_spy"].call_count == 2
 
-    session1 = spies["initialize_loop_spy"].call_args_list[0]
+    # Note that the .end_time from these calls will still be None
+    session1 = spies["initialize_loop_spy"].call_args_list[0][0][0]
 
     assert session1.get_name() == sleep_test_events[0].get_name()
     assert session1.start_time == sleep_test_events[0].start_time
-    assert session1.end_time == sleep_test_events[1].start_time
 
-    session2 = spies["initialize_loop_spy"].call_args_list[1]
+    session2 = spies["initialize_loop_spy"].call_args_list[1][0][0]
+
     assert session2.get_name() == sleep_test_events[3].get_name()
     assert session2.start_time == sleep_test_events[3].start_time
-    assert session2.end_time == sleep_test_events[4].start_time
 
-    # -- The core of the test
-
-    def event_three_concluded_around_correct_time():
-        """Checks that the event concluded at the time right before the gap"""
-        print("event 3 end time:   ", event_three.end_time)
-        print("just before the gap:", times_for_status_dao_clock[-3])
-        time_just_before_the_gap = times_for_status_dao_clock[-3]
-        return event_three.end_time == time_just_before_the_gap
-
-    def event_four_started_around_right_time():
-        """Checks that the event started at it's stated start time"""
-        return event_four.start_time == test_sleep_sessions[-1].start_time
-
-    assert event_three_concluded_around_correct_time()
-    assert event_four_started_around_right_time()
+    # -- Some other checks
 
     def on_state_changed_saw_correct_times():
         """
@@ -233,21 +242,39 @@ def test_arbiter_after_sleep(activity_arbiter_and_setup):
         """
         v1 = state_changed_handler_events[0].end_time == sleep_test_events[1].start_time
         v2 = state_changed_handler_events[1].end_time == sleep_test_events[2].start_time
+        # GAP: 2 and 3 do NOT link.
         v3 = state_changed_handler_events[3].end_time == sleep_test_events[4].start_time
         v4 = state_changed_handler_events[4].end_time == sleep_test_events[5].start_time
         return v1 and v2 and v3 and v4
 
     assert on_state_changed_saw_correct_times()
 
-    # --
-    # -- Usual stuff:
-    # --
-
-    def events_all_made_it_to_on_new_session():
-        pass
-
     def events_all_made_it_to_on_state_changed():
-        pass
+        return len(state_changed_handler_events) == len(sleep_test_events) - 1
 
-    assert events_all_made_it_to_on_new_session()
     assert events_all_made_it_to_on_state_changed()
+
+    # -- The core of the test
+
+    def final_pre_gap_event_concluded_at_time_just_before_gap():
+        """
+        Checks that the event concluded at the time right before the gap.
+
+        If you look, array index -3 is labeled "u4_post_gap".
+        """
+        time_just_before_the_gap = times_for_status_dao_clock[3]
+        # FYI it might be possible for concluding events
+        # using flush_and_reset to end up having a negative duration.
+        return event_three.end_time == time_just_before_the_gap
+
+    def first_post_gap_event_started_at_its_usual_time():
+        """
+        Checks that the event started at it's stated start time.
+
+        While debugging this, make sure you don't have an Off By One error.
+        """
+        first_full_event_after_gap = test_sleep_sessions[3]
+        return event_four.start_time == first_full_event_after_gap.start_time
+
+    assert final_pre_gap_event_concluded_at_time_just_before_gap()
+    assert first_post_gap_event_started_at_its_usual_time()
