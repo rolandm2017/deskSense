@@ -32,7 +32,11 @@ class ActivityStateMachine:
         self.state_listeners = []
         self.logger = ConsoleLogger()
 
-    def set_new_session(self, next_session: ProgramSession | ChromeSession):
+    def set_new_session(
+        self,
+        next_session: ProgramSession | ChromeSession,
+        latest_status_write: UserLocalTime | None,
+    ):
         # FIXME:
         # FIXME: Isn't this JUST handing off one session to the other now?
         # FIXME: Existing just to do, "end_time - start_time" and such
@@ -48,8 +52,10 @@ class ActivityStateMachine:
             else:
                 updated_state = self.transition_from_chrome.compute_next_state(next_session)
             if next_session.start_time:
-
-                self._conclude_session(self.current_state, next_session.start_time)
+                # Need: self.current_state.session. Nothin' else
+                self._conclude_session(
+                    self.current_state, next_session.start_time, latest_status_write
+                )
                 self.prior_state = self.current_state
                 self.current_state = updated_state
             else:
@@ -74,20 +80,44 @@ class ActivityStateMachine:
         """Asks 'is it an empty dict?'"""
         return isinstance(some_dict, dict) and not some_dict
 
-    def _conclude_session(self, state: InternalState, incoming_session_start: UserLocalTime):
+    def _conclude_session(
+        self,
+        state: InternalState,
+        incoming_session_start: UserLocalTime,
+        latest_status_write: UserLocalTime | None,
+    ):
         if not isinstance(incoming_session_start, UserLocalTime):
             raise ValueError("Expected a UserLocalTime")
         if self.is_initialization_session(state.session):
             return
 
+        # TODO: something like, "systemStatus.check_latest_write_time" here
+
+        if (
+            latest_status_write
+            and latest_status_write.dt < incoming_session_start + timedelta(minutes=2)
+        ):
+            time_since_latest_write = (
+                latest_status_write.dt - incoming_session_start.dt
+            ).total_seconds() / 60
+            self.logger.log_yellow(
+                f"[warn] latest status write was {time_since_latest_write} ago"
+            )
+            # TODO: Put this block way up there. Should be a totally different concluder method.
+
         duration = incoming_session_start - state.session.start_time
+        # FIXME: "concluding session:  9:42:51.327057" after overnight sleep
+        # FIXME: Solution to above problem is to check the latest
+        # keepAlive write time, the latest um, systemStatus polling write time.
+        # If the latest write was more than a minute ago, the session is over,
+        # do not update the end time past that time.
         print("concluding session: ", duration)
 
         session_copy = snapshot_obj_for_tests(state.session)
 
         # FIXME: (1) This whole file can go. It's just a session container.
+
         # FIXME: Durations are negative sometimes
-        # print(type(duration), duration.total_seconds(), "980ru")
 
         completed = session_copy.to_completed(incoming_session_start)
         completed.duration = duration
@@ -134,7 +164,7 @@ class ActivityStateMachine:
             return  # Nothing to wrap up
         end_time = UserLocalTime(self.user_facing_clock.now())
         assert isinstance(end_time, UserLocalTime)
-        self._conclude_session(self.current_state, end_time)
+        self._conclude_session(self.current_state, end_time, end_time)
         session_for_daos = self.current_state.session
         self.current_state = None  # Reset for power back on
         return session_for_daos
@@ -160,7 +190,6 @@ class TransitionFromProgramMachine:
     def _change_to_new_program(
         self, next_session: ProgramSession
     ) -> ApplicationInternalState:
-        # TODO: If next state is the same program, return current state
         is_same_program = self.current_state.active_application == next_session.window_title
         if is_same_program:
             return self._stay_on_same_program()

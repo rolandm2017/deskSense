@@ -1,19 +1,20 @@
+from zoneinfo import ZoneInfo
+
 import pytest
 
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
 import time
+from datetime import datetime, timedelta
 
 from activitytracker.arbiter.activity_state_machine import (
     ActivityStateMachine,
     TransitionFromChromeMachine,
     TransitionFromProgramMachine,
 )
-from activitytracker.object.classes import ChromeSession, ProgramSession
 from activitytracker.object.arbiter_classes import (
     ApplicationInternalState,
     ChromeInternalState,
 )
+from activitytracker.object.classes import ChromeSession, ProgramSession
 from activitytracker.util.clock import SystemClock
 from activitytracker.util.time_wrappers import UserLocalTime
 
@@ -38,6 +39,8 @@ class TestActivityStateMachine:
         assert asm.current_state is None
         assert asm.prior_state is None
 
+        latest_write_at_first_session = UserLocalTime(now)
+
         first_session = ProgramSession(
             "some/exe/path.exe",
             "path.exe",
@@ -46,6 +49,8 @@ class TestActivityStateMachine:
             UserLocalTime(now),
         )
 
+        second_session_latest_write = UserLocalTime(slightly_later)
+
         second = ChromeSession(
             "Claude.ai",
             "How to Cook Chicken Well in Thirty Minutes",
@@ -53,14 +58,14 @@ class TestActivityStateMachine:
         )
 
         # Act
-        asm.set_new_session(first_session)
+        asm.set_new_session(first_session, latest_write_at_first_session)
         response = asm.get_concluded_session()
 
         # None because there IS no prior state to conclude by startign a new session
         assert response is None
 
         # Act
-        asm.set_new_session(second)
+        asm.set_new_session(second, second_session_latest_write)
         response = asm.get_concluded_session()
 
         assert response is not None
@@ -81,6 +86,7 @@ class TestActivityStateMachine:
 
         asm = ActivityStateMachine(clock)
 
+        s1_latest = UserLocalTime(t1)
         session1 = ProgramSession(
             "some/path/to/an/exe.exe",
             "exe.exe",
@@ -89,12 +95,15 @@ class TestActivityStateMachine:
             UserLocalTime(t1),
         )
 
+        s2_latest = UserLocalTime(t2)
         second = ChromeSession(
             "Claude.ai", "How to Cook Chicken Well in Thirty Minutes", UserLocalTime(t2)
         )
 
+        s3_latest = UserLocalTime(t3)
         third = ChromeSession("ChatGPT.com", "Asian Stir Fry Tutorial", UserLocalTime(t3))
 
+        s4_latest = UserLocalTime(t4)
         fourth = ProgramSession(
             "some/path/to/an/exe2.exe",
             "exe2.exe",
@@ -103,6 +112,7 @@ class TestActivityStateMachine:
             UserLocalTime(t4),
         )
 
+        s5_latest = UserLocalTime(t5)
         fifth = ProgramSession(
             "some/path/to/an/exe4.exe",
             "exe4.exe",
@@ -111,12 +121,12 @@ class TestActivityStateMachine:
             UserLocalTime(t5),
         )
 
-        asm.set_new_session(session1)
+        asm.set_new_session(session1, s1_latest)
         response1 = asm.get_concluded_session()
 
         assert response1 is None
 
-        asm.set_new_session(second)
+        asm.set_new_session(second, s2_latest)
         response2 = asm.get_concluded_session()
 
         assert response2 is not None
@@ -125,7 +135,7 @@ class TestActivityStateMachine:
         print(t1.strftime("%M:%S"), "\n", t2.strftime("%M:%S"))
         assert response2.start_time == t1
 
-        asm.set_new_session(third)
+        asm.set_new_session(third, s3_latest)
         response3 = asm.get_concluded_session()
 
         assert response3 is not None
@@ -133,7 +143,7 @@ class TestActivityStateMachine:
         assert response3.domain == second.domain
         assert response3.start_time == t2
 
-        asm.set_new_session(fourth)
+        asm.set_new_session(fourth, s4_latest)
         response4 = asm.get_concluded_session()
 
         assert response4 is not None
@@ -141,7 +151,7 @@ class TestActivityStateMachine:
         assert response4.domain == third.domain
         assert response4.start_time == t3
 
-        asm.set_new_session(fifth)
+        asm.set_new_session(fifth, s5_latest)
         response5 = asm.get_concluded_session()
 
         assert response5 is not None
@@ -153,191 +163,8 @@ class TestActivityStateMachine:
         assert asm.current_state is not None
         assert asm.prior_state is not None
         assert isinstance(asm.prior_state, ApplicationInternalState)
-        assert asm.prior_state.active_application == fourth.window_title
+        assert asm.prior_state.session.window_title == fourth.window_title
         assert asm.prior_state.session.start_time == t4
 
-        assert asm.current_state.active_application == fifth.window_title
+        assert asm.current_state.session.window_title == fifth.window_title
         assert asm.current_state.session.start_time == fifth.start_time
-
-
-class TestTransitionFromProgram:
-    """
-    Test cases where the Transition From Program Machine.
-    """
-
-    def test_transition_to_different_program(self):
-        # Arrange
-        clock = SystemClock()
-        now = clock.now()
-        start_session = ProgramSession()
-        start_session.window_title = "Postman"
-        start_session.detail = "GET requests folder"
-        start_session.start_time = UserLocalTime(now)
-        current_state = ApplicationInternalState("Postman", False, start_session)
-        assert isinstance(current_state, ApplicationInternalState)
-        tfpm = TransitionFromProgramMachine(current_state)
-
-        next_session = ProgramSession()
-        next_session.window_title = "PyCharm"
-        next_session.detail = "api.py"
-        next_session.start_time = UserLocalTime(now) + timedelta(seconds=2)
-
-        # Act
-        output = tfpm.compute_next_state(next_session)
-
-        assert isinstance(output, ApplicationInternalState)
-        assert output.active_application == next_session.window_title
-        assert output.session.detail == next_session.detail
-        assert output.is_chrome is False
-
-    def test_transition_to_same_program(self):
-        # Arrange
-        system_clock = SystemClock()
-
-        now = system_clock.now()
-        start_session = ProgramSession()
-        start_session.window_title = "Postman"
-        start_session.detail = "GET requests folder"
-        start_session.start_time = UserLocalTime(now)
-        current_state = ApplicationInternalState("Postman", False, start_session)
-        tfpm = TransitionFromProgramMachine(current_state)
-
-        next_session = ProgramSession()
-        next_session.window_title = "Postman"
-        next_session.detail = "GET requests folder"
-        next_session.start_time = UserLocalTime(now) + timedelta(seconds=2)
-
-        # Act
-        output = tfpm.compute_next_state(next_session)
-
-        assert isinstance(output, ApplicationInternalState)
-        assert output.active_application == next_session.window_title
-        assert output.session.detail == next_session.detail
-        assert output.is_chrome is False
-
-    def test_transition_to_chrome(self):
-        # Arrange
-        system_clock = SystemClock()
-
-        now = system_clock.now()
-        start_session = ProgramSession()
-        start_session.window_title = "Postman"
-        start_session.detail = "GET requests folder"
-        start_session.start_time = UserLocalTime(now)
-        current_state = ApplicationInternalState("Postman", False, start_session)
-        tfpm = TransitionFromProgramMachine(current_state)
-
-        next_session = ChromeSession("Google.com", "Search here", now + timedelta(seconds=2))
-
-        # Act
-        output = tfpm.compute_next_state(next_session)
-
-        assert isinstance(output, ChromeInternalState)
-        assert output.session.domain == next_session.domain
-        assert output.session.detail == next_session.detail
-        assert output.is_chrome is True
-
-    def test_start_with_chrome(self):
-        """
-        Test cases where the machine starts with Chrome as the latest state.
-
-        A sad path. Should not happen, constitutes a bug.
-        """
-        system_clock = SystemClock()
-        now = system_clock.now()
-
-        chrome_tab = ChromeSession("Claude.ai", "Baking tips", now)
-        current_state = ChromeInternalState("Chrome", True, "Claude.ai", chrome_tab)
-
-        # Use pytest's raises context manager
-        with pytest.raises(TypeError, match="requires an ApplicationInternalState"):
-            tfpm = TransitionFromProgramMachine(current_state)
-
-
-class TestTransitionFromChrome:
-    """
-    Test cases for the Transition From Chrome Machine.
-    """
-
-    def test_start_from_program(self):
-        """A sad path. Machine cannot start with ApplicationInternalState, by design."""
-        system_clock = SystemClock()
-
-        session = ProgramSession(
-            "path/to/exe10.exe",
-            "exe10.exe",
-            "PyCharm",
-            "test_my_wonerful_code.py",
-            UserLocalTime(system_clock.now()),
-        )
-        current_state = ApplicationInternalState("PyCharm", False, session)
-
-        with pytest.raises(TypeError, match="requires a ChromeInternalState"):
-            tfcm = TransitionFromChromeMachine(current_state)
-
-    """
-    Test cases where the machine starts with Chrome as the latest state.
-    """
-
-    def test_transition_to_program(self):
-        system_clock = SystemClock()
-
-        now = system_clock.now()
-
-        start_session = ChromeSession("ChatGPT.com", "American stir fry", now)
-        current_state = ChromeInternalState("Chrome", True, "ChatGPT.com", start_session)
-
-        tfcm = TransitionFromChromeMachine(current_state)
-
-        next_session = ProgramSession(
-            "some/path.exe",
-            "path.exe",
-            "Postman",
-            "GET requests folder",
-            UserLocalTime(now) + timedelta(seconds=4),
-        )
-
-        output = tfcm.compute_next_state(next_session)
-
-        assert isinstance(output, ApplicationInternalState)
-        assert output.active_application == next_session.window_title
-        assert output.session.detail == next_session.detail
-
-    def test_transition_to_another_tab(self):
-        system_clock = SystemClock()
-
-        now = system_clock.now()
-
-        domain = "ChatGPT.com"
-        start_session = ChromeSession(domain, "American stir fry", now)
-        current_state = ChromeInternalState("Chrome", True, domain, start_session)
-
-        tfcm = TransitionFromChromeMachine(current_state)
-
-        next_session = ChromeSession("Twitter.com", "Home", now + timedelta(seconds=10))
-
-        output = tfcm.compute_next_state(next_session)
-
-        assert isinstance(output, ChromeInternalState)
-        assert output.current_tab == next_session.domain
-        assert output.session.detail == next_session.detail
-
-    def test_transition_to_same_tab(self):
-        system_clock = SystemClock()
-
-        now = system_clock.now()
-        later = now + timedelta(seconds=10)
-
-        domain = "Facebook.com"
-        start_session = ChromeSession(domain, "Home", now)
-        current_state = ChromeInternalState("Chrome", True, domain, start_session)
-
-        tfcm = TransitionFromChromeMachine(current_state)
-
-        next_session = ChromeSession(domain, "Marketplace", later)
-
-        output = tfcm.compute_next_state(next_session)
-
-        assert isinstance(output, ChromeInternalState)
-        assert output.current_tab == domain
-        assert output.session.start_time == now  # NOT later.

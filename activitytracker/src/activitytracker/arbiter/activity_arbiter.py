@@ -68,6 +68,12 @@ class ActivityArbiter:
             session_copy = snapshot_obj_for_tests(session)
             self.activity_recorder.on_new_session(session_copy)
 
+    def add_status_listener(self, listener):
+        if hasattr(listener, "get_latest_write_time"):
+            self.status_dao = listener
+        else:
+            raise AttributeError("Listener method was missing")
+
     def set_program_state(self, event: ProgramSession):
         self.transition_state(event)
 
@@ -113,10 +119,10 @@ class ActivityArbiter:
             # But also YAGNI? SO try it without polling first, until
             # you discover a problem.
             # TODO: VLC player can surely be left with just play, pause.
-            self.state_machine.set_new_session(new_session)
+            latest_status_write = self.status_dao.get_latest_write_time()
+            self.state_machine.set_new_session(new_session, latest_status_write)
 
             concluded_session = self.state_machine.get_concluded_session()
-            # ### Start the first window
             self.notify_of_new_session(new_session)
 
             self.current_pulse.stop()  # stop the old one from prev loop
@@ -124,7 +130,7 @@ class ActivityArbiter:
             new_keep_alive_engine = self.engine_class(new_session, self.activity_recorder)
 
             self.current_pulse.replace_engine(new_keep_alive_engine)
-            print("Starting pulse in regular loop")
+            # print("Starting pulse in regular loop")
             self.current_pulse.start()
 
             if self.state_machine.is_initialization_session(concluded_session):
@@ -135,7 +141,7 @@ class ActivityArbiter:
             self.logger.log_white("in arbiter init")
 
             self.notify_of_new_session(new_session)
-            self.state_machine.set_new_session(new_session)
+            self.state_machine.set_new_session(new_session, None)
 
             new_keep_alive_engine = self.engine_class(new_session, self.activity_recorder)
 

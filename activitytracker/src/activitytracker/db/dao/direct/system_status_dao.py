@@ -33,19 +33,21 @@ class SystemStatusDao(UtilityDaoMixin):
         self.clock = clock  # Must exist via constructor injection
         self.regular_session = sync_session_maker
         self.latest_id = None
+        self.latest_write_time = None
         self.logger = ConsoleLogger()
 
     def run_polling_loop(self):
         on_first_iteration = self.latest_id is None
         current_time = self.clock.now()
+        self.latest_write_time = current_time
         if on_first_iteration:
             self.logger.log_green("info: Writing program startup entry\n")
             self.add_activitytracker_started(current_time)
         else:
-            # self.logger.log_green(
-            #     "info: continued session at " + current_time.dt.strftime("%H:%M:%S")
-            # )
             self.add_new_log(current_time)
+
+    def get_latest_write_time(self):
+        return self.latest_write_time
 
     def add_activitytracker_started(self, current_time) -> None:
         """Used for the first status entry after the program starts up"""

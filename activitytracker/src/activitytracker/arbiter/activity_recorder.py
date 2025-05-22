@@ -50,6 +50,8 @@ class ActivityRecorder:
             self.logger.log_blue(
                 f"[on_new_session] video info made it to recorder: "
                 + session.video_info.get_name()
+                + " and state: "
+                + session.video_info.player_state.value
             )
         if isinstance(session, ProgramSession):
             # Regardless of the session being brand new today or a repeat,
@@ -93,7 +95,10 @@ class ActivityRecorder:
 
         if session.video_info:
             self.logger.log_blue(
-                f"[add_ten_sec_to_end_time] video info: " + session.video_info.get_name()
+                f"[add_ten_sec_to_end_time] video info: "
+                + session.video_info.get_name()
+                + " and state: "
+                + session.video_info.player_state.value
             )
 
         if isinstance(session, ProgramSession):
@@ -126,7 +131,10 @@ class ActivityRecorder:
 
         if session.video_info:
             self.logger.log_blue(
-                f"[add_partial_window] video info: " + session.video_info.get_name()
+                f"[add_partial_window] video info: "
+                + session.video_info.get_name()
+                + " and state: "
+                + session.video_info.player_state.value
             )
 
         if isinstance(session, ProgramSession):

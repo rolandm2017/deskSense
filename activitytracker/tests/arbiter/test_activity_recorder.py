@@ -34,7 +34,7 @@ def program_session():
         "Code.exe",
         "Visual Studio Code",
         "main.py",
-        null_VLC_video_info,
+        None,
         UserLocalTime(datetime(2023, 1, 1, 12, 0, 0, tzinfo=tokyo_tz)),
         UserLocalTime(datetime(2023, 1, 1, 12, 10, 0, tzinfo=tokyo_tz)),
         True,
@@ -47,7 +47,7 @@ def chrome_session():
     return CompletedChromeSession(
         "github.com",
         "DeepSeek Chat Repository",
-        null_netflix_info,
+        None,
         UserLocalTime(datetime(2023, 1, 1, 12, 0, 0, tzinfo=tokyo_tz)),
         UserLocalTime(datetime(2023, 1, 1, 12, 5, 0, tzinfo=tokyo_tz)),
         productive=True,

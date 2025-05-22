@@ -54,11 +54,16 @@ class KeepAliveEngine:
     def iterate_loop(self):
         # TODO: Change so that it relies on datetime.now() having 10 sec elapsed.
         self.amount_used += 1  # not
-        print(f"in loop {self.amount_used} of 10 for {self.session.get_name()}")
-        if self.session.video_info:
-            print(
-                "[polling for video] Iterating loop for", self.session.video_info.get_name()
-            )
+        type_of_thing = isinstance(self.session, ProgramSession)
+        # if type_of_thing:
+        #     print("IS PROGRAM SESION")
+        # else:
+        #     print("IS DOMAIN SESSION")
+        # print(f"in loop {self.amount_used} of 10 for {self.session.get_name()}, ")
+        # if self.session.video_info:
+        #     print(
+        #         "[polling for video] Iterating loop for", self.session.video_info.get_name()
+        #     )
         if self._hit_max_window():
             self._pulse_add_ten()
             self.amount_used = 0
@@ -83,6 +88,7 @@ class KeepAliveEngine:
         Go into the session's Summary DAO entry and add ten sec.
         """
         self.recorder.add_ten_sec_to_end_time(self.session)
+        # pass  # Temporarily disabled
 
     def _add_partial_window(self, amount_used):
         """
@@ -91,6 +97,7 @@ class KeepAliveEngine:
         Note that the Recorder will just do nothing if 0 is sent. This keeps testing simple.
         """
         self.recorder.add_partial_window(amount_used, self.session)
+        # pass  # Temporarily disabled
 
     # For testing: methods to expose internal state
     def get_amount_used(self):
@@ -130,7 +137,7 @@ class ThreadedEngineContainer:
         Starts updates on the current session
         """
         if not self.is_running:
-            print("HERE 131ru")
+            # print("HERE 131ru")
             self.stop_event.clear()  # Clear the stop event instead of creating a new one
 
             self.hook_thread = threading.Thread(target=self._iterate_loop)
@@ -139,12 +146,14 @@ class ThreadedEngineContainer:
             self.is_running = True
 
     def _iterate_loop(self):
-        print(self.engine, "139ru")
+        # print(self.engine, "139ru")
         if self.engine is None:
             raise MissingEngineError()
-        print("while not stop event is set?", self.stop_event.is_set())
+        # print("while not stop event is set?", self.stop_event.is_set())
+        thread_id = threading.get_ident()
+        # print(f"Thread {thread_id}: {self.engine}, 139ru")
         while not self.stop_event.is_set():
-            print("HERE 140ru")
+            # print(f"Thread {thread_id}")
             self.engine.iterate_loop()  # a second has been used
             self.sleep_fn(self.interval)  # Sleep for 1 second
 

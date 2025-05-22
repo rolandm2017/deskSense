@@ -80,6 +80,8 @@ class SurveillanceManager:
 
         self.system_status_dao = SystemStatusDao(clock, self.regular_session)
 
+        self.arbiter.add_status_listener(self.system_status_dao)
+
         if is_test:
             pass
         else:
