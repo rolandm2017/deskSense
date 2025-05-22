@@ -126,7 +126,7 @@ async def lifespan(app: FastAPI):
     # when it gets past development and onto being a typical daily use
 
     chrome_service = await get_chrome_service()
-    arbiter = await get_activity_arbiter()
+    arbiter, system_status_dao = await get_activity_arbiter()
 
     user_facing_clock = UserFacingClock()
 
@@ -157,6 +157,7 @@ async def lifespan(app: FastAPI):
         arbiter,
         facades,
         message_receiver,
+        system_status_dao,
     )
     activity_tracker_state.manager.print_sys_status_info()
     activity_tracker_state.manager.start_trackers()

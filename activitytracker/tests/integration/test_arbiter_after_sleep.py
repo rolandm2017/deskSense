@@ -70,10 +70,16 @@ def activity_arbiter_and_setup(db_session_in_mem):
     final_loop = 7  # keep it under 10 so there isn't a final pulse
     durations_as_int.append(final_loop)
 
+    status_dao_clock = UserLocalTimeMockClock(times_for_status_dao_clock)
+
+    status_dao = SystemStatusDao(
+        cast(UserFacingClock, status_dao_clock), 10, db_session_in_mem
+    )
+
     threaded_container = MockEngineContainer(
         durations_as_int, ultrafast_interval_for_testing
     )
-    arbiter = ActivityArbiter(clock, threaded_container, KeepAliveEngine)
+    arbiter = ActivityArbiter(clock, status_dao, threaded_container, KeepAliveEngine)
 
     flush_and_reset_spy = Mock(side_effect=arbiter.flush_and_reset)
     arbiter.flush_and_reset = flush_and_reset_spy
@@ -113,12 +119,6 @@ def activity_arbiter_and_setup(db_session_in_mem):
         lambda session: session.ledger.add_ten_sec()
     )
 
-    status_dao_clock = UserLocalTimeMockClock(times_for_status_dao_clock)
-
-    status_dao = SystemStatusDao(
-        cast(UserFacingClock, status_dao_clock), 10, db_session_in_mem
-    )
-
     # Arranging Status Dao start state:
     status_dao.run_polling_loop()
     status_dao.run_polling_loop()
@@ -140,7 +140,7 @@ def activity_arbiter_and_setup(db_session_in_mem):
     # AND the times need to come from the sessions, like, align with them.
 
     arbiter.add_recorder_listener(recorder_spy)
-    arbiter.add_status_listener(status_dao)
+    # arbiter.add_status_listener(status_dao)
 
     assert arbiter.activity_recorder == recorder_spy, "Test setup conditions failed"
 

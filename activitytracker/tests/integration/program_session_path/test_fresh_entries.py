@@ -23,6 +23,7 @@ from activitytracker.arbiter.session_polling import KeepAliveEngine
 from activitytracker.config.definitions import window_push_length
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from activitytracker.db.dao.direct.system_status_dao import SystemStatusDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.models import DailyProgramSummary, ProgramSummaryLog
@@ -157,7 +158,13 @@ async def test_program_path_with_fresh_sessions(
 
     mock_container = MockEngineContainer(durations_for_keep_alive, short_pulse_interval)
 
-    activity_arbiter = ActivityArbiter(mock_user_facing_clock, mock_container, engine_type)
+    status_dao = SystemStatusDao(
+        cast(UserFacingClock, mock_user_facing_clock), 10, regular_session_maker
+    )
+
+    activity_arbiter = ActivityArbiter(
+        mock_user_facing_clock, status_dao, mock_container, engine_type
+    )
 
     asm_set_new_session_spy = Mock(
         side_effect=activity_arbiter.state_machine.set_new_session
@@ -184,6 +191,7 @@ async def test_program_path_with_fresh_sessions(
         activity_arbiter,
         facades,
         mock_message_receiver,
+        status_dao,
         is_test=True,
     )
 
@@ -238,7 +246,6 @@ async def test_program_path_with_fresh_sessions(
     p_logging_dao.find_session = find_session_spy
 
     logging_dao_execute_and_read_one_or_none_spy = Mock()
-    # This happens in
     logging_dao_execute_and_read_one_or_none_spy.return_value = next(just_made_logs)
     p_logging_dao.execute_and_read_one_or_none = logging_dao_execute_and_read_one_or_none_spy
 

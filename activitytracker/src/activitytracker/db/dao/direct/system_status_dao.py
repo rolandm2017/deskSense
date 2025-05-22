@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from collections import deque
 
 from sqlalchemy import select, update
@@ -5,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 
 from datetime import datetime, timedelta
 
-from typing import List
+from typing import List, Optional, Tuple
 
 from activitytracker.db.dao.utility_dao_mixin import UtilityDaoMixin
 from activitytracker.db.models import SystemStatus

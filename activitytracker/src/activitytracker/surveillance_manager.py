@@ -47,6 +47,7 @@ class SurveillanceManager:
         arbiter: ActivityArbiter,
         facades,
         message_receiver: MessageReceiver,
+        system_status_dao: SystemStatusDao,
         is_test=False,
     ):
         """
@@ -78,19 +79,13 @@ class SurveillanceManager:
             program_summary_logger, chrome_summary_logger, self.async_session_maker
         )
 
-        polling_interval = 10  # sec
-
-        self.system_status_dao = SystemStatusDao(
-            clock, polling_interval, self.regular_session
-        )
-
-        self.arbiter.add_status_listener(self.system_status_dao)
+        self.system_status_dao = system_status_dao
 
         if is_test:
             pass
         else:
             self.program_online_polling = AsyncPeriodicTask(
-                self.system_status_dao, polling_interval
+                self.system_status_dao, system_status_dao.polling_interval_in_sec
             )
             self.program_online_polling.start()
 

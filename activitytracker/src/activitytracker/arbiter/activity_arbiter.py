@@ -19,6 +19,7 @@ class ActivityArbiter:
     def __init__(
         self,
         user_facing_clock,
+        sleep_detector,
         threaded_container: ThreadedEngineContainer,
         engine_class=KeepAliveEngine,
     ):
@@ -35,6 +36,7 @@ class ActivityArbiter:
         i.e. "chrome_event_update" and "self.current_is_chrome" before e22d5badb15
         """
         self.state_machine = StateMachine(user_facing_clock)
+        self.sleep_detector = sleep_detector
         self.engine_class = engine_class
         # Threaded container must receive the pulse interval outside of here.
         # The engine is then set using the add and replace methods.
@@ -68,14 +70,6 @@ class ActivityArbiter:
             session_copy = snapshot_obj_for_tests(session)
             self.activity_recorder.on_new_session(session_copy)
 
-    def add_status_listener(self, listener):
-        if hasattr(listener, "get_latest_write_time") and hasattr(
-            listener, "detect_awaken_from_sleep"
-        ):
-            self.status_dao = listener
-        else:
-            raise AttributeError("Listener method was missing")
-
     def set_program_state(self, event: ProgramSession):
         self.transition_state(event)
 
@@ -101,7 +95,7 @@ class ActivityArbiter:
         # since, like, 8 hours of inactivity?" via the StatusDao
 
         looks_like_sleep_occurred, time_before_lg_gap = (
-            self.status_dao.detect_awakening_from_sleep()
+            self.sleep_detector.detect_awakening_from_sleep()
         )
         print("** ** detect sleep results:", looks_like_sleep_occurred, time_before_lg_gap)
 
@@ -134,7 +128,7 @@ class ActivityArbiter:
             # But also YAGNI? SO try it without polling first, until
             # you discover a problem.
             # TODO: VLC player can surely be left with just play, pause.
-            latest_status_write = self.status_dao.get_latest_write_time()
+            latest_status_write = self.sleep_detector.get_latest_write_time()
             self.state_machine.set_new_session(new_session, latest_status_write)
 
             concluded_session = self.state_machine.get_concluded_session()

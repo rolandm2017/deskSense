@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 
 from activitytracker.arbiter.activity_arbiter import ActivityArbiter
 from activitytracker.arbiter.activity_recorder import ActivityRecorder
+from activitytracker.db.dao.direct.system_status_dao import SystemStatusDao
 from activitytracker.debug.debug_overlay import Overlay
 from activitytracker.debug.ui_notifier import UINotifier
 from activitytracker.object.classes import TabChangeEventWithLtz
@@ -78,15 +79,22 @@ def reconstructed_tab_changes():
 transience_for_test = 100
 
 
+from typing import cast
+
+from activitytracker.util.clock import UserFacingClock
+
+
 @pytest.fixture
-def chrome_service_fixture_with_arbiter():
+def chrome_service_fixture_with_arbiter(db_session_in_mem):
     # Initialize ChromeService with the mocked DAOs
 
     # recorder = ActivityRecorder(program_summary_dao, chrome_summary_dao)
     clock = SystemClock()
     threaded_container = MockEngineContainer([], 0.1)
 
-    arbiter = ActivityArbiter(clock, threaded_container)
+    system_status_dao = SystemStatusDao(cast(UserFacingClock, clock), 10, db_session_in_mem)
+
+    arbiter = ActivityArbiter(clock, system_status_dao, threaded_container)
 
     # Create mock listeners with side effects to record calls
     mock_program_listener = MagicMock()
@@ -210,7 +218,7 @@ async def test_add_arrival_to_queue(
 
 
 @pytest.mark.asyncio
-async def test_debounce_process(reconstructed_tab_changes):
+async def test_debounce_process(reconstructed_tab_changes, db_session_in_mem):
     # NOTE: This test BREAKS if you remove async/await!
 
     # You must set everything back up here, because it uses a specific ms delay for debounce
@@ -222,7 +230,9 @@ async def test_debounce_process(reconstructed_tab_changes):
     clock = SystemClock()
     threaded_container = MockEngineContainer([], 0.1)
 
-    arbiter = ActivityArbiter(clock, threaded_container)
+    system_status_dao = SystemStatusDao(cast(UserFacingClock, clock), 10, db_session_in_mem)
+
+    arbiter = ActivityArbiter(clock, system_status_dao, threaded_container)
 
     # Create mock listeners with side effects to record calls
     mock_program_listener = MagicMock()
@@ -329,7 +339,10 @@ async def test_queue_with_debounce(reconstructed_tab_changes, chrome_service_wit
     assert mock_log_tab_event.call_count == num_in_first_batch
 
     # Clean up any pending task
-    if chrome_svc.tab_queue.debounce_timer and not chrome_svc.tab_queue.debounce_timer.done():
+    if (
+        chrome_svc.tab_queue.debounce_timer
+        and not chrome_svc.tab_queue.debounce_timer.done()
+    ):
         chrome_svc.tab_queue.debounce_timer.cancel()
 
     for event in group2:
@@ -345,7 +358,10 @@ async def test_queue_with_debounce(reconstructed_tab_changes, chrome_service_wit
     assert mock_log_tab_event.call_count == num_in_second_batch + num_in_first_batch
 
     # Clean up any pending task
-    if chrome_svc.tab_queue.debounce_timer and not chrome_svc.tab_queue.debounce_timer.done():
+    if (
+        chrome_svc.tab_queue.debounce_timer
+        and not chrome_svc.tab_queue.debounce_timer.done()
+    ):
         chrome_svc.tab_queue.debounce_timer.cancel()
 
 

@@ -134,6 +134,7 @@ async def get_activity_arbiter():
     from activitytracker.arbiter.activity_arbiter import ActivityArbiter
     from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
     from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
+    from activitytracker.db.dao.direct.system_status_dao import SystemStatusDao
     from activitytracker.debug.debug_overlay import Overlay
 
     user_facing_clock = UserFacingClock()
@@ -143,7 +144,14 @@ async def get_activity_arbiter():
     program_summary_dao = ProgramSummaryDao(program_logging_dao, regular_session_maker)
     chrome_summary_dao = ChromeSummaryDao(chrome_logging_dao, regular_session_maker)
 
+    polling_interval = 10
+    system_status_dao = SystemStatusDao(
+        user_facing_clock, polling_interval, regular_session_maker
+    )
+
     container = ThreadedEngineContainer(1)
+
+    # TODO: Get the SystemStatusDao into here
 
     global _arbiter_instance
     if not _arbiter_instance:
@@ -157,7 +165,9 @@ async def get_activity_arbiter():
         chrome_service = await get_chrome_service()
 
         _arbiter_instance = ActivityArbiter(
-            user_facing_clock=user_facing_clock, threaded_container=container
+            user_facing_clock=user_facing_clock,
+            sleep_detector=system_status_dao,
+            threaded_container=container,
         )
 
         _arbiter_instance.add_ui_listener(ui_layer.on_state_changed)
@@ -176,7 +186,7 @@ async def get_activity_arbiter():
     # else:
     # print(f"Reusing arbiter instance with id: {id(_arbiter_instance)}")
 
-    return _arbiter_instance
+    return _arbiter_instance, system_status_dao
 
 
 async def get_chrome_service(

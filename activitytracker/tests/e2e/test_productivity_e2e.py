@@ -208,7 +208,11 @@ async def test_program_tracker_to_arbiter(
 
     container = MockEngineContainer(durations)
 
-    activity_arbiter = ActivityArbiter(mock_user_facing_clock, container)
+    sys_status_dao = SystemStatusDao(
+        cast(UserFacingClock, mock_user_facing_clock), 10, regular_session_maker
+    )
+
+    activity_arbiter = ActivityArbiter(mock_user_facing_clock, sys_status_dao, container)
     transition_state_mock = Mock()
     # Unhook it so nothing past entry is called
     activity_arbiter.transition_state = transition_state_mock
@@ -230,6 +234,7 @@ async def test_program_tracker_to_arbiter(
         activity_arbiter,
         facades,
         mock_message_receiver,
+        sys_status_dao,
         True,
     )
 
@@ -353,7 +358,7 @@ async def test_program_tracker_to_arbiter(
 @pytest.mark.asyncio
 # @pytest.mark.skip
 # @pytest.mark.skip("working on below test")
-async def test_chrome_svc_to_arbiter_path():
+async def test_chrome_svc_to_arbiter_path(regular_session_maker):
     chrome_events_for_test = chrome_data
 
     # chrome_dao = ChromeDao(plain_asm)
@@ -367,7 +372,11 @@ async def test_chrome_svc_to_arbiter_path():
 
     container = MockEngineContainer([])
 
-    activity_arbiter = ActivityArbiter(irrelevant_clock, container)
+    sys_status_dao = SystemStatusDao(
+        cast(UserFacingClock, irrelevant_clock), 10, regular_session_maker
+    )
+
+    activity_arbiter = ActivityArbiter(irrelevant_clock, sys_status_dao, container)
 
     chrome_service = ChromeService(irrelevant_clock, arbiter=activity_arbiter)
 
@@ -785,13 +794,11 @@ async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
 
     container = MockEngineContainer([int(x) for x in session_durations_in_sec])
 
-    activity_arbiter = ActivityArbiter(clock_again, container)
-
     sys_status_dao = SystemStatusDao(
         cast(UserFacingClock, clock_again), 10, regular_session_maker
     )
 
-    activity_arbiter.add_status_listener(sys_status_dao)
+    activity_arbiter = ActivityArbiter(clock_again, sys_status_dao, container)
 
     #
     # # Mocks in order of appearance:
