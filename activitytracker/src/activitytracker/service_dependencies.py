@@ -15,6 +15,7 @@ from activitytracker.db.dao.queuing.keyboard_dao import KeyboardDao
 from activitytracker.db.dao.queuing.mouse_dao import MouseDao
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
+from activitytracker.db.dao.queuing.video_logs_dao import VideoLoggingDao
 from activitytracker.db.database import async_session_maker, regular_session_maker
 from activitytracker.debug.ui_notifier import UINotifier
 from activitytracker.facade.facade_singletons import (
@@ -135,14 +136,17 @@ async def get_activity_arbiter():
     from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
     from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
     from activitytracker.db.dao.direct.system_status_dao import SystemStatusDao
+    from activitytracker.db.dao.direct.video_summary_dao import VideoSummaryDao
     from activitytracker.debug.debug_overlay import Overlay
 
     user_facing_clock = UserFacingClock()
-    chrome_logging_dao = ChromeLoggingDao(regular_session_maker)
     program_logging_dao = ProgramLoggingDao(regular_session_maker)
+    chrome_logging_dao = ChromeLoggingDao(regular_session_maker)
+    video_logging_dao = VideoLoggingDao(regular_session_maker)
 
     program_summary_dao = ProgramSummaryDao(program_logging_dao, regular_session_maker)
     chrome_summary_dao = ChromeSummaryDao(chrome_logging_dao, regular_session_maker)
+    video_summary_dao = VideoSummaryDao(video_logging_dao, regular_session_maker)
 
     polling_interval = 10
     system_status_dao = SystemStatusDao(
@@ -159,7 +163,12 @@ async def get_activity_arbiter():
         overlay = Overlay()
         ui_layer = UINotifier(overlay)
         activity_recorder = ActivityRecorder(
-            program_logging_dao, chrome_logging_dao, program_summary_dao, chrome_summary_dao
+            program_logging_dao,
+            chrome_logging_dao,
+            video_logging_dao,
+            program_summary_dao,
+            chrome_summary_dao,
+            video_summary_dao,
         )
         print("Creating new ActivityArbiter")
         chrome_service = await get_chrome_service()

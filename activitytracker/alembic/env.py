@@ -14,7 +14,7 @@ load_dotenv()
 # access to the values within the .ini file in use.
 config = context.config
 
-db_url = os.getenv("DATABASE_URL")
+db_url = os.getenv("SYNCHRONOUS_DB_URL")
 
 if db_url is None:
     raise ValueError("Failed to get database url")

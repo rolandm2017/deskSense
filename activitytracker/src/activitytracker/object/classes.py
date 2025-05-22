@@ -204,7 +204,7 @@ class ChromeSession(ActivitySession):
         completed = CompletedChromeSession(
             domain=self.domain,
             detail=self.detail,
-            video_info=self.video_info
+            video_info=self.video_info,
             #
             start_time=self.start_time,
             end_time=end_time,
@@ -304,21 +304,25 @@ class VideoSession(ActivitySession):
 
     def from_program_session(self, session: ProgramSession):
         """Works with a VLC Info object"""
-        return VideoSession(session.video_info.file,
-                            session.video_info.folder,
-                            session.video_info,
-                            session.start_time,
-                            session.productive,
-                            session.video_info.get_name())
-    
-    def from_chrome_session(self, session: ChromeSession)
-        return VideoSession(session.video_info.get_name(),
-                            # FIXME: How does Netflix media title get in here?
-                            session.video_info.channel_name,
-                            session.video_info,
-                            session.start_time,
-                            session.productive,
-                            session.video_info.get_name())
+        return VideoSession(
+            session.video_info.file,
+            session.video_info.folder,
+            session.video_info,
+            session.start_time,
+            session.productive,
+            session.video_info.get_name(),
+        )
+
+    def from_chrome_session(self, session: ChromeSession):
+        return VideoSession(
+            session.video_info.get_name(),
+            # FIXME: How does Netflix media title get in here?
+            session.video_info.channel_name,
+            session.video_info,
+            session.start_time,
+            session.productive,
+            session.video_info.get_name(),
+        )
 
     def to_completed(self, end_time: UserLocalTime):
         """Similar to to_completed in the other type"""
@@ -333,11 +337,14 @@ class VideoSession(ActivitySession):
         completed.ledger = self.ledger
         return completed
 
+
 class CompletedVideoSession(VideoSession):
     end_time: UserLocalTime
     duration: timedelta
 
-     def __init__(self, media_title, channel_info, video_info, start_time, end_time, productive, name):
+    def __init__(
+        self, media_title, channel_info, video_info, start_time, end_time, productive, name
+    ):
         super().__init__(media_title, channel_info, video_info, start_time, productive, name)
         self.end_time = end_time
         self.duration = end_time - start_time

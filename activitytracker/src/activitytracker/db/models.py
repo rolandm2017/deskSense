@@ -81,7 +81,7 @@ class DailyVideoSummary(DailySummaryBase):
     A summation of every instance of time spent watching video
     """
 
-     __tablename__ = "daily_video_summaries"
+    __tablename__ = "daily_video_summaries"
 
     media_name: Mapped[str] = mapped_column(String, nullable=True)
     # YouTube only
@@ -99,6 +99,7 @@ class DailyVideoSummary(DailySummaryBase):
             else "No date"
         )
         return f"Video: {self.media_name}, \tHours: {self.hours_spent}, \tDate: {formatted_date}"
+
 
 class SummaryLogBase(Base):
     """
@@ -160,8 +161,9 @@ class DomainSummaryLog(SummaryLogBase):
             f"gathering_date={self.gathering_date}, created_at={self.created_at})"
         )
 
+
 class VideoSummaryLog(SummaryLogBase):
-      __tablename__ = "video_logs"
+    __tablename__ = "video_Qlogs"
 
     media_name: Mapped[str] = mapped_column(String)
     # YouTube only
@@ -178,6 +180,7 @@ class VideoSummaryLog(SummaryLogBase):
             f"start_time={self.start_time}, end_time={self.end_time}, "
             f"gathering_date={self.gathering_date}, created_at={self.created_at})"
         )
+
 
 class TypingSession(Base):
     __tablename__ = "typing_sessions"

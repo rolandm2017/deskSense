@@ -1,29 +1,32 @@
 # daily_summary_dao.py
-from sqlalchemy import select, func
+import traceback
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import sessionmaker
 
-import traceback
-from datetime import datetime, timedelta, time
+from datetime import datetime, time, timedelta
+
 from typing import List
 
-from activitytracker.config.definitions import keep_alive_cycle_length, window_push_length
-from activitytracker.db.dao.utility_dao_mixin import UtilityDaoMixin
+from activitytracker.config.definitions import (
+    keep_alive_cycle_length,
+    window_push_length,
+)
 from activitytracker.db.dao.summary_dao_mixin import SummaryDaoMixin
+from activitytracker.db.dao.utility_dao_mixin import UtilityDaoMixin
 from activitytracker.db.models import DailyDomainSummary
-
-from activitytracker.tz_handling.dao_objects import FindTodaysEntryConverter
 from activitytracker.object.classes import ChromeSession
-
-from activitytracker.util.console_logger import ConsoleLogger
-from activitytracker.util.errors import NegativeTimeError, ImpossibleToGetHereError
-from activitytracker.util.const import SECONDS_PER_HOUR
+from activitytracker.tz_handling.dao_objects import FindTodaysEntryConverter
 from activitytracker.tz_handling.time_formatting import (
-    get_start_of_day_from_datetime,
     attach_tz_to_all,
     attach_tz_to_obj,
+    get_start_of_day_from_datetime,
     get_start_of_day_from_ult,
 )
+from activitytracker.util.console_logger import ConsoleLogger
+from activitytracker.util.const import SECONDS_PER_HOUR
+from activitytracker.util.errors import ImpossibleToGetHereError, NegativeTimeError
 from activitytracker.util.time_wrappers import UserLocalTime
 
 
@@ -80,7 +83,7 @@ class ChromeSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
 
     def read_day(self, day: UserLocalTime) -> List[DailyDomainSummary]:
         """Read all entries for the given day."""
-        return self.do_read_day(day)
+        return self.do_read_day(day)  # type: ignore
 
     def read_all(self) -> List[DailyDomainSummary]:
         """Read all entries."""

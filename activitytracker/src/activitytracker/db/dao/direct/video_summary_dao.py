@@ -86,11 +86,11 @@ class VideoSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
 
     def read_past_week(self, right_now: UserLocalTime) -> List[DailyVideoSummary]:
         # +1 because weekday() counts from Monday=0
-        return self.do_read_past_week(right_now)
+        return self.do_read_past_week(right_now)  # type: ignore
 
     def read_day(self, day: UserLocalTime) -> List[DailyVideoSummary]:
         """Read all entries for the given day."""
-        return self.do_read_day(day)
+        return self.do_read_day(day)  # type: ignore
 
     def read_all(self) -> List[DailyVideoSummary]:
         """Read all entries."""
