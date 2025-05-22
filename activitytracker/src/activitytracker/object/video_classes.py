@@ -20,6 +20,14 @@ class VideoInfo(ABC):
         """Grab some identifying info"""
         pass
 
+    @abstractmethod
+    def get_name_with_platform(self):
+        pass
+
+    @abstractmethod
+    def get_platform_title(self):
+        pass
+
 
 class YouTubeInfo(VideoInfo):
     def __init__(self, channel_name, player_state) -> None:
@@ -28,7 +36,13 @@ class YouTubeInfo(VideoInfo):
         self.channel_name = channel_name
 
     def get_name(self):
-        return f"YouTubeInfo: {self.channel_name}"
+        return f"{self.channel_name}"
+
+    def get_name_with_platform(self):
+        return f"YouTube Info: {self.channel_name}"
+
+    def get_platform_title(self):
+        return "YouTube"
 
     def __str__(self) -> str:
         return self.get_name()
@@ -41,7 +55,13 @@ class NetflixInfo(VideoInfo):
         self.video_id = video_id
 
     def get_name(self):
-        return f"NetflixInfo: {self.title}"
+        return f"{self.title}"
+
+    def get_name_with_platform(self):
+        return f"Netflix Info: {self.video_id}"
+
+    def get_platform_title(self):
+        return "Netflix"
 
     def __str__(self) -> str:
         return self.get_name()
@@ -56,7 +76,13 @@ class VlcInfo(VideoInfo):
         self.folder = folder
 
     def get_name(self):
-        return f"VLC: {self.file}"
+        return f"{self.file}"
+
+    def get_name_with_platform(self):
+        return f"VLC Info: {self.file}"
+
+    def get_platform_title(self):
+        return "VLC Media Player"
 
     def __str__(self) -> str:
         return f"{self.file}, {self.folder}, {self.player_state}"

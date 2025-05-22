@@ -155,7 +155,8 @@ class ActivityRecorder:
         if session is not None and session.video_info:
             self.logger.log_video_info("add_partial_window", session.video_info)
             video_session = VideoSession.from_other_type(session)
-            self.video_logging_dao.finalize_log(video_session)
+            completed_video_session = video_session.to_completed(session.end_time)
+            self.video_logging_dao.finalize_log(completed_video_session)
         if isinstance(session, ProgramSession):
             self.program_logging_dao.finalize_log(session)
         elif isinstance(session, ChromeSession):

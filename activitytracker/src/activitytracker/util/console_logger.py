@@ -108,9 +108,9 @@ class ConsoleLogger:
 
     def log_video_info(self, location_arg: str, video_obj: VideoInfo):
         message = (
-            f"[{location_arg}] video info: "
-            + video_obj.get_name()
-            + " and state: "
+            f"[{location_arg}] "
+            + f"{video_obj.get_name()}"
+            + " with state: "
             + video_obj.player_state.value
         )
         self.log_blue(message)

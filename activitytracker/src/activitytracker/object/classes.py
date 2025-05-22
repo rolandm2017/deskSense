@@ -281,11 +281,15 @@ class VideoSession(ActivitySession):
     # start_time: UserLocalTime  # exists in ActivitySession
     video_info: YouTubeInfo | NetflixInfo | VlcInfo
 
-    def __init__(self, media_title, channel_info, video_info, start_time, productive, name):
-        super().__init__(start_time, productive, name)
+    def __init__(self, media_title, channel_info, video_info, start_time, productive):
+        super().__init__(start_time, productive, media_title)
         self.media_title = media_title
         self.channel_info = channel_info  # Or FolderName or Series?
         self.video_info = video_info
+
+    def get_name(self):
+        """Useful because a string id property isn't common across all classes"""
+        return self.media_title
 
     @staticmethod
     def from_other_type(session: ProgramSession | ChromeSession):
@@ -307,7 +311,6 @@ class VideoSession(ActivitySession):
             session.video_info,
             session.start_time,
             session.productive,
-            session.video_info.get_name(),
         )
 
     @staticmethod
@@ -319,7 +322,6 @@ class VideoSession(ActivitySession):
             session.video_info,
             session.start_time,
             session.productive,
-            session.video_info.get_name(),
         )
 
     def to_completed(self, end_time: UserLocalTime):
@@ -342,9 +344,9 @@ class CompletedVideoSession(VideoSession):
     duration: timedelta
 
     def __init__(
-        self, media_title, channel_info, video_info, start_time, end_time, productive, name
+        self, media_title, channel_info, video_info, start_time, end_time, productive
     ):
-        super().__init__(media_title, channel_info, video_info, start_time, productive, name)
+        super().__init__(media_title, channel_info, video_info, start_time, productive)
         self.end_time = end_time
         self.duration = end_time - start_time
 

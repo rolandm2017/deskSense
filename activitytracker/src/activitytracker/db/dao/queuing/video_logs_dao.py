@@ -64,6 +64,7 @@ class VideoLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
 
         log_entry = VideoSummaryLog(
             media_name=session.media_title,
+            platform=session.video_info.get_platform_title(),
             # Assumes n sec will be added later
             hours_spent=0,
             start_time=initializer.base_start_time_as_utc,

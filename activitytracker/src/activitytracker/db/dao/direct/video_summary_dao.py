@@ -15,6 +15,7 @@ from activitytracker.db.dao.summary_dao_mixin import SummaryDaoMixin
 from activitytracker.db.dao.utility_dao_mixin import UtilityDaoMixin
 from activitytracker.db.models import DailyVideoSummary
 from activitytracker.object.classes import CompletedVideoSession, VideoSession
+from activitytracker.object.video_classes import YouTubeInfo
 
 # from activitytracker.object.classes import VideoInfo  # TODO?
 from activitytracker.tz_handling.dao_objects import FindTodaysEntryConverter
@@ -47,15 +48,22 @@ class VideoSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
         self._create(video_session, video_session.start_time.dt)
 
     def _create(self, session: VideoSession, start_time: datetime):
-        # self.logger.log_white("[debug] creating session: " + session.exe_path
+        # self.logger.log_white("[debug] creating session: " + session.media_name
         today_start = get_start_of_day_from_datetime(start_time)
+
+        channel_name = (
+            session.video_info.channel_name
+            if isinstance(session.video_info, YouTubeInfo)
+            else None
+        )
 
         new_entry = DailyVideoSummary(
             media_name=session.media_title,
+            channel_name=channel_name,
+            platform=session.video_info.get_platform_title(),
             # TODO: If YouTube, insert the channel name.
             # If Netflix, insert the movie name or series title.
             # If VLC, insert the movie name or series title.
-            channel_name=None,
             hours_spent=0,
             gathering_date=today_start,
             gathering_date_local=today_start.replace(tzinfo=None),
@@ -76,10 +84,10 @@ class VideoSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
 
         return self._execute_read_with_restored_tz(query, video_session.start_time)
 
-    def create_find_all_from_day_query(self, exe_path, start_of_day, end_of_day):
+    def create_find_all_from_day_query(self, media_title, start_of_day, end_of_day):
         # Use LTZ
         return select(DailyVideoSummary).where(
-            DailyVideoSummary.exe_path_as_id == exe_path,
+            DailyVideoSummary.media_name == media_title,
             DailyVideoSummary.gathering_date >= start_of_day,
             DailyVideoSummary.gathering_date < end_of_day,
         )
@@ -117,9 +125,9 @@ class VideoSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
             query, video_session.media_title, video_session.start_time.dt
         )
 
-    def select_where_time_equals_for_session(self, some_time, target_exe_path):
+    def select_where_time_equals_for_session(self, some_time, media_title):
         return select(DailyVideoSummary).where(
-            DailyVideoSummary.exe_path_as_id == target_exe_path,
+            DailyVideoSummary.media_name == media_title,
             DailyVideoSummary.gathering_date.op("=")(some_time),
         )
 
