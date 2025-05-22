@@ -1,27 +1,27 @@
-from sqlalchemy import select, or_, text, func
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.orm import DeclarativeMeta
 
-from typing import TypeVar, Callable, Type
+from datetime import datetime, timedelta
 
-from datetime import timedelta, datetime
+from typing import Callable, Type, TypeVar
 
 from activitytracker.config.definitions import window_push_length
-
-from activitytracker.object.classes import ProgramSession, ChromeSession
+from activitytracker.object.classes import ChromeSession, ProgramSession, VideoSession
 from activitytracker.tz_handling.dao_objects import FindTodaysEntryConverter
-
 from activitytracker.tz_handling.time_formatting import (
-    attach_tz_to_obj,
-    get_start_of_day_from_ult,
-    get_start_of_day_from_datetime,
     attach_tz_to_all,
+    attach_tz_to_obj,
+    get_start_of_day_from_datetime,
+    get_start_of_day_from_ult,
+)
+from activitytracker.util.const import SECONDS_PER_HOUR
+from activitytracker.util.errors import (
+    DatabaseProtectionError,
+    ImpossibleToGetHereError,
+    NegativeTimeError,
 )
 from activitytracker.util.log_dao_helper import group_logs_by_name
-from activitytracker.util.errors import ImpossibleToGetHereError
 from activitytracker.util.time_wrappers import UserLocalTime
-from activitytracker.util.const import SECONDS_PER_HOUR
-from activitytracker.util.errors import DatabaseProtectionError, NegativeTimeError
-
 
 T = TypeVar("T", bound=DeclarativeMeta)
 
@@ -77,7 +77,10 @@ class SummaryDaoMixin:
         return attach_tz_to_all(result, day.dt.tzinfo)
 
     def add_partial_window(
-        self, session: ProgramSession | ChromeSession, duration_in_sec: int, name_filter
+        self,
+        session: ProgramSession | ChromeSession | VideoSession,
+        duration_in_sec: int,
+        name_filter,
     ):
         if duration_in_sec == 0:
             return  # No work to do here

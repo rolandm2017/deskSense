@@ -76,6 +76,30 @@ class DailyDomainSummary(DailySummaryBase):
         return f"Domain: {self.domain_name}, \tHours: {self.hours_spent}, \tDate: {formatted_date}"
 
 
+class DailyVideoSummary(DailySummaryBase):
+    """
+    A summation of every instance of time spent watching video
+    """
+
+     __tablename__ = "daily_video_summaries"
+
+    media_name: Mapped[str] = mapped_column(String, nullable=True)
+    # YouTube only
+    channel_name: Mapped[str] = mapped_column(String, nullable=True)
+    # YouTube, VLC, Netflix
+    platform: Mapped[str] = mapped_column(String)
+
+    def get_name(self):
+        return self.media_name
+
+    def __str__(self):
+        formatted_date = (
+            self.gathering_date.strftime("%Y-%m-%d")
+            if self.gathering_date is not None
+            else "No date"
+        )
+        return f"Video: {self.media_name}, \tHours: {self.hours_spent}, \tDate: {formatted_date}"
+
 class SummaryLogBase(Base):
     """
     Base class for summary logs with common fields
@@ -136,6 +160,24 @@ class DomainSummaryLog(SummaryLogBase):
             f"gathering_date={self.gathering_date}, created_at={self.created_at})"
         )
 
+class VideoSummaryLog(SummaryLogBase):
+      __tablename__ = "video_logs"
+
+    media_name: Mapped[str] = mapped_column(String)
+    # YouTube only
+    channel_name: Mapped[str] = mapped_column(String, nullable=True)
+    # YouTube, VLC, Netflix
+    platform: Mapped[str] = mapped_column(String)
+
+    def get_name(self):
+        return self.media_name
+
+    def __str__(self):
+        return (
+            f"VideoSummaryLog(media_name={self.media_name}, hours_spent={self.hours_spent}, "
+            f"start_time={self.start_time}, end_time={self.end_time}, "
+            f"gathering_date={self.gathering_date}, created_at={self.created_at})"
+        )
 
 class TypingSession(Base):
     __tablename__ = "typing_sessions"
