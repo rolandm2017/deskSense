@@ -88,14 +88,14 @@ export class ViewingTracker {
         throw new Error("Incorrect media type for YouTube reporting");
     }
 
-    reportNetflixWatchPage(watchPageId: string) {
+    reportNetflixWatchPage(fullUrl: string, urlId: string) {
         // Netflix pages show their eventual url in an instant, but the program
         // must wait for the user to tell the program which media it is.
         // Hence a "reportWatchPage" from Netflix can only reliably contain
         // the videoId from the URL.
-        const partiallyDescribedMedia: string = watchPageId;
+        const partiallyDescribedMedia: string = urlId;
         this.partialNetflixDescriptor = partiallyDescribedMedia;
-        this.api.netflix.reportNetflixPage(partiallyDescribedMedia);
+        this.api.netflix.reportNetflixPage(fullUrl, partiallyDescribedMedia);
     }
 
     markPlaying() {

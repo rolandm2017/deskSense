@@ -24,10 +24,11 @@ export class MessageRelay {
         });
     }
 
-    alertTrackerOfNetflixPage(pageId: string) {
+    alertTrackerOfNetflixPage(fullUrl: string, pageId: string) {
         chrome.runtime.sendMessage({
             event: "netflix_page_opened",
             media: {
+                fullUrl: fullUrl,
                 pageId: pageId,
             },
         });
@@ -85,7 +86,7 @@ export class HistoryRecorder {
     sendPageDetailsToViewingTracker(url: string) {
         const watchPageId = this.makeUrlId(url);
         console.log("Sending watch page ID", watchPageId);
-        this.relay.alertTrackerOfNetflixPage(watchPageId);
+        this.relay.alertTrackerOfNetflixPage(url, watchPageId);
     }
 
     recordEnteredMediaTitle(

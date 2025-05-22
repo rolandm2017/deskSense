@@ -115,10 +115,16 @@ class NetflixApi {
         this.logger = new PlatformLogger("Netflix");
     }
 
-    reportNetflixPage(videoId: string) {
-        // TODO
-
-        this.sendPayload(netflixUrl, { videoId });
+    reportNetflixPage(fullUrl: string, urlId: string) {
+        // It's only the urlId because that's the only
+        // thing that doesn't require waiting for user input.
+        const payload = {
+            tabTitle: "Unknown Watch Page",
+            url: fullUrl,
+            urlId,
+            startTime: new Date(),
+        };
+        this.sendPayload(netflixUrl, payload);
     }
 
     // TODO: If they select the wrong thing form the dropdown,
@@ -137,7 +143,7 @@ class NetflixApi {
             eventTime: new Date(),
 
             playerState: "playing",
-            // I don't think I care about the timestamp.
+            // I don't care about the timestamp.
             // Like, what if they did a bunch of rewinding?
             // The timestamp would be messed and not representative of
             // their time spent watching content that day.

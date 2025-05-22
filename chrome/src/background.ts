@@ -24,12 +24,20 @@ function helpDeveloperNoticeMissingNpmRunBuild() {
     const hoursSinceBuild = Math.round(
         (now.getTime() - lastBuiltTimestamp.getTime()) / (1000 * 60 * 60)
     );
+    console.log(lastBuiltTimestamp, "aaaaaa 27ru");
+    console.log(now.getTime() - lastBuiltTimestamp.getTime());
     const minutesSinceBuild = Math.round(
         (now.getTime() - lastBuiltTimestamp.getTime()) / (1000 * 60)
     );
 
+    const secondsSinceBuild = Math.round(
+        (now.getTime() - lastBuiltTimestamp.getTime()) / 1000
+    );
+
     if (hoursSinceBuild === 0) {
-        console.log(`Loading build from ${minutesSinceBuild} minutes ago`);
+        console.log(
+            `Loading build from ${minutesSinceBuild} minutes and ${secondsSinceBuild} seconds ago`
+        );
     } else {
         console.log(`Loading build from ${hoursSinceBuild} hours ago`);
     }
@@ -203,7 +211,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             viewingTracker.currentMedia
         );
     } else if (message.event === "netflix_page_opened") {
-        viewingTracker.reportNetflixWatchPage(message.media.pageId);
+        viewingTracker.reportNetflixWatchPage(
+            message.media.fullUrl,
+            message.media.pageId
+        );
     }
     // Other existing message handling...
 });
