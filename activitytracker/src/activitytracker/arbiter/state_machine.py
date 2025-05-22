@@ -143,6 +143,14 @@ class StateMachine:
         assert self.prior_state is not None
         return self.prior_state.session
 
+    def conclude_without_replacement_at_time(self, given_time: UserLocalTime):
+        if self.current_state is None:
+            raise ValueError("Expected a current state")
+        self._conclude_session(self.current_state, given_time, given_time)
+        session_for_daos = self.current_state.session
+        self.current_state = None  # Reset loop state
+        return session_for_daos
+
     def conclude_without_replacement(self):
         """For wrap up when the computer is powering off to avoid sessions left open"""
         if self.current_state is None:

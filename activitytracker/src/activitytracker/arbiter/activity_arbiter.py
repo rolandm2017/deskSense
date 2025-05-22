@@ -69,7 +69,9 @@ class ActivityArbiter:
             self.activity_recorder.on_new_session(session_copy)
 
     def add_status_listener(self, listener):
-        if hasattr(listener, "get_latest_write_time"):
+        if hasattr(listener, "get_latest_write_time") and hasattr(
+            listener, "detect_awaken_from_sleep"
+        ):
             self.status_dao = listener
         else:
             raise AttributeError("Listener method was missing")
@@ -97,7 +99,16 @@ class ActivityArbiter:
 
         # TODO: Check in here, "Is this session the first one
         # since, like, 8 hours of inactivity?" via the StatusDao
+
+        looks_like_sleep_occurred, time_before_lg_gap = (
+            self.status_dao.detect_awaken_from_sleep()
+        )
+
+        if looks_like_sleep_occurred:
+            self.flush_and_reset(time_before_lg_gap)
+
         self.notify_display_update(new_session)
+
         if self.state_machine.current_state:
             if self.current_pulse is None:
                 raise ValueError("First loop failed in Activity Arbiter")
@@ -152,6 +163,18 @@ class ActivityArbiter:
             print("Starting pulse in init loop")
 
             self.current_pulse.start()
+
+    def flush_and_reset(self, last_status_before_sleep):
+        """Interrupts the current loop of transition_state to shut it down early."""
+        # TODO: Want that the currently active session is closed at um, when?
+        # I guess whenever the last status log before the large gap was.
+        # TODO: And then, the whole thing should be reset so that it can go
+        # into the else block again
+        concluded_session = self.state_machine.conclude_without_replacement_at_time(
+            last_status_before_sleep
+        )
+        self.current_pulse.stop()
+        self.notify_summary_dao(concluded_session)
 
     def shutdown(self):
         """Concludes the current state/session without adding a new one"""

@@ -192,9 +192,9 @@ def test_measure_gaps_between_pulses(db_session_in_mem):
 
     gaps = dao._measure_gaps_between_pulses()
 
-    assert all([x == 1 for x in gaps[:-1]])
+    assert all([x["duration"] == 1 for x in gaps[:-1]])
 
-    assert gaps[-1] == 1200 - 6
+    assert gaps[-1]["duration"] == 1200 - 6
 
 
 def test_has_large_gaps_in_pulses(db_session_in_mem):
@@ -214,9 +214,10 @@ def test_has_large_gaps_in_pulses(db_session_in_mem):
     for _ in range(7):
         dao.run_polling_loop()
 
-    large_gap_exists = dao.a_large_gap_exists_between_pulses()
+    large_gap_exists, starting_side_of_gap = dao.a_large_gap_exists_between_pulses()
 
     assert large_gap_exists is True
+    assert starting_side_of_gap == dt7
 
 
 def test_sleep_detector(db_session_in_mem):
@@ -240,12 +241,14 @@ def test_sleep_detector(db_session_in_mem):
 
     assert len(dao.logs_queue) == 4
 
-    assert dao.a_large_gap_exists_between_pulses() is False
+    result = dao.a_large_gap_exists_between_pulses()
+    assert result[0] is False and result[1] is None
 
     dao.run_polling_loop()
     dao.run_polling_loop()
 
-    assert dao.a_large_gap_exists_between_pulses() is False
+    result = dao.a_large_gap_exists_between_pulses()
+    assert result[0] is False and result[1] is None
 
     dao.run_polling_loop()  # 20 minute gap
 
@@ -253,4 +256,5 @@ def test_sleep_detector(db_session_in_mem):
 
     print(gaps)
 
-    assert dao.a_large_gap_exists_between_pulses() is True
+    result = dao.a_large_gap_exists_between_pulses()
+    assert result[0] is True and result[1] is dt7

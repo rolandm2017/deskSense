@@ -1,34 +1,36 @@
 # tests/integration/test_arbiter.py
-import pytest
-from unittest.mock import Mock, MagicMock
-from datetime import timedelta, datetime
 import math
 
-from activitytracker.config.definitions import keep_alive_cycle_length
+import pytest
+from unittest.mock import MagicMock, Mock
+
+from datetime import datetime, timedelta
+
+from typing import cast
+
 from activitytracker.arbiter.activity_arbiter import ActivityArbiter
 from activitytracker.arbiter.activity_recorder import ActivityRecorder
-from activitytracker.object.classes import ProgramSession, ChromeSession
-
 from activitytracker.arbiter.session_polling import KeepAliveEngine
-
+from activitytracker.config.definitions import keep_alive_cycle_length
+from activitytracker.db.dao.direct.system_status_dao import SystemStatusDao
+from activitytracker.object.classes import ChromeSession, ProgramSession
+from activitytracker.util.clock import UserFacingClock
 from activitytracker.util.time_wrappers import UserLocalTime
-from ..helper.copy_util import snapshot_obj_for_tests_with_ledger
-
 
 from ..data.arbiter_events import (
-    test_sessions,
     minutes_between_start_and_2nd_to_last,
-    test_events_elapsed_time_in_sec,
-    times_for_system_clock,
     minutes_between_start_and_final_time_change,
+    test_events_elapsed_time_in_sec,
+    test_sessions,
+    times_for_system_clock,
 )
-from ..mocks.mock_clock import MockClock
-from ..mocks.mock_engine_container import MockEngineContainer
-
 from ..helper.confirm_chronology import (
     assert_test_data_is_chronological_with_tz,
     get_durations_from_test_data,
 )
+from ..helper.copy_util import snapshot_obj_for_tests_with_ledger
+from ..mocks.mock_clock import MockClock, UserLocalTimeMockClock
+from ..mocks.mock_engine_container import MockEngineContainer
 
 # ###
 # ##
@@ -40,7 +42,7 @@ from ..helper.confirm_chronology import (
 
 
 @pytest.fixture
-def activity_arbiter_and_setup():
+def activity_arbiter_and_setup(db_session_in_mem):
     """
     Pytest fixture that returns a fresh ActivityArbiter instance for each test.
     Mocks the dependencies to avoid actual database or system interactions.
@@ -93,7 +95,10 @@ def activity_arbiter_and_setup():
         lambda session: session.ledger.add_ten_sec()
     )
 
+    status_dao = SystemStatusDao(cast(UserFacingClock, clock), 10, db_session_in_mem)
+
     arbiter.add_recorder_listener(recorder_spy)
+    arbiter.add_status_listener(status_dao)
 
     assert arbiter.activity_recorder == recorder_spy, "Test setup conditions failed"
 

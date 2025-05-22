@@ -42,7 +42,7 @@ class SystemStatusDao(UtilityDaoMixin):
         self.polling_interval_in_sec = (
             polling_interval  # Must be the same as Periodic Task's
         )
-        self.logs_queue = deque(maxlen=20)
+        self.logs_queue = deque(maxlen=10)
         self.latest_id = None
         self.latest_write_time = None
         self.logger = ConsoleLogger()
@@ -112,6 +112,9 @@ class SystemStatusDao(UtilityDaoMixin):
                 session.rollback()
                 self.logger.log_yellow(f"Error updating status record: {str(e)}")
 
+    def detect_awaken_from_sleep(self):
+        return self.a_large_gap_exists_between_pulses()
+
     def a_large_gap_exists_between_pulses(self):
         """
         Intends to detect times when the computer was asleep.
@@ -129,9 +132,9 @@ class SystemStatusDao(UtilityDaoMixin):
 
         measured_gaps = self._measure_gaps_between_pulses()
         for gap in measured_gaps:
-            if gap > acceptable_duration:
-                return True
-        return False
+            if gap["duration"] > acceptable_duration:
+                return True, gap["start_of_gap"]
+        return False, None
 
     def _measure_gaps_between_pulses(self):
         gaps = []
@@ -143,7 +146,7 @@ class SystemStatusDao(UtilityDaoMixin):
             current = item
             duration = current - prev
             duration = duration.total_seconds()
-            gaps.append(duration)
+            gaps.append({"duration": duration, "start_of_gap": prev})
 
             prev = current
 
