@@ -56,12 +56,14 @@ class NetflixTabChange(UtcDtTabChange):
 
 
 class NetflixPlayerChange(BaseModel):
-    tabTitle: str
     eventTime: datetime
     videoId: str
     # url: str  # full url - is this really needed?
     showName: str
     playerState: PlayerState
+
+    def __str__(self) -> str:
+        return super().__str__()
 
 
 class TabChangeEventWithUnknownTz(BaseModel):

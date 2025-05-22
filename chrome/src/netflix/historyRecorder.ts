@@ -18,6 +18,7 @@ export class MessageRelay {
         chrome.runtime.sendMessage({
             event: "netflix_media_selected",
             media: {
+                url: viewingToTrack.url,
                 videoId: viewingToTrack.videoId,
                 mediaTitle: viewingToTrack.mediaTitle,
             },
@@ -142,7 +143,8 @@ export class HistoryRecorder {
     formatWatchEntryAsViewing(entry: WatchEntry): NetflixViewingSansState {
         const viewing = new NetflixViewingSansState(
             entry.urlId,
-            entry.showName
+            entry.showName,
+            entry.url
         );
         return viewing;
     }

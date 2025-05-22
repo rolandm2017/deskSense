@@ -123,8 +123,6 @@ chrome.runtime.onMessage.addListener(
             console.log("[autoplay] netflix");
             // TODO
             console.warn("Netflix autoplay not yet handled");
-        } else {
-            console.warn("Unknown event:", message);
         }
     }
 );
@@ -196,6 +194,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.event === "netflix_media_selected") {
         // Create a new instance in this context with the same data
         const partialWatchEntry = {
+            url: message.media.url,
             urlId: message.media.videoId,
             showName: message.media.mediaTitle,
             playerState: message.media.playerState,
@@ -203,9 +202,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const recreatedMedia = new NetflixViewing(
             partialWatchEntry.urlId,
             partialWatchEntry.showName,
+            partialWatchEntry.url,
             partialWatchEntry.playerState
         );
         viewingTracker.setCurrent(recreatedMedia);
+        viewingTracker.reportFilledNetflixWatch(recreatedMedia);
         console.log(
             "Background received media state:",
             viewingTracker.currentMedia

@@ -7,7 +7,6 @@ export interface YouTubePayload {
 
 export interface NetflixPayload {
     videoId: string;
-    urlId: string;
     showName: string;
 }
 

@@ -1,6 +1,7 @@
 // api.ts
 import { DomainLogger, PlatformLogger } from "./endpointLogging";
 import { NetflixPayload, YouTubePayload } from "./interface/interfaces";
+import { NetflixViewing } from "./videoCommon/visits";
 
 const DESKSENSE_BACKEND_URL = "http://localhost:8000";
 
@@ -115,15 +116,32 @@ class NetflixApi {
         this.logger = new PlatformLogger("Netflix");
     }
 
-    reportNetflixPage(fullUrl: string, urlId: string) {
-        // It's only the urlId because that's the only
+    reportPartialNetflixPage(fullUrl: string, watchPageId: string) {
+        // It's only the watchPageId because that's the only
         // thing that doesn't require waiting for user input.
         const payload = {
             tabTitle: "Unknown Watch Page",
             url: fullUrl,
-            urlId,
+            videoId: watchPageId,
             startTime: new Date(),
         };
+        this.sendPayload(netflixUrl, payload);
+    }
+
+    reportFilledNetflixWatchPage({
+        videoId,
+        mediaTitle,
+        playerState,
+    }: NetflixViewing) {
+        const payload = {
+            tabTitle: mediaTitle,
+            videoId,
+            url: "https://www.netflix.com/watch/" + videoId,
+            playerState,
+            startTime: new Date(),
+        };
+        // I guess if the server receives an update, it can propagate the
+        // updated info to all logs related to that previously mysterious ID
         this.sendPayload(netflixUrl, payload);
     }
 
@@ -133,12 +151,12 @@ class NetflixApi {
     // click Confirm. And the program will end the incorrect session,
     // start them on the right one. They lose 2-3 min tracked in
     // the wrong spot.
-    sendPlayEvent({ urlId, showName }: NetflixPayload) {
+    sendPlayEvent({ videoId, showName }: NetflixPayload) {
         // The server knows which VideoSession it's modifying because
         // the currently active tab deliverable, contained the ...
         console.log("Would send play event for Netflix");
         const payload = {
-            urlId,
+            videoId: videoId,
             showName,
             eventTime: new Date(),
 
@@ -153,13 +171,13 @@ class NetflixApi {
         this.sendPayload(netflixPlayerStateUrl, payload);
     }
 
-    sendPauseEvent({ urlId, showName }: NetflixPayload) {
+    sendPauseEvent({ videoId, showName }: NetflixPayload) {
         // TODO: Align inputs definitions in chrome/api and server.py
 
         this.logger.logPauseEvent(showName);
         console.log("Would send pause event for Netflix");
         const payload = {
-            urlId,
+            videoId,
             showName,
             eventTime: new Date(),
 

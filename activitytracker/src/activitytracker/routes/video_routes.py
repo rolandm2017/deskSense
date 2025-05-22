@@ -106,7 +106,7 @@ async def receive_youtube_tab_change_event(
 
 @router.post("/youtube/state", status_code=status.HTTP_204_NO_CONTENT)
 async def receive_youtube_player_state(
-    tab_change_event: YouTubePlayerChange,
+    player_change_event: YouTubePlayerChange,
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service),
 ):
@@ -114,24 +114,24 @@ async def receive_youtube_player_state(
 
     logger.log_purple("[LOG] YouTube state received")
     try:
-        print("State received", tab_change_event.playerState)
-        field_has_utc_tzinfo_else_throw(tab_change_event.eventTime)
+        print("State received", player_change_event.playerState)
+        field_has_utc_tzinfo_else_throw(player_change_event.eventTime)
         user_id = 1  # temp until i have more than 1 user
 
-        # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
-        # capture_chrome_data_for_tests(tab_change_event)
+        # NOTE: player_change_event.startTime is in UTC at this point, a naive tz
+        # capture_chrome_data_for_tests(player_change_event)
         tz_for_user = timezone_service.get_tz_for_user(user_id)
 
         # TODO: One way to solve getting the YouTubeEvent into the Arbiter,
         # is to attach it to a ChromeSession, because well, it is a chrome session.
         # And then assume that the transit makes it through OK.
-        updated_tab_change_event: PlayerStateChangeEventWithLtz = (
+        updated_player_change_event: PlayerStateChangeEventWithLtz = (
             timezone_service.youtube.convert_tz_for_state_change(
-                tab_change_event, tz_for_user
+                player_change_event, tz_for_user
             )
         )
 
-        chrome_service.log_player_state_event(updated_tab_change_event)
+        chrome_service.log_player_state_event(updated_player_change_event)
         return  # Returns 204 No Content
     except Exception as e:
         print(e)
@@ -152,6 +152,7 @@ async def receive_netflix_tab_change_event(
         # TODO: Align inputs definitions in chrome/api and server.py
 
         print(f"received {tab_change_event.videoId}")
+        print("[video routes]", tab_change_event, "tab_change_event")
         field_has_utc_tzinfo_else_throw(tab_change_event.startTime)
 
         user_id = 1  # temp until i have more than 1 user
@@ -176,7 +177,7 @@ async def receive_netflix_tab_change_event(
 
 @router.post("/netflix/state", status_code=status.HTTP_204_NO_CONTENT)
 async def receive_netflix_player_state(
-    tab_change_event: NetflixPlayerChange,
+    player_change_event: NetflixPlayerChange,
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service),
 ):
@@ -184,24 +185,25 @@ async def receive_netflix_player_state(
     try:
         # TODO: Align inputs definitions in chrome/api and server.py
 
-        print("State received", tab_change_event.showName)
-        field_has_utc_tzinfo_else_throw(tab_change_event.eventTime)
+        print("State received", player_change_event.showName)
+        print("[video routes]", player_change_event, "player_change_event")
+        field_has_utc_tzinfo_else_throw(player_change_event.eventTime)
         user_id = 1  # temp until i have more than 1 user
 
-        # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
-        # capture_chrome_data_for_tests(tab_change_event)
+        # NOTE: player_change_event.startTime is in UTC at this point, a naive tz
+        # capture_chrome_data_for_tests(player_change_event)
         tz_for_user = timezone_service.get_tz_for_user(user_id)
 
         # TODO: One way to solve getting the NetflixEvent into the Arbiter,
         # is to attach it to a ChromeSession, because well, it is a chrome session.
         # And then assume that the transit makes it through OK.
-        updated_tab_change_event: PlayerStateChangeEventWithLtz = (
+        updated_player_change_event: PlayerStateChangeEventWithLtz = (
             timezone_service.netflix.convert_tz_for_state_change(
-                tab_change_event, tz_for_user
+                player_change_event, tz_for_user
             )
         )
 
-        chrome_service.log_player_state_event(updated_tab_change_event)
+        chrome_service.log_player_state_event(updated_player_change_event)
         return  # Returns 204 No Content
     except Exception as e:
         print(e)

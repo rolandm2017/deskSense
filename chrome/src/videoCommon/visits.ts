@@ -95,7 +95,14 @@ export class ViewingTracker {
         // the videoId from the URL.
         const partiallyDescribedMedia: string = urlId;
         this.partialNetflixDescriptor = partiallyDescribedMedia;
-        this.api.netflix.reportNetflixPage(fullUrl, partiallyDescribedMedia);
+        this.api.netflix.reportPartialNetflixPage(
+            fullUrl,
+            partiallyDescribedMedia
+        );
+    }
+
+    reportFilledNetflixWatch(netflixMedia: NetflixViewing) {
+        this.api.netflix.reportFilledNetflixWatchPage(netflixMedia);
     }
 
     markPlaying() {
@@ -185,11 +192,13 @@ export class YouTubeViewing implements IYouTubeViewing {
 export class NetflixViewingSansState implements IStatelessNetflixViewing {
     videoId: string;
     mediaTitle: string;
-    constructor(videoId: string, showName: string) {
+    url: string;
+    constructor(videoId: string, showName: string, url: string) {
         // the Url ID becomes the VideoID.
         this.videoId = videoId;
         // the showName becomes the mediaTitle.
         this.mediaTitle = showName;
+        this.url = url;
     }
 }
 
@@ -204,9 +213,10 @@ export class NetflixViewing
     constructor(
         videoId: string,
         showName: string,
+        url: string,
         playerState: "playing" | "paused"
     ) {
-        super(videoId, showName);
+        super(videoId, showName, url);
         // the Url ID becomes the VideoID.
         this.videoId = videoId;
         // the showName becomes the mediaTitle.
@@ -216,7 +226,6 @@ export class NetflixViewing
 
     convertToPayload(): NetflixPayload {
         return {
-            urlId: this.videoId,
             showName: this.mediaTitle,
             videoId: this.videoId,
         };
