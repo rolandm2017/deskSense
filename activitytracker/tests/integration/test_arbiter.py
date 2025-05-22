@@ -72,7 +72,9 @@ def activity_arbiter_and_setup(db_session_in_mem):
     threaded_container = MockEngineContainer(
         durations_as_int, ultrafast_interval_for_testing
     )
-    arbiter = ActivityArbiter(clock, threaded_container, KeepAliveEngine)
+    status_dao = SystemStatusDao(cast(UserFacingClock, clock), 10, db_session_in_mem)
+
+    arbiter = ActivityArbiter(clock, status_dao, threaded_container, KeepAliveEngine)
 
     # Add UI listener
     arbiter.add_ui_listener(ui_layer.on_state_changed)
@@ -95,10 +97,7 @@ def activity_arbiter_and_setup(db_session_in_mem):
         lambda session: session.ledger.add_ten_sec()
     )
 
-    status_dao = SystemStatusDao(cast(UserFacingClock, clock), 10, db_session_in_mem)
-
     arbiter.add_recorder_listener(recorder_spy)
-    arbiter.add_status_listener(status_dao)
 
     assert arbiter.activity_recorder == recorder_spy, "Test setup conditions failed"
 

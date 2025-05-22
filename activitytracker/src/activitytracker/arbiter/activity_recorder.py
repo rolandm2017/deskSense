@@ -61,9 +61,8 @@ class ActivityRecorder:
             session_exists_already = self.video_summary_dao.find_todays_entry_for_media(
                 video_session
             )
-            if session_exists_already:
-                return
-            self.video_summary_dao.start_session(video_session)
+            if not session_exists_already:
+                self.video_summary_dao.start_session(video_session)
         if isinstance(session, ProgramSession):
             # Regardless of the session being brand new today or a repeat,
             # must start a new logging session, to note the time being added to the summary.

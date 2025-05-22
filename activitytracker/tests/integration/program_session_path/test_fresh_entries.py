@@ -24,8 +24,10 @@ from activitytracker.config.definitions import window_push_length
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from activitytracker.db.dao.direct.system_status_dao import SystemStatusDao
+from activitytracker.db.dao.direct.video_summary_dao import VideoSummaryDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from activitytracker.db.dao.queuing.video_logs_dao import VideoLoggingDao
 from activitytracker.db.models import DailyProgramSummary, ProgramSummaryLog
 from activitytracker.facade.facade_singletons import (
     get_keyboard_facade_instance,
@@ -200,8 +202,17 @@ async def test_program_path_with_fresh_sessions(
     )
     surveillance_manager.program_tracker.window_change_handler = window_change_spy
 
+    video_logging_dao = VideoLoggingDao(regular_session_maker)
+    video_summary_dao = VideoSummaryDao(video_logging_dao, regular_session_maker)
+
     activity_recorder = ActivityRecorder(
-        p_logging_dao, chrome_logging_dao, p_summary_dao, chrome_sum_dao, True
+        p_logging_dao,
+        chrome_logging_dao,
+        video_logging_dao,
+        p_summary_dao,
+        chrome_sum_dao,
+        video_summary_dao,
+        True,
     )
 
     #

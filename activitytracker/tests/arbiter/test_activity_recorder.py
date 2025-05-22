@@ -7,8 +7,10 @@ from datetime import datetime, timedelta
 from activitytracker.arbiter.activity_recorder import ActivityRecorder
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from activitytracker.db.dao.direct.video_summary_dao import VideoSummaryDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from activitytracker.db.dao.queuing.video_logs_dao import VideoLoggingDao
 from activitytracker.object.classes import (
     CompletedChromeSession,
     CompletedProgramSession,
@@ -60,8 +62,10 @@ def mock_daos():
     return {
         "program_logging": AsyncMock(spec=ProgramLoggingDao),
         "chrome_logging": AsyncMock(spec=ChromeLoggingDao),
+        "video_logging": AsyncMock(spec=VideoLoggingDao),
         "program_summary": AsyncMock(spec=ProgramSummaryDao),
         "chrome_summary": AsyncMock(spec=ChromeSummaryDao),
+        "video_summary": AsyncMock(spec=VideoSummaryDao),
     }
 
 
@@ -77,8 +81,10 @@ def activity_recorder(mock_daos, mock_clock):
     return ActivityRecorder(
         program_logging_dao=mock_daos["program_logging"],
         chrome_logging_dao=mock_daos["chrome_logging"],
+        video_logging_dao=mock_daos["video_logging"],
         program_summary_dao=mock_daos["program_summary"],
         chrome_summary_dao=mock_daos["chrome_summary"],
+        video_summary_dao=mock_daos["video_summary"],
     )
 
 

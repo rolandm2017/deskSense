@@ -2,23 +2,24 @@ from unittest.mock import Mock
 
 import asyncio
 
+import pytz
 import time
 from datetime import datetime
-import pytz
 
-
-from activitytracker.arbiter.session_polling import ThreadedEngineContainer
-from activitytracker.arbiter.session_polling import KeepAliveEngine
-
-from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
-from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-
-from activitytracker.object.classes import ProgramSession, ChromeSession
 from activitytracker.arbiter.activity_recorder import ActivityRecorder
-from activitytracker.util.time_wrappers import UserLocalTime
+from activitytracker.arbiter.session_polling import (
+    KeepAliveEngine,
+    ThreadedEngineContainer,
+)
+from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from activitytracker.db.dao.direct.video_summary_dao import VideoSummaryDao
+from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from activitytracker.db.dao.queuing.video_logs_dao import VideoLoggingDao
+from activitytracker.object.classes import ChromeSession, ProgramSession
 from activitytracker.util.clock import UserFacingClock
+from activitytracker.util.time_wrappers import UserLocalTime
 
 from .mock_engine_container import MockEngineContainer
 
@@ -37,8 +38,16 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
 
     clock = UserFacingClock()
 
+    video_logging_dao = VideoLoggingDao(mock_regular_session_maker)
+    video_summary_dao = VideoSummaryDao(video_logging_dao, mock_regular_session_maker)
+
     recorder = ActivityRecorder(
-        p_logging_dao, chrome_logging_dao, p_summary_dao, chrome_sum_dao
+        p_logging_dao,
+        chrome_logging_dao,
+        video_logging_dao,
+        p_summary_dao,
+        chrome_sum_dao,
+        video_summary_dao,
     )
 
     window_push_mock = Mock()

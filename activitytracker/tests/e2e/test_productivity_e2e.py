@@ -18,9 +18,11 @@ from activitytracker.config.definitions import imported_local_tz_str, window_pus
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from activitytracker.db.dao.direct.system_status_dao import SystemStatusDao
+from activitytracker.db.dao.direct.video_summary_dao import VideoSummaryDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
+from activitytracker.db.dao.queuing.video_logs_dao import VideoLoggingDao
 from activitytracker.facade.facade_singletons import (
     get_keyboard_facade_instance,
     get_mouse_facade_instance,
@@ -778,11 +780,16 @@ async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
 
     debug = True
 
+    video_logging_dao = VideoLoggingDao(regular_session_maker)
+    video_summary_dao = VideoSummaryDao(video_logging_dao, regular_session_maker)
+
     activity_recorder = TestActivityRecorder(
         program_logging_dao,
         chrome_logging_dao,
+        video_logging_dao,
         program_summary_dao,
         chrome_summary_dao,
+        video_summary_dao,
         debug,
         durations_to_override=partials_for_mock_recorder,
     )

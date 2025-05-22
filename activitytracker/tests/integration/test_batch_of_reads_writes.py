@@ -5,8 +5,10 @@ from typing import cast
 from activitytracker.arbiter.activity_recorder import ActivityRecorder
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from activitytracker.db.dao.direct.video_summary_dao import VideoSummaryDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from activitytracker.db.dao.queuing.video_logs_dao import VideoLoggingDao
 from activitytracker.db.models import SummaryLogBase
 from activitytracker.object.classes import ChromeSession, ProgramSession
 from activitytracker.util.const import SECONDS_PER_HOUR
@@ -45,11 +47,16 @@ def setup_recorder_etc(regular_session_maker):
     program_summary_dao = ProgramSummaryDao(program_logging_dao, regular_session_maker)
     chrome_summary_dao = ChromeSummaryDao(chrome_logging_dao, regular_session_maker)
 
+    video_logging_dao = VideoLoggingDao(regular_session_maker)
+    video_summary_dao = VideoSummaryDao(video_logging_dao, regular_session_maker)
+
     recorder = ActivityRecorder(
         program_logging_dao,
         chrome_logging_dao,
+        video_logging_dao,
         program_summary_dao,
         chrome_summary_dao,
+        video_summary_dao,
         True,
     )
 
