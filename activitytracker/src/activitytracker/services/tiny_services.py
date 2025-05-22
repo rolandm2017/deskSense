@@ -53,13 +53,13 @@ class YouTubeTimezoneService:
         return self._make_player_state_change_event(tab_event, youtube_info, new_tz)
 
     def _make_player_state_change_event(
-        self, tab_event: YouTubePlayerChange, youtube_info: YouTubeInfo, new_tz
+        self, player_event: YouTubePlayerChange, youtube_info: YouTubeInfo, new_tz
     ):
         # FIXME: Need to make use of new_tz on the eventTime field
-        new_datetime_with_tz: datetime = convert_to_timezone(tab_event.eventTime, new_tz)
+        new_datetime_with_tz: datetime = convert_to_timezone(player_event.eventTime, new_tz)
 
         state_change_event = PlayerStateChangeEventWithLtz(
-            tab_event.tabTitle,
+            player_event.tabTitle,
             UserLocalTime(new_datetime_with_tz),
             youtube_info,
         )
@@ -91,13 +91,13 @@ class NetflixTimezoneService:
         return self._make_player_state_change_event(tab_event, netflix_info, new_tz)
 
     def _make_player_state_change_event(
-        self, tab_event: NetflixPlayerChange, netflix_info: NetflixInfo, new_tz
+        self, player_event: NetflixPlayerChange, netflix_info: NetflixInfo, new_tz
     ):
         # FIXME: Need to make use of new_tz on the eventTime field
-        new_datetime_with_tz: datetime = convert_to_timezone(tab_event.eventTime, new_tz)
+        new_datetime_with_tz: datetime = convert_to_timezone(player_event.eventTime, new_tz)
 
         state_change_event = PlayerStateChangeEventWithLtz(
-            tab_event.tabTitle,
+            player_event.showName,
             UserLocalTime(new_datetime_with_tz),
             netflix_info,
         )

@@ -204,7 +204,6 @@ export class PlayPauseDispatch {
             this.tracker.markAutoplayEventWaiting();
         }
         // https://www.youtube.com/watch?v=Pt2Pj3JZ9Ow&t=300s exists on sender obj
-        console.log(sender, "205ru");
         const senderVideoId = getYouTubeVideoId(sender.tab?.url);
         const pageEventAlreadyReported =
             this.pageAlreadyReported(senderVideoId);
@@ -220,7 +219,6 @@ export class PlayPauseDispatch {
             this.tracker.markAutoplayEventWaiting();
         }
         // https://www.youtube.com/watch?v=Pt2Pj3JZ9Ow&t=300s exists on sender obj
-        console.log(sender, "226ru");
         let senderVideoId;
         if (!sender.tab || !sender.tab.url) {
             console.warn(

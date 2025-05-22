@@ -55,7 +55,7 @@ class NetflixInfo(VideoInfo):
         self.video_id = video_id
 
     def get_name(self):
-        return f"{self.title}"
+        return f"{self.video_id}"
 
     def get_name_with_platform(self):
         return f"Netflix Info: {self.video_id}"

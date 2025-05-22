@@ -315,10 +315,15 @@ class VideoSession(ActivitySession):
 
     @staticmethod
     def from_chrome_session(session: ChromeSession):
+        channel_name = (
+            session.video_info.channel_name
+            if isinstance(session.video_info, YouTubeInfo)
+            else None
+        )
         return VideoSession(
             session.video_info.get_name(),
             # FIXME: How does Netflix media title get in here?
-            session.video_info.channel_name,
+            channel_name,
             session.video_info,
             session.start_time,
             session.productive,
