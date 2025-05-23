@@ -66,6 +66,7 @@ class ActivityRecorder:
     def on_new_session(self, session: ProgramSession | ChromeSession):
         # TODO: do an audit of logging time and summary time.
         if session.video_info:
+            print(session.video_info, "68ru")
 
             self.logger.log_video_info("on_new_session", session.video_info)
             video_session = VideoSession.from_other_type(session)
@@ -123,6 +124,7 @@ class ActivityRecorder:
         print(session.video_info, "-- in add ten sec")
 
         if session.video_info:
+            print(session.video_info, "127ru")
             self.logger.log_video_info("add_ten_sec_to_end_time", session.video_info)
             video_session = VideoSession.from_other_type(session)
             if isinstance(video_session, NetflixInfo):
@@ -163,6 +165,7 @@ class ActivityRecorder:
         print(session.video_info, "-- in add partial window")
 
         if session.video_info:
+            print(session.video_info, "166ru")
             self.logger.log_video_info("add_partial_window", session.video_info)
             video_session: VideoSession = VideoSession.from_other_type(session)
             if isinstance(video_session, NetflixInfo):
@@ -184,6 +187,7 @@ class ActivityRecorder:
         self, session: CompletedProgramSession | CompletedChromeSession | None
     ):
         if session is not None and session.video_info:
+            print(session.video_info, "187ru")
             self.logger.log_video_info("add_partial_window", session.video_info)
             video_session = VideoSession.from_other_type(session)
             completed_video_session = video_session.to_completed(session.end_time)

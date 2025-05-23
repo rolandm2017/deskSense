@@ -1,17 +1,16 @@
+from zoneinfo import ZoneInfo
+
 import pytest
 from unittest.mock import patch
 
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
-
-
-from activitytracker.services.tiny_services import TimezoneService
 
 from activitytracker.config.definitions import (
+    daylight_savings_tz_offset,
     local_time_zone,
     regular_tz_offset,
-    daylight_savings_tz_offset,
 )
+from activitytracker.services.timezone_service import TimezoneService
 from activitytracker.util.clock import UserFacingClock
 from activitytracker.util.time_wrappers import UserLocalTime
 

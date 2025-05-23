@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+# pydantic_dto.py
+from pydantic import BaseModel, field_validator
 
 from datetime import datetime
 
@@ -27,17 +28,31 @@ class VideoContentEvent(BaseModel):
     """Lives here to make everything that inherits from it a VideoContentEvent"""
 
 
-class YouTubeTabChange(UtcDtTabChange):
+class PlayerStateMixin:
+    """Mixin to handle PlayerState validation"""
+
+    @field_validator("playerState", mode="before")
+    @classmethod
+    def validate_player_state(cls, v):
+        if isinstance(v, str):
+            try:
+                return PlayerState(v)
+            except ValueError:
+                raise ValueError(f"Invalid PlayerState: {v}")
+        return v
+
+
+class YouTubeTabChange(UtcDtTabChange, PlayerStateMixin):
     """Documents the user using a YouTube Watch page."""
 
     # NOTE that on May 19, this TabChange event meant ANY YouTube page.
 
-    # videoId: str  # The VideoID cannot be known. There is no VideoID.
+    videoId: str
     channel: str
     playerState: PlayerState
 
 
-class YouTubePlayerChange(BaseModel):
+class YouTubePlayerChange(BaseModel, PlayerStateMixin):
     tabTitle: str
     eventTime: datetime
     videoId: str
@@ -47,15 +62,16 @@ class YouTubePlayerChange(BaseModel):
     playerState: PlayerState  # Will be "paused" or "playing"
 
 
-class NetflixTabChange(UtcDtTabChange):
+class NetflixTabChange(UtcDtTabChange, PlayerStateMixin):
     """Documents the user using a Netflix Watch page."""
 
     # At the time a user lands on the Netflix Watch page, the only info
     # the program will have is the videoId, until the user inputs media info by hand.
     videoId: str
+    playerState: PlayerState
 
 
-class NetflixPlayerChange(BaseModel):
+class NetflixPlayerChange(BaseModel, PlayerStateMixin):
     eventTime: datetime
     videoId: str
     # url: str  # full url - is this really needed?

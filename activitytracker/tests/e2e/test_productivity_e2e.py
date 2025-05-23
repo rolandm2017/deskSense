@@ -35,7 +35,7 @@ from activitytracker.object.classes import (
 )
 from activitytracker.services.chrome_service import ChromeService
 from activitytracker.services.dashboard_service import DashboardService
-from activitytracker.services.tiny_services import TimezoneService
+from activitytracker.services.timezone_service import TimezoneService
 from activitytracker.surveillance_manager import FacadeInjector, SurveillanceManager
 from activitytracker.tz_handling.time_formatting import convert_to_utc
 from activitytracker.util.clock import UserFacingClock

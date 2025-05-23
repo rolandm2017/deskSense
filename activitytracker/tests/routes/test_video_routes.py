@@ -23,7 +23,7 @@ from activitytracker.routes.video_routes import (
     receive_youtube_tab_change_event,
 )
 from activitytracker.services.chrome_service import ChromeService
-from activitytracker.services.tiny_services import TimezoneService
+from activitytracker.services.timezone_service import TimezoneService
 
 
 class TestVideoRoutes:
@@ -110,6 +110,7 @@ class TestVideoRoutes:
             url="https://www.netflix.com/watch/12345",
             startTime=datetime.now(timezone.utc),
             videoId="12345",
+            playerState=PlayerState.PAUSED,
         )
 
         # Call the route handler directly
@@ -169,6 +170,7 @@ class TestVideoRoutes:
             url="https://www.youtube.com/watch?v=abcdef",
             startTime=datetime.now(),  # No timezone info
             channel="TestChannel",
+            videoId="abcdef",
             playerState=PlayerState.PAUSED,
         )
 

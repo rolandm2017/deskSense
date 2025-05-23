@@ -1,29 +1,29 @@
 # dashboard_service.py
-from datetime import datetime, timedelta, timezone, date
-from typing import List, TypedDict, Dict, Tuple
+from datetime import date, datetime, timedelta, timezone
 
-from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from typing import Dict, List, Tuple, TypedDict
 
-from activitytracker.services.tiny_services import TimezoneService
-from activitytracker.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
-from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from activitytracker.config.definitions import productive_apps, productive_sites
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
+from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from activitytracker.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
 from activitytracker.db.models import (
     DailyDomainSummary,
     DailyProgramSummary,
     ProgramSummaryLog,
     TimelineEntryObj,
 )
-from activitytracker.config.definitions import productive_sites, productive_apps
-from activitytracker.util.console_logger import ConsoleLogger
-from activitytracker.util.clock import UserFacingClock
-from activitytracker.util.time_wrappers import UserLocalTime
-from activitytracker.util.dashboard_svc_mixin import WeekCalculationMixin
+from activitytracker.services.timezone_service import TimezoneService
 from activitytracker.tz_handling.time_formatting import (
     format_for_local_time,
     get_start_of_day_from_datetime,
 )
+from activitytracker.util.clock import UserFacingClock
+from activitytracker.util.console_logger import ConsoleLogger
+from activitytracker.util.dashboard_svc_mixin import WeekCalculationMixin
+from activitytracker.util.time_wrappers import UserLocalTime
 
 
 class DashboardService(WeekCalculationMixin):

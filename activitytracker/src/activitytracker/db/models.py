@@ -187,6 +187,14 @@ class VideoSummaryLog(SummaryLogBase):
 
 
 class MysteryMedia(Base):
+    """
+    Table contains Netflix Watch Page IDs that did not have an associated
+    media title at the time of their arrival in the Arbiter.
+
+    They are stored for later identification when the media title shows up
+    with the associated Video ID.
+    """
+
     __tablename__ = "mystery_media"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)

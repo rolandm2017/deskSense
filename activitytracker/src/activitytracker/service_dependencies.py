@@ -74,7 +74,7 @@ async def get_chrome_logging_dao() -> ChromeLoggingDao:
 
 
 async def get_timezone_service() -> TimezoneService:
-    from activitytracker.services.tiny_services import TimezoneService
+    from activitytracker.services.timezone_service import TimezoneService
 
     return TimezoneService()
 

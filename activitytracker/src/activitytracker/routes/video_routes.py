@@ -1,4 +1,4 @@
-# server.py
+# video_routes.py
 import traceback
 
 from fastapi import (
@@ -52,10 +52,7 @@ from activitytracker.service_dependencies import (
 )
 from activitytracker.services.chrome_service import ChromeService
 from activitytracker.services.dashboard_service import DashboardService
-from activitytracker.services.tiny_services import (
-    CaptureSessionService,
-    TimezoneService,
-)
+from activitytracker.services.timezone_service import TimezoneService
 from activitytracker.surveillance_manager import FacadeInjector, SurveillanceManager
 from activitytracker.util.clock import UserFacingClock
 from activitytracker.util.console_logger import ConsoleLogger

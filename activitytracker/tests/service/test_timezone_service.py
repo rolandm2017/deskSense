@@ -2,14 +2,13 @@ import pytest
 
 from datetime import datetime
 
-from activitytracker.services.tiny_services import TimezoneService
-
 from activitytracker.config.definitions import (
+    daylight_savings_tz_offset,
     local_time_zone,
     regular_tz_offset,
-    daylight_savings_tz_offset,
 )
 from activitytracker.object.pydantic_dto import UtcDtTabChange
+from activitytracker.services.timezone_service import TimezoneService
 
 timezone_service = TimezoneService()
 
