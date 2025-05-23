@@ -20,7 +20,12 @@ describe("ViewingTracker", () => {
         const server = new ServerApi("disable");
         replaceAllMethodsWithMocks(server);
         const tracker = new ViewingTracker(server);
-        const media = new NetflixViewing("23456", "Hilda", "paused");
+        const media = new NetflixViewing(
+            "23456",
+            "Hilda",
+            "www.netflix.com/watch/23456",
+            "paused"
+        );
         tracker.setCurrent(media);
 
         expect(tracker.currentMedia?.mediaTitle).toBe(media.mediaTitle);
@@ -29,10 +34,20 @@ describe("ViewingTracker", () => {
         const server = new ServerApi("disable");
         replaceAllMethodsWithMocks(server);
         const tracker = new ViewingTracker(server);
-        const media = new NetflixViewing("23456", "Hilda", "paused");
+        const media = new NetflixViewing(
+            "23456",
+            "Hilda",
+            "www.netflix.com/watch/23456",
+            "paused"
+        );
         tracker.setCurrent(media);
 
-        const media2 = new NetflixViewing("9876", "Carmen San Diego", "paused");
+        const media2 = new NetflixViewing(
+            "9876",
+            "Carmen San Diego",
+            "www.netflix.com/watch/9876",
+            "paused"
+        );
         tracker.setCurrent(media2);
 
         expect(tracker.currentMedia).toBeInstanceOf(NetflixViewing);
@@ -44,7 +59,8 @@ describe("ViewingTracker", () => {
         const tracker = new ViewingTracker(server);
 
         const target = "484848";
-        tracker.reportNetflixWatchPage(target);
+        const fullUrl = "www.netflix.com/watch/" + target;
+        tracker.reportNetflixWatchPage(fullUrl, target);
 
         expect(tracker.partialNetflixDescriptor).toBe(target);
     });
@@ -54,6 +70,7 @@ describe("ViewingTracker", () => {
         const tracker = new ViewingTracker(server);
         const youTubePage = new YouTubeViewing(
             "5959",
+            "www.youtube.com/watch?v=5959",
             "A Day of My Life In French!",
             "Piece of French"
         );
@@ -62,7 +79,12 @@ describe("ViewingTracker", () => {
         tracker.reportYouTubeWatchPage();
 
         expect(server.youtube.reportYouTubeWatchPage).toHaveBeenCalledOnce();
-        expect(server.netflix.reportNetflixPage).not.toHaveBeenCalledOnce();
+        expect(
+            server.netflix.reportFilledNetflixWatchPage
+        ).not.toHaveBeenCalledOnce();
+        expect(
+            server.netflix.reportPartialNetflixWatchPage
+        ).not.toHaveBeenCalledOnce();
     });
     test("markPlaying calls an API", () => {
         const server = new ServerApi("disable");
@@ -70,6 +92,7 @@ describe("ViewingTracker", () => {
         const tracker = new ViewingTracker(server);
         const youTubePage = new YouTubeViewing(
             "5959",
+            "www.youtube.com/watch?v=5959",
             "A Day of My Life In French!",
             "Piece of French"
         );
@@ -94,6 +117,8 @@ describe("ViewingTracker", () => {
         const tracker = new ViewingTracker(server);
         const youTubePage = new YouTubeViewing(
             "5959",
+            "www.youtube.com/watch?v=5959",
+
             "A Day of My Life In French!",
             "Piece of French"
         );

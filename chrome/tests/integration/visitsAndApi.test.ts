@@ -3,10 +3,10 @@ import { describe, expect, test, vi } from "vitest";
 import { ViewingTracker, YouTubeViewing } from "../../src/videoCommon/visits";
 
 import {
-    netflixUrl,
+    netflixWatchPageUrl,
     ServerApi,
     youtubePlayerStateUrl,
-    youTubeUrl,
+    youTubeWatchPageUrl,
 } from "../../src/api";
 
 describe("ViewingTracker and Server API", () => {
@@ -19,13 +19,14 @@ describe("ViewingTracker and Server API", () => {
         const tracker = new ViewingTracker(server);
 
         const target = "484848";
-        tracker.reportNetflixWatchPage(target);
+        const url = "www.netflix.com/watch/" + target;
+        tracker.reportNetflixWatchPage(url, target);
 
         expect(tracker.partialNetflixDescriptor).toBe(target);
 
         const targetUrl = payloadMock.mock.calls[0][0];
 
-        expect(targetUrl).toBe(netflixUrl);
+        expect(targetUrl).toBe(netflixWatchPageUrl);
 
         const deliverable = payloadMock.mock.calls[0][1];
 
@@ -41,6 +42,7 @@ describe("ViewingTracker and Server API", () => {
         const tracker = new ViewingTracker(server);
         const youTubePage = new YouTubeViewing(
             "5959",
+            "www.youtube.com/watch?v=5959",
             "A Day of My Life In French!",
             "Piece of French"
         );
@@ -52,7 +54,7 @@ describe("ViewingTracker and Server API", () => {
 
         const targetUrl = payloadMock.mock.calls[0][0];
 
-        expect(targetUrl).toBe(youTubeUrl);
+        expect(targetUrl).toBe(youTubeWatchPageUrl);
 
         const deliverable = payloadMock.mock.calls[0][1];
 
@@ -68,6 +70,8 @@ describe("ViewingTracker and Server API", () => {
         const tracker = new ViewingTracker(server);
         const youTubePage = new YouTubeViewing(
             "5959",
+            "www.youtube.com/watch?v=5959",
+
             "A Day of My Life In French!",
             "Piece of French"
         );
@@ -100,6 +104,8 @@ describe("ViewingTracker and Server API", () => {
         const tracker = new ViewingTracker(server);
         const youTubePage = new YouTubeViewing(
             "5959",
+            "www.youtube.com/watch?v=5959",
+
             "A Day of My Life In French!",
             "Piece of French"
         );

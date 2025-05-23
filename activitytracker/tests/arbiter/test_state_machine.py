@@ -51,14 +51,14 @@ class TestStateMachine:
         )
 
         # Act
-        asm.set_new_session(first_session, latest_write_at_first_session)
+        asm.set_new_session(first_session)
         response = asm.get_concluded_session()
 
         # None because there IS no prior state to conclude by startign a new session
         assert response is None
 
         # Act
-        asm.set_new_session(second, second_session_latest_write)
+        asm.set_new_session(second)
         response = asm.get_concluded_session()
 
         assert response is not None
@@ -114,12 +114,12 @@ class TestStateMachine:
             UserLocalTime(t5),
         )
 
-        asm.set_new_session(session1, s1_latest)
+        asm.set_new_session(session1)
         response1 = asm.get_concluded_session()
 
         assert response1 is None
 
-        asm.set_new_session(second, s2_latest)
+        asm.set_new_session(second)
         response2 = asm.get_concluded_session()
 
         assert response2 is not None
@@ -128,7 +128,7 @@ class TestStateMachine:
         print(t1.strftime("%M:%S"), "\n", t2.strftime("%M:%S"))
         assert response2.start_time == t1
 
-        asm.set_new_session(third, s3_latest)
+        asm.set_new_session(third)
         response3 = asm.get_concluded_session()
 
         assert response3 is not None
@@ -136,7 +136,7 @@ class TestStateMachine:
         assert response3.domain == second.domain
         assert response3.start_time == t2
 
-        asm.set_new_session(fourth, s4_latest)
+        asm.set_new_session(fourth)
         response4 = asm.get_concluded_session()
 
         assert response4 is not None
@@ -144,7 +144,7 @@ class TestStateMachine:
         assert response4.domain == third.domain
         assert response4.start_time == t3
 
-        asm.set_new_session(fifth, s5_latest)
+        asm.set_new_session(fifth)
         response5 = asm.get_concluded_session()
 
         assert response5 is not None
@@ -183,7 +183,7 @@ class TestStateMachine:
         )
 
         # arranging still
-        state_machine.set_new_session(session1, s1_latest)
+        state_machine.set_new_session(session1)
 
         # act
         concluded_session = state_machine.conclude_without_replacement_at_time(

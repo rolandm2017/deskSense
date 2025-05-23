@@ -54,14 +54,16 @@ describe("YouTube Autoplay", () => {
 
         console.log(watchPageReportingMock.mock.calls[0].length, "56ru");
         const tabTitle = watchPageReportingMock.mock.calls[0][0];
-        const channel = watchPageReportingMock.mock.calls[0][1];
-        const initialPlayerState = watchPageReportingMock.mock.calls[0][2];
+        const videoId = watchPageReportingMock.mock.calls[0][1];
+        const channel = watchPageReportingMock.mock.calls[0][2];
+        const initialPlayerState = watchPageReportingMock.mock.calls[0][3];
 
         // tabTitle: string | undefined,
         // channel: string,
         // initialPlayerState: "playing" | "paused"
 
         expect(tabTitle).toBe(youTubeVisit.mediaTitle);
+        expect(videoId).toBe(youTubeVisit.videoId);
 
         expect(channel).toBe(youTubeVisit.channelName);
         expect(initialPlayerState).toBe("playing");

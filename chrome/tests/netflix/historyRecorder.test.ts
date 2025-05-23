@@ -76,7 +76,8 @@ describe("HistoryRecorder", () => {
 
         const relay = new MessageRelay();
 
-        const mockOnPageLoad = vi.fn<(arg: string) => void>();
+        const mockOnPageLoad =
+            vi.fn<(fullUrl: string, videoId: string) => void>();
         relay.alertTrackerOfNetflixPage = mockOnPageLoad;
 
         // Highly useful pattern for testing with mocks in TS
@@ -97,7 +98,12 @@ describe("HistoryRecorder", () => {
             "paused"
         );
 
-        const pageTitle = mockOnPageLoad.mock.calls[0][0];
-        expect(pageTitle).toBe(pretendShow.urlId);
+        const args = mockOnPageLoad.mock.calls[0];
+        console.log(args);
+
+        const fullUrl = args[0];
+        const videoId = args[1];
+        expect(fullUrl).toBe(pretendShow.url);
+        expect(videoId).toBe(pretendShow.urlId);
     });
 });

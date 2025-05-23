@@ -8,6 +8,12 @@ from datetime import datetime
 from typing import List, Optional, Union
 
 from activitytracker.object.enums import PlayerState
+from activitytracker.object.pydantic_video_dto import (
+    NetflixPlayerChange,
+    NetflixTabChange,
+    YouTubePlayerChange,
+    YouTubeTabChange,
+)
 from activitytracker.util.time_wrappers import UserLocalTime
 
 

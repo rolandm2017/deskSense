@@ -124,7 +124,7 @@ def test_add_duration_for_tests():
     start_time = UserLocalTime(tokyo_tz.localize(datetime(2025, 4, 29, 10, 23, 0)))
     end_time = UserLocalTime(tokyo_tz.localize(datetime(2025, 4, 29, 10, 25, 55)))
 
-    video_info = VlcInfo("file.mov", "C:/movies", "playing")
+    video_info = VlcInfo("file.mov", "file.mov", "C:/movies", "playing")
 
     premade_duration = end_time.dt - start_time.dt
 
