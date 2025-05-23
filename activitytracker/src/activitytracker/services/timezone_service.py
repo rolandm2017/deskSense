@@ -2,7 +2,7 @@
 import pytz
 from datetime import date, datetime, time
 
-from typing import List, cast
+from typing import List, Union, cast
 
 from activitytracker.config.definitions import local_time_zone, productive_sites
 from activitytracker.object.classes import (
@@ -10,11 +10,10 @@ from activitytracker.object.classes import (
     TabChangeEventWithLtz,
 )
 from activitytracker.object.pydantic_dto import (
-    NetflixPlayerChange,
-    NetflixTabChange,
+    EventType,
+    Platform,
     UtcDtTabChange,
-    YouTubePlayerChange,
-    YouTubeTabChange,
+    VideoEvent,
 )
 from activitytracker.object.video_classes import NetflixInfo, YouTubeInfo
 from activitytracker.tz_handling.time_formatting import convert_to_timezone
@@ -22,94 +21,60 @@ from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.time_wrappers import UserLocalTime
 
 
-class YouTubeTimezoneService:
-    def __init__(self, parent_service):
-        self.parent_service = parent_service
+class UnifiedVideoEventTimezoneService:
+    def __init__(self):
+        pass
 
-    def convert_tz_for_tab_change(self, tab_event: YouTubeTabChange, new_tz: str):
-        youtube_info = YouTubeInfo(
-            tab_event.videoId, tab_event.channel, tab_event.playerState
-        )
-        return self._make_tab_change_event_with_youtube_info(tab_event, youtube_info, new_tz)
+    def convert_event_timezone(
+        self, event: VideoEvent, user_tz: str
+    ) -> Union[TabChangeEventWithLtz, PlayerStateChangeEventWithLtz]:
+        """Convert any video event to the appropriate timezone-aware event"""
 
-    def _make_tab_change_event_with_youtube_info(
-        self, tab_event, youtube_info: YouTubeInfo, new_tz: str
-    ):
-        new_datetime_with_tz: datetime = convert_to_timezone(tab_event.startTime, new_tz)
-        tab_change_with_time_zone = TabChangeEventWithLtz(
-            tab_event.tabTitle,
-            tab_event.url,
-            UserLocalTime(new_datetime_with_tz),
-            youtube_info,
-        )
-        return tab_change_with_time_zone
+        # Convert the datetime to user timezone
+        local_datetime = convert_to_timezone(event.event_time, user_tz)
+        local_time = UserLocalTime(local_datetime)
 
-    def convert_tz_for_state_change(self, tab_event: YouTubePlayerChange, new_tz: str):
-        youtube_info = YouTubeInfo(
-            tab_event.videoId, tab_event.channel, tab_event.playerState
-        )
-        return self._make_player_state_change_event(tab_event, youtube_info, new_tz)
+        # Create platform-specific info object
+        video_info = self._create_video_info(event)
 
-    def _make_player_state_change_event(
-        self, player_event: YouTubePlayerChange, youtube_info: YouTubeInfo, new_tz
-    ):
-        # FIXME: Need to make use of new_tz on the eventTime field
-        new_datetime_with_tz: datetime = convert_to_timezone(player_event.eventTime, new_tz)
+        if event.event_type == EventType.TAB_CHANGE:
+            return TabChangeEventWithLtz(
+                tab_title=event.tab_title,
+                url=event.url,
+                start_time_with_tz=local_time,
+                video_info=video_info,
+            )
+        else:  # PlayerStateEvent
+            return PlayerStateChangeEventWithLtz(
+                tab_title=event.tab_title,
+                event_time_with_tz=local_time,
+                video_info=video_info,
+            )
 
-        state_change_event = PlayerStateChangeEventWithLtz(
-            player_event.tabTitle,
-            UserLocalTime(new_datetime_with_tz),
-            youtube_info,
-        )
-        return state_change_event
-
-
-class NetflixTimezoneService:
-    def __init__(self, parent_service):
-        self.parent_service = parent_service
-
-    def convert_tz_for_tab_change(self, tab_event: NetflixTabChange, new_tz: str):
-        netflix_info = NetflixInfo(
-            tab_event.tabTitle, tab_event.videoId, tab_event.playerState
-        )
-        return self._make_tab_change_event_with_netflix_info(tab_event, netflix_info, new_tz)
-
-    def _make_tab_change_event_with_netflix_info(
-        self, tab_event: NetflixTabChange, netflix_info: NetflixInfo, new_tz: str
-    ):
-        new_datetime_with_tz: datetime = convert_to_timezone(tab_event.startTime, new_tz)
-        tab_change_with_time_zone = TabChangeEventWithLtz(
-            tab_event.tabTitle,
-            tab_event.url,
-            UserLocalTime(new_datetime_with_tz),
-            netflix_info,
-        )
-        return tab_change_with_time_zone
-
-    def convert_tz_for_state_change(self, tab_event: NetflixPlayerChange, new_tz: str):
-        netflix_info = NetflixInfo(
-            tab_event.showName, tab_event.videoId, tab_event.playerState
-        )
-        return self._make_player_state_change_event(tab_event, netflix_info, new_tz)
-
-    def _make_player_state_change_event(
-        self, player_event: NetflixPlayerChange, netflix_info: NetflixInfo, new_tz
-    ):
-        # FIXME: Need to make use of new_tz on the eventTime field
-        new_datetime_with_tz: datetime = convert_to_timezone(player_event.eventTime, new_tz)
-
-        state_change_event = PlayerStateChangeEventWithLtz(
-            player_event.showName,
-            UserLocalTime(new_datetime_with_tz),
-            netflix_info,
-        )
-        return state_change_event
+    def _create_video_info(self, event: VideoEvent):
+        """Create the appropriate video info object based on platform"""
+        if event.platform == Platform.YOUTUBE:
+            return YouTubeInfo(
+                video_id=event.video_id,
+                channel_name=event.channel or "Unknown",
+                player_state=event.player_state,
+            )
+        else:  # Netflix
+            return NetflixInfo(
+                media_title=event.show_name or event.tab_title,
+                video_id=event.video_id,
+                player_state=event.player_state,
+            )
 
 
 class TimezoneService:
     def __init__(self):
-        self.youtube = YouTubeTimezoneService(self)
-        self.netflix = NetflixTimezoneService(self)
+        self.converter = UnifiedVideoEventTimezoneService()
+
+    def convert_any_video_event(self, event: VideoEvent, user_id: int = 1):
+        """Single method to convert any video event to timezone-aware format"""
+        user_tz = self.get_tz_for_user(user_id)
+        return self.converter.convert_event_timezone(event, user_tz)
 
     def get_tz_for_user(self, user_id):
         # TODO: In the future, read from a cache of recently active users.

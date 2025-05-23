@@ -82,3 +82,7 @@ class DatabaseProtectionError(RuntimeError):
 
 class MustHaveUtcTzInfoError(Exception):
     pass
+
+
+class VideoRouteEventTypeError(Exception):
+    pass

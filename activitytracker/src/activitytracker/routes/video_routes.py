@@ -43,6 +43,7 @@ from activitytracker.object.pydantic_dto import (
     NetflixPlayerChange,
     NetflixTabChange,
     UtcDtTabChange,
+    VideoEventFactory,
     YouTubePlayerChange,
     YouTubeTabChange,
 )
@@ -57,7 +58,7 @@ from activitytracker.surveillance_manager import FacadeInjector, SurveillanceMan
 from activitytracker.util.clock import UserFacingClock
 from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.endpoint_util import field_has_utc_tzinfo_else_throw
-from activitytracker.util.errors import MustHaveUtcTzInfoError
+from activitytracker.util.errors import MustHaveUtcTzInfoError, VideoRouteEventTypeError
 from activitytracker.util.time_wrappers import UserLocalTime
 
 # Create a logger
@@ -86,12 +87,16 @@ async def receive_youtube_tab_change_event(
         user_id = 1  # temp until i have more than 1 user
 
         # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
-        # capture_chrome_data_for_tests(tab_change_event)
-        tz_for_user = timezone_service.get_tz_for_user(user_id)
-        updated_tab_change_event: TabChangeEventWithLtz = (
-            timezone_service.youtube.convert_tz_for_tab_change(tab_change_event, tz_for_user)
-        )
-        chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
+
+        # Convert to unified event
+        unified_event = VideoEventFactory.from_youtube_tab_change(tab_change_event)
+
+        # Convert timezone
+        localized_event = timezone_service.convert_any_video_event(unified_event, user_id)
+        if not isinstance(localized_event, TabChangeEventWithLtz):
+            raise VideoRouteEventTypeError()
+
+        chrome_service.tab_queue.add_to_arrival_queue(localized_event)
         return  # Returns 204 No Content
     except Exception as e:
         print(e)
@@ -117,18 +122,16 @@ async def receive_youtube_player_state(
 
         # NOTE: player_change_event.startTime is in UTC at this point, a naive tz
         # capture_chrome_data_for_tests(player_change_event)
-        tz_for_user = timezone_service.get_tz_for_user(user_id)
+        # Convert to unified event
+        unified_event = VideoEventFactory.from_youtube_player_change(player_change_event)
 
-        # TODO: One way to solve getting the YouTubeEvent into the Arbiter,
-        # is to attach it to a ChromeSession, because well, it is a chrome session.
-        # And then assume that the transit makes it through OK.
-        updated_player_change_event: PlayerStateChangeEventWithLtz = (
-            timezone_service.youtube.convert_tz_for_state_change(
-                player_change_event, tz_for_user
-            )
-        )
+        # Convert timezone
+        localized_event = timezone_service.convert_any_video_event(unified_event)
+        if not isinstance(localized_event, PlayerStateChangeEventWithLtz):
+            raise VideoRouteEventTypeError()
 
-        chrome_service.log_player_state_event(updated_player_change_event)
+        # Send to Chrome Service
+        chrome_service.log_player_state_event(localized_event)
         return  # Returns 204 No Content
     except Exception as e:
         print(e)
@@ -156,12 +159,14 @@ async def receive_netflix_tab_change_event(
 
         # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
         # capture_chrome_data_for_tests(tab_change_event)
-        tz_for_user = timezone_service.get_tz_for_user(user_id)
-        updated_tab_change_event: TabChangeEventWithLtz = (
-            timezone_service.netflix.convert_tz_for_tab_change(tab_change_event, tz_for_user)
-        )
+        unified_event = VideoEventFactory.from_netflix_tab_change(tab_change_event)
 
-        chrome_service.tab_queue.add_to_arrival_queue(updated_tab_change_event)
+        # Convert timezone
+        localized_event = timezone_service.convert_any_video_event(unified_event, user_id)
+        if not isinstance(localized_event, TabChangeEventWithLtz):
+            raise VideoRouteEventTypeError()
+
+        chrome_service.tab_queue.add_to_arrival_queue(localized_event)
         return  # Returns 204 No Content
     except Exception as e:
         print(e)
@@ -189,18 +194,15 @@ async def receive_netflix_player_state(
 
         # NOTE: player_change_event.startTime is in UTC at this point, a naive tz
         # capture_chrome_data_for_tests(player_change_event)
-        tz_for_user = timezone_service.get_tz_for_user(user_id)
+        unified_event = VideoEventFactory.from_netflix_player_change(player_change_event)
 
-        # TODO: One way to solve getting the NetflixEvent into the Arbiter,
-        # is to attach it to a ChromeSession, because well, it is a chrome session.
-        # And then assume that the transit makes it through OK.
-        updated_player_change_event: PlayerStateChangeEventWithLtz = (
-            timezone_service.netflix.convert_tz_for_state_change(
-                player_change_event, tz_for_user
-            )
-        )
+        # Convert timezone
+        localized_event = timezone_service.convert_any_video_event(unified_event)
+        if not isinstance(localized_event, PlayerStateChangeEventWithLtz):
+            raise VideoRouteEventTypeError()
 
-        chrome_service.log_player_state_event(updated_player_change_event)
+        # Send to Chrome Service
+        chrome_service.log_player_state_event(localized_event)
         return  # Returns 204 No Content
     except Exception as e:
         print(e)

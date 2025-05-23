@@ -15,13 +15,7 @@ from activitytracker.object.classes import (
     TabChangeEventWithLtz,
 )
 from activitytracker.object.dto import TypingSessionDto
-from activitytracker.object.pydantic_dto import (
-    NetflixPlayerChange,
-    NetflixTabChange,
-    UtcDtTabChange,
-    YouTubePlayerChange,
-    YouTubeTabChange,
-)
+from activitytracker.object.pydantic_dto import UtcDtTabChange
 from activitytracker.object.video_classes import NetflixInfo, YouTubeInfo
 from activitytracker.tz_handling.time_formatting import convert_to_timezone
 from activitytracker.util.console_logger import ConsoleLogger
