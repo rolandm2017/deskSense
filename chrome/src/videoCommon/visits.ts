@@ -95,7 +95,7 @@ export class ViewingTracker {
         // the videoId from the URL.
         const partiallyDescribedMedia: string = urlId;
         this.partialNetflixDescriptor = partiallyDescribedMedia;
-        this.api.netflix.reportPartialNetflixPage(
+        this.api.netflix.reportPartialNetflixWatchPage(
             fullUrl,
             partiallyDescribedMedia,
             this.autoplayWaiting ? "playing" : "paused"

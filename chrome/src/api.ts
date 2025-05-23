@@ -10,12 +10,15 @@ const baseChromeUrl = "/api/chrome";
 export const chromeTabUrl = baseChromeUrl + "/tab";
 export const ignoredDomainUrl = baseChromeUrl + "/ignored";
 
+const videoBaseUrl = baseChromeUrl + "/video";
 // youtube
-export const youTubeUrl = baseChromeUrl + "/video/youtube/new";
-export const youtubePlayerStateUrl = baseChromeUrl + "/video/youtube/state";
+export const youTubeUrl = videoBaseUrl + "/youtube/new";
+export const youTubeWatchPageUrl = videoBaseUrl + "/youtube/new/watchpage";
+export const youtubePlayerStateUrl = videoBaseUrl + "/youtube/state";
 // netflix
-export const netflixUrl = baseChromeUrl + "/video/netflix/new";
-export const netflixPlayerStateUrl = baseChromeUrl + "/video/netflix/state";
+export const netflixUrl = videoBaseUrl + "/netflix/new";
+export const netflixWatchPageUrl = videoBaseUrl + "/netflix/new/watchpage";
+export const netflixPlayerStateUrl = videoBaseUrl + "/netflix/state";
 
 export const captureSessionStartUrl = "/api/capture/start";
 
@@ -43,6 +46,8 @@ class YouTubeApi {
         this.sendPayload(youTubeUrl, payload);
     }
 
+    // FIXME: a regular youTube page != a youTube Watch Page
+
     reportYouTubeWatchPage(
         tabTitle: string | undefined,
         channel: string,
@@ -59,7 +64,7 @@ class YouTubeApi {
         };
         console.log("Sending YouTube Watch Page payload:", payload);
         // console.log(youTubeUrl, "is the youtube url");
-        this.sendPayload(youTubeUrl, payload);
+        this.sendPayload(youTubeWatchPageUrl, payload);
     }
     // TODO:
     // Refreshing a Youtube Watch page should be something like,
@@ -116,7 +121,15 @@ class NetflixApi {
         this.logger = new PlatformLogger("Netflix");
     }
 
-    reportPartialNetflixPage(
+    reportGeneralNetflixPage(fullUrl: string) {
+        const payload = {
+            url: fullUrl,
+            startTime: new Date(),
+        };
+        this.sendPayload(netflixUrl, payload);
+    }
+
+    reportPartialNetflixWatchPage(
         fullUrl: string,
         watchPageId: string,
         playerState: "playing" | "paused"
@@ -130,7 +143,7 @@ class NetflixApi {
             startTime: new Date(),
             playerState,
         };
-        this.sendPayload(netflixUrl, payload);
+        this.sendPayload(netflixWatchPageUrl, payload);
     }
 
     reportFilledNetflixWatchPage({
