@@ -1,6 +1,6 @@
 // youtube.ts
 import { ChannelPageOnlyError } from "../errors";
-import { stripProtocol } from "../urlTools";
+import { getDomainFromUrl, stripProtocol } from "../urlTools";
 import { YouTubeViewing, viewingTracker } from "../videoCommon/visits";
 import { extractChannelInfoFromWatchPage } from "./channelExtractor";
 
@@ -43,6 +43,10 @@ export function handleYouTubeUrl(
                 (results) => {
                     const tabTitle = tab.title ? tab.title : "Unknown Title";
 
+                    if (tab.url === undefined) {
+                        throw new MissingUrlError();
+                    }
+
                     let videoId = getYouTubeVideoId(tab.url);
 
                     let channelName = "Unknown Channel";
@@ -58,6 +62,7 @@ export function handleYouTubeUrl(
                     );
                     const youTubeVisit = new YouTubeViewing(
                         videoId,
+                        tab.url,
                         tabTitle,
                         channelName
                     );
@@ -73,20 +78,27 @@ export function handleYouTubeUrl(
     } else if (isOnSomeChannel(tab.url)) {
         // For channel pages, we can extract from the URL
         const channelName = extractChannelNameFromUrl(tab.url);
-        // no-op if recording disabled
 
-        initializedServerApi.youtube.reportYouTubePage(tab.title, channelName);
+        initializedServerApi.reportTabSwitch(
+            tab.url,
+            channelName ? channelName : "No channel name found"
+        );
     } else if (watchingShorts(tab.url)) {
         // Avoids trying to extract the channel name from
         // the YouTube Shorts page. The page's HTML changes often. Sisyphean task.
-        initializedServerApi.youtube.reportYouTubePage(
-            tab.title,
-            "Watching Shorts"
+        const domain = getDomainFromUrl(tab.url);
+        // Just generic YouTube Shorts page
+        initializedServerApi.reportTabSwitch(
+            domain ?? "www.youtube.com/shorts",
+            tab.title ? tab.title : "No title found"
         );
     } else {
-        initializedServerApi.youtube.reportYouTubePage(
-            tab.title,
-            "YouTube Home"
+        // Just generic YouTube page
+        const domain = getDomainFromUrl(tab.url);
+
+        initializedServerApi.reportTabSwitch(
+            domain ?? "www.youtube.com",
+            tab.title ? tab.title : "YouTube Home"
         );
     }
 }
@@ -105,6 +117,9 @@ export function startSecondaryChannelExtractionScript(
     // TODO: Clean this up
     const tab = sender.tab;
     const tabUrl = tab.url;
+    if (!tab.url) {
+        throw new MissingUrlError();
+    }
     const tabTitle = tab.title || "Unknown Title";
     // const channelName = getChannelNameFromSomewhere();
 
@@ -114,6 +129,7 @@ export function startSecondaryChannelExtractionScript(
     // TODO: Get channel name from somewhere
     const youTubeVisit = new YouTubeViewing(
         videoId,
+        tab.url,
         tabTitle,
         "Unknown Channel"
     );

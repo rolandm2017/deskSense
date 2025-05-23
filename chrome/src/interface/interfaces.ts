@@ -1,5 +1,6 @@
 // interfaces.ts
 export interface YouTubePayload {
+    url: string;
     videoId: string;
     tabTitle: string;
     channelName: string;

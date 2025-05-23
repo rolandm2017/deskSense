@@ -1,6 +1,12 @@
 // api.ts
 import { DomainLogger, PlatformLogger } from "./endpointLogging";
 import { NetflixPayload, YouTubePayload } from "./interface/interfaces";
+import {
+    NetflixPlayerChange,
+    NetflixTabChange,
+    YouTubePlayerChange,
+    YouTubeTabChange,
+} from "./interface/payloads";
 import { NetflixViewing } from "./videoCommon/visits";
 
 const DESKSENSE_BACKEND_URL = "http://localhost:8000";
@@ -33,33 +39,21 @@ class YouTubeApi {
         this.logger = new PlatformLogger("YouTube");
     }
 
-    reportYouTubePage(tabTitle: string | undefined, channel: string) {
-        /* Tab title must be undefined sometimes, says TS */
-        const payload = {
-            url: "www.youtube.com",
-            tabTitle,
-            channel,
-            startTime: new Date(),
-        };
-        console.log("Sending YouTube Page payload:", payload);
-        // console.log(youTubeUrl, "is the youtube url");
-        this.sendPayload(youTubeUrl, payload);
-    }
-
     // FIXME: a regular youTube page != a youTube Watch Page
 
     reportYouTubeWatchPage(
         tabTitle: string | undefined,
+        videoId: string,
         channel: string,
         initialPlayerState: "playing" | "paused"
     ) {
         /* Tab title must be undefined sometimes, says TS */
-        const payload = {
-            // Uses the YouTubeEvent pydantic definition
+        const payload: YouTubeTabChange = {
             url: "www.youtube.com",
-            tabTitle,
+            videoId,
+            tabTitle: tabTitle ?? "Unknown Tab Title",
             channel,
-            startTime: new Date(),
+            startTime: new Date().toISOString(),
             playerState: initialPlayerState,
         };
         console.log("Sending YouTube Watch Page payload:", payload);
@@ -76,14 +70,15 @@ class YouTubeApi {
     // PROBLEM: Can't have Player State, then Page. Bad! Will cause problems.
     // Page, then Player State might be ok. With like a 300 ms delay.
 
-    sendPlayEvent({ videoId, tabTitle, channelName }: YouTubePayload) {
+    sendPlayEvent({ videoId, tabTitle, channelName, url }: YouTubePayload) {
         // The server knows which VideoSession it's modifying because
         // the currently active tab deliverable, contained the ...
-        const payload = {
+        const payload: YouTubePlayerChange = {
+            url,
             videoId: videoId,
             tabTitle,
             channel: channelName,
-            eventTime: new Date(),
+            eventTime: new Date().toISOString(),
 
             playerState: "playing",
             // I don't think I care about the timestamp.
@@ -96,12 +91,13 @@ class YouTubeApi {
         this.sendPayload(youtubePlayerStateUrl, payload);
     }
 
-    sendPauseEvent({ videoId, tabTitle, channelName }: YouTubePayload) {
-        const payload = {
+    sendPauseEvent({ videoId, tabTitle, channelName, url }: YouTubePayload) {
+        const payload: YouTubePlayerChange = {
+            url,
             videoId,
             tabTitle,
             channel: channelName,
-            eventTime: new Date(),
+            eventTime: new Date().toISOString(),
             playerState: "paused",
             // timestamp: 0,
         };
@@ -121,14 +117,6 @@ class NetflixApi {
         this.logger = new PlatformLogger("Netflix");
     }
 
-    reportGeneralNetflixPage(fullUrl: string) {
-        const payload = {
-            url: fullUrl,
-            startTime: new Date(),
-        };
-        this.sendPayload(netflixUrl, payload);
-    }
-
     reportPartialNetflixWatchPage(
         fullUrl: string,
         watchPageId: string,
@@ -136,11 +124,11 @@ class NetflixApi {
     ) {
         // It's only the watchPageId because that's the only
         // thing that doesn't require waiting for user input.
-        const payload = {
+        const payload: NetflixTabChange = {
             tabTitle: "Unknown Watch Page",
             url: fullUrl,
             videoId: watchPageId,
-            startTime: new Date(),
+            startTime: new Date().toISOString(),
             playerState,
         };
         this.sendPayload(netflixWatchPageUrl, payload);
@@ -151,12 +139,12 @@ class NetflixApi {
         mediaTitle,
         playerState,
     }: NetflixViewing) {
-        const payload = {
+        const payload: NetflixTabChange = {
             tabTitle: mediaTitle,
             videoId,
             url: "https://www.netflix.com/watch/" + videoId,
             playerState: playerState,
-            startTime: new Date(),
+            startTime: new Date().toISOString(),
         };
         // I guess if the server receives an update, it can propagate the
         // updated info to all logs related to that previously mysterious ID
@@ -173,10 +161,12 @@ class NetflixApi {
         // The server knows which VideoSession it's modifying because
         // the currently active tab deliverable, contained the ...
         console.log("Would send play event for Netflix");
-        const payload = {
+        const payload: NetflixPlayerChange = {
+            tabTitle: showName,
+            url: "https://www.netflix.com/watch/" + videoId,
             videoId: videoId,
             showName,
-            eventTime: new Date(),
+            eventTime: new Date().toISOString(),
 
             playerState: "playing",
             // I don't care about the timestamp.
@@ -194,10 +184,12 @@ class NetflixApi {
 
         this.logger.logPauseEvent(showName);
         console.log("Would send pause event for Netflix");
-        const payload = {
+        const payload: NetflixPlayerChange = {
             videoId,
+            url: "https://www.netflix.com/watch/" + videoId,
+            tabTitle: showName,
             showName,
-            eventTime: new Date(),
+            eventTime: new Date().toISOString(),
 
             playerState: "paused",
         };

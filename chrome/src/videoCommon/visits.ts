@@ -56,19 +56,6 @@ export class ViewingTracker {
         this.autoplayWaiting = true;
     }
 
-    reportYouTubePage() {
-        if (this.currentMedia instanceof YouTubeViewing) {
-            this.mostRecentReport = this.currentMedia;
-            // this.youTubeApiLogger.logLandOnPage(this.currentMedia.mediaTitle);
-            this.api.youtube.reportYouTubePage(
-                this.currentMedia.mediaTitle,
-                this.currentMedia.channelName
-            );
-            return;
-        }
-        throw new Error("Incorrect media type for YouTube reporting");
-    }
-
     reportYouTubeWatchPage() {
         // FIXME: It's the case that, when you refresh, the
         // NewPageLoad event (this thing) goes off, BUT the video is playing!
@@ -79,6 +66,7 @@ export class ViewingTracker {
             // this.youTubeApiLogger.logLandOnPage(this.currentMedia.mediaTitle);
             this.api.youtube.reportYouTubeWatchPage(
                 this.currentMedia.mediaTitle,
+                this.currentMedia.videoId,
                 this.currentMedia.channelName,
                 this.autoplayWaiting ? "playing" : "paused"
             );
@@ -171,6 +159,7 @@ export const viewingTracker = new ViewingTracker(initializedServerApi);
 
 export class YouTubeViewing implements IYouTubeViewing {
     videoId: string;
+    url: string;
     mediaTitle: string;
     timestamps: number[];
     playerState: "playing" | "paused";
@@ -179,12 +168,14 @@ export class YouTubeViewing implements IYouTubeViewing {
 
     // Can tell also *how long* player was paused for.
 
-    // TODO: If pause lasts only five sec, ignore that it was paused
-    //      -> do not send payload
-    //      -> do not even stop tracking time
-
-    constructor(videoId: string, tabTitle: string, channelName: string) {
+    constructor(
+        videoId: string,
+        url: string,
+        tabTitle: string,
+        channelName: string
+    ) {
         this.videoId = videoId;
+        this.url = url;
         this.mediaTitle = tabTitle;
         this.channelName = channelName;
         this.timestamps = [];
@@ -193,6 +184,7 @@ export class YouTubeViewing implements IYouTubeViewing {
 
     convertToPayload(): YouTubePayload {
         return {
+            url: this.url,
             videoId: this.videoId,
             tabTitle: this.mediaTitle,
             channelName: this.channelName,

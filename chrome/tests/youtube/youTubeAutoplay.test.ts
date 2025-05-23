@@ -24,17 +24,17 @@ describe("YouTube Autoplay", () => {
             tab: { url: "https://www.youtube.com/watch?v=JpgiGi2epAs" },
         };
 
-        dispatch.noteAutoPlayEvent(sender);
+        dispatch.noteYouTubeAutoPlayEvent(sender);
 
         expect(tracker.autoplayWaiting).toBe(true);
 
-        expect(server.youtube.reportYouTubePage).not.toBeCalled();
         expect(server.youtube.reportYouTubeWatchPage).not.toBeCalled();
         expect(server.youtube.sendPlayEvent).not.toBeCalled();
         expect(server.youtube.sendPauseEvent).not.toBeCalled();
 
         const youTubeVisit = new YouTubeViewing(
             "JpgiGi2epAs",
+            sender.tab.url,
             "an American, in Turkey, speaking Portuguese for 5 minutes (CC)",
             "Elysse Davega"
         );
@@ -47,7 +47,6 @@ describe("YouTube Autoplay", () => {
             youTubeVisit.mediaTitle
         );
 
-        expect(server.youtube.reportYouTubePage).not.toBeCalled();
         expect(server.youtube.sendPauseEvent).not.toBeCalled();
         expect(server.youtube.sendPlayEvent).not.toBeCalled();
 
@@ -83,6 +82,7 @@ describe("YouTube Autoplay", () => {
 
         const youTubeVisit = new YouTubeViewing(
             "JpgiGi2epAs",
+            "www.youtube.com/watch?v=JpgiGi2epAs",
             "an American, in Turkey, speaking Portuguese for 5 minutes (CC)",
             "Elysse Davega"
         );
@@ -101,13 +101,12 @@ describe("YouTube Autoplay", () => {
             tab: { url: "https://www.youtube.com/watch?v=JpgiGi2epAs" },
         };
 
-        dispatch.noteAutoPlayEvent(sender);
+        dispatch.noteYouTubeAutoPlayEvent(sender);
 
         expect(tracker.autoplayWaiting).toBe(false);
 
         expect(server.youtube.sendPlayEvent).toBeCalled();
 
-        expect(server.youtube.reportYouTubePage).not.toBeCalled();
         expect(server.youtube.sendPauseEvent).not.toBeCalled();
 
         console.log(sendPlayEventMock.mock.calls[0].length, "56ru");
