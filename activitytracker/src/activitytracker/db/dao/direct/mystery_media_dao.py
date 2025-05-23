@@ -1,4 +1,4 @@
-from sqlalchemy import func, select, text
+from sqlalchemy import delete, func, select, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.selectable import Select
 
@@ -54,6 +54,9 @@ class MysteryMediaDao(SummaryDaoMixin, UtilityDaoMixin):
         self.model = MysteryMedia
 
     def create(self, mystery_id: str, discovery_time: UserLocalTime):
+        """
+        Duplicate entries are
+        """
         start_time_as_utc = convert_to_utc(discovery_time.dt)
 
         media = MysteryMedia(
@@ -79,5 +82,23 @@ class MysteryMediaDao(SummaryDaoMixin, UtilityDaoMixin):
         # TODO
         pass
 
-    def delete_by_id(self, existing_row_id: str):
-        self.delete(existing_row_id)
+    def delete_by_mystery_id(self, mystery_id: str):
+        """
+        Delete all MysteryMedia entries with the given mystery_id.
+
+        Note: mystery_id corresponds to Netflix watch page URLs which may
+        point to different media over time, so multiple entries may exist.
+
+        Args:
+            mystery_id: The mystery_id to delete all entries for
+
+        Returns:
+            int: Number of rows deleted
+        """
+        query = delete(self.model).where(self.model.mystery_id == mystery_id)
+        result = self.execute_and_return_all(query)
+
+        if self.debug:
+            self.logger.log(f"Deleted {result} entries with mystery_id: {mystery_id}")
+
+        return result
