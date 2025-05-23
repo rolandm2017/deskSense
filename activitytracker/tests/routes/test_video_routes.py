@@ -41,10 +41,7 @@ class TestVideoRoutes:
         """Use the real TimezoneService for integration testing"""
         return TimezoneService()
 
-    @pytest.mark.asyncio
-    async def test_receive_youtube_tab_change_event(
-        self, mock_chrome_service, timezone_service
-    ):
+    def test_receive_youtube_tab_change_event(self, mock_chrome_service, timezone_service):
         # Create a valid YouTube tab change event with UTC timezone
         event = YouTubeTabChange(
             tabTitle="Test YouTube Video",
@@ -56,7 +53,7 @@ class TestVideoRoutes:
         )
 
         # Call the route handler directly
-        result = await receive_youtube_tab_change_event(
+        result = receive_youtube_tab_change_event(
             tab_change_event=event,
             chrome_service=mock_chrome_service,
             timezone_service=timezone_service,
@@ -74,8 +71,7 @@ class TestVideoRoutes:
         # Verify the response is None (which means 204 No Content)
         assert result is None
 
-    @pytest.mark.asyncio
-    async def test_receive_youtube_player_state(self, mock_chrome_service, timezone_service):
+    def test_receive_youtube_player_state(self, mock_chrome_service, timezone_service):
         # Create a valid YouTube player state change event with UTC timezone
         event = YouTubePlayerChange(
             tabTitle="Test Video",
@@ -87,7 +83,7 @@ class TestVideoRoutes:
         )
 
         # Call the route handler directly
-        result = await receive_youtube_player_state(
+        result = receive_youtube_player_state(
             player_change_event=event,
             chrome_service=mock_chrome_service,
             timezone_service=timezone_service,
@@ -104,8 +100,7 @@ class TestVideoRoutes:
         # Verify the response is None (which means 204 No Content)
         assert result is None
 
-    @pytest.mark.asyncio
-    async def test_receive_netflix_event(self, mock_chrome_service, timezone_service):
+    def test_receive_netflix_event(self, mock_chrome_service, timezone_service):
         # Create a valid Netflix tab change event with UTC timezone
         event = NetflixTabChange(
             tabTitle="Unknown",
@@ -116,7 +111,7 @@ class TestVideoRoutes:
         )
 
         # Call the route handler directly
-        result = await receive_netflix_tab_change_event(
+        result = receive_netflix_tab_change_event(
             tab_change_event=event,
             chrome_service=mock_chrome_service,
             timezone_service=timezone_service,
@@ -133,8 +128,7 @@ class TestVideoRoutes:
         # Verify the response is None (which means 204 No Content)
         assert result is None
 
-    @pytest.mark.asyncio
-    async def test_receive_netflix_player_state(self, mock_chrome_service, timezone_service):
+    def test_receive_netflix_player_state(self, mock_chrome_service, timezone_service):
         # Create a valid Netflix player state change event with UTC timezone
         event = NetflixPlayerChange(
             tabTitle="Hilda Episode 1 - The Guardian",
@@ -145,8 +139,8 @@ class TestVideoRoutes:
             playerState=PlayerState.PLAYING,
         )
 
-        # Call the route handler directly
-        result = await receive_netflix_player_state(
+        # Call the handler directly
+        result = receive_netflix_player_state(
             player_change_event=event,
             chrome_service=mock_chrome_service,
             timezone_service=timezone_service,
@@ -163,10 +157,7 @@ class TestVideoRoutes:
         # Verify the response is None (which means 204 No Content)
         assert result is None
 
-    @pytest.mark.asyncio
-    async def test_missing_utc_timezone_raises_error(
-        self, mock_chrome_service, timezone_service
-    ):
+    def test_missing_utc_timezone_raises_error(self, mock_chrome_service, timezone_service):
         # Create an event without UTC timezone info
         event = YouTubeTabChange(
             tabTitle="Test YouTube Video",
@@ -181,7 +172,7 @@ class TestVideoRoutes:
         with pytest.raises(
             Exception
         ):  # This could be MustHaveUtcTzInfoError or HTTPException
-            await receive_youtube_tab_change_event(
+            receive_youtube_tab_change_event(
                 tab_change_event=event,
                 chrome_service=mock_chrome_service,
                 timezone_service=timezone_service,

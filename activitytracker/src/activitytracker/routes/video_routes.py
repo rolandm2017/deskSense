@@ -72,7 +72,7 @@ router = APIRouter(prefix="/api/chrome/video", tags=["video"])
 # TODO: Make these endpoints be /chrome/video/youtube/new
 # They WERE /chrome/youtube/new, /chrome/youtube/state
 @router.post("/youtube/new", status_code=status.HTTP_204_NO_CONTENT)
-async def receive_youtube_tab_change_event(
+def receive_youtube_tab_change_event(
     tab_change_event: YouTubeTabChange,
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service),
@@ -107,7 +107,7 @@ async def receive_youtube_tab_change_event(
 
 
 @router.post("/youtube/state", status_code=status.HTTP_204_NO_CONTENT)
-async def receive_youtube_player_state(
+def receive_youtube_player_state(
     player_change_event: YouTubePlayerChange,
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service),
@@ -142,7 +142,7 @@ async def receive_youtube_player_state(
 
 
 @router.post("/netflix/new", status_code=status.HTTP_204_NO_CONTENT)
-async def receive_netflix_tab_change_event(
+def receive_netflix_tab_change_event(
     tab_change_event: NetflixTabChange,
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service),
@@ -178,7 +178,7 @@ async def receive_netflix_tab_change_event(
 
 
 @router.post("/netflix/state", status_code=status.HTTP_204_NO_CONTENT)
-async def receive_netflix_player_state(
+def receive_netflix_player_state(
     player_change_event: NetflixPlayerChange,
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service),
