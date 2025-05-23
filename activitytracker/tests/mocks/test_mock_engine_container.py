@@ -12,6 +12,7 @@ from activitytracker.arbiter.session_polling import (
     ThreadedEngineContainer,
 )
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from activitytracker.db.dao.direct.mystery_media_dao import MysteryMediaDao
 from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from activitytracker.db.dao.direct.video_summary_dao import VideoSummaryDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
@@ -41,6 +42,8 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
     video_logging_dao = VideoLoggingDao(mock_regular_session_maker)
     video_summary_dao = VideoSummaryDao(video_logging_dao, mock_regular_session_maker)
 
+    mystery_dao = MysteryMediaDao(mock_regular_session_maker)
+
     recorder = ActivityRecorder(
         p_logging_dao,
         chrome_logging_dao,
@@ -48,6 +51,7 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
         p_summary_dao,
         chrome_sum_dao,
         video_summary_dao,
+        mystery_dao,
     )
 
     window_push_mock = Mock()

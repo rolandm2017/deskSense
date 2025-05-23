@@ -134,6 +134,7 @@ _chrome_service_instance = None
 async def get_activity_arbiter():
     from activitytracker.arbiter.activity_arbiter import ActivityArbiter
     from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+    from activitytracker.db.dao.direct.mystery_media_dao import MysteryMediaDao
     from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
     from activitytracker.db.dao.direct.system_status_dao import SystemStatusDao
     from activitytracker.db.dao.direct.video_summary_dao import VideoSummaryDao
@@ -147,6 +148,8 @@ async def get_activity_arbiter():
     program_summary_dao = ProgramSummaryDao(program_logging_dao, regular_session_maker)
     chrome_summary_dao = ChromeSummaryDao(chrome_logging_dao, regular_session_maker)
     video_summary_dao = VideoSummaryDao(video_logging_dao, regular_session_maker)
+
+    mystery_dao = MysteryMediaDao(regular_session_maker)
 
     polling_interval = 10
     system_status_dao = SystemStatusDao(
@@ -169,6 +172,7 @@ async def get_activity_arbiter():
             program_summary_dao,
             chrome_summary_dao,
             video_summary_dao,
+            mystery_dao,
         )
         print("Creating new ActivityArbiter")
         chrome_service = await get_chrome_service()

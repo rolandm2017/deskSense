@@ -1,4 +1,4 @@
-# daily_summary_dao.py
+# video_summary_dao.py
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.selectable import Select
@@ -74,6 +74,13 @@ class VideoSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
         )
         self.add_new_item(new_entry)
 
+    def find_netflix_media_by_id(self, media_id: str):
+        # TODO: Find entries more recent than three months. Because Netflix IDs change
+        query = select(self.model).where(
+            self.model.media_id == media_id and self.model.platform == "Netflix"
+        )
+        return self.execute_and_read_one_or_none(query)
+
     def find_todays_entry_for_media(
         self, video_session: VideoSession
     ) -> DailyVideoSummary | None:
@@ -110,6 +117,30 @@ class VideoSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
         return self.execute_and_return_all(query)
 
     # Updates section
+
+    def update_name_for_mystery(
+        self, previously_mysterious_id: str, discovered_media_title: str
+    ) -> None:
+        """Update the discovered_name field for a MysteryMedia record with the given mystery_id"""
+        with self.regular_session() as db_session:
+            # Find the mystery media record by mystery_id
+            mystery_media = db_session.scalars(
+                select(self.model).where(
+                    self.model.video_id == previously_mysterious_id,
+                    # "Unknown Watch Page" is a magic string from the client
+                    self.model.media_name == "Unknown Watch Page",
+                )
+            )
+
+            if mystery_media:
+                for media in mystery_media:
+                    media.media_name = discovered_media_title
+                db_session.commit()
+            else:
+                # Log or handle the case where no record is found
+                self.logger.log_white(
+                    f"[warning] No DailyVideoSummary found with previously_mysterious_id: {previously_mysterious_id}"
+                )
 
     def push_window_ahead_ten_sec(self, video_session: VideoSession):
         """

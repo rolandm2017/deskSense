@@ -88,7 +88,6 @@ from activitytracker.util.clock import UserFacingClock
 def chrome_service_fixture_with_arbiter(db_session_in_mem):
     # Initialize ChromeService with the mocked DAOs
 
-    # recorder = ActivityRecorder(program_summary_dao, chrome_summary_dao)
     clock = SystemClock()
     threaded_container = MockEngineContainer([], 0.1)
 
@@ -226,7 +225,6 @@ async def test_debounce_process(reconstructed_tab_changes, db_session_in_mem):
     very_short_debounce = 0.25
     local_transience_ms = 20  # get a transience threshold under the deboucne
 
-    # recorder = ActivityRecorder(program_summary_dao, chrome_summary_dao)
     clock = SystemClock()
     threaded_container = MockEngineContainer([], 0.1)
 

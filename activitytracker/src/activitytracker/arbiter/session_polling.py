@@ -144,6 +144,8 @@ class ThreadedEngineContainer:
             self.hook_thread.start()
             self.is_running = True
 
+    # FIXME: This class FOR SURE has problems. I see duplicated prints all the time
+
     def _iterate_loop(self):
         if self.engine is None:
             raise MissingEngineError()

@@ -186,6 +186,19 @@ class VideoSummaryLog(SummaryLogBase):
         )
 
 
+class MysteryMedia(Base):
+    __tablename__ = "mystery_media"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    mystery_id: Mapped[str] = mapped_column(String, index=True)
+    first_seen: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    last_seen: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    discovered_name: Mapped[str] = mapped_column(String, nullable=True)
+
+    count: Mapped[int] = mapped_column(Integer)
+
+
 class TypingSession(Base):
     __tablename__ = "typing_sessions"
     # It is unclear if this model needs a start_time_local, end_time_local, so I'm leaving it

@@ -16,6 +16,7 @@ from activitytracker.arbiter.activity_arbiter import ActivityArbiter
 from activitytracker.arbiter.activity_recorder import ActivityRecorder
 from activitytracker.config.definitions import imported_local_tz_str, window_push_length
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from activitytracker.db.dao.direct.mystery_media_dao import MysteryMediaDao
 from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from activitytracker.db.dao.direct.system_status_dao import SystemStatusDao
 from activitytracker.db.dao.direct.video_summary_dao import VideoSummaryDao
@@ -751,10 +752,6 @@ async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
     chrome_summary_add_used_time_spy = Mock(side_effect=chrome_summary_dao.add_used_time)
     chrome_summary_dao.add_used_time = chrome_summary_add_used_time_spy
 
-    # activity_recorder = ActivityRecorder(
-    # clock_again, program_logging_dao, chrome_logging_dao,
-    # program_summary_dao, chrome_summary_dao)
-
     class TestActivityRecorder(ActivityRecorder):
         def __init__(self, *args, durations_to_override=None, **kwargs):
             super().__init__(*args, **kwargs)
@@ -783,6 +780,8 @@ async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
     video_logging_dao = VideoLoggingDao(regular_session_maker)
     video_summary_dao = VideoSummaryDao(video_logging_dao, regular_session_maker)
 
+    mystery_dao = MysteryMediaDao(regular_session_maker)
+
     activity_recorder = TestActivityRecorder(
         program_logging_dao,
         chrome_logging_dao,
@@ -790,6 +789,7 @@ async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
         program_summary_dao,
         chrome_summary_dao,
         video_summary_dao,
+        mystery_dao,
         debug,
         durations_to_override=partials_for_mock_recorder,
     )

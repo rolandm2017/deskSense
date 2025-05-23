@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 
 from activitytracker.arbiter.activity_recorder import ActivityRecorder
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from activitytracker.db.dao.direct.mystery_media_dao import MysteryMediaDao
 from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from activitytracker.db.dao.direct.video_summary_dao import VideoSummaryDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
@@ -25,8 +26,8 @@ tokyo_tz = pytz.timezone(timezone_for_test)
 
 # Test implementations with proper session object instantiation
 
-null_VLC_video_info = VlcInfo("magic.mov", "C:/MagicContent", "playing")
-null_netflix_info = NetflixInfo("23456", "playing")
+null_VLC_video_info = VlcInfo("9432432", "magic.mov", "C:/MagicContent", "playing")
+null_netflix_info = NetflixInfo("Hilda", "23456", "playing")
 
 
 @pytest.fixture
@@ -66,6 +67,7 @@ def mock_daos():
         "program_summary": AsyncMock(spec=ProgramSummaryDao),
         "chrome_summary": AsyncMock(spec=ChromeSummaryDao),
         "video_summary": AsyncMock(spec=VideoSummaryDao),
+        "mystery_dao": AsyncMock(spec=MysteryMediaDao),
     }
 
 
@@ -85,6 +87,7 @@ def activity_recorder(mock_daos, mock_clock):
         program_summary_dao=mock_daos["program_summary"],
         chrome_summary_dao=mock_daos["chrome_summary"],
         video_summary_dao=mock_daos["video_summary"],
+        mystery_media_dao=mock_daos["mystery_dao"],
     )
 
 

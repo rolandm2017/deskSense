@@ -22,6 +22,7 @@ from activitytracker.arbiter.activity_recorder import ActivityRecorder
 from activitytracker.arbiter.session_polling import KeepAliveEngine
 from activitytracker.config.definitions import window_push_length
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
+from activitytracker.db.dao.direct.mystery_media_dao import MysteryMediaDao
 from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from activitytracker.db.dao.direct.system_status_dao import SystemStatusDao
 from activitytracker.db.dao.direct.video_summary_dao import VideoSummaryDao
@@ -205,6 +206,8 @@ async def test_program_path_with_fresh_sessions(
     video_logging_dao = VideoLoggingDao(regular_session_maker)
     video_summary_dao = VideoSummaryDao(video_logging_dao, regular_session_maker)
 
+    mystery_dao = MysteryMediaDao(regular_session_maker)
+
     activity_recorder = ActivityRecorder(
         p_logging_dao,
         chrome_logging_dao,
@@ -212,6 +215,7 @@ async def test_program_path_with_fresh_sessions(
         p_summary_dao,
         chrome_sum_dao,
         video_summary_dao,
+        mystery_dao,
         True,
     )
 

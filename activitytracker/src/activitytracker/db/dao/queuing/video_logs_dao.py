@@ -108,6 +108,30 @@ class VideoLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         """Fetch all domain log entries from the last 24 hours"""
         return self.do_read_last_24_hrs(right_now)
 
+    def update_name_for_mystery(
+        self, previously_mysterious_id: str, discovered_media_title: str
+    ) -> None:
+        """Update the discovered_name field for a MysteryMedia record with the given mystery_id"""
+        with self.regular_session() as db_session:
+            # Find the mystery media record by mystery_id
+            mystery_media = db_session.scalars(
+                select(self.model).where(
+                    self.model.video_id == previously_mysterious_id,
+                    # "Unknown Watch Page" is a magic string from the client
+                    self.model.media_name == "Unknown Watch Page",
+                )
+            )
+
+            if mystery_media:
+                for media in mystery_media:
+                    media.media_name = discovered_media_title
+                db_session.commit()
+            else:
+                # Log or handle the case where no record is found
+                self.logger.log_white(
+                    f"[warning] No DailyVideoSummary found with previously_mysterious_id: {previously_mysterious_id}"
+                )
+
     def push_window_ahead_ten_sec(self, session: VideoSession):
         log: VideoSummaryLog = self.find_session(session)
         if not log:
