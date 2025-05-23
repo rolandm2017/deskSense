@@ -33,7 +33,11 @@ def add_time_and_tz(base_date, hours=0, minutes=0, seconds=0):
 # grep -o '\.domain = "[^TEST"]*"' activitytracker/tests/data/weekly_breakdown.py | sort | uniq | wc -l
 # 10
 
-null_video_info = YouTubeInfo("someYouTubeChannel", "playing")
+null_video_info = YouTubeInfo(
+    "2345",
+    "playing",
+    "someYouTubeChannel",
+)
 
 # Define the base dates
 feb_23_2025 = datetime(2025, 2, 23, tzinfo=timezone.utc)

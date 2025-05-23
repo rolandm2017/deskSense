@@ -23,11 +23,11 @@ from activitytracker.facade.facade_singletons import (
     get_mouse_facade_instance,
 )
 from activitytracker.services.chrome_service import ChromeService
+from activitytracker.services.timezone_service import TimezoneService
 from activitytracker.services.tiny_services import (
     CaptureSessionService,
     KeyboardService,
     MouseService,
-    TimezoneService,
 )
 from activitytracker.util.clock import SystemClock, UserFacingClock
 

@@ -55,8 +55,8 @@ class UnifiedVideoEventTimezoneService:
         """Create the appropriate video info object based on platform"""
         if event.platform == Platform.YOUTUBE:
             return YouTubeInfo(
-                video_id=event.video_id,
                 channel_name=event.channel or "Unknown",
+                video_id=event.video_id,
                 player_state=event.player_state,
             )
         else:  # Netflix

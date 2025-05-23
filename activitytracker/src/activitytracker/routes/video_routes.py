@@ -208,5 +208,5 @@ async def receive_netflix_player_state(
         print(e)
         traceback.print_exc()
         raise HTTPException(
-            status_code=500, detail="A problem occurred in Chrome Service's YouTube endpoint"
+            status_code=500, detail="A problem occurred in Chrome Service's Netflix endpoint"
         )

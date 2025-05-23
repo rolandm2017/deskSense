@@ -48,6 +48,7 @@ class TestVideoRoutes:
         # Create a valid YouTube tab change event with UTC timezone
         event = YouTubeTabChange(
             tabTitle="Test YouTube Video",
+            videoId="abcdef",
             url="https://www.youtube.com/watch?v=abcdef",
             startTime=datetime.now(timezone.utc),
             channel="TestChannel",
@@ -81,12 +82,13 @@ class TestVideoRoutes:
             channel="Elysse Davega",
             eventTime=datetime.now(timezone.utc),
             videoId="abcdef",
+            url="www.youtube.com/watch?v=abcdef",
             playerState=PlayerState.PLAYING,
         )
 
         # Call the route handler directly
         result = await receive_youtube_player_state(
-            tab_change_event=event,
+            player_change_event=event,
             chrome_service=mock_chrome_service,
             timezone_service=timezone_service,
         )
@@ -136,15 +138,16 @@ class TestVideoRoutes:
         # Create a valid Netflix player state change event with UTC timezone
         event = NetflixPlayerChange(
             tabTitle="Hilda Episode 1 - The Guardian",
+            url="www.netflix.com/watch/12345",
             eventTime=datetime.now(timezone.utc),
             videoId="12345",
-            showName="Test Show",
+            showName="Hilda Episode 1 - The Guardian",
             playerState=PlayerState.PLAYING,
         )
 
         # Call the route handler directly
         result = await receive_netflix_player_state(
-            tab_change_event=event,
+            player_change_event=event,
             chrome_service=mock_chrome_service,
             timezone_service=timezone_service,
         )

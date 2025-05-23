@@ -1,4 +1,6 @@
 # pydantic_dto.py
+from enum import Enum
+
 from pydantic import BaseModel, field_validator
 
 from datetime import datetime
@@ -71,6 +73,7 @@ class YouTubeTabChange(BaseModel, PlayerStateMixin):
 
 class YouTubePlayerChange(BaseModel, PlayerStateMixin):
     videoId: str
+    url: str
     tabTitle: str
     channel: str
     eventTime: datetime
@@ -120,16 +123,6 @@ class BaseVideoEvent(BaseModel):
     event_type: EventType
     event_time: datetime  # Always UTC initially
     tab_title: str
-
-    @field_validator("player_state", mode="before")
-    @classmethod
-    def validate_player_state(cls, v):
-        if isinstance(v, str):
-            try:
-                return PlayerState(v)
-            except ValueError:
-                raise ValueError(f"Invalid PlayerState: {v}")
-        return v
 
 
 # Tab change events (user navigates to a watch page)
@@ -181,6 +174,7 @@ class VideoEventFactory:
             event_time=event.eventTime,
             tab_title=event.tabTitle,
             video_id=event.videoId,
+            url=event.url,
             player_state=event.playerState,
             channel=event.channel,
         )
@@ -203,6 +197,7 @@ class VideoEventFactory:
             event_time=event.eventTime,
             tab_title=event.showName,  # Using showName as tab_title
             video_id=event.videoId,
+            url=event.url,
             player_state=event.playerState,
             show_name=event.showName,
         )
