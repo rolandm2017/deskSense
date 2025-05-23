@@ -10,7 +10,7 @@ from activitytracker.object.classes import (
     TabChangeEventWithLtz,
 )
 from activitytracker.object.enums import PlayerState
-from activitytracker.object.pydantic_dto import (
+from activitytracker.object.pydantic_video_dto import (
     NetflixPlayerChange,
     NetflixTabChange,
     YouTubePlayerChange,
