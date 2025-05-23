@@ -191,12 +191,12 @@ class MysteryMedia(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     mystery_id: Mapped[str] = mapped_column(String, index=True)
-    first_seen: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    # first_seen: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     last_seen: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    discovered_name: Mapped[str] = mapped_column(String, nullable=True)
+    # discovered_name: Mapped[str] = mapped_column(String, nullable=True)
 
-    count: Mapped[int] = mapped_column(Integer)
+    # count: Mapped[int] = mapped_column(Integer)
 
 
 class TypingSession(Base):

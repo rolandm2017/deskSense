@@ -61,10 +61,7 @@ class MysteryMediaDao(SummaryDaoMixin, UtilityDaoMixin):
 
         media = MysteryMedia(
             mystery_id=mystery_id,
-            first_seen=start_time_as_utc,
             last_seen=start_time_as_utc,
-            discovered_name=None,
-            count=1,
         )
         self.add_new_item(media)
 
