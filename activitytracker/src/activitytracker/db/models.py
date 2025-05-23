@@ -83,6 +83,8 @@ class DailyVideoSummary(DailySummaryBase):
 
     __tablename__ = "daily_video_summaries"
 
+    # Not necessarily unique
+    video_id: Mapped[str] = mapped_column(String)  # Not necessarily unique
     media_name: Mapped[str] = mapped_column(String, nullable=True)
     # YouTube only
     channel_name: Mapped[str] = mapped_column(String, nullable=True)
@@ -165,6 +167,8 @@ class DomainSummaryLog(SummaryLogBase):
 class VideoSummaryLog(SummaryLogBase):
     __tablename__ = "video_logs"
 
+    # Not necessarily unique
+    video_id: Mapped[str] = mapped_column(String)  # Not necessarily unique
     media_name: Mapped[str] = mapped_column(String)
     # YouTube only
     channel_name: Mapped[str] = mapped_column(String, nullable=True)

@@ -8,10 +8,12 @@ class VideoInfo(ABC):
     """Base class for all video sessions that should never be instantiated directly."""
 
     # Start time, end time exist on the container class
+    video_id: str
     player_state: PlayerState
     # player_position_in_sec: int  # Don't care
 
-    def __init__(self, player_state):
+    def __init__(self, video_id, player_state):
+        self.video_id = video_id
         self.player_state = player_state
         # self.player_position_in_sec = player_position_in_sec
 
@@ -30,8 +32,14 @@ class VideoInfo(ABC):
 
 
 class YouTubeInfo(VideoInfo):
-    def __init__(self, channel_name, player_state) -> None:
-        super().__init__(player_state)
+
+    def __init__(
+        self,
+        video_id,
+        player_state,
+        channel_name,
+    ) -> None:
+        super().__init__(video_id, player_state)
 
         self.channel_name = channel_name
 
@@ -50,12 +58,14 @@ class YouTubeInfo(VideoInfo):
 
 class NetflixInfo(VideoInfo):
 
-    def __init__(self, video_id, player_state) -> None:
-        super().__init__(player_state)
-        self.video_id = video_id
+    def __init__(self, media_title, video_id, player_state) -> None:
+        # The media title will be "Unknown Watch Page" until the user
+        # sets the media title manually
+        super().__init__(video_id, player_state)
+        self.media_title = media_title
 
     def get_name(self):
-        return f"{self.video_id}"
+        return f"{self.media_title}"
 
     def get_name_with_platform(self):
         return f"Netflix Info: {self.video_id}"
@@ -70,8 +80,9 @@ class NetflixInfo(VideoInfo):
 class VlcInfo(VideoInfo):
     """For VLC Media Player"""
 
-    def __init__(self, file, folder, player_state) -> None:
-        super().__init__(player_state)
+    def __init__(self, video_id, file, folder, player_state) -> None:
+        # video_id is just the filename
+        super().__init__(video_id, player_state)
         self.file = file
         self.folder = folder
 

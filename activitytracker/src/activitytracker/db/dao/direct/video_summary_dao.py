@@ -61,6 +61,7 @@ class VideoSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
         )
 
         new_entry = DailyVideoSummary(
+            media_id=session.video_info.video_id,
             media_name=session.media_title,
             channel_name=channel_name,
             platform=session.video_info.get_platform_title(),

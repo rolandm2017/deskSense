@@ -65,6 +65,7 @@ class VideoLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         initializer = LogTimeConverter(session.start_time)
 
         log_entry = VideoSummaryLog(
+            video_id=session.video_info.video_id,
             media_name=session.media_title,
             platform=session.video_info.get_platform_title(),
             # Assumes n sec will be added later
