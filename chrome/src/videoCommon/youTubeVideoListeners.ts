@@ -1,5 +1,6 @@
 //  videoCommon/youTubeVideoListeners.ts
 
+import { runNeedToRefreshChecker } from "../contentScriptCommon";
 /*
 
 */
@@ -83,6 +84,8 @@ function attachVideoListeners(retries = 0, maxRetries = 10) {
 }
 
 attachVideoListeners();
+
+runNeedToRefreshChecker();
 
 function cleanupVideoListeners() {
     // If we have a stored video element and handlers

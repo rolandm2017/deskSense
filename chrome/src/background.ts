@@ -122,6 +122,15 @@ chrome.runtime.onMessage.addListener(
     }
 );
 
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === "heartbeat") {
+        sendResponse({ status: "alive" });
+        return true; // Keep the message channel open for async response
+    }
+
+    // Handle other message types...
+});
+
 /*
  * Claude says, re: onUpdated:
  *

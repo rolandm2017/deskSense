@@ -1,5 +1,7 @@
 // src/netflixVideoListeners.ts
 
+import { runNeedToRefreshChecker } from "../contentScriptCommon";
+
 export {}; // make ts ignore declaring global here
 
 declare global {
@@ -198,6 +200,8 @@ function setupMutationObserver() {
 // Initialize everything
 console.log("[Netflix] In attachNetflixVideoListeners, attempt: 0");
 attachNetflixVideoListeners();
+
+runNeedToRefreshChecker();
 
 // Setup mutation observer to catch dynamic changes
 const observer = setupMutationObserver();

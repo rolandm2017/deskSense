@@ -58,7 +58,7 @@ class SystemStatusDao(UtilityDaoMixin):
             self.logger.log_green("info: Writing program startup entry\n")
             self.add_activitytracker_started(current_time)
         else:
-            self.logger.log_green_multiple(current_time.dt, self.count)
+            # self.logger.log_green_multiple(current_time.dt, self.count)
             self.add_new_log(current_time)
         self.count += 1
 

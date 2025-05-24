@@ -162,7 +162,6 @@ class ProgramTrackerCore:
         print(f"[DEBUG] vlc_poller type: {type(self.vlc_poller)}")
         print(f"[DEBUG] self object id in start_vlc_polling: {id(self)}")
 
-        print(self.vlc_poller, "154ru")
         self.vlc_poller.start()
 
     def update_vlc_status(self):
