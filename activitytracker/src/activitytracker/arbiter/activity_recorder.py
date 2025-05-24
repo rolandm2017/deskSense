@@ -156,7 +156,7 @@ class ActivityRecorder:
             raise TypeError("Session was not the right type")
 
     def add_partial_window(
-        self, duration_in_sec: int, session: ProgramSession | ChromeSession
+        self, duration_in_sec: int, session: ProgramSession | ChromeSession, thread_id=None
     ):
         """
         Deducts t seconds from the duration of a session.
@@ -176,7 +176,7 @@ class ActivityRecorder:
         # print(session.video_info, "-- in add partial window")
 
         if session.video_info:
-            self.logger.log_video_info("add_partial_window", session.video_info)
+            self.logger.log_video_info("add_partial_window", session.video_info, thread_id)
             video_session: VideoSession = VideoSession.from_other_type(session)
 
             if isinstance(video_session, NetflixInfo):
@@ -199,7 +199,7 @@ class ActivityRecorder:
         self, session: CompletedProgramSession | CompletedChromeSession | None
     ):
         if session is not None and session.video_info:
-            self.logger.log_video_info("add_partial_window", session.video_info)
+            self.logger.log_video_info("on_state_changed", session.video_info)
             video_session = VideoSession.from_other_type(session)
             completed_video_session = video_session.to_completed(session.end_time)
             # TODO: In here, just do it by VideoID. If the Netflix media is not discovered yet,

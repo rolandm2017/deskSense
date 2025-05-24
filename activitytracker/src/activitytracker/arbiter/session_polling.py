@@ -1,4 +1,5 @@
 import threading
+from queue import Queue
 
 import time
 
@@ -68,7 +69,7 @@ class KeepAliveEngine:
             self._pulse_add_ten()
             self.amount_used = 0
 
-    def conclude(self):
+    def conclude_engine(self):
         """
         The "used amount" resets after it reaches a full window.
         So deducting the full 10 sec should never happen.
@@ -81,7 +82,7 @@ class KeepAliveEngine:
         thread_name = current_thread.name
 
         print(
-            f"[debug] CONCLUDING engine {self.session.get_name()} in thread '{thread_name}' (ID: {thread_id})"
+            f"[DEBUG] Concluding engine {self.session.get_name()} in thread '{thread_name}' (ID: {thread_id})"
         )
 
         if self.amount_used == window_push_length:
@@ -108,11 +109,18 @@ class KeepAliveEngine:
         thread_id = threading.get_ident()
         thread_name = current_thread.name
 
+        if self.session.video_info:
+            name = self.session.video_info.get_name()
+        else:
+            name = self.session.get_name()
+
         print(
-            f"[add_partial_window] {self.session.get_name()} with amount: {amount_used} in thread '{thread_name}' (ID: {thread_id})"
+            f"[add_partial_window - engine call] {name} with amount: {amount_used} in thread '{thread_name}' (ID: {thread_id})"
         )
 
-        self.recorder.add_partial_window(amount_used, self.session)
+        self.recorder.add_partial_window(
+            amount_used, self.session, thread_name + " : " + str(thread_id)
+        )
         # pass  # Temporarily disabled
 
     # For testing: methods to expose internal state
@@ -140,6 +148,7 @@ class ThreadedEngineContainer:
         self.interval = interval  # seconds - delay between loops
         self.sleep_fn = sleep_fn  # More testable to inject a func
         self.engine = None
+        self.engine_queue = Queue()
         self.stop_event = threading.Event()
         self.hook_thread = None
         self.is_running = False
@@ -176,8 +185,17 @@ class ThreadedEngineContainer:
         thread_id = threading.get_ident()
         while not self.stop_event.is_set():
             # print(f"Thread {thread_id}")
-            self.engine.iterate_loop()  # a second has been used
-            self.sleep_fn(self.interval)  # Sleep for 1 second
+            if not self.engine_queue.empty():
+                old_engine = self.engine
+                if old_engine:
+                    old_engine.conclude_engine()  # Called from KeepAlive thread!
+                self.engine = self.engine_queue.get()
+
+            if self.engine:
+                self.engine.iterate_loop()  # a second has been used
+                # TODO: The sleeping only happens while there is an engine.
+                # TODO: IF there is no engine, there is no sleeping, it just checks if there is a new engine over and over
+                self.sleep_fn(self.interval)  # Sleep for 1 second
 
     def replace_engine(self, new_engine):
         """Used to maintain container objects between sessions"""
@@ -189,26 +207,16 @@ class ThreadedEngineContainer:
         thread_id = threading.get_ident()
 
         print(
-            f"[replace_engine] Replacing engine for '{self.engine.session.get_name()}' with '{new_engine.session.get_name()}' in thread '{current_thread.name}' (ID: {thread_id})"
+            f"[container - replace_engine] Replacing engine for '{self.engine.session.get_name()}' with '{new_engine.session.get_name()}' in thread '{current_thread.name}' (ID: {thread_id})"
         )
 
         # NOTE: If you have some sort of off by 1 error, it could be because
         # the current .sleep() hasn't flushed yet, i.e. the prev iteration is still going
-        if self.is_running:
-            # Stop the current engine's work gracefully
-            print(
-                f"[replace_engine] About to conclude old engine: {self.engine.session.get_name()}"
-            )
-            self.engine.conclude()
-            print(
-                f"[replace_engine] Old engine concluded, setting new engine: {new_engine.session.get_name()}"
-            )
+        # Stop the current engine's work gracefully
 
-            # Swap the engine
-            self.engine = new_engine
-        else:
-            # If the thread isn't running, just set the new engine
-            self.engine = new_engine
+        # Swap the engine
+        # Just queue the new engine, don't stop the thread
+        self.engine_queue.put(new_engine)
 
     def stop(self):
         """
@@ -217,7 +225,7 @@ class ThreadedEngineContainer:
         if self.engine is None:
             raise MissingEngineError()
         if self.is_running:
-            self.engine.conclude()
+            # self.engine.conclude()
             self.stop_event.set()
             if self.hook_thread is not None and self.hook_thread.is_alive():
                 self.hook_thread.join(timeout=1)

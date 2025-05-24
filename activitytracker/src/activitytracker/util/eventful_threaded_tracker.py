@@ -20,7 +20,9 @@ class EventBasedThreadedTracker:
         if self.is_running:
             return
 
-        self.thread = threading.Thread(target=self._run_with_interruption)
+        self.thread = threading.Thread(
+            target=self._run_with_interruption, name="ProgramTrackerThread"
+        )
         self.thread.daemon = True
         self.thread.start()
         self.is_running = True
