@@ -55,10 +55,6 @@ def test_start_new_session():
 
     assert tracker.current_session is None, "Initialization condition wasn't met"
 
-    # assert tracker.current_session.window_title == "", "Initialization conditions weren't met"
-    # assert tracker.current_session.detail == "", "Initialization conditions weren't met"
-    # assert tracker.current_session.start_time is None, "Initialization conditions weren't met"
-
     # Act
     window_change = {
         "os": "Ubuntu",
@@ -114,9 +110,6 @@ def test_window_change_triggers_handler():
     tracker.user_facing_clock.now.assert_not_called()
 
     assert tracker.current_session is None, "Initialization condition wasn't met"
-    # assert tracker.current_session.window_title == "", "Initialization conditions weren't met"
-    # assert tracker.current_session.detail == "", "Initialization conditions weren't met"
-    # assert tracker.current_session.start_time is None, "Initialization conditions weren't met"
     # # assert tracker.current_session is None  # Test setup conditions
 
     # ### Act - Run the tracker

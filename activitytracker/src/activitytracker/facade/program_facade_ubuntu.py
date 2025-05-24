@@ -30,6 +30,7 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
         root.change_attributes(event_mask=self.X.FocusChangeMask | self.X.PropertyChangeMask)
 
         while True:
+            print("33ru")
             event = d.next_event()
             if event.type == self.X.PropertyNotify:
                 if event.atom == d.intern_atom("_NET_ACTIVE_WINDOW"):
@@ -134,15 +135,6 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
         except Exception as e:
             self.console_logger.debug(f"Error getting active window: {e}")
             return None
-
-    # def _get_active_window_ubuntu(self) -> Optional[Dict]:
-    #     for process in psutil.process_iter(['pid', 'name']):
-    #         try:
-    #             if process.status() == 'running':
-    #                 return {"pid": process.pid, "process_name": process.name(), "exe_path": process.exe()}
-    #         except (psutil.NoSuchProcess, psutil.AccessDenied):
-    #             continue
-    #     return None
 
     def setup_window_hook(self):
         """

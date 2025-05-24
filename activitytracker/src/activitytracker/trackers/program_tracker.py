@@ -64,7 +64,7 @@ class ProgramTrackerCore:
     def run_tracking_loop(self):
         for window_change in self.program_facade.listen_for_window_changes():
             # if self.vlc_is_active:
-            self.console_logger.log_white("INFO:", window_change)
+            self.console_logger.log_white("\n\n\n\nINFO:", window_change)
             if self.window_is_vlc(window_change):
                 # So in effect, because the VLC Media Player polling
                 # would be every 0.5 sec, just like the Program polling,
