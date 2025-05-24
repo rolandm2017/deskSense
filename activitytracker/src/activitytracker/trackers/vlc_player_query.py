@@ -59,12 +59,12 @@ def get_vlc_status() -> VlcInfo | None:
 
         # Try to extract file info
         info = data.get("information", {}).get("category", {}).get("meta", {})
-        print("INFO:", info)
+        # print("INFO:", info)
         full_url = info.get("url")  # e.g., file:///C:/Videos/movie.mp4
         filename = info.get("filename")
 
         file_path = None
-        print("full url:", full_url)
+        # print("full url:", full_url)
         if full_url and full_url.startswith("file://"):
             file_path = urllib.parse.unquote(full_url[7:])
 

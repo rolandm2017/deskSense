@@ -8,8 +8,10 @@ class AsyncPeriodicTask:
     Used to run a task such as polling periodically
     """
 
-    def __init__(self, dao, interval_in_sec: int | float = 10, sleep_func=asyncio.sleep):
-        self.dao = dao
+    def __init__(
+        self, periodic_task, interval_in_sec: int | float = 10, sleep_func=asyncio.sleep
+    ):
+        self.periodic_task = periodic_task
         self.interval = interval_in_sec
         # Inject asyncio.sleep to be testable
         self.sleep_func = sleep_func
@@ -23,7 +25,7 @@ class AsyncPeriodicTask:
             if self.DEBUG:
                 print("[polling shell] running polling loop", self.interval, self.loop_count)
             try:
-                self.dao.run_polling_loop()
+                await self.periodic_task()
             except Exception as e:
                 print(f"ERROR in polling loop: {e}")
             self.loop_count += 1
@@ -34,11 +36,7 @@ class AsyncPeriodicTask:
         self.is_running = True
         self.current_task = asyncio.create_task(self._loop())
 
-    async def stop(self):
+    def stop(self):
         self.is_running = False
         if self.current_task:
             self.current_task.cancel()
-            try:
-                await self.current_task
-            except asyncio.CancelledError:
-                pass  # expected during shutdown

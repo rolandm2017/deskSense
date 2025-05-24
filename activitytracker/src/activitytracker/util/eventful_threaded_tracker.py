@@ -1,4 +1,5 @@
 import threading
+import traceback
 
 
 class EventBasedThreadedTracker:
@@ -38,6 +39,7 @@ class EventBasedThreadedTracker:
                 f"[THREAD {threading.current_thread().name}] Caught Ctrl+C in event thread"
             )
         except Exception as e:
+            traceback.print_exc()
             print(f"[THREAD {threading.current_thread().name}] Error in event tracker: {e}")
         finally:
             print(f"[THREAD {threading.current_thread().name}] Event loop ending")

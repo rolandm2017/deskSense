@@ -11,11 +11,12 @@ from activitytracker.object.video_classes import VlcInfo
 from activitytracker.util.clock import SystemClock
 from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.detect_os import OperatingSystemInfo
+from activitytracker.util.eventful_threaded_tracker import EventBasedThreadedTracker
 from activitytracker.util.program_tools import (
     contains_space_dash_space,
     separate_window_name_and_detail,
 )
-from activitytracker.util.threaded_tracker import ThreadedTracker
+from activitytracker.util.sync_periodic_task import SyncPeriodicTask
 from activitytracker.util.time_wrappers import UserLocalTime
 
 from .vlc_player_query import VlcMediaPlayerTracker, get_vlc_status
@@ -46,15 +47,17 @@ class ProgramTrackerCore:
         self.user_facing_clock = user_facing_clock
         self.program_facade: ProgramFacadeInterface = program_api_facade
         self.window_change_handler = window_change_handler
-        # self.chrome_event_update = chrome_event_update
-
-        self.current_is_chrome = False
 
         self.vlc_tracker = VlcMediaPlayerTracker()
 
+        self.vlc_poller = SyncPeriodicTask(self.update_vlc_status, interval_in_sec=0.5)
+        print(f"[DEBUG] vlc_poller created: {self.vlc_poller} (id: {id(self.vlc_poller)})")
+        print(f"[DEBUG] self object id: {id(self)}")
+        self.vlc_window = None
+
         self.vlc_is_active = False
         self.latest_vlc_state = VlcInfo(
-            "Initialize", "Initialize", "Initialize", player_state=PlayerState.PAUSED
+            "Initialize", "Init", "Init", player_state=PlayerState.PAUSED
         )
 
         self.current_session: ProgramSession | None = None
@@ -63,32 +66,19 @@ class ProgramTrackerCore:
 
     def run_tracking_loop(self):
         print("Starting pure event-based window tracking...")
+        print(f"[DEBUG] Starting run_tracking_loop, vlc_poller: {self.vlc_poller}")
+        print(f"[DEBUG] self object id in run_tracking_loop: {id(self)}")
+
         for window_change in self.program_facade.listen_for_window_changes():
             # if self.vlc_is_active:
-            self.console_logger.log_white("\n\n\n\nINFO:", window_change)
+            self.console_logger.log_white("\n\nINFO:", window_change)
             if self.window_is_vlc(window_change):
-                # So in effect, because the VLC Media Player polling
-                # would be every 0.5 sec, just like the Program polling,
-                # it doesn't hurt to just, "if it's VLC, poll the state"
-                current_time: UserLocalTime = self.user_facing_clock.now()  # once per loop
-                vlc_state = self.vlc_tracker.get_updated_vlc_status()
-                updated_vlc_session = self.start_new_video_session(
-                    window_change, current_time, vlc_state
-                )
+                self.vlc_window = window_change
+                self.console_logger.log_white("was indeed VLC!")
 
-                if self.vlc_media_changed(updated_vlc_session):
-                    self.console_logger.log_yellow(
-                        "New VLC State: "
-                        + updated_vlc_session.video_info.file
-                        + " :: "
-                        + updated_vlc_session.video_info.player_state.value
-                    )
-                    self.window_change_handler(updated_vlc_session)
-                    self.current_session = updated_vlc_session
-
-                self.latest_vlc_state = updated_vlc_session.video_info
-
+                self.start_vlc_polling()
             else:
+                self.stop_vlc_polling()
                 self.console_logger.log_white("WAS NOT VLC!")
                 # FIXME: "Running Server (WindowsTerminal.exe)" -> Terminal (Terminal)
                 on_a_different_window_now = (
@@ -119,9 +109,9 @@ class ProgramTrackerCore:
                     self.current_session = new_session
                     self.window_change_handler(new_session)
 
-    def vlc_media_changed(self, vlc_session: VlcInfo):
+    def vlc_media_changed(self, vlc_info_update: VlcInfo):
         """Compares to the current VLC session using custom __eq__"""
-        return self.latest_vlc_state != vlc_session
+        return self.latest_vlc_state != vlc_info_update
 
     def is_uninitialized(self):
         return self.current_session is None
@@ -166,6 +156,41 @@ class ProgramTrackerCore:
             detail = no_space_dash_space
         return detail, window_title
 
+    def start_vlc_polling(self):
+        self.console_logger.log_yellow("Starting VLC polling")
+        print(f"[DEBUG] start_vlc_polling called, vlc_poller: {self.vlc_poller}")
+        print(f"[DEBUG] vlc_poller type: {type(self.vlc_poller)}")
+        print(f"[DEBUG] self object id in start_vlc_polling: {id(self)}")
+
+        print(self.vlc_poller, "154ru")
+        self.vlc_poller.start()
+
+    def update_vlc_status(self):
+        vlc_state = self.vlc_tracker.get_updated_vlc_status()
+
+        if self.vlc_media_changed(vlc_state):
+            print(self.latest_vlc_state, "172ru")
+            print(vlc_state, "175ru")
+            current_time: UserLocalTime = self.user_facing_clock.now()
+            self.console_logger.log_white("info:", current_time.dt)
+            updated_vlc_session = self.start_new_video_session(
+                self.vlc_window, current_time, vlc_state
+            )
+            self.console_logger.log_yellow(
+                "New VLC State: "
+                + updated_vlc_session.video_info.file
+                + " :: "
+                + updated_vlc_session.video_info.player_state.value
+            )
+            self.window_change_handler(updated_vlc_session)
+            self.current_session = updated_vlc_session
+
+        self.latest_vlc_state = vlc_state
+
+    def stop_vlc_polling(self):
+        if self.vlc_poller:
+            self.vlc_poller.stop()
+
     def window_is_vlc(self, window):
         current_os = "Linux"
         if current_os == "Linux":
@@ -203,7 +228,7 @@ if __name__ == "__main__":
     try:
 
         tracker = ProgramTrackerCore(clock, program_api_facade, ["", ""])
-        thread_handler = ThreadedTracker(tracker)
+        thread_handler = EventBasedThreadedTracker(tracker)
         thread_handler.start()
         # Add a way to keep the main thread alive
         while True:

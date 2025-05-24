@@ -22,12 +22,12 @@ from activitytracker.facade.receive_messages import MessageReceiver
 from activitytracker.trackers.keyboard_tracker import KeyboardTrackerCore
 from activitytracker.trackers.mouse_tracker import MouseTrackerCore
 from activitytracker.trackers.program_tracker import ProgramTrackerCore
+from activitytracker.util.async_periodic_task import AsyncPeriodicTask
 from activitytracker.util.clock import UserFacingClock
 from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.copy_util import snapshot_obj_for_tests
 from activitytracker.util.detect_os import OperatingSystemInfo
 from activitytracker.util.eventful_threaded_tracker import EventBasedThreadedTracker
-from activitytracker.util.periodic_task import AsyncPeriodicTask
 from activitytracker.util.threaded_tracker import ThreadedTracker
 
 
@@ -86,7 +86,8 @@ class SurveillanceManager:
             pass
         else:
             self.program_online_polling = AsyncPeriodicTask(
-                self.system_status_dao, system_status_dao.polling_interval_in_sec
+                self.system_status_dao.run_polling_loop,
+                system_status_dao.polling_interval_in_sec,
             )
             self.program_online_polling.start()
 
@@ -114,7 +115,7 @@ class SurveillanceManager:
             keyboard_facade, self.handle_keyboard_ready_for_db
         )
         self.mouse_tracker = MouseTrackerCore(mouse_facade, self.handle_mouse_ready_for_db)
-        self.operate_facades()
+        self.operate_message_receiver()
         # Program tracker
         self.program_tracker = ProgramTrackerCore(
             clock, program_facade, self.handle_window_change
@@ -146,7 +147,7 @@ class SurveillanceManager:
                 f"[info] latest status {latest_status.status} at {time_string}"
             )
 
-    def operate_facades(self):
+    def operate_message_receiver(self):
         """Start the message receiver."""
         print("[info] message receiver starting")
         self.message_receiver.start()
@@ -193,7 +194,7 @@ class SurveillanceManager:
         """Safely cancel all pending tasks created by this manager."""
         debug_prints = False
         if not self.is_test:
-            await self.program_online_polling.stop()
+            self.program_online_polling.stop()
         # Get all tasks from the event loop except the current one
         current_task = asyncio.current_task()
         all_tasks = [task for task in asyncio.all_tasks() if task is not current_task]
@@ -294,7 +295,7 @@ class SurveillanceManager:
             self.mouse_thread.stop()
             self.program_thread.stop()
             # Stop the asyncio loop
-            await self.program_online_polling.stop()
+            self.program_online_polling.stop()
         except Exception as e:
             print(f"Error stopping threads: {e}")
 

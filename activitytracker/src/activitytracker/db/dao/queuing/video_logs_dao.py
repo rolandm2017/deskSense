@@ -133,7 +133,6 @@ class VideoLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
                 )
 
     def push_window_ahead_ten_sec(self, session: VideoSession):
-        print(session, "137ru")
         log: VideoSummaryLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError("Start of pulse didn't reach the db")
@@ -145,7 +144,6 @@ class VideoLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         Overwrite value from the pulse. Expect something to ALWAYS be in the db already at this point.
         Note that if the computer was shutdown, this method is never called, and the rough estimate is kept.
         """
-        print(session, "148ru")
         log: VideoSummaryLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError("Start of pulse didn't reach the db")

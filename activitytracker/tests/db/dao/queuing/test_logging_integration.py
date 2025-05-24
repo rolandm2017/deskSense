@@ -7,38 +7,32 @@ push_window_ahead_ten_sec
 finalize_log
 """
 
-import pytest
+from zoneinfo import ZoneInfo
+
 import pytest_asyncio
+
+import pytest
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
+from sqlalchemy import text
 from sqlalchemy.sql.selectable import Select
 
-
-from sqlalchemy import text
-
 import pytz
-from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta, timezone
 
-
-from activitytracker.db.models import DomainSummaryLog, ProgramSummaryLog, Base
-
-
-from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-
+from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
+from activitytracker.db.models import Base, DomainSummaryLog, ProgramSummaryLog
 from activitytracker.object.classes import (
-    CompletedProgramSession,
-    CompletedChromeSession,
-    ProgramSession,
     ChromeSession,
+    CompletedChromeSession,
+    CompletedProgramSession,
+    ProgramSession,
 )
-
 from activitytracker.tz_handling.time_formatting import convert_to_utc
-from activitytracker.util.errors import ImpossibleToGetHereError
 from activitytracker.util.const import SECONDS_PER_HOUR
+from activitytracker.util.errors import ImpossibleToGetHereError
 from activitytracker.util.time_wrappers import UserLocalTime
-
 
 timezone_for_test_data = ZoneInfo("Asia/Tokyo")
 
@@ -121,7 +115,6 @@ def test_round_trip(regular_session_maker):
 
         duration_from_start_end = (log.end_time - log.start_time).total_seconds()
 
-        print(duration_from_start_end, "123ru")
         print("expected duration in sec:", expected_duration)
         assert log.duration_in_sec == expected_duration
         assert log.start_time == expected_start_time_in_utc  # but as utc

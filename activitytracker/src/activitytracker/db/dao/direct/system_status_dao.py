@@ -47,6 +47,7 @@ class SystemStatusDao(UtilityDaoMixin):
         self.latest_id = None
         self.latest_write_time = None
         self.logger = ConsoleLogger()
+        self.count = 0
 
     def run_polling_loop(self):
         on_first_iteration = self.latest_id is None
@@ -57,7 +58,9 @@ class SystemStatusDao(UtilityDaoMixin):
             self.logger.log_green("info: Writing program startup entry\n")
             self.add_activitytracker_started(current_time)
         else:
+            self.logger.log_green_multiple(current_time.dt, self.count)
             self.add_new_log(current_time)
+        self.count += 1
 
     def get_latest_write_time(self):
         return self.latest_write_time

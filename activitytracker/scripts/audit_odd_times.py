@@ -10,11 +10,6 @@ The intent is to look for days where the data surely is from a bug.
 
 """
 
-from datetime import datetime, timedelta
-from typing import List
-
-import pytz
-
 from surveillance.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from surveillance.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from surveillance.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
@@ -36,15 +31,18 @@ from surveillance.util.console_logger import ConsoleLogger
 from surveillance.util.const import SECONDS_PER_HOUR
 from surveillance.util.time_wrappers import UserLocalTime
 
+import pytz
+from datetime import datetime, timedelta
+
+from typing import List
+
 logger = ConsoleLogger()
 
 
 program_logging_dao = ProgramLoggingDao(regular_session_maker)
 chrome_logging_dao = ChromeLoggingDao(regular_session_maker)
-program_summary_dao = ProgramSummaryDao(
-    program_logging_dao, regular_session_maker)
-chrome_summary_dao = ChromeSummaryDao(
-    chrome_logging_dao, regular_session_maker)
+program_summary_dao = ProgramSummaryDao(program_logging_dao, regular_session_maker)
+chrome_summary_dao = ChromeSummaryDao(chrome_logging_dao, regular_session_maker)
 
 
 def sort_by_gathering_date(events: List):
@@ -97,7 +95,6 @@ def main():
         # will be made in reverse chronological order
         n_days_ago = today - timedelta(days=i)
         gathering_date_string = n_days_ago.strftime("%Y-%m-%d")
-        # print(gathering_date_string, type(gathering_date_string), "128ru")
         to_check.append(gathering_date_string)
 
     end_times_hashtable = {}
@@ -110,7 +107,6 @@ def main():
     # Go over the latest entries in
     for i in range(recent_n_days_to_check):
         gathering_date = to_check[i]
-        # print(type(gathering_date), "137ru")
         relevant_logs = program_logs_dict[gathering_date]
         for log in relevant_logs:
             log: ProgramSummaryLog | DomainSummaryLog

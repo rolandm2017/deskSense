@@ -343,6 +343,10 @@ class VideoSession(ActivitySession):
         completed.ledger = self.ledger
         return completed
 
+    def __str__(self):
+        productive_status = "productive" if self.productive else "non-productive"
+        return f"VideoSession({self.media_title} via {self.video_info.get_platform_title()}, {productive_status}, started {self.start_time})"
+
 
 class CompletedVideoSession(VideoSession):
     end_time: UserLocalTime

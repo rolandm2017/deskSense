@@ -55,7 +55,6 @@ def reconstructed_tab_changes():
 
     # Construct the path to the events.csv file
     events_csv_path = os.path.join(parent_dir, "data", "events.csv")
-    print(events_csv_path, "34ru")
 
     reconstructed = []
     with open(events_csv_path, "r", encoding="utf-8") as f:

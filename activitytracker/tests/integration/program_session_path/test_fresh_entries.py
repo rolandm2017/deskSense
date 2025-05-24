@@ -342,15 +342,12 @@ async def test_program_path_with_fresh_sessions(
             for i in range(0, expected_loops):
                 some_session = spy_from_mock.call_args_list[i][0][0]
                 print("\n---")
-                # print(some_session, "some_session 953ru")
                 print("Expected:", test_two_data_clone[i].start_time)
                 print("Actual:", some_session.start_time)
-                # print(test_two_data_clone[i], "954ru")
                 print(
                     str(some_session.start_time.dt)
                     == str(test_two_data_clone[i].start_time.dt)
                 )
-            print("end of debug segment 956ru")
             for i in range(0, expected_loops):
                 some_session = spy_from_mock.call_args_list[i][0][0]
                 assert isinstance(some_session, ProgramSession)

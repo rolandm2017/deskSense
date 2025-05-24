@@ -192,8 +192,7 @@ async def setup_with_populated_db(setup_parts):
     setup_program_writes_for_group(test_data_feb_programs, program_summary_dao, february)
 
     print("Populating Feb Chrome")
-    for event in test_data_feb_chrome:
-        print(event, "196ru")
+
     setup_chrome_writes_for_group(test_data_feb_chrome, chrome_summary_dao, february)
 
     assert all(
