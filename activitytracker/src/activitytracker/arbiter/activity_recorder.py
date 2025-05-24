@@ -16,6 +16,7 @@ from activitytracker.object.classes import (
     ProgramSession,
     VideoSession,
 )
+from activitytracker.object.enums import PlayerState
 from activitytracker.object.video_classes import NetflixInfo
 from activitytracker.tz_handling.time_formatting import get_start_of_day_from_ult
 from activitytracker.util.clock import UserFacingClock
@@ -64,7 +65,7 @@ class ActivityRecorder:
         self.remainder_history = []
 
     def on_new_session(self, session: ProgramSession | ChromeSession):
-        # TODO: do an audit of logging time and summary time.
+        # Nothing to do? Do an audit of logging time and summary time.
         if session.video_info:
             self.logger.log_video_info("on_new_session", session.video_info)
             video_session = VideoSession.from_other_type(session)
@@ -74,13 +75,14 @@ class ActivityRecorder:
                         video_session
                     )
                 )
-            self.video_logging_dao.start_session(video_session)
+            if video_session.video_info.player_state == PlayerState.PLAYING:
+                self.video_logging_dao.start_session(video_session)
 
-            session_exists_already = self.video_summary_dao.find_todays_entry_for_media(
-                video_session
-            )
-            if not session_exists_already:
-                self.video_summary_dao.start_session(video_session)
+                session_exists_already = self.video_summary_dao.find_todays_entry_for_media(
+                    video_session
+                )
+                if not session_exists_already:
+                    self.video_summary_dao.start_session(video_session)
         if isinstance(session, ProgramSession):
             # Regardless of the session being brand new today or a repeat,
             # must start a new logging session, to note the time being added to the summary.
@@ -119,11 +121,11 @@ class ActivityRecorder:
             session.ledger.add_ten_sec()
 
         # Window push now finds session based on start_time
-        print(session.video_info, "-- in add ten sec")
 
         if session.video_info:
             self.logger.log_video_info("add_ten_sec_to_end_time", session.video_info)
             video_session = VideoSession.from_other_type(session)
+            # Don't log time if the player isn't playing!
             if isinstance(video_session, NetflixInfo):
                 video_session.media_title = (
                     self.netflix_title_resolver.recover_or_register_netflix_title(
@@ -131,8 +133,9 @@ class ActivityRecorder:
                     )
                 )
 
-            self.video_logging_dao.push_window_ahead_ten_sec(video_session)
-            self.video_summary_dao.push_window_ahead_ten_sec(video_session)
+            if video_session.video_info.player_state == PlayerState.PLAYING:
+                self.video_logging_dao.push_window_ahead_ten_sec(video_session)
+                self.video_summary_dao.push_window_ahead_ten_sec(video_session)
         if isinstance(session, ProgramSession):
             self.program_logging_dao.push_window_ahead_ten_sec(session)
             self.program_summary_dao.push_window_ahead_ten_sec(session)
@@ -164,14 +167,16 @@ class ActivityRecorder:
         if session.video_info:
             self.logger.log_video_info("add_partial_window", session.video_info)
             video_session: VideoSession = VideoSession.from_other_type(session)
+
             if isinstance(video_session, NetflixInfo):
                 video_session.media_title = (
                     self.netflix_title_resolver.recover_or_register_netflix_title(
                         video_session
                     )
                 )
-            self.video_summary_dao.add_used_time(video_session, duration_in_sec)
-
+            # Don't log time if the player isn't playing!
+            if video_session.video_info.player_state == PlayerState.PLAYING:
+                self.video_summary_dao.add_used_time(video_session, duration_in_sec)
         if isinstance(session, ProgramSession):
             self.program_summary_dao.add_used_time(session, duration_in_sec)
         elif isinstance(session, ChromeSession):
