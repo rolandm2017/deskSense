@@ -106,11 +106,13 @@ class ConsoleLogger:
         self.log_green(formatted)
         return f"[\033[92m{formatted} ++ ++ \033[0m "
 
-    def log_video_info(self, location_arg: str, video_obj: VideoInfo):
+    def log_video_info(self, location_arg: str, video_obj: VideoInfo, counter=None):
         message = (
             f"[{location_arg}] "
             + f"{video_obj.get_name()}"
             + " with state: "
             + video_obj.player_state.value
         )
+        if counter:
+            message = message + " :: " + str(counter)
         self.log_blue(message)

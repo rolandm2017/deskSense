@@ -76,11 +76,8 @@ def receive_youtube_tab_change_event(
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service),
 ):
-    logger.log_purple("[LOG] New YouTube received")
+    logger.log_purple("[VIDEO LOG] New YouTube Page received: " + tab_change_event.tabTitle)
     try:
-        print(
-            f"received {tab_change_event.channel} with tabTitle {tab_change_event.tabTitle}"
-        )
         field_has_utc_tzinfo_else_throw(tab_change_event.startTime)
 
         user_id = 1  # temp until i have more than 1 user
@@ -111,11 +108,10 @@ def receive_youtube_player_state(
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service),
 ):
-    # TODO: Align inputs definitions in chrome/api and server.py
-
-    logger.log_purple("[LOG] YouTube state received")
+    logger.log_purple(
+        "[VIDEO LOG] YouTube state received:" + player_change_event.playerState.value
+    )
     try:
-        print("State received", player_change_event.playerState)
         field_has_utc_tzinfo_else_throw(player_change_event.eventTime)
         user_id = 1  # temp until i have more than 1 user
 
@@ -146,18 +142,12 @@ def receive_netflix_tab_change_event(
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service),
 ):
-    logger.log_purple("[LOG] New Netflix received")
+    logger.log_purple("[VIDEO LOG] New Netflix Page received: " + tab_change_event.videoId)
     try:
-        # TODO: Align inputs definitions in chrome/api and server.py
-
-        print(f"received {tab_change_event.videoId}")
-        print("[video routes]", tab_change_event, "tab_change_event")
         field_has_utc_tzinfo_else_throw(tab_change_event.startTime)
-
         user_id = 1  # temp until i have more than 1 user
 
         # NOTE: tab_change_event.startTime is in UTC at this point, a naive tz
-        # capture_chrome_data_for_tests(tab_change_event)
         unified_event = VideoEventFactory.from_netflix_tab_change(tab_change_event)
 
         # Convert timezone
@@ -182,7 +172,7 @@ def receive_netflix_player_state(
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service),
 ):
-    logger.log_purple("[LOG] Netflix state received")
+    logger.log_purple("[VIDEO LOG] Netflix state received")
     try:
         # TODO: Align inputs definitions in chrome/api and server.py
 

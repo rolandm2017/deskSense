@@ -58,6 +58,9 @@ class ActivityRecorder:
         if not DEBUG:
             self.logger.log_yellow("Recorder logs are off")
 
+        self.add_ten_counter = 0
+        self.prev_hash = ""
+
         # For testing: collect session activity history
         # List of (session, timestamp) tuples for each pulse
         self.pulse_history = []
@@ -66,6 +69,8 @@ class ActivityRecorder:
 
     def on_new_session(self, session: ProgramSession | ChromeSession):
         # Nothing to do? Do an audit of logging time and summary time.
+        self.add_ten_counter = 0
+
         if session.video_info:
             self.logger.log_video_info("on_new_session", session.video_info)
             video_session = VideoSession.from_other_type(session)
@@ -75,14 +80,14 @@ class ActivityRecorder:
                         video_session
                     )
                 )
-            if video_session.video_info.player_state == PlayerState.PLAYING:
-                self.video_logging_dao.start_session(video_session)
+            # if video_session.video_info.player_state == PlayerState.PLAYING:
+            self.video_logging_dao.start_session(video_session)
 
-                session_exists_already = self.video_summary_dao.find_todays_entry_for_media(
-                    video_session
-                )
-                if not session_exists_already:
-                    self.video_summary_dao.start_session(video_session)
+            session_exists_already = self.video_summary_dao.find_todays_entry_for_media(
+                video_session
+            )
+            if not session_exists_already:
+                self.video_summary_dao.start_session(video_session)
         if isinstance(session, ProgramSession):
             # Regardless of the session being brand new today or a repeat,
             # must start a new logging session, to note the time being added to the summary.
@@ -113,6 +118,9 @@ class ActivityRecorder:
         Pushes the end of the window forward ten sec so that,
         when the computer shuts down, the end time was "about right" anyways.
         """
+        print("[add ten] DEBUG:", session)
+        print("DEBUG:", session.video_info, self.add_ten_counter)
+        self.add_ten_counter += 1
         if session is None:
             raise ValueError("Session was None in add_ten_sec")
         # For testing
@@ -123,7 +131,9 @@ class ActivityRecorder:
         # Window push now finds session based on start_time
 
         if session.video_info:
-            self.logger.log_video_info("add_ten_sec_to_end_time", session.video_info)
+            self.logger.log_video_info(
+                "add_ten_sec_to_end_time", session.video_info, self.add_ten_counter
+            )
             video_session = VideoSession.from_other_type(session)
             # Don't log time if the player isn't playing!
             if isinstance(video_session, NetflixInfo):
@@ -133,9 +143,9 @@ class ActivityRecorder:
                     )
                 )
 
-            if video_session.video_info.player_state == PlayerState.PLAYING:
-                self.video_logging_dao.push_window_ahead_ten_sec(video_session)
-                self.video_summary_dao.push_window_ahead_ten_sec(video_session)
+            # if video_session.video_info.player_state == PlayerState.PLAYING:
+            self.video_logging_dao.push_window_ahead_ten_sec(video_session)
+            self.video_summary_dao.push_window_ahead_ten_sec(video_session)
         if isinstance(session, ProgramSession):
             self.program_logging_dao.push_window_ahead_ten_sec(session)
             self.program_summary_dao.push_window_ahead_ten_sec(session)
@@ -152,6 +162,7 @@ class ActivityRecorder:
         Deducts t seconds from the duration of a session.
         Here, the session's current window was cut short by a new session taking it's place.
         """
+        self.add_ten_counter = 0
         if session.start_time is None:
             raise ValueError("Session start time was not set")
 
@@ -175,8 +186,8 @@ class ActivityRecorder:
                     )
                 )
             # Don't log time if the player isn't playing!
-            if video_session.video_info.player_state == PlayerState.PLAYING:
-                self.video_summary_dao.add_used_time(video_session, duration_in_sec)
+            # if video_session.video_info.player_state == PlayerState.PLAYING:
+            self.video_summary_dao.add_used_time(video_session, duration_in_sec)
         if isinstance(session, ProgramSession):
             self.program_summary_dao.add_used_time(session, duration_in_sec)
         elif isinstance(session, ChromeSession):

@@ -76,6 +76,14 @@ class KeepAliveEngine:
         Said another way, the addition of the full 10 sec
         happens in _pulse_add_ten.
         """
+        current_thread = threading.current_thread()
+        thread_id = threading.get_ident()
+        thread_name = current_thread.name
+
+        print(
+            f"[debug] CONCLUDING engine {self.session.get_name()} in thread '{thread_name}' (ID: {thread_id})"
+        )
+
         if self.amount_used == window_push_length:
             raise FullWindowError("Used the wrong method to add ten sec")
         self._add_partial_window(self.amount_used)
@@ -96,6 +104,14 @@ class KeepAliveEngine:
 
         Note that the Recorder will just do nothing if 0 is sent. This keeps testing simple.
         """
+        current_thread = threading.current_thread()
+        thread_id = threading.get_ident()
+        thread_name = current_thread.name
+
+        print(
+            f"[add_partial_window] {self.session.get_name()} with amount: {amount_used} in thread '{thread_name}' (ID: {thread_id})"
+        )
+
         self.recorder.add_partial_window(amount_used, self.session)
         # pass  # Temporarily disabled
 
@@ -139,7 +155,14 @@ class ThreadedEngineContainer:
         if not self.is_running:
             self.stop_event.clear()  # Clear the stop event instead of creating a new one
 
-            self.hook_thread = threading.Thread(target=self._iterate_loop)
+            # Set a custom thread name based on the session
+            thread_name = (
+                f"KeepAlive-{self.engine.session.get_name()}"
+                if self.engine
+                else "KeepAlive-Unknown"
+            )
+
+            self.hook_thread = threading.Thread(target=self._iterate_loop, name=thread_name)
             self.hook_thread.daemon = True
             self.hook_thread.start()
             self.is_running = True
@@ -162,11 +185,25 @@ class ThreadedEngineContainer:
             # Expect that add_first_engine is used to initialize.
             raise MissingEngineError()
 
+        current_thread = threading.current_thread()
+        thread_id = threading.get_ident()
+
+        print(
+            f"[replace_engine] Replacing engine for '{self.engine.session.get_name()}' with '{new_engine.session.get_name()}' in thread '{current_thread.name}' (ID: {thread_id})"
+        )
+
         # NOTE: If you have some sort of off by 1 error, it could be because
         # the current .sleep() hasn't flushed yet, i.e. the prev iteration is still going
         if self.is_running:
             # Stop the current engine's work gracefully
+            print(
+                f"[replace_engine] About to conclude old engine: {self.engine.session.get_name()}"
+            )
             self.engine.conclude()
+            print(
+                f"[replace_engine] Old engine concluded, setting new engine: {new_engine.session.get_name()}"
+            )
+
             # Swap the engine
             self.engine = new_engine
         else:

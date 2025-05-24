@@ -222,7 +222,10 @@ class ChromeSession(ActivitySession):
         return parse_time_string(time_str)
 
     def __str__(self):
-        return f"ChromeSession(domain='{self.domain}', detail='{self.detail}', \n\tstart_time='{self.start_time}', \n\tproductive='{self.productive}', \n\tledger='{self.ledger.get_total()}')"
+        vid_info_str = (
+            self.video_info.get_name_with_platform() if self.video_info else "None"
+        )
+        return f"ChromeSession(domain='{self.domain}', detail='{self.detail}', \n\tstart_time='{self.start_time}', \n\tproductive='{self.productive}', \n\tledger='{self.ledger.get_total()}', video_info='{vid_info_str}')"
 
 
 # class ChromeSessionWithVideo(ChromeSession):
