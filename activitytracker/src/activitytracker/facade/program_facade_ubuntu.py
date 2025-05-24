@@ -18,25 +18,37 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
         self.X = X
 
     def listen_for_window_changes(self) -> Generator[ProgramSessionDict, None, None]:
-        if self.X is None or self.display is None:
-            raise AttributeError("Crucial component was not initialized")
+        """
+        Pure event-based window change detection.
+        Blocks until window focus changes, then yields window info.
 
+        X11 implementation using event hooks for efficient window change detection.
+        This method sets up an X11 event mask that triggers on window focus changes.
+
+        Yields:
+            Dict: Information about the new active window after each focus change.
+        """
         d = self.display.Display()
         root = d.screen().root
 
         # Listen for focus change events
-        # TODO: Change to a hook
-
         root.change_attributes(event_mask=self.X.FocusChangeMask | self.X.PropertyChangeMask)
 
+        # Get initial window state
+        initial_window = self._read_ubuntu()
+        yield initial_window
+
         while True:
-            print("33ru")
             event = d.next_event()
-            if event.type == self.X.PropertyNotify:
-                if event.atom == d.intern_atom("_NET_ACTIVE_WINDOW"):
-                    # Window focus changed - get new window info
-                    window_info = self._read_ubuntu()
-                    yield window_info
+
+            # Filter for the specific property change we care about
+            if event.type == self.X.PropertyNotify and event.atom == d.intern_atom(
+                "_NET_ACTIVE_WINDOW"
+            ):
+
+                # Window focus changed - get new window info
+                window_info = self._read_ubuntu()
+                yield window_info
 
     def _read_ubuntu(self) -> ProgramSessionDict:
         # Ubuntu implementation using wmctrl or xdotool could go here
@@ -135,13 +147,3 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
         except Exception as e:
             self.console_logger.debug(f"Error getting active window: {e}")
             return None
-
-    def setup_window_hook(self):
-        """
-        X11 implementation using event hooks for efficient window change detection.
-        This method sets up an X11 event mask that triggers on window focus changes.
-
-        Yields:
-            Dict: Information about the new active window after each focus change.
-        """
-        pass  # Note that the implementation exists in git

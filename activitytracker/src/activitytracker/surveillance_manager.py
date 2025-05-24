@@ -26,6 +26,7 @@ from activitytracker.util.clock import UserFacingClock
 from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.copy_util import snapshot_obj_for_tests
 from activitytracker.util.detect_os import OperatingSystemInfo
+from activitytracker.util.eventful_threaded_tracker import EventBasedThreadedTracker
 from activitytracker.util.periodic_task import AsyncPeriodicTask
 from activitytracker.util.threaded_tracker import ThreadedTracker
 
@@ -121,7 +122,7 @@ class SurveillanceManager:
 
         self.keyboard_thread = ThreadedTracker(self.keyboard_tracker)
         self.mouse_thread = ThreadedTracker(self.mouse_tracker)
-        self.program_thread = ThreadedTracker(self.program_tracker)
+        self.program_thread = EventBasedThreadedTracker(self.program_tracker)
 
         self.cancelled_tasks = 0
 
@@ -132,6 +133,7 @@ class SurveillanceManager:
         print("Running trackers")
         self.keyboard_thread.start()
         self.mouse_thread.start()
+        # self.program_tracker.run_tracking_loop()  # This will block and run forever
         self.program_thread.start()
 
     def print_sys_status_info(self):

@@ -54,7 +54,7 @@ class ProgramTrackerCore:
 
         self.vlc_is_active = False
         self.latest_vlc_state = VlcInfo(
-            "Initialize", "", "", player_state=PlayerState.PAUSED
+            "Initialize", "Initialize", "Initialize", player_state=PlayerState.PAUSED
         )
 
         self.current_session: ProgramSession | None = None
@@ -62,6 +62,7 @@ class ProgramTrackerCore:
         self.console_logger = ConsoleLogger()
 
     def run_tracking_loop(self):
+        print("Starting pure event-based window tracking...")
         for window_change in self.program_facade.listen_for_window_changes():
             # if self.vlc_is_active:
             self.console_logger.log_white("\n\n\n\nINFO:", window_change)

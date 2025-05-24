@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+
 from typing import Dict, Generator
 
 
@@ -15,16 +16,5 @@ class ProgramFacadeInterface(ABC):
 
         Yields:
             Dict: Information about the new active window after each focus change.
-        """
-        pass
-
-    @abstractmethod
-    def setup_window_hook(self) -> Generator[Dict, None, None]:
-        """
-        Sets up a hook to detect window focus changes.
-
-        Returns:
-            Generator[Dict, None, None]: A generator that yields information about
-            the active window when focus changes.
         """
         pass
