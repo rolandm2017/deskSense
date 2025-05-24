@@ -205,7 +205,6 @@ function splitYouTubeUrlFromVideoId(url: string) {
 }
 
 export function getYouTubeVideoId(url: string | undefined) {
-    console.log(url, "192ru");
     let videoId;
     if (url) {
         videoId = splitYouTubeUrlFromVideoId(url);

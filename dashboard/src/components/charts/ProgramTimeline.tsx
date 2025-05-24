@@ -334,7 +334,6 @@ const ProgramTimeline: React.FC<ProgramTimelineProps> = ({
                         });
 
                         // // if (event.endTime.getHours() < 19) {  // odd times gone
-                        // console.log(event.startTime.getHours(), "265ru");
                         addEventLinesForPrograms(
                             yPosition + programIndex * 10,
                             program.programName,

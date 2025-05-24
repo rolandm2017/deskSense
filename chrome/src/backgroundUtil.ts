@@ -176,7 +176,6 @@ export class PlayPauseDispatch {
             // It wasn't there yet because, the, the channel extractor
             // script didn't run yet but the "report playing video" code did.
             const isYouTube = "TODO";
-            console.log(this.tracker.currentMedia, "207ru");
 
             throw new Error("ShouldntBeAbleToGetHereError");
             if (isYouTube) {
@@ -245,7 +244,6 @@ export class PlayPauseDispatch {
         if (this.tracker.currentMedia) {
             this.tracker.markPaused();
         } else {
-            console.log(this.tracker.currentMedia, "238ru");
             console.warn("Somehow paused the media while it was undefined");
             throw new Error("ShouldntBeAbleToGetHereError");
         }

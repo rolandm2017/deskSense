@@ -52,7 +52,6 @@ describe("YouTube Autoplay", () => {
 
         expect(server.youtube.reportYouTubeWatchPage).toHaveBeenCalledOnce();
 
-        console.log(watchPageReportingMock.mock.calls[0].length, "56ru");
         const tabTitle = watchPageReportingMock.mock.calls[0][0];
         const videoId = watchPageReportingMock.mock.calls[0][1];
         const channel = watchPageReportingMock.mock.calls[0][2];
@@ -111,7 +110,6 @@ describe("YouTube Autoplay", () => {
 
         expect(server.youtube.sendPauseEvent).not.toBeCalled();
 
-        console.log(sendPlayEventMock.mock.calls[0].length, "56ru");
         const payload = sendPlayEventMock.mock.calls[0][0];
         const tabTitle = payload.tabTitle;
         const channel = payload.channelName;

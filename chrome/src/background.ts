@@ -24,7 +24,6 @@ function helpDeveloperNoticeMissingNpmRunBuild() {
     const hoursSinceBuild = Math.round(
         (now.getTime() - lastBuiltTimestamp.getTime()) / (1000 * 60 * 60)
     );
-    console.log(lastBuiltTimestamp, "aaaaaa 27ru");
     console.log(now.getTime() - lastBuiltTimestamp.getTime());
     const minutesSinceBuild = Math.round(
         (now.getTime() - lastBuiltTimestamp.getTime()) / (1000 * 60)
@@ -106,12 +105,10 @@ chrome.runtime.onMessage.addListener(
          * somewhere else in the program.
          */
         if (message.event === "user_pressed_play") {
-            console.log(message.event, "!! 100ru");
             // FIXME: User is able to press pause, somehow, before .setCurrent is called
             // TODO: On close ... oh, i need one PER watch screen. what if user has 5 videos going?
             playPauseDispatch.notePlayEvent(sender);
         } else if (message.event === "user_pressed_pause") {
-            console.log(message.event, "!! 105ru");
             playPauseDispatch.notePauseEvent();
         } else if (message.event === "youtube_autoplay") {
             console.log("[autoplay] youtube");

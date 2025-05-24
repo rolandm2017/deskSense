@@ -68,7 +68,6 @@ export function addEventLinesForPrograms(
     const endX = x(endTime);
 
     if (startTime.getHours() < 5 || startTime.getHours() >= 24) {
-        console.warn("Skipping ", startTime.getHours(), "73ru");
         return; // Skip events outside the defined time range
     }
 
