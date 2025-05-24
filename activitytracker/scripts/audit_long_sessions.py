@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 
 from typing import List
 
+from activitytracker.config.definitions import productive_apps, productive_sites
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
@@ -53,6 +54,38 @@ def sort_by_gathering_date(events: List):
         else:
             by_date_dict[gathering_date] = [event]
     return by_date_dict
+
+
+def sum_chrome_summaries(chrome_sums):
+    productivity = 0
+    leisure = 0
+    for domain in chrome_sums:
+        if domain.domain_name in productive_sites:
+            productivity = productivity + domain.hours_spent
+        else:
+            leisure = leisure + domain.hours_spent
+    return productivity, leisure
+
+
+def sum_program_summaries(program_sums):
+    productivity = 0
+    leisure = 0
+    alt_tab_window_hours = []
+    for program in program_sums:
+        # Make sure Chrome is SKIPPED!
+        if program.program_name == "Google Chrome":
+            # TODO: Verify that Chrome doesn't put a session into the Arbiter.
+            continue  # Don't double count
+        hours_spent: float = float(program.hours_spent)  # type: ignore
+        if str(program.program_name) == "Alt-tab window":
+            alt_tab_window_hours.append(program.hours_spent)
+            continue  # temp - skipping bugged outputs
+        if program.program_name in productive_apps:
+            # print("< LOG > adding " + program.program_name)
+            productivity = productivity + hours_spent
+        else:
+            leisure = leisure + hours_spent
+    return productivity, leisure, sum(alt_tab_window_hours)
 
 
 def main():
@@ -137,13 +170,37 @@ def main():
     for log in actual_logs:
         print(log)
 
-    # print("All program summaries")
-    # for entry in all_program_summaries:
-    #     print(entry)
+    program_sums_by_date = sort_by_gathering_date(all_program_summaries)
+    chrome_sums_by_date = sort_by_gathering_date(all_chrome_summaries)
 
-    # print("All Chrome summaries")
-    # for entry in all_chrome_summaries:
-    #     print(entry)
+    hours_by_day_out = {}
+
+    for day, sums in program_sums_by_date.items():
+        prod, leisure, alt_tab = sum_program_summaries(sums)
+        if day in hours_by_day_out:
+            hours_by_day_out[day] += prod
+            hours_by_day_out[day] += leisure + alt_tab
+        else:
+            hours_by_day_out[day] = prod + leisure + alt_tab
+
+    for day, sums in chrome_sums_by_date.items():
+        prod, leisure = sum_chrome_summaries(sums)
+        if day in hours_by_day_out:
+            hours_by_day_out[day] += prod
+            hours_by_day_out[day] += leisure
+        else:
+            hours_by_day_out[day] = prod + leisure
+
+    totals_index = []
+
+    for day, total in sorted(hours_by_day_out.items()):
+        print(f"day: {day}, total: {total:.3f}")
+        totals_index.append(total)
+
+    totals_index.sort()
+
+    for v in totals_index:
+        print(round(v, 3))
 
 
 if __name__ == "__main__":
