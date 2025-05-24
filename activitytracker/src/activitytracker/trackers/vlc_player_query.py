@@ -61,10 +61,14 @@ def get_vlc_status() -> VlcInfo | None:
         info = data.get("information", {}).get("category", {}).get("meta", {})
         # print("INFO:", info)
         full_url = info.get("url")  # e.g., file:///C:/Videos/movie.mp4
-        filename = info.get("filename")
+        filename = (
+            info.get("filename") if info.get("filename") is not None else "No file loaded"
+        )
 
-        file_path = None
+        file_path = "No file loaded"
         # print("full url:", full_url)
+        # FIXME: Handle case where file path is none, file name is None, because
+        # VLC has no media loaded yet
         if full_url and full_url.startswith("file://"):
             file_path = urllib.parse.unquote(full_url[7:])
 

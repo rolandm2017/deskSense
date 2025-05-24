@@ -25,9 +25,9 @@ class AsyncPeriodicTask:
             if self.DEBUG:
                 print("[polling shell] running polling loop", self.interval, self.loop_count)
             try:
-                await self.periodic_task()
+                self.periodic_task()
             except Exception as e:
-                print(f"ERROR in polling loop: {e}")
+                print(f"ERROR in asynchronous periodic task: {e}")
             self.loop_count += 1
             await self.sleep_func(self.interval)
 

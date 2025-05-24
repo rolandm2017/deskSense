@@ -22,7 +22,7 @@ class SyncPeriodicTask:
             try:
                 self.periodic_task()
             except Exception as e:
-                print(f"ERROR in polling loop: {e}")
+                print(f"ERROR in sync task polling loop: {e}")
             loop_count += 1
 
     def start(self):
