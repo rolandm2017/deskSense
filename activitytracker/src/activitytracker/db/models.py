@@ -143,8 +143,8 @@ class ProgramSummaryLog(SummaryLogBase):
     def __str__(self):
         return (
             f"ProgramSummaryLog(id={self.id}, program_name={self.program_name}, hours_spent={self.hours_spent}, "
-            f"start_time={self.start_time}, end_time={self.end_time}, "
-            f"gathering_date={self.gathering_date}, created_at={self.created_at})"
+            f"\n\tstart_time={self.start_time}, end_time={self.end_time}, duration={self.duration_in_sec}, "
+            f"\n\tgathering_date={self.gathering_date}, created_at={self.created_at})"
         )
 
 

@@ -41,17 +41,22 @@ def convert_summary_to_tz(summary_obj: DailySummaryBase, tz):
     """
     utc = pytz.UTC
 
+    already_utc_aware = (
+        summary_obj.gathering_date.tzinfo == timezone.utc
+        or str(summary_obj.gathering_date.tzinfo) == "UTC"
+    )
+
     # Check if gathering_date already has timezone info
     if summary_obj.gathering_date.tzinfo is None:
         # If naive, localize to UTC first
         utc_time = utc.localize(summary_obj.gathering_date)
-    else:
+        converted_time = utc_time.astimezone(tz)
+        summary_obj.gathering_date = converted_time
+    elif already_utc_aware:
         # If already has timezone info, just use it
         utc_time = summary_obj.gathering_date
-
-    converted_time = utc_time.astimezone(tz)
-
-    summary_obj.gathering_date = converted_time
+        converted_time = utc_time.astimezone(tz)
+        summary_obj.gathering_date = converted_time
 
 
 def convert_log_to_tz(log_obj: SummaryLogBase, tz):
@@ -62,30 +67,35 @@ def convert_log_to_tz(log_obj: SummaryLogBase, tz):
     # First, determine the original timezone (if known)
     original_tz = pytz.timezone("UTC")  # Assuming they were originally UTC
 
+    already_utc_aware = (
+        log_obj.gathering_date.tzinfo == timezone.utc
+        or str(log_obj.gathering_date.tzinfo) == "UTC"
+    )
     # Properly localize and then convert each datetime
     if log_obj.gathering_date.tzinfo is None:
         temp_time = original_tz.localize(log_obj.gathering_date)
         log_obj.gathering_date = temp_time.astimezone(tz)
-    elif (
-        log_obj.gathering_date.tzinfo == timezone.utc
-        or str(log_obj.gathering_date.tzinfo) == "UTC"
-    ):
+    elif already_utc_aware:
         # Already UTC-aware - just convert to target timezone
         log_obj.gathering_date = log_obj.gathering_date.astimezone(tz)
 
+    already_utc_aware = (
+        log_obj.start_time.tzinfo == timezone.utc or str(log_obj.start_time.tzinfo) == "UTC"
+    )
     if log_obj.start_time.tzinfo is None:
         temp_time = original_tz.localize(log_obj.start_time)
         log_obj.start_time = temp_time.astimezone(tz)
-    elif (
-        log_obj.start_time.tzinfo == timezone.utc or str(log_obj.start_time.tzinfo) == "UTC"
-    ):
+    elif already_utc_aware:
         # Already UTC-aware - just convert to target timezone
         log_obj.start_time = log_obj.start_time.astimezone(tz)
 
+    already_utc_aware = (
+        log_obj.end_time.tzinfo == timezone.utc or str(log_obj.end_time.tzinfo) == "UTC"
+    )
     if log_obj.end_time.tzinfo is None:
         temp_time = original_tz.localize(log_obj.end_time)
         log_obj.end_time = temp_time.astimezone(tz)
-    elif log_obj.end_time.tzinfo == timezone.utc or str(log_obj.end_time.tzinfo) == "UTC":
+    elif already_utc_aware:
         # Already UTC-aware - just convert to target timezone
         log_obj.end_time = log_obj.end_time.astimezone(tz)
 

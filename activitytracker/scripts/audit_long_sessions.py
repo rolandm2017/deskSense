@@ -1,13 +1,11 @@
 """
+Tool for looking for sessions that have extraordinarily long durations.
 
-#
-#
-# Tool for checking that the db contains no sessions from when the computer was not used.
-#
-#
+Five minutes is a long session, probably it's VSCode.
 
-The intent is to look for days where the data surely is from a bug.
+This script aims to find the ones that are one hour or more.
 
+Probably those are from the computer sleeping.
 """
 
 import pytz
@@ -69,11 +67,17 @@ def main():
     day_end_as_utc = (latest_plausible_hour + pst_offset) % 24
 
     all_program_logs = program_logging_dao.read_all()
+    print(my_tz)
     all_program_logs = convert_all_to_tz(all_program_logs, my_tz)
     all_chrome_logs = chrome_logging_dao.read_all()
+    print(my_tz)
     all_chrome_logs = convert_all_to_tz(all_chrome_logs, my_tz)
-    # all_program_summaries = program_summary_dao.read_all()
-    # all_chrome_summaries = chrome_summary_dao.read_all()
+    all_program_summaries = program_summary_dao.read_all()
+    print(my_tz)
+    all_program_summaries = convert_all_to_tz(all_program_summaries, my_tz)
+    all_chrome_summaries = chrome_summary_dao.read_all()
+    print(my_tz)
+    all_chrome_summaries = convert_all_to_tz(all_chrome_summaries, my_tz)
     # --
     # --
     # -- It should all be in PST now!!!
@@ -81,13 +85,11 @@ def main():
     # --
 
     program_logs_dict = sort_by_gathering_date(all_program_logs)
+    for key, item in program_logs_dict.items():
+        print(key, "key")
     chrome_logs_dict = sort_by_gathering_date(all_chrome_logs)
-    # exit()
-    # domain_logs_dict = sort_by_gathering_date(all_chrome_logs)
-    # program_sums_dict = sort_by_gathering_date(all_program_summaries)
-    # domain_sums_dict = sort_by_gathering_date(all_chrome_summaries)
 
-    recent_n_days_to_check = 6
+    recent_n_days_to_check = 22
     # make the recent n dates
     to_check = []  # Is in reverse chronological order
     today = datetime.now()
@@ -100,60 +102,49 @@ def main():
         gathering_date_string = n_days_ago.strftime("%Y-%m-%d")
         to_check.append(gathering_date_string)
 
-    end_times_hashtable = {}
-    problem_logs = 0
+    problem_durations_table = {}
+    problem_logs_count = 0
 
-    # FIXME: adjust the problem logs values by PST offset:  pst_hour = (utc_hour - pst_offset) % 24
+    actual_logs = []
 
-    # FIXME: account for PST -> UTC -> PST
+    one_hour_in_sec = 3600
 
     # Go over the latest entries in
     for i in range(recent_n_days_to_check):
         gathering_date = to_check[i]
+        if gathering_date not in program_logs_dict:
+            continue
         relevant_logs = program_logs_dict[gathering_date]
         for log in relevant_logs:
             log: ProgramSummaryLog | DomainSummaryLog
-            end_hour = log.end_time.hour
-            if end_hour in end_times_hashtable:
-                end_times_hashtable[end_hour] += 1
-            else:
-                end_times_hashtable[end_hour] = 1
-            if end_hour > day_start_as_utc or end_hour < day_end_as_utc:
+            log.duration_in_sec
+            if log.duration_in_sec > one_hour_in_sec:
+                duration_as_hours = log.duration_in_sec / one_hour_in_sec
+                hours_truncated = int(duration_as_hours)
+                if hours_truncated in problem_durations_table:
+                    problem_durations_table[hours_truncated] += 1
+                else:
+                    problem_durations_table[hours_truncated] = 1
+                problem_logs_count += 1
+                actual_logs.append(log)
 
-                problem_logs += 1
-                # print("Problem log:", log)
+    # loop over the problem durations
+    print("Problem Durations Table:")
+    for hour, count in problem_durations_table.items():
+        print(f"Hour: {hour} - Count: {count}")
 
-    print("end times table:")
-    for i in range(0, 24):
-        if i in end_times_hashtable:
+    print("Actual problem logs:")
+    for log in actual_logs:
+        print(log)
 
-            print(f"{i}: {end_times_hashtable[i]}")
-        else:
-            print(f"{i}: 0")
-    print(f"PST end times:")
-    pst_table = {}
-    pst_offset = 7  # UTC is 7 hours ahead of PST
-    for utc_hour in range(0, 24):
-        # Convert UTC to PST (subtract offset)
-        pst_hour = (utc_hour - pst_offset) % 24
+    # print("All program summaries")
+    # for entry in all_program_summaries:
+    #     print(entry)
 
-        # Map the UTC value to the PST hour
-        if utc_hour in end_times_hashtable:
-            pst_table[pst_hour] = end_times_hashtable[utc_hour]
-        else:
-            pst_table[pst_hour] = 0
-
-    # Print PST table in order
-    for i in range(0, 24):
-        if i in pst_table:
-            print(f"{i}: {pst_table[i]}")
-        else:
-            print(f"{i}: 0")
-    print(f"total problem logs: {problem_logs}")
+    # print("All Chrome summaries")
+    # for entry in all_chrome_summaries:
+    #     print(entry)
 
 
-#         # This is how you would run the async function
 if __name__ == "__main__":
     main()
-
-# # TODO: Go day by day for the past two weeks.
