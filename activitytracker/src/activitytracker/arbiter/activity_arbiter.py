@@ -87,8 +87,8 @@ class ActivityArbiter:
             self.logger.log_white("[Exe]", new_session.window_title)
         else:
             self.logger.log_white("[Tab]", new_session.domain)
-            if new_session.video_info:
-                self.logger.log_white("[vid]", new_session.video_info)
+        if new_session.video_info:
+            self.logger.log_white("[Vid]", new_session.video_info)
         assert not isinstance(new_session, dict), "Found an empty dictionary as session"
 
         # TODO: Check in here, "Is this session the first one

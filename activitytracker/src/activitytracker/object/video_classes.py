@@ -97,3 +97,8 @@ class VlcInfo(VideoInfo):
 
     def __str__(self) -> str:
         return f"{self.file}, {self.folder}, {self.player_state}"
+
+    def __eq__(self, other):
+        if not isinstance(other, VlcInfo):
+            return False
+        return self.__dict__ == other.__dict__

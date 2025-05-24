@@ -9,44 +9,12 @@ from activitytracker.config.definitions import (
     productive_sites,
 )
 from activitytracker.object.classes import CompletedProgramSession, ProgramSession
+from activitytracker.object.enums import PlayerState
+from activitytracker.object.video_classes import VlcInfo
 from activitytracker.trackers.program_tracker import ProgramTrackerCore
 from activitytracker.util.time_wrappers import UserLocalTime
 
 from ..mocks.mock_clock import MockClock
-
-
-@pytest.fixture
-def mock_facade():
-    facade = Mock()
-    facade.read_current_program_info.return_value = {
-        "os": "Ubuntu",
-        "pid": 12345,
-        "process_name": "chrome",
-        "window_title": "Test Window - Google Chrome",
-    }
-    return facade
-
-
-@pytest.fixture
-def mock_event_handler():
-    return Mock()
-
-
-@pytest.fixture
-def times():
-    return [datetime(2024, 1, 1, 12, 0), datetime(2024, 1, 1, 12, 1)]
-
-
-@pytest.fixture
-def clock(times):
-    return MockClock(times)
-
-
-@pytest.fixture
-def tracker(mock_facade, mock_event_handler, clock):
-
-    return ProgramTrackerCore(clock, mock_facade, mock_event_handler)
-
 
 ex3 = {
     "os": "Ubuntu",
@@ -258,6 +226,8 @@ def test_a_series_of_programs():
     assert tracker.current_session.window_title == program1["window_title"]
     assert tracker.current_session.detail == no_space_dash_space
 
+    assert handler.call_count == 1
+
     # More setup
     program2 = {
         "os": "some_val",
@@ -274,6 +244,7 @@ def test_a_series_of_programs():
     assert tracker.current_session.detail == no_space_dash_space
     assert tracker.current_session.start_time is not None
     assert clock.now.call_count == 2
+    assert handler.call_count == 2
 
     # More setup
     program3 = {
@@ -290,6 +261,7 @@ def test_a_series_of_programs():
     assert tracker.current_session.window_title == "Google Chrome"
     assert tracker.current_session.detail == "Vite + React + TS"
     assert clock.now.call_count == 3
+    assert handler.call_count == 3
 
     # More setup
     program4 = {
@@ -306,6 +278,7 @@ def test_a_series_of_programs():
     # Assert
     assert tracker.current_session.window_title == program4["window_title"]
     assert clock.now.call_count == 4
+    assert handler.call_count == 4
 
     # More setup
     program5 = {
@@ -321,7 +294,183 @@ def test_a_series_of_programs():
     # Assert
     assert clock.now.call_count == 5
     assert tracker.current_session.window_title == "Visual Studio Code"
+    assert handler.call_count == 5
 
     # ### Final assertions
 
     assert tracker.current_session.detail == "program_tracker.py - deskSense"
+
+
+def test_vlc_info_eq():
+    """Testing the custom __eq__ implementation"""
+    v1 = VlcInfo("foo", "FOO", "foo", PlayerState.PAUSED)
+    v2 = VlcInfo("foo", "FOO", "foo", PlayerState.PAUSED)
+
+    assert v1 == v2
+
+
+def test_initial_vlc_player_is_broadcast():
+    t1 = datetime(2024, 1, 1, 12, 2)
+    t2 = datetime(2024, 1, 1, 12, 4)
+    t3 = datetime(2024, 1, 1, 12, 7)
+    t4 = datetime(2024, 1, 1, 12, 10)
+    t5 = datetime(2024, 1, 1, 12, 14)
+    t6 = datetime(2024, 1, 1, 12, 15)
+    t7 = datetime(2024, 1, 1, 12, 19)
+
+    clock = MockClock([t1, t2, t3, t4, t5, t6, t7])
+    clock = MagicMock(wraps=clock)
+    facade = Mock()
+
+    events = []
+
+    def handler(event):
+        events.append(event)
+
+    tracker = ProgramTrackerCore(clock, facade, handler)
+
+    vlc_media_changed_spy = Mock(side_effect=tracker.vlc_media_changed)
+    tracker.vlc_media_changed = vlc_media_changed_spy
+
+    pretend_media = VlcInfo(
+        "LanguageLords.mov",
+        "LanguageLords.mov",
+        "C:/Videos/LanguageLords",
+        PlayerState.PAUSED,
+    )
+
+    vlc_tracker_spy = Mock(return_value=pretend_media)
+
+    tracker.vlc_tracker.get_updated_vlc_status = vlc_tracker_spy
+
+    assert tracker.current_session is None, "Initialization conditions not met"
+
+    # Setup
+    program1 = {
+        "os": "some_val",
+        "process_name": "vlc",
+        "exe_path": "/usr/bin/vlc",
+        "window_title": "How I Got Fluent In French In 30 Days Full 8 Hour Daily Routine -Bue05mPPoFw-1080pp-1705116796.mp4 - VLC media player",
+    }
+    facade.listen_for_window_changes.return_value = iter([program1])
+
+    # Act
+    tracker.run_tracking_loop()  # 1
+
+    vlc_tracker_spy.assert_called_once()
+    vlc_media_changed_spy.assert_called_once()
+
+    assert len(events) == 1
+
+    assert isinstance(events[0], ProgramSession)
+    assert isinstance(events[0].video_info, VlcInfo)
+
+    assert events[0].exe_path == program1["exe_path"]
+    assert events[0].video_info.file == pretend_media.file
+
+
+def test_multiple_vlc_state_changes():
+    t1 = datetime(2024, 1, 1, 12, 2)
+    t2 = datetime(2024, 1, 1, 12, 4)
+    t3 = datetime(2024, 1, 1, 12, 7)
+    t4 = datetime(2024, 1, 1, 12, 10)
+    t5 = datetime(2024, 1, 1, 12, 14)
+    t6 = datetime(2024, 1, 1, 12, 15)
+    t7 = datetime(2024, 1, 1, 12, 19)
+
+    clock = MockClock([t1, t2, t3, t4, t5, t6, t7])
+    clock = MagicMock(wraps=clock)
+    facade = Mock()
+
+    events = []
+
+    def handler(event):
+        events.append(event)
+
+    tracker = ProgramTrackerCore(clock, facade, handler)
+
+    vlc_media_changed_spy = Mock(side_effect=tracker.vlc_media_changed)
+    tracker.vlc_media_changed = vlc_media_changed_spy
+
+    pretend_media = VlcInfo(
+        "LanguageLords.mov",
+        "LanguageLords.mov",
+        "C:/Videos/LanguageLords",
+        PlayerState.PAUSED,
+    )
+
+    vlc_tracker_spy = Mock(return_value=pretend_media)
+
+    tracker.vlc_tracker.get_updated_vlc_status = vlc_tracker_spy
+
+    assert tracker.current_session is None, "Initialization conditions not met"
+
+    # Setup
+    program1 = {
+        "os": "some_val",
+        "process_name": "vlc",
+        "exe_path": "/usr/bin/vlc",
+        "window_title": "How I Got Fluent In French In 30 Days Full 8 Hour Daily Routine -Bue05mPPoFw-1080pp-1705116796.mp4 - VLC media player",
+    }
+    facade.listen_for_window_changes.return_value = iter([program1])
+
+    # Act
+    tracker.run_tracking_loop()  # 1
+
+    vlc_tracker_spy.assert_called_once()
+    vlc_media_changed_spy.assert_called_once()
+
+    assert len(events) == 1
+
+    assert isinstance(events[0], ProgramSession)
+    assert isinstance(events[0].video_info, VlcInfo)
+
+    assert events[0].exe_path == program1["exe_path"]
+    assert events[0].video_info.file == pretend_media.file
+    assert events[0].video_info.player_state == pretend_media.player_state
+
+    # More setup
+    program2 = program1
+
+    facade.listen_for_window_changes.return_value = iter([program2])
+    second_mock_info = VlcInfo(
+        "LanguageLords.mov",
+        "LanguageLords.mov",
+        "C:/Videos/LanguageLords",
+        PlayerState.PLAYING,
+    )
+    vlc_tracker_spy = Mock(return_value=second_mock_info)
+    tracker.vlc_tracker.get_updated_vlc_status = vlc_tracker_spy
+    # Act
+    tracker.run_tracking_loop()  # 2
+
+    assert len(events) == 2
+    assert isinstance(events[1], ProgramSession)
+    assert isinstance(events[1].video_info, VlcInfo)
+
+    assert events[1].exe_path == program2["exe_path"]
+    assert events[1].video_info.file == second_mock_info.file
+    assert events[1].video_info.player_state == second_mock_info.player_state
+
+    # More setup
+    program3 = program1
+
+    facade.listen_for_window_changes.return_value = iter([program3])
+    third_mock_result = VlcInfo(
+        "LanguageLords.mov",
+        "LanguageLords.mov",
+        "C:/Videos/LanguageLords",
+        PlayerState.PAUSED,
+    )
+    vlc_tracker_spy = Mock(return_value=third_mock_result)
+    tracker.vlc_tracker.get_updated_vlc_status = vlc_tracker_spy
+    # Act
+    tracker.run_tracking_loop()  # 2
+
+    assert len(events) == 3
+    assert isinstance(events[2], ProgramSession)
+    assert isinstance(events[2].video_info, VlcInfo)
+
+    assert events[2].exe_path == program2["exe_path"]
+    assert events[2].video_info.file == third_mock_result.file
+    assert events[2].video_info.player_state == third_mock_result.player_state

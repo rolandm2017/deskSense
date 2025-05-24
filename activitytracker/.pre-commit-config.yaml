@@ -3,7 +3,7 @@ repos:
       hooks:
           - id: sync-types
             name: Sync TypeScript types
-            entry: python activitytracker/scripts/sync_types.py
+            entry: bash -c 'cd activitytracker && source .venv-linux2/bin/activate && python scripts/sync_types.py'
             language: system
             files: '.*\.py$' # Only run when Python files change
             pass_filenames: false

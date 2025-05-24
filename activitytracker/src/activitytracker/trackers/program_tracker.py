@@ -6,6 +6,7 @@ from datetime import datetime
 from activitytracker.config.definitions import no_space_dash_space
 from activitytracker.facade.program_facade_base import ProgramFacadeInterface
 from activitytracker.object.classes import ProgramSession
+from activitytracker.object.enums import PlayerState
 from activitytracker.object.video_classes import VlcInfo
 from activitytracker.util.clock import SystemClock
 from activitytracker.util.console_logger import ConsoleLogger
@@ -52,6 +53,9 @@ class ProgramTrackerCore:
         self.vlc_tracker = VlcMediaPlayerTracker()
 
         self.vlc_is_active = False
+        self.latest_vlc_state = VlcInfo(
+            "Initialize", "", "", player_state=PlayerState.PAUSED
+        )
 
         self.current_session: ProgramSession | None = None
 
@@ -59,72 +63,64 @@ class ProgramTrackerCore:
 
     def run_tracking_loop(self):
         for window_change in self.program_facade.listen_for_window_changes():
-            if self.vlc_is_active:
-                if self.window_is_vlc(window_change):
-                    for vlc_state_change in self.vlc_tracker.listen_for_player_changes():
-                        updated_vlc_session = self.start_new_video_session(
-                            window_change, current_time, vlc_state_change
-                        )
-                        self.current_session = updated_vlc_session
-
-                        print("Returning VLC content")
-                        self.window_change_handler(updated_vlc_session)
-                        return
-                else:
-                    self.vlc_is_active = False
-
-            # FIXME: "Running Server (WindowsTerminal.exe)" -> Terminal (Terminal)
-            on_a_different_window_now = (
-                self.current_session
-                and window_change["window_title"] != self.current_session.window_title
-            )
-            if on_a_different_window_now and self.is_initialized():
-                if self.current_session is None:
-                    raise ValueError("Current session was None")
-
+            # if self.vlc_is_active:
+            self.console_logger.log_white("INFO:", window_change)
+            if self.window_is_vlc(window_change):
+                # So in effect, because the VLC Media Player polling
+                # would be every 0.5 sec, just like the Program polling,
+                # it doesn't hurt to just, "if it's VLC, poll the state"
                 current_time: UserLocalTime = self.user_facing_clock.now()  # once per loop
+                vlc_state = self.vlc_tracker.get_updated_vlc_status()
+                updated_vlc_session = self.start_new_video_session(
+                    window_change, current_time, vlc_state
+                )
 
-                is_vlc = self.window_is_vlc(window_change)
-                if is_vlc:
-                    # The program changed to VLC!
-                    # self.vlc_is_active = True
-                    # video_details = self.ask_vlc_player_for_info()
-                    # TODO: Setup polling.
-                    # TODO: Make polling cancel when user alt tabs away from Vlc.
-                    # The polling uses the same window_change_handler as usual programs.
-                    # new_session = self.start_new_video_session(
-                    #     window_change, current_time, video_details
-                    # )
-                    # so i could do a thing like
-                    # It just loops checking VLC's status until the user tabs away
-                    for vlc_state_change in self.vlc_tracker.listen_for_player_changes():
-                        updated_vlc_session = self.start_new_video_session(
-                            window_change, current_time, vlc_state_change
-                        )
-                        self.current_session = updated_vlc_session
+                if self.vlc_media_changed(updated_vlc_session):
+                    self.console_logger.log_yellow(
+                        "New VLC State: "
+                        + updated_vlc_session.video_info.file
+                        + " :: "
+                        + updated_vlc_session.video_info.player_state.value
+                    )
+                    self.window_change_handler(updated_vlc_session)
+                    self.current_session = updated_vlc_session
 
-                        print("Returning VLC content")
-                        self.window_change_handler(updated_vlc_session)
-                else:
-                    # if self.vlc_is_active:
-                    #     self.vlc_tracker.stop_polling()
-                    #     self.vlc_is_active = False
+                self.latest_vlc_state = updated_vlc_session.video_info
+
+            else:
+                self.console_logger.log_white("WAS NOT VLC!")
+                # FIXME: "Running Server (WindowsTerminal.exe)" -> Terminal (Terminal)
+                on_a_different_window_now = (
+                    self.current_session
+                    and window_change["window_title"] != self.current_session.window_title
+                )
+                if on_a_different_window_now and self.is_initialized():
+                    if self.current_session is None:
+                        raise ValueError("Current session was None")
+
+                    current_time: UserLocalTime = (
+                        self.user_facing_clock.now()
+                    )  # once per loop
+
                     new_session = self.start_new_session(window_change, current_time)
-                self.current_session = new_session
-                # report window change immediately via "window_change_handler()"
-                self.console_logger.log_yellow("New program: " + new_session.process_name)
-                self.window_change_handler(new_session)
+                    self.current_session = new_session
+                    # report window change immediately via "window_change_handler()"
+                    self.console_logger.log_yellow(
+                        "New program: " + new_session.process_name
+                    )
+                    self.window_change_handler(new_session)
 
-            # initialize
-            if self.is_uninitialized():
-                current_time: UserLocalTime = self.user_facing_clock.now()
-                # capture_program_data_for_tests(window_change, current_time)
-                new_session = self.start_new_session(window_change, current_time)
-                self.current_session = new_session
-                self.window_change_handler(new_session)
+                # initialize
+                if self.is_uninitialized():
+                    current_time: UserLocalTime = self.user_facing_clock.now()
+                    # capture_program_data_for_tests(window_change, current_time)
+                    new_session = self.start_new_session(window_change, current_time)
+                    self.current_session = new_session
+                    self.window_change_handler(new_session)
 
-    def ask_vlc_player_for_info(self) -> VlcInfo | None:
-        return get_vlc_status()
+    def vlc_media_changed(self, vlc_session: VlcInfo):
+        """Compares to the current VLC session using custom __eq__"""
+        return self.latest_vlc_state != vlc_session
 
     def is_uninitialized(self):
         return self.current_session is None
@@ -176,7 +172,7 @@ class ProgramTrackerCore:
             return window["process_name"] == linux_name_for_vlc
         else:
             # TODO: Find out what the name is
-            windows_name_for_vlc = "Bar"
+            windows_name_for_vlc = "TODO"
             return window["process_name"] == windows_name_for_vlc
 
 

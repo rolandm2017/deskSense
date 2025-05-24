@@ -31,12 +31,12 @@ class VlcMediaPlayerTracker:
     def start_polling(self):
         self.polling_active = True
         while self.polling_active:
-            yield self.ask_is_vlc_playing()
+            yield self.get_updated_vlc_status()
 
     def listen_for_player_changes(self):
         yield self.ask_is_vlc_playing()
 
-    def ask_is_vlc_playing(self):
+    def get_updated_vlc_status(self):
         return get_vlc_status()
 
     def stop_polling(self):
