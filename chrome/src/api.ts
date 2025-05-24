@@ -18,11 +18,11 @@ export const ignoredDomainUrl = baseChromeUrl + "/ignored";
 
 const videoBaseUrl = baseChromeUrl + "/video";
 // youtube
-export const youTubeUrl = videoBaseUrl + "/youtube/new";
+// export const youTubeUrl = videoBaseUrl + "/youtube/new";
 export const youTubeWatchPageUrl = videoBaseUrl + "/youtube/new/watchpage";
 export const youtubePlayerStateUrl = videoBaseUrl + "/youtube/state";
 // netflix
-export const netflixUrl = videoBaseUrl + "/netflix/new";
+// export const netflixUrl = videoBaseUrl + "/netflix/new";
 export const netflixWatchPageUrl = videoBaseUrl + "/netflix/new/watchpage";
 export const netflixPlayerStateUrl = videoBaseUrl + "/netflix/state";
 
@@ -148,7 +148,7 @@ class NetflixApi {
         };
         // I guess if the server receives an update, it can propagate the
         // updated info to all logs related to that previously mysterious ID
-        this.sendPayload(netflixUrl, payload);
+        this.sendPayload(netflixWatchPageUrl, payload);
     }
 
     // TODO: If they select the wrong thing form the dropdown,

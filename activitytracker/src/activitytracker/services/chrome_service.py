@@ -1,5 +1,6 @@
 # chrome_service.py
 import copy
+import threading
 from operator import attrgetter
 from tracemalloc import start
 from urllib.parse import urldefrag
@@ -45,10 +46,14 @@ class TabQueue:
         self.message_queue: list[TabChangeEventWithLtz] = []
         self.ordered_messages: list[TabChangeEventWithLtz] = []
         self.ready_queue: list[TabChangeEventWithLtz] = []
-        self.debounce_delay = debounce_delay  # One full sec was too long.
+        # One full sec was too long. <- An April assessment
+        # Two sec is good. <- A mid May assessment
+        self.debounce_delay = debounce_delay
         self.transience_time_in_ms = transience_time_in_ms
         self.debounce_timer = None
         self.log_tab_event = log_tab_event
+
+        self._lock = threading.Lock()  # Thread safety for timer operations
 
     def add_to_arrival_queue(self, tab_change_event: TabChangeEventWithLtz):
 
@@ -56,30 +61,61 @@ class TabQueue:
         self.append_to_queue(tab_change_event)
         MAX_QUEUE_LEN = 40
 
-        if len(self.message_queue) >= MAX_QUEUE_LEN:
-            assert (
-                self.debounce_timer is not None
-            ), "Debounce timer was None when it should exist"
-            print("Message queue length reached")
-            self.debounce_timer.cancel()
-            self.start_processing_msgs()
-            return
+        with self._lock:
+            if len(self.message_queue) >= MAX_QUEUE_LEN:
+                if self.debounce_timer is not None:
+                    print("Message queue length reached")
+                    self.debounce_timer.cancel()
+                    self.debounce_timer = None
+                self._process_messages_now()
+                return
 
-        if self.debounce_timer:
-            print("Canceling debounce")
-            self.debounce_timer.cancel()
+            # Cancel existing timer if present
+            if self.debounce_timer:
+                print("Canceling debounce")
+                self.debounce_timer.cancel()
 
-        self.debounce_timer = asyncio.create_task(self.debounced_process())
+            # Start new debounce timer
+            self.debounce_timer = threading.Timer(
+                self.debounce_delay, self._process_after_debounce
+            )
+            self.debounce_timer.start()
+
+        # if len(self.message_queue) >= MAX_QUEUE_LEN:
+        #     assert (
+        #         self.debounce_timer is not None
+        #     ), "Debounce timer was None when it should exist"
+        #     print("Message queue length reached")
+        #     self.debounce_timer.cancel()
+        #     self.start_processing_msgs()
+        #     return
+
+        # if self.debounce_timer:
+        #     print("Canceling debounce")
+        #     self.debounce_timer.cancel()
+
+        # self.debounce_timer = asyncio.create_task(self.debounced_process())
 
     def append_to_queue(self, tab_event):
         """Here to enhance testability"""
         self.message_queue.append(tab_event)
 
-    async def debounced_process(self):
-        await asyncio.sleep(self.debounce_delay)
+    def _process_after_debounce(self):
+        """Called by the timer thread after debounce delay"""
         print("in debounced process after sleep!")
-        # print("[debug] Starting processing")
+        with self._lock:
+            self.debounce_timer = None
+        self._process_messages_now()
+
+    def _process_messages_now(self):
+        """Internal method that actually processes the messages"""
         self.start_processing_msgs()
+
+    # async def debounced_process(self):
+    #     await asyncio.sleep(self.debounce_delay)
+    #     print("in debounced process after sleep!")
+    #     # print("[debug] Starting processing")
+    #     self.start_processing_msgs()
 
     def start_processing_msgs(self):
         self.order_message_queue()

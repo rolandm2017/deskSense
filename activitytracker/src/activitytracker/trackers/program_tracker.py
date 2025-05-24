@@ -71,15 +71,15 @@ class ProgramTrackerCore:
 
         for window_change in self.program_facade.listen_for_window_changes():
             # if self.vlc_is_active:
-            self.console_logger.log_white("\n\nINFO:", window_change)
+            # self.console_logger.log_white("\n\nINFO:", window_change)
             if self.window_is_vlc(window_change):
                 self.vlc_window = window_change
-                self.console_logger.log_white("was indeed VLC!")
+                self.console_logger.log_white("was VLC!")
 
                 self.start_vlc_polling()
             else:
                 self.stop_vlc_polling()
-                self.console_logger.log_white("WAS NOT VLC!")
+                # self.console_logger.log_white("WAS NOT VLC!")
                 # FIXME: "Running Server (WindowsTerminal.exe)" -> Terminal (Terminal)
                 on_a_different_window_now = (
                     self.current_session

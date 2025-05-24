@@ -70,7 +70,7 @@ router = APIRouter(prefix="/api/chrome/video", tags=["video"])
 # TODO: Make these endpoints be /chrome/video/netflix/new
 # TODO: Make these endpoints be /chrome/video/youtube/new
 # They WERE /chrome/youtube/new, /chrome/youtube/state
-@router.post("/youtube/new", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/youtube/new/watchpage", status_code=status.HTTP_204_NO_CONTENT)
 def receive_youtube_tab_change_event(
     tab_change_event: YouTubeTabChange,
     chrome_service: ChromeService = Depends(get_chrome_service),
@@ -140,7 +140,7 @@ def receive_youtube_player_state(
         )
 
 
-@router.post("/netflix/new", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/netflix/new/watchpage", status_code=status.HTTP_204_NO_CONTENT)
 def receive_netflix_tab_change_event(
     tab_change_event: NetflixTabChange,
     chrome_service: ChromeService = Depends(get_chrome_service),
