@@ -1,5 +1,6 @@
 import json
 import os
+import traceback
 import urllib.parse
 
 from dotenv import load_dotenv
@@ -9,6 +10,7 @@ load_dotenv
 import requests
 from requests.auth import HTTPBasicAuth
 
+from activitytracker.object.enums import PlayerState
 from activitytracker.object.video_classes import VlcInfo
 
 # VLC config
@@ -32,8 +34,7 @@ class VlcMediaPlayerTracker:
             yield self.ask_is_vlc_playing()
 
     def listen_for_player_changes(self):
-        while True:
-            yield self.ask_is_vlc_playing()
+        yield self.ask_is_vlc_playing()
 
     def ask_is_vlc_playing(self):
         return get_vlc_status()
@@ -53,6 +54,7 @@ def get_vlc_status() -> VlcInfo | None:
             print(json.dumps(data.get("information", {}), indent=2))
 
         state = data.get("state")  # "playing", "paused", "stopped"
+        state = PlayerState.PLAYING if state == "playing" else PlayerState.PAUSED
         position = data.get("time")  # in seconds
 
         # Try to extract file info
@@ -66,7 +68,7 @@ def get_vlc_status() -> VlcInfo | None:
         if full_url and full_url.startswith("file://"):
             file_path = urllib.parse.unquote(full_url[7:])
 
-        return VlcInfo(filename, file_path, state, position)
+        return VlcInfo(file_path, filename, file_path, state)
         # return {
         #     "state": state,
         #     "position_seconds": position,
@@ -75,5 +77,11 @@ def get_vlc_status() -> VlcInfo | None:
         # }
 
     except requests.RequestException as e:
+        traceback.print_exc()
         print(f"Error connecting to VLC: {e}")
-        return None
+        return VlcInfo(
+            "Error connecting to VLC",
+            "Error connecting to VLC",
+            "Error connecting to VLC",
+            PlayerState.PAUSED,
+        )

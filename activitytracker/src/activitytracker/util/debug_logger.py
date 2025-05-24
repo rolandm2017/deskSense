@@ -1,12 +1,9 @@
-from datetime import timedelta
-
 import json
-from datetime import datetime
 from sqlite3 import TimestampFromTicks
-from typing import List
 
-from .errors import SuspiciousDurationError
-from .console_logger import ConsoleLogger
+from datetime import datetime, timedelta
+
+from typing import List
 
 from activitytracker.db.models import (
     DailyDomainSummary,
@@ -14,8 +11,18 @@ from activitytracker.db.models import (
     DomainSummaryLog,
     ProgramSummaryLog,
 )
-from activitytracker.object.classes import ProgramSession
+from activitytracker.object.classes import ChromeSession, ProgramSession
 from activitytracker.object.pydantic_dto import UtcDtTabChange
+
+from .console_logger import ConsoleLogger
+from .errors import SuspiciousDurationError
+
+
+def write_to_suspicious_durations_log(
+    current_session: ProgramSession | ChromeSession, incoming_start, duration, iter
+):
+    with open("logs/suspicious_conclude_sessions.txt", "a") as f:
+        f.write(f"\n\n==\n==\n{iter}: {str(current_session)}\n{incoming_start}\n{duration}")
 
 
 def write_to_debug_log(name, hours_spent, time):
@@ -49,15 +56,6 @@ def write_to_large_usage_log(session: ProgramSession, hours_spent, time):
     print("Writing to large usage log: " + str(minutes_seconds))
     with open("large_usage_log_-_arbiter_ver.txt", "a") as f:
         f.write(f"{str(session)} - {minutes_seconds} - {time}\n")
-
-
-# TODO: Move this
-def write_temp_log(event: UtcDtTabChange):
-    with open("events.csv", "a") as f:
-        out = f"{event.tabTitle.replace(",", "::")},{event.url},{
-            str(event.startTime)}"
-        f.write(out)
-        f.write("\n")
 
 
 def get_current_day_log_name(log_date: str):

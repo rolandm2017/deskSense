@@ -13,6 +13,7 @@ from activitytracker.object.classes import (
 )
 from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.copy_util import snapshot_obj_for_tests
+from activitytracker.util.debug_logger import write_to_suspicious_durations_log
 from activitytracker.util.errors import SuspiciousDurationError
 from activitytracker.util.program_tools import window_is_chrome
 from activitytracker.util.time_wrappers import UserLocalTime
@@ -29,6 +30,7 @@ class StateMachine:
         self.current_state: InternalState | None = None
         self.prior_state: InternalState | None = None
         self.state_listeners = []
+        self.iteration = 0
         self.logger = ConsoleLogger()
 
     def set_new_session(
@@ -66,11 +68,19 @@ class StateMachine:
         # keepAlive write time, the latest um, systemStatus polling write time.
         # If the latest write was more than a minute ago, the session is over,
         # do not update the end time past that time.
-        print("concluding session: ", duration)
-        if duration.total_seconds() < -60:
+        print("concluding session: ", duration.total_seconds())
+        if duration.total_seconds() < 0:
             # One minute in seconds
             print("Outgoing session: ", state.session)
             print("Inc session start:", incoming_session_start)
+            write_to_suspicious_durations_log(
+                state.session,
+                incoming_session_start,
+                duration.total_seconds(),
+                self.iteration,
+            )
+            self.iteration += 1
+
             raise SuspiciousDurationError("Negative duration")
 
         session_copy = snapshot_obj_for_tests(state.session)

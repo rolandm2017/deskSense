@@ -59,14 +59,21 @@ class ProgramTrackerCore:
 
     def run_tracking_loop(self):
         for window_change in self.program_facade.listen_for_window_changes():
-            # Cleanup previous loop's VLC resources
-            # if self.vlc_is_active:
-            #     self.vlc_tracker.stop_polling()
-            #     self.vlc_is_active = False
+            if self.vlc_is_active:
+                if self.window_is_vlc(window_change):
+                    for vlc_state_change in self.vlc_tracker.listen_for_player_changes():
+                        updated_vlc_session = self.start_new_video_session(
+                            window_change, current_time, vlc_state_change
+                        )
+                        self.current_session = updated_vlc_session
 
-            # is_expected_shape_else_throw(window_change)
+                        print("Returning VLC content")
+                        self.window_change_handler(updated_vlc_session)
+                        return
+                else:
+                    self.vlc_is_active = False
+
             # FIXME: "Running Server (WindowsTerminal.exe)" -> Terminal (Terminal)
-            # TODO: Wager I can delete self.current_session & related code
             on_a_different_window_now = (
                 self.current_session
                 and window_change["window_title"] != self.current_session.window_title
@@ -81,13 +88,13 @@ class ProgramTrackerCore:
                 if is_vlc:
                     # The program changed to VLC!
                     # self.vlc_is_active = True
-                    video_details = self.ask_vlc_player_for_info()
+                    # video_details = self.ask_vlc_player_for_info()
                     # TODO: Setup polling.
                     # TODO: Make polling cancel when user alt tabs away from Vlc.
                     # The polling uses the same window_change_handler as usual programs.
-                    new_session = self.start_new_video_session(
-                        window_change, current_time, video_details
-                    )
+                    # new_session = self.start_new_video_session(
+                    #     window_change, current_time, video_details
+                    # )
                     # so i could do a thing like
                     # It just loops checking VLC's status until the user tabs away
                     for vlc_state_change in self.vlc_tracker.listen_for_player_changes():
@@ -95,11 +102,13 @@ class ProgramTrackerCore:
                             window_change, current_time, vlc_state_change
                         )
                         self.current_session = updated_vlc_session
+
+                        print("Returning VLC content")
                         self.window_change_handler(updated_vlc_session)
                 else:
-                    if self.vlc_is_active:
-                        self.vlc_tracker.stop_polling()
-                        self.vlc_is_active = False
+                    # if self.vlc_is_active:
+                    #     self.vlc_tracker.stop_polling()
+                    #     self.vlc_is_active = False
                     new_session = self.start_new_session(window_change, current_time)
                 self.current_session = new_session
                 # report window change immediately via "window_change_handler()"

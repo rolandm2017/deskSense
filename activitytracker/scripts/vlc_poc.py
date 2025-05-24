@@ -1,12 +1,21 @@
+import os
 import urllib.parse
 
+from dotenv import load_dotenv
+
+load_dotenv()
 import requests
 from requests.auth import HTTPBasicAuth
 
 # VLC config
 VLC_HOST = "http://localhost:8080"
-VLC_PASSWORD = "vlcpass"  # set this in VLC's Lua config
+VLC_PASSWORD = os.getenv("VLC_PASS")  # set this in VLC's Lua config
+if VLC_PASSWORD is None:
+    raise ValueError("Failed to load VLC password")
+
 AUTH = HTTPBasicAuth("", VLC_PASSWORD)
+
+DEBUG = False
 
 
 def get_vlc_status():

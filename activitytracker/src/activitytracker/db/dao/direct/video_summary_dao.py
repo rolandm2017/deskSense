@@ -61,7 +61,7 @@ class VideoSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
         )
 
         new_entry = DailyVideoSummary(
-            media_id=session.video_info.video_id,
+            video_id=session.video_info.video_id,
             media_name=session.media_title,
             channel_name=channel_name,
             platform=session.video_info.get_platform_title(),
@@ -74,10 +74,10 @@ class VideoSummaryDao(SummaryDaoMixin, UtilityDaoMixin):
         )
         self.add_new_item(new_entry)
 
-    def find_netflix_media_by_id(self, media_id: str):
+    def find_netflix_media_by_id(self, video_id: str):
         # TODO: Find entries more recent than three months. Because Netflix IDs change
         query = select(self.model).where(
-            self.model.media_id == media_id and self.model.platform == "Netflix"
+            self.model.video_id == video_id and self.model.platform == "Netflix"
         )
         return self.execute_and_read_one_or_none(query)
 
