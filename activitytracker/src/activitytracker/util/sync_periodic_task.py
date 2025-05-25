@@ -16,6 +16,7 @@ class SyncPeriodicTask:
 
     def _loop(self):
         loop_count = 0
+        # stop_event.wait(n) uses a thread equivalent of time.sleep(n)
         while not self.stop_event.wait(self.interval):
             if self.DEBUG:
                 print(f"[polling] running polling loop {self.interval} {loop_count}")

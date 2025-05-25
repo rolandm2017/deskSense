@@ -55,7 +55,6 @@ class ProgramTrackerCore:
         print(f"[DEBUG] self object id: {id(self)}")
         self.vlc_window = None
 
-        self.vlc_is_active = False
         self.latest_vlc_state = VlcInfo(
             "Initialize", "Init", "Init", player_state=PlayerState.PAUSED
         )
@@ -178,10 +177,7 @@ class ProgramTrackerCore:
         vlc_state = self.vlc_tracker.get_updated_vlc_status()
 
         if self.vlc_media_changed(vlc_state):
-            print(self.latest_vlc_state, "172ru")
-            print(vlc_state, "175ru")
             current_time: UserLocalTime = self.user_facing_clock.now()
-            self.console_logger.log_white("info:", current_time.dt)
             updated_vlc_session = self.start_new_video_session(
                 self.vlc_window, current_time, vlc_state
             )
