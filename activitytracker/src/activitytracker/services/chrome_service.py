@@ -1,18 +1,18 @@
 # chrome_service.py
-import copy
+import asyncio
 import threading
+
+from datetime import date, datetime, timedelta, timezone
+
+from typing import List
+
+import copy
 from operator import attrgetter
 from tracemalloc import start
 from urllib.parse import urldefrag
 
 from fastapi import Depends
 from pyee import EventEmitter
-
-import asyncio
-
-from datetime import date, datetime, timedelta, timezone
-
-from typing import List
 
 from activitytracker.arbiter.activity_arbiter import ActivityArbiter
 from activitytracker.config.definitions import productive_sites
@@ -83,21 +83,6 @@ class TabQueue:
             )
             self.debounce_timer.start()
 
-        # if len(self.message_queue) >= MAX_QUEUE_LEN:
-        #     assert (
-        #         self.debounce_timer is not None
-        #     ), "Debounce timer was None when it should exist"
-        #     print("Message queue length reached")
-        #     self.debounce_timer.cancel()
-        #     self.start_processing_msgs()
-        #     return
-
-        # if self.debounce_timer:
-        #     print("Canceling debounce")
-        #     self.debounce_timer.cancel()
-
-        # self.debounce_timer = asyncio.create_task(self.debounced_process())
-
     def append_to_queue(self, tab_event):
         """Here to enhance testability"""
         self.message_queue.append(tab_event)
@@ -112,12 +97,6 @@ class TabQueue:
     def _process_messages_now(self):
         """Internal method that actually processes the messages"""
         self.start_processing_msgs()
-
-    # async def debounced_process(self):
-    #     await asyncio.sleep(self.debounce_delay)
-    #     print("in debounced process after sleep!")
-    #     # print("[debug] Starting processing")
-    #     self.start_processing_msgs()
 
     def start_processing_msgs(self):
         self.order_message_queue()
@@ -202,10 +181,22 @@ class ChromeService:
         url = url_deliverable.url
         title = url_deliverable.tab_title
         is_productive = url_deliverable.url in productive_sites
+        print(url_deliverable, "184ru")
+        if url_deliverable.youtube_info:
+            url = "www.youtube.com"
+            video_info = url_deliverable.youtube_info
+        else:
+            # How does it know what the particular media is?
+            # For Netflix and YouTube both, the answers is the .tab_title field
+            url = "www.netflix.com"
+            video_info = url_deliverable.netflix_info
         start_time = UserLocalTime(url_deliverable.start_time_with_tz)
 
-        initialized: ChromeSession = ChromeSession(url, title, start_time, is_productive)
-        self.logger.log_yellow(initialized)
+        # TODO: Test the video route, /new routes, but bypassing the TabQueue. Make sure all info is passed
+
+        initialized: ChromeSession = ChromeSession(
+            url, title, start_time, is_productive, video_info
+        )
 
         # NOTE: In the past, the intent was to keep everything in UTC.
         # Now, the intent is to do everything in the user's LTZ, local time zone.

@@ -74,6 +74,7 @@ class ActivityRecorder:
         if session.video_info:
             self.logger.log_video_info("on_new_session", session.video_info)
             video_session = VideoSession.from_other_type(session)
+            # TODO: If video is paused, don't do anything except try to end an active, related session
             if isinstance(video_session, NetflixInfo):
                 video_session.media_title = (
                     self.netflix_title_resolver.recover_or_register_netflix_title(
@@ -119,7 +120,7 @@ class ActivityRecorder:
         when the computer shuts down, the end time was "about right" anyways.
         """
         self.logger.log_yellow(
-            f"[add ten sec] {session.get_name()} - {self.add_ten_counter}"
+            f"[add ten sec] {session.get_name()} - {self.add_ten_counter} - {session.video_info.get_name() if session.video_info else "No Video" }"
         )
         self.add_ten_counter += 1
         if session is None:
@@ -132,6 +133,8 @@ class ActivityRecorder:
         # Window push now finds session based on start_time
 
         if session.video_info:
+            # TODO: If video is paused, don't do anything except try to end an active, related session
+
             self.logger.log_video_info(
                 "add_ten_sec_to_end_time", session.video_info, self.add_ten_counter
             )
@@ -175,6 +178,8 @@ class ActivityRecorder:
             return  # Nothing to add
 
         if session.video_info:
+            # TODO: If video is paused, don't do anything except try to end an active, related session
+
             self.logger.log_video_info("add_partial_window", session.video_info, thread_id)
             video_session: VideoSession = VideoSession.from_other_type(session)
 

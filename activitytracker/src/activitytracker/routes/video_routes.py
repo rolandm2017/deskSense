@@ -1,4 +1,12 @@
 # video_routes.py
+from datetime import date, datetime
+from datetime import time as dt_time
+from datetime import timezone
+from time import time
+
+# import time
+from typing import List, Optional
+
 import traceback
 
 from fastapi import (
@@ -15,14 +23,6 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-
-from datetime import date, datetime
-from datetime import time as dt_time
-from datetime import timezone
-from time import time
-
-# import time
-from typing import List, Optional
 
 from activitytracker.db.database import (
     async_session_maker,

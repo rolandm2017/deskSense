@@ -75,17 +75,13 @@ class KeepAliveEngine:
         Said another way, the addition of the full 10 sec
         happens in _pulse_add_ten.
         """
-        current_thread = threading.current_thread()
-        thread_id = threading.get_ident()
-        thread_name = current_thread.name
+        # current_thread = threading.current_thread()
+        # thread_id = threading.get_ident()
+        # thread_name = current_thread.name
 
-        print(
-            f"[DEBUG] Concluding engine {self.session.get_name()} in thread '{thread_name}' (ID: {thread_id})"
-        )
-
-        print(
-            f"[DEBUG] Concluding engine {self.session.get_name()} in thread '{thread_name}' (ID: {thread_id})"
-        )
+        # print(
+        #     f"[DEBUG] Concluding engine {self.session.get_name()} in thread '{thread_name}' (ID: {thread_id})"
+        # )
 
         if self.amount_used == window_push_length:
             raise FullWindowError("Used the wrong method to add ten sec")
@@ -196,7 +192,6 @@ class ThreadedEngineContainer:
 
         # Swap the engine
         # Just queue the new engine, don't stop the thread
-        print("Queuing new engine")
         self.engine_queue.put(new_engine)
 
     def stop(self):

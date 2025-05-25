@@ -92,7 +92,6 @@ class ActivityArbiter:
         # When you alt tab back into Chrome, i.e. when the Session type is "Chrome",
         # restore the proper type using that latest type.
         # PROBLEM: But then how does it handle a situation where User has multiple Chrome windows?
-        print("TYPE: ", type(new_session))
         if isinstance(new_session, ProgramSession):
             self.logger.log_white("[Exe]", new_session.window_title)
         else:
@@ -106,6 +105,7 @@ class ActivityArbiter:
         looks_like_sleep_occurred, time_before_lg_gap = (
             self.sleep_detector.detect_awakening_from_sleep()
         )
+        print("sleep detection: ", looks_like_sleep_occurred, time_before_lg_gap)
 
         if looks_like_sleep_occurred:
             self.logger.log_yellow_multiple(

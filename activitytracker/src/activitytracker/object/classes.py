@@ -1,10 +1,10 @@
 # classes.py
 # For various classes
-from abc import ABC, abstractmethod
-
 from datetime import datetime, timedelta, timezone
 
 from typing import Optional, TypedDict
+
+from abc import ABC, abstractmethod
 
 from activitytracker.config.definitions import window_push_length
 from activitytracker.object.video_classes import (
@@ -382,11 +382,11 @@ class TabChangeEventWithLtz:
         self.tab_title = tab_title
         self.url = url
         self.start_time_with_tz = start_time_with_tz
+        self.netflix_info = None
+        self.youtube_info = None
         if isinstance(video_info, YouTubeInfo):
             self.youtube_info = video_info
-            self.netflix_info = None
         elif isinstance(video_info, NetflixInfo):
-            self.youtube_info = None
             self.netflix_info = video_info
 
     def __str__(self) -> str:

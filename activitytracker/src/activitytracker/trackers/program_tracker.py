@@ -95,24 +95,17 @@ class ProgramTrackerCore:
 
                     new_session = self.start_new_session(window_change, current_time)
                     self.current_session = new_session
-                    # report window change immediately via "window_change_handler()"
-                    # FILTER HERE: Only call the callback if it's NOT Chrome
+                    # FILTER HERE: Only report the event if it's NOT Chrome
                     if not self.window_is_chrome(window_change):
-                        #     # Do not report Chrome, because Chrome will do its own reporting.
-                        #     # Note that if you try to get out of this via early return, the
-                        #     # code breaks. If you try to get out of it via "continue,"
-                        #     # the code breaks.
+                        # Do not report Chrome, because Chrome will do its own reporting.
+                        # Note that if you try to get out of this via early return, the
+                        # code breaks. If you try to get out of it via "continue,"
+                        # the code breaks.
                         self.window_change_handler(new_session)
                     else:
                         self.console_logger.log_white(
                             "Chrome session ignored - not forwarded to external handler"
                         )
-
-                    # self.console_logger.log_yellow(
-                    #     "New program: " + new_session.process_name
-                    # )
-
-                    # self.window_change_handler(new_session)
 
                 # initialize
                 if self.is_uninitialized():
