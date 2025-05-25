@@ -4,11 +4,11 @@
 profile = "black"
 # Include the standard sections along with your custom ones
 sections = [
+    "FUTURE",
     "PARTY1",
     "PARTY2",
     "PARTY3",
     "PARTY4",
-    "FUTURE",
     "STDLIB",
     "THIRDPARTY",
     "FIRSTPARTY",

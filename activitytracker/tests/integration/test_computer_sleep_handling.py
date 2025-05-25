@@ -1,12 +1,12 @@
 # tests/integration/test_arbiter.py
-import math
-
 import pytest
 from unittest.mock import MagicMock, Mock
 
 from datetime import datetime, timedelta
 
 from typing import cast
+
+import math
 
 from activitytracker.arbiter.activity_arbiter import ActivityArbiter
 from activitytracker.arbiter.activity_recorder import ActivityRecorder
@@ -113,7 +113,7 @@ def activity_arbiter_and_setup(db_session_in_mem):
     recorder_spy = MagicMock(spec_set=ActivityRecorder)
     recorder_spy.on_state_changed.side_effect = event_handler
     recorder_spy.add_partial_window.side_effect = (
-        lambda amount_used, session: session.ledger.extend_by_n(amount_used)
+        lambda amount_used, session, thread_info: session.ledger.extend_by_n(amount_used)
     )
     recorder_spy.add_ten_sec_to_end_time.side_effect = (
         lambda session: session.ledger.add_ten_sec()
@@ -159,7 +159,7 @@ def activity_arbiter_and_setup(db_session_in_mem):
 #
 
 
-def test_arbiter_after_sleep(activity_arbiter_and_setup):
+def test_handling_computer_sleep(activity_arbiter_and_setup):
     """
     Test exists to ensure that the Arbiter and Status Dao work together to
     conclude the session that was active before the computer went to sleep

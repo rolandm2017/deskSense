@@ -149,13 +149,13 @@ class ActivityArbiter:
             concluded_session = self.state_machine.get_concluded_session()
             self.notify_of_new_session(new_session)
 
-            self.current_pulse.stop()  # stop the old one from prev loop
+            # self.current_pulse.stop()  # stop the old one from prev loop
 
             new_keep_alive_engine = self.engine_class(new_session, self.activity_recorder)
 
             self.current_pulse.replace_engine(new_keep_alive_engine)
             # print("Starting pulse in regular loop")
-            self.current_pulse.start()
+            # self.current_pulse.start()
 
             if self.state_machine.is_initialization_session(concluded_session):
                 return  # It's just null state

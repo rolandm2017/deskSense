@@ -1,12 +1,12 @@
 # tests/integration/test_arbiter.py
-import math
-
 import pytest
 from unittest.mock import MagicMock, Mock
 
 from datetime import datetime, timedelta
 
 from typing import cast
+
+import math
 
 from activitytracker.arbiter.activity_arbiter import ActivityArbiter
 from activitytracker.arbiter.activity_recorder import ActivityRecorder
@@ -91,7 +91,7 @@ def activity_arbiter_and_setup(db_session_in_mem):
     recorder_spy = MagicMock(spec_set=ActivityRecorder)
     recorder_spy.on_state_changed.side_effect = event_handler
     recorder_spy.add_partial_window.side_effect = (
-        lambda amount_used, session: session.ledger.extend_by_n(amount_used)
+        lambda amount_used, session, thread_info: session.ledger.extend_by_n(amount_used)
     )
     recorder_spy.add_ten_sec_to_end_time.side_effect = (
         lambda session: session.ledger.add_ten_sec()
@@ -155,6 +155,7 @@ def test_activity_arbiter(activity_arbiter_and_setup):
     ]
 
     def assert_basic_expectations_met():
+        # Aim real low:
         assert len(events_from_on_state_changed_handler) > 0, "Not even one event made it"
 
         assert all(
@@ -174,8 +175,8 @@ def test_activity_arbiter(activity_arbiter_and_setup):
 
     # ### Test DAO notifications
 
-    def assert_recorder_worked_as_intended():
-        assert (
+    def recorder_received_expected_finalized_log_calls():
+        return (
             mock_activity_recorder.on_state_changed.call_count
             == len(
                 # NOTE: Would be "- 1" if the final input was a ProgramSession
@@ -185,24 +186,16 @@ def test_activity_arbiter(activity_arbiter_and_setup):
             - remaining_open_session_offset
         )
 
-    assert_recorder_worked_as_intended()
+    assert recorder_received_expected_finalized_log_calls()
 
-    def assert_names_match(session1, session2):
+    def assert_names_match(session1, session2, location=None):
         try:
-            if isinstance(session1, ProgramSession):
-                assert session1.process_name == session2.process_name
-                assert isinstance(session1, ProgramSession) and isinstance(
-                    session2, ProgramSession
-                )
-            else:
-                assert isinstance(session1, ChromeSession) and isinstance(
-                    session2, ChromeSession
-                )
-                assert session1.domain == session2.domain
-        except AssertionError:
+            assert session1.get_name() == session2.get_name(), f"in location: {location}"
+        except AssertionError as e:
+            print("assert_names_match assertion error:")
             print(session1)
             print(session2)
-            raise
+            raise e
 
     total_expected_calls = sum(
         math.floor(duration // 10) for duration in durations_between_events_from_setup
@@ -212,8 +205,24 @@ def test_activity_arbiter(activity_arbiter_and_setup):
         == total_expected_calls
     )
 
+    assert mock_activity_recorder.add_partial_window.call_count == len(
+        events_from_on_state_changed_handler
+    )
+
     # assert number of conclude calls equals the num of sessions
     # assert the num of add_partial_window calls equals the num of sessions
+
+    def zero_chrome_program_sessions():
+        for call in mock_activity_recorder.add_ten_sec_to_end_time.call_args_list:
+            args, kwargs = call
+            session = args[0]  # First argument
+            # Assert something about the session
+            if isinstance(session, ProgramSession):
+                if session.get_name() == "chrome":
+                    return False  # A session was present
+        return True  # Zero program sessions
+
+    assert zero_chrome_program_sessions()
 
     def assert_keep_alive_worked_as_intended():
         """
@@ -224,14 +233,17 @@ def test_activity_arbiter(activity_arbiter_and_setup):
         # Tally up the arguments from
         end_of_prev_calls = 0
         for i in range(0, len(copied_test_data)):
+            print(f"LOOP: {i}")
             target_session = copied_test_data[i]
+            print("DATA: ", target_session)
+
             final_duration = len(durations_between_events_from_setup) - 1
             if i > final_duration:
                 # The session is never closed.
                 session_from_spy = (
                     mock_activity_recorder.add_ten_sec_to_end_time.call_args_list[0][0][0]
                 )
-                assert_names_match(session_from_spy, target_session)
+                assert_names_match(session_from_spy, target_session, "final entry assertion")
                 return  # Done
             expected_duration = durations_between_events_from_setup[i]
 
@@ -244,7 +256,9 @@ def test_activity_arbiter(activity_arbiter_and_setup):
                 session_from_spy = (
                     mock_activity_recorder.add_ten_sec_to_end_time.call_args_list[j][0][0]
                 )
-                assert_names_match(session_from_spy, target_session)
+                assert_names_match(
+                    session_from_spy, target_session, "validate_window_push_spy"
+                )
                 assert session_from_spy.start_time.dt == target_session.start_time.dt
 
             # Check that the add parital window calls were as intended
@@ -256,7 +270,9 @@ def test_activity_arbiter(activity_arbiter_and_setup):
             corresponding_addition_arg = args[0]  # First argument
             add_partial_window_session_arg = args[1]  # Second argument
 
-            assert_names_match(add_partial_window_session_arg, target_session)
+            assert_names_match(
+                add_partial_window_session_arg, target_session, f"verify_add_partial: {i}"
+            )
 
             # assert the sessions are actually the same
 
