@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, Mock, patch
 
 import asyncio
+import threading
 
 import time
 
@@ -159,7 +160,7 @@ def test_keep_alive_pulse_timing():
     assert mock_recorder.add_ten_sec_to_end_time.call_count == 1
 
     # Counter should reset
-    assert engine.get_amount_used() == 0
+    assert engine.amount_used == 0
 
     # 10 more iterations should trigger another pulse
     for _ in range(10):
@@ -430,11 +431,15 @@ class TestThreadedEngineContainer:
         quick_test_interval = 0.02
         container = ThreadedEngineContainer(quick_test_interval, time.sleep)
 
+        assert container.engine is None
+
         container.add_first_engine(engine)
 
-        assert container.engine is not None
+        assert container.engine is not None  # first engine loaded directly
 
         container.start()
+
+        await asyncio.sleep(0.04)  # Give time for engine to load
 
         sleep_time = 0.25
         await asyncio.sleep(sleep_time)
@@ -449,3 +454,280 @@ class TestThreadedEngineContainer:
         assert iterate_loop_mock.call_count >= int(sleep_time / quick_test_interval)
 
         conclude_mock.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_engine_durations_without_start_stop(self):
+        dao_mock = Mock()
+        add_ten_sec_to_end_time_mock = Mock()
+        dao_mock.add_ten_sec_to_end_time = add_ten_sec_to_end_time_mock
+        add_partial_window_mock = Mock()
+        dao_mock.add_partial_window = add_partial_window_mock
+
+        session = ProgramSession()
+
+        # FYI a value like 9 may end up cycling a full time
+        durations = [63, 30, 5, 6]
+        engines = []
+        for i in range(len(durations)):
+            session = ProgramSession()
+            session.process_name = f"rapid_test_{i}"
+            engine = KeepAliveEngine(session, dao_mock)
+            engine.iterate_loop = Mock(
+                wraps=engine.iterate_loop
+            )  # Spy but still run real method
+            engine.conclude_engine = Mock(wraps=engine.conclude_engine)
+            # Utility for debugging:
+            engine._hit_max_window = Mock(wraps=engine._hit_max_window)
+            engines.append(engine)
+
+        quick_test_interval = 0.02
+        container = ThreadedEngineContainer(quick_test_interval, time.sleep)
+
+        add_ten_mock_call_counts = []
+        iterate_loop_counts = []
+        try:
+            # Deal with first engine outside of loop
+            container.add_first_engine(engines[0])
+            assert container.engine is not None
+            container.start()
+            assert container.is_running is True
+
+            print("486ru")
+
+            sleep_time = quick_test_interval * durations[0]
+            await asyncio.sleep(sleep_time)
+
+            add_ten_mock_call_counts.append(add_ten_sec_to_end_time_mock.call_count)
+            iterate_loop_counts.append(engines[i].iterate_loop.call_count)
+
+            for i in range(1, len(durations)):
+                # Reset the mock call count for this engine's measurements
+                print("adding engine ", i)
+                add_ten_sec_to_end_time_mock.reset_mock()
+
+                print("496ru")
+                container.replace_engine(engines[i])
+
+                # Give a moment for the replacement to happen
+                await asyncio.sleep(0.05)
+
+                sleep_time = quick_test_interval * durations[i]
+                await asyncio.sleep(sleep_time)
+
+                add_ten_mock_call_counts.append(add_ten_sec_to_end_time_mock.call_count)
+                iterate_loop_counts.append(engines[i].iterate_loop.call_count)
+        except Exception as e:
+            print(e)
+            raise e
+
+        finally:
+            print("Stopping container...")
+            container.stop()
+
+            # Check REALLY BASIC stuff:
+
+            assert len(iterate_loop_counts) == len(durations)
+            assert len(add_ten_mock_call_counts) == len(durations)
+
+            print("Checking conclude_engine calls:")
+            for i, engine in enumerate(engines):
+                print(
+                    f"Engine {i}: conclude_engine called {engine.conclude_engine.call_count} times."
+                )
+                print(
+                    f"Engine {i} hit max window count: {engine._hit_max_window.call_count}"
+                )
+
+            iterate_loop_called_nonzero_times = any(x != 0 for x in iterate_loop_counts)
+            assert iterate_loop_called_nonzero_times
+
+            for f in iterate_loop_counts:
+                print("f:", f)
+
+            add_ten_called_nonzero_times = any(x != 0 for x in add_ten_mock_call_counts)
+            assert add_ten_called_nonzero_times
+
+            for k in add_ten_mock_call_counts:
+                print(k, "k")
+
+            for i, count in enumerate(add_ten_mock_call_counts):
+                # FYI a duration like 8 or 28 may cycle once more than expected
+                expected = durations[i] // window_push_length
+                print(count, expected, durations[i], "comparison ")
+                assert count == expected
+
+            assert container.is_running is False
+
+            # Check that all engines except the last were concluded during replacement
+            for i in range(len(engines) - 1):
+                engines[i].conclude_engine.assert_called_once()
+
+            # Last engine should be concluded during stop
+            engines[-1].conclude_engine.assert_called_once()
+
+            print("Checking add_partial_window calls:")
+            print(f"Total add_partial_window calls: {add_partial_window_mock.call_count}")
+
+            # Each engine should have been concluded exactly once
+            assert add_partial_window_mock.call_count == len(engines)
+
+            # Cannot check exactly what partial amt was used because
+            # the async sleeps run an indeterminate amount of time
+
+    @pytest.mark.asyncio
+    async def test_engine_container_replacement_lifecycle(self):
+        """Test that engines are properly replaced and concluded in the correct thread"""
+
+        # Setup mocks for multiple engines
+        engines = []
+        dao_mock = Mock()
+        dao_mock.add_ten_sec_to_end_time = Mock()
+        dao_mock.add_partial_window = Mock()
+
+        # Create 3 test engines with different sessions
+        for i in range(3):
+            session = ProgramSession()
+            session.process_name = f"test_program_{i}"
+
+            engine = KeepAliveEngine(session, dao_mock)
+            engine.iterate_loop = Mock()
+            engine.conclude_engine = Mock()
+            engines.append(engine)
+
+        quick_test_interval = 0.02
+        container = ThreadedEngineContainer(quick_test_interval, time.sleep)
+
+        # Start with first engine
+        container.add_first_engine(engines[0])
+        container.start()
+
+        try:
+            # Let first engine run for a bit
+            await asyncio.sleep(0.1)
+            first_engine_calls = engines[0].iterate_loop.call_count
+            assert first_engine_calls > 0
+            assert engines[0].conclude_engine.call_count == 0  # Not concluded yet
+
+            # Replace with second engine
+            container.replace_engine(engines[1])
+            await asyncio.sleep(0.1)
+
+            # First engine should be concluded, second should be running
+            engines[0].conclude_engine.assert_called_once()
+            assert engines[1].iterate_loop.call_count > 0
+            assert engines[1].conclude_engine.call_count == 0  # Not concluded yet
+
+            # Replace with third engine
+            container.replace_engine(engines[2])
+            await asyncio.sleep(0.1)
+
+            # Second engine should be concluded, third should be running
+            engines[1].conclude_engine.assert_called_once()
+            assert engines[2].iterate_loop.call_count > 0
+            assert engines[2].conclude_engine.call_count == 0  # Not concluded yet
+
+            # Verify first engine stopped being called after replacement
+            first_engine_final_calls = engines[0].iterate_loop.call_count
+            assert first_engine_final_calls == first_engine_calls  # No new calls
+
+        finally:
+            # Stop container
+            container.stop()
+
+            # Final engine should be concluded during stop
+            engines[2].conclude_engine.assert_called_once()
+            assert container.is_running is False
+
+    @pytest.mark.asyncio
+    async def test_engine_container_thread_ownership(self):
+        """Test that conclude_engine is called from the KeepAlive thread"""
+
+        dao_mock = Mock()
+        dao_mock.add_ten_sec_to_end_time = Mock()
+        dao_mock.add_partial_window = Mock()
+
+        session = ProgramSession()
+        session.process_name = "test_program"
+
+        # Track which thread called conclude_engine
+        conclusion_thread_name = None
+
+        def mock_conclude():
+            nonlocal conclusion_thread_name
+            conclusion_thread_name = threading.current_thread().name
+
+        engine = KeepAliveEngine(session, dao_mock)
+        engine.iterate_loop = Mock()
+        engine.conclude_engine = Mock(side_effect=mock_conclude)
+
+        container = ThreadedEngineContainer(0.02, time.sleep)
+        container.add_first_engine(engine)
+        container.start()
+
+        try:
+            await asyncio.sleep(0.05)  # Let it run briefly
+
+            # Create replacement engine
+            new_session = ProgramSession()
+            new_session.process_name = "replacement_program"
+            new_engine = KeepAliveEngine(new_session, dao_mock)
+            new_engine.iterate_loop = Mock()
+            new_engine.conclude_engine = Mock()
+
+            # Replace engine (this call happens from test thread)
+            test_thread_name = threading.current_thread().name
+            container.replace_engine(new_engine)
+
+            await asyncio.sleep(0.05)  # Wait for replacement to be processed
+
+            # Verify conclude was called from KeepAlive thread, not test thread
+            engine.conclude_engine.assert_called_once()
+            assert conclusion_thread_name is not None
+            assert conclusion_thread_name.startswith("KeepAlive-")
+            assert conclusion_thread_name != test_thread_name
+
+        finally:
+            container.stop()
+
+    @pytest.mark.asyncio
+    async def test_engine_container_queue_behavior(self):
+        """Test that multiple rapid replacements are handled correctly"""
+
+        dao_mock = Mock()
+        dao_mock.add_ten_sec_to_end_time = Mock()
+        dao_mock.add_partial_window = Mock()
+
+        engines = []
+        for i in range(5):
+            session = ProgramSession()
+            session.process_name = f"rapid_test_{i}"
+            engine = KeepAliveEngine(session, dao_mock)
+            engine.iterate_loop = Mock()
+            engine.conclude_engine = Mock()
+            engines.append(engine)
+
+        container = ThreadedEngineContainer(0.01, time.sleep)  # Very fast for this test
+        container.add_first_engine(engines[0])
+        container.start()
+
+        try:
+            # Rapidly queue multiple replacements
+            for i in range(1, 5):
+                container.replace_engine(engines[i])
+                await asyncio.sleep(0.005)  # Very brief pause
+
+            # Wait for all replacements to be processed
+            await asyncio.sleep(0.1)
+
+            # All but the last engine should be concluded
+            for i in range(4):
+                assert engines[i].conclude_engine.call_count == 1
+
+            # Last engine should still be running
+            assert engines[4].conclude_engine.call_count == 0
+            assert engines[4].iterate_loop.call_count > 0
+
+        finally:
+            container.stop()
+            # Last engine should be concluded on stop
+            engines[4].conclude_engine.assert_called_once()

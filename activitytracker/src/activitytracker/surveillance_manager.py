@@ -93,8 +93,6 @@ class SurveillanceManager:
 
         self.mouse_dao = MouseDao(self.async_session_maker)
         self.keyboard_dao = KeyboardDao(self.async_session_maker)
-        # self.program_dao = ProgramDao(self.async_session_maker)
-        # self.chrome_dao = ChromeDao(self.async_session_maker)
 
         self.program_summary_dao = ProgramSummaryDao(
             program_summary_logger, self.regular_session

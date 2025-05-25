@@ -15,7 +15,7 @@ sections = [
     "LOCALFOLDER",
 ]
 known_party1 = ["pytest", "unittest"]
-known_party2 = ["asyncio", "sqlalchemy"]
+known_party2 = ["asyncio", "sqlalchemy", "threading"]
 known_party3 = ["pytz", "datetime", "time"]
 known_party4 = ["typing"]
 known_third_party = ["sqlalchemy"] # Add this line

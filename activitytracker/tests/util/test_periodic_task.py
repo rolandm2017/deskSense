@@ -19,18 +19,15 @@ class MockSystemStatusDao:
 
 
 @pytest.mark.asyncio
-async def test_periodic_task():
+async def test_async_periodic_task():
     """
     This test tests both .start() and .stop()
     """
-    mock_dao = MockSystemStatusDao()
 
-    run_polling_loop_mock = Mock()
-
-    mock_dao.run_polling_loop = run_polling_loop_mock
+    periodic_task_mock = Mock()
 
     test_sleep_interval = 0.05  # sec
-    periodic_task = AsyncPeriodicTask(mock_dao, test_sleep_interval, asyncio.sleep)
+    periodic_task = AsyncPeriodicTask(periodic_task_mock, test_sleep_interval, asyncio.sleep)
 
     assert periodic_task.current_task is None
 
@@ -49,7 +46,7 @@ async def test_periodic_task():
     assert str(periodic_task.current_task).startswith("<Task pending")
 
     # A big deal:
-    assert mock_dao.run_polling_loop.call_count == cycle_count
+    assert periodic_task_mock.call_count == cycle_count
 
     assert periodic_task.current_task is not None
 
@@ -65,4 +62,7 @@ async def test_periodic_task():
     assert periodic_task.current_task.done()
     assert "cancelled" in str(periodic_task.current_task).lower()
 
-    assert run_polling_loop_mock.call_count == cycle_count
+    assert periodic_task_mock.call_count == cycle_count
+
+
+# TODO: Test the Sync version

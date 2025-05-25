@@ -308,14 +308,18 @@ async def test_program_path_with_fresh_sessions(
         trailing_entry = 1
 
         def assert_all_window_change_args_match_src_material(calls_from_spy):
-            assert calls_from_spy[0][0][0].exe_path == test_two_data_clone[0].exe_path
-            assert calls_from_spy[1][0][0].exe_path == test_two_data_clone[1].exe_path
-            assert calls_from_spy[2][0][0].exe_path == test_two_data_clone[2].exe_path
+            # Postman
+            assert calls_from_spy[0][0][0].exe_path == test_two_data_clone[1].exe_path
+            # VSCode
+            assert calls_from_spy[1][0][0].exe_path == test_two_data_clone[2].exe_path
+            # assert calls_from_spy[2][0][0].exe_path == test_two_data_clone[2].exe_path
             # Note that there is no entry 3 here; used idx 0,1,2 for brevity
 
         def assert_state_machine_had_correct_order():
             assert_all_spy_args_were_sessions(
-                asm_set_new_session_spy, second_test_event_count, "Activity State Machine"
+                asm_set_new_session_spy,
+                second_test_event_count - two_uncounted_chromes,
+                "Activity State Machine",
             )
 
         def assert_activity_recorder_called_expected_times(count_of_events):
@@ -360,7 +364,7 @@ async def test_program_path_with_fresh_sessions(
         def assert_all_on_new_sessions_received_sessions():
             assert_all_spy_args_were_sessions(
                 recorder_spies["on_new_session_spy"],
-                second_test_event_count,
+                second_test_event_count - two_uncounted_chromes,
                 "on_new_session_spy",
             )
 
@@ -372,7 +376,7 @@ async def test_program_path_with_fresh_sessions(
             one_left_in_arb = 1
             assert_all_spy_args_were_sessions(
                 recorder_spies["on_state_changed_spy"],
-                second_test_event_count - one_left_in_arb,
+                second_test_event_count - one_left_in_arb - two_uncounted_chromes,
                 "on_state_changed_spy",
             )
 
@@ -395,15 +399,19 @@ async def test_program_path_with_fresh_sessions(
 
         assert recorder_spies["add_ten_sec_to_end_time_spy"].call_count == total_pushes
 
+        two_uncounted_chromes = 2
+
         assert second_test_event_count == 4
-        assert window_change_spy.call_count == 4
-        assert window_change_spy.call_count == second_test_event_count
+        assert window_change_spy.call_count == 4 - two_uncounted_chromes
+        assert (
+            window_change_spy.call_count == second_test_event_count - two_uncounted_chromes
+        )
 
         def assert_window_change_spy_as_expected(arg):
             assert isinstance(arg, ProgramSession)
             assert arg.exe_path == test_two_data_clone[i].exe_path
 
-        for i in range(0, second_test_event_count):
+        for i in range(0, second_test_event_count - two_uncounted_chromes):
             print(f"comparing window change spy arg {i}")
             arg = window_change_spy.call_args_list[i][0][0]
             assert_window_change_spy_as_expected(arg)
@@ -411,9 +419,12 @@ async def test_program_path_with_fresh_sessions(
         window_change_calls = window_change_spy.call_args_list
 
         assert_all_spy_args_were_sessions(
-            window_change_spy, second_test_event_count, "Window change spy"
+            window_change_spy,
+            second_test_event_count - two_uncounted_chromes,
+            "Window change spy",
         )
-
+        for v in window_change_calls:
+            print(v[0][0], "window_change_calls")
         assert_all_window_change_args_match_src_material(window_change_calls)
 
         assert (

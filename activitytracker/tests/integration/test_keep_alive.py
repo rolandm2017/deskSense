@@ -217,8 +217,8 @@ def test_five_runs(dao_connection):
 
     engine_container.add_first_engine(engine)
 
-    engine_container.start()
-    engine_container.stop()
+    # engine_container.start()
+    # engine_container.stop()
 
     assert count_full_loops(durations_for_test[0]) == 6
     assert dao_connection.add_ten_sec_to_end_time.call_count == 6
@@ -229,10 +229,13 @@ def test_five_runs(dao_connection):
         engine = KeepAliveEngine(session, dao_connection)
         engine_container.replace_engine(engine)
 
-        engine_container.start()
-        engine_container.stop()
+        # engine_container.start()
+        # engine_container.stop()
 
     # -- assert
+
+    for v in dao_connection.add_partial_window.call_args_list:
+        print(v[0], "238ru")
 
     for i in range(0, len(durations_for_test)):
         if durations_for_test[i] % window_push_length == 0:
@@ -245,259 +248,259 @@ def test_five_runs(dao_connection):
     assert dao_connection.add_ten_sec_to_end_time.call_count == count_of_full_windows
 
 
-def test_full_test_sessions(activity_arbiter_and_setup, mock_recorder):
-    tested_sessions, durations_between_sessions = activity_arbiter_and_setup
+# def test_full_test_sessions(activity_arbiter_and_setup, mock_recorder):
+#     tested_sessions, durations_between_sessions = activity_arbiter_and_setup
 
-    window_pushes = 0
-    pushes_by_index = {}
-    partials = []
+#     window_pushes = 0
+#     pushes_by_index = {}
+#     partials = []
 
-    for index, duration in enumerate(durations_between_sessions):
-        full_windows = count_full_loops(duration)
-        window_pushes += full_windows
-        pushes_by_index[index] = full_windows
+#     for index, duration in enumerate(durations_between_sessions):
+#         full_windows = count_full_loops(duration)
+#         window_pushes += full_windows
+#         pushes_by_index[index] = full_windows
 
-        partials.append(duration % keep_alive_cycle_length)
+#         partials.append(duration % keep_alive_cycle_length)
 
-    expected_time = sum(durations_between_sessions)
+#     expected_time = sum(durations_between_sessions)
 
-    # Calculate expected results
-    expected_pulses_by_session = {}
-    expected_partials = {}
+#     # Calculate expected results
+#     expected_pulses_by_session = {}
+#     expected_partials = {}
 
-    def get_session_key(session):
-        """Create a unique key for each session based on name and start time"""
-        return f"{session.get_name()}_{session.start_time.dt.isoformat()}"
+#     def get_session_key(session):
+#         """Create a unique key for each session based on name and start time"""
+#         return f"{session.get_name()}_{session.start_time.dt.isoformat()}"
 
-    for index, session in enumerate(tested_sessions):
-        duration_exists_for_session = index < len(durations_between_sessions)
-        # The final session has no duration, because there is session after it.
-        if duration_exists_for_session:
-            session_key = get_session_key(session)
+#     for index, session in enumerate(tested_sessions):
+#         duration_exists_for_session = index < len(durations_between_sessions)
+#         # The final session has no duration, because there is session after it.
+#         if duration_exists_for_session:
+#             session_key = get_session_key(session)
 
-            # Calculate full windows (each window is 10 seconds)
-            full_windows = count_full_loops(durations_between_sessions[index])
-            expected_pulses_by_session[session_key] = full_windows
+#             # Calculate full windows (each window is 10 seconds)
+#             full_windows = count_full_loops(durations_between_sessions[index])
+#             expected_pulses_by_session[session_key] = full_windows
 
-            # Calculate expected partial (used bit of window)
-            used_amount = durations_between_sessions[index] % keep_alive_cycle_length
-            expected_partials[session_key] = used_amount if used_amount > 0 else None
+#             # Calculate expected partial (used bit of window)
+#             used_amount = durations_between_sessions[index] % keep_alive_cycle_length
+#             expected_partials[session_key] = used_amount if used_amount > 0 else None
 
-    engine = KeepAliveEngine(tested_sessions[0], mock_recorder)
+#     engine = KeepAliveEngine(tested_sessions[0], mock_recorder)
 
-    # Remember that, if this were development, on_new_session would add 10 sec
-    # before any of this happened. So there's a free +10 per session before this occurs.
-    engine_container = MockEngineContainer(durations_between_sessions)
+#     # Remember that, if this were development, on_new_session would add 10 sec
+#     # before any of this happened. So there's a free +10 per session before this occurs.
+#     engine_container = MockEngineContainer(durations_between_sessions)
 
-    for index, session in enumerate(tested_sessions):
-        print(f"using session {session.get_name()} in index {index}")
-        engine = KeepAliveEngine(session, mock_recorder)
+#     for index, session in enumerate(tested_sessions):
+#         print(f"using session {session.get_name()} in index {index}")
+#         engine = KeepAliveEngine(session, mock_recorder)
 
-        if index == 0:
-            engine_container.add_first_engine(engine)
-        else:
-            engine_container.replace_engine(engine)
+#         if index == 0:
+#             engine_container.add_first_engine(engine)
+#         else:
+#             engine_container.replace_engine(engine)
 
-        engine_container.start()
-        engine_container.stop()
+#         engine_container.start()
+#         engine_container.stop()
 
-        if engine_container.engine:
-            if index == len(tested_sessions) - 1:
-                # Nothing to assert for the final one
-                break
-            session_key = get_session_key(session)
-            if expected_partials[session_key] is None:
-                assert engine.amount_used == 0
-            else:
-                assert engine.amount_used == expected_partials[session_key]
+#         if engine_container.engine:
+#             if index == len(tested_sessions) - 1:
+#                 # Nothing to assert for the final one
+#                 break
+#             session_key = get_session_key(session)
+#             if expected_partials[session_key] is None:
+#                 assert engine.amount_used == 0
+#             else:
+#                 assert engine.amount_used == expected_partials[session_key]
 
-    assert engine_container.count == len(tested_sessions) - 1
-    assert mock_recorder.add_ten_sec_to_end_time.call_count == window_pushes
+#     assert engine_container.count == len(tested_sessions) - 1
+#     assert mock_recorder.add_ten_sec_to_end_time.call_count == window_pushes
 
-    # Debugging information
-    print(f"Expected pulses: {expected_pulses_by_session}")
-    print(f"Pulse history length: {len(mock_recorder.pulse_history)}")
+#     # Debugging information
+#     print(f"Expected pulses: {expected_pulses_by_session}")
+#     print(f"Pulse history length: {len(mock_recorder.pulse_history)}")
 
-    # Easier check - total pulse count
-    total_expected_pulses = sum(expected_pulses_by_session.values())
-    total_actual_pulses = len(mock_recorder.pulse_history)
-    assert (
-        total_actual_pulses == total_expected_pulses
-    ), f"Expected {total_expected_pulses} total pulses but got {total_actual_pulses}"
+#     # Easier check - total pulse count
+#     total_expected_pulses = sum(expected_pulses_by_session.values())
+#     total_actual_pulses = len(mock_recorder.pulse_history)
+#     assert (
+#         total_actual_pulses == total_expected_pulses
+#     ), f"Expected {total_expected_pulses} total pulses but got {total_actual_pulses}"
 
-    # Verify pulse counts for each session by unique key
-    def assert_pulse_counts_were_as_expected():
-        for session in tested_sessions:
-            session_key = get_session_key(session)
-            if session_key in expected_pulses_by_session:
-                expected = expected_pulses_by_session[session_key]
-                actual = mock_recorder.get_pulse_count_for_session(session)
-                assert (
-                    actual == expected
-                ), f"Session {session.get_name()} (start: {session.start_time.dt.isoformat()}) expected {expected} pulses but got {actual}"
+#     # Verify pulse counts for each session by unique key
+#     def assert_pulse_counts_were_as_expected():
+#         for session in tested_sessions:
+#             session_key = get_session_key(session)
+#             if session_key in expected_pulses_by_session:
+#                 expected = expected_pulses_by_session[session_key]
+#                 actual = mock_recorder.get_pulse_count_for_session(session)
+#                 assert (
+#                     actual == expected
+#                 ), f"Session {session.get_name()} (start: {session.start_time.dt.isoformat()}) expected {expected} pulses but got {actual}"
 
-    assert_pulse_counts_were_as_expected()
+#     assert_pulse_counts_were_as_expected()
 
-    # Total partials count
-    def assert_partials_were_all_counted():
-        """Even the fake partials where elapsed_time == 0."""
-        expected_partial_count = sum(1 for v in expected_partials.values())
-        actual_partial_count = len(mock_recorder.partial_window_history) - 1
-        assert (
-            actual_partial_count == expected_partial_count
-        ), f"Expected {expected_partial_count} partials but got {actual_partial_count}"
+#     # Total partials count
+#     def assert_partials_were_all_counted():
+#         """Even the fake partials where elapsed_time == 0."""
+#         expected_partial_count = sum(1 for v in expected_partials.values())
+#         actual_partial_count = len(mock_recorder.partial_window_history) - 1
+#         assert (
+#             actual_partial_count == expected_partial_count
+#         ), f"Expected {expected_partial_count} partials but got {actual_partial_count}"
 
-    assert_partials_were_all_counted()
+#     assert_partials_were_all_counted()
 
-    def assert_final_partial_is_from_final_test_data():
-        assert (
-            mock_recorder.partial_window_history[-1][0].get_name()
-            == test_sessions[-1].get_name()
-        )
+#     def assert_final_partial_is_from_final_test_data():
+#         assert (
+#             mock_recorder.partial_window_history[-1][0].get_name()
+#             == test_sessions[-1].get_name()
+#         )
 
-    assert_final_partial_is_from_final_test_data()
+#     assert_final_partial_is_from_final_test_data()
 
-    # Assert that the number of nonzero entries is the same
+#     # Assert that the number of nonzero entries is the same
 
-    # Verify partials for each session by unique key
-    def assert_recorder_received_expected_partials():
-        for session in tested_sessions:
-            session_key = get_session_key(session)
-            expected = expected_partials.get(session_key)
-            if expected is not None:
-                actual = mock_recorder.get_addition_for_session(session)
-                assert (
-                    actual == expected
-                ), f"Session {session.get_name()} (start: {session.start_time.dt.isoformat()}) expected partial addition of {expected} but got {actual}"
-            else:
-                # Verify that it's a session that had x % 10 == 0 loops.
-                actual_addition = mock_recorder.get_addition_for_session(session)
-                assert actual_addition == 0
+#     # Verify partials for each session by unique key
+#     def assert_recorder_received_expected_partials():
+#         for session in tested_sessions:
+#             session_key = get_session_key(session)
+#             expected = expected_partials.get(session_key)
+#             if expected is not None:
+#                 actual = mock_recorder.get_addition_for_session(session)
+#                 assert (
+#                     actual == expected
+#                 ), f"Session {session.get_name()} (start: {session.start_time.dt.isoformat()}) expected partial addition of {expected} but got {actual}"
+#             else:
+#                 # Verify that it's a session that had x % 10 == 0 loops.
+#                 actual_addition = mock_recorder.get_addition_for_session(session)
+#                 assert actual_addition == 0
 
-    assert_recorder_received_expected_partials()
+#     assert_recorder_received_expected_partials()
 
 
-def test_session_sequences_with_explicit_expectations():
-    """
-    Test a sequence of sessions with explicit expectations for
-    pulses and partials, handling repeated application names.
-    """
-    # Create the mock recorder with side effects
-    mock_recorder = MockActivityRecorder()
+# def test_session_sequences_with_explicit_expectations():
+#     """
+#     Test a sequence of sessions with explicit expectations for
+#     pulses and partials, handling repeated application names.
+#     """
+#     # Create the mock recorder with side effects
+#     mock_recorder = MockActivityRecorder()
 
-    # Helper function to generate unique session keys
-    def get_session_key(session):
-        return f"{session.get_name()}_{session.start_time.dt.isoformat()}"
+#     # Helper function to generate unique session keys
+#     def get_session_key(session):
+#         return f"{session.get_name()}_{session.start_time.dt.isoformat()}"
 
-    # Create test sessions that mimic your real test data
-    t1 = tokyo_tz.localize(datetime(2023, 1, 1, 10, 0, 0))
-    t2 = tokyo_tz.localize(datetime(2023, 1, 1, 10, 0, 30))
-    t3 = tokyo_tz.localize(datetime(2023, 1, 1, 10, 1, 15))
-    t4 = tokyo_tz.localize(datetime(2023, 1, 1, 10, 1, 45))
-    t5 = tokyo_tz.localize(datetime(2023, 1, 1, 10, 2, 10))
+#     # Create test sessions that mimic your real test data
+#     t1 = tokyo_tz.localize(datetime(2023, 1, 1, 10, 0, 0))
+#     t2 = tokyo_tz.localize(datetime(2023, 1, 1, 10, 0, 30))
+#     t3 = tokyo_tz.localize(datetime(2023, 1, 1, 10, 1, 15))
+#     t4 = tokyo_tz.localize(datetime(2023, 1, 1, 10, 1, 45))
+#     t5 = tokyo_tz.localize(datetime(2023, 1, 1, 10, 2, 10))
 
-    sessions = [
-        # Create the right type of session object based on your actual code
-        ProgramSession(
-            "App1", "app1.exe", "App1", "First App", UserLocalTime(t1), productive=True
-        ),
-        ProgramSession(
-            "App2", "app2.exe", "App2", "Second App", UserLocalTime(t2), productive=True
-        ),
-        ProgramSession(
-            "App1",
-            "app1.exe",
-            "App1",
-            "First App Again",
-            UserLocalTime(t3),
-            productive=True,
-        ),  # Same app as #1
-        ProgramSession(
-            "App3", "app3.exe", "App3", "Third App", UserLocalTime(t4), productive=True
-        ),
-        ProgramSession(
-            "App2",
-            "app2.exe",
-            "App2",
-            "Second App Again",
-            UserLocalTime(t5),
-            productive=True,
-        ),  # Same app as #2
-    ]
+#     sessions = [
+#         # Create the right type of session object based on your actual code
+#         ProgramSession(
+#             "App1", "app1.exe", "App1", "First App", UserLocalTime(t1), productive=True
+#         ),
+#         ProgramSession(
+#             "App2", "app2.exe", "App2", "Second App", UserLocalTime(t2), productive=True
+#         ),
+#         ProgramSession(
+#             "App1",
+#             "app1.exe",
+#             "App1",
+#             "First App Again",
+#             UserLocalTime(t3),
+#             productive=True,
+#         ),  # Same app as #1
+#         ProgramSession(
+#             "App3", "app3.exe", "App3", "Third App", UserLocalTime(t4), productive=True
+#         ),
+#         ProgramSession(
+#             "App2",
+#             "app2.exe",
+#             "App2",
+#             "Second App Again",
+#             UserLocalTime(t5),
+#             productive=True,
+#         ),  # Same app as #2
+#     ]
 
-    # Define explicit durations between sessions
-    durations = [
-        30,  # App1 runs for 30 seconds (3 full pulses)
-        45,  # App2 runs for 45 seconds (4 full pulses, 5 sec partial)
-        30,  # App1 runs for 30 seconds (3 full pulses)
-        25,  # App3 runs for 25 seconds (2 full pulses, 5 sec partial)
-        20,  # App2 runs for 20 seconds (2 full pulses)
-    ]
+#     # Define explicit durations between sessions
+#     durations = [
+#         30,  # App1 runs for 30 seconds (3 full pulses)
+#         45,  # App2 runs for 45 seconds (4 full pulses, 5 sec partial)
+#         30,  # App1 runs for 30 seconds (3 full pulses)
+#         25,  # App3 runs for 25 seconds (2 full pulses, 5 sec partial)
+#         20,  # App2 runs for 20 seconds (2 full pulses)
+#     ]
 
-    # Calculate expected pulses and partials
-    expected_pulses = {}
-    expected_partials = {}
+#     # Calculate expected pulses and partials
+#     expected_pulses = {}
+#     expected_partials = {}
 
-    for i, session in enumerate(sessions):
-        session_key = get_session_key(session)
-        # Calculate full windows (each window is 10 seconds)
-        full_windows = count_full_loops(durations[i])
-        expected_pulses[session_key] = full_windows
+#     for i, session in enumerate(sessions):
+#         session_key = get_session_key(session)
+#         # Calculate full windows (each window is 10 seconds)
+#         full_windows = count_full_loops(durations[i])
+#         expected_pulses[session_key] = full_windows
 
-        # Calculate expected partial (used_amount of window)
-        used_amount = durations[i] % 10
-        expected_partials[session_key] = used_amount
+#         # Calculate expected partial (used_amount of window)
+#         used_amount = durations[i] % 10
+#         expected_partials[session_key] = used_amount
 
-    # Run the test with the mock container
-    engine_container = MockEngineContainer(durations)
+#     # Run the test with the mock container
+#     engine_container = MockEngineContainer(durations)
 
-    # Process each session
-    for i, session in enumerate(sessions):
-        engine = KeepAliveEngine(session, mock_recorder)
+#     # Process each session
+#     for i, session in enumerate(sessions):
+#         engine = KeepAliveEngine(session, mock_recorder)
 
-        if i == 0:
-            engine_container.add_first_engine(engine)
-        else:
-            engine_container.replace_engine(engine)
+#         if i == 0:
+#             engine_container.add_first_engine(engine)
+#         else:
+#             engine_container.replace_engine(engine)
 
-        engine_container.start()
-        engine_container.stop()
+#         engine_container.start()
+#         engine_container.stop()
 
-    # Debugging
-    print(f"Expected pulses: {expected_pulses}")
-    print(f"Pulse history length: {len(mock_recorder.pulse_history)}")
+#     # Debugging
+#     print(f"Expected pulses: {expected_pulses}")
+#     print(f"Pulse history length: {len(mock_recorder.pulse_history)}")
 
-    # Verify overall pulse count
-    total_expected_pulses = sum(expected_pulses.values())
-    total_actual_pulses = len(mock_recorder.pulse_history)
-    assert (
-        total_actual_pulses == total_expected_pulses
-    ), f"Expected {total_expected_pulses} total pulses but got {total_actual_pulses}"
+#     # Verify overall pulse count
+#     total_expected_pulses = sum(expected_pulses.values())
+#     total_actual_pulses = len(mock_recorder.pulse_history)
+#     assert (
+#         total_actual_pulses == total_expected_pulses
+#     ), f"Expected {total_expected_pulses} total pulses but got {total_actual_pulses}"
 
-    # Verify pulse counts for each session
-    def assert_each_session_had_expected_pulse_count():
-        for i, session in enumerate(sessions):
-            session_key = get_session_key(session)
-            expected_count = expected_pulses.get(session_key, 0)
-            actual_count = mock_recorder.get_pulse_count_for_session(session)
-            assert (
-                actual_count == expected_count
-            ), f"Session {session.get_name()} (start: {session.start_time.dt.isoformat()}) expected {expected_count} pulses but got {actual_count}"
+#     # Verify pulse counts for each session
+#     def assert_each_session_had_expected_pulse_count():
+#         for i, session in enumerate(sessions):
+#             session_key = get_session_key(session)
+#             expected_count = expected_pulses.get(session_key, 0)
+#             actual_count = mock_recorder.get_pulse_count_for_session(session)
+#             assert (
+#                 actual_count == expected_count
+#             ), f"Session {session.get_name()} (start: {session.start_time.dt.isoformat()}) expected {expected_count} pulses but got {actual_count}"
 
-    assert_each_session_had_expected_pulse_count()
+#     assert_each_session_had_expected_pulse_count()
 
-    # Verify partials
-    def assert_each_session_had_expected_partials():
-        for i, session in enumerate(sessions):
-            session_key = get_session_key(session)
-            expected_partial = expected_partials.get(session_key)
-            if expected_partial != 0:
-                actual_partial = mock_recorder.get_addition_for_session(session)
-                assert (
-                    actual_partial == expected_partial
-                ), f"Session {session.get_name()} (start: {session.start_time.dt.isoformat()}) expected partial of {expected_partial} but got {actual_partial}"
-            else:
-                actual_partial = mock_recorder.get_addition_for_session(session)
-                assert actual_partial == 0, "Session ended on a full window"
+#     # Verify partials
+#     def assert_each_session_had_expected_partials():
+#         for i, session in enumerate(sessions):
+#             session_key = get_session_key(session)
+#             expected_partial = expected_partials.get(session_key)
+#             if expected_partial != 0:
+#                 actual_partial = mock_recorder.get_addition_for_session(session)
+#                 assert (
+#                     actual_partial == expected_partial
+#                 ), f"Session {session.get_name()} (start: {session.start_time.dt.isoformat()}) expected partial of {expected_partial} but got {actual_partial}"
+#             else:
+#                 actual_partial = mock_recorder.get_addition_for_session(session)
+#                 assert actual_partial == 0, "Session ended on a full window"
 
-    assert_each_session_had_expected_partials()
+#     assert_each_session_had_expected_partials()

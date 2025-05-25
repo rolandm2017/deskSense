@@ -1,5 +1,6 @@
-import threading
 from queue import Queue
+
+import threading
 
 import time
 
@@ -54,17 +55,14 @@ class KeepAliveEngine:
 
     def iterate_loop(self):
         # TODO: Change so that it relies on datetime.now() having 10 sec elapsed.
+        # Reason is that the time.sleep(self.interval) will be ~1.03 sec on average
         self.amount_used += 1  # not
-        type_of_thing = isinstance(self.session, ProgramSession)
-        # if type_of_thing:
-        #     print("IS PROGRAM SESION")
-        # else:
-        #     print("IS DOMAIN SESSION")
-        print(f"\nin loop {self.amount_used} of 10 for {self.session.get_name()}, ")
+        # print(f"\nin loop {self.amount_used} of 10 for {self.session.get_name()}, ")
         # if self.session.video_info:
         #     print(
         #         "[polling for video] Iterating loop for", self.session.video_info.get_name()
         #     )
+        # if self._hit_max_window(self.max_interval, self.amount_used):
         if self._hit_max_window():
             self._pulse_add_ten()
             self.amount_used = 0
@@ -94,6 +92,7 @@ class KeepAliveEngine:
         self._add_partial_window(self.amount_used)
 
     def _hit_max_window(self):
+        # return max < used
         return self.max_interval <= self.amount_used
 
     def _pulse_add_ten(self):
@@ -101,7 +100,6 @@ class KeepAliveEngine:
         Go into the session's Summary DAO entry and add ten sec.
         """
         self.recorder.add_ten_sec_to_end_time(self.session)
-        # pass  # Temporarily disabled
 
     def _add_partial_window(self, amount_used):
         """
@@ -123,15 +121,6 @@ class KeepAliveEngine:
         )
         thread_id_and_name = thread_name + " : " + str(thread_id)
         self.recorder.add_partial_window(amount_used, self.session, thread_id_and_name)
-
-    # For testing: methods to expose internal state
-    def get_amount_used(self):
-        """Get the current amount used (for testing)"""
-        return self.amount_used
-
-    def get_session(self):
-        """Get the current session (for testing)"""
-        return self.session
 
 
 class ThreadedEngineContainer:
@@ -185,7 +174,7 @@ class ThreadedEngineContainer:
         # print("while not stop event is set?", self.stop_event.is_set())
         while not self.stop_event.is_set():
             # print(f"Thread {thread_id}")
-            if not self.engine_queue.empty():
+            while not self.engine_queue.empty():
                 old_engine = self.engine
                 if old_engine:
                     old_engine.conclude_engine()  # Called from KeepAlive thread!
@@ -193,8 +182,8 @@ class ThreadedEngineContainer:
 
             if self.engine:
                 self.engine.iterate_loop()  # a second has been used
-                # TODO: The sleeping only happens while there is an engine.
-                # TODO: IF there is no engine, there is no sleeping, it just checks if there is a new engine over and over
+                # The sleeping only happens while there is an engine.
+                # If there is no engine, there is no sleeping, it just checks if there is a new engine over and over
                 self.sleep_fn(self.interval)  # Sleep for 1 second
 
     def replace_engine(self, new_engine):
@@ -207,12 +196,9 @@ class ThreadedEngineContainer:
         #     f"[container - replace_engine] Replacing engine for '{self.engine.session.get_name()}' with '{new_engine.session.get_name()}' in thread '{current_thread.name}' (ID: {thread_id})"
         # )
 
-        # NOTE: If you have some sort of off by 1 error, it could be because
-        # the current .sleep() hasn't flushed yet, i.e. the prev iteration is still going
-        # Stop the current engine's work gracefully
-
         # Swap the engine
         # Just queue the new engine, don't stop the thread
+        print("Queuing new engine")
         self.engine_queue.put(new_engine)
 
     def stop(self):

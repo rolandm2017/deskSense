@@ -69,4 +69,4 @@ class MockEngineContainer(ThreadedEngineContainer):
     def stop(self):
         if self.engine is None:
             raise MissingEngineError()
-        self.engine.conclude()
+        self.engine.conclude_engine()
