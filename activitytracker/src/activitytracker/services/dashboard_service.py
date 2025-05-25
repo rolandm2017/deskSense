@@ -6,14 +6,17 @@ from typing import Dict, List, Tuple, TypedDict
 from activitytracker.config.definitions import productive_apps, productive_sites
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
+from activitytracker.db.dao.direct.video_summary_dao import VideoSummaryDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
+from activitytracker.db.dao.queuing.video_logs_dao import VideoLoggingDao
 from activitytracker.db.models import (
     DailyDomainSummary,
     DailyProgramSummary,
     ProgramSummaryLog,
     TimelineEntryObj,
+    VideoSummaryLog,
 )
 from activitytracker.services.timezone_service import TimezoneService
 from activitytracker.tz_handling.time_formatting import (
@@ -34,12 +37,16 @@ class DashboardService(WeekCalculationMixin):
         program_logging_dao: ProgramLoggingDao,
         chrome_summary_dao: ChromeSummaryDao,
         chrome_logging_dao: ChromeLoggingDao,
+        video_summary_dao: VideoSummaryDao,
+        video_logging_dao: VideoLoggingDao,
     ):
         self.timeline_dao = timeline_dao
         self.program_summary_dao = program_summary_dao
         self.program_logging_dao = program_logging_dao
         self.chrome_summary_dao = chrome_summary_dao
         self.chrome_logging_dao = chrome_logging_dao
+        self.video_summary_dao = video_summary_dao
+        self.video_logging_dao = video_logging_dao
         self.user_clock = UserFacingClock()
         self.logger = ConsoleLogger()
 
@@ -48,6 +55,9 @@ class DashboardService(WeekCalculationMixin):
         self.peripherals = PeripheralsService(timeline_dao, self.timezone_service)
         self.programs = ProgramsService(
             program_summary_dao, program_logging_dao, self.timezone_service
+        )
+        self.video = VideoService(
+            video_summary_dao, video_logging_dao, self.timezone_service
         )
 
     async def get_weekly_productivity_overview(self, week_of: date):
@@ -131,7 +141,7 @@ class DashboardService(WeekCalculationMixin):
         right_now = self.user_clock.now()
         all = self.chrome_summary_dao.read_past_week(right_now)
         # FIXME: Ensure that it actually gets all days of week; can't test it on Monday
-        return all
+        return all  # type: ignore
 
     async def get_previous_week_chrome_summary(
         self, start_sunday: date
@@ -150,6 +160,56 @@ class DashboardService(WeekCalculationMixin):
             usage_from_days.extend(daily_summaries)
 
         return usage_from_days
+
+
+class VideoService(WeekCalculationMixin):
+
+    def __init__(
+        self,
+        video_summary_dao: VideoSummaryDao,
+        video_logging_dao: VideoLoggingDao,
+        timezone_service: TimezoneService,
+    ):
+        self.video_summary_dao = video_summary_dao
+        self.video_logging_dao = video_logging_dao
+        self.timezone_service = timezone_service
+        self.user_clock = UserFacingClock()
+        self.logger = ConsoleLogger()
+
+    async def get_usage_timeline_for_week(
+        self, week_of: date
+    ) -> Tuple[List[Dict], datetime]:
+        """
+        week_of: The day according to the user.
+
+        starting_sunday: The Sunday that is the start of the week being selected.
+        """
+        starting_sunday: datetime = self.prepare_start_of_week(week_of)
+        starting_sunday = self.timezone_service.localize_to_user_tz(starting_sunday)
+
+        now: UserLocalTime = self.user_clock.now()
+        start_of_today: datetime = now.dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        start_of_tomorrow: datetime = start_of_today + timedelta(days=1)
+
+        all_days = []
+
+        for days_after_sunday in range(7):
+            current_day: datetime = starting_sunday + timedelta(days=days_after_sunday)
+
+            is_in_future = current_day > start_of_tomorrow
+            if is_in_future:
+                continue  # avoid reading future dates from db
+
+            video_usage_timeline: dict[str, VideoSummaryLog] = (
+                self.video_logging_dao.read_day_as_sorted(UserLocalTime(current_day))
+            )
+            day = {
+                "date": current_day,
+                "video_usage_timeline": video_usage_timeline,
+            }
+            all_days.append(day)
+
+        return all_days, starting_sunday
 
 
 class ProgramsService(WeekCalculationMixin):

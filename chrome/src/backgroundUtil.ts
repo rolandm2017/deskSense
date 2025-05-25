@@ -6,11 +6,7 @@ import {
 } from "./netflix/netflixUrlTool";
 import { getDomainFromUrl } from "./urlTools";
 import { viewingTracker, ViewingTracker } from "./videoCommon/visits";
-import {
-    getYouTubeVideoId,
-    handleYouTubeUrl,
-    startSecondaryChannelExtractionScript,
-} from "./youtube/youtube";
+import { getYouTubeVideoId, handleYouTubeUrl } from "./youtube/youtube";
 
 export const tabsWithPollingList: number[] = [];
 
@@ -179,15 +175,10 @@ export class PlayPauseDispatch {
             // It wasn't there yet because, the, the channel extractor
             // script didn't run yet but the "report playing video" code did.
             const isYouTube = "TODO";
+            console.log(sender);
+            console.log(this.tracker);
 
             throw new Error("ShouldntBeAbleToGetHereError");
-            if (isYouTube) {
-                // FIXME: THIS RAN ON NETFLIX
-                startSecondaryChannelExtractionScript(sender);
-                // After the channel extractor runs, then you can fwd the play event
-            } else {
-                // is netflix
-            }
         }
     }
 
@@ -248,6 +239,7 @@ export class PlayPauseDispatch {
             this.tracker.markPaused();
         } else {
             console.warn("Somehow paused the media while it was undefined");
+            console.log(this.tracker);
             throw new Error("ShouldntBeAbleToGetHereError");
         }
     }

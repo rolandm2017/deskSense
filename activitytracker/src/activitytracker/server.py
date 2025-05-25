@@ -1,4 +1,15 @@
 # server.py
+import asyncio
+
+import pytz
+from datetime import date, datetime
+from datetime import time as dt_time
+from datetime import timezone
+from time import time
+
+# import time
+from typing import List, Optional
+
 import os
 import sys
 from contextlib import asynccontextmanager
@@ -17,17 +28,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-import asyncio
-
-import pytz
-from datetime import date, datetime
-from datetime import time as dt_time
-from datetime import timezone
-from time import time
-
-# import time
-from typing import List, Optional
-
 from activitytracker.db.database import (
     async_session_maker,
     init_db,
@@ -37,6 +37,7 @@ from activitytracker.db.models import (
     DailyDomainSummary,
     DailyProgramSummary,
     ProgramSummaryLog,
+    VideoSummaryLog,
 )
 from activitytracker.facade.facade_singletons import (
     get_keyboard_facade_instance,
@@ -55,10 +56,13 @@ from activitytracker.object.dashboard_dto import (
     TimelineEntrySchema,
     TimelineEvent,
     TimelineRows,
+    VideoTimelineContent,
+    VideoUsageTimeline,
     WeeklyChromeContent,
     WeeklyProgramContent,
     WeeklyProgramUsageTimeline,
     WeeklyTimeline,
+    WeeklyVideoUsageTimeline,
 )
 from activitytracker.object.pydantic_dto import UtcDtTabChange
 from activitytracker.routes.report_routes import router as report_router
@@ -544,6 +548,43 @@ async def get_program_usage_timeline_by_week(
         days.append(day_timeline)
 
     return WeeklyProgramUsageTimeline(days=days)
+
+
+@app.get(
+    "/api/dashboard/video/usage/timeline/{week_of}",
+    response_model=WeeklyVideoUsageTimeline,
+)
+async def get_video_usage_timeline_by_week(
+    week_of: date = Path(..., description="Week starting date"),
+    dashboard_service: DashboardService = Depends(get_dashboard_service),
+):
+    all_days, start_of_week = await dashboard_service.video.get_usage_timeline_for_week(
+        week_of
+    )
+
+    days = []
+    for day in all_days:
+        videos: dict[str, VideoSummaryLog] = day["video_usage_timeline"]
+        date = day["date"]
+
+        videos_content = []
+        for key, value_list in videos.items():
+            timeline_events = []
+            for video_log in value_list:
+                timeline_event = TimelineEvent(
+                    logId=video_log.id,
+                    startTime=video_log.start_time,
+                    endTime=video_log.end_time,
+                )
+                timeline_events.append(timeline_event)
+
+            content = VideoTimelineContent(videoName=key, events=timeline_events)
+            videos_content.append(content)
+
+        day_timeline = VideoUsageTimeline(date=date, videos=videos_content)
+        days.append(day_timeline)
+
+    return WeeklyVideoUsageTimeline(days=days)
 
 
 @app.get("/api/report/chrome")

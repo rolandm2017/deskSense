@@ -1,6 +1,8 @@
-from pydantic import BaseModel, ConfigDict
-from typing import List
 from datetime import datetime
+
+from typing import List
+
+from pydantic import BaseModel, ConfigDict
 
 from activitytracker.db.models import PrecomputedTimelineEntry
 
@@ -149,6 +151,20 @@ class ProgramUsageTimeline(BaseModel):
 
 class WeeklyProgramUsageTimeline(BaseModel):
     days: List[ProgramUsageTimeline]
+
+
+class VideoTimelineContent(BaseModel):
+    videoName: str
+    events: List[TimelineEvent]
+
+
+class VideoUsageTimeline(BaseModel):
+    date: datetime
+    videos: List[VideoTimelineContent]
+
+
+class WeeklyVideoUsageTimeline(BaseModel):
+    days: List[VideoUsageTimeline]
 
 
 class MouseEventsPayload(BaseModel):
