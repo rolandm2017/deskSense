@@ -41,7 +41,7 @@ class YouTubeApi {
 
     // FIXME: a regular youTube page != a youTube Watch Page
 
-    reportYouTubeWatchPage(
+    sendYouTubeWatchPage(
         tabTitle: string | undefined,
         videoId: string,
         channel: string,
@@ -56,7 +56,7 @@ class YouTubeApi {
             startTime: new Date().toISOString(),
             playerState: initialPlayerState,
         };
-        console.log("Sending YouTube Watch Page payload:", payload);
+        console.log("Sending YouTube Watch Page payload:", payload.channel);
         // console.log(youTubeUrl, "is the youtube url");
         this.sendPayload(youTubeWatchPageUrl, payload);
     }
@@ -87,7 +87,7 @@ class YouTubeApi {
             // their time spent watching content that day.
             // timestamp: 0
         };
-        console.log("The play payload was be ", payload);
+        console.log("The play payload is ", payload.channel);
         this.sendPayload(youtubePlayerStateUrl, payload);
     }
 
@@ -101,7 +101,7 @@ class YouTubeApi {
             playerState: "paused",
             // timestamp: 0,
         };
-        console.log("The pause payload was be ", payload);
+        console.log("The pause payload is ", payload.channel);
         this.sendPayload(youtubePlayerStateUrl, payload);
     }
 }
@@ -175,7 +175,7 @@ class NetflixApi {
             // their time spent watching content that day.
             // timestamp: 0
         };
-        console.log("The play payload was be ", payload);
+        console.log("The play payload is ", payload);
         this.sendPayload(netflixPlayerStateUrl, payload);
     }
 
@@ -194,7 +194,7 @@ class NetflixApi {
             playerState: "paused",
         };
 
-        console.log("The pause payload was be ", payload);
+        console.log("The pause payload is ", payload);
         this.sendPayload(netflixPlayerStateUrl, payload);
     }
 }

@@ -181,7 +181,6 @@ class ChromeService:
         url = url_deliverable.url
         title = url_deliverable.tab_title
         is_productive = url_deliverable.url in productive_sites
-        print(url_deliverable, "184ru")
         if url_deliverable.youtube_info:
             url = "www.youtube.com"
             video_info = url_deliverable.youtube_info

@@ -74,7 +74,7 @@ export class ViewingTracker {
         if (this.currentMedia instanceof YouTubeViewing) {
             this.mostRecentReport = this.currentMedia;
             // this.youTubeApiLogger.logLandOnPage(this.currentMedia.mediaTitle);
-            this.api.youtube.reportYouTubeWatchPage(
+            this.api.youtube.sendYouTubeWatchPage(
                 this.currentMedia.mediaTitle,
                 this.currentMedia.videoId,
                 this.currentMedia.channelName,

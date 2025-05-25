@@ -113,9 +113,9 @@ class KeepAliveEngine:
             name = self.session.get_name()
 
         print(
-            f"[add_partial_window - engine call] {name} with amount: {amount_used} in thread '{thread_name}' (ID: {thread_id})"
+            f"[add_partial_window - engine call] {name} with amount: {amount_used} in thread '{thread_name}'"
         )
-        thread_id_and_name = thread_name + " : " + str(thread_id)
+        thread_id_and_name = thread_name
         self.recorder.add_partial_window(amount_used, self.session, thread_id_and_name)
 
 
@@ -149,18 +149,12 @@ class ThreadedEngineContainer:
             self.stop_event.clear()  # Clear the stop event instead of creating a new one
 
             # Set a custom thread name based on the session
-            thread_name = (
-                f"KeepAlive-{self.engine.session.get_name()}"
-                if self.engine
-                else "KeepAlive-Unknown"
-            )
+            thread_name = "KeepAlive"
 
             self.hook_thread = threading.Thread(target=self._iterate_loop, name=thread_name)
             self.hook_thread.daemon = True
             self.hook_thread.start()
             self.is_running = True
-
-    # FIXME: This class FOR SURE has problems. I see duplicated prints all the time
 
     def _iterate_loop(self):
         if self.engine is None:

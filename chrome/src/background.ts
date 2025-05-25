@@ -83,7 +83,6 @@ chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
     // Perform any cleanup or final operations here
     if (isYouTubeWatchPage && viewingTracker.currentMedia) {
         // send final data to server
-        // TODO: This actually ends THE VISIT because a visit is the time on a page!
         // The Viewing would be when the user hits Pause.
         viewingTracker.endViewing();
     }
@@ -109,7 +108,7 @@ chrome.runtime.onMessage.addListener(
          */
         if (message.event === "user_pressed_play") {
             // FIXME: User is able to press pause, somehow, before .setCurrent is called
-            // TODO: On close ... oh, i need one PER watch screen. what if user has 5 videos going?
+            // TODO: On close ... i need one PER watch screen. what if user has 5 videos going?
             playPauseDispatch.notePlayEvent(sender);
         } else if (message.event === "user_pressed_pause") {
             playPauseDispatch.notePauseEvent();
@@ -157,10 +156,16 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 // Listen for tab switches.
+let currentTabId: number;
 chrome.tabs.onActivated.addListener((activeInfo) => {
+    currentTabId = activeInfo.tabId;
     chrome.tabs.get(activeInfo.tabId, (tab) => {
         if (tab.url) {
             console.log("onActivated - getDomainFromUrl");
+            // SO this one is, "I switch from Chrome Tab A to Chrome Tab B".
+            // The other one is, "I alt tab back IN to Chrome."
+            // But the alt-tab-back-into-Chrome one also fires "onActivated".
+            // TODO: Find a way to choose between this one and the onMessage focus listener
             getDomainFromUrlAndSubmit(tab);
         } else {
             console.warn("Active tab had no url");
@@ -249,7 +254,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     );
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const activeTab = tabs[0];
-        if (activeTab.url) {
+        // Must hinder both window_gained_focus event and onActivated co-occurring
+        const tabbingIntoCurrentlyActiveTab = activeTab.id == currentTabId;
+        if (activeTab.url && tabbingIntoCurrentlyActiveTab) {
             const url = activeTab.url;
             // FIXME: If YouTube/Netflix Watch, get Player state
             if (isWatchingYouTubeVideo(url)) {
