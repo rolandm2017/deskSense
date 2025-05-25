@@ -234,18 +234,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // alert to the server. So the backend sits there saying "Google Chrome"
 // until the user (a) changes tabs or (b) changes player state,
 // or that's how it was until this code fixed it.
+let switchCounter = 0;
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log(message.event, "238ru");
-    console.log(
-        "AAAAAAAAA\n\n\nAAAAAAA\n\n\nAAAAAAsdfadsfdsaAAAAAAAAAAAAAA\nAAAAAAa\nAAAAAAA"
-    );
     if (message.event !== "window_gained_focus") {
         return;
     }
     /*
         Code runs when user alt tabs into Chrome
     */
-    console.log("Chrome gained focus (switched from another app)");
+    switchCounter++;
+    console.log(
+        "Chrome gained focus (switched from another app)",
+        switchCounter
+    );
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const activeTab = tabs[0];
         if (activeTab.url) {
@@ -265,6 +266,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     throw new Error("Expected YouTube Viewing; got Netflix");
                 }
                 viewingTracker.setCurrent(pageState);
+                pageState.playerState === "playing"
+                    ? viewingTracker.markAutoplayEventWaiting()
+                    : null;
+
                 viewingTracker.reportYouTubeWatchPage();
             } else if (isNetflixWatchPage(url)) {
                 console.log("onFocusChanged - Netflix Watch Page");
@@ -279,6 +284,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     throw new Error("Expected Netflix Viewing; got YouTube");
                 }
                 viewingTracker.setCurrent(pageState);
+                pageState.playerState === "playing"
+                    ? viewingTracker.markAutoplayEventWaiting()
+                    : null;
+
                 // FIXME: It might be a partiallyFilled page
                 viewingTracker.reportFilledNetflixWatch(pageState);
             } else {
