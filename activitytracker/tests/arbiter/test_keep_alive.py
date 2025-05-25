@@ -60,9 +60,9 @@ class MockActivityRecorder:
         # Side effects in unittest.mock should return None by default
         return None
 
-    def _record_addition(self, duration, session):
+    def _record_addition(self, duration, session, thread_info=None):
         """Side effect function that records each partial window"""
-        self.partial_window_history.append((session, duration))
+        self.partial_window_history.append((session, duration, thread_info))
         # Side effects in unittest.mock should return None by default
         return None
 
@@ -188,11 +188,14 @@ def test_one_complete_run(dao_connection):
     assert duration == only_length % keep_alive_cycle_length == 3
 
 
-def test_five_runs(dao_connection):
+def test_five_runs_manual_iteration(dao_connection):
+    """
+    There
+    """
     session = ProgramSession("Foo")
 
     engine = KeepAliveEngine(session, dao_connection)
-    durations_for_test = [63, 0, 10, 9, 23]
+    durations_for_test = [63, 0, 10, 5, 23]
 
     # 0 is secretly 10.
     # If it ends on 0, withdraw the window push that just happened.
@@ -209,16 +212,16 @@ def test_five_runs(dao_connection):
     # 23 -> 2
     full_windows_per_session = [6, 0, 1, 0, 2]
     count_of_full_windows = sum(full_windows_per_session)
-    count_of_additions = [1, 1, 1, 1, 1]  # FIXME
+    count_of_additions = [1, 1, 1, 1, 1]
 
     # Remember that, if this were development, on_new_session would add 10 sec
     # before any of this happened. So there's a free +10 per session before this occurs.
-    engine_container = MockEngineContainer(durations_for_test)
+    mock_engine_container = MockEngineContainer(durations_for_test)
 
-    engine_container.add_first_engine(engine)
+    mock_engine_container.add_first_engine(engine)
 
-    # engine_container.start()
-    # engine_container.stop()
+    mock_engine_container.start()
+    mock_engine_container.stop()
 
     assert count_full_loops(durations_for_test[0]) == 6
     assert dao_connection.add_ten_sec_to_end_time.call_count == 6
@@ -227,25 +230,25 @@ def test_five_runs(dao_connection):
 
     for i in durations_for_test[1:]:
         engine = KeepAliveEngine(session, dao_connection)
-        engine_container.replace_engine(engine)
+        mock_engine_container.replace_engine(engine)
 
-        # engine_container.start()
-        # engine_container.stop()
+        mock_engine_container.start()
+        mock_engine_container.stop()
 
     # -- assert
 
     for v in dao_connection.add_partial_window.call_args_list:
-        print(v[0], "238ru")
-
-    for i in range(0, len(durations_for_test)):
-        if durations_for_test[i] % window_push_length == 0:
-            continue  # Nothing to test
-        partial_window = dao_connection.add_partial_window.call_args_list[i][0][0]
-        assert partial_window == durations_for_test[i] % window_push_length
+        print(v[0][0], "238ru")
 
     assert dao_connection.add_partial_window.call_count == len(count_of_additions)
 
     assert dao_connection.add_ten_sec_to_end_time.call_count == count_of_full_windows
+
+    for i in range(0, len(durations_for_test)):
+        # if durations_for_test[i] % window_push_length == 0:
+        #     continue  # Nothing to test
+        partial_window = dao_connection.add_partial_window.call_args_list[i][0][0]
+        assert partial_window == durations_for_test[i] % window_push_length
 
 
 # def test_full_test_sessions(activity_arbiter_and_setup, mock_recorder):

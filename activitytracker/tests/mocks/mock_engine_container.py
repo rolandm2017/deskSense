@@ -6,8 +6,8 @@ from activitytracker.arbiter.session_polling import (
 )
 from activitytracker.util.errors import MissingEngineError
 
-# TODO:
-# I want this mock to be able to like
+
+# I want this mock to be able to like,
 # like, I set it to run 3 full cycles and 3 extra loops
 # I want the loops to happen in an instant, because the main pipeline
 # won't care whether a threaded sleep happened over 40 sec or 40 CPU cycles.
@@ -17,8 +17,6 @@ from activitytracker.util.errors import MissingEngineError
 # it just does it. Like you get the calculation by hand, before feeding vals in in the test
 # and you feed the Mock, "hey, it's actually going to be, 23 sec" or "it's gonna be 8 sec" or
 # "it's gonna be 43 sec"
-
-
 class MockEngineContainer(ThreadedEngineContainer):
     """
     Is not threaded.
@@ -44,29 +42,58 @@ class MockEngineContainer(ThreadedEngineContainer):
         # Time.sleep isn't used
         super().__init__(interval, sleep_fn, timestamp)
         self.session_durations = session_durations or []
-        self.duration_iter = iter(self.session_durations)
-        self.count = 0
+        self.duration_index = 0
+        self.is_started = False
 
     def add_first_engine(self, engine):
         return super().add_first_engine(engine)
 
     def start(self):
+        """Start processing - run the first engine with its duration"""
         if self.engine is None:
             raise MissingEngineError()
-        # Get the duration for the nth run from the iter
-        try:
-            duration_for_run = next(self.duration_iter)
-            self.count += 1  # Increment the count here
-            # print(f"duration for run: {duration_for_run} in run {self.count}")
-            for i in range(0, duration_for_run):
-                self.engine.iterate_loop()
-        except StopIteration:
-            print("No more durations available in the iterator")
+
+        if not self.is_started:
+            self.is_started = True
+            self._run_current_engine()
+
+    def replace_engine(self, new_engine):
+        """Replace current engine and run it with the next duration"""
+        if self.engine is None:
+            raise MissingEngineError()
+
+        # Conclude the old engine
+        if self.engine:
+            self.engine.conclude_engine()
+
+        # Set the new engine
+        self.engine = new_engine
+        self.duration_index += 1
+
+        # Run the new engine if we're started
+        if self.is_started:
+            self._run_current_engine()
+
+    def _run_current_engine(self):
+        """Run the current engine for its specified duration"""
+        if self.duration_index < len(self.session_durations):
+            duration_for_run = self.session_durations[self.duration_index]
+            print(f"Running engine for duration: {duration_for_run}")
+
+            for i in range(duration_for_run):
+                if self.engine:
+                    self.engine.iterate_loop()
+        else:
+            print("No more durations available")
 
     def _iterate_loop(self):
+        # Not used in mock
         pass
 
     def stop(self):
+        """Stop and conclude the final engine"""
         if self.engine is None:
             raise MissingEngineError()
-        self.engine.conclude_engine()
+        if self.engine:
+            self.engine.conclude_engine()
+        self.is_started = False

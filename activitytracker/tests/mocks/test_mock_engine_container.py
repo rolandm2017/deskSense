@@ -29,7 +29,16 @@ timezone_for_test = "Asia/Tokyo"  # UTC+9
 tokyo_tz = pytz.timezone(timezone_for_test)
 
 
-def test_engine_container(mock_regular_session_maker, mock_async_session):
+def test_mock_engine_container(mock_regular_session_maker, mock_async_session):
+    """
+    Notes for debugging:
+
+    - Run 1's outcome can only be tested after run 2 is started.
+
+    - You must reset the mocks after run 1's outcome is tested, but before run 2 activates.
+
+
+    """
 
     p_logging_dao = ProgramLoggingDao(mock_regular_session_maker)
     chrome_logging_dao = ChromeLoggingDao(mock_regular_session_maker)
@@ -62,13 +71,15 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
 
     t1 = UserLocalTime(tokyo_tz.localize(datetime(2025, 4, 24, 1, 1, 1)))
     t2 = UserLocalTime(tokyo_tz.localize(datetime(2025, 4, 24, 2, 2, 2)))
+    t3 = UserLocalTime(tokyo_tz.localize(datetime(2025, 4, 24, 3, 3, 3)))
 
-    session1 = ProgramSession("path/to/bar.exe", "bar.exe")
-    session2 = ChromeSession("foo.com", "Experience Foo", t2)
+    session1 = ProgramSession("path/to/bar.exe", "bar.exe", "", "", t1)
+    session2 = ChromeSession("foo.com", "Foo Dot Com", t2)
 
     pulse_interval = 0.1
 
-    an_engine = KeepAliveEngine(session1, recorder)
+    first_engine = KeepAliveEngine(session1, recorder)
+    first_engine.conclude_engine = Mock(wraps=first_engine.conclude_engine)
 
     duration_in_sec_1 = 33
     partial1 = 3
@@ -84,19 +95,14 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
     # Time.sleep isn't used
     engine_container = MockEngineContainer(run_durations, pulse_interval)
 
-    engine_container.add_first_engine(an_engine)
+    engine_container.add_first_engine(first_engine)
 
     engine_container.start()
 
     # An arbiter loop passes, and then:
 
-    engine_container.stop()
-
     # assert window push happened 3x
     assert window_push_mock.call_count == 3
-    # assert add_partial_window happened 1x for 7 sec
-    assert add_partial_window_mock.call_count == 1
-    add_partial_window_mock.assert_called_once_with(partial1, session1)
 
     window_push_mock.reset_mock()
     add_partial_window_mock.reset_mock()
@@ -105,26 +111,26 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
     # -- Run #2
     # --
 
-    an_engine = KeepAliveEngine(session2, recorder)
-    engine_container.replace_engine(an_engine)
+    second_engine = KeepAliveEngine(session2, recorder)
+    second_engine.conclude_engine = Mock(wraps=second_engine.conclude_engine)
 
-    engine_container.start()
+    engine_container.replace_engine(second_engine)
+
+    # assert add_partial_window happened 1x for 7 sec,
+    # because replace_engine() causes conclude_engine().
+    # So you can't test the outcome of run 1 until you start run 2.
+    assert first_engine.conclude_engine.call_count == 1
+    assert add_partial_window_mock.call_count == 1
+    call_args = add_partial_window_mock.call_args[0]  # Get positional args
+    assert call_args[0] == partial1  # First arg
+    assert call_args[1] == session1  # Second arg
+    assert call_args[1].get_name() == session1.get_name()
 
     # An arbiter loop passes, and then:
-
-    engine_container.stop()
 
     assert window_push_mock.call_count == 5  # (50 / 10 = 5)
     # assert add_partial_window happened 1x for 7 sec
     assert add_partial_window_mock.call_count == 1
-
-    first_arg = add_partial_window_mock.call_args_list[0][0][0]
-    second_arg = add_partial_window_mock.call_args_list[0][0][1]
-    assert isinstance(first_arg, int)
-    assert first_arg == partial2
-    assert isinstance(second_arg, ChromeSession)
-
-    add_partial_window_mock.assert_called_once_with(partial2, session2)
 
     window_push_mock.reset_mock()
     add_partial_window_mock.reset_mock()
@@ -133,17 +139,32 @@ def test_engine_container(mock_regular_session_maker, mock_async_session):
     # -- Run #3
     # --
 
-    session3 = ProgramSession()
+    session3 = ChromeSession("test.com", "Test your code", t3)
 
-    an_engine = KeepAliveEngine(session3, recorder)
-    engine_container.replace_engine(an_engine)
+    third_engine = KeepAliveEngine(session3, recorder)
+    third_engine.conclude_engine = Mock(wraps=third_engine.conclude_engine)
 
-    engine_container.start()
+    engine_container.replace_engine(third_engine)
+
+    first_arg = add_partial_window_mock.call_args_list[0][0][0]
+    second_arg = add_partial_window_mock.call_args_list[0][0][1]
+    assert isinstance(first_arg, int)
+    assert first_arg == partial2
+    assert isinstance(second_arg, ChromeSession)
+    assert second_arg.get_name() == session2.get_name()
+
+    window_push_mock.reset_mock()
+    add_partial_window_mock.reset_mock()
 
     # An arbiter loop passes, and then:
 
     engine_container.stop()
 
     window_push_mock.assert_not_called()
-    assert add_partial_window_mock.call_count == 1
-    add_partial_window_mock.assert_called_once_with(partial3, session3)
+
+    first_arg = add_partial_window_mock.call_args_list[0][0][0]
+    second_arg = add_partial_window_mock.call_args_list[0][0][1]
+    assert isinstance(first_arg, int)
+    assert first_arg == partial3
+    assert isinstance(second_arg, ChromeSession)
+    assert second_arg.get_name() == session3.get_name()
