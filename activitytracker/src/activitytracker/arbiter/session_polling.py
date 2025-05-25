@@ -1,8 +1,8 @@
-from queue import Queue
-
 import threading
 
 import time
+
+from queue import Queue
 
 from activitytracker.config.definitions import (
     keep_alive_cycle_length,
@@ -127,11 +127,9 @@ class ThreadedEngineContainer:
     """
     Runs the KeepAlive signal in a separate thread until the stop signal.
 
-    Does this to keep the ActivityArbiter and the currently active session's window push
-
+    Does this to keep the ActivityArbiter thread free for cvhanges while the
+    Engine pulse adds time to sessions, often sleeping for 58 sec of 60.
     """
-
-    # TODO: Also keep the EngineContainer between engines. just change it out. Keep the thread alive.
 
     def __init__(self, interval: int | float = 1, sleep_fn=time.sleep, profiler=None):
         # TODO: Use a sleep interval of like 0.25. Finer granularity.

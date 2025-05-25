@@ -1,7 +1,7 @@
-from curses import window
-
 import time
 from datetime import datetime
+
+from curses import window
 
 from activitytracker.config.definitions import no_space_dash_space
 from activitytracker.facade.program_facade_base import ProgramFacadeInterface
@@ -69,53 +69,52 @@ class ProgramTrackerCore:
         # print(f"[DEBUG] self object id in run_tracking_loop: {id(self)}")
 
         for window_change in self.program_facade.listen_for_window_changes():
-
-            # if self.vlc_is_active:
-            # self.console_logger.log_white("\n\nINFO:", window_change)
-            if self.window_is_vlc(window_change):
-                self.vlc_window = window_change
-                self.console_logger.log_white("was VLC!")
-
-                self.start_vlc_polling()
+            if self.window_is_chrome(window_change):
+                # Do not report Chrome, because Chrome will do its own reporting.
+                # Note that if you try to get out of this via early return, the
+                # code breaks. If you try to get out of it via "continue,"
+                # the code breaks.
+                pass
             else:
-                self.stop_vlc_polling()
-                # self.console_logger.log_white("WAS NOT VLC!")
-                # FIXME: "Running Server (WindowsTerminal.exe)" -> Terminal (Terminal)
-                on_a_different_window_now = (
-                    self.current_session
-                    and window_change["window_title"] != self.current_session.window_title
-                )
-                if on_a_different_window_now and self.is_initialized():
-                    if self.current_session is None:
-                        raise ValueError("Current session was None")
+                # if self.vlc_is_active:
+                # self.console_logger.log_white("\n\nINFO:", window_change)
+                if self.window_is_vlc(window_change):
+                    self.vlc_window = window_change
+                    self.console_logger.log_white("was VLC!")
 
-                    current_time: UserLocalTime = (
-                        self.user_facing_clock.now()
-                    )  # once per loop
-
-                    new_session = self.start_new_session(window_change, current_time)
-                    self.current_session = new_session
-                    # report window change immediately via "window_change_handler()"
-                    self.console_logger.log_yellow(
-                        "New program: " + new_session.process_name
+                    self.start_vlc_polling()
+                else:
+                    self.stop_vlc_polling()
+                    # self.console_logger.log_white("WAS NOT VLC!")
+                    # FIXME: "Running Server (WindowsTerminal.exe)" -> Terminal (Terminal)
+                    on_a_different_window_now = (
+                        self.current_session
+                        and window_change["window_title"]
+                        != self.current_session.window_title
                     )
-                    if self.window_is_chrome(window_change):
-                        # Do not report Chrome, because Chrome will do its own reporting.
-                        pass
-                    else:
+                    if on_a_different_window_now and self.is_initialized():
+                        if self.current_session is None:
+                            raise ValueError("Current session was None")
+
+                        current_time: UserLocalTime = (
+                            self.user_facing_clock.now()
+                        )  # once per loop
+
+                        new_session = self.start_new_session(window_change, current_time)
+                        self.current_session = new_session
+                        # report window change immediately via "window_change_handler()"
+                        self.console_logger.log_yellow(
+                            "New program: " + new_session.process_name
+                        )
 
                         self.window_change_handler(new_session)
 
-                # initialize
-                if self.is_uninitialized():
-                    current_time: UserLocalTime = self.user_facing_clock.now()
-                    # capture_program_data_for_tests(window_change, current_time)
-                    new_session = self.start_new_session(window_change, current_time)
-                    self.current_session = new_session
-                    if self.window_is_chrome(window_change):
-                        # Do not report Chrome, because Chrome will do its own reporting.
-                        pass
-                    else:
+                    # initialize
+                    if self.is_uninitialized():
+                        current_time: UserLocalTime = self.user_facing_clock.now()
+                        # capture_program_data_for_tests(window_change, current_time)
+                        new_session = self.start_new_session(window_change, current_time)
+                        self.current_session = new_session
                         self.window_change_handler(new_session)
 
     def vlc_media_changed(self, vlc_info_update: VlcInfo):

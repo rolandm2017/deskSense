@@ -2,6 +2,8 @@ import pytest
 
 from datetime import datetime
 
+from typing import List
+
 from activitytracker.object.classes import ProgramSession, ProgramSessionDict
 from activitytracker.util.time_wrappers import UserLocalTime
 
@@ -13,14 +15,14 @@ def fmt_time_string(s):
 
 
 imaginary_path_to_chrome = "C:/Programs/imaginary/path/to/Chrome.exe"
-imaginary_chrome_processe = "Chrome.exe"
+imaginary_chrome_process = "Chrome.exe"
 
 
 @pytest.fixture
 def program_path_test_events():
     session1 = ProgramSession(
         exe_path=imaginary_path_to_chrome,
-        process_name=imaginary_chrome_processe,
+        process_name=imaginary_chrome_process,
         window_title="Google Chrome",
         detail="X. It's what's happening / X",
         start_time=UserLocalTime(fmt_time_string("2025-03-22 16:14:50.201399-07:00")),
@@ -49,7 +51,7 @@ def program_path_test_events():
     session4 = ProgramSession(
         # NOTE: Manual change from Gnome Shell to a second Chrome entry
         exe_path=imaginary_path_to_chrome,
-        process_name=imaginary_chrome_processe,
+        process_name=imaginary_chrome_process,
         window_title="Google Chrome",
         detail="TikTok: Waste Your Time Today!",
         start_time=UserLocalTime(
@@ -57,37 +59,70 @@ def program_path_test_events():
         ),  # Roughly 14 sec difference
         productive=False,
     )
-    test_events = [session1, session2, session3, session4]
+
+    session5 = ProgramSession(
+        exe_path="/usr/bin/path/to/Discord",
+        process_name="Discord",
+        window_title="Discord",
+        detail="#tech-chat | The Programmer's Hangout",  # or just "Discord" ?
+        start_time=UserLocalTime(
+            fmt_time_string("2025-03-22 16:17:00.947841-07:00")
+        ),  # Roughly 43 sec difference
+        productive=False,
+    )
+
+    session6 = ProgramSession(
+        exe_path="C:/path/to/VSCode.exe",  # matching session3's path
+        process_name="code",
+        window_title="Visual Studio Code",
+        detail="captures_for_test_data_-_Chrome.txt - deskSense",  # extracted from full title
+        start_time=UserLocalTime(
+            fmt_time_string("2025-03-22 16:17:13.306823-07:00")
+        ),  # Roughly 13 sec difference
+        productive=False,
+    )
+    test_events = [session1, session2, session3, session4, session5, session6]
 
     return test_events
 
 
 @pytest.fixture(scope="function")
-def validate_test_data_and_get_durations(program_path_test_events):
-    """Exists to ensure no PEBKAC. 'The data really does say what was intended.'"""
+def validate_test_data_and_get_durations(program_path_test_events: List[ProgramSession]):
+    """
+    Exists to ensure no PEBKAC. 'The data really does say what was intended.'
+
+    Because Chrome events are not passed out of the Tracker, you must
+    account for that in calculations of session durations. Yes really.
+    """
+
+    # Why not remove the Chrome events from the input data? It seems more authentic.
+    events_sans_chrome = [
+        x for x in program_path_test_events if x.get_name() != imaginary_chrome_process
+    ]
 
     # Validate your dummy test data
     durations_for_sessions = []
-    for i in range(0, 4):
-        assert isinstance(program_path_test_events[i].start_time, UserLocalTime)
-        assert isinstance(program_path_test_events[i].start_time.dt, datetime)
-        assert program_path_test_events[i].start_time.dt.tzinfo is not None
+    event_count = len(events_sans_chrome)
+    for i in range(0, event_count):
+        print(events_sans_chrome[i], i, "107ru")
+        assert isinstance(events_sans_chrome[i].start_time, UserLocalTime)
+        assert isinstance(events_sans_chrome[i].start_time.dt, datetime)
+        assert events_sans_chrome[i].start_time.dt.tzinfo is not None
 
-        if i == 3:
-            break  # There is no 4th value
+        if i == event_count - 1:
+            break  # end of loop
         assert (
-            program_path_test_events[i].start_time < program_path_test_events[i + 1].start_time
+            events_sans_chrome[i].start_time < events_sans_chrome[i + 1].start_time
         ), "Events must be chronological"
 
         elapsed_between_sessions = int(
             (
-                program_path_test_events[i + 1].start_time
-                - program_path_test_events[i].start_time
+                events_sans_chrome[i + 1].start_time - events_sans_chrome[i].start_time
             ).total_seconds()
         )
         durations_for_sessions.append(elapsed_between_sessions)
 
-    clones = deepcopy_test_data(program_path_test_events)
+    clones = deepcopy_test_data(events_sans_chrome)
     print("enumerating clones")
     for i, c in enumerate(clones):
         print(i, c.start_time)

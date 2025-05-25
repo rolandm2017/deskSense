@@ -1,12 +1,13 @@
 # activitytracker/src/surveillance_manager.py
+import asyncio
+
+from datetime import datetime
+
 import traceback
 from pathlib import Path
 
-import asyncio
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import sessionmaker
-
-from datetime import datetime
 
 from activitytracker.arbiter.activity_arbiter import ActivityArbiter
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
@@ -293,7 +294,9 @@ class SurveillanceManager:
             self.mouse_thread.stop()
             self.program_thread.stop()
             # Stop the asyncio loop
-            self.program_online_polling.stop()
+            if not self.is_test:
+
+                self.program_online_polling.stop()
         except Exception as e:
             print(f"Error stopping threads: {e}")
 

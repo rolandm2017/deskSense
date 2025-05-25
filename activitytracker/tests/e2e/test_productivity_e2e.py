@@ -1,7 +1,3 @@
-import traceback
-
-import pytest_asyncio
-
 import pytest
 from unittest.mock import Mock
 
@@ -11,6 +7,10 @@ import pytz
 from datetime import datetime, timedelta
 
 from typing import cast
+
+import traceback
+
+import pytest_asyncio
 
 from activitytracker.arbiter.activity_arbiter import ActivityArbiter
 from activitytracker.arbiter.activity_recorder import ActivityRecorder
@@ -758,7 +758,7 @@ async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
             self._override_durations = durations_to_override or []
             self._override_index = 0
 
-        def add_partial_window(self, duration_in_sec, session):
+        def add_partial_window(self, duration_in_sec, session, thread_info=None):
             """
             Must give deduct duration answers calculated by hand because
             the actual test will run way faster than the actual elapsed time of the sessions
@@ -773,7 +773,7 @@ async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
                     print(f"getting {duration_in_sec} for {session.domain}")
 
                 self._override_index += 1
-            super().add_partial_window(duration_in_sec, session)
+            super().add_partial_window(duration_in_sec, session, thread_info)
 
     debug = True
 

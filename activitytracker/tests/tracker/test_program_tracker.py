@@ -244,14 +244,14 @@ def test_a_series_of_programs():
         "os": "some_val",
         "process_name": "whatever11.exe",
         "exe_path": "C:/whatever11.exe",
-        "window_title": "Vite + React + TS - Google Chrome",
+        "window_title": "Vite + React + TS - Some Program",
     }
     facade.listen_for_window_changes.return_value = iter([program3])
     # Act
     tracker.run_tracking_loop()
 
     # Assert
-    assert tracker.current_session.window_title == "Google Chrome"
+    assert tracker.current_session.window_title == "Some Program"
     assert tracker.current_session.detail == "Vite + React + TS"
     assert clock.now.call_count == 3
     assert handler.call_count == 3
@@ -533,13 +533,18 @@ def test_chrome_is_ignored_without_interrupting():
     # Act
     tracker.run_tracking_loop()  # 2
 
-    # ### Assert
-    assert tracker.current_session.window_title == "Google Chrome"
+    """
+    Remember that the clock and handler will not increment when Chrome occurs.
+    """
 
-    assert tracker.current_session.detail == "Google Docs"
+    # ### Assert
+    still_program_one = program1["window_title"]
+    assert tracker.current_session.window_title == still_program_one
+
+    assert tracker.current_session.detail == no_space_dash_space
     assert tracker.current_session.start_time is not None
-    assert clock.now.call_count == 2
     one_chrome_session = 1
+    assert clock.now.call_count == 2 - one_chrome_session
     assert handler.call_count == 2 - one_chrome_session
 
     # More setup
@@ -547,16 +552,18 @@ def test_chrome_is_ignored_without_interrupting():
         "os": "some_val",
         "process_name": "whatever11.exe",
         "exe_path": "C:/whatever11.exe",
-        "window_title": "Vite + React + TS - Google Chrome",
+        "window_title": "Vite + React + TS - Whatever",
     }
     facade.listen_for_window_changes.return_value = iter([program3])
     # Act
     tracker.run_tracking_loop()
 
     # Assert
-    assert tracker.current_session.window_title == "Google Chrome"
+    print(tracker.current_session, "8u239048324324")
+    program_three_resulting_title = "Whatever"
+    assert tracker.current_session.window_title == program_three_resulting_title
     assert tracker.current_session.detail == "Vite + React + TS"
-    assert clock.now.call_count == 3
+    assert clock.now.call_count == 3 - one_chrome_session
     assert handler.call_count == 3 - one_chrome_session
 
     # More setup
@@ -573,9 +580,12 @@ def test_chrome_is_ignored_without_interrupting():
     tracker.run_tracking_loop()
 
     # Assert
-    assert tracker.current_session.window_title == "Google Chrome"
-    assert clock.now.call_count == 4
+    still_program_three = (
+        tracker.current_session.window_title == program_three_resulting_title
+    )
+    assert still_program_three
     two_chrome_sessions = 2
+    assert clock.now.call_count == 4 - two_chrome_sessions
     assert handler.call_count == 4 - two_chrome_sessions
 
     # More setup
@@ -590,8 +600,8 @@ def test_chrome_is_ignored_without_interrupting():
     tracker.run_tracking_loop()
 
     # Assert
-    assert clock.now.call_count == 5
     assert tracker.current_session.window_title == "Visual Studio Code"
+    assert clock.now.call_count == 5 - two_chrome_sessions
     assert handler.call_count == 5 - two_chrome_sessions
 
     # ### Final assertions

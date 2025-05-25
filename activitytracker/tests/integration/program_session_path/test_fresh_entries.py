@@ -5,8 +5,6 @@ Proves that the ProgramSession and all relevant fields get where they're intende
 Using three sessions to notice edge cases and prove a chain is established.
 """
 
-import copy
-
 import pytest
 from unittest.mock import Mock
 
@@ -16,6 +14,8 @@ import pytz
 from datetime import datetime, timedelta
 
 from typing import Dict, List, cast
+
+import copy
 
 from activitytracker.arbiter.activity_arbiter import ActivityArbiter
 from activitytracker.arbiter.activity_recorder import ActivityRecorder
@@ -64,7 +64,7 @@ timezone_for_test = "Europe/Berlin"  # UTC +1 or UTC +2
 some_local_tz = pytz.timezone(timezone_for_test)
 
 
-made_up_pids = [2345, 3456, 4567, 5678]
+made_up_pids = [2345, 3456, 4567, 5678, 3423, 4324324]
 
 
 # @pytest.mark.skip
@@ -91,20 +91,17 @@ async def test_program_path_with_fresh_sessions(
 
     test_two_data_clone, durations_for_keep_alive = validate_test_data_and_get_durations
 
-    for i, session in enumerate(test_two_data_clone):
-        print(f"Cloned test data {i}: {session.start_time}")
-        assert session.start_time == test_two_data_clone[i].start_time
-
     logger = ConsoleLogger()
 
     class MockProgramFacade:
         def __init__(self, clones):
             self.yield_count = 0  # Initialize the counter
             self.MAX_EVENTS = len(clones)
-            self.test_program_dicts = [
+            v = [
                 convert_back_to_dict(x, made_up_pids[i])
                 for i, x in enumerate(test_two_data_clone)
             ]
+            self.test_program_dicts = v
 
         def listen_for_window_changes(self):
             print("Mock listen_for_window_changes called")
@@ -308,17 +305,17 @@ async def test_program_path_with_fresh_sessions(
         trailing_entry = 1
 
         def assert_all_window_change_args_match_src_material(calls_from_spy):
-            # Postman
-            assert calls_from_spy[0][0][0].exe_path == test_two_data_clone[1].exe_path
-            # VSCode
-            assert calls_from_spy[1][0][0].exe_path == test_two_data_clone[2].exe_path
+            assert calls_from_spy[0][0][0].exe_path == test_two_data_clone[0].exe_path
+            assert calls_from_spy[1][0][0].exe_path == test_two_data_clone[1].exe_path
+            assert calls_from_spy[2][0][0].exe_path == test_two_data_clone[2].exe_path
+            assert calls_from_spy[3][0][0].exe_path == test_two_data_clone[3].exe_path
             # assert calls_from_spy[2][0][0].exe_path == test_two_data_clone[2].exe_path
             # Note that there is no entry 3 here; used idx 0,1,2 for brevity
 
         def assert_state_machine_had_correct_order():
             assert_all_spy_args_were_sessions(
                 asm_set_new_session_spy,
-                second_test_event_count - two_uncounted_chromes,
+                second_test_event_count,
                 "Activity State Machine",
             )
 
@@ -364,7 +361,7 @@ async def test_program_path_with_fresh_sessions(
         def assert_all_on_new_sessions_received_sessions():
             assert_all_spy_args_were_sessions(
                 recorder_spies["on_new_session_spy"],
-                second_test_event_count - two_uncounted_chromes,
+                second_test_event_count,
                 "on_new_session_spy",
             )
 
@@ -376,7 +373,7 @@ async def test_program_path_with_fresh_sessions(
             one_left_in_arb = 1
             assert_all_spy_args_were_sessions(
                 recorder_spies["on_state_changed_spy"],
-                second_test_event_count - one_left_in_arb - two_uncounted_chromes,
+                second_test_event_count - one_left_in_arb,
                 "on_state_changed_spy",
             )
 
@@ -399,19 +396,15 @@ async def test_program_path_with_fresh_sessions(
 
         assert recorder_spies["add_ten_sec_to_end_time_spy"].call_count == total_pushes
 
-        two_uncounted_chromes = 2
-
         assert second_test_event_count == 4
-        assert window_change_spy.call_count == 4 - two_uncounted_chromes
-        assert (
-            window_change_spy.call_count == second_test_event_count - two_uncounted_chromes
-        )
+        assert window_change_spy.call_count == 4
+        assert window_change_spy.call_count == second_test_event_count
 
         def assert_window_change_spy_as_expected(arg):
             assert isinstance(arg, ProgramSession)
             assert arg.exe_path == test_two_data_clone[i].exe_path
 
-        for i in range(0, second_test_event_count - two_uncounted_chromes):
+        for i in range(0, second_test_event_count):
             print(f"comparing window change spy arg {i}")
             arg = window_change_spy.call_args_list[i][0][0]
             assert_window_change_spy_as_expected(arg)
@@ -420,7 +413,7 @@ async def test_program_path_with_fresh_sessions(
 
         assert_all_spy_args_were_sessions(
             window_change_spy,
-            second_test_event_count - two_uncounted_chromes,
+            second_test_event_count,
             "Window change spy",
         )
         for v in window_change_calls:
