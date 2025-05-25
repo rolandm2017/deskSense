@@ -70,9 +70,7 @@ class ProgramTrackerCore:
         # print(f"[DEBUG] self object id in run_tracking_loop: {id(self)}")
 
         for window_change in self.program_facade.listen_for_window_changes():
-            if self.window_is_chrome(window_change):
-                # Do not report Chrome, because Chrome will do its own reporting.
-                continue
+
             # if self.vlc_is_active:
             # self.console_logger.log_white("\n\nINFO:", window_change)
             if self.window_is_vlc(window_change):
@@ -102,7 +100,12 @@ class ProgramTrackerCore:
                     self.console_logger.log_yellow(
                         "New program: " + new_session.process_name
                     )
-                    self.window_change_handler(new_session)
+                    if self.window_is_chrome(window_change):
+                        # Do not report Chrome, because Chrome will do its own reporting.
+                        pass
+                    else:
+
+                        self.window_change_handler(new_session)
 
                 # initialize
                 if self.is_uninitialized():
@@ -110,7 +113,11 @@ class ProgramTrackerCore:
                     # capture_program_data_for_tests(window_change, current_time)
                     new_session = self.start_new_session(window_change, current_time)
                     self.current_session = new_session
-                    self.window_change_handler(new_session)
+                    if self.window_is_chrome(window_change):
+                        # Do not report Chrome, because Chrome will do its own reporting.
+                        pass
+                    else:
+                        self.window_change_handler(new_session)
 
     def vlc_media_changed(self, vlc_info_update: VlcInfo):
         """Compares to the current VLC session using custom __eq__"""
