@@ -230,7 +230,7 @@ export class ServerApi {
             tabTitle: tabTitle,
             startTime: new Date(),
         };
-        console.log("Sending tab switch payload:", payload);
+        // console.log("Sending tab switch payload:", payload);
         this.sendPayload(chromeTabUrl, payload);
     };
 
@@ -243,17 +243,6 @@ export class ServerApi {
         console.log("Sending ignoredUrl payload:", payload);
         this.sendPayload(ignoredDomainUrl, payload);
     };
-
-    checkForCaptureSession(setStartTimeCallback: Function) {
-        fetch(DESKSENSE_BACKEND_URL + captureSessionStartUrl, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        }).then((response) => {
-            setStartTimeCallback(response);
-        });
-    }
 
     sendPayload = (targetUrl: string, payload: object) => {
         if (!this.enablePayloads) {
@@ -295,6 +284,7 @@ export class ServerApi {
 
     replacePayloadMethod(newMethod: any) {
         // You think the any is a bad idea, but replacing it is worse
+        // Made just for inserting mocks
         this.sendPayload = newMethod;
         this.youtube.sendPayload = newMethod;
         this.netflix.sendPayload = newMethod;

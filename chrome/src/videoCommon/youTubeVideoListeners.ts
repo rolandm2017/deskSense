@@ -1,6 +1,5 @@
 //  videoCommon/youTubeVideoListeners.ts
 
-import { runNeedToRefreshChecker } from "../contentScriptCommon";
 /*
 
 */
@@ -57,12 +56,18 @@ function attachVideoListeners(retries = 0, maxRetries = 10) {
     playHandler = () => {
         console.log("Sending play message");
         // TODO: Distinguish between Netflix Play, YouTube Play
-        chrome.runtime.sendMessage({ event: "user_pressed_play" });
+        chrome.runtime.sendMessage({
+            event: "user_pressed_play",
+            source: "youtube",
+        });
     };
 
     pauseHandler = () => {
         console.log("Sending *pause message");
-        chrome.runtime.sendMessage({ event: "user_pressed_pause" });
+        chrome.runtime.sendMessage({
+            event: "user_pressed_pause",
+            source: "youtube",
+        });
     };
 
     // Attach listeners
@@ -84,8 +89,6 @@ function attachVideoListeners(retries = 0, maxRetries = 10) {
 }
 
 attachVideoListeners();
-
-runNeedToRefreshChecker();
 
 function cleanupVideoListeners() {
     // If we have a stored video element and handlers

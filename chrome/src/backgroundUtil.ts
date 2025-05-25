@@ -48,7 +48,7 @@ export function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
         // FIXME: What to do when the user visits the same URL 2-3x on multiple tabs?
         return;
     }
-    console.log("Tab.url and ID", tab.url, tab.id);
+    // console.log("Tab.url and ID", tab.url, tab.id);
 
     const domain = getDomainFromUrl(tab.url);
     if (domain) {

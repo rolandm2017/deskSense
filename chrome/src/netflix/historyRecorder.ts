@@ -23,6 +23,7 @@ export class MessageRelay {
                 videoId: viewingToTrack.videoId,
                 mediaTitle: viewingToTrack.mediaTitle,
             },
+            source: "historyRecorder",
         });
     }
 
@@ -33,6 +34,7 @@ export class MessageRelay {
                 fullUrl: fullUrl,
                 pageId: pageId,
             },
+            source: "historyRecorder",
         });
     }
 }

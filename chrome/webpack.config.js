@@ -30,6 +30,7 @@ export default {
         options: "./src/optionsPage/options.js",
         background: "./src/background.ts",
         // Add more entry points as needed
+        chromeGainsFocusListener: "./src/chromeGainsFocusListener.ts",
         youTubeVideoListeners: "./src/videoCommon/youTubeVideoListeners.ts",
         netflixVideoListeners: "./src/videoCommon/netflixVideoListeners.ts",
         netflixWatch: "./src/netflix/netflixWatch.ts",

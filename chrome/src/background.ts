@@ -97,7 +97,11 @@ chrome.runtime.onMessage.addListener(
             url: "https://www.youtube.com/watch?v=Pt2Pj3JZ9Ow&t=300s"
             * PROBABLY also has the "source" field
         */
-        console.log("top of onMessage listener", message.event);
+        console.log(
+            "start of onMessage listener",
+            message.event,
+            message.source
+        );
         /*
          *   This only runs when the user presses play or pauses the video.
          * Hence they're definitely on a page that already loaded
@@ -230,66 +234,66 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // alert to the server. So the backend sits there saying "Google Chrome"
 // until the user (a) changes tabs or (b) changes player state,
 // or that's how it was until this code fixed it.
-chrome.windows.onFocusChanged.addListener((windowId) => {
-    /*
-        when Chrome as a whole loses focus (e.g. you alt-tab to another application)
-        windowId becomes a special value: chrome.windows.WINDOW_ID_NONE.
-    */
-    if (windowId !== chrome.windows.WINDOW_ID_NONE) {
-        console.log("Chrome gained focus (switched from another app)");
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            const activeTab = tabs[0];
-            if (activeTab.url) {
-                const url = activeTab.url;
-                // FIXME: If YouTube/Netflix Watch, get Player state
-                if (isWatchingYouTubeVideo(url)) {
-                    console.log("onFocusChanged - YouTube Watch Page");
-
-                    // If YouTube Watch Page, do special version with player state
-                    const pageState = viewingTracker.latestActiveViewing;
-                    if (!pageState) {
-                        throw new MissingMediaError(
-                            "latestActiveViewing undefined when tabbing back in"
-                        );
-                    }
-                    if (pageState instanceof NetflixViewing) {
-                        throw new Error(
-                            "Expected YouTube Viewing; got Netflix"
-                        );
-                    }
-                    viewingTracker.setCurrent(pageState);
-                    viewingTracker.reportYouTubeWatchPage();
-                } else if (isNetflixWatchPage(url)) {
-                    console.log("onFocusChanged - Netflix Watch Page");
-
-                    const pageState = viewingTracker.latestActiveViewing;
-                    if (!pageState) {
-                        throw new MissingMediaError(
-                            "latestActiveViewing undefined when tabbing back in"
-                        );
-                    }
-                    if (pageState instanceof YouTubeViewing) {
-                        throw new Error(
-                            "Expected Netflix Viewing; got YouTube"
-                        );
-                    }
-                    viewingTracker.setCurrent(pageState);
-                    // FIXME: It might be a partiallyFilled page
-                    viewingTracker.reportFilledNetflixWatch(pageState);
-                } else {
-                    // If Netflix Watch Page, do special version with player state
-                    // TODO: Could do like, "if returning to page, use stored page/player info".
-                    // You wouldn't have to store too many values for the page to
-                    // reliably be among them.
-                    // else:
-                    console.log("onFocusChanged - getDomainFromUrl");
-
-                    getDomainFromUrlAndSubmit(activeTab);
-                }
-            } else {
-                console.warn("Active tab had no url");
-            }
-            // activeTab.url, activeTab.title, etc.
-        });
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    console.log(message.event, "238ru");
+    console.log(
+        "AAAAAAAAA\n\n\nAAAAAAA\n\n\nAAAAAAsdfadsfdsaAAAAAAAAAAAAAA\nAAAAAAa\nAAAAAAA"
+    );
+    if (message.event !== "window_gained_focus") {
+        return;
     }
+    /*
+        Code runs when user alt tabs into Chrome
+    */
+    console.log("Chrome gained focus (switched from another app)");
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        const activeTab = tabs[0];
+        if (activeTab.url) {
+            const url = activeTab.url;
+            // FIXME: If YouTube/Netflix Watch, get Player state
+            if (isWatchingYouTubeVideo(url)) {
+                console.log("onFocusChanged - YouTube Watch Page");
+
+                // If YouTube Watch Page, do special version with player state
+                const pageState = viewingTracker.latestActiveViewing;
+                if (!pageState) {
+                    throw new MissingMediaError(
+                        "latestActiveViewing undefined when tabbing back in"
+                    );
+                }
+                if (pageState instanceof NetflixViewing) {
+                    throw new Error("Expected YouTube Viewing; got Netflix");
+                }
+                viewingTracker.setCurrent(pageState);
+                viewingTracker.reportYouTubeWatchPage();
+            } else if (isNetflixWatchPage(url)) {
+                console.log("onFocusChanged - Netflix Watch Page");
+
+                const pageState = viewingTracker.latestActiveViewing;
+                if (!pageState) {
+                    throw new MissingMediaError(
+                        "latestActiveViewing undefined when tabbing back in"
+                    );
+                }
+                if (pageState instanceof YouTubeViewing) {
+                    throw new Error("Expected Netflix Viewing; got YouTube");
+                }
+                viewingTracker.setCurrent(pageState);
+                // FIXME: It might be a partiallyFilled page
+                viewingTracker.reportFilledNetflixWatch(pageState);
+            } else {
+                // If Netflix Watch Page, do special version with player state
+                // TODO: Could do like, "if returning to page, use stored page/player info".
+                // You wouldn't have to store too many values for the page to
+                // reliably be among them.
+                // else:
+                console.log("onFocusChanged - getDomainFromUrl");
+
+                getDomainFromUrlAndSubmit(activeTab);
+            }
+        } else {
+            console.warn("Active tab had no url");
+        }
+        // activeTab.url, activeTab.title, etc.
+    });
 });
