@@ -5,3 +5,7 @@ export function makeNetflixWatchPageId(url: string) {
     }
     return urlId;
 }
+
+export function isNetflixWatchPage(url: string) {
+    return url.includes("netflix.com/watch");
+}

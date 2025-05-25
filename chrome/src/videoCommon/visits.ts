@@ -25,6 +25,7 @@ export class ViewingTracker {
      * Class is a container enabling cross-file Viewing management.
      */
     currentMedia: YouTubeViewing | NetflixViewing | undefined;
+    latestActiveViewing: YouTubeViewing | NetflixViewing | undefined;
     mostRecentReport: YouTubeViewing | undefined;
     autoplayWaiting: boolean;
     youTubeApiLogger: PlatformLogger;
@@ -36,6 +37,7 @@ export class ViewingTracker {
     constructor(api: ServerApi) {
         this.api = api;
         this.mostRecentReport = undefined;
+        this.latestActiveViewing = undefined;
         this.autoplayWaiting = false;
         this.currentMedia = undefined;
         this.partialNetflixDescriptor = undefined;
@@ -47,6 +49,14 @@ export class ViewingTracker {
 
     setCurrent(current: YouTubeViewing | NetflixViewing) {
         this.currentMedia = current;
+
+        this.preserveStateForAltTabs(current);
+    }
+
+    preserveStateForAltTabs(current: YouTubeViewing | NetflixViewing) {
+        // This info needs to be there for when the user alt tabs
+        // back into a video player page
+        this.latestActiveViewing = current;
     }
 
     markAutoplayEventWaiting() {

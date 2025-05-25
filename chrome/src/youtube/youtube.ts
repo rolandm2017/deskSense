@@ -27,7 +27,7 @@ export function handleYouTubeUrl(
         throw new Error("Missing required tab properties");
     }
 
-    if (isWatchingVideo(tab.url)) {
+    if (isWatchingYouTubeVideo(tab.url)) {
         // YouTube does lots and lots of client side rendering, so
         // a short delay ensures that the page has fully loaded
         // Use executeScript to access the DOM on YouTube watch pages
@@ -140,7 +140,7 @@ export function startSecondaryChannelExtractionScript(
 
 export function getYouTubeChannel(youTubeUrl: string) {
     // try this way first
-    if (isWatchingVideo(youTubeUrl)) {
+    if (isWatchingYouTubeVideo(youTubeUrl)) {
         return extractChannelInfoFromWatchPage();
     } else if (isOnSomeChannel(youTubeUrl)) {
         return extractChannelNameFromUrl(youTubeUrl);
@@ -150,7 +150,7 @@ export function getYouTubeChannel(youTubeUrl: string) {
     }
 }
 
-export function isWatchingVideo(youTubeUrl: string) {
+export function isWatchingYouTubeVideo(youTubeUrl: string) {
     return youTubeUrl.includes("youtube.com/watch");
 }
 

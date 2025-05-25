@@ -1,6 +1,9 @@
 import { initializedServerApi } from "./api";
 import { ignoredDomains, isDomainIgnored } from "./ignoreList";
-import { makeNetflixWatchPageId } from "./netflix/netflixUrlTool";
+import {
+    isNetflixWatchPage,
+    makeNetflixWatchPageId,
+} from "./netflix/netflixUrlTool";
 import { getDomainFromUrl } from "./urlTools";
 import { viewingTracker, ViewingTracker } from "./videoCommon/visits";
 import {
@@ -65,7 +68,7 @@ export function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
         }
         const isNetflix = domain.includes("netflix.com");
         if (isNetflix) {
-            const isNetflixWatch = domain.includes("netflix.com/watch");
+            const isNetflixWatch = isNetflixWatchPage(domain);
             if (isNetflixWatch) {
                 // ViewingTracker will handle it via onMessage
                 return;

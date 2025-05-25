@@ -1,14 +1,22 @@
 // background.ts
 
+import { isNetflixWatchPage } from "./netflix/netflixUrlTool";
+
 import {
     getDomainFromUrlAndSubmit,
     playPauseDispatch,
     tabsWithPollingList,
 } from "./backgroundUtil";
 
-import { NetflixViewing, viewingTracker } from "./videoCommon/visits";
+import {
+    NetflixViewing,
+    viewingTracker,
+    YouTubeViewing,
+} from "./videoCommon/visits";
 
+import { MissingMediaError } from "./errors";
 import { setupIgnoredDomains } from "./ignoreList";
+import { isWatchingYouTubeVideo } from "./youtube/youtube";
 
 function helpDeveloperNoticeMissingNpmRunBuild() {
     const lastBuiltTimestampString = process.env.BUILD_TIMESTAMP as string;
@@ -170,7 +178,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     if (
         tab.id &&
         tab.url &&
-        (tab.url.includes("wikipedia") || tab.url.includes("netflix.com/watch"))
+        (tab.url.includes("wikipedia") || isNetflixWatchPage(tab.url))
     ) {
         // Inject the content script
         await chrome.tabs.sendMessage(tab.id, { action: "openModal" });
@@ -223,19 +231,60 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // until the user (a) changes tabs or (b) changes player state,
 // or that's how it was until this code fixed it.
 chrome.windows.onFocusChanged.addListener((windowId) => {
-    if (windowId === chrome.windows.WINDOW_ID_NONE) {
+    /*
+        when Chrome as a whole loses focus (e.g. you alt-tab to another application)
+        windowId becomes a special value: chrome.windows.WINDOW_ID_NONE.
+    */
+    if (windowId !== chrome.windows.WINDOW_ID_NONE) {
         console.log("Chrome lost focus (switched to another app)");
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             const activeTab = tabs[0];
             if (activeTab.url) {
+                const url = activeTab.url;
+                // FIXME: If YouTube/Netflix Watch, get Player state
                 console.log("onFocusChanged - getDomainFromUrl");
-                getDomainFromUrlAndSubmit(activeTab);
+                if (isWatchingYouTubeVideo(url)) {
+                    // If YouTube Watch Page, do special version with player state
+                    const pageState = viewingTracker.latestActiveViewing;
+                    if (!pageState) {
+                        throw new MissingMediaError(
+                            "latestActiveViewing undefined when tabbing back in"
+                        );
+                    }
+                    if (pageState instanceof NetflixViewing) {
+                        throw new Error(
+                            "Expected YouTube Viewing; got Netflix"
+                        );
+                    }
+                    viewingTracker.setCurrent(pageState);
+                    viewingTracker.reportYouTubeWatchPage();
+                } else if (isNetflixWatchPage(url)) {
+                    const pageState = viewingTracker.latestActiveViewing;
+                    if (!pageState) {
+                        throw new MissingMediaError(
+                            "latestActiveViewing undefined when tabbing back in"
+                        );
+                    }
+                    if (pageState instanceof YouTubeViewing) {
+                        throw new Error(
+                            "Expected Netflix Viewing; got YouTube"
+                        );
+                    }
+                    viewingTracker.setCurrent(pageState);
+                    // FIXME: It might be a partiallyFilled page
+                    viewingTracker.reportFilledNetflixWatch(pageState);
+                } else {
+                    // If Netflix Watch Page, do special version with player state
+                    // TODO: Could do like, "if returning to page, use stored page/player info".
+                    // You wouldn't have to store too many values for the page to
+                    // reliably be among them.
+                    // else:
+                    getDomainFromUrlAndSubmit(activeTab);
+                }
             } else {
                 console.warn("Active tab had no url");
             }
             // activeTab.url, activeTab.title, etc.
         });
-    } else {
-        console.log("Chrome gained focus (switched back from another app)");
     }
 });
