@@ -8,6 +8,8 @@ import { DailyProgramSummaries } from "../interface/programs.interface";
 
 import { getChromeSummaries, getProgramSummaries } from "../api/getData.api";
 
+import { getEnhancedVideoTimeline } from "../api/weekly.api";
+
 import {
     getPresentWeekProgramTimeline,
     getTimelineForPresentWeek,
@@ -16,12 +18,14 @@ import {
 import ChromeBarChart from "../components/charts/ChromeBarChart";
 import PeripheralsTimeline from "../components/charts/PeripheralsTimeline";
 import ProgramTimeline from "../components/charts/ProgramTimeline";
+import VideoTimeline from "../components/charts/VideoTimeline";
 import { DayOfAggregatedRows } from "../interface/misc.interface";
 import {
     DayOfTimelineRows,
     PartiallyAggregatedWeeklyTimeline,
 } from "../interface/peripherals.interface";
 import { WeeklyProgramTimelines } from "../interface/programs.interface";
+import { WeeklyVideoTimeline } from "../interface/video.interface";
 import { aggregateEvents } from "../util/aggregateEvents";
 
 function Home() {
@@ -35,6 +39,9 @@ function Home() {
 
     const [presentWeekRawTimeline, setRawTimeline] =
         useState<PartiallyAggregatedWeeklyTimeline | null>(null);
+
+    const [videoTimelines, setVideoTimelines] =
+        useState<WeeklyVideoTimeline | null>(null);
 
     const [aggregatedDays, setAggregatedDays] = useState<
         DayOfAggregatedRows[] | null
@@ -74,6 +81,16 @@ function Home() {
             });
         }
     }, [programTimelines]);
+
+    useEffect(() => {
+        const today = new Date();
+        if (videoTimelines === null) {
+            getEnhancedVideoTimeline(today).then((timeline) => {
+                console.log(timeline);
+                setVideoTimelines(timeline);
+            });
+        }
+    }, [videoTimelines]);
 
     useEffect(() => {
         /* Aggregation */
@@ -132,10 +149,9 @@ function Home() {
                     </h1>
                 </div>
                 <div>
-                    <h2>Keyboard & Mouse</h2>
-                    {/* // TODO: Use Weekly Peripherals chart on Home */}
-                    {aggregatedDays !== null ? (
-                        <PeripheralsTimeline days={aggregatedDays} />
+                    <h2>Video Timelines</h2>
+                    {videoTimelines !== null ? (
+                        <VideoTimeline days={videoTimelines.days} />
                     ) : (
                         <p>Loading...</p>
                     )}
@@ -144,6 +160,15 @@ function Home() {
                     <h2>Program Timelines</h2>
                     {programTimelines !== null ? (
                         <ProgramTimeline days={programTimelines.days} />
+                    ) : (
+                        <p>Loading...</p>
+                    )}
+                </div>
+                <div>
+                    <h2>Keyboard & Mouse</h2>
+                    {/* // TODO: Use Weekly Peripherals chart on Home */}
+                    {aggregatedDays !== null ? (
+                        <PeripheralsTimeline days={aggregatedDays} />
                     ) : (
                         <p>Loading...</p>
                     )}

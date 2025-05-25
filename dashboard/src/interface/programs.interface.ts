@@ -2,6 +2,11 @@ export interface WeeklyProgramUsage {
     days: DayOfProgramUsage[];
 }
 
+export interface DayOfProgramUsage {
+    date: Date;
+    usage: DailyProgramSummary;
+}
+
 export interface WeeklyProgramTimelines {
     days: ProgamUsageTimeline[];
 }
@@ -33,11 +38,6 @@ export interface DailyProgramSummary {
 
 export interface DailyProgramSummaries {
     columns: DailyProgramSummary[];
-}
-
-export interface DayOfProgramUsage {
-    date: Date;
-    usage: DailyProgramSummary;
 }
 
 export interface ProgramActivityLog {

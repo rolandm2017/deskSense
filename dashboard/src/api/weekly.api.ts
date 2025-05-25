@@ -27,6 +27,10 @@ import {
     TimelineRows,
     WeeklyTimeline,
 } from "../interface/peripherals.interface";
+import {
+    VideoUsageTimeline,
+    WeeklyVideoTimeline,
+} from "../interface/video.interface";
 import { ensureSunday } from "../util/apiUtil";
 import { formatDateForApi } from "../util/timeTools";
 
@@ -146,6 +150,19 @@ const getProgramTimelineForPastWeek = withErrorHandlingAndArgument<
     return api.get(`/dashboard/programs/usage/timeline/${formattedDate}`);
 });
 
+const getVideoTimelineForPastWeek = withErrorHandlingAndArgument<
+    WeeklyVideoTimeline,
+    [Date]
+>((date: Date) => {
+    // Trying out um, using only one "get weekly"
+    // endpoint, used for both present and past weeks
+    ensureSunday(date);
+    const formattedDate = formatDateForApi(date);
+    // const timezone = getTimezone(date);
+    // TODO: send timezone
+    return api.get(`/dashboard/programs/usage/timeline/${formattedDate}`);
+});
+
 // Typescript wizardry
 //
 //
@@ -164,9 +181,17 @@ const getEnhancedWeeklyBreakdown = withDateConversion<
     typeof getWeeklyBreakdown
 >(getWeeklyBreakdown);
 
+// Is assumed to be super broken until proven otherwise
+const getEnhancedVideoTimeline = withDateConversion<
+    VideoUsageTimeline,
+    WeeklyVideoTimeline,
+    typeof getVideoTimelineForPastWeek
+>(getVideoTimelineForPastWeek);
+
 export {
     getChromeSummaries,
     getEnhancedChromeUsageForPastWeek,
+    getEnhancedVideoTimeline,
     getEnhancedWeeklyBreakdown,
     getPresentWeekChromeUsage,
     getPresentWeekProgramTimeline,
