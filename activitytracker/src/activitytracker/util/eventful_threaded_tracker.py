@@ -1,4 +1,5 @@
 import threading
+
 import traceback
 
 
@@ -31,11 +32,11 @@ class EventBasedThreadedTracker:
         """Run tracker with proper interruption handling."""
         try:
             # Pass the stop_event to the tracker so it can check for interruption
-            if hasattr(self.tracker, "run_forever_interruptible"):
-                self.tracker.run_forever_interruptible(self.stop_event)
-            else:
-                # Fallback to regular run_forever
-                self.tracker.run_tracking_loop()
+            # if hasattr(self.tracker, "run_forever_interruptible"):
+            #     self.tracker.run_forever_interruptible(self.stop_event)
+            # else:
+            # Fallback to regular run_forever
+            self.tracker.run_tracking_loop()
         except KeyboardInterrupt:
             print(
                 f"[THREAD {threading.current_thread().name}] Caught Ctrl+C in event thread"
