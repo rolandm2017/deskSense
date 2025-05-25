@@ -68,7 +68,7 @@ class StateMachine:
         # keepAlive write time, the latest um, systemStatus polling write time.
         # If the latest write was more than a minute ago, the session is over,
         # do not update the end time past that time.
-        print("concluding session: ", duration.total_seconds())
+        print("concluding session: ", state.session.get_name(), duration.total_seconds())
         if duration.total_seconds() < 0:
             # One minute in seconds
             print("Outgoing session: ", state.session)

@@ -236,14 +236,15 @@ chrome.windows.onFocusChanged.addListener((windowId) => {
         windowId becomes a special value: chrome.windows.WINDOW_ID_NONE.
     */
     if (windowId !== chrome.windows.WINDOW_ID_NONE) {
-        console.log("Chrome lost focus (switched to another app)");
+        console.log("Chrome gained focus (switched from another app)");
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             const activeTab = tabs[0];
             if (activeTab.url) {
                 const url = activeTab.url;
                 // FIXME: If YouTube/Netflix Watch, get Player state
-                console.log("onFocusChanged - getDomainFromUrl");
                 if (isWatchingYouTubeVideo(url)) {
+                    console.log("onFocusChanged - YouTube Watch Page");
+
                     // If YouTube Watch Page, do special version with player state
                     const pageState = viewingTracker.latestActiveViewing;
                     if (!pageState) {
@@ -259,6 +260,8 @@ chrome.windows.onFocusChanged.addListener((windowId) => {
                     viewingTracker.setCurrent(pageState);
                     viewingTracker.reportYouTubeWatchPage();
                 } else if (isNetflixWatchPage(url)) {
+                    console.log("onFocusChanged - Netflix Watch Page");
+
                     const pageState = viewingTracker.latestActiveViewing;
                     if (!pageState) {
                         throw new MissingMediaError(
@@ -279,6 +282,8 @@ chrome.windows.onFocusChanged.addListener((windowId) => {
                     // You wouldn't have to store too many values for the page to
                     // reliably be among them.
                     // else:
+                    console.log("onFocusChanged - getDomainFromUrl");
+
                     getDomainFromUrlAndSubmit(activeTab);
                 }
             } else {

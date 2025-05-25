@@ -70,6 +70,9 @@ class ProgramTrackerCore:
         # print(f"[DEBUG] self object id in run_tracking_loop: {id(self)}")
 
         for window_change in self.program_facade.listen_for_window_changes():
+            if self.window_is_chrome(window_change):
+                # Do not report Chrome, because Chrome will do its own reporting.
+                continue
             # if self.vlc_is_active:
             # self.console_logger.log_white("\n\nINFO:", window_change)
             if self.window_is_vlc(window_change):
@@ -199,6 +202,16 @@ class ProgramTrackerCore:
             # TODO: Find out what the name is
             windows_name_for_vlc = "TODO"
             return window["process_name"] == windows_name_for_vlc
+
+    def window_is_chrome(self, window):
+        current_os = "Linux"
+        if current_os == "Linux":
+            linux_name_for_chrome = "chrome"
+            return window["process_name"] == linux_name_for_chrome
+        else:
+            # TODO: Find out what the name is
+            windows_name_for_chrome = "TODO"
+            return window["process_name"] == windows_name_for_chrome
 
 
 if __name__ == "__main__":
