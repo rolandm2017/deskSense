@@ -54,15 +54,6 @@ function openOptionsOnClickIcon() {
 
 // openOptionsOnClickIcon();
 
-// const captureManager = new InputCaptureManager(systemInputCapture, api);
-// Periodically check if a recording session has started
-// function runCheckOnRecordingSessionStart() {
-//     //
-//     captureManager.startPolling();
-// }
-
-// runCheckOnRecordingSessionStart();
-
 // New tab created
 // DISABLED May 9. Not sure it needs to run!
 // chrome.tabs.onCreated.addListener((tab) => {
@@ -159,6 +150,8 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
         if (tab.url) {
             console.log("onActivated - getDomainFromUrl");
             getDomainFromUrlAndSubmit(tab);
+        } else {
+            console.warn("Active tab had no url");
         }
     });
 });
@@ -222,4 +215,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         );
     }
     // Other existing message handling...
+});
+
+// PROBLEM: Without this code and it's partner code, the user
+// can tab back into Chrome, WITHOUT Tab firing off an "Active Tab"
+// alert to the server. So the backend sits there saying "Google Chrome"
+// until the user (a) changes tabs or (b) changes player state,
+// or that's how it was until this code fixed it.
+chrome.windows.onFocusChanged.addListener((windowId) => {
+    if (windowId === chrome.windows.WINDOW_ID_NONE) {
+        console.log("Chrome lost focus (switched to another app)");
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            const activeTab = tabs[0];
+            if (activeTab.url) {
+                console.log("onFocusChanged - getDomainFromUrl");
+                getDomainFromUrlAndSubmit(activeTab);
+            } else {
+                console.warn("Active tab had no url");
+            }
+            // activeTab.url, activeTab.title, etc.
+        });
+    } else {
+        console.log("Chrome gained focus (switched back from another app)");
+    }
 });

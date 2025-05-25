@@ -66,8 +66,8 @@ class ProgramTrackerCore:
 
     def run_tracking_loop(self):
         print("Starting pure event-based window tracking...")
-        print(f"[DEBUG] Starting run_tracking_loop, vlc_poller: {self.vlc_poller}")
-        print(f"[DEBUG] self object id in run_tracking_loop: {id(self)}")
+        # print(f"[DEBUG] Starting run_tracking_loop, vlc_poller: {self.vlc_poller}")
+        # print(f"[DEBUG] self object id in run_tracking_loop: {id(self)}")
 
         for window_change in self.program_facade.listen_for_window_changes():
             # if self.vlc_is_active:
@@ -158,9 +158,9 @@ class ProgramTrackerCore:
 
     def start_vlc_polling(self):
         self.console_logger.log_yellow("Starting VLC polling")
-        print(f"[DEBUG] start_vlc_polling called, vlc_poller: {self.vlc_poller}")
-        print(f"[DEBUG] vlc_poller type: {type(self.vlc_poller)}")
-        print(f"[DEBUG] self object id in start_vlc_polling: {id(self)}")
+        # print(f"[DEBUG] start_vlc_polling called, vlc_poller: {self.vlc_poller}")
+        # print(f"[DEBUG] vlc_poller type: {type(self.vlc_poller)}")
+        # print(f"[DEBUG] self object id in start_vlc_polling: {id(self)}")
 
         self.vlc_poller.start()
 

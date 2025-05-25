@@ -41,13 +41,15 @@ class TabQueue:
     transient ones long enough for it to matter. So why record it?
     """
 
-    def __init__(self, log_tab_event, debounce_delay=2.0, transience_time_in_ms=300):
+    def __init__(self, log_tab_event, debounce_delay=1.0, transience_time_in_ms=300):
         self.last_entry = None
         self.message_queue: list[TabChangeEventWithLtz] = []
         self.ordered_messages: list[TabChangeEventWithLtz] = []
         self.ready_queue: list[TabChangeEventWithLtz] = []
         # One full sec was too long. <- An April assessment
         # Two sec is good. <- A mid May assessment
+        # (3) Two sec is too long. Means the Tab event has to wait two sec to
+        # make it into the arbiter.
         self.debounce_delay = debounce_delay
         self.transience_time_in_ms = transience_time_in_ms
         self.debounce_timer = None

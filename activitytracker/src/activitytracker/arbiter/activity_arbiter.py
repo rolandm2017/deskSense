@@ -83,13 +83,22 @@ class ActivityArbiter:
 
         When a program is opened, start a session for the program. And vice versa when it closes.
         """
+        # FIXME: When you alt tab BACK into Chrome, the session is "Google Chrome". But,
+        # that's wrong! I don't want it to be Google Chrome. I want it to be Chrome's active tab.
+        # FIXME: If you Play a youtube video, tab out, and then tab back into Chrome, but
+        # don't do anything except watch the Youtube video, the time IS NOT RECORDED. It's
+        # recorded as "Google Chrome".
+        # Solution statement: Lodge whatever Chrome session is latest in a property.
+        # When you alt tab back into Chrome, i.e. when the Session type is "Chrome",
+        # restore the proper type using that latest type.
+        # PROBLEM: But then how does it handle a situation where User has multiple Chrome windows?
+        print("TYPE: ", type(new_session))
         if isinstance(new_session, ProgramSession):
             self.logger.log_white("[Exe]", new_session.window_title)
         else:
             self.logger.log_white("[Tab]", new_session.domain)
         if new_session.video_info:
             self.logger.log_white("[Vid]", new_session.video_info)
-        assert not isinstance(new_session, dict), "Found an empty dictionary as session"
 
         # TODO: Check in here, "Is this session the first one
         # since, like, 8 hours of inactivity?" via the StatusDao

@@ -76,7 +76,12 @@ def receive_youtube_tab_change_event(
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service),
 ):
-    logger.log_purple("[VIDEO LOG] New YouTube Page received: " + tab_change_event.tabTitle)
+    logger.log_purple(
+        "[VIDEO LOG] New YouTube Page received: "
+        + tab_change_event.tabTitle
+        + " :: "
+        + tab_change_event.playerState.value
+    )
     try:
         field_has_utc_tzinfo_else_throw(tab_change_event.startTime)
 
@@ -109,7 +114,7 @@ def receive_youtube_player_state(
     timezone_service: TimezoneService = Depends(get_timezone_service),
 ):
     logger.log_purple(
-        "[VIDEO LOG] YouTube state received:" + player_change_event.playerState.value
+        "[VIDEO LOG] YouTube state received: " + player_change_event.playerState.value
     )
     try:
         field_has_utc_tzinfo_else_throw(player_change_event.eventTime)
@@ -142,7 +147,12 @@ def receive_netflix_tab_change_event(
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service),
 ):
-    logger.log_purple("[VIDEO LOG] New Netflix Page received: " + tab_change_event.videoId)
+    logger.log_purple(
+        "[VIDEO LOG] New Netflix Page received: "
+        + tab_change_event.videoId
+        + " :: "
+        + tab_change_event.playerState.value
+    )
     try:
         field_has_utc_tzinfo_else_throw(tab_change_event.startTime)
         user_id = 1  # temp until i have more than 1 user

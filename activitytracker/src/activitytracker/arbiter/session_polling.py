@@ -81,9 +81,9 @@ class KeepAliveEngine:
         thread_id = threading.get_ident()
         thread_name = current_thread.name
 
-        print(
-            f"[DEBUG] Concluding engine {self.session.get_name()} in thread '{thread_name}' (ID: {thread_id})"
-        )
+        # print(
+        #     f"[DEBUG] Concluding engine {self.session.get_name()} in thread '{thread_name}' (ID: {thread_id})"
+        # )
 
         if self.amount_used == window_push_length:
             raise FullWindowError("Used the wrong method to add ten sec")
@@ -121,7 +121,6 @@ class KeepAliveEngine:
         self.recorder.add_partial_window(
             amount_used, self.session, thread_name + " : " + str(thread_id)
         )
-        # pass  # Temporarily disabled
 
     # For testing: methods to expose internal state
     def get_amount_used(self):
@@ -206,9 +205,9 @@ class ThreadedEngineContainer:
         current_thread = threading.current_thread()
         thread_id = threading.get_ident()
 
-        print(
-            f"[container - replace_engine] Replacing engine for '{self.engine.session.get_name()}' with '{new_engine.session.get_name()}' in thread '{current_thread.name}' (ID: {thread_id})"
-        )
+        # print(
+        #     f"[container - replace_engine] Replacing engine for '{self.engine.session.get_name()}' with '{new_engine.session.get_name()}' in thread '{current_thread.name}' (ID: {thread_id})"
+        # )
 
         # NOTE: If you have some sort of off by 1 error, it could be because
         # the current .sleep() hasn't flushed yet, i.e. the prev iteration is still going

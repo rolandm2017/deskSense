@@ -118,8 +118,9 @@ class ActivityRecorder:
         Pushes the end of the window forward ten sec so that,
         when the computer shuts down, the end time was "about right" anyways.
         """
-        print("[add ten] DEBUG:", session)
-        print("DEBUG:", session.video_info, self.add_ten_counter)
+        self.logger.log_yellow(
+            f"[add ten sec] {session.get_name()} - {self.add_ten_counter}"
+        )
         self.add_ten_counter += 1
         if session is None:
             raise ValueError("Session was None in add_ten_sec")
@@ -172,8 +173,6 @@ class ActivityRecorder:
             session.ledger.extend_by_n(duration_in_sec)
         if duration_in_sec == 0:
             return  # Nothing to add
-
-        # print(session.video_info, "-- in add partial window")
 
         if session.video_info:
             self.logger.log_video_info("add_partial_window", session.video_info, thread_id)
