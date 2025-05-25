@@ -63,12 +63,11 @@ class StateMachine:
             return
 
         duration = incoming_session_start - state.session.start_time
-        # FIXME: "concluding session:  9:42:51.327057" after overnight sleep
-        # FIXME: Solution to above problem is to check the latest
-        # keepAlive write time, the latest um, systemStatus polling write time.
-        # If the latest write was more than a minute ago, the session is over,
-        # do not update the end time past that time.
-        print("concluding session: ", state.session.get_name(), duration.total_seconds())
+        print(
+            "concluding session: ",
+            state.session.get_name(),
+            round(duration.total_seconds(), 3),
+        )
         if duration.total_seconds() < 0:
             # One minute in seconds
             print("Outgoing session: ", state.session)
@@ -85,10 +84,7 @@ class StateMachine:
 
         session_copy = snapshot_obj_for_tests(state.session)
 
-        # FIXME: (1) This whole file can go. It's just a session container.
-
         # FIXME: Durations are negative sometimes
-        # TODO: Make toCompleted throw err if end time before start time
         completed = session_copy.to_completed(incoming_session_start)
         completed.duration = duration
 

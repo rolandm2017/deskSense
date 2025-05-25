@@ -63,10 +63,13 @@ def test_window_addition_math():
     instance.iterate_loop()
 
     # The Engine concludes:
-    instance.conclude()
+    instance.conclude_engine()
 
     # So add_partial_window was called with the remainder:
-    add_partial_window_spy.assert_called_once_with(partial_cycle_loops, session)
+    call_args = add_partial_window_spy.call_args[0]  # Get positional args
+    assert call_args[0] == partial_cycle_loops  # First arg
+    assert call_args[1] == session  # Second arg
+    # Ignore third arg
 
     add_partial_window_spy.reset_mock()
 
@@ -78,11 +81,15 @@ def test_window_addition_math():
     instance = KeepAliveEngine(session, dao_mock)
 
     # Loops 0 times before concluding.
-    instance.conclude()
+    instance.conclude_engine()
 
     # Used time is added to duration
-    add_ten_mock.assert_not_called()
-    add_partial_window_spy.assert_called_once_with(used_amount, session)
+    assert add_ten_mock.call_count == 0
+    assert add_partial_window_spy.call_count == 1
+
+    call_args = add_partial_window_spy.call_args[0]  # Get positional args
+    assert call_args[0] == used_amount  # First arg
+    assert call_args[1] == session  # Second arg
 
     add_partial_window_spy.reset_mock()
 
@@ -101,10 +108,13 @@ def test_window_addition_math():
     for i in range(0, total_loops):
         instance.iterate_loop()
 
-    instance.conclude()
+    instance.conclude_engine()
 
     add_partial_window_spy.assert_called_once()
-    assert add_partial_window_spy.call_args_list[0][0][0] == used_amount
+
+    call_args = add_partial_window_spy.call_args[0]  # Get positional args
+    assert call_args[0] == used_amount  # First arg
+    assert call_args[1] == session  # Second arg
 
 
 def test_hit_max_window():
@@ -214,8 +224,8 @@ def test_running_for_three_sec():
 
     instance = KeepAliveEngine(session, dao_mock)
 
-    conclude_spy = Mock(side_effect=instance.conclude)
-    instance.conclude = conclude_spy
+    conclude_spy = Mock(side_effect=instance.conclude_engine)
+    instance.conclude_engine = conclude_spy
 
     assert instance.amount_used == 0
 
@@ -234,10 +244,13 @@ def test_running_for_three_sec():
     add_partial_window_mock.assert_not_called()
 
     # Act - Pretend the container called .stop()
-    instance.conclude()
+    instance.conclude_engine()
 
     conclude_spy.assert_called_once()
-    add_partial_window_mock.assert_called_once_with(final_loop_amt, session)
+
+    call_args = add_partial_window_mock.call_args[0]  # Get positional args
+    assert call_args[0] == final_loop_amt  # First arg
+    assert call_args[1] == session  # Second arg
 
 
 def test_multiple_whole_loops():
@@ -250,8 +263,8 @@ def test_multiple_whole_loops():
 
     instance = KeepAliveEngine(session, dao_mock)
 
-    conclude_spy = Mock(side_effect=instance.conclude)
-    instance.conclude = conclude_spy
+    conclude_spy = Mock(side_effect=instance.conclude_engine)
+    instance.conclude_engine = conclude_spy
 
     two_whole_loops = 20
     partial_incomplete_cycle = 3
@@ -266,10 +279,12 @@ def test_multiple_whole_loops():
     assert instance.amount_used == total % keep_alive_cycle_length  # 3
 
     # Act again
-    instance.conclude()
+    instance.conclude_engine()
 
     # Assert
-    add_partial_window_mock.assert_called_with(partial_incomplete_cycle, session)
+    call_args = add_partial_window_mock.call_args[0]  # Get positional args
+    assert call_args[0] == partial_incomplete_cycle  # First arg
+    assert call_args[1] == session  # Second arg
 
 
 def test_conclude_calls_add_partial_window():
@@ -287,7 +302,7 @@ def test_conclude_calls_add_partial_window():
     assert instance.amount_used == 3
 
     # Act
-    instance.conclude()
+    instance.conclude_engine()
 
     assert dao_mock.add_partial_window.call_count == 1
 
@@ -306,10 +321,13 @@ def test_window_isnt_used_at_all():
     instance = KeepAliveEngine(session, dao_mock)
 
     assert instance.amount_used == 0
-    instance.conclude()
+    instance.conclude_engine()
 
     add_ten_sec_to_end_time_mock.assert_not_called()
-    add_partial_window_mock.assert_called_once_with(0, session)
+
+    call_args = add_partial_window_mock.call_args[0]  # Get positional args
+    assert call_args[0] == 0  # First arg
+    assert call_args[1] == session  # Second arg
 
     final_addition = add_partial_window_mock.call_args_list[0][0][0]
     assert final_addition == 0
@@ -365,7 +383,7 @@ def test_full_window_is_used():
         instance.iterate_loop()
 
     assert instance.amount_used == partial_cycle
-    instance.conclude()
+    instance.conclude_engine()
 
     internal_add_spy.assert_called_once_with(partial_cycle)
 
@@ -387,7 +405,7 @@ def test_numerous_full_cycles():
     for _ in range(0, iteration_count):
         instance.iterate_loop()
 
-    instance.conclude()
+    instance.conclude_engine()
 
     assert add_ten_sec_to_end_time_mock.call_count == 6  # 60 / 10
 
@@ -406,7 +424,7 @@ class TestThreadedEngineContainer:
 
         engine = KeepAliveEngine(session, dao_mock)
 
-        engine.conclude = conclude_mock
+        engine.conclude_engine = conclude_mock
         engine.iterate_loop = iterate_loop_mock
 
         quick_test_interval = 0.02

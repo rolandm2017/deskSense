@@ -60,7 +60,7 @@ class KeepAliveEngine:
         #     print("IS PROGRAM SESION")
         # else:
         #     print("IS DOMAIN SESSION")
-        # print(f"in loop {self.amount_used} of 10 for {self.session.get_name()}, ")
+        print(f"\nin loop {self.amount_used} of 10 for {self.session.get_name()}, ")
         # if self.session.video_info:
         #     print(
         #         "[polling for video] Iterating loop for", self.session.video_info.get_name()
@@ -81,9 +81,13 @@ class KeepAliveEngine:
         thread_id = threading.get_ident()
         thread_name = current_thread.name
 
-        # print(
-        #     f"[DEBUG] Concluding engine {self.session.get_name()} in thread '{thread_name}' (ID: {thread_id})"
-        # )
+        print(
+            f"[DEBUG] Concluding engine {self.session.get_name()} in thread '{thread_name}' (ID: {thread_id})"
+        )
+
+        print(
+            f"[DEBUG] Concluding engine {self.session.get_name()} in thread '{thread_name}' (ID: {thread_id})"
+        )
 
         if self.amount_used == window_push_length:
             raise FullWindowError("Used the wrong method to add ten sec")
@@ -117,10 +121,8 @@ class KeepAliveEngine:
         print(
             f"[add_partial_window - engine call] {name} with amount: {amount_used} in thread '{thread_name}' (ID: {thread_id})"
         )
-
-        self.recorder.add_partial_window(
-            amount_used, self.session, thread_name + " : " + str(thread_id)
-        )
+        thread_id_and_name = thread_name + " : " + str(thread_id)
+        self.recorder.add_partial_window(amount_used, self.session, thread_id_and_name)
 
     # For testing: methods to expose internal state
     def get_amount_used(self):
@@ -181,7 +183,6 @@ class ThreadedEngineContainer:
         if self.engine is None:
             raise MissingEngineError()
         # print("while not stop event is set?", self.stop_event.is_set())
-        thread_id = threading.get_ident()
         while not self.stop_event.is_set():
             # print(f"Thread {thread_id}")
             if not self.engine_queue.empty():
@@ -202,9 +203,6 @@ class ThreadedEngineContainer:
             # Expect that add_first_engine is used to initialize.
             raise MissingEngineError()
 
-        current_thread = threading.current_thread()
-        thread_id = threading.get_ident()
-
         # print(
         #     f"[container - replace_engine] Replacing engine for '{self.engine.session.get_name()}' with '{new_engine.session.get_name()}' in thread '{current_thread.name}' (ID: {thread_id})"
         # )
@@ -224,7 +222,10 @@ class ThreadedEngineContainer:
         if self.engine is None:
             raise MissingEngineError()
         if self.is_running:
-            # self.engine.conclude()
+            # Since we're stopping the thread, it
+            # doesn't matter which thread calls engine.conclude()
+            if self.engine:
+                self.engine.conclude_engine()
             self.stop_event.set()
             if self.hook_thread is not None and self.hook_thread.is_alive():
                 self.hook_thread.join(timeout=1)

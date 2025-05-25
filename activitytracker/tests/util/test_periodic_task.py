@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 import asyncio
 
-from activitytracker.util.periodic_task import AsyncPeriodicTask
+from activitytracker.util.async_periodic_task import AsyncPeriodicTask
 
 
 class MockSystemStatusDao:
@@ -53,7 +53,7 @@ async def test_periodic_task():
 
     assert periodic_task.current_task is not None
 
-    await periodic_task.stop()
+    periodic_task.stop()
 
     assert periodic_task.is_running is False
 
