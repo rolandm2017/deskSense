@@ -1,4 +1,5 @@
 // interfaces.ts
+
 export interface YouTubePayload {
     url: string;
     videoId: string;
@@ -9,6 +10,27 @@ export interface YouTubePayload {
 export interface NetflixPayload {
     videoId: string;
     showName: string;
+}
+
+export interface AltTabYouTubeReturn {
+    url: string;
+    videoId: string;
+    tabTitle: string;
+    channel: string;
+    returnTime: string; // ISO timestamp when user alt-tabbed back
+    playerState: "playing" | "paused";
+    // Optionally include context about where they came from
+    previousContext?: "external_app" | "other_chrome_tab";
+}
+
+export interface AltTabNetflixReturn {
+    url: string;
+    videoId: string;
+    tabTitle: string;
+    showName: string;
+    returnTime: string;
+    playerState: "playing" | "paused";
+    previousContext?: "external_app" | "other_chrome_tab";
 }
 
 export interface WatchEntry {

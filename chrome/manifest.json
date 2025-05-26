@@ -37,11 +37,6 @@
             "matches": ["https://www.netflix.com/watch/*"],
             "js": ["dist/netflixVideoListeners.bundle.js"],
             "run_at": "document_idle"
-        },
-        {
-            "matches": ["https://en.wikipedia.org/wiki/Main_Page"],
-            "js": ["dist/netflixWatch.bundle.js"],
-            "run_at": "document_end"
         }
     ]
 }

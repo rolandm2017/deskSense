@@ -3,6 +3,8 @@
 import { initializedServerApi, ServerApi } from "../api";
 import { MissingMediaError } from "../errors";
 import {
+    AltTabNetflixReturn,
+    AltTabYouTubeReturn,
     INetflixViewing,
     IStatelessNetflixViewing,
     IYouTubeViewing,
@@ -11,6 +13,11 @@ import {
 } from "../interface/interfaces";
 
 import { PlatformLogger } from "../endpointLogging";
+import {
+    isNetflixWatchPage,
+    makeNetflixWatchPageId,
+} from "../netflix/netflixUrlTool";
+import { getYouTubeVideoId, isWatchingYouTubeVideo } from "../youtube/youtube";
 
 // A Visit: As in, A PageVisit
 // A Viewing: A window of time spent actively viewing the video.
@@ -153,6 +160,90 @@ export class ViewingTracker {
         }
     }
 
+    // New method specifically for alt-tab scenarios
+    handleAltTabReturn(
+        tab: chrome.tabs.Tab,
+        playerState: "playing" | "paused"
+    ) {
+        if (!tab.url) return;
+
+        if (isWatchingYouTubeVideo(tab.url)) {
+            this.handleYouTubeAltTabReturn(tab, playerState);
+        } else if (isNetflixWatchPage(tab.url)) {
+            this.handleNetflixAltTabReturn(tab, playerState);
+        }
+    }
+
+    private handleYouTubeAltTabReturn(
+        tab: chrome.tabs.Tab,
+        playerState: "playing" | "paused"
+    ) {
+        const videoId = getYouTubeVideoId(tab.url!);
+        const existingViewing = this.latestActiveViewing;
+
+        if (
+            existingViewing instanceof YouTubeViewing &&
+            existingViewing.videoId === videoId &&
+            tab.id == existingViewing.sourceTabId
+        ) {
+            // Same video - just update state and report alt-tab return
+            existingViewing.playerState = playerState;
+            this.setCurrent(existingViewing);
+
+            const payload: AltTabYouTubeReturn = {
+                url: existingViewing.url,
+                videoId: existingViewing.videoId,
+                tabTitle: existingViewing.mediaTitle,
+                channel: existingViewing.channelName,
+                returnTime: new Date().toISOString(),
+                playerState: playerState,
+                previousContext: "external_app",
+            };
+
+            this.api.youtube.sendAltTabReturn(payload);
+        } else {
+            // Different video or no previous viewing - this is actually a new page visit
+            // Fall back to ... to what?
+            // Only mistakes go here.
+            throw new Error("Not Yet Implemented");
+        }
+    }
+
+    private handleNetflixAltTabReturn(
+        tab: chrome.tabs.Tab,
+        playerState: "playing" | "paused"
+    ) {
+        const videoId = makeNetflixWatchPageId(tab.url!);
+        const existingViewing = this.latestActiveViewing;
+
+        if (
+            existingViewing instanceof NetflixViewing &&
+            existingViewing.videoId === videoId &&
+            tab.id == existingViewing.sourceTabId
+        ) {
+            // Same video - update and report
+            existingViewing.playerState = playerState;
+            this.setCurrent(existingViewing);
+
+            const payload: AltTabNetflixReturn = {
+                url: existingViewing.url,
+                videoId: existingViewing.videoId,
+                tabTitle: existingViewing.mediaTitle,
+                showName: existingViewing.mediaTitle,
+                returnTime: new Date().toISOString(),
+                playerState: playerState,
+                previousContext: "external_app",
+            };
+
+            this.api.netflix.sendAltTabReturn(payload);
+        } else {
+            // Different video or no previous viewing - this is actually a new page visit
+            // Fall back to ... to what?
+            // Only mistakes go here.
+            throw new Error("Not Yet Implemented");
+        }
+    }
+
     endViewing() {
         // TODO: handle the user closing the tab
         // used to report the final value on window close
@@ -175,6 +266,7 @@ export class YouTubeViewing implements IYouTubeViewing {
     playerState: "playing" | "paused";
     // unique to this class
     channelName: string;
+    sourceTabId: number;
 
     // Can tell also *how long* player was paused for.
 
@@ -182,12 +274,14 @@ export class YouTubeViewing implements IYouTubeViewing {
         videoId: string,
         url: string,
         tabTitle: string,
-        channelName: string
+        channelName: string,
+        sourceTabId: number
     ) {
         this.videoId = videoId;
         this.url = url;
         this.mediaTitle = tabTitle;
         this.channelName = channelName;
+        this.sourceTabId = sourceTabId;
         this.timestamps = [];
         this.playerState = "paused";
     }
@@ -207,6 +301,8 @@ export class NetflixViewingSansState implements IStatelessNetflixViewing {
     mediaTitle: string;
     url: string;
     constructor(videoId: string, showName: string, url: string) {
+        // It cannot have a SourceTabID because
+        // there is no tabId accessible in a content script.
         // the Url ID becomes the VideoID.
         this.videoId = videoId;
         // the showName becomes the mediaTitle.
@@ -219,22 +315,25 @@ export class NetflixViewing
     extends NetflixViewingSansState
     implements INetflixViewing
 {
-    videoId: string;
-    mediaTitle: string;
+    // videoId: string;
+    // mediaTitle: string;
     playerState: "playing" | "paused";
+    sourceTabId: number;
     // TODO
     constructor(
         videoId: string,
         showName: string,
         url: string,
-        playerState: "playing" | "paused"
+        playerState: "playing" | "paused",
+        sourceTabId: number
     ) {
         super(videoId, showName, url);
         // the Url ID becomes the VideoID.
-        this.videoId = videoId;
+        // this.videoId = videoId;
         // the showName becomes the mediaTitle.
-        this.mediaTitle = showName;
+        // this.mediaTitle = showName;
         this.playerState = playerState;
+        this.sourceTabId = sourceTabId;
     }
 
     convertToPayload(): NetflixPayload {

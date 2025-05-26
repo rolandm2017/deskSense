@@ -1,4 +1,5 @@
 import { initializedServerApi } from "./api";
+import { MissingMediaError } from "./errors";
 import { ignoredDomains, isDomainIgnored } from "./ignoreList";
 import {
     isNetflixWatchPage,
@@ -6,7 +7,11 @@ import {
 } from "./netflix/netflixUrlTool";
 import { getDomainFromUrl } from "./urlTools";
 import { viewingTracker, ViewingTracker } from "./videoCommon/visits";
-import { getYouTubeVideoId, handleYouTubeUrl } from "./youtube/youtube";
+import {
+    getYouTubeVideoId,
+    handleYouTubeUrl,
+    isWatchingYouTubeVideo,
+} from "./youtube/youtube";
 
 export function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
     /*
@@ -70,6 +75,33 @@ export function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
         );
     } else {
         console.log("No domain found for ", tab.url);
+    }
+}
+
+export function handleUserTabsBackIn(url: string, activeTab: chrome.tabs.Tab) {
+    /*
+        For the case where the user is using some other 
+        program, alt-tabs back into Chrome.
+    */
+    if (isWatchingYouTubeVideo(url) || isNetflixWatchPage(url)) {
+        console.log("onFocusChanged - a Watch Page");
+        // If YouTube Watch Page, do special version with player state
+        const pageState = viewingTracker.latestActiveViewing;
+        if (!pageState) {
+            throw new MissingMediaError(
+                "latestActiveViewing undefined when tabbing back in"
+            );
+        }
+        viewingTracker.handleAltTabReturn(activeTab, pageState.playerState);
+    } else {
+        // If Netflix Watch Page, do special version with player state
+        // TODO: Could do like, "if returning to page, use stored page/player info".
+        // You wouldn't have to store too many values for the page to
+        // reliably be among them.
+        // else:
+        console.log("onFocusChanged - getDomainFromUrl");
+
+        getDomainFromUrlAndSubmit(activeTab);
     }
 }
 
@@ -186,6 +218,8 @@ export class PlayPauseDispatch {
     }
 
     noteYouTubeAutoPlayEvent(sender: chrome.runtime.MessageSender) {
+        // Autoplay is when you open a page or refresh, and, the player
+        // starts playing automatically.
         if (this.pageNotYetLoaded()) {
             // wait for the page event to go out, attach "playing" to it
             this.tracker.markAutoplayEventWaiting();
@@ -201,6 +235,8 @@ export class PlayPauseDispatch {
     }
 
     noteNetflixAutoPlayEvent(sender: chrome.runtime.MessageSender) {
+        // Autoplay is when you open a page or refresh, and, the player
+        // starts playing automatically.
         if (this.pageNotYetLoaded()) {
             // wait for the page event to go out, attach "playing" to it
             this.tracker.markAutoplayEventWaiting();

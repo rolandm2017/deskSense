@@ -84,7 +84,8 @@ export function handleYouTubeUrl(tab: chrome.tabs.Tab) {
                         videoId,
                         tab.url,
                         tabTitle,
-                        channelName
+                        channelName,
+                        tabId
                     );
 
                     viewingTracker.setCurrent(youTubeVisit);
@@ -151,7 +152,8 @@ export function startSecondaryChannelExtractionScript(
         videoId,
         tab.url,
         tabTitle,
-        "Unknown Channel"
+        "Unknown Channel",
+        9000
     );
     // youTubeVisit.sendInitialInfoToServer();
 

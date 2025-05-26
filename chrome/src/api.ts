@@ -1,6 +1,11 @@
 // api.ts
 import { DomainLogger, PlatformLogger } from "./endpointLogging";
-import { NetflixPayload, YouTubePayload } from "./interface/interfaces";
+import {
+    AltTabNetflixReturn,
+    AltTabYouTubeReturn,
+    NetflixPayload,
+    YouTubePayload,
+} from "./interface/interfaces";
 import {
     NetflixPlayerChange,
     NetflixTabChange,
@@ -21,12 +26,13 @@ const videoBaseUrl = baseChromeUrl + "/video";
 // export const youTubeUrl = videoBaseUrl + "/youtube/new";
 export const youTubeWatchPageUrl = videoBaseUrl + "/youtube/new/watchpage";
 export const youtubePlayerStateUrl = videoBaseUrl + "/youtube/state";
+export const altTabYouTubeWatchUrl = videoBaseUrl + "/youtube/alt-tab-return";
+
 // netflix
 // export const netflixUrl = videoBaseUrl + "/netflix/new";
 export const netflixWatchPageUrl = videoBaseUrl + "/netflix/new/watchpage";
 export const netflixPlayerStateUrl = videoBaseUrl + "/netflix/state";
-
-export const captureSessionStartUrl = "/api/capture/start";
+export const altTabNetflixWatchUrl = videoBaseUrl + "/netflix/alt-tab-return";
 
 class YouTubeApi {
     sendPayload: Function;
@@ -103,6 +109,11 @@ class YouTubeApi {
         };
         console.log("The pause payload is ", payload.channel);
         this.sendPayload(youtubePlayerStateUrl, payload);
+    }
+
+    sendAltTabReturn(payload: AltTabYouTubeReturn) {
+        console.log("Sending YouTube alt-tab return payload:", payload.channel);
+        this.sendPayload(altTabYouTubeWatchUrl, payload);
     }
 }
 
@@ -196,6 +207,14 @@ class NetflixApi {
 
         console.log("The pause payload is ", payload);
         this.sendPayload(netflixPlayerStateUrl, payload);
+    }
+
+    sendAltTabReturn(payload: AltTabNetflixReturn) {
+        console.log(
+            "Sending Netflix alt-tab return payload:",
+            payload.showName
+        );
+        this.sendPayload(altTabNetflixWatchUrl, payload);
     }
 }
 
