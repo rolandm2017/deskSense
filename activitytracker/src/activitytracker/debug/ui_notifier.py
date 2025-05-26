@@ -1,9 +1,5 @@
-from activitytracker.object.arbiter_classes import (
-    ApplicationInternalState,
-    ChromeInternalState,
-    InternalState,
-)
-from activitytracker.object.classes import ProgramSession, ChromeSession
+from activitytracker.object.arbiter_classes import InternalState
+from activitytracker.object.classes import ChromeSession, ProgramSession
 
 
 class UINotifier:
@@ -23,14 +19,14 @@ class UINotifier:
             display_text = f"{session.domain}"
             # display_text = f"Chrome | {session.domain}"
             self.overlay.change_display_text(display_text, "#4285F4")
-        elif isinstance(session, ApplicationInternalState):
+        elif isinstance(session, InternalState):
             attached = session.session
-            display_text = attached.window_title
-            self.overlay.change_display_text(display_text, "lime")
-        elif isinstance(session, ChromeInternalState):
-            attached = session.session
-            display_text = f"{attached.domain}"
-            self.overlay.change_display_text(display_text, "#4285F4")
+            if isinstance(attached, ProgramSession):
+                display_text = attached.window_title
+                self.overlay.change_display_text(display_text, "lime")
+            else:
+                display_text = f"{attached.domain}"
+                self.overlay.change_display_text(display_text, "#4285F4")
         else:
             print(type(session))
             raise TypeError("Type wasn't an expected Session or State")

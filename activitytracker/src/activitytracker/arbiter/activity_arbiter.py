@@ -93,14 +93,15 @@ class ActivityArbiter:
         # restore the proper type using that latest type.
         # PROBLEM: But then how does it handle a situation where User has multiple Chrome windows?
         if isinstance(new_session, ProgramSession):
-            self.logger.log_white("[Exe]", new_session.window_title)
+            self.logger.log_white("[Exe]", new_session.get_name_and_id())
         else:
-            self.logger.log_white("[Tab]", new_session.domain)
+            self.logger.log_white("[Tab]", new_session.get_name_and_id())
         if new_session.video_info:
-            self.logger.log_white("[Vid]", new_session.video_info)
+            self.logger.log_white("[Vid]", new_session.video_info.get_name_and_id())
 
         # TODO: Check in here, "Is this session the first one
         # since, like, 8 hours of inactivity?" via the StatusDao
+        # FIXME: It totally isn't working - noticed May 25
 
         looks_like_sleep_occurred, time_before_lg_gap = (
             self.sleep_detector.detect_awakening_from_sleep()

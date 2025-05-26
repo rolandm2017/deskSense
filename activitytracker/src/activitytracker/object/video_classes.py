@@ -30,6 +30,9 @@ class VideoInfo(ABC):
     def get_platform_title(self):
         pass
 
+    def get_name_and_id(self):
+        return self.get_name() + " :: " + str(hex(id(self))[-6:])
+
 
 class YouTubeInfo(VideoInfo):
 
@@ -96,7 +99,7 @@ class VlcInfo(VideoInfo):
         return "VLC Media Player"
 
     def __str__(self) -> str:
-        return f"{self.file}, {self.folder}, {self.player_state}"
+        return self.get_name()
 
     def __eq__(self, other):
         if not isinstance(other, VlcInfo):

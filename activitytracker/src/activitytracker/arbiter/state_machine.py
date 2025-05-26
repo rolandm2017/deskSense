@@ -1,10 +1,6 @@
 from datetime import timedelta
 
-from activitytracker.object.arbiter_classes import (
-    ApplicationInternalState,
-    ChromeInternalState,
-    InternalState,
-)
+from activitytracker.object.arbiter_classes import InternalState
 from activitytracker.object.classes import (
     ChromeSession,
     CompletedChromeSession,
@@ -63,9 +59,16 @@ class StateMachine:
             return
 
         duration = incoming_session_start - state.session.start_time
+
+        name = (
+            state.session.video_info.get_name_and_id()
+            if state.session.video_info
+            else state.session.get_name_and_id()
+        )
         print(
             "concluding session: ",
-            state.session.get_name(),
+            # state.session.get_name(), " - ", state.session.video_info
+            name,
             round(duration.total_seconds(), 3),
         )
         if duration.total_seconds() < 0:
@@ -128,14 +131,5 @@ class StateMachine:
 
     @staticmethod
     def _initialize(first_session):
-        if isinstance(first_session, ProgramSession):
-            is_chrome = window_is_chrome(first_session.window_title)
-            updated_state = ApplicationInternalState(
-                first_session.window_title, is_chrome, first_session
-            )
-        else:
-            assert isinstance(first_session, ChromeSession)
-            updated_state = ChromeInternalState(
-                "Chrome", True, first_session.domain, first_session
-            )
+        updated_state = InternalState(None, None, first_session)
         return updated_state

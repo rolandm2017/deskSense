@@ -1,18 +1,15 @@
 import pytest
-import pytz
-from unittest.mock import Mock, MagicMock
+from unittest.mock import MagicMock, Mock
+
 import asyncio
 
+import pytz
 from datetime import datetime
 
 from activitytracker.debug.ui_notifier import UINotifier
-from activitytracker.object.arbiter_classes import (
-    ApplicationInternalState,
-    ChromeInternalState,
-)
-from activitytracker.object.classes import ProgramSession, ChromeSession
+from activitytracker.object.arbiter_classes import InternalState
+from activitytracker.object.classes import ChromeSession, ProgramSession
 from activitytracker.util.time_wrappers import UserLocalTime
-
 
 timezone_for_test = "Asia/Tokyo"  # UTC+9
 
@@ -58,7 +55,7 @@ def test_internal_state_change(ui_notifier, mock_overlay):
         "",
         UserLocalTime(now_tokyo),
     )
-    test_state = ApplicationInternalState("Test Window Title", False, program_session)
+    test_state = InternalState(None, None, program_session)
 
     # Trigger the state change
     ui_notifier.on_state_changed(test_state)
@@ -75,7 +72,7 @@ def test_other_state_change(ui_notifier, mock_overlay):
     # Create a test state
 
     chrome_session = ChromeSession("example.com", "", UserLocalTime(now_tokyo))
-    test_state = ChromeInternalState("Chrome", True, "example.com", chrome_session)
+    test_state = InternalState(None, None, chrome_session)
 
     # Trigger the state change
     ui_notifier.on_state_changed(test_state)
@@ -94,8 +91,8 @@ def test_multiple_state_changes(ui_notifier, mock_overlay):
         "C:/InternalApp.exe", "InternalApp.exe", "Internal App", "", UserLocalTime(now_tokyo)
     )
     chrome_session = ChromeSession("test-domain.org", "", UserLocalTime(now_tokyo))
-    internal_state = ApplicationInternalState("Internal App", True, program_session)
-    other_state = ChromeInternalState("Chrome", True, "test-domain.org", chrome_session)
+    internal_state = InternalState(None, None, program_session)
+    other_state = InternalState(None, None, chrome_session)
 
     # Trigger state changes
     ui_notifier.on_state_changed(internal_state)

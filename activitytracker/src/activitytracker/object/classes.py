@@ -121,6 +121,9 @@ class ProgramSession(ActivitySession):
         """Useful because a string id property isn't common across both classes"""
         return self.process_name
 
+    def get_name_and_id(self):
+        return self.process_name + " :: " + str(hex(id(self))[-6:])
+
     def parse_time_string(self, time_str):
         return parse_time_string(time_str)
 
@@ -216,6 +219,9 @@ class ChromeSession(ActivitySession):
     def get_name(self):
         """Useful because a string id property isn't common across both classes"""
         return self.domain
+
+    def get_name_and_id(self):
+        return self.domain + " :: " + str(hex(id(self))[-6:])
 
     @staticmethod
     def parse_time_string(time_str):

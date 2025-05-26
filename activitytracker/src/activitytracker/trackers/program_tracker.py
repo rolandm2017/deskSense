@@ -96,6 +96,7 @@ class ProgramTrackerCore:
                     new_session = self.start_new_session(window_change, current_time)
                     self.current_session = new_session
                     # FILTER HERE: Only report the event if it's NOT Chrome
+                    # https://claude.ai/chat/ede0b004-79ff-4b42-b191-40e8d3f91bf4
                     if not self.window_is_chrome(window_change):
                         # Do not report Chrome, because Chrome will do its own reporting.
                         # Note that if you try to get out of this via early return, the

@@ -1,6 +1,6 @@
-import platform
-
 from datetime import datetime
+
+import platform
 
 from activitytracker.object.video_classes import VideoInfo
 
@@ -55,7 +55,8 @@ class ConsoleLogger:
 
     def log_blue(self, message):
         if self.active:
-            print(f"\033[94m{message}\033[0m")
+            print(f"\033[38;2;100;200;255m{message}\033[0m")
+            # print(f"\033[96m{message}\033[0m")
 
     def log_white(self, *args):
         if self.active:
