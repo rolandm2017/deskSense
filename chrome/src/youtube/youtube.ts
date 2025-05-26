@@ -19,10 +19,7 @@ import { MissingUrlError } from "../errors";
 let runningExtractChannelInfoScript = false;
 
 // // Handle YouTube URL specifically
-export function handleYouTubeUrl(
-    tab: chrome.tabs.Tab,
-    tabsWithIntervalsRecorder: Function
-) {
+export function handleYouTubeUrl(tab: chrome.tabs.Tab) {
     if (!tab.url || !tab.id || !tab.title) {
         throw new Error("Missing required tab properties");
     }
@@ -32,7 +29,6 @@ export function handleYouTubeUrl(
         // a short delay ensures that the page has fully loaded
         // Use executeScript to access the DOM on YouTube watch pages
         const tabId = tab.id;
-        tabsWithIntervalsRecorder(tabId);
         runningExtractChannelInfoScript = true;
         setTimeout(() => {
             chrome.scripting.executeScript(
@@ -54,6 +50,7 @@ export function handleYouTubeUrl(
                         // TODO: Get the video player info
                         channelName = results[0].result;
                     }
+                    // TODO: Need to get Player State for tabs into it
                     console.log(
                         "Detected ",
                         channelName,

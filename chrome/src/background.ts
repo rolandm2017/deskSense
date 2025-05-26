@@ -2,11 +2,7 @@
 
 import { isNetflixWatchPage } from "./netflix/netflixUrlTool";
 
-import {
-    getDomainFromUrlAndSubmit,
-    playPauseDispatch,
-    tabsWithPollingList,
-} from "./backgroundUtil";
+import { getDomainFromUrlAndSubmit, playPauseDispatch } from "./backgroundUtil";
 
 import {
     NetflixViewing,
@@ -78,10 +74,8 @@ chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
     // removeInfo contains additional information
     console.log("Window was closed:", removeInfo.isWindowClosing);
 
-    const isYouTubeWatchPage = tabsWithPollingList.includes(tabId);
-
     // Perform any cleanup or final operations here
-    if (isYouTubeWatchPage && viewingTracker.currentMedia) {
+    if (viewingTracker.currentMedia) {
         // send final data to server
         // The Viewing would be when the user hits Pause.
         viewingTracker.endViewing();
@@ -136,7 +130,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 /*
  * Claude says, re: onUpdated:
  *
- * The chrome.tabs.onUpdated event specifically triggers when any tab in the browser undergoes a state change. This event can fire for various reasons:
+ * The chrome.tabs.onUpdated event specifically triggers when any tab
+ * in the browser undergoes a state change. This event can fire for various reasons:
  *
  * When a page is loading
  * When a page completes loading
@@ -167,6 +162,9 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
             // But the alt-tab-back-into-Chrome one also fires "onActivated".
             // TODO: Find a way to choose between this one and the onMessage focus listener
             getDomainFromUrlAndSubmit(tab);
+            // TODO: On tab into a Player page, get player state from storage, package
+            // player state into payload for reportWatchPage. Think
+            // it just needs to be, "store the active players in an array of tab IDs"
         } else {
             console.warn("Active tab had no url");
         }

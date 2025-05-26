@@ -8,12 +8,6 @@ import { getDomainFromUrl } from "./urlTools";
 import { viewingTracker, ViewingTracker } from "./videoCommon/visits";
 import { getYouTubeVideoId, handleYouTubeUrl } from "./youtube/youtube";
 
-export const tabsWithPollingList: number[] = [];
-
-function putTabIdIntoPollingList(tabId: number) {
-    tabsWithPollingList.push(tabId);
-}
-
 export function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
     /*
 
@@ -59,7 +53,7 @@ export function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
         if (isYouTube) {
             console.log("[info] on YouTube");
             // Use the dedicated function to handle YouTube URLs
-            handleYouTubeUrl(tab, putTabIdIntoPollingList);
+            handleYouTubeUrl(tab);
             return;
         }
         const isNetflix = domain.includes("netflix.com");
