@@ -6,6 +6,7 @@ import { ServerApi } from "../../src/api";
 
 import { PlayPauseDispatch } from "../../src/backgroundUtil";
 
+import { PlayerStateCache } from "../../src/playerStateCache";
 import { replaceAllMethodsWithMocks } from "../helper";
 
 describe("YouTube Autoplay", () => {
@@ -14,9 +15,10 @@ describe("YouTube Autoplay", () => {
         replaceAllMethodsWithMocks(server);
 
         const watchPageReportingMock = vi.fn();
-        server.youtube.reportYouTubeWatchPage = watchPageReportingMock;
+        server.youtube.sendYouTubeWatchPage = watchPageReportingMock;
 
-        const tracker = new ViewingTracker(server);
+        const cache = new PlayerStateCache();
+        const tracker = new ViewingTracker(cache, server);
 
         const dispatch = new PlayPauseDispatch(tracker);
 
@@ -28,7 +30,7 @@ describe("YouTube Autoplay", () => {
 
         expect(tracker.autoplayWaiting).toBe(true);
 
-        expect(server.youtube.reportYouTubeWatchPage).not.toBeCalled();
+        expect(server.youtube.sendYouTubeWatchPage).not.toBeCalled();
         expect(server.youtube.sendPlayEvent).not.toBeCalled();
         expect(server.youtube.sendPauseEvent).not.toBeCalled();
 
@@ -36,7 +38,8 @@ describe("YouTube Autoplay", () => {
             "JpgiGi2epAs",
             sender.tab.url,
             "an American, in Turkey, speaking Portuguese for 5 minutes (CC)",
-            "Elysse Davega"
+            "Elysse Davega",
+            9000
         );
 
         tracker.setCurrent(youTubeVisit);
@@ -50,7 +53,7 @@ describe("YouTube Autoplay", () => {
         expect(server.youtube.sendPauseEvent).not.toBeCalled();
         expect(server.youtube.sendPlayEvent).not.toBeCalled();
 
-        expect(server.youtube.reportYouTubeWatchPage).toHaveBeenCalledOnce();
+        expect(server.youtube.sendYouTubeWatchPage).toHaveBeenCalledOnce();
 
         const tabTitle = watchPageReportingMock.mock.calls[0][0];
         const videoId = watchPageReportingMock.mock.calls[0][1];
@@ -72,12 +75,13 @@ describe("YouTube Autoplay", () => {
         replaceAllMethodsWithMocks(server);
 
         const watchPageReportingMock = vi.fn();
-        server.youtube.reportYouTubeWatchPage = watchPageReportingMock;
+        server.youtube.sendYouTubeWatchPage = watchPageReportingMock;
 
         const sendPlayEventMock = vi.fn();
         server.youtube.sendPlayEvent = sendPlayEventMock;
 
-        const tracker = new ViewingTracker(server);
+        const cache = new PlayerStateCache();
+        const tracker = new ViewingTracker(cache, server);
 
         const dispatch = new PlayPauseDispatch(tracker);
 
@@ -85,7 +89,8 @@ describe("YouTube Autoplay", () => {
             "JpgiGi2epAs",
             "www.youtube.com/watch?v=JpgiGi2epAs",
             "an American, in Turkey, speaking Portuguese for 5 minutes (CC)",
-            "Elysse Davega"
+            "Elysse Davega",
+            9000
         );
 
         tracker.setCurrent(youTubeVisit);
@@ -96,7 +101,7 @@ describe("YouTube Autoplay", () => {
             youTubeVisit.mediaTitle
         );
 
-        expect(server.youtube.reportYouTubeWatchPage).toHaveBeenCalledOnce();
+        expect(server.youtube.sendYouTubeWatchPage).toHaveBeenCalledOnce();
 
         const sender = {
             tab: { url: "https://www.youtube.com/watch?v=JpgiGi2epAs" },

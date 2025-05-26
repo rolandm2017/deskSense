@@ -10,6 +10,8 @@ import {
 
 import { replaceAllMethodsWithMocks } from "../helper";
 
+import { PlayerStateCache } from "../../src/playerStateCache";
+
 // TODO:
 
 // TODO: Test play/pause
@@ -19,12 +21,14 @@ describe("ViewingTracker", () => {
     test("setCurrent sets the current media", () => {
         const server = new ServerApi("disable");
         replaceAllMethodsWithMocks(server);
-        const tracker = new ViewingTracker(server);
+        const cache = new PlayerStateCache();
+        const tracker = new ViewingTracker(cache, server);
         const media = new NetflixViewing(
             "23456",
             "Hilda",
             "www.netflix.com/watch/23456",
-            "paused"
+            "paused",
+            5
         );
         tracker.setCurrent(media);
 
@@ -33,12 +37,14 @@ describe("ViewingTracker", () => {
     test("setCurrent updates the current media", () => {
         const server = new ServerApi("disable");
         replaceAllMethodsWithMocks(server);
-        const tracker = new ViewingTracker(server);
+        const cache = new PlayerStateCache();
+        const tracker = new ViewingTracker(cache, server);
         const media = new NetflixViewing(
             "23456",
             "Hilda",
             "www.netflix.com/watch/23456",
-            "paused"
+            "paused",
+            5
         );
         tracker.setCurrent(media);
 
@@ -46,7 +52,8 @@ describe("ViewingTracker", () => {
             "9876",
             "Carmen San Diego",
             "www.netflix.com/watch/9876",
-            "paused"
+            "paused",
+            5
         );
         tracker.setCurrent(media2);
 
@@ -56,7 +63,8 @@ describe("ViewingTracker", () => {
     test("reportNetflixWatchPage sets a partial page info and calls an API", () => {
         const server = new ServerApi("disable");
         replaceAllMethodsWithMocks(server);
-        const tracker = new ViewingTracker(server);
+        const cache = new PlayerStateCache();
+        const tracker = new ViewingTracker(cache, server);
 
         const target = "484848";
         const fullUrl = "www.netflix.com/watch/" + target;
@@ -67,18 +75,20 @@ describe("ViewingTracker", () => {
     test("reportYouTubeWatchPage calls an API", () => {
         const server = new ServerApi("disable");
         replaceAllMethodsWithMocks(server);
-        const tracker = new ViewingTracker(server);
+        const cache = new PlayerStateCache();
+        const tracker = new ViewingTracker(cache, server);
         const youTubePage = new YouTubeViewing(
             "5959",
             "www.youtube.com/watch?v=5959",
             "A Day of My Life In French!",
-            "Piece of French"
+            "Piece of French",
+            9000
         );
         tracker.setCurrent(youTubePage);
 
         tracker.reportYouTubeWatchPage();
 
-        expect(server.youtube.reportYouTubeWatchPage).toHaveBeenCalledOnce();
+        expect(server.youtube.sendYouTubeWatchPage).toHaveBeenCalledOnce();
         expect(
             server.netflix.reportFilledNetflixWatchPage
         ).not.toHaveBeenCalledOnce();
@@ -89,12 +99,14 @@ describe("ViewingTracker", () => {
     test("markPlaying calls an API", () => {
         const server = new ServerApi("disable");
         replaceAllMethodsWithMocks(server);
-        const tracker = new ViewingTracker(server);
+        const cache = new PlayerStateCache();
+        const tracker = new ViewingTracker(cache, server);
         const youTubePage = new YouTubeViewing(
             "5959",
             "www.youtube.com/watch?v=5959",
             "A Day of My Life In French!",
-            "Piece of French"
+            "Piece of French",
+            9000
         );
         const convertToPayloadSpy = vi.spyOn(youTubePage, "convertToPayload");
 
@@ -114,13 +126,15 @@ describe("ViewingTracker", () => {
     test("markPaused calls an API", () => {
         const server = new ServerApi("disable");
         replaceAllMethodsWithMocks(server);
-        const tracker = new ViewingTracker(server);
+        const cache = new PlayerStateCache();
+        const tracker = new ViewingTracker(cache, server);
         const youTubePage = new YouTubeViewing(
             "5959",
             "www.youtube.com/watch?v=5959",
 
             "A Day of My Life In French!",
-            "Piece of French"
+            "Piece of French",
+            9000
         );
         const convertToPayloadSpy = vi.spyOn(youTubePage, "convertToPayload");
 

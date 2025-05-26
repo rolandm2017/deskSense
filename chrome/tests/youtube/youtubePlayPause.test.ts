@@ -9,6 +9,7 @@ import { ServerApi } from "../../src/api";
 
 import { ViewingTracker, YouTubeViewing } from "../../src/videoCommon/visits";
 
+import { PlayerStateCache } from "../../src/playerStateCache";
 import { replaceAllMethodsWithMocks } from "../helper";
 
 describe("The YouTube tracker works as intended", () => {
@@ -17,21 +18,25 @@ describe("The YouTube tracker works as intended", () => {
         const api = new ServerApi("disable");
         // turn off send payloads
         replaceAllMethodsWithMocks(api);
-        const viewingTrackerInit = new ViewingTracker(api);
+        const cache = new PlayerStateCache();
+        const viewingTrackerInit = new ViewingTracker(cache, api);
         //
         const fakePage = {
             videoId: "456",
+            url: "www.youtube.com/watch?v=456",
             tabTitle: "A Day of My Life in FRENCH!",
             channelName: "Piece of French",
         };
         const youTubeVisit = new YouTubeViewing(
             fakePage.videoId,
+            fakePage.url,
             fakePage.tabTitle,
-            fakePage.channelName
+            fakePage.channelName,
+            9000
         );
         viewingTrackerInit.setCurrent(youTubeVisit);
         viewingTrackerInit.reportYouTubeWatchPage();
-        expect(api.youtube.reportYouTubeWatchPage).toHaveBeenCalledOnce();
+        expect(api.youtube.sendYouTubeWatchPage).toHaveBeenCalledOnce();
     });
     test("A play event is sent to the server when it occurs", () => {
         const api = new ServerApi("disable");
@@ -39,22 +44,26 @@ describe("The YouTube tracker works as intended", () => {
         // turn off send payloads
         replaceAllMethodsWithMocks(api);
 
-        const viewingTracker = new ViewingTracker(api);
+        const cache = new PlayerStateCache();
+        const viewingTrackerInit = new ViewingTracker(cache, api);
         //
         const fakePage = {
             videoId: "456",
+            url: "www.youtube.com/watch?v=456",
             tabTitle: "A Day of My Life in FRENCH!",
             channelName: "Piece of French",
         };
         const youTubeVisit = new YouTubeViewing(
             fakePage.videoId,
+            fakePage.url,
             fakePage.tabTitle,
-            fakePage.channelName
+            fakePage.channelName,
+            9000
         );
-        viewingTracker.setCurrent(youTubeVisit);
-        viewingTracker.reportYouTubeWatchPage();
+        viewingTrackerInit.setCurrent(youTubeVisit);
+        viewingTrackerInit.reportYouTubeWatchPage();
 
-        viewingTracker.markPlaying();
+        viewingTrackerInit.markPlaying();
 
         expect(api.youtube.sendPlayEvent).toHaveBeenCalledOnce();
     });
@@ -64,17 +73,21 @@ describe("The YouTube tracker works as intended", () => {
         // turn off send payloads
         replaceAllMethodsWithMocks(api);
 
-        const viewingTrackerInit = new ViewingTracker(api);
+        const cache = new PlayerStateCache();
+        const viewingTrackerInit = new ViewingTracker(cache, api);
         //
         const fakePage = {
             videoId: "456",
+            url: "www.youtube.com/watch?v=456",
             tabTitle: "A Day of My Life in FRENCH!",
             channelName: "Piece of French",
         };
         const youTubeVisit = new YouTubeViewing(
             fakePage.videoId,
+            fakePage.url,
             fakePage.tabTitle,
-            fakePage.channelName
+            fakePage.channelName,
+            9000
         );
         viewingTrackerInit.setCurrent(youTubeVisit);
         viewingTrackerInit.reportYouTubeWatchPage();

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { ServerApi } from "../src/api.ts";
 import { PlayPauseDispatch } from "../src/backgroundUtil.ts";
+import { PlayerStateCache } from "../src/playerStateCache.ts";
 import { NetflixViewing, ViewingTracker } from "../src/videoCommon/visits.ts";
 import { replaceAllMethodsWithMocks } from "./helper.ts";
 
@@ -21,11 +22,15 @@ describe("Background Util", () => {
             const api = new ServerApi("disable");
             // turn off send payloads
             replaceAllMethodsWithMocks(api);
-            const tracker = new ViewingTracker(api);
+            const cache = new PlayerStateCache();
+            const tracker = new ViewingTracker(cache, api);
             const someCurrentMedia = new NetflixViewing(
                 "123456999",
+                "netflix.com/watch/123456999",
+
                 "Hilda",
-                "paused"
+                "paused",
+                9000
             );
             tracker.setCurrent(someCurrentMedia);
             tracker.markPlaying = vi.fn();
@@ -40,11 +45,14 @@ describe("Background Util", () => {
             const api = new ServerApi("disable");
             // turn off send payloads
             replaceAllMethodsWithMocks(api);
-            const tracker = new ViewingTracker(api);
+            const cache = new PlayerStateCache();
+            const tracker = new ViewingTracker(cache, api);
             const someCurrentMedia = new NetflixViewing(
                 "123456",
+                "netflix.com/watch/123456",
                 "Hilda",
-                "playing"
+                "playing",
+                9000
             );
             tracker.setCurrent(someCurrentMedia);
             tracker.markPlaying = vi.fn();
@@ -61,7 +69,9 @@ describe("Background Util", () => {
 
             // turn off send payloads
             replaceAllMethodsWithMocks(api);
-            const tracker = new ViewingTracker(api);
+
+            const cache = new PlayerStateCache();
+            const tracker = new ViewingTracker(cache, api);
 
             tracker.markPlaying = vi.fn();
 
@@ -72,28 +82,4 @@ describe("Background Util", () => {
             expect(tracker.markPlaying).not.toHaveBeenCalledOnce();
         });
     });
-
-    // test("getDomainFromUrl extracts domain correctly", () => {
-    //     expect(getDomainFromUrl("www.google.com")).toBe(null);
-    //     expect(getDomainFromUrl("https://www.google.com")).toBe(
-    //         "www.google.com"
-    //     );
-    //     expect(getDomainFromUrl("www.youtube.com")).toBe(null);
-    //     expect(getDomainFromUrl("https://www.youtube.com")).toBe(
-    //         "www.youtube.com"
-    //     );
-    // });
-
-    // test("isDomainIgnored returns true for ignored domains", () => {
-    //     // Set up mock ignored domains
-    //     mockIgnoredDomains = ["example.com", "ignored.com"];
-
-    //     expect(isDomainIgnored("example.com", mockIgnoredDomains)).toBe(true);
-    //     expect(isDomainIgnored("sub.example.com", mockIgnoredDomains)).toBe(
-    //         true
-    //     );
-    //     expect(isDomainIgnored("notignored.com", mockIgnoredDomains)).toBe(
-    //         false
-    //     );
-    // });
 });
