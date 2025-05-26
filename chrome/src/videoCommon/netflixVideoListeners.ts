@@ -95,7 +95,8 @@ function attachNetflixVideoListeners(retries = 0, maxRetries = 15) {
         console.log("[Netflix] Sending play message");
         chrome.runtime.sendMessage({
             event: "user_pressed_play",
-            source: "netflix",
+            source: "netflix_player",
+            type: "player_state_change",
         });
     };
 
@@ -103,7 +104,8 @@ function attachNetflixVideoListeners(retries = 0, maxRetries = 15) {
         console.log("[Netflix] Sending pause message");
         chrome.runtime.sendMessage({
             event: "user_pressed_pause",
-            source: "netflix",
+            source: "netflix_player",
+            type: "player_state_change",
         });
     };
 
@@ -121,7 +123,8 @@ function attachNetflixVideoListeners(retries = 0, maxRetries = 15) {
             // Don't be tempted to merge Netflix Autoplay, YouTube Autoplay.
             // They are not the same thing.
             event: "netflix_autoplay",
-            source: "netflix",
+            source: "netflix_player",
+            type: "player_state_change",
         });
     }
 

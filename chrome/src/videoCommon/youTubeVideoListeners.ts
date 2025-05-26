@@ -59,6 +59,7 @@ function attachVideoListeners(retries = 0, maxRetries = 10) {
         chrome.runtime.sendMessage({
             event: "user_pressed_play",
             source: "youtube",
+            type: "player_state_change",
         });
     };
 
@@ -67,6 +68,7 @@ function attachVideoListeners(retries = 0, maxRetries = 10) {
         chrome.runtime.sendMessage({
             event: "user_pressed_pause",
             source: "youtube",
+            type: "player_state_change",
         });
     };
 
@@ -82,6 +84,7 @@ function attachVideoListeners(retries = 0, maxRetries = 10) {
         chrome.runtime.sendMessage({
             event: "youtube_autoplay",
             source: "youtube",
+            type: "player_state_change",
         });
     }
 

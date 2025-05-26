@@ -22,17 +22,18 @@ export const chromeTabUrl = baseChromeUrl + "/tab";
 export const ignoredDomainUrl = baseChromeUrl + "/ignored";
 
 const videoBaseUrl = baseChromeUrl + "/video";
-// youtube
-// export const youTubeUrl = videoBaseUrl + "/youtube/new";
-export const youTubeWatchPageUrl = videoBaseUrl + "/youtube/new/watchpage";
-export const youtubePlayerStateUrl = videoBaseUrl + "/youtube/state";
-export const altTabYouTubeWatchUrl = videoBaseUrl + "/youtube/alt-tab-return";
 
-// netflix
-// export const netflixUrl = videoBaseUrl + "/netflix/new";
-export const netflixWatchPageUrl = videoBaseUrl + "/netflix/new/watchpage";
-export const netflixPlayerStateUrl = videoBaseUrl + "/netflix/state";
-export const altTabNetflixWatchUrl = videoBaseUrl + "/netflix/alt-tab-return";
+export const youTubeRoutes = {
+    youTubeWatchPageUrl: videoBaseUrl + "/youtube/new/watchpage",
+    youtubePlayerStateUrl: videoBaseUrl + "/youtube/state",
+    altTabYouTubeWatchUrl: videoBaseUrl + "/youtube/alt-tab-return",
+};
+
+export const netflixRoutes = {
+    netflixWatchPageUrl: videoBaseUrl + "/netflix/new/watchpage",
+    netflixPlayerStateUrl: videoBaseUrl + "/netflix/state",
+    altTabNetflixWatchUrl: videoBaseUrl + "/netflix/alt-tab-return",
+};
 
 class YouTubeApi {
     sendPayload: Function;
@@ -45,7 +46,7 @@ class YouTubeApi {
         this.logger = new PlatformLogger("YouTube");
     }
 
-    // FIXME: a regular youTube page != a youTube Watch Page
+    // NOTE: a regular youTube page != a youTube Watch Page
 
     sendYouTubeWatchPage(
         tabTitle: string | undefined,
@@ -64,7 +65,7 @@ class YouTubeApi {
         };
         console.log("Sending YouTube Watch Page payload:", payload.channel);
         // console.log(youTubeUrl, "is the youtube url");
-        this.sendPayload(youTubeWatchPageUrl, payload);
+        this.sendPayload(youTubeRoutes.youTubeWatchPageUrl, payload);
     }
     // TODO:
     // Refreshing a Youtube Watch page should be something like,
@@ -94,7 +95,7 @@ class YouTubeApi {
             // timestamp: 0
         };
         console.log("The play payload is ", payload.channel);
-        this.sendPayload(youtubePlayerStateUrl, payload);
+        this.sendPayload(youTubeRoutes.youtubePlayerStateUrl, payload);
     }
 
     sendPauseEvent({ videoId, tabTitle, channelName, url }: YouTubePayload) {
@@ -108,12 +109,12 @@ class YouTubeApi {
             // timestamp: 0,
         };
         console.log("The pause payload is ", payload.channel);
-        this.sendPayload(youtubePlayerStateUrl, payload);
+        this.sendPayload(youTubeRoutes.youtubePlayerStateUrl, payload);
     }
 
     sendAltTabReturn(payload: AltTabYouTubeReturn) {
         console.log("Sending YouTube alt-tab return payload:", payload.channel);
-        this.sendPayload(altTabYouTubeWatchUrl, payload);
+        this.sendPayload(youTubeRoutes.altTabYouTubeWatchUrl, payload);
     }
 }
 
@@ -142,7 +143,7 @@ class NetflixApi {
             startTime: new Date().toISOString(),
             playerState,
         };
-        this.sendPayload(netflixWatchPageUrl, payload);
+        this.sendPayload(netflixRoutes.netflixWatchPageUrl, payload);
     }
 
     reportFilledNetflixWatchPage({
@@ -159,7 +160,7 @@ class NetflixApi {
         };
         // I guess if the server receives an update, it can propagate the
         // updated info to all logs related to that previously mysterious ID
-        this.sendPayload(netflixWatchPageUrl, payload);
+        this.sendPayload(netflixRoutes.netflixWatchPageUrl, payload);
     }
 
     // TODO: If they select the wrong thing form the dropdown,
@@ -187,7 +188,7 @@ class NetflixApi {
             // timestamp: 0
         };
         console.log("The play payload is ", payload);
-        this.sendPayload(netflixPlayerStateUrl, payload);
+        this.sendPayload(netflixRoutes.netflixPlayerStateUrl, payload);
     }
 
     sendPauseEvent({ videoId, showName }: NetflixPayload) {
@@ -206,7 +207,7 @@ class NetflixApi {
         };
 
         console.log("The pause payload is ", payload);
-        this.sendPayload(netflixPlayerStateUrl, payload);
+        this.sendPayload(netflixRoutes.netflixPlayerStateUrl, payload);
     }
 
     sendAltTabReturn(payload: AltTabNetflixReturn) {
@@ -214,7 +215,7 @@ class NetflixApi {
             "Sending Netflix alt-tab return payload:",
             payload.showName
         );
-        this.sendPayload(altTabNetflixWatchUrl, payload);
+        this.sendPayload(netflixRoutes.altTabNetflixWatchUrl, payload);
     }
 }
 

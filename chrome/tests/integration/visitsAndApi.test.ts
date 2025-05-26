@@ -2,12 +2,7 @@ import { describe, expect, test, vi } from "vitest";
 
 import { ViewingTracker, YouTubeViewing } from "../../src/videoCommon/visits";
 
-import {
-    netflixWatchPageUrl,
-    ServerApi,
-    youtubePlayerStateUrl,
-    youTubeWatchPageUrl,
-} from "../../src/api";
+import { ServerApi, netflixRoutes, youTubeRoutes } from "../../src/api";
 
 describe("ViewingTracker and Server API", () => {
     test("reportNetflixWatchPage sets a partial page info and calls an API", () => {
@@ -26,7 +21,7 @@ describe("ViewingTracker and Server API", () => {
 
         const targetUrl = payloadMock.mock.calls[0][0];
 
-        expect(targetUrl).toBe(netflixWatchPageUrl);
+        expect(targetUrl).toBe(netflixRoutes.netflixWatchPageUrl);
 
         const deliverable = payloadMock.mock.calls[0][1];
 
@@ -44,7 +39,8 @@ describe("ViewingTracker and Server API", () => {
             "5959",
             "www.youtube.com/watch?v=5959",
             "A Day of My Life In French!",
-            "Piece of French"
+            "Piece of French",
+            9000
         );
         tracker.setCurrent(youTubePage);
 
@@ -54,7 +50,7 @@ describe("ViewingTracker and Server API", () => {
 
         const targetUrl = payloadMock.mock.calls[0][0];
 
-        expect(targetUrl).toBe(youTubeWatchPageUrl);
+        expect(targetUrl).toBe(youTubeRoutes.youTubeWatchPageUrl);
 
         const deliverable = payloadMock.mock.calls[0][1];
 
@@ -73,7 +69,8 @@ describe("ViewingTracker and Server API", () => {
             "www.youtube.com/watch?v=5959",
 
             "A Day of My Life In French!",
-            "Piece of French"
+            "Piece of French",
+            9000
         );
         tracker.setCurrent(youTubePage);
 
@@ -87,7 +84,7 @@ describe("ViewingTracker and Server API", () => {
 
         const targetUrl = payloadMock.mock.calls[0][0];
 
-        expect(targetUrl).toBe(youtubePlayerStateUrl);
+        expect(targetUrl).toBe(youTubeRoutes.youtubePlayerStateUrl);
 
         const deliverable = payloadMock.mock.calls[0][1];
 
@@ -107,7 +104,8 @@ describe("ViewingTracker and Server API", () => {
             "www.youtube.com/watch?v=5959",
 
             "A Day of My Life In French!",
-            "Piece of French"
+            "Piece of French",
+            9000
         );
         tracker.setCurrent(youTubePage);
         tracker.reportYouTubeWatchPage();
@@ -121,7 +119,7 @@ describe("ViewingTracker and Server API", () => {
 
         const targetUrl = payloadMock.mock.calls[0][0];
 
-        expect(targetUrl).toBe(youtubePlayerStateUrl);
+        expect(targetUrl).toBe(youTubeRoutes.youtubePlayerStateUrl);
 
         const deliverable = payloadMock.mock.calls[0][1];
 

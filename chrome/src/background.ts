@@ -86,6 +86,9 @@ chrome.runtime.onMessage.addListener(
             url: "https://www.youtube.com/watch?v=Pt2Pj3JZ9Ow&t=300s"
             * PROBABLY also has the "source" field
         */
+        if (message.type !== "player_state_change") {
+            return;
+        }
         console.log(
             "start of onMessage listener",
             message.event,
@@ -119,8 +122,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ status: "alive" });
         return true; // Keep the message channel open for async response
     }
-
-    // Handle other message types...
 });
 
 /*
@@ -167,10 +168,6 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
     });
 });
 
-chrome.runtime.onInstalled.addListener(() => {
-    setupIgnoredDomains();
-});
-
 /*
  * Open the Netflix Watch modal when you click the icon on the right page
  */
@@ -199,40 +196,43 @@ chrome.action.onClicked.addListener(async (tab) => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.event === "netflix_media_selected") {
-        if (!sender.tab?.id) {
-            console.error(
-                "No tab ID available in netflix_media_selected handler"
+    // Netflix content script events
+    if (message.source === "netflix_history_recorder") {
+        if (message.event === "netflix_media_selected") {
+            if (!sender.tab?.id) {
+                console.error(
+                    "No tab ID available in netflix_media_selected handler"
+                );
+                return;
+            }
+            // Create a new instance in this context with the same data
+            const partialWatchEntry = {
+                url: message.media.url,
+                urlId: message.media.videoId,
+                showName: message.media.mediaTitle,
+                playerState: message.media.playerState,
+            };
+            const recreatedMedia = new NetflixViewing(
+                partialWatchEntry.urlId,
+                partialWatchEntry.showName,
+                partialWatchEntry.url,
+                partialWatchEntry.playerState,
+                sender.tab.id
             );
-            return;
+            viewingTracker.setCurrent(recreatedMedia);
+            viewingTracker.reportFilledNetflixWatch(recreatedMedia);
+            console.log(
+                "Background received media state:",
+                viewingTracker.currentMedia
+            );
+        } else if (message.event === "netflix_page_opened") {
+            viewingTracker.reportNetflixWatchPage(
+                message.media.fullUrl,
+                message.media.pageId
+            );
         }
-        // Create a new instance in this context with the same data
-        const partialWatchEntry = {
-            url: message.media.url,
-            urlId: message.media.videoId,
-            showName: message.media.mediaTitle,
-            playerState: message.media.playerState,
-        };
-        const recreatedMedia = new NetflixViewing(
-            partialWatchEntry.urlId,
-            partialWatchEntry.showName,
-            partialWatchEntry.url,
-            partialWatchEntry.playerState,
-            sender.tab.id
-        );
-        viewingTracker.setCurrent(recreatedMedia);
-        viewingTracker.reportFilledNetflixWatch(recreatedMedia);
-        console.log(
-            "Background received media state:",
-            viewingTracker.currentMedia
-        );
-    } else if (message.event === "netflix_page_opened") {
-        viewingTracker.reportNetflixWatchPage(
-            message.media.fullUrl,
-            message.media.pageId
-        );
+        // Other existing message handling...
     }
-    // Other existing message handling...
 });
 
 // PROBLEM: Without this code and it's partner code, the user
@@ -264,4 +264,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         // activeTab.url, activeTab.title, etc.
     });
+});
+
+chrome.runtime.onInstalled.addListener(() => {
+    setupIgnoredDomains();
 });

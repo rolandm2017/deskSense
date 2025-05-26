@@ -23,7 +23,7 @@ export class MessageRelay {
                 videoId: viewingToTrack.videoId,
                 mediaTitle: viewingToTrack.mediaTitle,
             },
-            source: "historyRecorder",
+            source: "netflix_history_recorder",
         });
     }
 
@@ -34,7 +34,7 @@ export class MessageRelay {
                 fullUrl: fullUrl,
                 pageId: pageId,
             },
-            source: "historyRecorder",
+            source: "netflix_history_recorder",
         });
     }
 }
