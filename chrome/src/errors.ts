@@ -38,9 +38,18 @@ class MissingMediaError extends Error {
     }
 }
 
+class MismatchedTabIdError extends Error {
+    constructor(targetId: number, receivedId: number) {
+        const message = `Tab ID mismatch: expected ${targetId}, got ${receivedId}`;
+        super(message);
+        this.name = "MissingMediaError";
+    }
+}
+
 export {
     ChannelPageOnlyError,
     ImpossibleToGetHereError,
+    MismatchedTabIdError,
     MissingMediaError,
     MissingUrlError,
     TrackerInitializationError,

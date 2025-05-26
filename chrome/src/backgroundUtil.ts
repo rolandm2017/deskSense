@@ -85,14 +85,31 @@ export function handleUserTabsBackIn(url: string, activeTab: chrome.tabs.Tab) {
     */
     if (isWatchingYouTubeVideo(url) || isNetflixWatchPage(url)) {
         console.log("onFocusChanged - a Watch Page");
+        if (activeTab.id === undefined) {
+            // TODO: Handle by getting it from scratch as if on the page for the first time
+            return;
+        }
         // If YouTube Watch Page, do special version with player state
-        const pageState = viewingTracker.latestActiveViewing;
-        if (!pageState) {
+        if (!viewingTracker.hasPlayerStateForTab(activeTab.id)) {
             throw new MissingMediaError(
                 "latestActiveViewing undefined when tabbing back in"
             );
         }
-        viewingTracker.handleAltTabReturn(activeTab, pageState.playerState);
+        /*
+        TODO: write the code that handles the user tabbing back in.
+                - It only has to do so on Watch Pages
+        TODO: Write a nice integration test for this "user tabs back in" scenario
+
+        TODO: Write user input capture. 
+                - Capture you watching YouTube.
+                    * It must also include you tabbing to other Chrome tabs.
+                    * I think it also needs to be aware of you alt tabbing out of Chrome.
+                - Capture the API events from this session.
+                - Play the events back to the program, expect the same results.
+
+
+        */
+        viewingTracker.handleAltTabReturn(activeTab);
     } else {
         // If Netflix Watch Page, do special version with player state
         // TODO: Could do like, "if returning to page, use stored page/player info".

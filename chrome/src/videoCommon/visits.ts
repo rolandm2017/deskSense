@@ -1,7 +1,7 @@
 // videoCommon/visits.ts
 
 import { initializedServerApi, ServerApi } from "../api";
-import { MissingMediaError } from "../errors";
+import { MismatchedTabIdError, MissingMediaError } from "../errors";
 import {
     AltTabNetflixReturn,
     AltTabYouTubeReturn,
@@ -168,42 +168,50 @@ export class ViewingTracker {
     }
 
     // New method specifically for alt-tab scenarios
-    handleAltTabReturn(
-        tab: chrome.tabs.Tab,
-        playerState: "playing" | "paused"
-    ) {
-        if (!tab.url) return;
+    handleAltTabReturn(tab: chrome.tabs.Tab) {
+        if (!tab.url || !tab.id) {
+            throw new Error(`Invalid tab state: url=${tab.url}, id=${tab.id}`);
+        }
 
-        if (isWatchingYouTubeVideo(tab.url)) {
-            this.handleYouTubeAltTabReturn(tab, playerState);
-        } else if (isNetflixWatchPage(tab.url)) {
-            this.handleNetflixAltTabReturn(tab, playerState);
+        const storedState = this.stateCache.get(tab.id)!;
+
+        if (storedState.sourceTabId !== tab.id) {
+            throw new MismatchedTabIdError(storedState.sourceTabId, tab.id);
+        }
+
+        if (
+            isWatchingYouTubeVideo(tab.url) &&
+            storedState instanceof YouTubeViewing
+        ) {
+            this.handleYouTubeAltTabReturn(tab, storedState);
+        } else if (
+            isNetflixWatchPage(tab.url) &&
+            storedState instanceof NetflixViewing
+        ) {
+            this.handleNetflixAltTabReturn(tab, storedState);
         }
     }
 
     private handleYouTubeAltTabReturn(
         tab: chrome.tabs.Tab,
-        playerState: "playing" | "paused"
+        storedState: YouTubeViewing
     ) {
         const videoId = getYouTubeVideoId(tab.url!);
-        const existingViewing = this.latestActiveViewing;
 
         if (
-            existingViewing instanceof YouTubeViewing &&
-            existingViewing.videoId === videoId &&
-            tab.id == existingViewing.sourceTabId
+            storedState instanceof YouTubeViewing &&
+            storedState.videoId === videoId &&
+            tab.id == storedState.sourceTabId
         ) {
-            // Same video - just update state and report alt-tab return
-            existingViewing.playerState = playerState;
-            this.setCurrent(existingViewing);
+            this.setCurrent(storedState);
 
             const payload: AltTabYouTubeReturn = {
-                url: existingViewing.url,
-                videoId: existingViewing.videoId,
-                tabTitle: existingViewing.mediaTitle,
-                channel: existingViewing.channelName,
+                url: storedState.url,
+                videoId: storedState.videoId,
+                tabTitle: storedState.mediaTitle,
+                channel: storedState.channelName,
                 returnTime: new Date().toISOString(),
-                playerState: playerState,
+                playerState: storedState.playerState,
                 previousContext: "external_app",
             };
 
@@ -218,27 +226,24 @@ export class ViewingTracker {
 
     private handleNetflixAltTabReturn(
         tab: chrome.tabs.Tab,
-        playerState: "playing" | "paused"
+        storedState: NetflixViewing
     ) {
         const videoId = makeNetflixWatchPageId(tab.url!);
-        const existingViewing = this.latestActiveViewing;
 
         if (
-            existingViewing instanceof NetflixViewing &&
-            existingViewing.videoId === videoId &&
-            tab.id == existingViewing.sourceTabId
+            storedState.videoId === videoId &&
+            tab.id == storedState.sourceTabId
         ) {
             // Same video - update and report
-            existingViewing.playerState = playerState;
-            this.setCurrent(existingViewing);
+            this.setCurrent(storedState);
 
             const payload: AltTabNetflixReturn = {
-                url: existingViewing.url,
-                videoId: existingViewing.videoId,
-                tabTitle: existingViewing.mediaTitle,
-                showName: existingViewing.mediaTitle,
+                url: storedState.url,
+                videoId: storedState.videoId,
+                tabTitle: storedState.mediaTitle,
+                showName: storedState.mediaTitle,
                 returnTime: new Date().toISOString(),
-                playerState: playerState,
+                playerState: storedState.playerState,
                 previousContext: "external_app",
             };
 
