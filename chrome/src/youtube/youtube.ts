@@ -18,6 +18,26 @@ import { MissingUrlError } from "../errors";
 
 let runningExtractChannelInfoScript = false;
 
+class TabPlayerStateCache {
+    cache: number[];
+    constructor() {
+        //
+        this.cache = [];
+    }
+
+    contains(tabId: number) {
+        return this.cache.includes(tabId);
+    }
+
+    get(tabId: number) {
+        const index = this.cache.indexOf(tabId);
+        const state = this.cache[index];
+        return state;
+    }
+}
+
+const tabPlayerStateCache = new TabPlayerStateCache();
+
 // // Handle YouTube URL specifically
 export function handleYouTubeUrl(tab: chrome.tabs.Tab) {
     if (!tab.url || !tab.id || !tab.title) {
@@ -49,6 +69,9 @@ export function handleYouTubeUrl(tab: chrome.tabs.Tab) {
                     if (results && results[0] && results[0].result) {
                         // TODO: Get the video player info
                         channelName = results[0].result;
+                    }
+                    if (tabPlayerStateCache.contains(tabId)) {
+                        const tabPlayerState = tabPlayerStateCache.get(tabId);
                     }
                     // TODO: Need to get Player State for tabs into it
                     console.log(

@@ -61,9 +61,7 @@ function openOptionsOnClickIcon() {
 // New tab created
 // DISABLED May 9. Not sure it needs to run!
 // chrome.tabs.onCreated.addListener((tab) => {
-//     if (tab.url) {
-//         getDomainFromUrlAndSubmit(tab);
-//     }
+
 // });
 
 // runs when you shut a tab
@@ -270,10 +268,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 if (pageState instanceof NetflixViewing) {
                     throw new Error("Expected YouTube Viewing; got Netflix");
                 }
-                viewingTracker.setCurrent(pageState);
                 pageState.playerState === "playing"
                     ? viewingTracker.markAutoplayEventWaiting()
                     : null;
+                viewingTracker.setCurrent(pageState);
 
                 viewingTracker.reportYouTubeWatchPage();
             } else if (isNetflixWatchPage(url)) {
@@ -288,10 +286,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 if (pageState instanceof YouTubeViewing) {
                     throw new Error("Expected Netflix Viewing; got YouTube");
                 }
-                viewingTracker.setCurrent(pageState);
                 pageState.playerState === "playing"
                     ? viewingTracker.markAutoplayEventWaiting()
                     : null;
+                viewingTracker.setCurrent(pageState);
 
                 // FIXME: It might be a partiallyFilled page
                 viewingTracker.reportFilledNetflixWatch(pageState);
