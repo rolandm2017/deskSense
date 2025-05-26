@@ -47,7 +47,6 @@ export interface WatchEntry {
 export interface IYouTubeViewing {
     videoId: string;
     mediaTitle: string;
-    timestamps: number[];
     playerState: "playing" | "paused";
     // unique to this class
     channelName: string;

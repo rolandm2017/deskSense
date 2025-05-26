@@ -17,6 +17,7 @@ import {
     isNetflixWatchPage,
     makeNetflixWatchPageId,
 } from "../netflix/netflixUrlTool";
+import { playerStateCache, PlayerStateCache } from "../playerStateCache";
 import { getYouTubeVideoId, isWatchingYouTubeVideo } from "../youtube/youtube";
 
 // A Visit: As in, A PageVisit
@@ -37,11 +38,13 @@ export class ViewingTracker {
     autoplayWaiting: boolean;
     youTubeApiLogger: PlatformLogger;
     netflixApiLogger: PlatformLogger;
+    stateCache: PlayerStateCache;
     api: ServerApi;
 
     partialNetflixDescriptor: string | undefined;
 
-    constructor(api: ServerApi) {
+    constructor(stateCache: PlayerStateCache, api: ServerApi) {
+        this.stateCache = stateCache;
         this.api = api;
         this.mostRecentReport = undefined;
         this.latestActiveViewing = undefined;
@@ -160,6 +163,10 @@ export class ViewingTracker {
         }
     }
 
+    hasPlayerStateForTab(tabId: number) {
+        return this.stateCache.contains(tabId);
+    }
+
     // New method specifically for alt-tab scenarios
     handleAltTabReturn(
         tab: chrome.tabs.Tab,
@@ -256,13 +263,15 @@ export class ViewingTracker {
     }
 }
 
-export const viewingTracker = new ViewingTracker(initializedServerApi);
+export const viewingTracker = new ViewingTracker(
+    playerStateCache,
+    initializedServerApi
+);
 
 export class YouTubeViewing implements IYouTubeViewing {
     videoId: string;
     url: string;
     mediaTitle: string;
-    timestamps: number[];
     playerState: "playing" | "paused";
     // unique to this class
     channelName: string;
@@ -282,7 +291,6 @@ export class YouTubeViewing implements IYouTubeViewing {
         this.mediaTitle = tabTitle;
         this.channelName = channelName;
         this.sourceTabId = sourceTabId;
-        this.timestamps = [];
         this.playerState = "paused";
     }
 
