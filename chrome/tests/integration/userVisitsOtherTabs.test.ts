@@ -4,6 +4,7 @@ import { ServerApi } from "../../src/api";
 import { distributeTaskData, getTaskForDomain } from "../../src/backgroundUtil";
 import { taskTypes } from "../../src/const";
 import { resetDependencies, setDependencies } from "../../src/dependencies";
+import { InputCaptureManager } from "../../src/inputLogger/inputCaptureManager";
 import { Task } from "../../src/interface/interfaces";
 import { ViewingTracker, YouTubeViewing } from "../../src/videoCommon/visits";
 import { replaceAllMethodsWithMocks } from "../helper";
@@ -34,11 +35,13 @@ describe("Player state is preserved while visiting a different Chrome tab", () =
         resetDependencies();
     });
 
+    const capture = new InputCaptureManager({ enabled: false }, 2);
+
     test("When the user opens a link in a new tab, the initial player state is fetched and set", () => {
         // Situation: User middle clicks to open a link in a new tab.
         // User switches to the tab. They have never visited before, because
         // they just opened it in a new tab using middle click.
-        const server = new ServerApi("disable");
+        const server = new ServerApi("disable", capture);
         replaceAllMethodsWithMocks(server);
 
         const tracker = new ViewingTracker(server);
@@ -66,7 +69,7 @@ describe("Player state is preserved while visiting a different Chrome tab", () =
         // Situation: The user opened a tab, watched for two min, tabs away with
         // the player playing. A moment passes. They tab back to the player page.
         // And the state is there!
-        const server = new ServerApi("disable");
+        const server = new ServerApi("disable", capture);
         replaceAllMethodsWithMocks(server);
         const tracker = new ViewingTracker(server);
 
@@ -116,7 +119,7 @@ describe("Player state is preserved while visiting a different Chrome tab", () =
     }
 
     test("The user tabs leaves the first tab, then returns, and the state doesn't need to be fetched again", async () => {
-        const server = new ServerApi("disable");
+        const server = new ServerApi("disable", capture);
         replaceAllMethodsWithMocks(server);
 
         const mockSendYouTubeWatchPage =
@@ -263,7 +266,7 @@ describe("Player state is preserved while visiting a different Chrome tab", () =
     });
 
     // test("The user closes a tab, so the tab is deleted from the cache", () => {
-    //     const server = new ServerApi("disable");
+    //     const server = new ServerApi("disable", capture);
     //     replaceAllMethodsWithMocks(server);
 
     //     const tracker = new ViewingTracker(server);
