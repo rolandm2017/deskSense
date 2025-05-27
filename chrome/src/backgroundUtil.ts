@@ -1,6 +1,14 @@
 import { initializedServerApi } from "./api";
+import {
+    isRegularDomainTask,
+    isYouTubeHomeTask,
+    isYouTubeShortsTask,
+    isYouTubeWatchPageTask,
+    taskTypes,
+} from "./const";
 import { MissingMediaError } from "./errors";
 import { ignoredDomains, isDomainIgnored } from "./ignoreList";
+import { Task } from "./interface/interfaces";
 import {
     isNetflixWatchPage,
     makeNetflixWatchPageId,
@@ -13,7 +21,7 @@ import {
     isWatchingYouTubeVideo,
 } from "./youtube/youtube";
 
-export function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
+export function getTaskForDomain(tab: chrome.tabs.Tab): Task | undefined {
     /*
 
     This function has a debounce timer barring entry into it.
@@ -48,28 +56,31 @@ export function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
     if (domain) {
         const ignored = isDomainIgnored(domain, ignoredDomains.getAll());
         if (ignored) {
-            initializedServerApi.reportIgnoredUrl();
-            return;
+            // initializedServerApi.reportIgnoredUrl();
+            return { type: taskTypes.IGNORED_URL };
         }
         const isYouTube = domain.includes("youtube.com");
         if (isYouTube) {
             console.log("[info] on YouTube");
             // Use the dedicated function to handle YouTube URLs
-            handleYouTubeUrl(tab);
-            return;
+            return handleYouTubeUrl(tab);
         }
         const isNetflix = domain.includes("netflix.com");
         if (isNetflix) {
             const isNetflixWatch = isNetflixWatchPage(domain);
             if (isNetflixWatch) {
                 // ViewingTracker will handle it via onMessage
-                return;
+                return { type: taskTypes.NETFLIX_WATCH_PAGE };
             }
         }
-        initializedServerApi.reportTabSwitch(
-            domain,
-            tab.title ? tab.title : "No title found"
-        );
+        return {
+            type: taskTypes.REGULAR_DOMAIN,
+            data: {
+                domain,
+                tabTitle: tab.title ? tab.title : "No title found",
+            },
+        };
+        // initializedServerApi.reportTabSwitch();
     } else {
         console.log("No domain found for ", tab.url);
     }
@@ -115,7 +126,34 @@ export function handleUserTabsBackIn(url: string, activeTab: chrome.tabs.Tab) {
         // else:
         console.log("onFocusChanged - getDomainFromUrl");
 
-        getDomainFromUrlAndSubmit(activeTab);
+        const task = getTaskForDomain(activeTab);
+    }
+}
+
+export function distributeTaskData(task: Task | undefined) {
+    // One big switch statement
+    if (task === undefined) {
+        return;
+    } else if (isRegularDomainTask(task)) {
+        initializedServerApi.reportTabSwitch(
+            task.data.domain,
+            task.data.tabTitle
+        );
+    } else if (task.type === taskTypes.IGNORED_URL) {
+        initializedServerApi.reportIgnoredUrl();
+    } else if (task.type === taskTypes.NETFLIX_WATCH_PAGE) {
+        // do nothing
+    } else if (isYouTubeWatchPageTask(task)) {
+        //
+        viewingTracker.setCurrent(task.data);
+        viewingTracker.reportYouTubeWatchPage();
+    } else if (isYouTubeShortsTask(task) || isYouTubeHomeTask(task)) {
+        initializedServerApi.reportTabSwitch(
+            task.data.domain,
+            task.data.tabTitle
+        );
+    } else {
+        console.log("Unhandled task type: ", task);
     }
 }
 

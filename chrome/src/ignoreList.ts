@@ -23,6 +23,10 @@ class IgnoredDomains {
     getAll() {
         return this.ignoreList;
     }
+
+    reset() {
+        this.ignoreList = [];
+    }
 }
 
 // Load domains when extension starts

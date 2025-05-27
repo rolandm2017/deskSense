@@ -1,5 +1,21 @@
 // interfaces.ts
 
+import { YouTubeViewing } from "../videoCommon/visits";
+
+export interface Task {
+    type: string;
+    data?: DomainInfo | ChannelOnly | YouTubeViewing;
+}
+
+export interface ChannelOnly {
+    channelName: string;
+}
+
+export interface DomainInfo {
+    domain: string;
+    tabTitle: string;
+}
+
 export interface YouTubePayload {
     url: string;
     videoId: string;

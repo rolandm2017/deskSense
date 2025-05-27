@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { ServerApi } from "../src/api.ts";
-import { PlayPauseDispatch } from "../src/backgroundUtil.ts";
+import { getTaskForDomain, PlayPauseDispatch } from "../src/backgroundUtil.ts";
+import { taskTypes } from "../src/const.ts";
+import { ignoredDomains } from "../src/ignoreList.ts";
 import { NetflixViewing, ViewingTracker } from "../src/videoCommon/visits.ts";
 import { replaceAllMethodsWithMocks } from "./helper.ts";
 
@@ -14,6 +16,45 @@ describe("Background Util", () => {
     beforeEach(() => {
         // Reset mock data
         mockIgnoredDomains = [];
+    });
+
+    describe("getTaskForDomain returns appropriate types", () => {
+        // handleYouTubeUrl paths handled in youtube.test.ts
+
+        test("Regular domains return the Regular Domain task type", () => {
+            const url = "www.wikipedia.org";
+            const tab = { url, id: 9000 } as chrome.tabs.Tab;
+
+            const task = getTaskForDomain(tab);
+
+            expect(task).toBeDefined();
+            expect(task!.type).toBe(taskTypes.REGULAR_DOMAIN);
+        });
+        test("Getting the domain from an ignored URL reports an ignored URL", () => {
+            const url = "www.google.com";
+
+            ignoredDomains.addNew(url);
+
+            const tab = { url, id: 9000 } as chrome.tabs.Tab;
+
+            const task = getTaskForDomain(tab);
+
+            expect(task).toBeDefined();
+
+            expect(task!.type).toBe(taskTypes.IGNORED_URL);
+
+            ignoredDomains.reset();
+        });
+        test("Netflix Watch pages return the Netflix Watch Page type", () => {
+            const url = "www.netflix.com/watch/23403284";
+            const tab = { url, id: 9000 } as chrome.tabs.Tab;
+
+            const task = getTaskForDomain(tab);
+
+            expect(task).toBeDefined();
+            expect(task!.type).toBe(taskTypes.NETFLIX_WATCH_PAGE);
+        });
+        // handleYouTubeUrl paths handled in youtube.test.ts
     });
 
     describe("PlayPauseDispatch", () => {

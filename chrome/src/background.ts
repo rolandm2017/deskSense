@@ -3,7 +3,8 @@
 import { isNetflixWatchPage } from "./netflix/netflixUrlTool";
 
 import {
-    getDomainFromUrlAndSubmit,
+    distributeTaskData,
+    getTaskForDomain,
     handleUserTabsBackIn,
     playPauseDispatch,
 } from "./backgroundUtil";
@@ -45,7 +46,8 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     // Chrome's onUpdated event can indeed fire multiple times for a single user action like a refresh
     if (changeInfo.status === "complete" && tab.url) {
         console.log("onUpdated - getDomainFromUrl");
-        getDomainFromUrlAndSubmit(tab);
+        const task = getTaskForDomain(tab);
+        distributeTaskData(task);
     }
 });
 
@@ -60,7 +62,9 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
             // The other one is, "I alt tab back IN to Chrome."
             // But the alt-tab-back-into-Chrome one also fires "onActivated".
             // TODO: Find a way to choose between this one and the onMessage focus listener
-            getDomainFromUrlAndSubmit(tab);
+            const task = getTaskForDomain(tab);
+            distributeTaskData(task);
+
             // TODO: On tab into a Player page, get player state from storage, package
             // player state into payload for reportWatchPage. Think
             // it just needs to be, "store the active players in an array of tab IDs"

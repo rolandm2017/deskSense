@@ -1,7 +1,7 @@
 /// <reference types="chrome"/>
 import { afterEach, beforeEach, describe, test, vi } from "vitest";
 import { ServerApi } from "../../src/api";
-import { getDomainFromUrlAndSubmit } from "../../src/backgroundUtil";
+import { getTaskForDomain } from "../../src/backgroundUtil";
 import { resetDependencies, setDependencies } from "../../src/dependencies";
 import { ViewingTracker, YouTubeViewing } from "../../src/videoCommon/visits";
 import { replaceAllMethodsWithMocks } from "../helper";
@@ -74,7 +74,7 @@ describe("Player state is preserved while using a different program", () => {
             id: 9001,
             title: "It's What's Happening",
         } as chrome.tabs.Tab;
-        getDomainFromUrlAndSubmit(secondTab);
+        getTaskForDomain(secondTab);
 
         // Tab to a YouTube page that has paused media:
         const thirdTab = {
@@ -82,7 +82,7 @@ describe("Player state is preserved while using a different program", () => {
             id: 9002,
             title: "an American, in Turkey, speaking Portuguese for 5 minutes (CC)",
         } as chrome.tabs.Tab;
-        getDomainFromUrlAndSubmit(thirdTab);
+        getTaskForDomain(thirdTab);
 
         // Tab back to the original YouTube page:
     });

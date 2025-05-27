@@ -1,13 +1,13 @@
 // youtube.ts
 import { ChannelPageOnlyError } from "../errors";
 import { getDomainFromUrl, stripProtocol } from "../urlTools";
-import { YouTubeViewing, viewingTracker } from "../videoCommon/visits";
+import { YouTubeViewing } from "../videoCommon/visits";
 import { extractChannelInfoFromWatchPage } from "./channelExtractor";
 
-import { initializedServerApi } from "../api";
-
+import { taskTypes } from "../const";
 import { getDependencies } from "../dependencies";
 import { MissingUrlError } from "../errors";
+import { Task } from "../interface/interfaces";
 
 /*
  * For YouTube, some channels are productive; others are not.
@@ -20,7 +20,7 @@ import { MissingUrlError } from "../errors";
 let runningExtractChannelInfoScript = false;
 
 // // Handle YouTube URL specifically
-export function handleYouTubeUrl(tab: chrome.tabs.Tab) {
+export function handleYouTubeUrl(tab: chrome.tabs.Tab): Task | undefined {
     if (!tab.url || !tab.id || !tab.title) {
         throw new Error("Missing required tab properties");
     }
@@ -54,7 +54,8 @@ export function handleYouTubeUrl(tab: chrome.tabs.Tab) {
                         channelName = results[0].result;
                     }
 
-                    // TODO: Need to get Player State for tabs into it
+                    // FIXME: Need to get Player State for tabs into it
+                    // tabbing into youtube watch page with player going -> "paused"
                     console.log(
                         "Detected ",
                         channelName,
@@ -69,8 +70,12 @@ export function handleYouTubeUrl(tab: chrome.tabs.Tab) {
                         tabId
                     );
 
-                    viewingTracker.setCurrent(youTubeVisit);
-                    viewingTracker.reportYouTubeWatchPage();
+                    return {
+                        task: taskTypes.YOUTUBE_WATCH_PAGE,
+                        data: youTubeVisit,
+                    };
+                    // viewingTracker.setCurrent(youTubeVisit);
+                    // viewingTracker.reportYouTubeWatchPage();
                 }
             );
             // NOTE: ** do not change this 1500 ms delay **
@@ -81,27 +86,44 @@ export function handleYouTubeUrl(tab: chrome.tabs.Tab) {
         // For channel pages, we can extract from the URL
         const channelName = extractChannelNameFromUrl(tab.url);
 
-        initializedServerApi.reportTabSwitch(
-            tab.url,
-            channelName ? channelName : "No channel name found"
-        );
+        return { type: taskTypes.YOUTUBE_CHANNEL_PAGE, data: { channelName } };
+
+        // initializedServerApi.reportTabSwitch(
+        //     tab.url,
+        //     channelName ? channelName : "No channel name found"
+        // );
     } else if (watchingShorts(tab.url)) {
         // Avoids trying to extract the channel name from
         // the YouTube Shorts page. The page's HTML changes often. Sisyphean task.
         const domain = getDomainFromUrl(tab.url);
         // Just generic YouTube Shorts page
-        initializedServerApi.reportTabSwitch(
-            domain ?? "www.youtube.com/shorts",
-            tab.title ? tab.title : "No title found"
-        );
+        return {
+            type: taskTypes.YOUTUBE_SHORTS,
+            data: {
+                domain: domain ?? "www.youtube.com/shorts",
+                tabTitle: tab.title ? tab.title : "No title found",
+            },
+        };
+        // initializedServerApi.reportTabSwitch(
+        //     domain ?? "www.youtube.com/shorts",
+        //     tab.title ? tab.title : "No title found"
+        // );
     } else {
         // Just generic YouTube page
         const domain = getDomainFromUrl(tab.url);
 
-        initializedServerApi.reportTabSwitch(
-            domain ?? "www.youtube.com",
-            tab.title ? tab.title : "YouTube Home"
-        );
+        return {
+            type: taskTypes.YOUTUBE_HOME,
+            data: {
+                domain: domain ?? "www.youtube.com",
+                tabTitle: tab.title ? tab.title : "YouTube Home",
+            },
+        };
+
+        // initializedServerApi.reportTabSwitch(
+        //     domain ?? "www.youtube.com",
+        //     tab.title ? tab.title : "YouTube Home"
+        // );
     }
 }
 
@@ -194,9 +216,7 @@ function splitYouTubeUrlFromVideoId(url: string) {
         }
         return videoId;
     } catch (e) {
-        console.error("Error in splitYouTubeUrlFromVideoId");
-        console.log(url);
-        console.log(e);
+        console.error("Error in splitYouTubeUrlFromVideoId", url);
         return "Unknown ID";
     }
 }
