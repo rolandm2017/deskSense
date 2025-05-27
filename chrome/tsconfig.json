@@ -14,7 +14,8 @@
         "lib": ["dom", "dom.iterable", "esnext"],
         "allowJs": true,
         "forceConsistentCasingInFileNames": true,
-        "jsx": "preserve"
+        "jsx": "preserve",
+        "types": ["chrome"]
     },
     "include": ["src/**/*.ts", "src/optionsPage/options.js"],
     "exclude": ["node_modules", "dist"]

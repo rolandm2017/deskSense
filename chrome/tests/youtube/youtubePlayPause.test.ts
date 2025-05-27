@@ -9,7 +9,6 @@ import { ServerApi } from "../../src/api";
 
 import { ViewingTracker, YouTubeViewing } from "../../src/videoCommon/visits";
 
-import { PlayerStateCache } from "../../src/playerStateCache";
 import { replaceAllMethodsWithMocks } from "../helper";
 
 describe("The YouTube tracker works as intended", () => {
@@ -18,8 +17,8 @@ describe("The YouTube tracker works as intended", () => {
         const api = new ServerApi("disable");
         // turn off send payloads
         replaceAllMethodsWithMocks(api);
-        const cache = new PlayerStateCache();
-        const viewingTrackerInit = new ViewingTracker(cache, api);
+
+        const viewingTrackerInit = new ViewingTracker(api);
         //
         const fakePage = {
             videoId: "456",
@@ -44,8 +43,7 @@ describe("The YouTube tracker works as intended", () => {
         // turn off send payloads
         replaceAllMethodsWithMocks(api);
 
-        const cache = new PlayerStateCache();
-        const viewingTrackerInit = new ViewingTracker(cache, api);
+        const viewingTrackerInit = new ViewingTracker(api);
         //
         const fakePage = {
             videoId: "456",
@@ -73,8 +71,7 @@ describe("The YouTube tracker works as intended", () => {
         // turn off send payloads
         replaceAllMethodsWithMocks(api);
 
-        const cache = new PlayerStateCache();
-        const viewingTrackerInit = new ViewingTracker(cache, api);
+        const viewingTrackerInit = new ViewingTracker(api);
         //
         const fakePage = {
             videoId: "456",

@@ -26,68 +26,6 @@ function openOptionsOnClickIcon() {
 
 // openOptionsOnClickIcon();
 
-// runs when you shut a tab
-chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
-    // Your code to run when a tab is closed
-    console.log(`Tab ${tabId} was closed`);
-
-    // removeInfo contains additional information
-    console.log("Window was closed:", removeInfo.isWindowClosing);
-
-    // Perform any cleanup or final operations here
-    if (viewingTracker.currentMedia) {
-        // send final data to server
-        // The Viewing would be when the user hits Pause.
-        viewingTracker.endViewing();
-    }
-});
-
-chrome.runtime.onMessage.addListener(
-    (message, sender: chrome.runtime.MessageSender, sendResponse) => {
-        /* BTW the sender object has:
-            origin: "https://www.youtube.com"
-            tab : {active: true, title, url},
-            url: "https://www.youtube.com/watch?v=Pt2Pj3JZ9Ow&t=300s"
-            * PROBABLY also has the "source" field
-        */
-        if (message.type !== "player_state_change") {
-            return;
-        }
-        console.log(
-            "start of onMessage listener",
-            message.event,
-            message.source
-        );
-        /*
-         *   This only runs when the user presses play or pauses the video.
-         * Hence they're definitely on a page that already loaded
-         * somewhere else in the program.
-         */
-        if (message.event === "user_pressed_play") {
-            // FIXME: User is able to press pause, somehow, before .setCurrent is called
-            // TODO: On close ... i need one PER watch screen. what if user has 5 videos going?
-            playPauseDispatch.notePlayEvent(sender);
-        } else if (message.event === "user_pressed_pause") {
-            playPauseDispatch.notePauseEvent();
-        } else if (message.event === "youtube_autoplay") {
-            console.log("[autoplay] youtube");
-            // IF trySendPlayEvent, BUT no page event report yet,
-            // THEN bundle them.
-            playPauseDispatch.noteYouTubeAutoPlayEvent(sender);
-        } else if (message.event === "netflix_autoplay") {
-            console.log("[autoplay] netflix");
-            playPauseDispatch.noteNetflixAutoPlayEvent(sender);
-        }
-    }
-);
-
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === "heartbeat") {
-        sendResponse({ status: "alive" });
-        return true; // Keep the message channel open for async response
-    }
-});
-
 /*
  * Claude says, re: onUpdated:
  *
@@ -159,6 +97,45 @@ chrome.action.onClicked.addListener(async (tab) => {
     }
 });
 
+chrome.runtime.onMessage.addListener(
+    (message, sender: chrome.runtime.MessageSender, sendResponse) => {
+        /* BTW the sender object has:
+            origin: "https://www.youtube.com"
+            tab : {active: true, title, url},
+            url: "https://www.youtube.com/watch?v=Pt2Pj3JZ9Ow&t=300s"
+            * PROBABLY also has the "source" field
+        */
+        if (message.type !== "player_state_change") {
+            return;
+        }
+        console.log(
+            "start of onMessage listener",
+            message.event,
+            message.source
+        );
+        /*
+         *   This only runs when the user presses play or pauses the video.
+         * Hence they're definitely on a page that already loaded
+         * somewhere else in the program.
+         */
+        if (message.event === "user_pressed_play") {
+            // FIXME: User is able to press pause, somehow, before .setCurrent is called
+            // TODO: On close ... i need one PER watch screen. what if user has 5 videos going?
+            playPauseDispatch.notePlayEvent(sender);
+        } else if (message.event === "user_pressed_pause") {
+            playPauseDispatch.notePauseEvent();
+        } else if (message.event === "youtube_autoplay") {
+            console.log("[autoplay] youtube");
+            // IF trySendPlayEvent, BUT no page event report yet,
+            // THEN bundle them.
+            playPauseDispatch.noteYouTubeAutoPlayEvent(sender);
+        } else if (message.event === "netflix_autoplay") {
+            console.log("[autoplay] netflix");
+            playPauseDispatch.noteNetflixAutoPlayEvent(sender);
+        }
+    }
+);
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Netflix content script events
     if (message.source === "netflix_history_recorder") {
@@ -228,6 +205,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         // activeTab.url, activeTab.title, etc.
     });
+});
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === "heartbeat") {
+        sendResponse({ status: "alive" });
+        return true; // Keep the message channel open for async response
+    }
+});
+
+// runs when you shut a tab
+chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
+    // Your code to run when a tab is closed
+    console.log(`Tab ${tabId} was closed`);
+
+    // removeInfo contains additional information
+    console.log("Window was closed:", removeInfo.isWindowClosing);
+
+    // Perform any cleanup or final operations here
+    viewingTracker.endViewing(tabId);
 });
 
 chrome.runtime.onInstalled.addListener(() => {

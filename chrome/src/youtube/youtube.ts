@@ -6,6 +6,7 @@ import { extractChannelInfoFromWatchPage } from "./channelExtractor";
 
 import { initializedServerApi } from "../api";
 
+import { getDependencies } from "../dependencies";
 import { MissingUrlError } from "../errors";
 
 /*
@@ -18,31 +19,13 @@ import { MissingUrlError } from "../errors";
 
 let runningExtractChannelInfoScript = false;
 
-class TabPlayerStateCache {
-    cache: number[];
-    constructor() {
-        //
-        this.cache = [];
-    }
-
-    contains(tabId: number) {
-        return this.cache.includes(tabId);
-    }
-
-    get(tabId: number) {
-        const index = this.cache.indexOf(tabId);
-        const state = this.cache[index];
-        return state;
-    }
-}
-
-const tabPlayerStateCache = new TabPlayerStateCache();
-
 // // Handle YouTube URL specifically
 export function handleYouTubeUrl(tab: chrome.tabs.Tab) {
     if (!tab.url || !tab.id || !tab.title) {
         throw new Error("Missing required tab properties");
     }
+
+    const { chromeApi } = getDependencies();
 
     if (isWatchingYouTubeVideo(tab.url)) {
         // YouTube does lots and lots of client side rendering, so
@@ -51,7 +34,7 @@ export function handleYouTubeUrl(tab: chrome.tabs.Tab) {
         const tabId = tab.id;
         runningExtractChannelInfoScript = true;
         setTimeout(() => {
-            chrome.scripting.executeScript(
+            chromeApi.executeScript(
                 {
                     target: { tabId: tabId },
                     func: extractChannelInfoFromWatchPage,
@@ -70,9 +53,7 @@ export function handleYouTubeUrl(tab: chrome.tabs.Tab) {
                         // TODO: Get the video player info
                         channelName = results[0].result;
                     }
-                    if (tabPlayerStateCache.contains(tabId)) {
-                        const tabPlayerState = tabPlayerStateCache.get(tabId);
-                    }
+
                     // TODO: Need to get Player State for tabs into it
                     console.log(
                         "Detected ",
@@ -135,29 +116,23 @@ export function startSecondaryChannelExtractionScript(
         // just wait for it; it'll do al this stuff too
         return;
     }
-    // TODO: Clean this up
-    const tab = sender.tab;
-    const tabUrl = tab.url;
-    if (!tab.url) {
-        throw new MissingUrlError();
-    }
-    const tabTitle = tab.title || "Unknown Title";
-    // const channelName = getChannelNameFromSomewhere();
+    // // TODO: Clean this up
+    // const tab = sender.tab;
+    // const tabUrl = tab.url;
+    // if (!tab.url) {
+    //     throw new MissingUrlError();
+    // }
+    // const tabTitle = tab.title || "Unknown Title";
+    // // const channelName = getChannelNameFromSomewhere();
 
-    // Extract video ID from URL
-    let videoId = getYouTubeVideoId(tabUrl);
+    // // Extract video ID from URL
+    // let videoId = getYouTubeVideoId(tabUrl);
 
-    // TODO: Get channel name from somewhere
-    const youTubeVisit = new YouTubeViewing(
-        videoId,
-        tab.url,
-        tabTitle,
-        "Unknown Channel",
-        9000
-    );
-    // youTubeVisit.sendInitialInfoToServer();
+    // // TODO: Get channel name from somewhere
 
-    viewingTracker.setCurrent(youTubeVisit);
+    // // youTubeVisit.sendInitialInfoToServer();
+
+    // viewingTracker.setCurrent(youTubeVisit);
 }
 
 export function getYouTubeChannel(youTubeUrl: string) {

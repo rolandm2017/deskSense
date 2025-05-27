@@ -43,7 +43,6 @@ export function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
         // FIXME: What to do when the user visits the same URL 2-3x on multiple tabs?
         return;
     }
-    // console.log("Tab.url and ID", tab.url, tab.id);
 
     const domain = getDomainFromUrl(tab.url);
     if (domain) {
@@ -52,8 +51,6 @@ export function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
             initializedServerApi.reportIgnoredUrl();
             return;
         }
-        // TODO: "If Netflix, use regular ReportTabSwitch.
-        //  Unless WatchPage, then report NetflixWatchPage"
         const isYouTube = domain.includes("youtube.com");
         if (isYouTube) {
             console.log("[info] on YouTube");
@@ -81,7 +78,7 @@ export function getDomainFromUrlAndSubmit(tab: chrome.tabs.Tab) {
 export function handleUserTabsBackIn(url: string, activeTab: chrome.tabs.Tab) {
     /*
         For the case where the user is using some other 
-        program, alt-tabs back into Chrome.
+        program, ALT-TABS (emphasis, alt tabs only) back into Chrome.
     */
     if (isWatchingYouTubeVideo(url) || isNetflixWatchPage(url)) {
         console.log("onFocusChanged - a Watch Page");
@@ -127,7 +124,7 @@ interface ProcessedUrlEntry {
     url: string;
 }
 
-const PAGE_LOAD_DEBOUNCE_DELAY = 4000;
+const PAGE_LOAD_DEBOUNCE_DELAY_IN_MS = 4000;
 
 class DebounceTimer {
     processedTabs: Map<number, ProcessedUrlEntry>;
@@ -152,7 +149,8 @@ class DebounceTimer {
         if (tabExistsInMap) {
             // must use a nested if here because otherwise TS complains re: undefined
             const tabWasSeenRecently =
-                now - lastProcessedTab.timestamp < PAGE_LOAD_DEBOUNCE_DELAY;
+                now - lastProcessedTab.timestamp <
+                PAGE_LOAD_DEBOUNCE_DELAY_IN_MS;
             if (tabWasSeenRecently) {
                 return true;
             }
@@ -213,14 +211,10 @@ export class PlayPauseDispatch {
             this.tracker.markPlaying();
             return;
         } else {
-            console.warn("ShouldntBeAbleToGetHereError");
             // NOTE that the user LIKELY refreshed the page to get here.
             // It wasn't there yet because, the, the channel extractor
             // script didn't run yet but the "report playing video" code did.
-            const isYouTube = "TODO";
-            console.log(sender);
-            console.log(this.tracker);
-
+            return;
             throw new Error("ShouldntBeAbleToGetHereError");
         }
     }
@@ -286,7 +280,6 @@ export class PlayPauseDispatch {
             this.tracker.markPaused();
         } else {
             console.warn("Somehow paused the media while it was undefined");
-            console.log(this.tracker);
             throw new Error("ShouldntBeAbleToGetHereError");
         }
     }

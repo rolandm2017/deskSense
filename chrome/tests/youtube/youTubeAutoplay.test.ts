@@ -6,7 +6,6 @@ import { ServerApi } from "../../src/api";
 
 import { PlayPauseDispatch } from "../../src/backgroundUtil";
 
-import { PlayerStateCache } from "../../src/playerStateCache";
 import { replaceAllMethodsWithMocks } from "../helper";
 
 describe("YouTube Autoplay", () => {
@@ -17,14 +16,14 @@ describe("YouTube Autoplay", () => {
         const watchPageReportingMock = vi.fn();
         server.youtube.sendYouTubeWatchPage = watchPageReportingMock;
 
-        const cache = new PlayerStateCache();
-        const tracker = new ViewingTracker(cache, server);
+        const tracker = new ViewingTracker(server);
 
         const dispatch = new PlayPauseDispatch(tracker);
 
+        const testUrl = "https://www.youtube.com/watch?v=JpgiGi2epAs";
         const sender = {
-            tab: { url: "https://www.youtube.com/watch?v=JpgiGi2epAs" },
-        };
+            tab: { url: testUrl },
+        } as chrome.runtime.MessageSender;
 
         dispatch.noteYouTubeAutoPlayEvent(sender);
 
@@ -36,7 +35,7 @@ describe("YouTube Autoplay", () => {
 
         const youTubeVisit = new YouTubeViewing(
             "JpgiGi2epAs",
-            sender.tab.url,
+            testUrl,
             "an American, in Turkey, speaking Portuguese for 5 minutes (CC)",
             "Elysse Davega",
             9000
@@ -80,8 +79,7 @@ describe("YouTube Autoplay", () => {
         const sendPlayEventMock = vi.fn();
         server.youtube.sendPlayEvent = sendPlayEventMock;
 
-        const cache = new PlayerStateCache();
-        const tracker = new ViewingTracker(cache, server);
+        const tracker = new ViewingTracker(server);
 
         const dispatch = new PlayPauseDispatch(tracker);
 
@@ -103,9 +101,10 @@ describe("YouTube Autoplay", () => {
 
         expect(server.youtube.sendYouTubeWatchPage).toHaveBeenCalledOnce();
 
+        const testUrl = "https://www.youtube.com/watch?v=JpgiGi2epAs";
         const sender = {
-            tab: { url: "https://www.youtube.com/watch?v=JpgiGi2epAs" },
-        };
+            tab: { url: testUrl },
+        } as chrome.runtime.MessageSender;
 
         dispatch.noteYouTubeAutoPlayEvent(sender);
 

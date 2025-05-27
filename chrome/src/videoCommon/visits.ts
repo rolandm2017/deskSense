@@ -17,7 +17,6 @@ import {
     isNetflixWatchPage,
     makeNetflixWatchPageId,
 } from "../netflix/netflixUrlTool";
-import { playerStateCache, PlayerStateCache } from "../playerStateCache";
 import { getYouTubeVideoId, isWatchingYouTubeVideo } from "../youtube/youtube";
 
 // A Visit: As in, A PageVisit
@@ -38,13 +37,13 @@ export class ViewingTracker {
     autoplayWaiting: boolean;
     youTubeApiLogger: PlatformLogger;
     netflixApiLogger: PlatformLogger;
-    stateCache: PlayerStateCache;
+    stateCache: Map<number, YouTubeViewing | NetflixViewing>;
     api: ServerApi;
 
     partialNetflixDescriptor: string | undefined;
 
-    constructor(stateCache: PlayerStateCache, api: ServerApi) {
-        this.stateCache = stateCache;
+    constructor(api: ServerApi) {
+        this.stateCache = new Map<number, YouTubeViewing | NetflixViewing>();
         this.api = api;
         this.mostRecentReport = undefined;
         this.latestActiveViewing = undefined;
@@ -59,10 +58,11 @@ export class ViewingTracker {
 
     setCurrent(current: YouTubeViewing | NetflixViewing) {
         this.currentMedia = current;
-
+        this.stateCache.set(current.sourceTabId, current);
         this.preserveStateForAltTabs(current);
     }
 
+    // TODO: This can probably go.
     preserveStateForAltTabs(current: YouTubeViewing | NetflixViewing) {
         // This info needs to be there for when the user alt tabs
         // back into a video player page
@@ -164,7 +164,7 @@ export class ViewingTracker {
     }
 
     hasPlayerStateForTab(tabId: number) {
-        return this.stateCache.contains(tabId);
+        return this.stateCache.has(tabId);
     }
 
     // New method specifically for alt-tab scenarios
@@ -256,9 +256,10 @@ export class ViewingTracker {
         }
     }
 
-    endViewing() {
+    endViewing(tabId: number) {
         // TODO: handle the user closing the tab
         // used to report the final value on window close
+        this.stateCache.delete(tabId);
         this.mostRecentReport = undefined;
         if (this.currentMedia) {
             // conclude. something like:
@@ -268,10 +269,7 @@ export class ViewingTracker {
     }
 }
 
-export const viewingTracker = new ViewingTracker(
-    playerStateCache,
-    initializedServerApi
-);
+export const viewingTracker = new ViewingTracker(initializedServerApi);
 
 export class YouTubeViewing implements IYouTubeViewing {
     videoId: string;

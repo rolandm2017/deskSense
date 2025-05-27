@@ -3,7 +3,6 @@ import { describe, expect, test, vi } from "vitest";
 import { ViewingTracker, YouTubeViewing } from "../../src/videoCommon/visits";
 
 import { ServerApi, netflixRoutes, youTubeRoutes } from "../../src/api";
-import { PlayerStateCache } from "../../src/playerStateCache";
 
 describe("ViewingTracker and Server API", () => {
     test("reportNetflixWatchPage sets a partial page info and calls an API", () => {
@@ -12,8 +11,7 @@ describe("ViewingTracker and Server API", () => {
         const payloadMock = vi.fn();
         server.replacePayloadMethod(payloadMock);
 
-        const cache = new PlayerStateCache();
-        const tracker = new ViewingTracker(cache, server);
+        const tracker = new ViewingTracker(server);
 
         const target = "484848";
         const url = "www.netflix.com/watch/" + target;
@@ -36,8 +34,7 @@ describe("ViewingTracker and Server API", () => {
         const payloadMock = vi.fn();
         server.replacePayloadMethod(payloadMock);
 
-        const cache = new PlayerStateCache();
-        const tracker = new ViewingTracker(cache, server);
+        const tracker = new ViewingTracker(server);
         const youTubePage = new YouTubeViewing(
             "5959",
             "www.youtube.com/watch?v=5959",
@@ -66,8 +63,7 @@ describe("ViewingTracker and Server API", () => {
         const payloadMock = vi.fn();
         server.replacePayloadMethod(payloadMock);
 
-        const cache = new PlayerStateCache();
-        const tracker = new ViewingTracker(cache, server);
+        const tracker = new ViewingTracker(server);
         const youTubePage = new YouTubeViewing(
             "5959",
             "www.youtube.com/watch?v=5959",
@@ -102,8 +98,7 @@ describe("ViewingTracker and Server API", () => {
         const payloadMock = vi.fn();
         server.replacePayloadMethod(payloadMock);
 
-        const cache = new PlayerStateCache();
-        const tracker = new ViewingTracker(cache, server);
+        const tracker = new ViewingTracker(server);
 
         const youTubePage = new YouTubeViewing(
             "5959",

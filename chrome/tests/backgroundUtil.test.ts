@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { ServerApi } from "../src/api.ts";
 import { PlayPauseDispatch } from "../src/backgroundUtil.ts";
-import { PlayerStateCache } from "../src/playerStateCache.ts";
 import { NetflixViewing, ViewingTracker } from "../src/videoCommon/visits.ts";
 import { replaceAllMethodsWithMocks } from "./helper.ts";
 
@@ -22,8 +21,8 @@ describe("Background Util", () => {
             const api = new ServerApi("disable");
             // turn off send payloads
             replaceAllMethodsWithMocks(api);
-            const cache = new PlayerStateCache();
-            const tracker = new ViewingTracker(cache, api);
+
+            const tracker = new ViewingTracker(api);
             const someCurrentMedia = new NetflixViewing(
                 "123456999",
                 "netflix.com/watch/123456999",
@@ -45,8 +44,8 @@ describe("Background Util", () => {
             const api = new ServerApi("disable");
             // turn off send payloads
             replaceAllMethodsWithMocks(api);
-            const cache = new PlayerStateCache();
-            const tracker = new ViewingTracker(cache, api);
+
+            const tracker = new ViewingTracker(api);
             const someCurrentMedia = new NetflixViewing(
                 "123456",
                 "netflix.com/watch/123456",
@@ -70,8 +69,7 @@ describe("Background Util", () => {
             // turn off send payloads
             replaceAllMethodsWithMocks(api);
 
-            const cache = new PlayerStateCache();
-            const tracker = new ViewingTracker(cache, api);
+            const tracker = new ViewingTracker(api);
 
             tracker.markPlaying = vi.fn();
 

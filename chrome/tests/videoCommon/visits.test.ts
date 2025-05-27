@@ -10,19 +10,16 @@ import {
 
 import { replaceAllMethodsWithMocks } from "../helper";
 
-import { PlayerStateCache } from "../../src/playerStateCache";
-
 // TODO:
 
 // TODO: Test play/pause
 
 describe("ViewingTracker", () => {
-    //
     test("setCurrent sets the current media", () => {
         const server = new ServerApi("disable");
         replaceAllMethodsWithMocks(server);
-        const cache = new PlayerStateCache();
-        const tracker = new ViewingTracker(cache, server);
+
+        const tracker = new ViewingTracker(server);
         const media = new NetflixViewing(
             "23456",
             "Hilda",
@@ -37,8 +34,8 @@ describe("ViewingTracker", () => {
     test("setCurrent updates the current media", () => {
         const server = new ServerApi("disable");
         replaceAllMethodsWithMocks(server);
-        const cache = new PlayerStateCache();
-        const tracker = new ViewingTracker(cache, server);
+
+        const tracker = new ViewingTracker(server);
         const media = new NetflixViewing(
             "23456",
             "Hilda",
@@ -63,8 +60,8 @@ describe("ViewingTracker", () => {
     test("reportNetflixWatchPage sets a partial page info and calls an API", () => {
         const server = new ServerApi("disable");
         replaceAllMethodsWithMocks(server);
-        const cache = new PlayerStateCache();
-        const tracker = new ViewingTracker(cache, server);
+
+        const tracker = new ViewingTracker(server);
 
         const target = "484848";
         const fullUrl = "www.netflix.com/watch/" + target;
@@ -75,8 +72,8 @@ describe("ViewingTracker", () => {
     test("reportYouTubeWatchPage calls an API", () => {
         const server = new ServerApi("disable");
         replaceAllMethodsWithMocks(server);
-        const cache = new PlayerStateCache();
-        const tracker = new ViewingTracker(cache, server);
+
+        const tracker = new ViewingTracker(server);
         const youTubePage = new YouTubeViewing(
             "5959",
             "www.youtube.com/watch?v=5959",
@@ -99,8 +96,8 @@ describe("ViewingTracker", () => {
     test("markPlaying calls an API", () => {
         const server = new ServerApi("disable");
         replaceAllMethodsWithMocks(server);
-        const cache = new PlayerStateCache();
-        const tracker = new ViewingTracker(cache, server);
+
+        const tracker = new ViewingTracker(server);
         const youTubePage = new YouTubeViewing(
             "5959",
             "www.youtube.com/watch?v=5959",
@@ -126,8 +123,8 @@ describe("ViewingTracker", () => {
     test("markPaused calls an API", () => {
         const server = new ServerApi("disable");
         replaceAllMethodsWithMocks(server);
-        const cache = new PlayerStateCache();
-        const tracker = new ViewingTracker(cache, server);
+
+        const tracker = new ViewingTracker(server);
         const youTubePage = new YouTubeViewing(
             "5959",
             "www.youtube.com/watch?v=5959",
@@ -150,5 +147,56 @@ describe("ViewingTracker", () => {
 
         expect(server.netflix.sendPauseEvent).not.toHaveBeenCalled();
         expect(server.netflix.sendPlayEvent).not.toHaveBeenCalled();
+    });
+    test("Setting current media adds it to the cache", () => {
+        const server = new ServerApi("disable");
+        replaceAllMethodsWithMocks(server);
+
+        const tracker = new ViewingTracker(server);
+
+        const tabId = 9000;
+        const youTubePage = new YouTubeViewing(
+            "5959",
+            "www.youtube.com/watch?v=5959",
+
+            "A Day of My Life In French!",
+            "Piece of French",
+            tabId
+        );
+
+        tracker.setCurrent(youTubePage);
+
+        expect(tracker.stateCache.has(tabId)).toBeTruthy();
+
+        const viewing = tracker.stateCache.get(tabId);
+        expect(viewing?.mediaTitle).toBe(youTubePage.mediaTitle);
+        expect(viewing?.url).toBe(youTubePage.url);
+    });
+    test("Closing a tab deletes its entry from the cache", () => {
+        const server = new ServerApi("disable");
+        replaceAllMethodsWithMocks(server);
+
+        const tracker = new ViewingTracker(server);
+
+        const tabId = 9000;
+        const youTubePage = new YouTubeViewing(
+            "5959",
+            "www.youtube.com/watch?v=5959",
+
+            "A Day of My Life In French!",
+            "Piece of French",
+            tabId
+        );
+
+        tracker.setCurrent(youTubePage);
+
+        const hasEntry = tracker.hasPlayerStateForTab(tabId);
+
+        tracker.endViewing(tabId);
+
+        const hasEntryPostDelete = tracker.hasPlayerStateForTab(tabId);
+
+        expect(hasEntry).toBeTruthy();
+        expect(hasEntryPostDelete).toBeFalsy();
     });
 });
