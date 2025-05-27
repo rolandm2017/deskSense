@@ -20,20 +20,20 @@ import {
 } from "./inputLogger/endpointLogging";
 import { captureManager } from "./inputLogger/initInputCapture";
 
+captureManager.startCaptureSession();
+
 helpDeveloperNoticeMissingNpmRunBuild();
 
 function deskSenseLogs() {
-    captureManager.logger.writeLogsToJson();
     endpointLoggingDownload();
 }
 function clearDeskSenseLogs() {
-    captureManager.logger.clearStorage();
     clearEndpointLoggingStorage();
 }
 // enable logging file download
 (self as any).deskSenseLogs = deskSenseLogs;
 (self as any).clearDeskSenseLogs = clearDeskSenseLogs;
-(self as any).writeInputLogsToJson = captureManager.logger.writeLogsToJson;
+(self as any).writeInputLogsToJson = endpointLoggingDownload;
 (self as any).writeEndpointLogsToJson = endpointLoggingDownload;
 
 // Disabled in favor of the modal

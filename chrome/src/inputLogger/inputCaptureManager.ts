@@ -1,18 +1,31 @@
-import { CaptureEvent, SystemInputLogger } from "./systemInputLogger";
+import { SystemInputLogger } from "./systemInputLogger";
 
-const RECORDING_INPUT = { enabled: false };
+import {
+    endpointLoggingDownload,
+    LoggerStorageWriter,
+} from "./endpointLogging";
+
+export interface CaptureEvent {
+    type: string;
+    data: object;
+
+    metadata: {
+        source: string;
+        method: string;
+        location: string;
+        timestamp: string;
+    };
+}
 class InputCaptureSession {
     runTime: number;
     startTime: Date;
     constructor() {
-        // foo
-        this.runTime = 5 * 1000; // ms
+        const RUN_TIME = 5;
+        this.runTime = RUN_TIME * 1000; // ms
         this.startTime = new Date();
     }
 
-    start() {
-        // foo
-    }
+    start() {}
 
     checkIfTimeExpired() {
         const currentTime = new Date();
@@ -21,51 +34,68 @@ class InputCaptureSession {
         return expired;
     }
 
-    end() {
-        // foo
-    }
+    end() {}
 }
 
 export class InputCaptureManager {
-    runPolling: boolean;
-    captureSessionStartTime: Date | undefined;
+    recording: { enabled: boolean };
     session: InputCaptureSession;
     logger: SystemInputLogger;
-    sessionEndCheckIntervalId: number | null;
+    storage: LoggerStorageWriter | undefined;
+    events: CaptureEvent[];
 
-    constructor() {
-        this.runPolling = false;
-        this.captureSessionStartTime = undefined;
+    constructor(
+        isRecording: { enabled: boolean },
+        storageWriter?: LoggerStorageWriter
+    ) {
+        this.recording = isRecording;
+
+        this.events = [];
         this.session = new InputCaptureSession();
-        this.logger = new SystemInputLogger((event: CaptureEvent) => {
+        this.logger = new SystemInputLogger(
+            isRecording,
+            (event: CaptureEvent) => {
+                this.onCaptureEvent(event);
+            }
+        );
+
+        this.storage = storageWriter;
+    }
+
+    captureIfEnabled(event: CaptureEvent) {
+        if (this.recording.enabled) {
+            console.log(
+                "Pushing event data: ",
+                event.data,
+                this.recording.enabled
+            );
+            this.events.push(event);
             this.onCaptureEvent(event);
-        });
-        this.sessionEndCheckIntervalId = null;
+        }
     }
 
     onCaptureEvent(event: CaptureEvent) {
         this.session.checkIfTimeExpired();
+        if (this.storage) {
+            this.storage.pushUserActivityToStorage(this.events);
+        }
     }
 
     endCapture() {}
 
     startCaptureSession() {
         // TODO: Reach out into CaptureLogger switch and activate it
-        RECORDING_INPUT.enabled = true;
+        this.recording.enabled = true;
         this.session.start();
     }
 
     onSessionEnd() {
         const now = new Date();
-        if (this.captureSessionStartTime === undefined) {
-            return;
-        }
 
-        RECORDING_INPUT.enabled = false;
+        this.recording.enabled = false;
         this.session.end();
-        this.logger.writeLogsToJson();
+        endpointLoggingDownload();
         // Reset captureSessionStartTime
-        this.captureSessionStartTime = undefined;
         // TODO: Download the logs as json
         console.log("Capture session ended");
     }
@@ -73,7 +103,6 @@ export class InputCaptureManager {
     // Reset everything
     reset() {
         // this.stopPolling();
-        this.captureSessionStartTime = undefined;
-        RECORDING_INPUT.enabled = false;
+        this.recording.enabled = false;
     }
 }

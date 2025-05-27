@@ -360,4 +360,4 @@ export class ServerApi {
     }
 }
 
-export const initializedServerApi = new ServerApi("enable");
+export const initializedServerApi = new ServerApi("disable");

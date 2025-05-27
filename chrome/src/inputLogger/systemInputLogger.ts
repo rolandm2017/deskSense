@@ -1,5 +1,4 @@
 export const RECORDING_INPUT = { enabled: false };
-
 export interface CaptureEvent {
     type: string;
     data: object;
@@ -11,7 +10,6 @@ export interface CaptureEvent {
         timestamp: string;
     };
 }
-
 export class SystemInputLogger {
     // "A canonical semantic event is a clean, standardized representation of
     // what the user is trying to do, regardless of the technical messiness underneath"
@@ -19,71 +17,30 @@ export class SystemInputLogger {
     // Capture URL, raw
     // Capture media title, raw
 
+    recording: { enabled: boolean };
     events: CaptureEvent[];
 
     private onCaptureCallback: (event: CaptureEvent) => void;
 
-    constructor(onCaptureCallback: (event: CaptureEvent) => void) {
+    constructor(
+        isRecording: { enabled: boolean },
+        onCaptureCallback: (event: CaptureEvent) => void
+    ) {
         this.events = [];
+        this.recording = isRecording;
         this.onCaptureCallback = onCaptureCallback;
     }
 
     captureIfEnabled(event: CaptureEvent) {
-        if (RECORDING_INPUT.enabled) {
+        if (this.recording.enabled) {
             console.log(event);
             console.log(
                 "Pushing event data: ",
                 event.data,
-                RECORDING_INPUT.enabled
+                this.recording.enabled
             );
             this.events.push(event);
-            this.pushNewActivityToStorage(this.events);
             this.onCaptureCallback(event);
         }
-    }
-
-    pushNewActivityToStorage(activities: CaptureEvent[]) {
-        console.log("Pushing new activity to storage");
-        chrome.storage.local.get(["userActivityCapture"], function (result) {
-            // Get current array or initialize empty array if it doesn't exist
-            const currentActivity = result.userActivity || [];
-
-            // Push the new item to the array
-            // currentActivity.push(activity);
-
-            // Save the updated array back to storage
-            chrome.storage.local.set(
-                { userActivityCapture: activities },
-                function () {
-                    console.log("Array updated successfully");
-                }
-            );
-        });
-    }
-
-    writeLogsToJson() {
-        chrome.storage.local.get("userActivityCapture", (res) => {
-            console.log(res, "RES for userActivityCapture");
-
-            const jsonString = JSON.stringify(res.userActivityCapture, null, 2);
-            const dataUrl =
-                "data:application/json;charset=utf-8," +
-                encodeURIComponent(jsonString);
-
-            const dateString = new Date().toDateString();
-
-            // Use chrome.downloads API instead of the anchor trick
-            chrome.downloads.download({
-                url: dataUrl,
-                filename: `user-activity-capture-${dateString}.json`,
-                saveAs: true,
-            });
-        });
-    }
-
-    clearStorage() {
-        chrome.storage.local.set({ userActivityCapture: [] }, function () {
-            console.log("userActivityCapture reset successfully");
-        });
     }
 }

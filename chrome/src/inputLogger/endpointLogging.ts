@@ -6,7 +6,7 @@ import { CaptureEvent } from "./systemInputLogger";
 console.log();
 console.log(chalk.magenta("[Netflix]"), "⏸️  pause");
 
-class LoggerStorageWriter {
+export class LoggerStorageWriter {
     storeEvent(event: CaptureEvent) {
         // gather metadata
         // TODO: log to json file
@@ -25,6 +25,51 @@ class LoggerStorageWriter {
                     console.log("Array updated successfully");
                 }
             );
+        });
+    }
+
+    pushUserActivityToStorage(activities: CaptureEvent[]) {
+        console.log("Pushing new activity to storage");
+        chrome.storage.local.get(["userActivityCapture"], function (result) {
+            // Get current array or initialize empty array if it doesn't exist
+            const currentActivity = result.userActivity || [];
+
+            // Push the new item to the array
+            // currentActivity.push(activity);
+
+            // Save the updated array back to storage
+            chrome.storage.local.set(
+                { userActivityCapture: activities },
+                function () {
+                    console.log("Array updated successfully");
+                }
+            );
+        });
+    }
+
+    writeUserActivityLogsToJson() {
+        chrome.storage.local.get("userActivityCapture", (res) => {
+            console.log(res, "RES for userActivityCapture");
+
+            const jsonString = JSON.stringify(res.userActivityCapture, null, 2);
+            const dataUrl =
+                "data:application/json;charset=utf-8," +
+                encodeURIComponent(jsonString);
+
+            const dateString = new Date().toDateString();
+
+            // Use chrome.downloads API instead of the anchor trick
+            chrome.downloads.download({
+                url: dataUrl,
+                filename: `user-activity-capture-${dateString}.json`,
+                saveAs: true,
+            });
+        });
+    }
+
+    clearUserActivityStorage() {
+        chrome.storage.local.set({ userActivityCapture: [] }, function () {
+            console.log("userActivityCapture reset successfully");
         });
     }
 }
