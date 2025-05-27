@@ -1,4 +1,3 @@
-import { ServerApi } from "../api";
 import { SystemInputLogger } from "./systemInputLogger";
 
 const RECORDING_INPUT = { enabled: false };
@@ -17,49 +16,21 @@ class InputCaptureSession {
 }
 
 export class InputCaptureManager {
-    api: ServerApi;
     runPolling: boolean;
     captureSessionStartTime: Date | undefined;
     inputCaptureSession: InputCaptureSession;
     systemInputLogger: SystemInputLogger;
-    pollingIntervalId: number | null;
     sessionEndCheckIntervalId: number | null;
 
-    constructor(systemInputLogger: SystemInputLogger, api: ServerApi) {
-        this.api = api;
+    constructor(systemInputLogger: SystemInputLogger) {
         this.runPolling = false;
         this.captureSessionStartTime = undefined;
         this.inputCaptureSession = new InputCaptureSession();
         this.systemInputLogger = systemInputLogger;
-        this.pollingIntervalId = null;
         this.sessionEndCheckIntervalId = null;
 
         // Bind methods to preserve 'this' context
         this.processTestStartTime = this.processTestStartTime.bind(this);
-    }
-
-    // Start polling for capture session
-    startPolling() {
-        // Don't start if already polling
-        if (this.pollingIntervalId !== null) return;
-
-        this.runPolling = true;
-        // Poll every second
-        this.pollingIntervalId = window.setInterval(() => {
-            this.getTestStartTime();
-        }, 1000);
-
-        console.log("Polling for capture session started");
-    }
-
-    // Stop polling for capture session
-    stopPolling() {
-        if (this.pollingIntervalId !== null) {
-            window.clearInterval(this.pollingIntervalId);
-            this.pollingIntervalId = null;
-        }
-        this.runPolling = false;
-        console.log("Polling for capture session stopped");
     }
 
     getTestStartTime() {
@@ -67,28 +38,10 @@ export class InputCaptureManager {
     }
 
     processTestStartTime(response: Response) {
-        response.json().then((result) => {
-            if (result.captureSessionStartTime) {
-                this.captureSessionStartTime = new Date(
-                    result.captureSessionStartTime
-                );
-                console.log(
-                    "Starting capture session at : ",
-                    this.captureSessionStartTime
-                );
+        this.startCaptureSession();
 
-                // Stop polling once we've found a session
-                // this.stopPolling();
-
-                // Start the capture session
-                this.startCaptureSession();
-
-                // Start checking for session end
-                this.startSessionEndChecking();
-            } else {
-                console.log("Nothing yet");
-            }
-        });
+        // Start checking for session end
+        this.startSessionEndChecking();
     }
 
     startCaptureSession() {

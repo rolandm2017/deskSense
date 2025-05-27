@@ -1,5 +1,5 @@
 // api.ts
-import { DomainLogger, PlatformLogger } from "./endpointLogging";
+import { DomainLogger, PlatformLogger } from "./inputLogger/endpointLogging";
 import {
     AltTabNetflixReturn,
     AltTabYouTubeReturn,
@@ -65,6 +65,11 @@ class YouTubeApi {
         };
         console.log("Sending YouTube Watch Page payload:", payload.channel);
         // console.log(youTubeUrl, "is the youtube url");
+        this.logger.logEventWithPayload(
+            "sendYouTubeWatchPage",
+            youTubeRoutes.youTubeWatchPageUrl,
+            payload
+        );
         this.sendPayload(youTubeRoutes.youTubeWatchPageUrl, payload);
     }
     // TODO:
@@ -94,7 +99,14 @@ class YouTubeApi {
             // their time spent watching content that day.
             // timestamp: 0
         };
+        console.trace("Play event");
+
         console.log("The play payload is ", payload.channel);
+        this.logger.logEventWithPayload(
+            "sendPlayEvent",
+            youTubeRoutes.youtubePlayerStateUrl,
+            payload
+        );
         this.sendPayload(youTubeRoutes.youtubePlayerStateUrl, payload);
     }
 
@@ -108,13 +120,29 @@ class YouTubeApi {
             playerState: "paused",
             // timestamp: 0,
         };
+        console.trace("pause event");
+
         console.log("The pause payload is ", payload.channel);
+        this.logger.logEventWithPayload(
+            "sendPauseEvent",
+            youTubeRoutes.youtubePlayerStateUrl,
+            payload
+        );
+
         this.sendPayload(youTubeRoutes.youtubePlayerStateUrl, payload);
     }
 
     sendAltTabReturn(payload: AltTabYouTubeReturn) {
         console.log("Sending YouTube alt-tab return payload:", payload.channel);
-        this.sendPayload(youTubeRoutes.altTabYouTubeWatchUrl, payload);
+        // Using watch page url until i find out it's too complex or doesn't work etc
+        this.logger.logEventWithPayload(
+            "sendAltTabReturn",
+            youTubeRoutes.youTubeWatchPageUrl,
+            payload
+        );
+        this.sendPayload(youTubeRoutes.youTubeWatchPageUrl, payload);
+
+        // this.sendPayload(youTubeRoutes.altTabYouTubeWatchUrl, payload);
     }
 }
 
@@ -143,6 +171,7 @@ class NetflixApi {
             startTime: new Date().toISOString(),
             playerState,
         };
+        // TODO: Add payload capture
         this.sendPayload(netflixRoutes.netflixWatchPageUrl, payload);
     }
 
@@ -160,6 +189,8 @@ class NetflixApi {
         };
         // I guess if the server receives an update, it can propagate the
         // updated info to all logs related to that previously mysterious ID
+        // TODO: Add payload capture
+
         this.sendPayload(netflixRoutes.netflixWatchPageUrl, payload);
     }
 
@@ -187,7 +218,11 @@ class NetflixApi {
             // their time spent watching content that day.
             // timestamp: 0
         };
+        console.trace("Play event");
+
         console.log("The play payload is ", payload);
+        // TODO: Add payload capture
+
         this.sendPayload(netflixRoutes.netflixPlayerStateUrl, payload);
     }
 
@@ -206,7 +241,10 @@ class NetflixApi {
             playerState: "paused",
         };
 
+        console.trace("Pause event");
         console.log("The pause payload is ", payload);
+        // TODO: Add payload capture
+
         this.sendPayload(netflixRoutes.netflixPlayerStateUrl, payload);
     }
 
@@ -215,7 +253,7 @@ class NetflixApi {
             "Sending Netflix alt-tab return payload:",
             payload.showName
         );
-        this.sendPayload(netflixRoutes.altTabNetflixWatchUrl, payload);
+        this.sendPayload(netflixRoutes.netflixWatchPageUrl, payload);
     }
 }
 
@@ -251,6 +289,11 @@ export class ServerApi {
             startTime: new Date(),
         };
         // console.log("Sending tab switch payload:", payload);
+        this.logger.logEventWithPayload(
+            "reportTabSwitch",
+            chromeTabUrl,
+            payload
+        );
         this.sendPayload(chromeTabUrl, payload);
     };
 
@@ -261,6 +304,12 @@ export class ServerApi {
             startTime: new Date(),
         };
         console.log("Sending ignoredUrl payload:", payload);
+        this.logger.logEventWithPayload(
+            "reportIgnoredUrl",
+            ignoredDomainUrl,
+            payload
+        );
+
         this.sendPayload(ignoredDomainUrl, payload);
     };
 

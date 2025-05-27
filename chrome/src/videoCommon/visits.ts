@@ -12,7 +12,6 @@ import {
     YouTubePayload,
 } from "../interface/interfaces";
 
-import { PlatformLogger } from "../endpointLogging";
 import {
     isNetflixWatchPage,
     makeNetflixWatchPageId,
@@ -35,8 +34,6 @@ export class ViewingTracker {
     latestActiveViewing: YouTubeViewing | NetflixViewing | undefined;
     mostRecentReport: YouTubeViewing | undefined;
     autoplayWaiting: boolean;
-    youTubeApiLogger: PlatformLogger;
-    netflixApiLogger: PlatformLogger;
     stateCache: Map<number, YouTubeViewing | NetflixViewing>;
     api: ServerApi;
 
@@ -50,8 +47,7 @@ export class ViewingTracker {
         this.autoplayWaiting = false;
         this.currentMedia = undefined;
         this.partialNetflixDescriptor = undefined;
-        this.youTubeApiLogger = new PlatformLogger("YouTube");
-        this.netflixApiLogger = new PlatformLogger("Netflix");
+
         // TODO: JUST ASSUME it's going to work with Play/Pause only,
         // until you figure out otherwise.
     }
@@ -98,7 +94,6 @@ export class ViewingTracker {
 
         if (this.currentMedia instanceof YouTubeViewing) {
             this.mostRecentReport = this.currentMedia;
-            // this.youTubeApiLogger.logLandOnPage(this.currentMedia.mediaTitle);
             this.api.youtube.sendYouTubeWatchPage(
                 this.currentMedia.mediaTitle,
                 this.currentMedia.videoId,
@@ -139,17 +134,12 @@ export class ViewingTracker {
         this.currentMedia.playerState = "playing";
         this.updateCachedState(this.currentMedia);
 
+        console.log("sending play event");
         if (this.currentMedia instanceof YouTubeViewing) {
-            console.log("Media is YouTubeViewing");
-            // this.youTubeApiLogger.logPlayEvent();
             const asYouTubePayload = this.currentMedia.convertToPayload();
-            console.log("sending play event");
             this.api.youtube.sendPlayEvent(asYouTubePayload);
         } else {
-            console.log("Media is NetflixViewing");
-            // this.netflixApiLogger.logPlayEvent();
             const asNetflixPayload = this.currentMedia.convertToPayload();
-            console.log("sending play event");
             this.api.netflix.sendPlayEvent(asNetflixPayload);
         }
     }
@@ -172,15 +162,12 @@ export class ViewingTracker {
         this.currentMedia.playerState = "paused";
         this.updateCachedState(this.currentMedia);
 
+        console.log("sending pause event");
         if (this.currentMedia instanceof YouTubeViewing) {
-            // this.youTubeApiLogger.logPauseEvent();
             const asYouTubePayload = this.currentMedia.convertToPayload();
-            console.log("sending pause event");
             this.api.youtube.sendPauseEvent(asYouTubePayload);
         } else {
-            // this.netflixApiLogger.logPauseEvent();
             const asNetflixPayload = this.currentMedia.convertToPayload();
-            console.log("sending pause event");
             this.api.netflix.sendPauseEvent(asNetflixPayload);
         }
     }
@@ -240,7 +227,8 @@ export class ViewingTracker {
                 videoId: storedState.videoId,
                 tabTitle: storedState.mediaTitle,
                 channel: storedState.channelName,
-                returnTime: new Date().toISOString(),
+                // Used to be "return time" but that required too many new classes
+                startTime: new Date().toISOString(),
                 playerState: storedState.playerState,
                 previousContext: "external_app",
             };
@@ -272,7 +260,8 @@ export class ViewingTracker {
                 videoId: storedState.videoId,
                 tabTitle: storedState.mediaTitle,
                 showName: storedState.mediaTitle,
-                returnTime: new Date().toISOString(),
+                // Used to be "return time" but that required too many new classes
+                startTime: new Date().toISOString(),
                 playerState: storedState.playerState,
                 previousContext: "external_app",
             };

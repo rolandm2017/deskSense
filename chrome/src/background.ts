@@ -14,6 +14,7 @@ import { NetflixViewing, viewingTracker } from "./videoCommon/visits";
 import { setupIgnoredDomains } from "./ignoreList";
 
 import { helpDeveloperNoticeMissingNpmRunBuild } from "./developerExperience";
+import { systemInputCapture } from "./inputLogger/systemInputLogger";
 
 helpDeveloperNoticeMissingNpmRunBuild();
 
@@ -46,6 +47,17 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     // Chrome's onUpdated event can indeed fire multiple times for a single user action like a refresh
     if (changeInfo.status === "complete" && tab.url) {
         console.log("onUpdated - getDomainFromUrl");
+        systemInputCapture.captureIfEnabled({
+            type: "ON_UPDATED_COMPLETE",
+            data: { tabId, url: tab.url },
+            metadata: {
+                source: "onUpdated.addListener",
+                method: "user_input",
+                location: "background.ts",
+                timestamp: new Date().toISOString(),
+            },
+        });
+
         const task = getTaskForDomain(tab, (youTubeTask) => {
             distributeTaskData(youTubeTask);
         });
@@ -59,6 +71,16 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
     currentTabId = activeInfo.tabId;
     chrome.tabs.get(activeInfo.tabId, (tab) => {
         if (tab.url) {
+            systemInputCapture.captureIfEnabled({
+                type: "ON_UPDATED_COMPLETE",
+                data: { tabId: currentTabId, url: tab.url },
+                metadata: {
+                    source: "onActivated.addListener",
+                    method: "user_input",
+                    location: "background.ts",
+                    timestamp: new Date().toISOString(),
+                },
+            });
             console.log("onActivated - getDomainFromUrl");
             // SO this one is, "I switch from Chrome Tab A to Chrome Tab B".
             // The other one is, "I alt tab back IN to Chrome."
@@ -116,6 +138,26 @@ chrome.runtime.onMessage.addListener(
         if (message.type !== "player_state_change") {
             return;
         }
+        systemInputCapture.captureIfEnabled({
+            type: "PLAYER_STATE_CHANGED",
+            data: {
+                message: {
+                    type: message.type,
+                    event: message.event,
+                },
+                sender: {
+                    tab: {
+                        url: sender.tab?.url,
+                    },
+                },
+            },
+            metadata: {
+                source: "onMessage.addListener.player_state_change",
+                method: "user_input",
+                location: "background.ts",
+                timestamp: new Date().toISOString(),
+            },
+        });
         console.log(
             "start of onMessage listener",
             message.event,
@@ -154,6 +196,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 );
                 return;
             }
+            // TODO: Capture input here for tests
             // Create a new instance in this context with the same data
             const partialWatchEntry = {
                 url: message.media.url,
@@ -226,6 +269,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
     // Your code to run when a tab is closed
     console.log(`Tab ${tabId} was closed`);
+    systemInputCapture.captureIfEnabled({
+        type: "TAB_CLOSED",
+        data: {
+            tabId,
+        },
+        metadata: {
+            source: "onRemoved.addListener",
+            method: "user_input",
+            location: "background.ts",
+            timestamp: new Date().toISOString(),
+        },
+    });
 
     // removeInfo contains additional information
     console.log("Window was closed:", removeInfo.isWindowClosing);

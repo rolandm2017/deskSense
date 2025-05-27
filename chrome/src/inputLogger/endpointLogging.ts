@@ -1,6 +1,6 @@
 import chalk from "chalk";
 
-import { PlatformType } from "./types/general.types";
+import { PlatformType } from "../types/general.types";
 
 console.log();
 console.log(chalk.magenta("[Netflix]"), "⏸️  pause");
@@ -67,6 +67,10 @@ export class PlatformLogger {
         console.log(this.chalkColor(this.insert), "▶️  play " + identifier);
     }
 
+    logEventWithPayload(caller: string, url: string, payload: object) {
+        //
+    }
+
     logPauseEvent(mediaTitle?: string) {
         const identifier = mediaTitle ? ":: " + mediaTitle : "";
 
@@ -98,6 +102,10 @@ export class DomainLogger {
         // TODO: log to json file
         // Consider it turned off if it's commented out
         // this.storageWriter.savePayload(eventType, serverUrl, payload);
+    }
+
+    logEventWithPayload(caller: string, url: string, payload: object) {
+        //
     }
 }
 

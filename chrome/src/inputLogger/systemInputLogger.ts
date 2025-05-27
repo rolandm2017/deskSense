@@ -48,9 +48,7 @@ export class SystemInputLogger {
                 RECORDING_INPUT.enabled
             );
             this.events.push(event);
-            if (this.events.length % 5 == 0) {
-                this.pushNewActivityToStorage(this.events);
-            }
+            this.pushNewActivityToStorage(this.events);
         }
     }
 

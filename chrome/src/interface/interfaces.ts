@@ -33,7 +33,8 @@ export interface AltTabYouTubeReturn {
     videoId: string;
     tabTitle: string;
     channel: string;
-    returnTime: string; // ISO timestamp when user alt-tabbed back
+    // Used to be "return time" but that required too many new classes
+    startTime: string; // ISO timestamp when user alt-tabbed back
     playerState: "playing" | "paused";
     // Optionally include context about where they came from
     previousContext?: "external_app" | "other_chrome_tab";
@@ -44,7 +45,7 @@ export interface AltTabNetflixReturn {
     videoId: string;
     tabTitle: string;
     showName: string;
-    returnTime: string;
+    startTime: string;
     playerState: "playing" | "paused";
     previousContext?: "external_app" | "other_chrome_tab";
 }
