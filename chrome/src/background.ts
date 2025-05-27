@@ -14,9 +14,27 @@ import { NetflixViewing, viewingTracker } from "./videoCommon/visits";
 import { setupIgnoredDomains } from "./ignoreList";
 
 import { helpDeveloperNoticeMissingNpmRunBuild } from "./developerExperience";
-import { systemInputCapture } from "./inputLogger/systemInputLogger";
+import {
+    clearEndpointLoggingStorage,
+    endpointLoggingDownload,
+} from "./inputLogger/endpointLogging";
+import { captureManager } from "./inputLogger/initInputCapture";
 
 helpDeveloperNoticeMissingNpmRunBuild();
+
+function deskSenseLogs() {
+    captureManager.logger.writeLogsToJson();
+    endpointLoggingDownload();
+}
+function clearDeskSenseLogs() {
+    captureManager.logger.clearStorage();
+    clearEndpointLoggingStorage();
+}
+// enable logging file download
+(self as any).deskSenseLogs = deskSenseLogs;
+(self as any).clearDeskSenseLogs = clearDeskSenseLogs;
+(self as any).writeInputLogsToJson = captureManager.logger.writeLogsToJson;
+(self as any).writeEndpointLogsToJson = endpointLoggingDownload;
 
 // Disabled in favor of the modal
 function openOptionsOnClickIcon() {
@@ -47,7 +65,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     // Chrome's onUpdated event can indeed fire multiple times for a single user action like a refresh
     if (changeInfo.status === "complete" && tab.url) {
         console.log("onUpdated - getDomainFromUrl");
-        systemInputCapture.captureIfEnabled({
+        captureManager.logger.captureIfEnabled({
             type: "ON_UPDATED_COMPLETE",
             data: { tabId, url: tab.url },
             metadata: {
@@ -71,7 +89,7 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
     currentTabId = activeInfo.tabId;
     chrome.tabs.get(activeInfo.tabId, (tab) => {
         if (tab.url) {
-            systemInputCapture.captureIfEnabled({
+            captureManager.logger.captureIfEnabled({
                 type: "ON_UPDATED_COMPLETE",
                 data: { tabId: currentTabId, url: tab.url },
                 metadata: {
@@ -138,7 +156,7 @@ chrome.runtime.onMessage.addListener(
         if (message.type !== "player_state_change") {
             return;
         }
-        systemInputCapture.captureIfEnabled({
+        captureManager.logger.captureIfEnabled({
             type: "PLAYER_STATE_CHANGED",
             data: {
                 message: {
@@ -250,6 +268,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Must hinder both window_gained_focus event and onActivated co-occurring
         const tabbingIntoCurrentlyActiveTab = activeTab.id == currentTabId;
         if (activeTab.url && tabbingIntoCurrentlyActiveTab) {
+            captureManager.logger.captureIfEnabled({
+                type: "ALT_TAB_BACK_IN",
+                data: {
+                    activeTab,
+                    url: activeTab.url,
+                },
+                metadata: {
+                    source: "window_gained_focus",
+                    method: "user_input",
+                    location: "background.ts",
+                    timestamp: new Date().toISOString(),
+                },
+            });
             handleUserTabsBackIn(activeTab.url, activeTab);
         } else {
             console.warn("Active tab had no url");
@@ -269,7 +300,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
     // Your code to run when a tab is closed
     console.log(`Tab ${tabId} was closed`);
-    systemInputCapture.captureIfEnabled({
+    captureManager.logger.captureIfEnabled({
         type: "TAB_CLOSED",
         data: {
             tabId,

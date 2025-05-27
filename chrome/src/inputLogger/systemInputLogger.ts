@@ -1,15 +1,6 @@
 export const RECORDING_INPUT = { enabled: false };
 
-interface UserAction {
-    playerStateChange?: string;
-}
-
-interface UserActivity {
-    time: Date;
-    action: UserAction;
-}
-
-interface CaptureEvent {
+export interface CaptureEvent {
     type: string;
     data: object;
 
@@ -30,13 +21,11 @@ export class SystemInputLogger {
 
     events: CaptureEvent[];
 
-    constructor() {
-        this.events = [];
-    }
+    private onCaptureCallback: (event: CaptureEvent) => void;
 
-    setupDetectorOnPage() {
-        // runs once when the page loads
-        //
+    constructor(onCaptureCallback: (event: CaptureEvent) => void) {
+        this.events = [];
+        this.onCaptureCallback = onCaptureCallback;
     }
 
     captureIfEnabled(event: CaptureEvent) {
@@ -49,6 +38,7 @@ export class SystemInputLogger {
             );
             this.events.push(event);
             this.pushNewActivityToStorage(this.events);
+            this.onCaptureCallback(event);
         }
     }
 
@@ -97,5 +87,3 @@ export class SystemInputLogger {
         });
     }
 }
-
-export const systemInputCapture = new SystemInputLogger();

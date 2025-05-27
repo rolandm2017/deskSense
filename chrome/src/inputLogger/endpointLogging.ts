@@ -1,27 +1,22 @@
 import chalk from "chalk";
 
 import { PlatformType } from "../types/general.types";
+import { CaptureEvent } from "./systemInputLogger";
 
 console.log();
 console.log(chalk.magenta("[Netflix]"), "⏸️  pause");
 
 class LoggerStorageWriter {
-    savePayload(eventType: string, serverUrl: string, payload: object) {
+    storeEvent(event: CaptureEvent) {
         // gather metadata
-        const metadata = {
-            source: eventType,
-            method: "POST",
-            location: "api.ts",
-            timestamp: new Date().toISOString(),
-        };
         // TODO: log to json file
         chrome.storage.local.get(["endpointActivity"], function (result) {
             // Get current array or initialize empty array if it doesn't exist
             const currentActivity = result.endpointActivity || [];
 
-            console.log("Writing payload with metadata", metadata);
+            console.log("Writing payload with metadata", event.metadata);
             // Push the new item to the array
-            currentActivity.push({ eventType, serverUrl, payload, metadata });
+            currentActivity.push(event);
 
             // Save the updated array back to storage
             chrome.storage.local.set(
@@ -68,18 +63,23 @@ export class PlatformLogger {
     }
 
     logEventWithPayload(caller: string, url: string, payload: object) {
-        //
+        const event: CaptureEvent = {
+            type: caller,
+            data: { payload, url },
+            metadata: {
+                source: "api.ts",
+                method: caller,
+                location: caller,
+                timestamp: new Date().toISOString(),
+            },
+        };
+        this.storageWriter.storeEvent(event);
     }
 
     logPauseEvent(mediaTitle?: string) {
         const identifier = mediaTitle ? ":: " + mediaTitle : "";
 
         console.log(this.chalkColor(this.insert), "⏸️  pause " + identifier);
-    }
-
-    logPayloadToStorage(eventType: string, serverUrl: string, payload: object) {
-        // TODO: log to json file
-        this.storageWriter.savePayload(eventType, serverUrl, payload);
     }
 
     writeLogsToJson() {
@@ -96,12 +96,6 @@ export class DomainLogger {
 
     logTabSwitch() {
         console.log("🌐 [API] 🌍  Switched to domain: youtube.com");
-    }
-
-    logPayloadToStorage(eventType: string, serverUrl: string, payload: object) {
-        // TODO: log to json file
-        // Consider it turned off if it's commented out
-        // this.storageWriter.savePayload(eventType, serverUrl, payload);
     }
 
     logEventWithPayload(caller: string, url: string, payload: object) {
