@@ -260,8 +260,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             captureManager.captureIfEnabled({
                 type: "ALT_TAB_BACK_IN",
                 data: {
-                    activeTab,
+                    id: activeTab.id ? activeTab.id : 9000,
                     url: activeTab.url,
+                    title: activeTab.title,
                 },
                 metadata: {
                     source: "window_gained_focus",

@@ -1,8 +1,13 @@
 import chalk from "chalk";
 
-import { PlatformType } from "../types/general.types";
+import { AltTabYouTubeReturn } from "../interface/interfaces";
+import { YouTubePlayerChange, YouTubeTabChange } from "../interface/payloads";
 import {
     CaptureEvent,
+    PayloadCaptureEvent,
+} from "../types/captureEvents.types";
+import { PlatformType } from "../types/general.types";
+import {
     InputCaptureManager,
     InputCaptureSession,
 } from "./inputCaptureManager";
@@ -103,7 +108,11 @@ export class PlatformLogger {
         }
     }
 
-    logEventWithPayload(caller: string, url: string, payload: object) {
+    logEventWithPayload(
+        caller: string,
+        url: string,
+        payload: YouTubeTabChange | YouTubePlayerChange | AltTabYouTubeReturn
+    ) {
         const expired = this.session.checkIfTimeExpired(new Date());
         if (expired) {
             console.warn("Capture session expired");
@@ -112,7 +121,7 @@ export class PlatformLogger {
             console.warn("Capture session expired");
             return;
         }
-        const event: CaptureEvent = {
+        const event: PayloadCaptureEvent = {
             type: caller,
             data: { payload, url },
             metadata: {
@@ -123,7 +132,7 @@ export class PlatformLogger {
             },
         };
         this.captureManager.payloadEvents.push(event);
-        this.storageWriter.storeEvent(event);
+        // this.storageWriter.storeEvent(event);
     }
 
     logEventCount() {

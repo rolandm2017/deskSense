@@ -1,16 +1,7 @@
+import { PayloadCaptureEvent } from "../types/captureEvents.types";
 import { LoggerStorageWriter } from "./endpointLogging";
 
-export interface CaptureEvent {
-    type: string;
-    data: object;
-
-    metadata: {
-        source: string;
-        method: string;
-        location: string;
-        timestamp: string;
-    };
-}
+import { CaptureEvent } from "../types/captureEvents.types";
 export class InputCaptureSession {
     runTime: number;
     startTime: Date;
@@ -43,7 +34,7 @@ export class InputCaptureManager {
     session: InputCaptureSession;
     storage: LoggerStorageWriter | undefined;
     events: CaptureEvent[];
-    payloadEvents: CaptureEvent[];
+    payloadEvents: PayloadCaptureEvent[];
 
     constructor(
         isRecording: { enabled: boolean },

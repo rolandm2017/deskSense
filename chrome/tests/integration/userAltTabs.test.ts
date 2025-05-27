@@ -2,13 +2,15 @@
 import { describe, expect, test, vi } from "vitest";
 import { ServerApi } from "../../src/api";
 import { handleUserTabsBackIn } from "../../src/backgroundUtil";
+import { InputCaptureManager } from "../../src/inputLogger/inputCaptureManager";
 import { AltTabYouTubeReturn } from "../../src/interface/interfaces";
 import { ViewingTracker, YouTubeViewing } from "../../src/videoCommon/visits";
 import { replaceAllMethodsWithMocks } from "../helper";
 
 describe("Player state is preserved while using a different program", () => {
+    const captureManager = new InputCaptureManager({ enabled: false }, 0);
     test("The user alt-tabs to a different program, then alt-tabs back in, the state is there still", () => {
-        const server = new ServerApi("disable");
+        const server = new ServerApi("disable", captureManager);
         replaceAllMethodsWithMocks(server);
 
         const sendAltTabReturnMock = vi.fn();
