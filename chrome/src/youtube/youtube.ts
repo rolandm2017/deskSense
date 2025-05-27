@@ -48,12 +48,12 @@ export function handleYouTubeUrl(
             console.log("Returning cached YouTube state for tab", tabId);
             if (youTubeState instanceof YouTubeViewing) {
                 return {
-                    type: taskTypes.YOUTUBE_WATCH_PAGE,
+                    type: taskTypes.YOUTUBE_WATCH_PAGE_RETURN,
                     data: youTubeState,
                 };
             }
-            // fallback to getting it again
             console.warn("Found Netflix Viewing where a YouTube was expected");
+            // fallback to scraping it again
         }
         console.log("Running script for ", tab.title);
         runningExtractChannelInfoScript = true;
@@ -115,11 +115,6 @@ export function handleYouTubeUrl(
         const channelName = extractChannelNameFromUrl(tab.url);
 
         return { type: taskTypes.YOUTUBE_CHANNEL_PAGE, data: { channelName } };
-
-        // initializedServerApi.reportTabSwitch(
-        //     tab.url,
-        //     channelName ? channelName : "No channel name found"
-        // );
     } else if (watchingShorts(tab.url)) {
         // Avoids trying to extract the channel name from
         // the YouTube Shorts page. The page's HTML changes often. Sisyphean task.
@@ -132,10 +127,6 @@ export function handleYouTubeUrl(
                 tabTitle: tab.title ? tab.title : "No title found",
             },
         };
-        // initializedServerApi.reportTabSwitch(
-        //     domain ?? "www.youtube.com/shorts",
-        //     tab.title ? tab.title : "No title found"
-        // );
     } else {
         // Just generic YouTube page
         const domain = getDomainFromUrl(tab.url);
@@ -147,11 +138,6 @@ export function handleYouTubeUrl(
                 tabTitle: tab.title ? tab.title : "YouTube Home",
             },
         };
-
-        // initializedServerApi.reportTabSwitch(
-        //     domain ?? "www.youtube.com",
-        //     tab.title ? tab.title : "YouTube Home"
-        // );
     }
 }
 

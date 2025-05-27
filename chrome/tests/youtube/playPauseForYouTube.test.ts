@@ -34,7 +34,7 @@ describe("The YouTube tracker works as intended", () => {
             9000
         );
         viewingTrackerInit.setCurrent(youTubeVisit);
-        viewingTrackerInit.reportYouTubeWatchPage();
+        viewingTrackerInit.reportInitialLandOnWatchPage();
         expect(api.youtube.sendYouTubeWatchPage).toHaveBeenCalledOnce();
     });
     test("A play event is sent to the server when it occurs", () => {
@@ -59,7 +59,7 @@ describe("The YouTube tracker works as intended", () => {
             9000
         );
         viewingTrackerInit.setCurrent(youTubeVisit);
-        viewingTrackerInit.reportYouTubeWatchPage();
+        viewingTrackerInit.reportInitialLandOnWatchPage();
 
         viewingTrackerInit.markPlaying();
 
@@ -87,7 +87,7 @@ describe("The YouTube tracker works as intended", () => {
             9000
         );
         viewingTrackerInit.setCurrent(youTubeVisit);
-        viewingTrackerInit.reportYouTubeWatchPage();
+        viewingTrackerInit.reportInitialLandOnWatchPage();
 
         viewingTrackerInit.markPlaying();
         viewingTrackerInit.markPaused();

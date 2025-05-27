@@ -1,6 +1,7 @@
 import { initializedServerApi, ServerApi } from "./api";
 import {
     isRegularDomainTask,
+    isReturnToYouTubeWatchPageTask,
     isYouTubeHomeTask,
     isYouTubeShortsTask,
     isYouTubeWatchPageTask,
@@ -74,6 +75,7 @@ export function getTaskForDomain(
                 (asyncTask) => {
                     // Handle async YouTube watch case
                     extractionDone(asyncTask);
+                    return;
                 },
                 tracker
             );
@@ -82,20 +84,23 @@ export function getTaskForDomain(
                 // Handle all other sync cases
                 return syncTask;
             }
+            // THIS ELSE BLOCK IS NEEDED!
+            // The YouTube block will return a regular domain otherwise
+        } else {
+            const isNetflix = domain.includes("netflix.com");
+            const isNetflixWatch = isNetflixWatchPage(tab.url);
+            if (isNetflix && isNetflixWatch) {
+                // ViewingTracker will handle it via onMessage
+                return { type: taskTypes.NETFLIX_WATCH_PAGE };
+            }
+            return {
+                type: taskTypes.REGULAR_DOMAIN,
+                data: {
+                    domain,
+                    tabTitle: tab.title ? tab.title : "No title found",
+                },
+            };
         }
-        const isNetflix = domain.includes("netflix.com");
-        const isNetflixWatch = isNetflixWatchPage(tab.url);
-        if (isNetflix && isNetflixWatch) {
-            // ViewingTracker will handle it via onMessage
-            return { type: taskTypes.NETFLIX_WATCH_PAGE };
-        }
-        return {
-            type: taskTypes.REGULAR_DOMAIN,
-            data: {
-                domain,
-                tabTitle: tab.title ? tab.title : "No title found",
-            },
-        };
         // initializedServerApi.reportTabSwitch();
     } else {
         console.log("No domain found for ", tab.url);
@@ -121,7 +126,10 @@ export function distributeTaskData(
         // do nothing
     } else if (isYouTubeWatchPageTask(task)) {
         tracker.setCurrent(task.data);
-        tracker.reportYouTubeWatchPage();
+        tracker.reportInitialLandOnWatchPage();
+    } else if (isReturnToYouTubeWatchPageTask(task)) {
+        tracker.setCurrent(task.data);
+        tracker.reportTabBackIntoWatchPage();
     } else if (isYouTubeShortsTask(task) || isYouTubeHomeTask(task)) {
         server.reportTabSwitch(task.data.domain, task.data.tabTitle);
     } else {

@@ -6,6 +6,7 @@ export const taskTypes = {
     IGNORED_URL: "ignored_url",
     NETFLIX_WATCH_PAGE: "netflix_watch_page",
     YOUTUBE_WATCH_PAGE: "youtube_watch_page",
+    YOUTUBE_WATCH_PAGE_RETURN: "youtube_watch_page_return",
     YOUTUBE_CHANNEL_PAGE: "youtube_channel_page",
     YOUTUBE_SHORTS: "youtube_shorts",
     YOUTUBE_HOME: "youtube_home",
@@ -24,6 +25,13 @@ export function isYouTubeWatchPageTask(task: Task): task is Task & {
     data: YouTubeViewing;
 } {
     return task.type === taskTypes.YOUTUBE_WATCH_PAGE;
+}
+
+export function isReturnToYouTubeWatchPageTask(task: Task): task is Task & {
+    type: typeof taskTypes.YOUTUBE_WATCH_PAGE_RETURN;
+    data: YouTubeViewing;
+} {
+    return task.type === taskTypes.YOUTUBE_WATCH_PAGE_RETURN;
 }
 
 export function isYouTubeShortsTask(task: Task): task is Task & {

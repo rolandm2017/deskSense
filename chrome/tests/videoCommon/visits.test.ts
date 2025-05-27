@@ -83,7 +83,7 @@ describe("ViewingTracker", () => {
         );
         tracker.setCurrent(youTubePage);
 
-        tracker.reportYouTubeWatchPage();
+        tracker.reportInitialLandOnWatchPage();
 
         expect(server.youtube.sendYouTubeWatchPage).toHaveBeenCalledOnce();
         expect(
@@ -109,7 +109,7 @@ describe("ViewingTracker", () => {
 
         tracker.setCurrent(youTubePage);
 
-        tracker.reportYouTubeWatchPage();
+        tracker.reportInitialLandOnWatchPage();
 
         tracker.markPlaying();
 
@@ -136,7 +136,7 @@ describe("ViewingTracker", () => {
         const convertToPayloadSpy = vi.spyOn(youTubePage, "convertToPayload");
 
         tracker.setCurrent(youTubePage);
-        tracker.reportYouTubeWatchPage();
+        tracker.reportInitialLandOnWatchPage();
         tracker.markPlaying();
 
         tracker.markPaused();

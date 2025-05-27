@@ -28,7 +28,7 @@ describe("ViewingTracker and Server API", () => {
         expect(deliverable.videoId).toBeDefined();
         expect(deliverable.videoId).toBe(target);
     });
-    test("reportYouTubeWatchPage calls an API", () => {
+    test("reportInitialLandOnWatchPage calls an API", () => {
         const server = new ServerApi("disable");
 
         const payloadMock = vi.fn();
@@ -44,7 +44,7 @@ describe("ViewingTracker and Server API", () => {
         );
         tracker.setCurrent(youTubePage);
 
-        tracker.reportYouTubeWatchPage();
+        tracker.reportInitialLandOnWatchPage();
 
         expect(payloadMock).toHaveBeenCalledOnce();
 
@@ -74,7 +74,7 @@ describe("ViewingTracker and Server API", () => {
         );
         tracker.setCurrent(youTubePage);
 
-        tracker.reportYouTubeWatchPage();
+        tracker.reportInitialLandOnWatchPage();
 
         payloadMock.mockClear();
 
@@ -109,7 +109,7 @@ describe("ViewingTracker and Server API", () => {
             9000
         );
         tracker.setCurrent(youTubePage);
-        tracker.reportYouTubeWatchPage();
+        tracker.reportInitialLandOnWatchPage();
         tracker.markPlaying();
 
         payloadMock.mockClear();

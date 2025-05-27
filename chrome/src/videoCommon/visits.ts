@@ -76,7 +76,22 @@ export class ViewingTracker {
         this.autoplayWaiting = true;
     }
 
-    reportYouTubeWatchPage() {
+    reportInitialLandOnWatchPage() {
+        if (this.currentMedia instanceof YouTubeViewing) {
+            // use autoplay state
+            this.reportYouTubeWatchPage(
+                this.autoplayWaiting ? "playing" : "paused"
+            );
+        }
+    }
+
+    reportTabBackIntoWatchPage() {
+        if (this.currentMedia instanceof YouTubeViewing) {
+            this.reportYouTubeWatchPage(this.currentMedia.playerState);
+        }
+    }
+
+    reportYouTubeWatchPage(playerState: "playing" | "paused") {
         // FIXME: It's the case that, when you refresh, the
         // NewPageLoad event (this thing) goes off, BUT the video is playing!
         // And there is no notification of it BEING playing! No indication.
@@ -88,7 +103,7 @@ export class ViewingTracker {
                 this.currentMedia.mediaTitle,
                 this.currentMedia.videoId,
                 this.currentMedia.channelName,
-                this.autoplayWaiting ? "playing" : "paused"
+                playerState
             );
             this.autoplayWaiting = false;
             return;
@@ -122,6 +137,8 @@ export class ViewingTracker {
         // TODO: PAUSE and Play Needs to update the cached player state
 
         this.currentMedia.playerState = "playing";
+        this.updateCachedState(this.currentMedia);
+
         if (this.currentMedia instanceof YouTubeViewing) {
             console.log("Media is YouTubeViewing");
             // this.youTubeApiLogger.logPlayEvent();
@@ -144,6 +161,7 @@ export class ViewingTracker {
             throw new MissingMediaError();
         }
         this.currentMedia.playerState = "playing";
+        this.updateCachedState(this.currentMedia);
     }
 
     markPaused() {
@@ -152,6 +170,7 @@ export class ViewingTracker {
         }
         // TODO: PAUSE and Play Needs to update the cached player state
         this.currentMedia.playerState = "paused";
+        this.updateCachedState(this.currentMedia);
 
         if (this.currentMedia instanceof YouTubeViewing) {
             // this.youTubeApiLogger.logPauseEvent();
@@ -164,6 +183,10 @@ export class ViewingTracker {
             console.log("sending pause event");
             this.api.netflix.sendPauseEvent(asNetflixPayload);
         }
+    }
+
+    updateCachedState(update: YouTubeViewing | NetflixViewing) {
+        this.stateCache.set(update.sourceTabId, update);
     }
 
     hasPlayerStateForTab(tabId: number) {

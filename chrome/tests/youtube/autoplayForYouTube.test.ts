@@ -42,7 +42,8 @@ describe("YouTube Autoplay", () => {
         );
 
         tracker.setCurrent(youTubeVisit);
-        tracker.reportYouTubeWatchPage();
+        tracker.markAutoplayEventWaiting();
+        tracker.reportInitialLandOnWatchPage();
 
         expect(tracker.autoplayWaiting).toBe(false);
         expect(tracker.mostRecentReport?.mediaTitle).toBe(
@@ -92,7 +93,7 @@ describe("YouTube Autoplay", () => {
         );
 
         tracker.setCurrent(youTubeVisit);
-        tracker.reportYouTubeWatchPage();
+        tracker.reportInitialLandOnWatchPage();
 
         expect(tracker.autoplayWaiting).toBe(false);
         expect(tracker.mostRecentReport?.mediaTitle).toBe(
