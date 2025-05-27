@@ -15,7 +15,7 @@
         "allowJs": true,
         "forceConsistentCasingInFileNames": true,
         "jsx": "preserve",
-        "types": ["chrome"]
+        "types": ["chrome", "node"]
     },
     "include": ["src/**/*.ts", "src/optionsPage/options.js"],
     "exclude": ["node_modules", "dist"]
