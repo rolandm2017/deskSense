@@ -1,7 +1,11 @@
 import chalk from "chalk";
 
 import { PlatformType } from "../types/general.types";
-import { CaptureEvent } from "./systemInputLogger";
+import {
+    CaptureEvent,
+    InputCaptureManager,
+    InputCaptureSession,
+} from "./inputCaptureManager";
 
 console.log();
 console.log(chalk.magenta("[Netflix]"), "⏸️  pause");
@@ -79,10 +83,15 @@ export class PlatformLogger {
     insert: string;
     chalkColor: Function;
 
+    session: InputCaptureSession;
+    captureManager: InputCaptureManager;
+
     storageWriter: LoggerStorageWriter;
 
-    constructor(platform: PlatformType) {
+    constructor(platform: PlatformType, captureManager: InputCaptureManager) {
         this.platform = platform;
+        this.captureManager = captureManager;
+        this.session = captureManager.session;
         this.storageWriter = new LoggerStorageWriter();
 
         if (platform === "YouTube") {
@@ -92,6 +101,33 @@ export class PlatformLogger {
             this.chalkColor = chalk.magenta;
             this.insert = "[Netflix]";
         }
+    }
+
+    logEventWithPayload(caller: string, url: string, payload: object) {
+        const expired = this.session.checkIfTimeExpired(new Date());
+        if (expired) {
+            console.warn("Capture session expired");
+            console.warn("Capture session expired");
+            console.warn("Capture session expired");
+            console.warn("Capture session expired");
+            return;
+        }
+        const event: CaptureEvent = {
+            type: caller,
+            data: { payload, url },
+            metadata: {
+                source: "api.ts",
+                method: caller,
+                location: caller,
+                timestamp: new Date().toISOString(),
+            },
+        };
+        this.captureManager.payloadEvents.push(event);
+        this.storageWriter.storeEvent(event);
+    }
+
+    logEventCount() {
+        console.log("Event count: ", this.captureManager.payloadEvents.length);
     }
 
     logLandOnPage(tabTitle: string) {
@@ -105,20 +141,6 @@ export class PlatformLogger {
     logPlayEvent(mediaTitle?: string) {
         const identifier = mediaTitle ? ":: " + mediaTitle : "";
         console.log(this.chalkColor(this.insert), "▶️  play " + identifier);
-    }
-
-    logEventWithPayload(caller: string, url: string, payload: object) {
-        const event: CaptureEvent = {
-            type: caller,
-            data: { payload, url },
-            metadata: {
-                source: "api.ts",
-                method: caller,
-                location: caller,
-                timestamp: new Date().toISOString(),
-            },
-        };
-        this.storageWriter.storeEvent(event);
     }
 
     logPauseEvent(mediaTitle?: string) {
@@ -148,7 +170,7 @@ export class DomainLogger {
     }
 }
 
-export function endpointLoggingDownload() {
+function endpointLoggingDownload() {
     chrome.storage.local.get("endpointActivity", (res) => {
         // Create a data URL instead of using createObjectURL
         console.log(res, "endpointActivity RES");
@@ -168,7 +190,7 @@ export function endpointLoggingDownload() {
     });
 }
 
-export function clearEndpointLoggingStorage() {
+function clearEndpointLoggingStorage() {
     chrome.storage.local.set({ endpointActivity: [] }, function () {
         console.log("Everything deleted in endpointActivity");
     });

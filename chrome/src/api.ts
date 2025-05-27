@@ -1,5 +1,7 @@
 // api.ts
 import { DomainLogger, PlatformLogger } from "./inputLogger/endpointLogging";
+import { captureManager } from "./inputLogger/initInputCapture";
+import { InputCaptureManager } from "./inputLogger/inputCaptureManager";
 import {
     AltTabNetflixReturn,
     AltTabYouTubeReturn,
@@ -40,10 +42,14 @@ class YouTubeApi {
     logger: PlatformLogger;
     logging: boolean;
 
-    constructor(sendPayload: Function, logging: boolean) {
+    constructor(
+        sendPayload: Function,
+        logging: boolean,
+        capture: InputCaptureManager
+    ) {
         this.sendPayload = sendPayload;
         this.logging = logging;
-        this.logger = new PlatformLogger("YouTube");
+        this.logger = new PlatformLogger("YouTube", capture);
     }
 
     // NOTE: a regular youTube page != a youTube Watch Page
@@ -151,10 +157,14 @@ class NetflixApi {
     logger: PlatformLogger;
     logging: boolean;
 
-    constructor(sendPayload: Function, logging: boolean) {
+    constructor(
+        sendPayload: Function,
+        logging: boolean,
+        capture: InputCaptureManager
+    ) {
         this.sendPayload = sendPayload;
         this.logging = logging;
-        this.logger = new PlatformLogger("Netflix");
+        this.logger = new PlatformLogger("Netflix", capture);
     }
 
     reportPartialNetflixWatchPage(
@@ -264,7 +274,10 @@ export class ServerApi {
     logger: DomainLogger;
     logging: boolean;
 
-    constructor(enablePayloads: "enable" | "disable") {
+    constructor(
+        enablePayloads: "enable" | "disable",
+        capture: InputCaptureManager
+    ) {
         // Must set disablePayloads = false, deliberately. To protect testers
         this.enablePayloads = enablePayloads === "enable";
         if (this.enablePayloads) {
@@ -273,11 +286,13 @@ export class ServerApi {
         this.logging = false;
         this.youtube = new YouTubeApi(
             this.sendPayload.bind(this),
-            this.logging
+            this.logging,
+            capture
         );
         this.netflix = new NetflixApi(
             this.sendPayload.bind(this),
-            this.logging
+            this.logging,
+            capture
         );
         this.logger = new DomainLogger();
     }
@@ -360,4 +375,4 @@ export class ServerApi {
     }
 }
 
-export const initializedServerApi = new ServerApi("disable");
+export const initializedServerApi = new ServerApi("disable", captureManager);
