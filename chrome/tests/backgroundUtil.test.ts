@@ -22,8 +22,8 @@ describe("Background Util", () => {
         // handleYouTubeUrl paths handled in youtube.test.ts
 
         test("Regular domains return the Regular Domain task type", () => {
-            const url = "www.wikipedia.org";
-            const tab = { url, id: 9000 } as chrome.tabs.Tab;
+            const url = "https://www.wikipedia.org";
+            const tab = { url, id: 9020 } as chrome.tabs.Tab;
 
             const task = getTaskForDomain(tab);
 
@@ -31,11 +31,11 @@ describe("Background Util", () => {
             expect(task!.type).toBe(taskTypes.REGULAR_DOMAIN);
         });
         test("Getting the domain from an ignored URL reports an ignored URL", () => {
-            const url = "www.google.com";
+            const url = "https://www.google.com";
 
             ignoredDomains.addNew(url);
 
-            const tab = { url, id: 9000 } as chrome.tabs.Tab;
+            const tab = { url, id: 9021 } as chrome.tabs.Tab;
 
             const task = getTaskForDomain(tab);
 
@@ -46,8 +46,8 @@ describe("Background Util", () => {
             ignoredDomains.reset();
         });
         test("Netflix Watch pages return the Netflix Watch Page type", () => {
-            const url = "www.netflix.com/watch/23403284";
-            const tab = { url, id: 9000 } as chrome.tabs.Tab;
+            const url = "https://www.netflix.com/watch/23403284";
+            const tab = { url, id: 9022 } as chrome.tabs.Tab;
 
             const task = getTaskForDomain(tab);
 

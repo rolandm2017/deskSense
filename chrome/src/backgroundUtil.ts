@@ -36,8 +36,7 @@ export function getTaskForDomain(tab: chrome.tabs.Tab): Task | undefined {
     */
 
     if (!tab.url) {
-        console.error("No url found");
-        return;
+        throw new Error("A tab had no URL");
     }
 
     // Use tab ID-based debouncing if we have a tab ID
@@ -67,7 +66,7 @@ export function getTaskForDomain(tab: chrome.tabs.Tab): Task | undefined {
         }
         const isNetflix = domain.includes("netflix.com");
         if (isNetflix) {
-            const isNetflixWatch = isNetflixWatchPage(domain);
+            const isNetflixWatch = isNetflixWatchPage(tab.url);
             if (isNetflixWatch) {
                 // ViewingTracker will handle it via onMessage
                 return { type: taskTypes.NETFLIX_WATCH_PAGE };
@@ -83,10 +82,44 @@ export function getTaskForDomain(tab: chrome.tabs.Tab): Task | undefined {
         // initializedServerApi.reportTabSwitch();
     } else {
         console.log("No domain found for ", tab.url);
+        return {
+            type: taskTypes.ERROR,
+        };
     }
 }
 
-export function handleUserTabsBackIn(url: string, activeTab: chrome.tabs.Tab) {
+export function distributeTaskData(task: Task | undefined) {
+    // One big switch statement
+    if (task === undefined) {
+        return;
+    } else if (isRegularDomainTask(task)) {
+        initializedServerApi.reportTabSwitch(
+            task.data.domain,
+            task.data.tabTitle
+        );
+    } else if (task.type === taskTypes.IGNORED_URL) {
+        initializedServerApi.reportIgnoredUrl();
+    } else if (task.type === taskTypes.NETFLIX_WATCH_PAGE) {
+        // do nothing
+    } else if (isYouTubeWatchPageTask(task)) {
+        viewingTracker.setCurrent(task.data);
+        viewingTracker.reportYouTubeWatchPage();
+    } else if (isYouTubeShortsTask(task) || isYouTubeHomeTask(task)) {
+        initializedServerApi.reportTabSwitch(
+            task.data.domain,
+            task.data.tabTitle
+        );
+    } else {
+        console.log("Unhandled task type: ", task);
+    }
+}
+
+export function handleUserTabsBackIn(
+    url: string,
+    activeTab: chrome.tabs.Tab,
+    tracker: ViewingTracker = viewingTracker
+) {
+    // Default to singleton for prod) {
     /*
         For the case where the user is using some other 
         program, ALT-TABS (emphasis, alt tabs only) back into Chrome.
@@ -98,7 +131,7 @@ export function handleUserTabsBackIn(url: string, activeTab: chrome.tabs.Tab) {
             return;
         }
         // If YouTube Watch Page, do special version with player state
-        if (!viewingTracker.hasPlayerStateForTab(activeTab.id)) {
+        if (!tracker.hasPlayerStateForTab(activeTab.id)) {
             throw new MissingMediaError(
                 "latestActiveViewing undefined when tabbing back in"
             );
@@ -117,7 +150,7 @@ export function handleUserTabsBackIn(url: string, activeTab: chrome.tabs.Tab) {
 
 
         */
-        viewingTracker.handleAltTabReturn(activeTab);
+        tracker.handleAltTabReturn(activeTab);
     } else {
         // If Netflix Watch Page, do special version with player state
         // TODO: Could do like, "if returning to page, use stored page/player info".
@@ -127,33 +160,6 @@ export function handleUserTabsBackIn(url: string, activeTab: chrome.tabs.Tab) {
         console.log("onFocusChanged - getDomainFromUrl");
 
         const task = getTaskForDomain(activeTab);
-    }
-}
-
-export function distributeTaskData(task: Task | undefined) {
-    // One big switch statement
-    if (task === undefined) {
-        return;
-    } else if (isRegularDomainTask(task)) {
-        initializedServerApi.reportTabSwitch(
-            task.data.domain,
-            task.data.tabTitle
-        );
-    } else if (task.type === taskTypes.IGNORED_URL) {
-        initializedServerApi.reportIgnoredUrl();
-    } else if (task.type === taskTypes.NETFLIX_WATCH_PAGE) {
-        // do nothing
-    } else if (isYouTubeWatchPageTask(task)) {
-        //
-        viewingTracker.setCurrent(task.data);
-        viewingTracker.reportYouTubeWatchPage();
-    } else if (isYouTubeShortsTask(task) || isYouTubeHomeTask(task)) {
-        initializedServerApi.reportTabSwitch(
-            task.data.domain,
-            task.data.tabTitle
-        );
-    } else {
-        console.log("Unhandled task type: ", task);
     }
 }
 
@@ -244,7 +250,7 @@ export class PlayPauseDispatch {
     notePlayEvent(sender: chrome.runtime.MessageSender) {
         this.playCount++;
 
-        console.log("[play event] ", this.tracker.currentMedia);
+        console.log("[play event] ", this.tracker.currentMedia?.mediaTitle);
         if (this.tracker.currentMedia) {
             this.tracker.markPlaying();
             return;
@@ -313,7 +319,7 @@ export class PlayPauseDispatch {
     notePauseEvent() {
         this.pauseCount++;
 
-        console.log("[pause] ", this.tracker.currentMedia);
+        console.log("[pause] ", this.tracker.currentMedia?.mediaTitle);
         if (this.tracker.currentMedia) {
             this.tracker.markPaused();
         } else {

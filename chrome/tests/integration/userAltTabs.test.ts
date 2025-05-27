@@ -1,40 +1,18 @@
 /// <reference types="chrome"/>
-import { afterEach, beforeEach, describe, test, vi } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { ServerApi } from "../../src/api";
-import { getTaskForDomain } from "../../src/backgroundUtil";
-import { resetDependencies, setDependencies } from "../../src/dependencies";
+import { handleUserTabsBackIn } from "../../src/backgroundUtil";
+import { AltTabYouTubeReturn } from "../../src/interface/interfaces";
 import { ViewingTracker, YouTubeViewing } from "../../src/videoCommon/visits";
 import { replaceAllMethodsWithMocks } from "../helper";
 
 describe("Player state is preserved while using a different program", () => {
-    const mockChromeApi = {
-        executeScript: vi.fn(),
-    };
-
-    beforeEach(() => {
-        // Set up mock dependencies for testing
-        setDependencies({ chromeApi: mockChromeApi });
-
-        // Reset mocks
-        vi.clearAllMocks();
-
-        // Configure executeScript mock to simulate successful channel extraction
-        mockChromeApi.executeScript.mockImplementation((options, callback) => {
-            // Simulate the async nature with setTimeout
-            setTimeout(() => {
-                callback([{ result: "Test Channel Name" }]);
-            }, 0);
-        });
-    });
-
-    afterEach(() => {
-        // Reset to production dependencies
-        resetDependencies();
-    });
-
     test("The user alt-tabs to a different program, then alt-tabs back in, the state is there still", () => {
         const server = new ServerApi("disable");
         replaceAllMethodsWithMocks(server);
+
+        const sendAltTabReturnMock = vi.fn();
+        server.youtube.sendAltTabReturn = sendAltTabReturnMock;
 
         const tracker = new ViewingTracker(server);
 
@@ -49,41 +27,44 @@ describe("Player state is preserved while using a different program", () => {
             channelName,
             tabId
         );
+        // Ext finishes handling arrival on page!
+        let currentTabId = tabId;
         tracker.setCurrent(youTubeVisit);
 
-        // Set up executeScript to return different channel names based on call order
-        let callCount = 0;
-        mockChromeApi.executeScript.mockImplementation((options, callback) => {
-            callCount++;
-            let channelName;
+        tracker.markPlaying();
+        tracker.markPaused();
+        tracker.markPlaying();
 
-            if (callCount === 1) {
-                channelName = "Third Tab's YouTube Channel"; // For the thirdTab
-            } else {
-                channelName = "Test Channel Name"; // Default for other calls
-            }
+        // Unseen: USER ALT-TABS AWAY!
 
-            setTimeout(() => {
-                callback([{ result: channelName }]);
-            }, 0);
-        });
+        // Some time passes
 
-        // Tab to a tab without a player in it:
-        const secondTab = {
-            url: "www.x.com",
-            id: 9001,
-            title: "It's What's Happening",
-        } as chrome.tabs.Tab;
-        getTaskForDomain(secondTab);
+        // User tabs back in!
+        const activeTab = { id: tabId, url: tabUrl } as chrome.tabs.Tab;
+        handleUserTabsBackIn(tabUrl, activeTab, tracker);
 
-        // Tab to a YouTube page that has paused media:
-        const thirdTab = {
-            url: "https://www.youtube.com/watch?v=JpgiGi2epAs",
-            id: 9002,
-            title: "an American, in Turkey, speaking Portuguese for 5 minutes (CC)",
-        } as chrome.tabs.Tab;
-        getTaskForDomain(thirdTab);
+        expect(server.youtube.sendAltTabReturn).toHaveBeenCalledOnce();
 
-        // Tab back to the original YouTube page:
+        const tabReturnPayload: AltTabYouTubeReturn =
+            sendAltTabReturnMock.mock.calls[0][0];
+        expect(tabReturnPayload).toBeDefined();
+        expect(tabReturnPayload.channel).toBe(channelName);
+        expect(tabReturnPayload.videoId).toBe(videoId);
+        expect(tabReturnPayload.playerState).toBe("playing");
+
+        // AND! It survives another alt tab:
+
+        tracker.markPaused();
+
+        // Unseen: USER ALT-TABS AWAY!
+
+        // User tabs back in!
+        handleUserTabsBackIn(tabUrl, activeTab, tracker);
+        expect(server.youtube.sendAltTabReturn).toHaveBeenCalledTimes(2);
+
+        const tabReturnPayload2: AltTabYouTubeReturn =
+            sendAltTabReturnMock.mock.calls[1][0];
+        expect(tabReturnPayload2).toBeDefined();
+        expect(tabReturnPayload2.playerState).toBe("paused");
     });
 });
