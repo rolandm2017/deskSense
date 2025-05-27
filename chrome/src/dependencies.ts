@@ -17,11 +17,13 @@ export const regularExecuteScript: ChromeApi = {
 
 export interface Dependencies {
     chromeApi: ChromeApi;
+    scrapeDelay: number;
 }
 
 // Default production dependencies
 export const regularDependencies: Dependencies = {
     chromeApi: regularExecuteScript,
+    scrapeDelay: 2900,
 };
 
 // Global dependencies (can be overridden for testing)

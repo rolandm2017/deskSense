@@ -46,7 +46,9 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     // Chrome's onUpdated event can indeed fire multiple times for a single user action like a refresh
     if (changeInfo.status === "complete" && tab.url) {
         console.log("onUpdated - getDomainFromUrl");
-        const task = getTaskForDomain(tab);
+        const task = getTaskForDomain(tab, (youTubeTask) => {
+            distributeTaskData(youTubeTask);
+        });
         distributeTaskData(task);
     }
 });
@@ -62,7 +64,9 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
             // The other one is, "I alt tab back IN to Chrome."
             // But the alt-tab-back-into-Chrome one also fires "onActivated".
             // TODO: Find a way to choose between this one and the onMessage focus listener
-            const task = getTaskForDomain(tab);
+            const task = getTaskForDomain(tab, (youTubeTask) => {
+                distributeTaskData(youTubeTask);
+            });
             distributeTaskData(task);
 
             // TODO: On tab into a Player page, get player state from storage, package

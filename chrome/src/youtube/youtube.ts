@@ -1,7 +1,11 @@
 // youtube.ts
 import { ChannelPageOnlyError } from "../errors";
 import { getDomainFromUrl, stripProtocol } from "../urlTools";
-import { YouTubeViewing } from "../videoCommon/visits";
+import {
+    viewingTracker,
+    ViewingTracker,
+    YouTubeViewing,
+} from "../videoCommon/visits";
 import { extractChannelInfoFromWatchPage } from "./channelExtractor";
 
 import { taskTypes } from "../const";
@@ -20,19 +24,41 @@ import { Task } from "../interface/interfaces";
 let runningExtractChannelInfoScript = false;
 
 // // Handle YouTube URL specifically
-export function handleYouTubeUrl(tab: chrome.tabs.Tab): Task | undefined {
+export function handleYouTubeUrl(
+    tab: chrome.tabs.Tab,
+    onAsyncTask?: (task: Task) => void,
+    tracker: ViewingTracker = viewingTracker
+): Task | undefined {
     if (!tab.url || !tab.id || !tab.title) {
         throw new Error("Missing required tab properties");
     }
 
-    const { chromeApi } = getDependencies();
+    const { chromeApi, scrapeDelay } = getDependencies();
 
     if (isWatchingYouTubeVideo(tab.url)) {
         // YouTube does lots and lots of client side rendering, so
         // a short delay ensures that the page has fully loaded
         // Use executeScript to access the DOM on YouTube watch pages
         const tabId = tab.id;
+        // TODO: IF tab ID in cache, use that!
+        let foundCachedState = false;
+        if (tracker.hasPlayerStateForTab(tabId)) {
+            foundCachedState = true;
+            const youTubeState = tracker.useStoredPlayerState(tabId);
+            console.log("Returning cached YouTube state for tab", tabId);
+            if (youTubeState instanceof YouTubeViewing) {
+                return {
+                    type: taskTypes.YOUTUBE_WATCH_PAGE,
+                    data: youTubeState,
+                };
+            }
+            // fallback to getting it again
+            console.warn("Found Netflix Viewing where a YouTube was expected");
+        }
+        console.log("Running script for ", tab.title);
         runningExtractChannelInfoScript = true;
+        // Always use setTimeout to make it consistently async
+
         setTimeout(() => {
             chromeApi.executeScript(
                 {
@@ -57,9 +83,9 @@ export function handleYouTubeUrl(tab: chrome.tabs.Tab): Task | undefined {
                     // FIXME: Need to get Player State for tabs into it
                     // tabbing into youtube watch page with player going -> "paused"
                     console.log(
-                        "Detected ",
+                        "Detected: ",
                         channelName,
-                        " In new page",
+                        " In new page:",
                         tabTitle
                     );
                     const youTubeVisit = new YouTubeViewing(
@@ -70,18 +96,20 @@ export function handleYouTubeUrl(tab: chrome.tabs.Tab): Task | undefined {
                         tabId
                     );
 
-                    return {
-                        task: taskTypes.YOUTUBE_WATCH_PAGE,
-                        data: youTubeVisit,
-                    };
-                    // viewingTracker.setCurrent(youTubeVisit);
-                    // viewingTracker.reportYouTubeWatchPage();
+                    if (onAsyncTask) {
+                        onAsyncTask({
+                            type: taskTypes.YOUTUBE_WATCH_PAGE,
+                            data: youTubeVisit,
+                        }); // Callback handles the async result
+                    }
+                    return;
                 }
             );
             // NOTE: ** do not change this 1500 ms delay **
             // was 1500 but tha'ts too short
-        }, 2900); // 1.5 second delay. The absolute minimum value.
+        }, scrapeDelay); // 1.5 second delay. The absolute minimum value.
         // 1.0 sec delay still had the "prior channel reported as current" problem
+        return undefined;
     } else if (isOnSomeChannel(tab.url)) {
         // For channel pages, we can extract from the URL
         const channelName = extractChannelNameFromUrl(tab.url);
@@ -125,36 +153,6 @@ export function handleYouTubeUrl(tab: chrome.tabs.Tab): Task | undefined {
         //     tab.title ? tab.title : "YouTube Home"
         // );
     }
-}
-
-export function startSecondaryChannelExtractionScript(
-    sender: chrome.runtime.MessageSender
-) {
-    if (!sender.tab) {
-        // unhandled problem
-        return;
-    }
-    if (runningExtractChannelInfoScript) {
-        // just wait for it; it'll do al this stuff too
-        return;
-    }
-    // // TODO: Clean this up
-    // const tab = sender.tab;
-    // const tabUrl = tab.url;
-    // if (!tab.url) {
-    //     throw new MissingUrlError();
-    // }
-    // const tabTitle = tab.title || "Unknown Title";
-    // // const channelName = getChannelNameFromSomewhere();
-
-    // // Extract video ID from URL
-    // let videoId = getYouTubeVideoId(tabUrl);
-
-    // // TODO: Get channel name from somewhere
-
-    // // youTubeVisit.sendInitialInfoToServer();
-
-    // viewingTracker.setCurrent(youTubeVisit);
 }
 
 export function getYouTubeChannel(youTubeUrl: string) {

@@ -41,10 +41,10 @@ describe("handleYouTubeUrl", () => {
         const url = "https://www.youtube.com/watch?v=JpgiGi2epAs";
         const tab = { url: url, id: 9000, title: "Foo" } as chrome.tabs.Tab;
 
-        const task = handleYouTubeUrl(tab);
-
-        expect(task).toBeDefined();
-        expect(task?.type).toBe(taskTypes.YOUTUBE_WATCH_PAGE);
+        handleYouTubeUrl(tab, (asyncTask) => {
+            expect(asyncTask).toBeDefined();
+            expect(asyncTask?.type).toBe(taskTypes.YOUTUBE_WATCH_PAGE);
+        });
     });
     test("The Channel page returns a Channel Page task with channel info", () => {
         const url = "https://www.youtube.com/@elyssedavega";

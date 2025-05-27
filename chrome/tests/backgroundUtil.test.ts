@@ -25,7 +25,9 @@ describe("Background Util", () => {
             const url = "https://www.wikipedia.org";
             const tab = { url, id: 9020 } as chrome.tabs.Tab;
 
-            const task = getTaskForDomain(tab);
+            const task = getTaskForDomain(tab, (foo) => {
+                //
+            });
 
             expect(task).toBeDefined();
             expect(task!.type).toBe(taskTypes.REGULAR_DOMAIN);
@@ -37,7 +39,9 @@ describe("Background Util", () => {
 
             const tab = { url, id: 9021 } as chrome.tabs.Tab;
 
-            const task = getTaskForDomain(tab);
+            const task = getTaskForDomain(tab, (foo) => {
+                //
+            });
 
             expect(task).toBeDefined();
 
@@ -49,7 +53,9 @@ describe("Background Util", () => {
             const url = "https://www.netflix.com/watch/23403284";
             const tab = { url, id: 9022 } as chrome.tabs.Tab;
 
-            const task = getTaskForDomain(tab);
+            const task = getTaskForDomain(tab, (foo) => {
+                //
+            });
 
             expect(task).toBeDefined();
             expect(task!.type).toBe(taskTypes.NETFLIX_WATCH_PAGE);

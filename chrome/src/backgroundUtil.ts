@@ -1,4 +1,4 @@
-import { initializedServerApi } from "./api";
+import { initializedServerApi, ServerApi } from "./api";
 import {
     isRegularDomainTask,
     isYouTubeHomeTask,
@@ -21,7 +21,11 @@ import {
     isWatchingYouTubeVideo,
 } from "./youtube/youtube";
 
-export function getTaskForDomain(tab: chrome.tabs.Tab): Task | undefined {
+export function getTaskForDomain(
+    tab: chrome.tabs.Tab,
+    extractionDone: (task: Task) => void,
+    tracker: ViewingTracker = viewingTracker
+): Task | undefined {
     /*
 
     This function has a debounce timer barring entry into it.
@@ -45,11 +49,12 @@ export function getTaskForDomain(tab: chrome.tabs.Tab): Task | undefined {
     }
 
     // Check if this tab with this URL was processed recently
-    const recentlySeenTab = debounce.isTabBeingProcessed(tab);
-    if (recentlySeenTab) {
-        // FIXME: What to do when the user visits the same URL 2-3x on multiple tabs?
-        return;
-    }
+    // const recentlySeenTab = debounce.isTabBeingProcessed(tab);
+    // if (recentlySeenTab) {
+    //
+    //     console.log("INFO: Debounce saw tab " + tab.id + " recently");
+    //     return;
+    // }
 
     const domain = getDomainFromUrl(tab.url);
     if (domain) {
@@ -62,15 +67,27 @@ export function getTaskForDomain(tab: chrome.tabs.Tab): Task | undefined {
         if (isYouTube) {
             console.log("[info] on YouTube");
             // Use the dedicated function to handle YouTube URLs
-            return handleYouTubeUrl(tab);
+            // return handleYouTubeUrl(tab);
+
+            const syncTask = handleYouTubeUrl(
+                tab,
+                (asyncTask) => {
+                    // Handle async YouTube watch case
+                    extractionDone(asyncTask);
+                },
+                tracker
+            );
+
+            if (syncTask) {
+                // Handle all other sync cases
+                return syncTask;
+            }
         }
         const isNetflix = domain.includes("netflix.com");
-        if (isNetflix) {
-            const isNetflixWatch = isNetflixWatchPage(tab.url);
-            if (isNetflixWatch) {
-                // ViewingTracker will handle it via onMessage
-                return { type: taskTypes.NETFLIX_WATCH_PAGE };
-            }
+        const isNetflixWatch = isNetflixWatchPage(tab.url);
+        if (isNetflix && isNetflixWatch) {
+            // ViewingTracker will handle it via onMessage
+            return { type: taskTypes.NETFLIX_WATCH_PAGE };
         }
         return {
             type: taskTypes.REGULAR_DOMAIN,
@@ -88,27 +105,25 @@ export function getTaskForDomain(tab: chrome.tabs.Tab): Task | undefined {
     }
 }
 
-export function distributeTaskData(task: Task | undefined) {
+export function distributeTaskData(
+    task: Task | undefined,
+    server: ServerApi = initializedServerApi,
+    tracker: ViewingTracker = viewingTracker
+) {
     // One big switch statement
     if (task === undefined) {
         return;
     } else if (isRegularDomainTask(task)) {
-        initializedServerApi.reportTabSwitch(
-            task.data.domain,
-            task.data.tabTitle
-        );
+        server.reportTabSwitch(task.data.domain, task.data.tabTitle);
     } else if (task.type === taskTypes.IGNORED_URL) {
-        initializedServerApi.reportIgnoredUrl();
+        server.reportIgnoredUrl();
     } else if (task.type === taskTypes.NETFLIX_WATCH_PAGE) {
         // do nothing
     } else if (isYouTubeWatchPageTask(task)) {
-        viewingTracker.setCurrent(task.data);
-        viewingTracker.reportYouTubeWatchPage();
+        tracker.setCurrent(task.data);
+        tracker.reportYouTubeWatchPage();
     } else if (isYouTubeShortsTask(task) || isYouTubeHomeTask(task)) {
-        initializedServerApi.reportTabSwitch(
-            task.data.domain,
-            task.data.tabTitle
-        );
+        server.reportTabSwitch(task.data.domain, task.data.tabTitle);
     } else {
         console.log("Unhandled task type: ", task);
     }
@@ -159,7 +174,10 @@ export function handleUserTabsBackIn(
         // else:
         console.log("onFocusChanged - getDomainFromUrl");
 
-        const task = getTaskForDomain(activeTab);
+        const task = getTaskForDomain(activeTab, (youTubeTask) => {
+            distributeTaskData(youTubeTask);
+        });
+        distributeTaskData(task);
     }
 }
 
@@ -171,6 +189,10 @@ interface ProcessedUrlEntry {
 const PAGE_LOAD_DEBOUNCE_DELAY_IN_MS = 4000;
 
 class DebounceTimer {
+    /**
+     * Why does this exist?
+     *
+     */
     processedTabs: Map<number, ProcessedUrlEntry>;
     constructor() {
         this.processedTabs = new Map<number, ProcessedUrlEntry>();

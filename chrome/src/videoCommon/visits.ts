@@ -119,6 +119,8 @@ export class ViewingTracker {
         if (!this.currentMedia) {
             throw new MissingMediaError();
         }
+        // TODO: PAUSE and Play Needs to update the cached player state
+
         this.currentMedia.playerState = "playing";
         if (this.currentMedia instanceof YouTubeViewing) {
             console.log("Media is YouTubeViewing");
@@ -148,6 +150,7 @@ export class ViewingTracker {
         if (!this.currentMedia) {
             throw new MissingMediaError();
         }
+        // TODO: PAUSE and Play Needs to update the cached player state
         this.currentMedia.playerState = "paused";
 
         if (this.currentMedia instanceof YouTubeViewing) {
@@ -165,6 +168,10 @@ export class ViewingTracker {
 
     hasPlayerStateForTab(tabId: number) {
         return this.stateCache.has(tabId);
+    }
+
+    useStoredPlayerState(tabId: number) {
+        return this.stateCache.get(tabId)!;
     }
 
     // New method specifically for alt-tab scenarios
