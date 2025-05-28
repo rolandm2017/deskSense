@@ -2,4 +2,4 @@
 
 import { InputCaptureManager } from "./inputCaptureManager";
 
-export const captureManager = new InputCaptureManager({ enabled: true }, 2);
+export const captureManager = new InputCaptureManager({ enabled: true }, 10);

@@ -188,9 +188,9 @@ class ProgramTrackerCore:
             )
             self.console_logger.log_yellow(
                 "New VLC State: "
-                + updated_vlc_session.video_info.file
+                + updated_vlc_session.video_info.file  # type: ignore
                 + " :: "
-                + updated_vlc_session.video_info.player_state.value
+                + updated_vlc_session.video_info.player_state.value  # type: ignore
             )
             self.window_change_handler(updated_vlc_session)
             self.current_session = updated_vlc_session

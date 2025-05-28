@@ -57,11 +57,11 @@ export class InputCaptureManager {
     captureIfEnabled(event: CaptureEvent) {
         console.log("capture if enabled", event.type);
         if (this.recording.enabled) {
-            console.log(
-                "Pushing event data: ",
-                event.data,
-                this.session.getRemainingTime(new Date())
-            );
+            // console.log(
+            //     "Pushing event data: ",
+            //     event.data,
+            //     this.session.getRemainingTime(new Date())
+            // );
             this.events.push(event);
             this.onCaptureEvent(new Date());
         }

@@ -33,9 +33,6 @@ class VlcMediaPlayerTracker:
         while self.polling_active:
             yield self.get_updated_vlc_status()
 
-    def listen_for_player_changes(self):
-        yield self.ask_is_vlc_playing()
-
     def get_updated_vlc_status(self):
         return get_vlc_status()
 
@@ -43,7 +40,7 @@ class VlcMediaPlayerTracker:
         self.polling_active = False
 
 
-def get_vlc_status() -> VlcInfo | None:
+def get_vlc_status() -> VlcInfo:
     url = f"{VLC_HOST}/requests/status.json"
     try:
         response = requests.get(url, auth=AUTH)

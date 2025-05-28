@@ -49,7 +49,7 @@ function openOptionsOnClickIcon() {
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     // Chrome's onUpdated event can indeed fire multiple times for a single user action like a refresh
     if (changeInfo.status === "complete" && tab.url) {
-        console.log("onUpdated - getDomainFromUrl");
+        console.log("onUpdated - getDomainFromUrl", tabId, changeInfo.status);
         //    captureManager.captureIfEnabled({
         //        type: "ON_UPDATED_COMPLETE",
         //        data: { tabId, url: tab.url, title: tab.title },
@@ -71,7 +71,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 let currentTabId: number;
 chrome.tabs.onActivated.addListener((activeInfo) => {
     currentTabId = activeInfo.tabId;
-    console.log("in ONACTIVATED: ", currentTabId);
+    // console.log("in ONACTIVATED: ", currentTabId);
     lastActiveTabId = activeInfo.tabId;
     chrome.tabs.get(activeInfo.tabId, (tab) => {
         if (tab.url) {
@@ -202,17 +202,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             }
             // TODO: Capture input here for tests
             // Create a new instance in this context with the same data
-            const partialWatchEntry = {
-                url: message.media.url,
-                urlId: message.media.videoId,
-                showName: message.media.mediaTitle,
-                playerState: message.media.playerState,
-            };
             const recreatedMedia = new NetflixViewing(
-                partialWatchEntry.urlId,
-                partialWatchEntry.showName,
-                partialWatchEntry.url,
-                partialWatchEntry.playerState,
+                message.media.videoId,
+                message.media.mediaTitle,
+                message.media.url,
+                message.media.playerState,
                 sender.tab.id
             );
             viewingTracker.setCurrent(recreatedMedia);
@@ -230,6 +224,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Other existing message handling...
     }
 });
+
 // PROBLEM: Without this code and it's partner code, the user
 // can tab back into Chrome, WITHOUT Tab firing off an "Active Tab"
 // alert to the server. So the backend sits there saying "Google Chrome"
@@ -237,7 +232,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // or that's how it was until this code fixed it.
 let switchCounter = 0;
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log("window_gained_focus listener");
+    console.log("window_gained_focus listener", switchCounter, message.source);
+    if (message.source === "chromeGainsFocusListener") {
+        console.log("msg.event", message.event);
+    }
     if (message.event !== "window_gained_focus") {
         return;
     }
@@ -282,7 +280,7 @@ let lastActiveWindowId: number | undefined = undefined;
 let lastActiveTabId: number | undefined = undefined;
 
 chrome.windows.onFocusChanged.addListener((windowId) => {
-    console.log("on focus changed listener");
+    console.log("onFocusChanged listener");
 
     // IDEA ONE: On Alt Tab, store the tab ID in a variable.
     // Then, "alt tab back in" only occurs if the tab ID is the same.
@@ -291,6 +289,9 @@ chrome.windows.onFocusChanged.addListener((windowId) => {
     // IDEA TWO: Poll the server for the currently active program. Every like 200 ms
     // When the user tabs back into Chrome, the "onAnotherWindow" stops,
     // The onAnotherWindow signal stops, and the extension knows, "time to update state"
+    // IDEA THREE: On the server, cache the latest Chrome state for each Chrome instance.
+    // When the user tabs back into Chrome, use THAT state as Chrome's state.
+    //      --> But it might be from a different Chrome session
     if (windowId === chrome.windows.WINDOW_ID_NONE) {
         // Chrome lost focus
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {

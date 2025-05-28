@@ -1,8 +1,8 @@
+from typing import Dict, Generator, Optional
+
 import psutil
 from Xlib import X, display
 from Xlib.error import BadWindow
-
-from typing import Dict, Generator, Optional
 
 from activitytracker.object.classes import ProgramSessionDict
 from activitytracker.util.console_logger import ConsoleLogger
@@ -62,6 +62,7 @@ class UbuntuProgramFacadeCore(ProgramFacadeInterface):
         #         process = psutil.Process(pid)
         # exe_path = process.exe()  # This gets the full path to the executable
         # process_name = process.name()
+        # print("window name: ", window_name) # Gold
 
         return {
             "os": "Ubuntu",
