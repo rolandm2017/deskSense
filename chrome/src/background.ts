@@ -2,7 +2,12 @@
 
 import { isNetflixWatchPage } from "./netflix/netflixUrlTool";
 
-import { handleUserTabsBackIn, playPauseDispatch } from "./backgroundUtil";
+import {
+    distributeTaskData,
+    getTaskForDomain,
+    handleUserTabsBackIn,
+    playPauseDispatch,
+} from "./backgroundUtil";
 
 import { NetflixViewing, viewingTracker } from "./videoCommon/visits";
 
@@ -50,20 +55,20 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     // Chrome's onUpdated event can indeed fire multiple times for a single user action like a refresh
     if (changeInfo.status === "complete" && tab.url) {
         console.log("onUpdated - getDomainFromUrl", tabId, changeInfo.status);
-        //    captureManager.captureIfEnabled({
-        //        type: "ON_UPDATED_COMPLETE",
-        //        data: { tabId, url: tab.url, title: tab.title },
-        //        metadata: {
-        //            source: "onUpdated.addListener",
-        //            method: "user_input",
-        //            location: "background.ts",
-        //            timestamp: new Date().toISOString(),
-        //        },
-        //    });
-        //    const task = getTaskForDomain(tab, (youTubeTask) => {
-        //        distributeTaskData(youTubeTask);
-        //    });
-        //    distributeTaskData(task);
+        captureManager.captureIfEnabled({
+            type: "ON_UPDATED_COMPLETE",
+            data: { tabId, url: tab.url, title: tab.title },
+            metadata: {
+                source: "onUpdated.addListener",
+                method: "user_input",
+                location: "background.ts",
+                timestamp: new Date().toISOString(),
+            },
+        });
+        const task = getTaskForDomain(tab, (youTubeTask) => {
+            distributeTaskData(youTubeTask);
+        });
+        distributeTaskData(task);
     }
 });
 

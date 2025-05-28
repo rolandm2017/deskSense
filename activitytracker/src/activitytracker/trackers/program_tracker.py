@@ -108,7 +108,7 @@ class ProgramTrackerCore:
                         # self.console_logger.log_white(
                         #     "Chrome session ignored - not forwarded to external handler"
                         # )
-                        self.handle_chrome(window_change["window_title"])
+                        self.handle_chrome(new_session)
                     else:
                         self.window_change_handler(new_session)
 
@@ -122,7 +122,7 @@ class ProgramTrackerCore:
                         # self.console_logger.log_white(
                         #     "Chrome session ignored - not forwarded to external handler"
                         # )
-                        self.handle_chrome(window_change["window_title"])
+                        self.handle_chrome(new_session)
                     else:
                         self.window_change_handler(new_session)
 

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import sessionmaker
 
 from activitytracker.arbiter.activity_arbiter import ActivityArbiter
+from activitytracker.arbiter.tab_cache import TabCache
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from activitytracker.db.dao.direct.session_integrity_dao import SessionIntegrityDao
@@ -20,6 +21,7 @@ from activitytracker.db.dao.queuing.mouse_dao import MouseDao
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
 from activitytracker.facade.receive_messages import MessageReceiver
+from activitytracker.object.classes import ProgramSession
 from activitytracker.trackers.keyboard_tracker import KeyboardTrackerCore
 from activitytracker.trackers.mouse_tracker import MouseTrackerCore
 from activitytracker.trackers.program_tracker import ProgramTrackerCore
@@ -30,7 +32,6 @@ from activitytracker.util.copy_util import snapshot_obj_for_tests
 from activitytracker.util.detect_os import OperatingSystemInfo
 from activitytracker.util.eventful_threaded_tracker import EventBasedThreadedTracker
 from activitytracker.util.threaded_tracker import ThreadedTracker
-from activitytracker.arbiter.tab_cache import TabCache
 
 
 class FacadeInjector:
@@ -51,7 +52,7 @@ class SurveillanceManager:
         facades,
         message_receiver: MessageReceiver,
         system_status_dao: SystemStatusDao,
-        shared_tab_cache: Tab
+        shared_tab_cache: TabCache,
         is_test=False,
     ):
         """
@@ -140,14 +141,21 @@ class SurveillanceManager:
         # self.program_tracker.run_tracking_loop()  # This will block and run forever
         self.program_thread.start()
 
-    def handle_tab_into_chrome(self, chrome_window_title):
-        if self.tab_cache.contains(chrome_window_title):
-            print("cache contains: ", chrome_window_title)
-            tab = self.tab_cache.get_by_title(chrome_window_title)
+    def handle_tab_into_chrome(self, chrome_session: ProgramSession):
+        print(" ACCESSING CACHE", chrome_session.detail)
+        print(" ACCESSING CACHE", chrome_session.detail)
+        if self.tab_cache.contains(chrome_session.detail):
+            print("cache contains: ", chrome_session.detail)
+            print("cache contains: ", chrome_session.detail)
+            tab = self.tab_cache.get_by_title(chrome_session.detail)
+            print("FOUND TAB:", tab)
+            print("FOUND TAB:", tab)
+            tab = self.tab_cache.update_start_time(tab, chrome_session.start_time)
             self.arbiter.set_tab_state(tab)
         else:
             # Not sure. What is the fallback? Perhaps ask the DAO layer.
             # YAGNI?
+            self.logger.log_yellow("Couldn't find cached value for " + chrome_session.detail)
             pass
 
     def print_sys_status_info(self):

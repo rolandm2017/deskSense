@@ -181,11 +181,13 @@ class ChromeService:
         if url_deliverable.youtube_info:
             url = "www.youtube.com"
             video_info = url_deliverable.youtube_info
-        else:
+        elif url_deliverable.netflix_info:
             # How does it know what the particular media is?
             # For Netflix and YouTube both, the answers is the .tab_title field
             url = "www.netflix.com"
             video_info = url_deliverable.netflix_info
+        else:
+            video_info = None
         start_time = UserLocalTime(url_deliverable.start_time_with_tz)
 
         # TODO: Test the video route, /new routes, but bypassing the TabQueue. Make sure all info is passed
@@ -216,7 +218,7 @@ class ChromeService:
         if deliverable.youtube_info:
             url = "www.youtube.com"
             video_info = deliverable.youtube_info
-        else:
+        elif deliverable.netflix_info:
             # How does it know what the particular media is?
             # For Netflix and YouTube both, the answers is the .tab_title field
             url = "www.netflix.com"

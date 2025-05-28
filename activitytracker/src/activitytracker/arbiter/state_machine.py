@@ -84,7 +84,7 @@ class StateMachine:
             self.iteration += 1
 
             raise SuspiciousDurationError(
-                f"Negative duration for {state.session.get_name()}"
+                f"Negative duration for {state.session.get_name()} in iteration {self.iteration}"
             )
 
         session_copy = snapshot_obj_for_tests(state.session)

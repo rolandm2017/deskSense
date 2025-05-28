@@ -8,6 +8,7 @@ from fastapi import Depends
 from activitytracker.arbiter.activity_arbiter import ActivityArbiter
 from activitytracker.arbiter.activity_recorder import ActivityRecorder
 from activitytracker.arbiter.session_polling import ThreadedEngineContainer
+from activitytracker.arbiter.tab_cache import TabCache
 from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
 from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
@@ -131,7 +132,7 @@ _arbiter_instance = None
 _chrome_service_instance = None
 
 
-async def get_activity_arbiter(tab_cache):
+async def get_activity_arbiter(tab_cache: TabCache):
     from activitytracker.arbiter.activity_arbiter import ActivityArbiter
     from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
     from activitytracker.db.dao.direct.mystery_media_dao import MysteryMediaDao
@@ -193,6 +194,10 @@ async def get_activity_arbiter(tab_cache):
             if _arbiter_instance is None:
                 raise ValueError("Arbiter instance should be set by now")
             # loop.create_task(_arbiter_instance.set_tab_state(tab))
+            print("HERE HERE HERE HERE HERE HERE ")
+            print("HERE HERE HERE HERE HERE HERE ")
+            print("HERE HERE HERE HERE HERE HERE ")
+            print("HERE HERE HERE HERE HERE HERE ", tab)
             tab_cache.store(tab)
             _arbiter_instance.set_tab_state(tab)
 
