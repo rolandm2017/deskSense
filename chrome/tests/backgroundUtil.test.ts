@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { ServerApi } from "../src/api.ts";
 import { getTaskForDomain, PlayPauseDispatch } from "../src/backgroundUtil.ts";
 import { taskTypes } from "../src/const.ts";
+import { ImpossibleToGetHereError } from "../src/errors.ts";
 import { ignoredDomains } from "../src/ignoreList.ts";
+import { InputCaptureManager } from "../src/inputLogger/inputCaptureManager.ts";
 import { NetflixViewing, ViewingTracker } from "../src/videoCommon/visits.ts";
 import { replaceAllMethodsWithMocks } from "./helper.ts";
 
@@ -17,6 +19,8 @@ describe("Background Util", () => {
         // Reset mock data
         mockIgnoredDomains = [];
     });
+
+    const m = new InputCaptureManager({ enabled: false }, 10);
 
     describe("getTaskForDomain returns appropriate types", () => {
         // handleYouTubeUrl paths handled in youtube.test.ts
@@ -65,7 +69,7 @@ describe("Background Util", () => {
 
     describe("PlayPauseDispatch", () => {
         test("Note Play Event marks the tracker media as playing", () => {
-            const api = new ServerApi("disable");
+            const api = new ServerApi("disable", m);
             // turn off send payloads
             replaceAllMethodsWithMocks(api);
 
@@ -88,7 +92,7 @@ describe("Background Util", () => {
             expect(tracker.markPlaying).toHaveBeenCalledOnce();
         });
         test("Note Pause Event marks the tracker media as paused", () => {
-            const api = new ServerApi("disable");
+            const api = new ServerApi("disable", m);
             // turn off send payloads
             replaceAllMethodsWithMocks(api);
 
@@ -110,8 +114,8 @@ describe("Background Util", () => {
 
             expect(tracker.markPaused).toHaveBeenCalledOnce();
         });
-        test("If the viewing tracker has no current media, nothing happens", () => {
-            const api = new ServerApi("disable");
+        test("If the viewing tracker has no current media, an error occurs", () => {
+            const api = new ServerApi("disable", m);
 
             // turn off send payloads
             replaceAllMethodsWithMocks(api);
@@ -122,7 +126,9 @@ describe("Background Util", () => {
 
             const dispatch = new PlayPauseDispatch(tracker);
 
-            dispatch.notePlayEvent({});
+            expect(() => {
+                dispatch.notePlayEvent({});
+            }).toThrow(ImpossibleToGetHereError);
 
             expect(tracker.markPlaying).not.toHaveBeenCalledOnce();
         });

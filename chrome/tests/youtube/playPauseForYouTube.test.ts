@@ -9,12 +9,14 @@ import { ServerApi } from "../../src/api";
 
 import { ViewingTracker, YouTubeViewing } from "../../src/videoCommon/visits";
 
+import { InputCaptureManager } from "../../src/inputLogger/inputCaptureManager";
 import { replaceAllMethodsWithMocks } from "../helper";
 
 describe("The YouTube tracker works as intended", () => {
-    //
+    const m = new InputCaptureManager({ enabled: false }, 10);
+
     test("A page update is sent to the server when the channel name arrives", () => {
-        const api = new ServerApi("disable");
+        const api = new ServerApi("disable", m);
         // turn off send payloads
         replaceAllMethodsWithMocks(api);
 
@@ -38,7 +40,7 @@ describe("The YouTube tracker works as intended", () => {
         expect(api.youtube.sendYouTubeWatchPage).toHaveBeenCalledOnce();
     });
     test("A play event is sent to the server when it occurs", () => {
-        const api = new ServerApi("disable");
+        const api = new ServerApi("disable", m);
 
         // turn off send payloads
         replaceAllMethodsWithMocks(api);
@@ -66,7 +68,7 @@ describe("The YouTube tracker works as intended", () => {
         expect(api.youtube.sendPlayEvent).toHaveBeenCalledOnce();
     });
     test("A pause event is sent to the server when it occurs", () => {
-        const api = new ServerApi("disable");
+        const api = new ServerApi("disable", m);
 
         // turn off send payloads
         replaceAllMethodsWithMocks(api);

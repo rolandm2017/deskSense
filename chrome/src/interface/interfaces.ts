@@ -28,28 +28,6 @@ export interface NetflixPayload {
     showName: string;
 }
 
-export interface AltTabYouTubeReturn {
-    url: string;
-    videoId: string;
-    tabTitle: string;
-    channel: string;
-    // Used to be "return time" but that required too many new classes
-    startTime: string; // ISO timestamp when user alt-tabbed back
-    playerState: "playing" | "paused";
-    // Optionally include context about where they came from
-    previousContext?: "external_app" | "other_chrome_tab";
-}
-
-export interface AltTabNetflixReturn {
-    url: string;
-    videoId: string;
-    tabTitle: string;
-    showName: string;
-    startTime: string;
-    playerState: "playing" | "paused";
-    previousContext?: "external_app" | "other_chrome_tab";
-}
-
 export interface WatchEntry {
     serverId: number; //
     urlId: string;

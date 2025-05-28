@@ -1,6 +1,5 @@
 import chalk from "chalk";
 
-import { AltTabYouTubeReturn } from "../interface/interfaces";
 import { YouTubePlayerChange, YouTubeTabChange } from "../interface/payloads";
 import {
     CaptureEvent,
@@ -111,7 +110,7 @@ export class PlatformLogger {
     logEventWithPayload(
         caller: string,
         url: string,
-        payload: YouTubeTabChange | YouTubePlayerChange | AltTabYouTubeReturn
+        payload: YouTubeTabChange | YouTubePlayerChange
     ) {
         console.log(
             "logEventWithPayload",

@@ -2,7 +2,6 @@
 // PLAYER_STATE_CHANGED
 // ON_UPDATED_COMPLETE
 
-import { AltTabYouTubeReturn } from "../interface/interfaces";
 import { YouTubePlayerChange, YouTubeTabChange } from "../interface/payloads";
 
 export type CaptureEvent =
@@ -13,7 +12,6 @@ export type CaptureEvent =
           data: PlayerStateData;
           metadata: Metadata;
       }
-    | { type: "ALT_TAB_BACK_IN"; data: AltTabData; metadata: Metadata }
     | { type: "TAB_CLOSED"; data: TabClosedData; metadata: Metadata }
     | { type: "TEST_CAPTURE"; data: object; metadata: Metadata };
 // Add more cases here as needed
@@ -36,12 +34,6 @@ export interface PlayerStateData {
     };
 }
 
-export interface AltTabData {
-    id: number;
-    url: string;
-    title?: string;
-}
-
 export interface TabClosedData {
     tabId: number;
 }
@@ -56,7 +48,7 @@ export interface Metadata {
 export interface PayloadCaptureEvent {
     type: string; // e.g., "sendPlayEvent"
     data: {
-        payload: YouTubeTabChange | YouTubePlayerChange | AltTabYouTubeReturn;
+        payload: YouTubeTabChange | YouTubePlayerChange;
         url: string;
     };
     metadata: Metadata;
@@ -76,12 +68,6 @@ export function isPlayerStateChangedEvent(event: CaptureEvent): event is {
     metadata: Metadata;
 } {
     return event.type === "PLAYER_STATE_CHANGED";
-}
-
-export function isAltTabBackInEvent(
-    event: CaptureEvent
-): event is { type: "ALT_TAB_BACK_IN"; data: AltTabData; metadata: Metadata } {
-    return event.type === "ALT_TAB_BACK_IN";
 }
 
 export function isTabClosedEvent(

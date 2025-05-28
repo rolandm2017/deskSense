@@ -6,11 +6,14 @@ import { ServerApi } from "../../src/api";
 
 import { PlayPauseDispatch } from "../../src/backgroundUtil";
 
+import { InputCaptureManager } from "../../src/inputLogger/inputCaptureManager";
 import { replaceAllMethodsWithMocks } from "../helper";
 
 describe("YouTube Autoplay", () => {
+    const m = new InputCaptureManager({ enabled: false }, 10);
+
     test("If the play event occurs before the page event, it waits to be bundled together", () => {
-        const server = new ServerApi("disable");
+        const server = new ServerApi("disable", m);
         replaceAllMethodsWithMocks(server);
 
         const watchPageReportingMock = vi.fn();
@@ -71,7 +74,7 @@ describe("YouTube Autoplay", () => {
         expect(initialPlayerState).toBe("playing");
     });
     test("If the page event occurs first, the Play event uses the same info", () => {
-        const server = new ServerApi("disable");
+        const server = new ServerApi("disable", m);
         replaceAllMethodsWithMocks(server);
 
         const watchPageReportingMock = vi.fn();

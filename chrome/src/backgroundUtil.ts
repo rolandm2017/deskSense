@@ -7,7 +7,7 @@ import {
     isYouTubeWatchPageTask,
     taskTypes,
 } from "./const";
-import { ImpossibleToGetHereError, MissingMediaError } from "./errors";
+import { ImpossibleToGetHereError } from "./errors";
 import { ignoredDomains, isDomainIgnored } from "./ignoreList";
 import { Task } from "./interface/interfaces";
 import {
@@ -16,11 +16,7 @@ import {
 } from "./netflix/netflixUrlTool";
 import { getDomainFromUrl } from "./urlTools";
 import { viewingTracker, ViewingTracker } from "./videoCommon/visits";
-import {
-    getYouTubeVideoId,
-    handleYouTubeUrl,
-    isWatchingYouTubeVideo,
-} from "./youtube/youtube";
+import { getYouTubeVideoId, handleYouTubeUrl } from "./youtube/youtube";
 
 export function getTaskForDomain(
     tab: chrome.tabs.Tab,
@@ -134,58 +130,6 @@ export function distributeTaskData(
         server.reportTabSwitch(task.data.domain, task.data.tabTitle);
     } else {
         console.log("Unhandled task type: ", task);
-    }
-}
-
-export function handleUserTabsBackIn(
-    url: string,
-    activeTab: chrome.tabs.Tab,
-    tracker: ViewingTracker = viewingTracker
-) {
-    // Default to singleton for prod) {
-    /*
-        For the case where the user is using some other 
-        program, ALT-TABS (emphasis, alt tabs only) back into Chrome.
-    */
-    if (isWatchingYouTubeVideo(url) || isNetflixWatchPage(url)) {
-        console.log("onFocusChanged - a Watch Page");
-        if (activeTab.id === undefined) {
-            // TODO: Handle by getting it from scratch as if on the page for the first time
-            return;
-        }
-        // If YouTube Watch Page, do special version with player state
-        if (!tracker.hasPlayerStateForTab(activeTab.id)) {
-            throw new MissingMediaError(
-                "latestActiveViewing undefined when tabbing back in"
-            );
-        }
-        /*
-        TODO: write the code that handles the user tabbing back in.
-                - It only has to do so on Watch Pages
-        TODO: Write a nice integration test for this "user tabs back in" scenario
-
-        TODO: Write user input capture. 
-                - Capture you watching YouTube.
-                    * It must also include you tabbing to other Chrome tabs.
-                    * I think it also needs to be aware of you alt tabbing out of Chrome.
-                - Capture the API events from this session.
-                - Play the events back to the program, expect the same results.
-
-
-        */
-        tracker.handleAltTabReturn(activeTab);
-    } else {
-        // If Netflix Watch Page, do special version with player state
-        // TODO: Could do like, "if returning to page, use stored page/player info".
-        // You wouldn't have to store too many values for the page to
-        // reliably be among them.
-        // else:
-        console.log("onFocusChanged - getDomainFromUrl");
-
-        const task = getTaskForDomain(activeTab, (youTubeTask) => {
-            distributeTaskData(youTubeTask);
-        });
-        distributeTaskData(task);
     }
 }
 
@@ -357,8 +301,10 @@ export class PlayPauseDispatch {
         }
     }
 
-    /* NOTE that a grace period before the pause event is set
-    yields complexities: What if the user pauses, alt tabs into VSCode a second later?
+    /* 
+    NOTE that a grace period before the pause event is set
+    yields complexities: What if the user pauses, 
+    alt tabs into VSCode a second later?
     
     The Alt Tab into VSCode yields a Program state, but then the pause countdown 
     finishes, the pause event is sent, and now the Program state is bumped off by

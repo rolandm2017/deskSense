@@ -76,7 +76,6 @@ let currentTabId: number;
 chrome.tabs.onActivated.addListener((activeInfo) => {
     currentTabId = activeInfo.tabId;
     // console.log("in ONACTIVATED: ", currentTabId);
-    lastActiveTabId = activeInfo.tabId;
     chrome.tabs.get(activeInfo.tabId, (tab) => {
         if (tab.url) {
             captureManager.captureIfEnabled({
@@ -91,9 +90,6 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
             });
             console.log("onActivated - getDomainFromUrl");
             // SO this one is, "I switch from Chrome Tab A to Chrome Tab B".
-            // The other one is, "I alt tab back IN to Chrome."
-            // But the alt-tab-back-into-Chrome one also fires "onActivated".
-            // TODO: Find a way to choose between this one and the onMessage focus listener
             const task = getTaskForDomain(tab, (youTubeTask) => {
                 distributeTaskData(youTubeTask);
             });
@@ -228,28 +224,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Other existing message handling...
     }
 });
-
-// PROBLEM: Without this code and it's partner code, the user
-// can tab back into Chrome, WITHOUT Tab firing off an "Active Tab"
-// alert to the server. So the backend sits there saying "Google Chrome"
-// until the user (a) changes tabs or (b) changes player state,
-// or that's how it was until this code fixed it.
-let switchCounter = 0;
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {});
-
-let lastActiveWindowId: number | undefined = undefined;
-let lastActiveTabId: number | undefined = undefined;
-
-//     // IDEA ONE: On Alt Tab, store the tab ID in a variable.
-//     // Then, "alt tab back in" only occurs if the tab ID is the same.
-//     // LITERALLY run "get current tab ID" when  if (windowId === chrome.windows.WINDOW_ID_NONE) {
-//     // in onFocusChanged
-//     // IDEA TWO: Poll the server for the currently active program. Every like 200 ms
-//     // When the user tabs back into Chrome, the "onAnotherWindow" stops,
-//     // The onAnotherWindow signal stops, and the extension knows, "time to update state"
-//     // IDEA THREE: On the server, cache the latest Chrome state for each Chrome instance.
-//     // When the user tabs back into Chrome, use THAT state as Chrome's state.
-//     //      --> But it might be from a different Chrome session
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === "heartbeat") {

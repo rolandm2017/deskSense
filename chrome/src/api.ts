@@ -2,12 +2,7 @@
 import { DomainLogger, PlatformLogger } from "./inputLogger/endpointLogging";
 import { captureManager } from "./inputLogger/initInputCapture";
 import { InputCaptureManager } from "./inputLogger/inputCaptureManager";
-import {
-    AltTabNetflixReturn,
-    AltTabYouTubeReturn,
-    NetflixPayload,
-    YouTubePayload,
-} from "./interface/interfaces";
+import { NetflixPayload, YouTubePayload } from "./interface/interfaces";
 import {
     NetflixPlayerChange,
     NetflixTabChange,
@@ -28,13 +23,11 @@ const videoBaseUrl = baseChromeUrl + "/video";
 export const youTubeRoutes = {
     youTubeWatchPageUrl: videoBaseUrl + "/youtube/new/watchpage",
     youtubePlayerStateUrl: videoBaseUrl + "/youtube/state",
-    altTabYouTubeWatchUrl: videoBaseUrl + "/youtube/alt-tab-return",
 };
 
 export const netflixRoutes = {
     netflixWatchPageUrl: videoBaseUrl + "/netflix/new/watchpage",
     netflixPlayerStateUrl: videoBaseUrl + "/netflix/state",
-    altTabNetflixWatchUrl: videoBaseUrl + "/netflix/alt-tab-return",
 };
 
 class YouTubeApi {
@@ -136,19 +129,6 @@ class YouTubeApi {
         );
 
         this.sendPayload(youTubeRoutes.youtubePlayerStateUrl, payload);
-    }
-
-    sendAltTabReturn(payload: AltTabYouTubeReturn) {
-        console.log("Sending YouTube alt-tab return payload:", payload.channel);
-        // Using watch page url until i find out it's too complex or doesn't work etc
-        this.logger.logEventWithPayload(
-            "sendAltTabReturn",
-            youTubeRoutes.youTubeWatchPageUrl,
-            payload
-        );
-        this.sendPayload(youTubeRoutes.youTubeWatchPageUrl, payload);
-
-        // this.sendPayload(youTubeRoutes.altTabYouTubeWatchUrl, payload);
     }
 }
 
@@ -256,14 +236,6 @@ class NetflixApi {
         // TODO: Add payload capture
 
         this.sendPayload(netflixRoutes.netflixPlayerStateUrl, payload);
-    }
-
-    sendAltTabReturn(payload: AltTabNetflixReturn) {
-        console.log(
-            "Sending Netflix alt-tab return payload:",
-            payload.showName
-        );
-        this.sendPayload(netflixRoutes.netflixWatchPageUrl, payload);
     }
 }
 

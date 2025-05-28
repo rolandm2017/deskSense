@@ -1,22 +1,14 @@
 // videoCommon/visits.ts
 
 import { initializedServerApi, ServerApi } from "../api";
-import { MismatchedTabIdError, MissingMediaError } from "../errors";
+import { MissingMediaError } from "../errors";
 import {
-    AltTabNetflixReturn,
-    AltTabYouTubeReturn,
     INetflixViewing,
     IStatelessNetflixViewing,
     IYouTubeViewing,
     NetflixPayload,
     YouTubePayload,
 } from "../interface/interfaces";
-
-import {
-    isNetflixWatchPage,
-    makeNetflixWatchPageId,
-} from "../netflix/netflixUrlTool";
-import { getYouTubeVideoId, isWatchingYouTubeVideo } from "../youtube/youtube";
 
 // A Visit: As in, A PageVisit
 // A Viewing: A window of time spent actively viewing the video.
@@ -55,14 +47,6 @@ export class ViewingTracker {
     setCurrent(current: YouTubeViewing | NetflixViewing) {
         this.currentMedia = current;
         this.stateCache.set(current.sourceTabId, current);
-        this.preserveStateForAltTabs(current);
-    }
-
-    // TODO: This can probably go.
-    preserveStateForAltTabs(current: YouTubeViewing | NetflixViewing) {
-        // This info needs to be there for when the user alt tabs
-        // back into a video player page
-        this.latestActiveViewing = current;
     }
 
     markAutoplayEventWaiting() {
@@ -182,97 +166,6 @@ export class ViewingTracker {
 
     useStoredPlayerState(tabId: number) {
         return this.stateCache.get(tabId)!;
-    }
-
-    // New method specifically for alt-tab scenarios
-    handleAltTabReturn(tab: chrome.tabs.Tab) {
-        if (!tab.url || !tab.id) {
-            throw new Error(`Invalid tab state: url=${tab.url}, id=${tab.id}`);
-        }
-
-        const storedState = this.stateCache.get(tab.id)!;
-
-        if (storedState.sourceTabId !== tab.id) {
-            throw new MismatchedTabIdError(storedState.sourceTabId, tab.id);
-        }
-
-        if (
-            isWatchingYouTubeVideo(tab.url) &&
-            storedState instanceof YouTubeViewing
-        ) {
-            this.handleYouTubeAltTabReturn(tab, storedState);
-        } else if (
-            isNetflixWatchPage(tab.url) &&
-            storedState instanceof NetflixViewing
-        ) {
-            this.handleNetflixAltTabReturn(tab, storedState);
-        }
-    }
-
-    private handleYouTubeAltTabReturn(
-        tab: chrome.tabs.Tab,
-        storedState: YouTubeViewing
-    ) {
-        const videoId = getYouTubeVideoId(tab.url!);
-
-        if (
-            storedState instanceof YouTubeViewing &&
-            storedState.videoId === videoId &&
-            tab.id == storedState.sourceTabId
-        ) {
-            this.setCurrent(storedState);
-
-            const payload: AltTabYouTubeReturn = {
-                url: storedState.url,
-                videoId: storedState.videoId,
-                tabTitle: storedState.mediaTitle,
-                channel: storedState.channelName,
-                // Used to be "return time" but that required too many new classes
-                startTime: new Date().toISOString(),
-                playerState: storedState.playerState,
-                previousContext: "external_app",
-            };
-
-            this.api.youtube.sendAltTabReturn(payload);
-        } else {
-            // Different video or no previous viewing - this is actually a new page visit
-            // Fall back to ... to what?
-            // Only mistakes go here.
-            throw new Error("Not Yet Implemented");
-        }
-    }
-
-    private handleNetflixAltTabReturn(
-        tab: chrome.tabs.Tab,
-        storedState: NetflixViewing
-    ) {
-        const videoId = makeNetflixWatchPageId(tab.url!);
-
-        if (
-            storedState.videoId === videoId &&
-            tab.id == storedState.sourceTabId
-        ) {
-            // Same video - update and report
-            this.setCurrent(storedState);
-
-            const payload: AltTabNetflixReturn = {
-                url: storedState.url,
-                videoId: storedState.videoId,
-                tabTitle: storedState.mediaTitle,
-                showName: storedState.mediaTitle,
-                // Used to be "return time" but that required too many new classes
-                startTime: new Date().toISOString(),
-                playerState: storedState.playerState,
-                previousContext: "external_app",
-            };
-
-            this.api.netflix.sendAltTabReturn(payload);
-        } else {
-            // Different video or no previous viewing - this is actually a new page visit
-            // Fall back to ... to what?
-            // Only mistakes go here.
-            throw new Error("Not Yet Implemented");
-        }
     }
 
     endViewing(tabId: number) {

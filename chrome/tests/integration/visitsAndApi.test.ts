@@ -3,10 +3,13 @@ import { describe, expect, test, vi } from "vitest";
 import { ViewingTracker, YouTubeViewing } from "../../src/videoCommon/visits";
 
 import { ServerApi, netflixRoutes, youTubeRoutes } from "../../src/api";
+import { InputCaptureManager } from "../../src/inputLogger/inputCaptureManager";
 
 describe("ViewingTracker and Server API", () => {
+    const m = new InputCaptureManager({ enabled: false }, 10);
+
     test("reportNetflixWatchPage sets a partial page info and calls an API", () => {
-        const server = new ServerApi("disable");
+        const server = new ServerApi("disable", m);
 
         const payloadMock = vi.fn();
         server.replacePayloadMethod(payloadMock);
@@ -29,7 +32,7 @@ describe("ViewingTracker and Server API", () => {
         expect(deliverable.videoId).toBe(target);
     });
     test("reportInitialLandOnWatchPage calls an API", () => {
-        const server = new ServerApi("disable");
+        const server = new ServerApi("disable", m);
 
         const payloadMock = vi.fn();
         server.replacePayloadMethod(payloadMock);
@@ -58,7 +61,7 @@ describe("ViewingTracker and Server API", () => {
         expect(deliverable.tabTitle).toBeDefined();
     });
     test("markPlaying calls an API", () => {
-        const server = new ServerApi("disable");
+        const server = new ServerApi("disable", m);
 
         const payloadMock = vi.fn();
         server.replacePayloadMethod(payloadMock);
@@ -93,7 +96,7 @@ describe("ViewingTracker and Server API", () => {
         expect(deliverable.videoId).toBeDefined();
     });
     test("markPaused calls an API", () => {
-        const server = new ServerApi("disable");
+        const server = new ServerApi("disable", m);
 
         const payloadMock = vi.fn();
         server.replacePayloadMethod(payloadMock);

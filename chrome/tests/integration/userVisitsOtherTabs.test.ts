@@ -90,11 +90,6 @@ describe("Player state is preserved while visiting a different Chrome tab", () =
             id: tabId,
             url: "whatever",
         } as chrome.tabs.Tab;
-
-        // FIXME: This IS NOT an alt tab return scenario
-        // tracker.handleAltTabReturn(tab);
-
-        // expect(server.youtube.sendAltTabReturn).toHaveBeenCalled();
     });
 
     // Helper function to promisify your callback-based function

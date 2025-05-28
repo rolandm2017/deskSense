@@ -8,6 +8,7 @@ import {
     YouTubeViewing,
 } from "../../src/videoCommon/visits";
 
+import { InputCaptureManager } from "../../src/inputLogger/inputCaptureManager";
 import { replaceAllMethodsWithMocks } from "../helper";
 
 // TODO:
@@ -15,8 +16,10 @@ import { replaceAllMethodsWithMocks } from "../helper";
 // TODO: Test play/pause
 
 describe("ViewingTracker", () => {
+    const m = new InputCaptureManager({ enabled: false }, 10);
+
     test("setCurrent sets the current media", () => {
-        const server = new ServerApi("disable");
+        const server = new ServerApi("disable", m);
         replaceAllMethodsWithMocks(server);
 
         const tracker = new ViewingTracker(server);
@@ -32,7 +35,7 @@ describe("ViewingTracker", () => {
         expect(tracker.currentMedia?.mediaTitle).toBe(media.mediaTitle);
     });
     test("setCurrent updates the current media", () => {
-        const server = new ServerApi("disable");
+        const server = new ServerApi("disable", m);
         replaceAllMethodsWithMocks(server);
 
         const tracker = new ViewingTracker(server);
@@ -58,7 +61,7 @@ describe("ViewingTracker", () => {
         expect(tracker.currentMedia?.mediaTitle).toBe(media2.mediaTitle);
     });
     test("reportNetflixWatchPage sets a partial page info and calls an API", () => {
-        const server = new ServerApi("disable");
+        const server = new ServerApi("disable", m);
         replaceAllMethodsWithMocks(server);
 
         const tracker = new ViewingTracker(server);
@@ -70,7 +73,7 @@ describe("ViewingTracker", () => {
         expect(tracker.partialNetflixDescriptor).toBe(target);
     });
     test("reportYouTubeWatchPage calls an API", () => {
-        const server = new ServerApi("disable");
+        const server = new ServerApi("disable", m);
         replaceAllMethodsWithMocks(server);
 
         const tracker = new ViewingTracker(server);
@@ -94,7 +97,7 @@ describe("ViewingTracker", () => {
         ).not.toHaveBeenCalledOnce();
     });
     test("markPlaying calls an API", () => {
-        const server = new ServerApi("disable");
+        const server = new ServerApi("disable", m);
         replaceAllMethodsWithMocks(server);
 
         const tracker = new ViewingTracker(server);
@@ -121,7 +124,7 @@ describe("ViewingTracker", () => {
         expect(server.netflix.sendPlayEvent).not.toHaveBeenCalled();
     });
     test("markPaused calls an API", () => {
-        const server = new ServerApi("disable");
+        const server = new ServerApi("disable", m);
         replaceAllMethodsWithMocks(server);
 
         const tracker = new ViewingTracker(server);
@@ -149,7 +152,7 @@ describe("ViewingTracker", () => {
         expect(server.netflix.sendPlayEvent).not.toHaveBeenCalled();
     });
     test("Setting current media adds it to the cache", () => {
-        const server = new ServerApi("disable");
+        const server = new ServerApi("disable", m);
         replaceAllMethodsWithMocks(server);
 
         const tracker = new ViewingTracker(server);
@@ -173,7 +176,7 @@ describe("ViewingTracker", () => {
         expect(viewing?.url).toBe(youTubePage.url);
     });
     test("Closing a tab deletes its entry from the cache", () => {
-        const server = new ServerApi("disable");
+        const server = new ServerApi("disable", m);
         replaceAllMethodsWithMocks(server);
 
         const tracker = new ViewingTracker(server);

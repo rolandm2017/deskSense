@@ -7,7 +7,6 @@ import { ServerApi } from "../../src/api";
 import {
     distributeTaskData,
     getTaskForDomain,
-    handleUserTabsBackIn,
     PlayPauseDispatch,
 } from "../../src/backgroundUtil";
 import { resetDependencies, setDependencies } from "../../src/dependencies";
@@ -89,7 +88,6 @@ describe("Run the system according to a set of recorded user inputs", () => {
             viewingTracker: tracker,
             serverApi: server,
             dispatch: dispatch,
-            handleUserTabsBackIn: handleUserTabsBackIn,
             getTaskForDomain: getTaskForDomain,
             distributeTaskData: distributeTaskData,
         };
