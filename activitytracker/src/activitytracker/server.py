@@ -28,6 +28,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from activitytracker.arbiter.tab_cache import TabCache
 from activitytracker.db.database import (
     async_session_maker,
     init_db,
@@ -123,8 +124,10 @@ async def lifespan(app: FastAPI):
     # consider that the server will likely auto-run on startup
     # when it gets past development and onto being a typical daily use
 
+    shared_tab_cache = TabCache()
+
     chrome_service = await get_chrome_service()
-    arbiter, system_status_dao = await get_activity_arbiter()
+    arbiter, system_status_dao = await get_activity_arbiter(shared_tab_cache)
 
     user_facing_clock = UserFacingClock()
 
@@ -156,6 +159,7 @@ async def lifespan(app: FastAPI):
         facades,
         message_receiver,
         system_status_dao,
+        shared_tab_cache,
     )
     activity_tracker_state.manager.print_sys_status_info()
     activity_tracker_state.manager.start_trackers()

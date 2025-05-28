@@ -30,6 +30,7 @@ from activitytracker.util.copy_util import snapshot_obj_for_tests
 from activitytracker.util.detect_os import OperatingSystemInfo
 from activitytracker.util.eventful_threaded_tracker import EventBasedThreadedTracker
 from activitytracker.util.threaded_tracker import ThreadedTracker
+from activitytracker.arbiter.tab_cache import TabCache
 
 
 class FacadeInjector:
@@ -50,6 +51,7 @@ class SurveillanceManager:
         facades,
         message_receiver: MessageReceiver,
         system_status_dao: SystemStatusDao,
+        shared_tab_cache: Tab
         is_test=False,
     ):
         """
@@ -62,6 +64,8 @@ class SurveillanceManager:
         self.chrome_service = chrome_service
 
         self.arbiter = arbiter
+
+        self.tab_cache = shared_tab_cache
 
         self.message_receiver = message_receiver
         # self.message_receiver = MessageReceiver("tcp://127.0.0.1:5555")
@@ -117,7 +121,7 @@ class SurveillanceManager:
         self.operate_message_receiver()
         # Program tracker
         self.program_tracker = ProgramTrackerCore(
-            clock, program_facade, self.handle_window_change
+            clock, program_facade, self.handle_window_change, self.handle_tab_into_chrome
         )
 
         self.keyboard_thread = ThreadedTracker(self.keyboard_tracker)
@@ -135,6 +139,16 @@ class SurveillanceManager:
         self.mouse_thread.start()
         # self.program_tracker.run_tracking_loop()  # This will block and run forever
         self.program_thread.start()
+
+    def handle_tab_into_chrome(self, chrome_window_title):
+        if self.tab_cache.contains(chrome_window_title):
+            print("cache contains: ", chrome_window_title)
+            tab = self.tab_cache.get_by_title(chrome_window_title)
+            self.arbiter.set_tab_state(tab)
+        else:
+            # Not sure. What is the fallback? Perhaps ask the DAO layer.
+            # YAGNI?
+            pass
 
     def print_sys_status_info(self):
         latest_status = self.system_status_dao.read_latest()
@@ -155,18 +169,12 @@ class SurveillanceManager:
         self, latest_shutdown_time: datetime | None, latest_startup_time: datetime
     ):
         # FIXME: This function isn't being used anywhere! And it still should be
-        # FIXME: get latest times from system status dao
         if latest_shutdown_time is None:
             self.session_integrity_dao.audit_first_startup(latest_startup_time)
-            # self.loop.create_task(
-            #     self.session_integrity_dao.audit_first_startup(latest_startup_time))
         else:
             self.session_integrity_dao.audit_sessions(
                 latest_shutdown_time, latest_startup_time
             )
-            #     latest_shutdown_time, latest_startup_time)
-            # self.loop.create_task(self.session_integrity_dao.audit_sessions(
-            #     latest_shutdown_time, latest_startup_time))
 
     def handle_keyboard_ready_for_db(self, event):
         self.loop.create_task(self.timeline_dao.create_from_keyboard_aggregate(event))

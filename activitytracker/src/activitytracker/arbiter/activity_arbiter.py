@@ -140,7 +140,7 @@ class ActivityArbiter:
                 )
                 if suspicious_write_time:
                     time_since_latest_write = (
-                        latest_status_write.dt - incoming_session_start.dt
+                        latest_status_write.dt - new_session.start_time.dt
                     ).total_seconds() / 60
                     self.logger.log_yellow(
                         f"[warn] latest status write was {time_since_latest_write:2f} min ago"

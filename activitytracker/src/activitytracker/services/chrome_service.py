@@ -143,7 +143,6 @@ class ChromeService:
     def __init__(
         self,
         user_facing_clock,
-        arbiter: ActivityArbiter,
         debounce_delay=0.5,
         transience_msa=300,
     ):
@@ -152,13 +151,11 @@ class ChromeService:
         print("╚════════╝")
         # FIXME: It can't be a user facing clock b/c it's ... global, server wide.
         self.user_facing_clock = user_facing_clock
-        self.arbiter = arbiter
         self.last_entry = None
         self.elapsed_alt_tab = None
         # self.summary_dao = summary_dao
 
         self.tab_queue = TabQueue(self.log_tab_event, debounce_delay, transience_msa)
-        self.arbiter = arbiter  # Replace direct arbiter calls
 
         self.event_emitter = EventEmitter()
 
@@ -201,7 +198,7 @@ class ChromeService:
         # Now, the intent is to do everything in the user's LTZ, local time zone.
         # initialized.start_time = url_deliverable.startTime
 
-        self.handle_session_ready_for_arbiter(initialized)
+        self.emit_tab_to_arbiter(initialized)
 
     def log_player_state_event(self, deliverable: PlayerStateChangeEventWithLtz):
         """
@@ -230,9 +227,9 @@ class ChromeService:
         )
         self.logger.log_yellow(initialized)
 
-        self.handle_session_ready_for_arbiter(initialized)
+        self.emit_tab_to_arbiter(initialized)
 
-    def handle_session_ready_for_arbiter(self, session):
+    def emit_tab_to_arbiter(self, session):
         session_copy = copy.deepcopy(session)
         # Leads to activityArbiter.set_tab_state
         self.event_emitter.emit("tab_change", session_copy)

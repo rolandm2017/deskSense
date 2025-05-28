@@ -25,7 +25,9 @@ from .vlc_player_query import VlcMediaPlayerTracker, get_vlc_status
 
 
 class ProgramTrackerCore:
-    def __init__(self, user_facing_clock, program_api_facade, window_change_handler):
+    def __init__(
+        self, user_facing_clock, program_api_facade, window_change_handler, handle_chrome
+    ):
         """
         !!!!! IMPORTANT - READ THIS FIRST !!!!!
 
@@ -47,6 +49,7 @@ class ProgramTrackerCore:
         self.user_facing_clock = user_facing_clock
         self.program_facade: ProgramFacadeInterface = program_api_facade
         self.window_change_handler = window_change_handler
+        self.handle_chrome = handle_chrome
 
         self.vlc_tracker = VlcMediaPlayerTracker()
 
@@ -97,16 +100,17 @@ class ProgramTrackerCore:
                     self.current_session = new_session
                     # FILTER HERE: Only report the event if it's NOT Chrome
                     # https://claude.ai/chat/ede0b004-79ff-4b42-b191-40e8d3f91bf4
-                    if not self.window_is_chrome(window_change):
+                    if self.window_is_chrome(window_change):
                         # Do not report Chrome, because Chrome will do its own reporting.
                         # Note that if you try to get out of this via early return, the
                         # code breaks. If you try to get out of it via "continue,"
                         # the code breaks.
-                        self.window_change_handler(new_session)
+                        # self.console_logger.log_white(
+                        #     "Chrome session ignored - not forwarded to external handler"
+                        # )
+                        self.handle_chrome(window_change["window_title"])
                     else:
-                        self.console_logger.log_white(
-                            "Chrome session ignored - not forwarded to external handler"
-                        )
+                        self.window_change_handler(new_session)
 
                 # initialize
                 if self.is_uninitialized():
@@ -114,12 +118,13 @@ class ProgramTrackerCore:
                     # capture_program_data_for_tests(window_change, current_time)
                     new_session = self.start_new_session(window_change, current_time)
                     self.current_session = new_session
-                    if not self.window_is_chrome(window_change):
-                        self.window_change_handler(new_session)
+                    if self.window_is_chrome(window_change):
+                        # self.console_logger.log_white(
+                        #     "Chrome session ignored - not forwarded to external handler"
+                        # )
+                        self.handle_chrome(window_change["window_title"])
                     else:
-                        self.console_logger.log_white(
-                            "Chrome session ignored - not forwarded to external handler"
-                        )
+                        self.window_change_handler(new_session)
 
                     # self.window_change_handler(new_session)
 
@@ -247,7 +252,7 @@ if __name__ == "__main__":
 
     try:
 
-        tracker = ProgramTrackerCore(clock, program_api_facade, ["", ""])
+        tracker = ProgramTrackerCore(clock, program_api_facade, ["", ""], None)
         thread_handler = EventBasedThreadedTracker(tracker)
         thread_handler.start()
         # Add a way to keep the main thread alive

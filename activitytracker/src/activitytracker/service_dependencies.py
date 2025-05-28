@@ -1,9 +1,9 @@
 # activitytracker/src/service_dependencies.py
-from fastapi import Depends
-
 import asyncio
 
 from typing import Callable
+
+from fastapi import Depends
 
 from activitytracker.arbiter.activity_arbiter import ActivityArbiter
 from activitytracker.arbiter.activity_recorder import ActivityRecorder
@@ -131,7 +131,7 @@ _arbiter_instance = None
 _chrome_service_instance = None
 
 
-async def get_activity_arbiter():
+async def get_activity_arbiter(tab_cache):
     from activitytracker.arbiter.activity_arbiter import ActivityArbiter
     from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
     from activitytracker.db.dao.direct.mystery_media_dao import MysteryMediaDao
@@ -193,6 +193,7 @@ async def get_activity_arbiter():
             if _arbiter_instance is None:
                 raise ValueError("Arbiter instance should be set by now")
             # loop.create_task(_arbiter_instance.set_tab_state(tab))
+            tab_cache.store(tab)
             _arbiter_instance.set_tab_state(tab)
 
         print("ActivityArbiter created successfully")
@@ -202,14 +203,12 @@ async def get_activity_arbiter():
     return _arbiter_instance, system_status_dao
 
 
-async def get_chrome_service(
-    arbiter: ActivityArbiter = Depends(get_activity_arbiter),
-) -> ChromeService:
+async def get_chrome_service() -> ChromeService:
     # Lazy import to avoid circular dependency
     from activitytracker.services.chrome_service import ChromeService
 
     global _chrome_service_instance  # Singleton because it must preserve internal state
     if _chrome_service_instance is None:
         clock = SystemClock()
-        _chrome_service_instance = ChromeService(clock, arbiter)
+        _chrome_service_instance = ChromeService(clock)
     return _chrome_service_instance
