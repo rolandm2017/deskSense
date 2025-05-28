@@ -85,7 +85,7 @@ export function getTaskForDomain(
                 return syncTask;
             }
             // THIS ELSE BLOCK IS NEEDED!
-            // The YouTube block will return a regular domain otherwise
+            // Otherwise the YouTube block will return a regular domain
         } else {
             const isNetflix = domain.includes("netflix.com");
             const isNetflixWatch = isNetflixWatchPage(tab.url);

@@ -30,11 +30,8 @@ class TabCache:
 
     def get_by_title(self, title):
         print("IN GET BY TITLE")
-        print("IN GET BY TITLE")
-        print("IN GET BY TITLE")
         for cache_dict in reversed(self.cache):
-            print(title, cache_dict)
-            if title in cache_dict or cache_dict:
+            if title in cache_dict:
                 return cache_dict[title]
         return None  # Return None if not found
 

@@ -142,14 +142,12 @@ class SurveillanceManager:
         self.program_thread.start()
 
     def handle_tab_into_chrome(self, chrome_session: ProgramSession):
-        print(" ACCESSING CACHE", chrome_session.detail)
-        print(" ACCESSING CACHE", chrome_session.detail)
+        self.logger.log_green_multiple(" ACCESSING CACHE", chrome_session.detail)
+        print("Using time: ", chrome_session.start_time)
         if self.tab_cache.contains(chrome_session.detail):
             print("cache contains: ", chrome_session.detail)
-            print("cache contains: ", chrome_session.detail)
             tab = self.tab_cache.get_by_title(chrome_session.detail)
-            print("FOUND TAB:", tab)
-            print("FOUND TAB:", tab)
+            self.logger.log_green_multiple("FOUND TAB:", tab)
             tab = self.tab_cache.update_start_time(tab, chrome_session.start_time)
             self.arbiter.set_tab_state(tab)
         else:

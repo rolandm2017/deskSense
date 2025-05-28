@@ -112,9 +112,9 @@ class KeepAliveEngine:
         else:
             name = self.session.get_name()
 
-        print(
-            f"[add_partial_window - engine call] {name} with amount: {amount_used} in thread '{thread_name}'"
-        )
+        # print(
+        #     f"[add_partial_window - engine call] {name} with amount: {amount_used} in thread '{thread_name}'"
+        # )
         thread_id_and_name = thread_name
         self.recorder.add_partial_window(amount_used, self.session, thread_id_and_name)
 

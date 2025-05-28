@@ -591,21 +591,13 @@ async def get_video_usage_timeline_by_week(
     return WeeklyVideoUsageTimeline(days=days)
 
 
-@app.get("/api/report/chrome")
-async def get_chrome_report(chrome_service: ChromeService = Depends(get_chrome_service)):
-    logger.log_purple("[LOG] Get chrome tabs")
-    # reports = await chrome_service.read_last_24_hrs()
-    reports = None  # might be deprecated, this endpoint
-    return reports
-
-
 @app.post("/api/chrome/tab", status_code=status.HTTP_204_NO_CONTENT)
 async def receive_chrome_tab(
     tab_change_event: UtcDtTabChange,
     chrome_service: ChromeService = Depends(get_chrome_service),
     timezone_service: TimezoneService = Depends(get_timezone_service),
 ):
-    logger.log_purple("[LOG] Chrome Tab Received")
+    logger.log_purple("[LOG] Chrome Tab Received: " + tab_change_event.tabTitle)
     try:
         field_has_utc_tzinfo_else_throw(tab_change_event.startTime)
         user_id = 1  # temp until i have more than 1 user

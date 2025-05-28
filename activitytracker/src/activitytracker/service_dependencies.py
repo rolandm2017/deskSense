@@ -194,9 +194,6 @@ async def get_activity_arbiter(tab_cache: TabCache):
             if _arbiter_instance is None:
                 raise ValueError("Arbiter instance should be set by now")
             # loop.create_task(_arbiter_instance.set_tab_state(tab))
-            print("HERE HERE HERE HERE HERE HERE ")
-            print("HERE HERE HERE HERE HERE HERE ")
-            print("HERE HERE HERE HERE HERE HERE ")
             print("HERE HERE HERE HERE HERE HERE ", tab)
             tab_cache.store(tab)
             _arbiter_instance.set_tab_state(tab)

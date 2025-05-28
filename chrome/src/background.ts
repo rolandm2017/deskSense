@@ -5,7 +5,6 @@ import { isNetflixWatchPage } from "./netflix/netflixUrlTool";
 import {
     distributeTaskData,
     getTaskForDomain,
-    handleUserTabsBackIn,
     playPauseDispatch,
 } from "./backgroundUtil";
 
@@ -95,10 +94,10 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
             // The other one is, "I alt tab back IN to Chrome."
             // But the alt-tab-back-into-Chrome one also fires "onActivated".
             // TODO: Find a way to choose between this one and the onMessage focus listener
-            // const task = getTaskForDomain(tab, (youTubeTask) => {
-            //     distributeTaskData(youTubeTask);
-            // });
-            // distributeTaskData(task);
+            const task = getTaskForDomain(tab, (youTubeTask) => {
+                distributeTaskData(youTubeTask);
+            });
+            distributeTaskData(task);
 
             // TODO: On tab into a Player page, get player state from storage, package
             // player state into payload for reportWatchPage. Think
@@ -236,81 +235,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // until the user (a) changes tabs or (b) changes player state,
 // or that's how it was until this code fixed it.
 let switchCounter = 0;
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log("window_gained_focus listener", switchCounter, message.source);
-    if (message.source === "chromeGainsFocusListener") {
-        console.log("msg.event", message.event);
-    }
-    if (message.event !== "window_gained_focus") {
-        return;
-    }
-    /*
-        Code runs when user alt tabs into Chrome
-    */
-    switchCounter++;
-    console.log(
-        "Chrome gained focus (switched from another app)",
-        switchCounter
-    );
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        const activeTab = tabs[0];
-        // Must hinder both window_gained_focus event and onActivated co-occurring
-        // const tabbingIntoCurrentlyActiveTab = activeTab.id == currentTabId;
-        // if (activeTab.url && tabbingIntoCurrentlyActiveTab) {
-        if (activeTab.url) {
-            console.log("Tabbed back in OR changed tabs");
-            captureManager.captureIfEnabled({
-                type: "ALT_TAB_BACK_IN",
-                data: {
-                    id: activeTab.id ? activeTab.id : 9000,
-                    url: activeTab.url,
-                    title: activeTab.title,
-                },
-                metadata: {
-                    source: "window_gained_focus",
-                    method: "user_input",
-                    location: "background.ts",
-                    timestamp: new Date().toISOString(),
-                },
-            });
-            handleUserTabsBackIn(activeTab.url, activeTab);
-        } else {
-            console.warn("Active tab had no url");
-        }
-        // activeTab.url, activeTab.title, etc.
-    });
-});
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {});
 
 let lastActiveWindowId: number | undefined = undefined;
 let lastActiveTabId: number | undefined = undefined;
 
-chrome.windows.onFocusChanged.addListener((windowId) => {
-    console.log("onFocusChanged listener");
-
-    // IDEA ONE: On Alt Tab, store the tab ID in a variable.
-    // Then, "alt tab back in" only occurs if the tab ID is the same.
-    // LITERALLY run "get current tab ID" when  if (windowId === chrome.windows.WINDOW_ID_NONE) {
-    // in onFocusChanged
-    // IDEA TWO: Poll the server for the currently active program. Every like 200 ms
-    // When the user tabs back into Chrome, the "onAnotherWindow" stops,
-    // The onAnotherWindow signal stops, and the extension knows, "time to update state"
-    // IDEA THREE: On the server, cache the latest Chrome state for each Chrome instance.
-    // When the user tabs back into Chrome, use THAT state as Chrome's state.
-    //      --> But it might be from a different Chrome session
-    if (windowId === chrome.windows.WINDOW_ID_NONE) {
-        // Chrome lost focus
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            const activeTab = tabs[0];
-            // chrome.tabs.query(windowId, { populate: true }, (window) => {
-            if (activeTab && activeTab.id !== lastActiveTabId) {
-                // Case A: Came from another program (window focus changed)
-                console.log("Alt-tabbed from another program");
-                lastActiveTabId = activeTab.id;
-            }
-        });
-        return;
-    }
-});
+//     // IDEA ONE: On Alt Tab, store the tab ID in a variable.
+//     // Then, "alt tab back in" only occurs if the tab ID is the same.
+//     // LITERALLY run "get current tab ID" when  if (windowId === chrome.windows.WINDOW_ID_NONE) {
+//     // in onFocusChanged
+//     // IDEA TWO: Poll the server for the currently active program. Every like 200 ms
+//     // When the user tabs back into Chrome, the "onAnotherWindow" stops,
+//     // The onAnotherWindow signal stops, and the extension knows, "time to update state"
+//     // IDEA THREE: On the server, cache the latest Chrome state for each Chrome instance.
+//     // When the user tabs back into Chrome, use THAT state as Chrome's state.
+//     //      --> But it might be from a different Chrome session
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === "heartbeat") {

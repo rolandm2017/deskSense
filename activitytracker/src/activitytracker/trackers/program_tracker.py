@@ -54,8 +54,8 @@ class ProgramTrackerCore:
         self.vlc_tracker = VlcMediaPlayerTracker()
 
         self.vlc_poller = SyncPeriodicTask(self.update_vlc_status, interval_in_sec=0.5)
-        print(f"[DEBUG] vlc_poller created: {self.vlc_poller} (id: {id(self.vlc_poller)})")
-        print(f"[DEBUG] self object id: {id(self)}")
+        print(f"[init] vlc_poller created: {self.vlc_poller} (id: {id(self.vlc_poller)})")
+        print(f"[init] self object id: {id(self)}")
         self.vlc_window = None
 
         self.latest_vlc_state = VlcInfo(
