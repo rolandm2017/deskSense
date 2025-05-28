@@ -7,7 +7,7 @@ import {
     isYouTubeWatchPageTask,
     taskTypes,
 } from "./const";
-import { MissingMediaError } from "./errors";
+import { ImpossibleToGetHereError, MissingMediaError } from "./errors";
 import { ignoredDomains, isDomainIgnored } from "./ignoreList";
 import { Task } from "./interface/interfaces";
 import {
@@ -288,8 +288,7 @@ export class PlayPauseDispatch {
             // NOTE that the user LIKELY refreshed the page to get here.
             // It wasn't there yet because, the, the channel extractor
             // script didn't run yet but the "report playing video" code did.
-            return;
-            throw new Error("ShouldntBeAbleToGetHereError");
+            throw new ImpossibleToGetHereError();
         }
     }
 
@@ -354,7 +353,7 @@ export class PlayPauseDispatch {
             this.tracker.markPaused();
         } else {
             console.warn("Somehow paused the media while it was undefined");
-            throw new Error("ShouldntBeAbleToGetHereError");
+            throw new ImpossibleToGetHereError();
         }
     }
 

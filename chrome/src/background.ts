@@ -56,7 +56,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         console.log("onUpdated - getDomainFromUrl");
         captureManager.captureIfEnabled({
             type: "ON_UPDATED_COMPLETE",
-            data: { tabId, url: tab.url },
+            data: { tabId, url: tab.url, title: tab.title },
             metadata: {
                 source: "onUpdated.addListener",
                 method: "user_input",
@@ -80,9 +80,9 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
         if (tab.url) {
             captureManager.captureIfEnabled({
                 type: "ON_UPDATED_COMPLETE",
-                data: { tabId: currentTabId, url: tab.url },
+                data: { tabId: currentTabId, url: tab.url, title: tab.title },
                 metadata: {
-                    source: "onActivated.addListener",
+                    source: "onActivated",
                     method: "user_input",
                     location: "background.ts",
                     timestamp: new Date().toISOString(),

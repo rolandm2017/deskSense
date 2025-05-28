@@ -20,6 +20,7 @@ export type CaptureEvent =
 export interface OnUpdatedData {
     tabId: number;
     url: string;
+    title?: string;
 }
 
 export interface PlayerStateData {

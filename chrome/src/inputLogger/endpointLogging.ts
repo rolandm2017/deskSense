@@ -113,9 +113,9 @@ export class PlatformLogger {
         url: string,
         payload: YouTubeTabChange | YouTubePlayerChange | AltTabYouTubeReturn
     ) {
+        console.log("logEventWithPayload", caller);
         const expired = this.session.checkIfTimeExpired(new Date());
         if (expired) {
-            console.warn("Capture session expired");
             console.warn("Capture session expired");
             console.warn("Capture session expired");
             console.warn("Capture session expired");
