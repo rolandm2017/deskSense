@@ -55,7 +55,7 @@ export function handleYouTubeUrl(
             console.warn("Found Netflix Viewing where a YouTube was expected");
             // fallback to scraping it again
         }
-        console.log("Running script for ", tab.title);
+        // console.log("Running script for ", tab.title);
         runningExtractChannelInfoScript = true;
         // Always use setTimeout to make it consistently async
 

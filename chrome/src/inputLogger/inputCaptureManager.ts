@@ -56,13 +56,11 @@ export class InputCaptureManager {
 
     captureIfEnabled(event: CaptureEvent) {
         console.log("capture if enabled", event.type);
-        console.log("capture if enabled", event.type);
-        console.log("capture if enabled", event.type);
         if (this.recording.enabled) {
             console.log(
                 "Pushing event data: ",
                 event.data,
-                this.recording.enabled
+                this.session.getRemainingTime(new Date())
             );
             this.events.push(event);
             this.onCaptureEvent(new Date());
@@ -83,9 +81,6 @@ export class InputCaptureManager {
         this.recording.enabled = false;
         // Reset captureSessionStartTime
         // TODO: Download the logs as json
-        console.log("Capture session ended");
-        console.log("Capture session ended");
-        console.log("Capture session ended");
         console.log("Capture session ended");
         console.log("Capture session ended");
         console.log("Capture session ended");
@@ -128,6 +123,11 @@ export class InputCaptureManager {
 
     // Reset everything
     reset() {
+        this.recording.enabled = false;
+    }
+
+    cancel() {
+        console.log("Canceled capture session");
         this.recording.enabled = false;
     }
 

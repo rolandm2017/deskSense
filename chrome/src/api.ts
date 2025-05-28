@@ -69,7 +69,7 @@ class YouTubeApi {
             startTime: new Date().toISOString(),
             playerState: initialPlayerState,
         };
-        console.log("Sending YouTube Watch Page payload:", payload.channel);
+        // console.log("Sending YouTube Watch Page payload:", payload.channel);
         // console.log(youTubeUrl, "is the youtube url");
         this.logger.logEventWithPayload(
             "sendYouTubeWatchPage",
@@ -105,9 +105,9 @@ class YouTubeApi {
             // their time spent watching content that day.
             // timestamp: 0
         };
-        console.trace("Play event");
+        // console.trace("Play event");
 
-        console.log("The play payload is ", payload.channel);
+        // console.log("The play payload is ", payload.channel);
         this.logger.logEventWithPayload(
             "sendPlayEvent",
             youTubeRoutes.youtubePlayerStateUrl,
@@ -126,7 +126,7 @@ class YouTubeApi {
             playerState: "paused",
             // timestamp: 0,
         };
-        console.trace("pause event");
+        // console.trace("pause event");
 
         console.log("The pause payload is ", payload.channel);
         this.logger.logEventWithPayload(

@@ -7,6 +7,7 @@ import { YouTubePlayerChange, YouTubeTabChange } from "../interface/payloads";
 
 export type CaptureEvent =
     | { type: "ON_UPDATED_COMPLETE"; data: OnUpdatedData; metadata: Metadata }
+    | { type: "ON_ACTIVATED"; data: OnUpdatedData; metadata: Metadata }
     | {
           type: "PLAYER_STATE_CHANGED";
           data: PlayerStateData;

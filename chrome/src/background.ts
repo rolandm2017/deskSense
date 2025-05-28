@@ -2,12 +2,7 @@
 
 import { isNetflixWatchPage } from "./netflix/netflixUrlTool";
 
-import {
-    distributeTaskData,
-    getTaskForDomain,
-    handleUserTabsBackIn,
-    playPauseDispatch,
-} from "./backgroundUtil";
+import { handleUserTabsBackIn, playPauseDispatch } from "./backgroundUtil";
 
 import { NetflixViewing, viewingTracker } from "./videoCommon/visits";
 
@@ -24,6 +19,7 @@ helpDeveloperNoticeMissingNpmRunBuild();
     captureManager.downloadPayloadEvents();
 (self as any).showRemainingTime = () => captureManager.showRemainingTime();
 (self as any).countPayloadEvents = () => captureManager.showRemainingTime();
+(self as any).cancelCapture = () => captureManager.cancel();
 
 // Disabled in favor of the modal
 function openOptionsOnClickIcon() {
@@ -48,27 +44,26 @@ function openOptionsOnClickIcon() {
  * When a tab's favicon changes
  * When a tab's loading status changes
  */
-
+// TODO: Figure out if this is needed or not
 // Listen for any tab updates
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     // Chrome's onUpdated event can indeed fire multiple times for a single user action like a refresh
     if (changeInfo.status === "complete" && tab.url) {
         console.log("onUpdated - getDomainFromUrl");
-        captureManager.captureIfEnabled({
-            type: "ON_UPDATED_COMPLETE",
-            data: { tabId, url: tab.url, title: tab.title },
-            metadata: {
-                source: "onUpdated.addListener",
-                method: "user_input",
-                location: "background.ts",
-                timestamp: new Date().toISOString(),
-            },
-        });
-
-        const task = getTaskForDomain(tab, (youTubeTask) => {
-            distributeTaskData(youTubeTask);
-        });
-        distributeTaskData(task);
+        //    captureManager.captureIfEnabled({
+        //        type: "ON_UPDATED_COMPLETE",
+        //        data: { tabId, url: tab.url, title: tab.title },
+        //        metadata: {
+        //            source: "onUpdated.addListener",
+        //            method: "user_input",
+        //            location: "background.ts",
+        //            timestamp: new Date().toISOString(),
+        //        },
+        //    });
+        //    const task = getTaskForDomain(tab, (youTubeTask) => {
+        //        distributeTaskData(youTubeTask);
+        //    });
+        //    distributeTaskData(task);
     }
 });
 
@@ -76,10 +71,12 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 let currentTabId: number;
 chrome.tabs.onActivated.addListener((activeInfo) => {
     currentTabId = activeInfo.tabId;
+    console.log("in ONACTIVATED: ", currentTabId);
+    lastActiveTabId = activeInfo.tabId;
     chrome.tabs.get(activeInfo.tabId, (tab) => {
         if (tab.url) {
             captureManager.captureIfEnabled({
-                type: "ON_UPDATED_COMPLETE",
+                type: "ON_ACTIVATED",
                 data: { tabId: currentTabId, url: tab.url, title: tab.title },
                 metadata: {
                     source: "onActivated",
@@ -93,10 +90,10 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
             // The other one is, "I alt tab back IN to Chrome."
             // But the alt-tab-back-into-Chrome one also fires "onActivated".
             // TODO: Find a way to choose between this one and the onMessage focus listener
-            const task = getTaskForDomain(tab, (youTubeTask) => {
-                distributeTaskData(youTubeTask);
-            });
-            distributeTaskData(task);
+            // const task = getTaskForDomain(tab, (youTubeTask) => {
+            //     distributeTaskData(youTubeTask);
+            // });
+            // distributeTaskData(task);
 
             // TODO: On tab into a Player page, get player state from storage, package
             // player state into payload for reportWatchPage. Think
@@ -233,7 +230,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Other existing message handling...
     }
 });
-
 // PROBLEM: Without this code and it's partner code, the user
 // can tab back into Chrome, WITHOUT Tab firing off an "Active Tab"
 // alert to the server. So the backend sits there saying "Google Chrome"
@@ -241,6 +237,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // or that's how it was until this code fixed it.
 let switchCounter = 0;
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    console.log("window_gained_focus listener");
     if (message.event !== "window_gained_focus") {
         return;
     }
@@ -255,8 +252,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const activeTab = tabs[0];
         // Must hinder both window_gained_focus event and onActivated co-occurring
-        const tabbingIntoCurrentlyActiveTab = activeTab.id == currentTabId;
-        if (activeTab.url && tabbingIntoCurrentlyActiveTab) {
+        // const tabbingIntoCurrentlyActiveTab = activeTab.id == currentTabId;
+        // if (activeTab.url && tabbingIntoCurrentlyActiveTab) {
+        if (activeTab.url) {
+            console.log("Tabbed back in OR changed tabs");
             captureManager.captureIfEnabled({
                 type: "ALT_TAB_BACK_IN",
                 data: {
@@ -277,6 +276,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         // activeTab.url, activeTab.title, etc.
     });
+});
+
+let lastActiveWindowId: number | undefined = undefined;
+let lastActiveTabId: number | undefined = undefined;
+
+chrome.windows.onFocusChanged.addListener((windowId) => {
+    console.log("on focus changed listener");
+
+    // IDEA ONE: On Alt Tab, store the tab ID in a variable.
+    // Then, "alt tab back in" only occurs if the tab ID is the same.
+    // LITERALLY run "get current tab ID" when  if (windowId === chrome.windows.WINDOW_ID_NONE) {
+    // in onFocusChanged
+    // IDEA TWO: Poll the server for the currently active program. Every like 200 ms
+    // When the user tabs back into Chrome, the "onAnotherWindow" stops,
+    // The onAnotherWindow signal stops, and the extension knows, "time to update state"
+    if (windowId === chrome.windows.WINDOW_ID_NONE) {
+        // Chrome lost focus
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            const activeTab = tabs[0];
+            // chrome.tabs.query(windowId, { populate: true }, (window) => {
+            if (activeTab && activeTab.id !== lastActiveTabId) {
+                // Case A: Came from another program (window focus changed)
+                console.log("Alt-tabbed from another program");
+                lastActiveTabId = activeTab.id;
+            }
+        });
+        return;
+    }
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

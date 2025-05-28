@@ -28,12 +28,16 @@ const sets = [
         "user-input-activity-Tue May 27 2025 (2).json",
         "payload-events-Tue May 27 2025.json",
     ],
+    [
+        "user-input-activity-Tue May 27 2025 (3).json",
+        "payload-events-Tue May 27 2025 (1).json",
+    ],
 ];
-const payloadLogFilePath = join(chromeDir, "logs", sets[0][1]);
+const payloadLogFilePath = join(chromeDir, "logs", sets[1][1]);
 const rawData = readFileSync(payloadLogFilePath, "utf8");
 const payloadEvents = JSON.parse(rawData);
 
-const activityLogFilePath = join(chromeDir, "logs", sets[0][0]);
+const activityLogFilePath = join(chromeDir, "logs", sets[1][0]);
 const rawUserData = readFileSync(activityLogFilePath, "utf8");
 const userEvents = JSON.parse(rawUserData);
 
