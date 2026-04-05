@@ -4,6 +4,8 @@ a program that tracks how I spend my time.
 
 programs, chrome tabs. entertainment vs productivity.
 
+Allows the user to become content or discontent with how they spent their day, week, month.
+
 ## use cases
 
 Tracking how much time I spend coding.
