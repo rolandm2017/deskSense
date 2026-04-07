@@ -5,6 +5,7 @@
 .venv
 .win-env
 .win-env2
+.desk
 
 
 .idea
