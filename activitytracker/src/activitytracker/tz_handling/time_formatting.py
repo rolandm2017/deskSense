@@ -9,7 +9,7 @@ from activitytracker.config.definitions import (
 )
 from activitytracker.db.models import (
     DailySummaryBase,
-    SummaryLogBase,
+    ActivityLogBase,
     SystemStatus,
     TimelineEntryObj,
 )
@@ -26,7 +26,7 @@ def convert_all_to_tz(obj_list, target_tz):
         for obj in obj_list:
             convert_summary_to_tz(obj, target_tz)
         return obj_list
-    elif isinstance(obj_list[0], SummaryLogBase):
+    elif isinstance(obj_list[0], ActivityLogBase):
         for log_obj in obj_list:
             # FIXME: If _local fields are None, convert the gathering_date
             convert_log_to_tz(log_obj, target_tz)
@@ -54,7 +54,7 @@ def convert_summary_to_tz(summary_obj: DailySummaryBase, tz):
     summary_obj.gathering_date = converted_time
 
 
-def convert_log_to_tz(log_obj: SummaryLogBase, tz):
+def convert_log_to_tz(log_obj: ActivityLogBase, tz):
     """
     Modifies the object in place! Mutates the reference.
     """
@@ -101,7 +101,7 @@ def attach_tz_to_obj(obj, target_tz):
         attach_tz_to_local_fields_for_summary(obj, target_tz)
 
         return obj
-    elif isinstance(obj, SummaryLogBase):
+    elif isinstance(obj, ActivityLogBase):
         # Properly assign the new datetime objects back to the attributes
         # FIXME: If _local fields are None, convert the gathering_date
         attach_tz_to_local_fields_for_logs(obj, target_tz)
@@ -122,7 +122,7 @@ def attach_tz_to_all(obj_list, target_tz):
         for obj in obj_list:
             attach_tz_to_local_fields_for_summary(obj, target_tz)
         return obj_list
-    elif isinstance(obj_list[0], SummaryLogBase):
+    elif isinstance(obj_list[0], ActivityLogBase):
         for log_obj in obj_list:
             # FIXME: If _local fields are None, convert the gathering_date
             attach_tz_to_local_fields_for_logs(log_obj, target_tz)
@@ -143,7 +143,7 @@ def attach_tz_to_local_fields_for_summary(summary_obj: DailySummaryBase, tz):
     summary_obj.gathering_date_local = summary_obj.gathering_date_local.replace(tzinfo=tz)
 
 
-def attach_tz_to_local_fields_for_logs(log_obj: SummaryLogBase, tz):
+def attach_tz_to_local_fields_for_logs(log_obj: ActivityLogBase, tz):
     log_obj.gathering_date_local = log_obj.gathering_date_local.replace(tzinfo=tz)
     log_obj.start_time_local = log_obj.start_time_local.replace(tzinfo=tz)
     log_obj.end_time_local = log_obj.end_time_local.replace(tzinfo=tz)

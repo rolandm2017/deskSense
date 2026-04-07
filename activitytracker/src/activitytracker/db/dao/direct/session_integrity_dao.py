@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from datetime import datetime, timedelta
 from typing import List
 
-from activitytracker.db.models import DomainSummaryLog, ProgramSummaryLog
+from activitytracker.db.models import DomainActivityLog, ProgramActivityLog
 from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.debug_logger import print_and_log
 
@@ -58,10 +58,10 @@ class SessionIntegrityDao:
         """Find sessions that were never properly closed -- still open after shutdown."""
         # Implementation that uses system_status_dao to get power events
         # and checks against program/chrome logs
-        programs: List[ProgramSummaryLog] = self.program_logging_dao.find_orphans(
+        programs: List[ProgramActivityLog] = self.program_logging_dao.find_orphans(
             latest_shutdown, startup_time
         )
-        domains: List[DomainSummaryLog] = self.chrome_logging_dao.find_orphans(
+        domains: List[DomainActivityLog] = self.chrome_logging_dao.find_orphans(
             latest_shutdown, startup_time
         )
         return programs, domains
@@ -72,10 +72,10 @@ class SessionIntegrityDao:
         A phantom is a session that has its start time as "when the computer was surely off."
         """
         # Implementation that checks for session start times during power-off periods
-        programs: List[ProgramSummaryLog] = self.program_logging_dao.find_phantoms(
+        programs: List[ProgramActivityLog] = self.program_logging_dao.find_phantoms(
             latest_shutdown, startup_time
         )
-        domains: List[DomainSummaryLog] = self.chrome_logging_dao.find_phantoms(
+        domains: List[DomainActivityLog] = self.chrome_logging_dao.find_phantoms(
             latest_shutdown, startup_time
         )
         return programs, domains

@@ -9,7 +9,7 @@ from typing import List
 
 from activitytracker.db.dao.logging_dao_mixin import LoggingDaoMixin
 from activitytracker.db.dao.utility_dao_mixin import UtilityDaoMixin
-from activitytracker.db.models import VideoSummaryLog
+from activitytracker.db.models import VideoActivityLog
 from activitytracker.object.classes import (
     CompletedVideoSession,
     VideoInfo,
@@ -53,7 +53,7 @@ class VideoLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
 
         self.regular_session = session_maker  # Do not delete. UtilityDao still uses it
         self.logger = ConsoleLogger()
-        self.model = VideoSummaryLog
+        self.model = VideoActivityLog
 
     def start_session(self, session: VideoSession):
         """
@@ -64,7 +64,7 @@ class VideoLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
 
         initializer = LogTimeConverter(session.start_time)
 
-        log_entry = VideoSummaryLog(
+        log_entry = VideoActivityLog(
             video_id=session.video_info.video_id,
             media_name=session.media_title,
             platform=session.video_info.get_platform_title(),
@@ -91,15 +91,15 @@ class VideoLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         return self.execute_and_read_one_or_none(query)
 
     def select_where_time_equals(self, some_time):
-        return select(VideoSummaryLog).where(VideoSummaryLog.start_time.op("=")(some_time))
+        return select(VideoActivityLog).where(VideoActivityLog.start_time.op("=")(some_time))
 
-    def read_day_as_sorted(self, day: UserLocalTime) -> dict[str, VideoSummaryLog]:
+    def read_day_as_sorted(self, day: UserLocalTime) -> dict[str, VideoActivityLog]:
         # NOTE: the database is storing and returning times in UTC
-        return self._read_day_as_sorted(day, VideoSummaryLog, VideoSummaryLog.domain_name)
+        return self._read_day_as_sorted(day, VideoActivityLog, VideoActivityLog.domain_name)
 
-    def read_all(self) -> List[VideoSummaryLog]:
+    def read_all(self) -> List[VideoActivityLog]:
         """Fetch all domain log entries"""
-        query = select(VideoSummaryLog)
+        query = select(VideoActivityLog)
         results = self.execute_and_return_all(query)
         return results  # Developer is trusted to attach tz manually where relevant
         # return self.execute_and_return_all(query)
@@ -133,7 +133,7 @@ class VideoLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
                 )
 
     def push_window_ahead_ten_sec(self, session: VideoSession):
-        log: VideoSummaryLog = self.find_session(session)
+        log: VideoActivityLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError("Start of pulse didn't reach the db")
         log.end_time = log.end_time + timedelta(seconds=10)
@@ -144,7 +144,7 @@ class VideoLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         Overwrite value from the pulse. Expect something to ALWAYS be in the db already at this point.
         Note that if the computer was shutdown, this method is never called, and the rough estimate is kept.
         """
-        log: VideoSummaryLog = self.find_session(session)
+        log: VideoActivityLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError("Start of pulse didn't reach the db")
         self.attach_final_values_and_update(session, log)

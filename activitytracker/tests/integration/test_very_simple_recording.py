@@ -12,8 +12,8 @@ from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.models import (
     DailyDomainSummary,
     DailyProgramSummary,
-    DomainSummaryLog,
-    ProgramSummaryLog,
+    DomainActivityLog,
+    ProgramActivityLog,
 )
 from activitytracker.object.classes import ChromeSession, ProgramSession
 from activitytracker.tz_handling.time_formatting import get_start_of_day_from_ult

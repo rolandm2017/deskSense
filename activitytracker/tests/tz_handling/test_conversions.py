@@ -9,7 +9,7 @@ import pytest
 from datetime import datetime, timezone
 import pytz
 
-from activitytracker.db.models import ProgramSummaryLog, DailyProgramSummary
+from activitytracker.db.models import ProgramActivityLog, DailyProgramSummary
 from activitytracker.tz_handling.time_formatting import (
     convert_to_utc,
     convert_to_timezone,
@@ -114,7 +114,7 @@ def test_convert_log_back_to_target_tz():
 
     t2 = utc_tz.localize(datetime(2025, 1, 20, 0, 0, 0))
 
-    mock_db_result = ProgramSummaryLog()
+    mock_db_result = ProgramActivityLog()
     mock_db_result.start_time = t0
     mock_db_result.end_time = t1
     mock_db_result.gathering_date = t2

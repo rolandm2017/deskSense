@@ -29,7 +29,7 @@ from activitytracker.db.dao.direct.video_summary_dao import VideoSummaryDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.dao.queuing.video_logs_dao import VideoLoggingDao
-from activitytracker.db.models import DailyProgramSummary, ProgramSummaryLog
+from activitytracker.db.models import DailyProgramSummary, ProgramActivityLog
 from activitytracker.facade.facade_singletons import (
     get_keyboard_facade_instance,
     get_mouse_facade_instance,
@@ -526,7 +526,7 @@ async def test_program_path_with_existing_sessions(
         for i in range(0, event_count):
             summary_log = logger_add_new_item_spy.call_args_list[i][0][0]
 
-            assert isinstance(summary_log, ProgramSummaryLog)
+            assert isinstance(summary_log, ProgramActivityLog)
             assert (
                 summary_log.exe_path_as_id == test_data_clone[i].exe_path
             ), "Exe path didn't make it to one of it's destinations"

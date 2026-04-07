@@ -7,7 +7,7 @@ from typing import List
 
 from activitytracker.db.dao.logging_dao_mixin import LoggingDaoMixin
 from activitytracker.db.dao.utility_dao_mixin import UtilityDaoMixin
-from activitytracker.db.models import ProgramSummaryLog
+from activitytracker.db.models import ProgramActivityLog
 from activitytracker.object.classes import CompletedProgramSession, ProgramSession
 from activitytracker.tz_handling.dao_objects import LogTimeConverter
 from activitytracker.tz_handling.time_formatting import (
@@ -46,7 +46,7 @@ class ProgramLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         """Exists mostly for debugging."""
         self.regular_session = session_maker  # Do not delete. UtilityDao still uses it
         self.logger = ConsoleLogger()
-        self.model = ProgramSummaryLog
+        self.model = ProgramActivityLog
 
     def start_session(self, session: ProgramSession):
         """
@@ -60,7 +60,7 @@ class ProgramLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
 
         # self.logger.log_white(f"INFO: starting session at start_of_day: {start_of_day_as_utc}\n\t for {session.process_name}")
 
-        log_entry = ProgramSummaryLog(
+        log_entry = ProgramActivityLog(
             exe_path_as_id=session.exe_path,
             process_name=session.process_name,
             program_name=session.window_title,
@@ -79,7 +79,7 @@ class ProgramLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         # self.do_add_entry(log_entry)
         self.add_new_item(log_entry)
 
-    def find_session(self, session: ProgramSession) -> ProgramSummaryLog | None:
+    def find_session(self, session: ProgramSession) -> ProgramActivityLog | None:
         """Is finding it by time! Looking for the one, specifically, with the arg's time"""
         # the database is storing and returning times in UTC
         if session.start_time is None:
@@ -89,19 +89,19 @@ class ProgramLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         return self.execute_and_read_one_or_none(query)
 
     def select_where_time_equals(self, some_time):
-        return select(ProgramSummaryLog).where(
-            ProgramSummaryLog.start_time.op("=")(some_time)
+        return select(ProgramActivityLog).where(
+            ProgramActivityLog.start_time.op("=")(some_time)
         )
 
-    def read_day_as_sorted(self, day: UserLocalTime) -> dict[str, ProgramSummaryLog]:
+    def read_day_as_sorted(self, day: UserLocalTime) -> dict[str, ProgramActivityLog]:
         # NOTE: the database is storing and returning times in UTC
         return self._read_day_as_sorted(
-            day, ProgramSummaryLog, ProgramSummaryLog.program_name
+            day, ProgramActivityLog, ProgramActivityLog.program_name
         )
 
-    def read_all(self) -> List[ProgramSummaryLog]:
+    def read_all(self) -> List[ProgramActivityLog]:
         """Fetch all program log entries"""
-        query = select(ProgramSummaryLog)
+        query = select(ProgramActivityLog)
         # Developer is trusted to attach tz info manually
         return self.execute_and_return_all(query)
 
@@ -116,9 +116,9 @@ class ProgramLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         """Get entries with durations longer than 20 minutes"""
         suspicious_duration = 0.33333333  # 20 minutes in hours
         query = (
-            select(ProgramSummaryLog)
-            .where(ProgramSummaryLog.hours_spent > suspicious_duration)
-            .order_by(ProgramSummaryLog.hours_spent.desc())
+            select(ProgramActivityLog)
+            .where(ProgramActivityLog.hours_spent > suspicious_duration)
+            .order_by(ProgramActivityLog.hours_spent.desc())
         )
         return self.execute_and_return_all(query)
 
@@ -126,19 +126,19 @@ class ProgramLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         """Get alt-tab windows with durations longer than 10 seconds"""
         alt_tab_threshold = 0.0027777  # 10 seconds in hours, or 10/3600
         query = (
-            select(ProgramSummaryLog)
+            select(ProgramActivityLog)
             .where(
-                ProgramSummaryLog.program_name == "Alt-tab window",
-                ProgramSummaryLog.hours_spent > alt_tab_threshold,
+                ProgramActivityLog.program_name == "Alt-tab window",
+                ProgramActivityLog.hours_spent > alt_tab_threshold,
             )
-            .order_by(ProgramSummaryLog.hours_spent.desc())
+            .order_by(ProgramActivityLog.hours_spent.desc())
         )
         return self.execute_and_return_all(query)
 
     def push_window_ahead_ten_sec(self, session: ProgramSession):
         if session is None:
             raise ValueError("Session was None")
-        log: ProgramSummaryLog = self.find_session(session)
+        log: ProgramActivityLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError("Start of pulse didn't reach the db")
         log.duration_in_sec = log.duration_in_sec + 10
@@ -147,7 +147,7 @@ class ProgramLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
 
     def finalize_log(self, session: CompletedProgramSession):
         """Overwrite value from the pulse. Expect something to ALWAYS be in the db already at this point."""
-        log: ProgramSummaryLog = self.find_session(session)
+        log: ProgramActivityLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError("Start of pulse didn't reach the db")
         self.attach_final_values_and_update(session, log)

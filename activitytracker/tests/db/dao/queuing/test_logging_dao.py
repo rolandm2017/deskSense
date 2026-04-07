@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta, timezone
 
 
-from activitytracker.db.models import DomainSummaryLog, ProgramSummaryLog, Base
+from activitytracker.db.models import DomainActivityLog, ProgramActivityLog, Base
 
 
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
@@ -135,7 +135,7 @@ def test_push_window_ahead(prepare_daos):
     start_val_for_test = 33
 
     program_find_session_mock = Mock()
-    pretend_pr_log = ProgramSummaryLog(
+    pretend_pr_log = ProgramActivityLog(
         program_name="VSCode",
         hours_spent=120 / SECONDS_PER_HOUR,
         start_time=datetime(2025, 4, 19, 9, 0, 0, tzinfo=tokyo_tz),
@@ -148,7 +148,7 @@ def test_push_window_ahead(prepare_daos):
     program_dao.find_session = program_find_session_mock
 
     chrome_find_session_mock = Mock()
-    pretend_domain_log = DomainSummaryLog(
+    pretend_domain_log = DomainActivityLog(
         domain_name="example.com",
         hours_spent=4.5,
         start_time=datetime(2025, 4, 20, 10, 0, tzinfo=tokyo_tz),
@@ -178,10 +178,10 @@ def test_push_window_ahead(prepare_daos):
     chrome_update_item_spy.assert_called_once()
 
     args, _ = program_update_item_spy.call_args
-    assert isinstance(args[0], ProgramSummaryLog), "Window push failed in logging dao"
+    assert isinstance(args[0], ProgramActivityLog), "Window push failed in logging dao"
 
     args, _ = chrome_update_item_spy.call_args
-    assert isinstance(args[0], DomainSummaryLog), "Window push failed in logging dao"
+    assert isinstance(args[0], DomainActivityLog), "Window push failed in logging dao"
 
 
 @pytest.fixture
@@ -240,10 +240,10 @@ def test_finalize_log(prepare_daos, mock_regular_session_maker, nonexistent_sess
     assert str(t4_start.tzinfo) == "Asia/Tokyo"
     assert str(t5_end.tzinfo) == "Asia/Tokyo"
 
-    found_program_session = ProgramSummaryLog()
+    found_program_session = ProgramActivityLog()
     found_program_session.start_time = convert_to_utc(s1_start)
     found_program_session.end_time = convert_to_utc(s1_end)  # They're already in UTC
-    found_domain_session = DomainSummaryLog()
+    found_domain_session = DomainActivityLog()
     found_domain_session.start_time = convert_to_utc(t4_start)
     found_domain_session.end_time = convert_to_utc(t5_end)  # They're already in UTC
 
@@ -284,9 +284,9 @@ def test_finalize_log(prepare_daos, mock_regular_session_maker, nonexistent_sess
     ch_update_item_spy.assert_called_once()
 
     args, _ = pr_update_item_spy.call_args
-    assert isinstance(args[0], ProgramSummaryLog)
+    assert isinstance(args[0], ProgramActivityLog)
     args, _ = ch_update_item_spy.call_args
-    assert isinstance(args[0], DomainSummaryLog)
+    assert isinstance(args[0], DomainActivityLog)
 
     # Assert that the end time is calculated correctly
     assert str(found_program_session.end_time.tzinfo) == "UTC"

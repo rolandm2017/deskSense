@@ -10,7 +10,7 @@ from activitytracker.db.dao.direct.video_summary_dao import VideoSummaryDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.dao.queuing.video_logs_dao import VideoLoggingDao
-from activitytracker.db.models import SummaryLogBase
+from activitytracker.db.models import ActivityLogBase
 from activitytracker.object.classes import ChromeSession, ProgramSession
 from activitytracker.util.const import SECONDS_PER_HOUR
 
@@ -291,7 +291,7 @@ def test_long_series_of_writes_yields_correct_final_times(
         logs_durations_tally_by_name = {}
 
         for log in program_logs + domain_logs:
-            log: SummaryLogBase
+            log: ActivityLogBase
             name = log.get_name()
             if name in logs_durations_tally_by_name:
                 logs_durations_tally_by_name[name] += log.duration_in_sec

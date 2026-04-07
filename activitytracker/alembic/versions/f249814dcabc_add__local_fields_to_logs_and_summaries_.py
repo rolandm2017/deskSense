@@ -72,7 +72,7 @@ def downgrade():
     op.drop_column("daily_program_summaries", "gathering_date_local")
     op.drop_column("daily_chrome_summaries", "gathering_date_local")
 
-    # Remove local timezone fields from models inheriting from SummaryLogBase
+    # Remove local timezone fields from models inheriting from ActivityLogBase
     op.drop_column("program_logs", "start_time_local")
     op.drop_column("program_logs", "end_time_local")
     op.drop_column("program_logs", "gathering_date_local")

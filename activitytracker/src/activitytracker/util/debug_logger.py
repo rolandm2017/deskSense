@@ -11,8 +11,8 @@ from .console_logger import ConsoleLogger
 from activitytracker.db.models import (
     DailyDomainSummary,
     DailyProgramSummary,
-    DomainSummaryLog,
-    ProgramSummaryLog,
+    DomainActivityLog,
+    ProgramActivityLog,
 )
 from activitytracker.object.classes import ProgramSession
 from activitytracker.object.pydantic_dto import UtcDtTabChange
@@ -65,7 +65,7 @@ def get_current_day_log_name(log_date: str):
 
 
 def print_and_log(
-    sessions: List[ProgramSummaryLog] | List[DomainSummaryLog],
+    sessions: List[ProgramActivityLog] | List[DomainActivityLog],
     latest_shutdown_time: datetime,
     startup_time: datetime,
 ):

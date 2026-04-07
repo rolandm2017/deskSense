@@ -32,7 +32,7 @@ from activitytracker.db.database import (
 from activitytracker.db.models import (
     DailyDomainSummary,
     DailyProgramSummary,
-    ProgramSummaryLog,
+    ProgramActivityLog,
 )
 from activitytracker.facade.receive_messages import MessageReceiver
 from activitytracker.object.classes import (

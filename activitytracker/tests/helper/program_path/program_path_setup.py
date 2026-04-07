@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 from datetime import datetime, timedelta
 
-from activitytracker.db.models import DailyProgramSummary, ProgramSummaryLog
+from activitytracker.db.models import DailyProgramSummary, ProgramActivityLog
 from activitytracker.tz_handling.time_formatting import (
     convert_to_utc,
     get_start_of_day_from_datetime,
@@ -41,7 +41,7 @@ def make_preexisting_log(session, id_for_log):
     sixty_sec = 60
     # Note that the test data is from  "2025-03-22 16:16:17.480951-07:00" ish. 03-22.
     very_early_morning = datetime(2025, 3, 22, 5, 35, 50)
-    return ProgramSummaryLog(
+    return ProgramActivityLog(
         id=id_for_log,
         exe_path_as_id=session.process_name,
         process_name=session.process_name,
@@ -79,7 +79,7 @@ def make_log_from_session(session):
         raise ValueError("Expected datetime")
     start_of_day_as_utc = convert_to_utc(start_of_day)
     start_window_end = base_start_time_as_utc + timedelta(seconds=10)
-    return ProgramSummaryLog(
+    return ProgramActivityLog(
         exe_path_as_id=session.exe_path,
         process_name=session.process_name,
         program_name=session.window_title,

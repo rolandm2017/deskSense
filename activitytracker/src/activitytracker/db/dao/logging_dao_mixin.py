@@ -6,9 +6,9 @@ from datetime import timedelta
 from typing import Callable, Type, TypeVar
 
 from activitytracker.db.models import (
-    DomainSummaryLog,
-    ProgramSummaryLog,
-    VideoSummaryLog,
+    DomainActivityLog,
+    ProgramActivityLog,
+    VideoActivityLog,
 )
 from activitytracker.tz_handling.time_formatting import (
     attach_tz_to_all,
@@ -46,7 +46,7 @@ class LoggingDaoMixin:
         return grouped_logs
 
     def attach_final_values_and_update(
-        self, session, log: ProgramSummaryLog | DomainSummaryLog | VideoSummaryLog
+        self, session, log: ProgramActivityLog | DomainActivityLog | VideoActivityLog
     ):
         finalized_duration = (session.end_time.dt - session.start_time.dt).total_seconds()
         if finalized_duration < 0:

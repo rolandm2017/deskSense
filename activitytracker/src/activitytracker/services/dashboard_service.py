@@ -12,7 +12,7 @@ from activitytracker.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
 from activitytracker.db.models import (
     DailyDomainSummary,
     DailyProgramSummary,
-    ProgramSummaryLog,
+    ProgramActivityLog,
     TimelineEntryObj,
 )
 from activitytracker.services.timezone_service import TimezoneService
@@ -189,7 +189,7 @@ class ProgramsService(WeekCalculationMixin):
             if is_in_future:
                 continue  # avoid reading future dates from db
 
-            program_usage_timeline: dict[str, ProgramSummaryLog] = (
+            program_usage_timeline: dict[str, ProgramActivityLog] = (
                 self.program_logging_dao.read_day_as_sorted(UserLocalTime(current_day))
             )
             day = {
@@ -220,7 +220,7 @@ class ProgramsService(WeekCalculationMixin):
             if is_in_future:
                 continue  # avoid reading future dates from db
 
-            program_usage_timeline: dict[str, ProgramSummaryLog] = (
+            program_usage_timeline: dict[str, ProgramActivityLog] = (
                 self.program_logging_dao.read_day_as_sorted(UserLocalTime(current_day))
             )
 

@@ -22,12 +22,9 @@ from surveillance.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from surveillance.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
 from surveillance.db.database import async_session_maker, regular_session_maker
 from surveillance.db.models import (
-    DailyDomainSummary,
-    DailyProgramSummary,
-    DailySummaryBase,
-    DomainSummaryLog,
-    ProgramSummaryLog,
-    SummaryLogBase,
+    DomainActivityLog,
+    ProgramActivityLog
+  
 )
 from surveillance.object.dashboard_dto import WeeklyProgramContent
 from surveillance.object.enums import ChartEventType
@@ -113,7 +110,7 @@ def main():
         # print(type(gathering_date), "137ru")
         relevant_logs = program_logs_dict[gathering_date]
         for log in relevant_logs:
-            log: ProgramSummaryLog | DomainSummaryLog
+            log: ProgramActivityLog | DomainActivityLog
             end_hour = log.end_time.hour
             if end_hour in end_times_hashtable:
                 end_times_hashtable[end_hour] += 1

@@ -21,7 +21,7 @@ from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta, timezone
 
 
-from activitytracker.db.models import DomainSummaryLog, ProgramSummaryLog, Base
+from activitytracker.db.models import DomainActivityLog, ProgramActivityLog, Base
 
 
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
@@ -117,7 +117,7 @@ def test_round_trip(regular_session_maker):
 
         log = logs_arr[0]
 
-        assert isinstance(log, ProgramSummaryLog)
+        assert isinstance(log, ProgramActivityLog)
 
         duration_from_start_end = (log.end_time - log.start_time).total_seconds()
 

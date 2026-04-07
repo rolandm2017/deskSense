@@ -103,7 +103,7 @@ class DailyVideoSummary(DailySummaryBase):
         return f"Video: {self.media_name}, \tHours: {self.hours_spent}, \tDate: {formatted_date}"
 
 
-class SummaryLogBase(Base):
+class ActivityLogBase(Base):
     """
     Base class for summary logs with common fields
     """
@@ -126,7 +126,7 @@ class SummaryLogBase(Base):
     created_at = Column(DateTime(timezone=True))
 
 
-class ProgramSummaryLog(SummaryLogBase):
+class ProgramActivityLog(ActivityLogBase):
     """
     Logs a singular addition to the ProgramSummary table
     """
@@ -142,13 +142,13 @@ class ProgramSummaryLog(SummaryLogBase):
 
     def __str__(self):
         return (
-            f"ProgramSummaryLog(id={self.id}, program_name={self.program_name}, hours_spent={self.hours_spent}, "
+            f"ProgramActivityLog(id={self.id}, program_name={self.program_name}, hours_spent={self.hours_spent}, "
             f"start_time={self.start_time}, end_time={self.end_time}, "
             f"gathering_date={self.gathering_date}, created_at={self.created_at})"
         )
 
 
-class DomainSummaryLog(SummaryLogBase):
+class DomainActivityLog(ActivityLogBase):
     __tablename__ = "domain_logs"
 
     domain_name: Mapped[str] = mapped_column(String)
@@ -158,13 +158,13 @@ class DomainSummaryLog(SummaryLogBase):
 
     def __str__(self):
         return (
-            f"DomainSummaryLog(domain_name={self.domain_name}, hours_spent={self.hours_spent}, "
+            f"DomainActivityLog(domain_name={self.domain_name}, hours_spent={self.hours_spent}, "
             f"start_time={self.start_time}, end_time={self.end_time}, "
             f"gathering_date={self.gathering_date}, created_at={self.created_at})"
         )
 
 
-class VideoSummaryLog(SummaryLogBase):
+class VideoActivityLog(ActivityLogBase):
     __tablename__ = "video_logs"
 
     # Not necessarily unique
@@ -180,7 +180,7 @@ class VideoSummaryLog(SummaryLogBase):
 
     def __str__(self):
         return (
-            f"VideoSummaryLog(media_name={self.media_name}, hours_spent={self.hours_spent}, "
+            f"VideoActivityLog(media_name={self.media_name}, hours_spent={self.hours_spent}, "
             f"start_time={self.start_time}, end_time={self.end_time}, "
             f"gathering_date={self.gathering_date}, created_at={self.created_at})"
         )

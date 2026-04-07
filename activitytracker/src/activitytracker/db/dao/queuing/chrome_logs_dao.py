@@ -9,7 +9,7 @@ from typing import List
 
 from activitytracker.db.dao.logging_dao_mixin import LoggingDaoMixin
 from activitytracker.db.dao.utility_dao_mixin import UtilityDaoMixin
-from activitytracker.db.models import DomainSummaryLog, ProgramSummaryLog
+from activitytracker.db.models import DomainActivityLog, ProgramActivityLog
 from activitytracker.object.classes import ChromeSession, CompletedChromeSession
 from activitytracker.tz_handling.dao_objects import LogTimeConverter
 from activitytracker.tz_handling.time_formatting import (
@@ -49,7 +49,7 @@ class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
 
         self.regular_session = session_maker  # Do not delete. UtilityDao still uses it
         self.logger = ConsoleLogger()
-        self.model = DomainSummaryLog
+        self.model = DomainActivityLog
 
     def start_session(self, session: ChromeSession):
         """
@@ -58,7 +58,7 @@ class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
 
         initializer = LogTimeConverter(session.start_time)
 
-        log_entry = DomainSummaryLog(
+        log_entry = DomainActivityLog(
             domain_name=session.domain,
             # Assumes (10 - n) sec will be deducted later
             # FIXME: all time additions should happen thru KeepAlive
@@ -84,15 +84,15 @@ class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         return self.execute_and_read_one_or_none(query)
 
     def select_where_time_equals(self, some_time):
-        return select(DomainSummaryLog).where(DomainSummaryLog.start_time.op("=")(some_time))
+        return select(DomainActivityLog).where(DomainActivityLog.start_time.op("=")(some_time))
 
-    def read_day_as_sorted(self, day: UserLocalTime) -> dict[str, DomainSummaryLog]:
+    def read_day_as_sorted(self, day: UserLocalTime) -> dict[str, DomainActivityLog]:
         # NOTE: the database is storing and returning times in UTC
-        return self._read_day_as_sorted(day, DomainSummaryLog, DomainSummaryLog.domain_name)
+        return self._read_day_as_sorted(day, DomainActivityLog, DomainActivityLog.domain_name)
 
-    def read_all(self) -> List[DomainSummaryLog]:
+    def read_all(self) -> List[DomainActivityLog]:
         """Fetch all domain log entries"""
-        query = select(DomainSummaryLog)
+        query = select(DomainActivityLog)
         results = self.execute_and_return_all(query)
         return results  # Developer is trusted to attach tz manually where relevant
         # return self.execute_and_return_all(query)
@@ -102,7 +102,7 @@ class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         return self.do_read_last_24_hrs(right_now)
 
     def push_window_ahead_ten_sec(self, session: ChromeSession):
-        log: DomainSummaryLog = self.find_session(session)
+        log: DomainActivityLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError("Start of pulse didn't reach the db")
         log.end_time = log.end_time + timedelta(seconds=10)
@@ -113,7 +113,7 @@ class ChromeLoggingDao(LoggingDaoMixin, UtilityDaoMixin):
         Overwrite value from the pulse. Expect something to ALWAYS be in the db already at this point.
         Note that if the computer was shutdown, this method is never called, and the rough estimate is kept.
         """
-        log: DomainSummaryLog = self.find_session(session)
+        log: DomainActivityLog = self.find_session(session)
         if not log:
             raise ImpossibleToGetHereError("Start of pulse didn't reach the db")
         self.attach_final_values_and_update(session, log)

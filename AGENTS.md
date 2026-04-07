@@ -113,7 +113,7 @@ There are models that record the individual session of using a program, be it fo
 
 There is some naming confusion currently. Fixing it is my #1 to do.
 
-A **SummaryLogBase** exists to record an individual session or activity. This will be renamed to ActivityLogBase. We'll then have ProgramActivityLog, DomainActivityLog, VideoActivityLog. Note that it cannot be called a "ProgramSession" etc., because that is an in-memory object's name. 
+A **ActivityLogBase** exists to record an individual session or activity. 
 
 **DailySummaryBase** is a base class covering hours spent and the data data was gathered, summarized into one float representation of hours spent. This Base extends into a DailyProgramSummary, DailyDomainSummary, DailyVideoSummary. There, the extension exists to specify which website or program was being used, for how long. The DailyVideoSummary covers a question of media categorization. 
 

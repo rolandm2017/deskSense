@@ -17,8 +17,8 @@ from typing import List
 
 from activitytracker.db.models import (
     DailyProgramSummary,
-    ProgramSummaryLog,
-    DomainSummaryLog,
+    ProgramActivityLog,
+    DomainActivityLog,
 )
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao

@@ -36,7 +36,7 @@ from activitytracker.db.database import (
 from activitytracker.db.models import (
     DailyDomainSummary,
     DailyProgramSummary,
-    ProgramSummaryLog,
+    ProgramActivityLog,
 )
 from activitytracker.facade.facade_singletons import (
     get_keyboard_facade_instance,
@@ -481,7 +481,7 @@ async def get_program_usage_timeline_for_present_week(
 
     days = []
     for day in all_days:
-        programs: dict[str, ProgramSummaryLog] = day["program_usage_timeline"]
+        programs: dict[str, ProgramActivityLog] = day["program_usage_timeline"]
         # assert isinstance(programs, dict)
         date = day["date"]
 
@@ -490,7 +490,7 @@ async def get_program_usage_timeline_for_present_week(
 
             timeline_events = []
             for program_log in value_list:
-                # Assuming ProgramSummaryLog has startTime and endTime attributes
+                # Assuming ProgramActivityLog has startTime and endTime attributes
                 timeline_event = TimelineEvent(
                     logId=program_log.id,
                     startTime=program_log.start_time,
@@ -523,7 +523,7 @@ async def get_program_usage_timeline_by_week(
 
     days = []
     for day in all_days:
-        programs: dict[str, ProgramSummaryLog] = day["program_usage_timeline"]
+        programs: dict[str, ProgramActivityLog] = day["program_usage_timeline"]
         date = day["date"]
 
         programs_content = []

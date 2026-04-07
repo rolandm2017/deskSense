@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 import os
 
 # Import models and DAOs
-from activitytracker.db.models import Base, SystemStatus, ProgramSummaryLog, DomainSummaryLog
+from activitytracker.db.models import Base, SystemStatus, ProgramActivityLog, DomainActivityLog
 from activitytracker.db.dao.direct.session_integrity_dao import SessionIntegrityDao
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
@@ -90,7 +90,7 @@ async def test_program_logs(plain_asm, test_power_events):
         # Orphan type 1: started before shutdown, never ended
         # Removed: Cannot have a "Never ended" as end_time is not Nullable
 
-        # orphan_1 = ProgramSummaryLog(
+        # orphan_1 = ProgramActivityLog(
         #     program_name="Notepad",
         #     hours_spent=1.0,
         #     start_time=shutdown_time - timedelta(minutes=30),
@@ -99,7 +99,7 @@ async def test_program_logs(plain_asm, test_power_events):
         #     created_at=base_time
         # )
         # Orphan type 2: started before shutdown, ended after startup (impossible)
-        orphan_2 = ProgramSummaryLog(
+        orphan_2 = ProgramActivityLog(
             exe_path_as_id="C:/ProgramFiles/Outlook.exe",
             process_name="Outlook.exe",
             program_name="Outlook",
@@ -115,7 +115,7 @@ async def test_program_logs(plain_asm, test_power_events):
             created_at=base_time,
         )
         # Phantom: impossibly started during system off time
-        phantom_1 = ProgramSummaryLog(
+        phantom_1 = ProgramActivityLog(
             exe_path_as_id="C:/ProgramFiles/Firefox.exe",
             process_name="Firefox.exe",
             program_name="Firefox",
@@ -136,7 +136,7 @@ async def test_program_logs(plain_asm, test_power_events):
         # Create test data
         program_logs = [
             # Normal session: started and ended before shutdown
-            ProgramSummaryLog(
+            ProgramActivityLog(
                 exe_path_as_id="C:/ProgramFiles/PyCharm.exe",
                 process_name="Pycharm.exe",
                 program_name="PyCharm",
@@ -154,7 +154,7 @@ async def test_program_logs(plain_asm, test_power_events):
             orphan_2,
             phantom_1,
             # Normal session after startup
-            ProgramSummaryLog(
+            ProgramActivityLog(
                 exe_path_as_id="C:/ProgramFiles/Chrome.exe",
                 process_name="Chrome.exe",
                 program_name="Chrome",
@@ -193,7 +193,7 @@ async def test_domain_logs(plain_asm, test_power_events):
 
         # Orphan type 1: started before shutdown, never ended
         # Removed: Cannot have a "Never ended" as end_time is not Nullable
-        # orphan_1 = DomainSummaryLog(
+        # orphan_1 = DomainActivityLog(
         #     domain_name="stackoverflow.com",
         #     hours_spent=0.5,
         #     start_time=shutdown_time - timedelta(minutes=40),
@@ -202,7 +202,7 @@ async def test_domain_logs(plain_asm, test_power_events):
         #     created_at=base_time
         # Orphan type 2: started before shutdown, ended after startup (impossible)
         # Orphan type 2: started before shutdown, ended after startup (impossible)
-        orphan_2 = DomainSummaryLog(
+        orphan_2 = DomainActivityLog(
             domain_name="youtube.com",
             hours_spent=10.0,  # Impossibly long session
             start_time=shutdown_time - timedelta(minutes=20),
@@ -216,7 +216,7 @@ async def test_domain_logs(plain_asm, test_power_events):
             created_at=base_time,
         )
         # Phantom: impossibly started during system off time
-        phantom_1 = DomainSummaryLog(
+        phantom_1 = DomainActivityLog(
             domain_name="reddit.com",
             hours_spent=0.3,
             # Started after shutdown
@@ -235,7 +235,7 @@ async def test_domain_logs(plain_asm, test_power_events):
         # Create test data
         domain_logs = [
             # Normal session: started and ended before shutdown
-            DomainSummaryLog(
+            DomainActivityLog(
                 domain_name="github.com",
                 hours_spent=1.0,
                 start_time=shutdown_time - timedelta(hours=2),
@@ -251,7 +251,7 @@ async def test_domain_logs(plain_asm, test_power_events):
             orphan_2,
             phantom_1,
             # Normal session after startup
-            DomainSummaryLog(
+            DomainActivityLog(
                 domain_name="google.com",
                 hours_spent=0.8,
                 start_time=startup_time + timedelta(minutes=10),
