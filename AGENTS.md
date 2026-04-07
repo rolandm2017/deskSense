@@ -4,7 +4,37 @@ It's a time tracker for desktop. One machine only. The goal is to enable self-ma
 
 # How to run the program
 
-// todo
+## Setup for the activityTracker server
+
+- make a virtual environment
+- enter the venv
+- run "pip install -r .\windows-requirements.txt"
+- OR on linux, run "pip install -r .\requirements.txt
+
+cd C:\Users\roly\Code\desksense\activitytracker
+pip install -e .
+
+- populate the virual env. variables
+
+(.desk) PS C:\Users\roly\Code\desksense\activitytracker> python src/activitytracker/server.py
+
+## Setup for the peripherals
+
+Just run `python src/activitytracker/run_peripherals.py` with the virtual env active
+
+## Setup for Chrome extension
+
+npm install, npm run build.
+
+entrypoint is the src/background.ts file.
+
+## Dashboard
+
+npm install, npm run dev 
+
+go to localhost:5173
+
+entrypoint: dashboard\src\pages\Home.tsx
 
 # Architecture
 

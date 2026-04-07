@@ -85,6 +85,9 @@ if __name__ == "__main__":
 
         run_linux_monitors()
     try:
+        # NOTE: apparently this try/except block never runs.
+        # Because the scripts the script runs, has their own exit codes.
+        
         # Main loop - check running flag periodically
         while running:
             time.sleep(0.1)

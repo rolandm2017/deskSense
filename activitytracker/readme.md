@@ -1,4 +1,4 @@
-# surveillance: what is this?
+# desksense: what is this?
 
 it's a program that tracks which programs I use on Windows and Ubuntu. how do I spend my time?
 
@@ -36,3 +36,16 @@ LOCAL_TIME_OFFSET_DST
 
 ## Setup for the peripherals
 
+Just run `python src/activitytracker/run_peripherals.py`
+
+## Setup for Chrome extension
+
+npm install, npm run build.
+
+entrypoint is the src/background.ts file.
+
+## Dashboard
+
+npm install, npm run dev 
+
+go to localhost:5173
