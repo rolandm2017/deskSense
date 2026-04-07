@@ -280,6 +280,7 @@ async def get_program_time_for_dashboard(
 async def get_chrome_time_for_dashboard(
     dashboard_service: DashboardService = Depends(get_dashboard_service),
 ):
+    print("in the rome/summarie endpoint 283rm")
     chrome_data = await dashboard_service.get_chrome_summary()
     if not isinstance(chrome_data, list):
         raise HTTPException(status_code=500, detail="Failed to retrieve Chrome chart info")

@@ -18,6 +18,8 @@ Three components:
 - `npm install` must be done outside WSL (in Windows)
 - Python tests can be run from WSL
 
+This project is developed in WSL but runs on Windows 11. You cannot run `npm install`, `npm run test`, or `pytest` directly from WSL - ask the user to run these commands.
+
 ## Commands
 
 ### activitytracker (Python)

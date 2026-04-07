@@ -2,6 +2,10 @@
 
 It's a time tracker for desktop. One machine only. The goal is to enable self-management. Let the user audit what they actually did.
 
+## Environment
+
+This project is developed in WSL but runs on Windows 11. You cannot run `npm install`, `npm run test`, or `pytest` directly from WSL - ask the user to run these commands.
+
 # How to run the program
 
 ## Setup for the activityTracker server
@@ -18,6 +22,10 @@ pip install -e .
 
 (.desk) PS C:\Users\roly\Code\desksense\activitytracker> python src/activitytracker/server.py
 
+OR for hot reload:
+
+(.desk) PS C:\Users\roly\Code\desksense\activitytracker> uvicorn src.activitytracker.server:app --reload
+
 ## Setup for the peripherals
 
 Just run `python src/activitytracker/run_peripherals.py` with the virtual env active
@@ -29,6 +37,8 @@ npm install, npm run build.
 entrypoint is the src/background.ts file.
 
 ## Dashboard
+
+- make an .env file with VITE_API_URL=http://localhost:5173
 
 npm install, npm run dev 
 
@@ -204,4 +214,7 @@ Prefer to write testable code. Take all the low hanging fruit. Pure functions ar
 
 3. Enhance the dashboard so that users get value from having their system tracked.
 
+# The state of my tests
+
+As of Feb 28 2026, I've had tests that are well well maintained for several ongoing months. Think that 99% of test cases pass. Hence you can trust a test to document how the code works.
 
