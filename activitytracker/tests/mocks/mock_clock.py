@@ -59,7 +59,7 @@ class MockClock(ClockProtocol):
             return prev_current_time.replace(hour=0, minute=0, second=0, microsecond=0)
         else:
             new_time = self.now()
-            return new_time.replace(hour=0, minute=0, second=0, microsecond=0)
+            return new_time.dt.replace(hour=0, minute=0, second=0, microsecond=0)
         # return datetime.now(ZoneInfo(local_time_zone)).replace(
         #     hour=0, minute=0, second=0, microsecond=0)
         # Use self._current_time instead of datetime.now()
@@ -187,11 +187,11 @@ class UserLocalTimeMockClock(ClockProtocol):
 
         with self._lock:
             if self._current_time:
-                return self._current_time.replace(hour=0, minute=0, second=0, microsecond=0)
+                return self._current_time.dt.replace(hour=0, minute=0, second=0, microsecond=0)
             else:
                 # This will call now() which increments counter
                 new_time = self.now()
-                return new_time.replace(hour=0, minute=0, second=0, microsecond=0)
+                return new_time.dt.replace(hour=0, minute=0, second=0, microsecond=0)
 
     def get_debug_info(self):
         """Return debug information about clock usage"""

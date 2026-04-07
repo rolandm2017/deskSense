@@ -15,7 +15,7 @@ from .weekly_breakdown_programs import march_2_2025, march_3_2025, weekly_breakd
 # Sample CompletedChromeSession objects
 
 
-def add_time_and_tz(base_date, hours=0, minutes=0, seconds=0):
+def add_time_and_tz(base_date, hours=0, minutes=0, seconds=0) -> datetime:
     """Helper function to add hours, minutes, seconds to a base date. Plus a timezone"""
     result_dt = base_date + timedelta(hours=hours, minutes=minutes, seconds=seconds)
 
@@ -40,9 +40,9 @@ null_video_info = YouTubeInfo(
 )
 
 # Define the base dates
-feb_23_2025 = datetime(2025, 2, 23, tzinfo=timezone.utc)
-feb_24_2025 = datetime(2025, 2, 24, tzinfo=timezone.utc)
-feb_26_2025 = datetime(2025, 2, 26, tzinfo=timezone.utc)
+feb_23_2025: datetime = datetime(2025, 2, 23, tzinfo=timezone.utc)
+feb_24_2025: datetime = datetime(2025, 2, 24, tzinfo=timezone.utc)
+feb_26_2025: datetime = datetime(2025, 2, 26, tzinfo=timezone.utc)
 
 
 def chrome_feb_23() -> List[CompletedChromeSession]:
@@ -56,8 +56,6 @@ def chrome_feb_23() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(feb_23_2025, 9, 30, 0)),
         UserLocalTime(add_time_and_tz(feb_23_2025, 10, 45, 0)),
         productive=True,
-        duration_for_tests=UserLocalTime(add_time_and_tz(feb_23_2025, 10, 45, 0))
-        - UserLocalTime(add_time_and_tz(feb_23_2025, 9, 30, 0)),
     )
     chrome_sessions.append(github_session)
 
@@ -69,8 +67,6 @@ def chrome_feb_23() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(feb_23_2025, 15, 45, 0)),
         UserLocalTime(add_time_and_tz(feb_23_2025, 16, 30, 0)),
         productive=True,
-        duration_for_tests=UserLocalTime(add_time_and_tz(feb_23_2025, 16, 30, 0))
-        - UserLocalTime(add_time_and_tz(feb_23_2025, 15, 45, 0)),
     )
     chrome_sessions.append(stackoverflow_session)
 
@@ -88,8 +84,6 @@ def chrome_feb_24() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(feb_24_2025, 11, 20, 0)),
         UserLocalTime(add_time_and_tz(feb_24_2025, 12, 15, 0)),
         productive=True,
-        duration_for_tests=UserLocalTime(add_time_and_tz(feb_24_2025, 12, 15, 0))
-        - UserLocalTime(add_time_and_tz(feb_24_2025, 11, 20, 0)),
     )
     chrome_sessions.append(docs_session)
 
@@ -101,8 +95,6 @@ def chrome_feb_24() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(feb_24_2025, 16, 0, 0)),
         UserLocalTime(add_time_and_tz(feb_24_2025, 16, 40, 0)),
         productive=True,
-        duration_for_tests=UserLocalTime(add_time_and_tz(feb_24_2025, 16, 40, 0))
-        - UserLocalTime(add_time_and_tz(feb_24_2025, 16, 0, 0)),
     )
     chrome_sessions.append(youtube_session)
 
@@ -120,8 +112,6 @@ def chrome_feb_26() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(feb_26_2025, 9, 15, 0)),
         UserLocalTime(add_time_and_tz(feb_26_2025, 10, 30, 0)),
         productive=True,
-        duration_for_tests=UserLocalTime(add_time_and_tz(feb_26_2025, 10, 30, 0))
-        - UserLocalTime(add_time_and_tz(feb_26_2025, 9, 15, 0)),
     )
     chrome_sessions.append(github_session)
 
@@ -133,8 +123,6 @@ def chrome_feb_26() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(feb_26_2025, 14, 0, 0)),
         UserLocalTime(add_time_and_tz(feb_26_2025, 15, 15, 0)),
         productive=True,
-        duration_for_tests=UserLocalTime(add_time_and_tz(feb_26_2025, 15, 15, 0))
-        - UserLocalTime(add_time_and_tz(feb_26_2025, 14, 0, 0)),
     )
     chrome_sessions.append(chatgpt_session)
 
@@ -164,8 +152,6 @@ def chrome_march_2nd() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(march_2_2025, 9, 15, 0)),
         UserLocalTime(add_time_and_tz(march_2_2025, 9, 30, 0)),
         productive=True,
-        duration_for_tests=UserLocalTime(add_time_and_tz(march_2_2025, 9, 30, 0))
-        - UserLocalTime(add_time_and_tz(march_2_2025, 9, 15, 0)),
     )
     chrome_sessions.append(github_session)
 
@@ -177,8 +163,6 @@ def chrome_march_2nd() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(march_2_2025, 11, 5, 0)),
         UserLocalTime(add_time_and_tz(march_2_2025, 11, 59, 0)),
         productive=True,
-        duration_for_tests=UserLocalTime(add_time_and_tz(march_2_2025, 11, 59, 0))
-        - UserLocalTime(add_time_and_tz(march_2_2025, 11, 5, 0)),
     )
     chrome_sessions.append(stackoverflow_session)
 
@@ -190,8 +174,6 @@ def chrome_march_2nd() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(march_2_2025, 13, 0, 0)),
         UserLocalTime(add_time_and_tz(march_2_2025, 13, 30, 0)),
         productive=True,
-        duration_for_tests=UserLocalTime(add_time_and_tz(march_2_2025, 13, 30, 0))
-        - UserLocalTime(add_time_and_tz(march_2_2025, 13, 0, 0)),
     )
     chrome_sessions.append(youtube_session)
 
@@ -203,8 +185,6 @@ def chrome_march_2nd() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(march_2_2025, 14, 0, 0)),
         UserLocalTime(add_time_and_tz(march_2_2025, 14, 45, 0)),
         productive=True,
-        duration_for_tests=UserLocalTime(add_time_and_tz(march_2_2025, 14, 45, 0))
-        - UserLocalTime(add_time_and_tz(march_2_2025, 14, 0, 0)),
     )
     chrome_sessions.append(python_docs_session)
 
@@ -216,8 +196,6 @@ def chrome_march_2nd() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(march_2_2025, 15, 0, 0)),
         UserLocalTime(add_time_and_tz(march_2_2025, 15, 24, 0)),
         productive=True,
-        duration_for_tests=UserLocalTime(add_time_and_tz(march_2_2025, 15, 24, 0))
-        - UserLocalTime(add_time_and_tz(march_2_2025, 15, 0, 0)),
     )
     chrome_sessions.append(gmail_session)
 
@@ -229,8 +207,6 @@ def chrome_march_2nd() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(march_2_2025, 16, 0, 0)),
         UserLocalTime(add_time_and_tz(march_2_2025, 16, 6, 0)),
         productive=True,
-        duration_for_tests=UserLocalTime(add_time_and_tz(march_2_2025, 16, 6, 0))
-        - UserLocalTime(add_time_and_tz(march_2_2025, 16, 0, 0)),
     )
     chrome_sessions.append(chatgpt_session)
 
@@ -249,8 +225,6 @@ def chrome_march_3rd() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(march_3_2025, 9, 0, 0)),
         UserLocalTime(add_time_and_tz(march_3_2025, 9, 16, 0)),
         productive=True,
-        duration_for_tests=UserLocalTime(add_time_and_tz(march_3_2025, 9, 16, 0))
-        - UserLocalTime(add_time_and_tz(march_3_2025, 9, 0, 0)),
     )
     chrome_sessions.append(github_session2)
 
@@ -262,8 +236,6 @@ def chrome_march_3rd() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(march_3_2025, 11, 15, 0)),
         UserLocalTime(add_time_and_tz(march_3_2025, 11, 45, 0)),
         productive=True,
-        duration_for_tests=UserLocalTime(add_time_and_tz(march_3_2025, 11, 45, 0))
-        - UserLocalTime(add_time_and_tz(march_3_2025, 11, 15, 0)),
     )
     chrome_sessions.append(jira_session)
 
@@ -275,8 +247,6 @@ def chrome_march_3rd() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(march_3_2025, 13, 30, 0)),
         UserLocalTime(add_time_and_tz(march_3_2025, 14, 21, 0)),
         productive=True,
-        duration_for_tests=UserLocalTime(add_time_and_tz(march_3_2025, 14, 21, 0))
-        - UserLocalTime(add_time_and_tz(march_3_2025, 13, 30, 0)),
     )
     chrome_sessions.append(aws_session)
 
@@ -288,8 +258,6 @@ def chrome_march_3rd() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(march_3_2025, 14, 30, 0)),
         UserLocalTime(add_time_and_tz(march_3_2025, 15, 6, 0)),
         productive=True,
-        duration_for_tests=UserLocalTime(add_time_and_tz(march_3_2025, 15, 6, 0))
-        - UserLocalTime(add_time_and_tz(march_3_2025, 14, 30, 0)),
     )
     chrome_sessions.append(confluence_session)
 
@@ -301,8 +269,6 @@ def chrome_march_3rd() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(march_3_2025, 15, 15, 0)),
         UserLocalTime(add_time_and_tz(march_3_2025, 15, 33, 0)),
         productive=False,
-        duration_for_tests=UserLocalTime(add_time_and_tz(march_3_2025, 15, 33, 0))
-        - UserLocalTime(add_time_and_tz(march_3_2025, 15, 15, 0)),
     )
     chrome_sessions.append(youtube_break_session)
 
@@ -314,8 +280,6 @@ def chrome_march_3rd() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(march_3_2025, 16, 50, 0)),
         UserLocalTime(add_time_and_tz(march_3_2025, 17, 24, 0)),
         productive=True,
-        duration_for_tests=UserLocalTime(add_time_and_tz(march_3_2025, 17, 24, 0))
-        - UserLocalTime(add_time_and_tz(march_3_2025, 16, 50, 0)),
     )
     chrome_sessions.append(chatgpt_session2)
 
@@ -334,8 +298,6 @@ def duplicates_chrome_march_2() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(march_2_2025, 15, 30, 0)),
         UserLocalTime(add_time_and_tz(march_2_2025, 16, 15, 0)),
         productive=True,
-        duration_for_tests=UserLocalTime(add_time_and_tz(march_2_2025, 16, 15, 0))
-        - UserLocalTime(add_time_and_tz(march_2_2025, 15, 30, 0)),
     )
     duplicate_chrome_sessions.append(chatgpt_session_dup)
 
@@ -347,8 +309,6 @@ def duplicates_chrome_march_2() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(march_2_2025, 16, 30, 0)),
         UserLocalTime(add_time_and_tz(march_2_2025, 17, 15, 0)),
         productive=True,
-        duration_for_tests=UserLocalTime(add_time_and_tz(march_2_2025, 17, 15, 0))
-        - UserLocalTime(add_time_and_tz(march_2_2025, 16, 30, 0)),
     )
     duplicate_chrome_sessions.append(stackoverflow_session_dup)
 
@@ -366,8 +326,6 @@ def duplicates_chrome_march_3rd() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(march_3_2025, 14, 0, 0)),
         UserLocalTime(add_time_and_tz(march_3_2025, 14, 45, 0)),
         productive=True,
-        duration_for_tests=UserLocalTime(add_time_and_tz(march_3_2025, 14, 45, 0))
-        - UserLocalTime(add_time_and_tz(march_3_2025, 14, 0, 0)),
     )
     duplicate_chrome_sessions.append(github_session_dup)
 
@@ -379,8 +337,6 @@ def duplicates_chrome_march_3rd() -> List[CompletedChromeSession]:
         UserLocalTime(add_time_and_tz(march_3_2025, 16, 0, 0)),
         UserLocalTime(add_time_and_tz(march_3_2025, 16, 45, 0)),
         productive=True,
-        duration_for_tests=UserLocalTime(add_time_and_tz(march_3_2025, 16, 45, 0))
-        - UserLocalTime(add_time_and_tz(march_3_2025, 16, 0, 0)),
     )
     duplicate_chrome_sessions.append(youtube_session_dup)
 

@@ -601,7 +601,7 @@ async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
 
     assert output_domains[-1].start_time is not None, "Setup condition not met"
 
-    final_time = output_domains[-1].start_time + timedelta(seconds=8)
+    final_time = UserLocalTime(output_domains[-1].start_time.dt + timedelta(seconds=8))
 
     times_for_window_push.append(final_time)  # used for what?
 
@@ -618,7 +618,7 @@ async def test_arbiter_to_dao_layer(regular_session_maker, plain_asm):
 
     # type: ignore
     assert all(
-        t.day == 22 for t in times_for_window_push
+        t.dt.day == 22 for t in times_for_window_push
     ), "All days should be 22 like in the above test data"
 
     # this is just appeasing type checking

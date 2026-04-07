@@ -103,10 +103,10 @@ class TimelineEntryDao(BaseQueueingDao):
 
     async def read_precomputed_entry_for_day(self, day: UserLocalTime, type: ChartEventType):
         # Get start of day (midnight) # time.min is 00:00:00
-        start_of_day = datetime.combine(day.date(), time.min)
+        start_of_day = datetime.combine(day.dt.date(), time.min)
 
         # Get end of day (just before midnight) # time.max is 23:59:59.999999
-        end_of_day = datetime.combine(day.date(), time.max)
+        end_of_day = datetime.combine(day.dt.date(), time.max)
         query = select(PrecomputedTimelineEntry).where(
             PrecomputedTimelineEntry.group == type,
             PrecomputedTimelineEntry.start >= start_of_day,

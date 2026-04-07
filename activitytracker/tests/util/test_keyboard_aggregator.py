@@ -77,7 +77,7 @@ def test_timeout_creates_new_aggregation(monkeypatch):
     ), "Because adding another event, much later, closes the current window"
     assert isinstance(completed, list)
     assert len(completed) == 1
-    assert completed[0].timestamp() == base_time
+    assert completed[0].dt.timestamp() == base_time
 
 
 def test_callback_execution(monkeypatch):

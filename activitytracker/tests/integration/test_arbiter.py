@@ -316,7 +316,7 @@ def test_activity_arbiter(activity_arbiter_and_setup):
     ), "A duration wasn't set"
 
     chronological = sorted(
-        events_from_on_state_changed_handler, key=lambda obj: obj.start_time
+        events_from_on_state_changed_handler, key=lambda obj: obj.start_time.dt
     )
 
     # ### Assert the nth entry is concluded when the (n + 1)th entry starts
@@ -327,7 +327,7 @@ def test_activity_arbiter(activity_arbiter_and_setup):
             break
         current = chronological[i]
         next = chronological[i + 1]
-        duration_from_start_end_times = next.start_time - current.start_time
+        duration_from_start_end_times = next.start_time.dt - current.start_time.dt
         assert (
             current.end_time == next.start_time
         ), "There was a misalignment in session start & end"
@@ -365,7 +365,7 @@ def test_activity_arbiter(activity_arbiter_and_setup):
         t0 = events_from_on_state_changed_handler[0].start_time
         t13 = events_from_on_state_changed_handler[final_event_index].start_time
 
-        elapsed_time_in_test = (t13 - t0).total_seconds() / sec_per_min
+        elapsed_time_in_test = (t13.dt - t0.dt).total_seconds() / sec_per_min
         # it's "minutes btwn first session and 2nd to last" here because
         # the final sessionh, the very last, does not get into on_state_changed
         assert (

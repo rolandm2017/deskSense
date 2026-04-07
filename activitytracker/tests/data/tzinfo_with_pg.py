@@ -28,7 +28,7 @@ def create_pycharm_entry(dt):
     pycharm_session.detail = "Refactoring database models"
     pycharm_session.start_time = window_start
     pycharm_session.end_time = window_end
-    pycharm_session.duration = pycharm_session.end_time - pycharm_session.start_time
+    pycharm_session.duration = pycharm_session.end_time.dt - pycharm_session.start_time.dt
     pycharm_session.productive = True
     return pycharm_session
 
@@ -43,7 +43,7 @@ def create_zoom_entry(dt):
     zoom_session.detail = "Weekly team sync"
     zoom_session.start_time = window_start
     zoom_session.end_time = window_end
-    zoom_session.duration = zoom_session.end_time - zoom_session.start_time
+    zoom_session.duration = zoom_session.end_time.dt - zoom_session.start_time.dt
     zoom_session.productive = True
     return zoom_session
 
@@ -58,6 +58,6 @@ def create_notion_entry(dt):
     notion_session.detail = "Sprint planning documentation"
     notion_session.start_time = window_start
     notion_session.end_time = window_end
-    notion_session.duration = notion_session.end_time - notion_session.start_time
+    notion_session.duration = notion_session.end_time.dt - notion_session.start_time.dt
     notion_session.productive = True
     return notion_session

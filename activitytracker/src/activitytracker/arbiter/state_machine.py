@@ -60,7 +60,7 @@ class StateMachine:
         if self.is_initialization_session(state.session):
             return
 
-        duration = incoming_session_start - state.session.start_time
+        duration = incoming_session_start.dt - state.session.start_time.dt
         # FIXME: "concluding session:  9:42:51.327057" after overnight sleep
         # FIXME: Solution to above problem is to check the latest
         # keepAlive write time, the latest um, systemStatus polling write time.

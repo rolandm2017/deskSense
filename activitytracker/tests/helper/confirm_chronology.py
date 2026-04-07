@@ -15,7 +15,7 @@ def assert_start_times_are_chronological(test_events):
 def assert_all_start_times_precede_end_times(test_events):
     for i in range(0, len(test_events)):
         if test_events[i].end_time:
-            assert test_events[i].start_time < test_events[i].end_time
+            assert test_events[i].start_time.dt < test_events[i].end_time.dt
 
 
 def assert_test_data_is_chronological_with_tz(test_events):
@@ -29,7 +29,7 @@ def assert_test_data_is_chronological_with_tz(test_events):
         if i == len(test_events) - 1:
             break  # There is no next val to link with
         assert (
-            test_events[i].start_time < test_events[i + 1].start_time
+            test_events[i].start_time.dt < test_events[i + 1].start_time.dt
         ), "Events must be chronological"
 
     # Return the data to the test

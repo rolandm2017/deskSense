@@ -208,15 +208,13 @@ class ProgramsService(WeekCalculationMixin):
 
         now: UserLocalTime = self.user_clock.now()
         start_of_today: UserLocalTime = now.get_start_of_day()
-        start_of_tomorrow: UserLocalTime = start_of_today + timedelta(days=1)
+        start_of_tomorrow = UserLocalTime(start_of_today.dt + timedelta(days=1))
 
         all_days = []
 
         for days_after_sunday in range(7):
             current_day: datetime = starting_sunday + timedelta(days=days_after_sunday)
-            print(current_day)
-            print(start_of_tomorrow)
-            is_in_future: bool = current_day > start_of_tomorrow
+            is_in_future: bool = current_day > start_of_tomorrow.dt
             if is_in_future:
                 continue  # avoid reading future dates from db
 
@@ -267,11 +265,12 @@ class PeripheralsService(WeekCalculationMixin):
 
         today = self.user_clock.now()
 
-        starting_sunday: datetime = self.prepare_start_of_week(today.date())
+        starting_sunday: datetime = self.prepare_start_of_week(today.dt.date())
+        starting_sunday = self.timezone_service.localize_to_user_tz(starting_sunday)
 
         days_before_today = []
 
-        todays_date = today.date()
+        todays_date = today.dt.date()
 
         for days_after_sunday in range(7):
             current_day = starting_sunday + timedelta(days=days_after_sunday)

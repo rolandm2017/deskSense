@@ -150,7 +150,7 @@ class SystemStatusDao(UtilityDaoMixin):
                 prev = item
                 continue
             current = item
-            duration = current - prev
+            duration = current.dt - prev.dt
             duration = duration.total_seconds()
             gaps.append({"duration": duration, "start_of_gap": prev})
 

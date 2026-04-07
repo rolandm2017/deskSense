@@ -84,13 +84,15 @@ class UserFacingClock(ClockProtocol):
     def get_previous_sunday(self, date=None):
         """Get the most recent Sunday before the given date (or today)"""
         target = date or self.now()
-        days_since_sunday = (target.weekday() + 1) % 7
-        return target - timedelta(days=days_since_sunday)
+        dt = target.dt if isinstance(target, UserLocalTime) else target
+        days_since_sunday = (dt.weekday() + 1) % 7
+        return dt - timedelta(days=days_since_sunday)
 
     def get_day_start(self, date=None):
         """Get midnight for the specified day"""
         target = date or self.now()
-        return datetime.combine(target.date(), datetime.min.time())
+        dt = target.dt if isinstance(target, UserLocalTime) else target
+        return datetime.combine(dt.date(), datetime.min.time())
 
     def is_timezone_aware(self, dt):
         """

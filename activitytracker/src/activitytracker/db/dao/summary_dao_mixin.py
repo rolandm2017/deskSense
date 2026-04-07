@@ -55,7 +55,7 @@ class SummaryDaoMixin:
         return attach_tz_to_obj(result, session_time.dt.tzinfo)
 
     def do_read_past_week(self, right_now: UserLocalTime):
-        days_since_sunday = right_now.weekday() + 1
+        days_since_sunday = right_now.dt.weekday() + 1
         last_sunday = right_now.dt - timedelta(days=days_since_sunday)
 
         query = select(self.model).where(

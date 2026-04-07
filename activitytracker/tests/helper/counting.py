@@ -18,5 +18,5 @@ def get_logs_total(item_name, logs_arr):
     for entry in logs_arr:
         if item_name == entry.get_name():
             relevant_picks.append(entry)
-    total_time = sum([x.end_time - x.start_time for x in relevant_picks])
+    total_time = sum([x.end_time.dt - x.start_time.dt for x in relevant_picks])
     return total_time

@@ -328,8 +328,6 @@ async def get_program_week_history(
             status_code=500, detail="Failed to retrieve week of program chart info"
         )
     return WeeklyProgramContent(days=DtoMapper.map_programs(week_of_data))
-
-
 @app.get("/api/dashboard/chrome/summaries/week", response_model=WeeklyChromeContent)
 async def get_chrome_week_history(
     dashboard_service: DashboardService = Depends(get_dashboard_service),

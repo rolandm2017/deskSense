@@ -127,8 +127,8 @@ class TestChromeSummaryDao:
         assert isinstance(args[0], Select)
 
         assert len(result) == len(pretend_result)
-        assert result[0].gathering_date.day == t1.day
-        assert result[1].gathering_date.day == t3.day
+        assert result[0].gathering_date.day == t1.dt.day
+        assert result[1].gathering_date.day == t3.dt.day
 
     def test_read_all(self, chrome_summary_dao):
         # Pretend these happened:

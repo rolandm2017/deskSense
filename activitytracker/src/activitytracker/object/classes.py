@@ -165,7 +165,7 @@ class CompletedProgramSession(ProgramSession):
 
         # Calculate duration
         if start_time and end_time:
-            self.duration = end_time - start_time
+            self.duration = end_time.dt - start_time.dt
         elif duration_for_tests:
             self.duration = duration_for_tests
         else:
@@ -261,7 +261,7 @@ class CompletedChromeSession(ChromeSession):
 
         # Calculate duration
         if start_time and end_time:
-            self.duration = end_time - start_time
+            self.duration = end_time.dt - start_time.dt
         elif duration_for_tests:
             self.duration = duration_for_tests
         else:
@@ -384,9 +384,9 @@ class TabChangeEventWithLtz:
 
     def __str__(self) -> str:
         """Custom string representation of the TabChangeEventWithLtz."""
-        formatted_time = self.start_time_with_tz.strftime("%Y-%m-%d %H:%M:%S.%f")[
-            :-3
-        ]  # Truncate to milliseconds
+        formatted_time = self.start_time_with_tz.dt.strftime(
+            "%Y-%m-%d %H:%M:%S.%f"
+        )[:-3]  # Truncate to milliseconds
         return f"TabChangeEventWithLtz(tabTitle='{self.tab_title}', startTime='{formatted_time}', \n\tyoutube_info='{self.youtube_info}', netflix_info='{self.netflix_info}')"
 
 
@@ -410,9 +410,9 @@ class PlayerStateChangeEventWithLtz:
 
     def __str__(self) -> str:
         """Custom string representation of the PlayerStateChangeEventWithLtz."""
-        formatted_time = self.event_time_with_tz.strftime("%Y-%m-%d %H:%M:%S.%f")[
-            :-3
-        ]  # Truncate to milliseconds
+        formatted_time = self.event_time_with_tz.dt.strftime(
+            "%Y-%m-%d %H:%M:%S.%f"
+        )[:-3]  # Truncate to milliseconds
         return f"PlayerStateChangeEventWithLtz(\n\ttabTitle='{self.tab_title}', startTime='{formatted_time}', \n\tyoutube_info='{self.youtube_info}', \n\tnetflix_info='{self.netflix_info}')"
 
 
@@ -435,8 +435,8 @@ class PeripheralAggregate:
         self.count = count_of_events
 
     def __str__(self):
-        start_formatted = self.start_time.strftime("%m-%d %H:%M:%S")
-        end_formatted = self.end_time.strftime("%m-%d %H:%M:%S")
+        start_formatted = self.start_time.dt.strftime("%m-%d %H:%M:%S")
+        end_formatted = self.end_time.dt.strftime("%m-%d %H:%M:%S")
         return f"Peripheral aggregate from {start_formatted} to {end_formatted} with {self.count} events"
 
 
@@ -446,8 +446,8 @@ class KeyboardAggregate(PeripheralAggregate):
     """
 
     def __str__(self):
-        start_formatted = self.start_time.strftime("%m-%d %H:%M:%S")
-        end_formatted = self.end_time.strftime("%m-%d %H:%M:%S")
+        start_formatted = self.start_time.dt.strftime("%m-%d %H:%M:%S")
+        end_formatted = self.end_time.dt.strftime("%m-%d %H:%M:%S")
         return f"Keyboard aggregate from {start_formatted} to {end_formatted} with {self.count} events"
 
 
@@ -457,8 +457,8 @@ class MouseAggregate(PeripheralAggregate):
     """
 
     def __str__(self):
-        start_formatted = self.start_time.strftime("%m-%d %H:%M:%S")
-        end_formatted = self.end_time.strftime("%m-%d %H:%M:%S")
+        start_formatted = self.start_time.dt.strftime("%m-%d %H:%M:%S")
+        end_formatted = self.end_time.dt.strftime("%m-%d %H:%M:%S")
         return f"Mouse aggregate from {start_formatted} to {end_formatted} with {self.count} events"
 
 

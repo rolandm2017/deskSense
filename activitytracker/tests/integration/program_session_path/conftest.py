@@ -76,13 +76,13 @@ def validate_test_data_and_get_durations(program_path_test_events):
         if i == 3:
             break  # There is no 4th value
         assert (
-            program_path_test_events[i].start_time < program_path_test_events[i + 1].start_time
+            program_path_test_events[i].start_time.dt < program_path_test_events[i + 1].start_time.dt
         ), "Events must be chronological"
 
         elapsed_between_sessions = int(
             (
-                program_path_test_events[i + 1].start_time
-                - program_path_test_events[i].start_time
+                program_path_test_events[i + 1].start_time.dt
+                - program_path_test_events[i].start_time.dt
             ).total_seconds()
         )
         durations_for_sessions.append(elapsed_between_sessions)

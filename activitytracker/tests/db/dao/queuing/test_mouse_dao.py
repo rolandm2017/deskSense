@@ -35,7 +35,7 @@ class TestMouseDao:
     @pytest.mark.asyncio
     async def test_create_from_window(self, dao):
         start_time = UserLocalTime(now_tokyo)
-        end_time = start_time + timedelta(minutes=1)
+        end_time = start_time.dt + timedelta(minutes=1)
         window = MouseMoveWindow(start_time, end_time)
 
         original_queue_item = dao.queue_item

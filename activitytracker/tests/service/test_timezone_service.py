@@ -42,7 +42,7 @@ def test_convert_tab_change_timezone():
 
     assert str(start_time.tzinfo) == local_time_zone
 
-    offset = start_time.utcoffset()
+    offset = start_time.dt.utcoffset()
     assert hasattr(offset, "total_seconds") and offset is not None
     offset_hours = int(offset.total_seconds() / 3600)
 
@@ -61,7 +61,7 @@ def test_real_scenario():
 
     assert str(updated_tab_change_event.start_time_with_tz.tzinfo) == local_time_zone
 
-    offset = updated_tab_change_event.start_time_with_tz.utcoffset()
+    offset = updated_tab_change_event.start_time_with_tz.dt.utcoffset()
     assert hasattr(offset, "total_seconds") and offset is not None
     offset_hours = int(offset.total_seconds() / 3600)
 
@@ -69,7 +69,7 @@ def test_real_scenario():
 
     # Test that the new time really really did come out as intended
 
-    output_hours = updated_tab_change_event.start_time_with_tz.hour
+    output_hours = updated_tab_change_event.start_time_with_tz.dt.hour
 
     expected_hours = (march_16_at_1_am.hour + regular_tz_offset) % 24
     expected_hours_v2 = (march_16_at_1_am.hour + daylight_savings_tz_offset) % 24

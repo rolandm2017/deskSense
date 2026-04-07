@@ -24,7 +24,7 @@ def test_now_has_tz():
 
     assert str(now.tzinfo) == local_time_zone
 
-    offset = now.utcoffset()
+    offset = now.dt.utcoffset()
     assert hasattr(offset, "total_seconds") and offset is not None
     offset_hours = int(offset.total_seconds() / 3600)
 

@@ -138,7 +138,7 @@ class ActivityArbiter:
                 # and so the duration of the outgoing session will include
                 # the time the computer was asleep!
                 suspicious_write_time = (
-                    latest_status_write.dt < new_session.start_time - timedelta(minutes=2)
+                    latest_status_write.dt < new_session.start_time.dt - timedelta(minutes=2)
                 )
                 if suspicious_write_time:
                     time_since_latest_write = (
