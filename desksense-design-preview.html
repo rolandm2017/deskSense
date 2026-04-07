@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeskSense — Design System Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #18191B;
+    --surface: #222528;
+    --surface-2: #2C3033;
+    --text: #E8E4DB;
+    --text-muted: #8A8478;
+    --accent: #C7F36B;
+    --accent-deep: #8DAE32;
+    --rule: #3A3F3E;
+    --cat-productivity: #C7F36B;
+    --cat-entertainment: #F28A2E;
+    --cat-learning: #7DD3C7;
+    --cat-communication: #E9687A;
+    --cat-idle: #6B6560;
+    --radius-sm: 2px;
+    --radius-md: 4px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Section headers ── */
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* ── Font Specimen ── */
+  .specimen {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 32px;
+  }
+  .specimen-header {
+    font-family: 'Instrument Serif', serif;
+    font-size: 56px;
+    line-height: 1.1;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .specimen-sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 48px;
+  }
+  .font-row {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 16px;
+    align-items: baseline;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .font-role {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .font-sample-display {
+    font-family: 'Instrument Serif', serif;
+    font-size: 36px;
+    line-height: 1.2;
+  }
+  .font-sample-body {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    max-width: 600px;
+  }
+  .font-sample-mono {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--accent);
+  }
+  .font-sample-data {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* ── Color Palette ── */
+  .palette-section {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 32px;
+    border-top: 1px solid var(--rule);
+  }
+  .palette-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .swatch {
+    height: 72px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 8px 10px;
+    border: 1px solid var(--rule);
+  }
+  .swatch-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .swatch-hex {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    opacity: 0.7;
+  }
+  .swatch-dark { color: var(--text); }
+  .swatch-light { color: var(--bg); }
+
+  /* ── UI Components ── */
+  .components-section {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 32px;
+    border-top: 1px solid var(--rule);
+  }
+  .component-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    align-items: center;
+  }
+  .btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 20px;
+    border: none;
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    transition: all 0.15s ease-out;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+  }
+  .btn-primary:hover { background: #D4FF80; }
+  .btn-secondary {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--rule);
+  }
+  .btn-secondary:hover { background: #353A3E; }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid transparent;
+  }
+  .btn-ghost:hover { color: var(--text); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-sm);
+    padding: 20px;
+  }
+  .card-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .card-value {
+    font-family: 'Instrument Serif', serif;
+    font-size: 32px;
+    line-height: 1.1;
+  }
+  .card-detail {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 8px;
+  }
+
+  .input-group { margin-bottom: 16px; }
+  .input-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .input-field {
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-md);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 8px 12px;
+    width: 280px;
+    outline: none;
+    transition: border-color 0.15s ease-out;
+  }
+  .input-field:focus { border-color: var(--accent); }
+  .input-field::placeholder { color: var(--text-muted); }
+
+  /* alerts */
+  .alert {
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    border-left: 3px solid;
+    max-width: 400px;
+  }
+  .alert-success { background: #1a2a1a; border-color: #4ade80; color: #4ade80; }
+  .alert-warning { background: #2a2415; border-color: #F28A2E; color: #F28A2E; }
+  .alert-error { background: #2a1a1a; border-color: #E9687A; color: #E9687A; }
+  .alert-info { background: #1a2a2a; border-color: #7DD3C7; color: #7DD3C7; }
+
+  /* ── Dashboard Mockup ── */
+  .mockup-section {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 32px;
+    border-top: 1px solid var(--rule);
+  }
+  .dashboard {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 0;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    min-height: 600px;
+  }
+  .dash-main {
+    padding: 32px;
+    border-right: 1px solid var(--rule);
+  }
+  .dash-heading {
+    font-family: 'Instrument Serif', serif;
+    font-size: 42px;
+    line-height: 1.1;
+    margin-bottom: 4px;
+  }
+  .dash-subheading {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 32px;
+  }
+
+  /* Timeline bars */
+  .timeline { margin-top: 16px; }
+  .timeline-hour {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 12px;
+    align-items: center;
+    min-height: 36px;
+    border-bottom: 1px solid #1f2123;
+  }
+  .timeline-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: right;
+  }
+  .timeline-bar-row {
+    display: flex;
+    gap: 2px;
+    height: 24px;
+  }
+  .timeline-block {
+    border-radius: 1px;
+    position: relative;
+    transition: opacity 0.15s ease-out;
+  }
+  .timeline-block:hover { opacity: 0.85; }
+  .timeline-block .tip {
+    display: none;
+    position: absolute;
+    top: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    padding: 2px 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text);
+    white-space: nowrap;
+    border-radius: 2px;
+    z-index: 10;
+  }
+  .timeline-block:hover .tip { display: block; }
+
+  /* Right rail */
+  .dash-rail {
+    background: var(--surface);
+    padding: 32px 20px;
+  }
+  .rail-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .rail-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #2a2d30;
+  }
+  .rail-item-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .rail-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 1px;
+  }
+  .rail-cat-name {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .rail-time {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .rail-pct {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    text-align: right;
+  }
+  .rail-item-right { text-align: right; }
+
+  /* Stat row */
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 32px;
+  }
+  .stat-box {
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-sm);
+  }
+  .stat-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .stat-value {
+    font-family: 'Instrument Serif', serif;
+    font-size: 28px;
+    line-height: 1.1;
+  }
+  .stat-delta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    margin-top: 4px;
+  }
+  .stat-delta.down { color: var(--cat-entertainment); }
+
+  /* Hourly rhythm strip */
+  .rhythm-section { margin-top: 32px; }
+  .rhythm-strip {
+    display: flex;
+    gap: 2px;
+    height: 32px;
+    align-items: flex-end;
+  }
+  .rhythm-bar {
+    flex: 1;
+    background: var(--accent);
+    border-radius: 1px 1px 0 0;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+  }
+  .rhythm-bar:hover { opacity: 1; }
+  .rhythm-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+  }
+  .rhythm-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+  }
+
+  /* ── Top Programs ── */
+  .programs-section { margin-top: 32px; }
+  .program-row {
+    display: grid;
+    grid-template-columns: 1fr 80px 60px;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #1f2123;
+  }
+  .program-name {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+  }
+  .program-cat-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 1px;
+    display: inline-block;
+    margin-right: 8px;
+  }
+  .program-time {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: right;
+  }
+  .program-bar-wrap {
+    height: 4px;
+    background: var(--surface-2);
+    border-radius: 1px;
+  }
+  .program-bar {
+    height: 100%;
+    border-radius: 1px;
+  }
+
+  /* ── Footer ── */
+  .preview-footer {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 32px;
+    border-top: 1px solid var(--rule);
+    text-align: center;
+  }
+  .preview-footer p {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+</style>
+</head>
+<body>
+
+<!-- ════ Font Specimen ════ -->
+<div class="specimen">
+  <div class="specimen-header">DeskSense</div>
+  <div class="specimen-sub">Design System Preview — Industrial/Utilitarian</div>
+
+  <div class="section-label">Typography</div>
+
+  <div class="font-row">
+    <div class="font-role">Display<br>Instrument Serif</div>
+    <div class="font-sample-display">Monday, April 7</div>
+  </div>
+  <div class="font-row">
+    <div class="font-role">Display<br>Large Numbers</div>
+    <div class="font-sample-display" style="font-size: 48px;">6h 42m</div>
+  </div>
+  <div class="font-row">
+    <div class="font-role">Body / UI<br>DM Sans</div>
+    <div class="font-sample-body">You spent 3 hours and 12 minutes in VS Code today, spread across 7 sessions. Your longest unbroken stretch was 54 minutes starting at 2:15 PM. Productivity was up 18% compared to last Monday.</div>
+  </div>
+  <div class="font-row">
+    <div class="font-role">Data / Mono<br>IBM Plex Mono</div>
+    <div class="font-sample-mono">
+      09:00 — 09:47 &nbsp; VS Code &nbsp; 47m<br>
+      09:47 — 10:12 &nbsp; Chrome  &nbsp; 25m<br>
+      10:12 — 10:14 &nbsp; Discord &nbsp;  2m<br>
+      10:14 — 11:38 &nbsp; VS Code &nbsp; 84m
+    </div>
+  </div>
+  <div class="font-row">
+    <div class="font-role">Data / Tabular</div>
+    <div class="font-sample-data" style="font-variant-numeric: tabular-nums;">
+      Productivity &nbsp;&nbsp; 4:12:00 &nbsp; 62.8%<br>
+      Entertainment &nbsp; 1:08:00 &nbsp; 16.9%<br>
+      Learning &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0:52:00 &nbsp; 12.9%<br>
+      Communication &nbsp; 0:18:00 &nbsp;&nbsp; 4.5%<br>
+      Idle &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0:12:00 &nbsp;&nbsp; 3.0%
+    </div>
+  </div>
+</div>
+
+<!-- ════ Color Palette ════ -->
+<div class="palette-section">
+  <div class="section-label">Color Palette</div>
+
+  <div style="font-family: 'DM Sans'; font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Core</div>
+  <div class="palette-grid">
+    <div class="swatch swatch-dark" style="background: #18191B;">
+      <div class="swatch-name">Background</div>
+      <div class="swatch-hex">#18191B</div>
+    </div>
+    <div class="swatch swatch-dark" style="background: #222528;">
+      <div class="swatch-name">Surface</div>
+      <div class="swatch-hex">#222528</div>
+    </div>
+    <div class="swatch swatch-dark" style="background: #2C3033;">
+      <div class="swatch-name">Surface 2</div>
+      <div class="swatch-hex">#2C3033</div>
+    </div>
+    <div class="swatch swatch-light" style="background: #E8E4DB;">
+      <div class="swatch-name">Text</div>
+      <div class="swatch-hex">#E8E4DB</div>
+    </div>
+    <div class="swatch swatch-light" style="background: #8A8478;">
+      <div class="swatch-name">Muted</div>
+      <div class="swatch-hex">#8A8478</div>
+    </div>
+    <div class="swatch swatch-light" style="background: #C7F36B;">
+      <div class="swatch-name">Accent</div>
+      <div class="swatch-hex">#C7F36B</div>
+    </div>
+    <div class="swatch swatch-dark" style="background: #3A3F3E;">
+      <div class="swatch-name">Rule</div>
+      <div class="swatch-hex">#3A3F3E</div>
+    </div>
+  </div>
+
+  <div style="font-family: 'DM Sans'; font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Categories</div>
+  <div class="palette-grid">
+    <div class="swatch swatch-light" style="background: #C7F36B;">
+      <div class="swatch-name">Productivity</div>
+      <div class="swatch-hex">#C7F36B</div>
+    </div>
+    <div class="swatch swatch-light" style="background: #F28A2E;">
+      <div class="swatch-name">Entertainment</div>
+      <div class="swatch-hex">#F28A2E</div>
+    </div>
+    <div class="swatch swatch-light" style="background: #7DD3C7;">
+      <div class="swatch-name">Learning</div>
+      <div class="swatch-hex">#7DD3C7</div>
+    </div>
+    <div class="swatch swatch-light" style="background: #E9687A;">
+      <div class="swatch-name">Communication</div>
+      <div class="swatch-hex">#E9687A</div>
+    </div>
+    <div class="swatch swatch-dark" style="background: #6B6560;">
+      <div class="swatch-name">Idle</div>
+      <div class="swatch-hex">#6B6560</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ UI Components ════ -->
+<div class="components-section">
+  <div class="section-label">UI Components</div>
+
+  <div style="font-family: 'DM Sans'; font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Buttons</div>
+  <div class="component-row">
+    <button class="btn btn-primary">Save Categories</button>
+    <button class="btn btn-secondary">This Week</button>
+    <button class="btn btn-ghost">Reset Filters</button>
+  </div>
+
+  <div style="font-family: 'DM Sans'; font-size: 13px; color: var(--text-muted); margin-bottom: 16px; margin-top: 24px;">Stat Cards</div>
+  <div class="component-row" style="gap: 16px;">
+    <div class="card" style="min-width: 180px;">
+      <div class="card-title">Total Active</div>
+      <div class="card-value">6h 42m</div>
+      <div class="card-detail">+18% vs last Monday</div>
+    </div>
+    <div class="card" style="min-width: 180px;">
+      <div class="card-title">Longest Focus</div>
+      <div class="card-value">1h 24m</div>
+      <div class="card-detail">VS Code, 2:15 PM</div>
+    </div>
+    <div class="card" style="min-width: 180px;">
+      <div class="card-title">Sessions</div>
+      <div class="card-value">23</div>
+      <div class="card-detail">avg 17m each</div>
+    </div>
+  </div>
+
+  <div style="font-family: 'DM Sans'; font-size: 13px; color: var(--text-muted); margin-bottom: 16px; margin-top: 24px;">Form Input</div>
+  <div class="input-group">
+    <label class="input-label">Category Name</label>
+    <input class="input-field" type="text" placeholder="e.g. Language Learning">
+  </div>
+
+  <div style="font-family: 'DM Sans'; font-size: 13px; color: var(--text-muted); margin-bottom: 16px; margin-top: 24px;">Alerts</div>
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+    <div class="alert alert-success">Tracker running. Last pulse 2s ago.</div>
+    <div class="alert alert-warning">Chrome extension disconnected for 5m.</div>
+    <div class="alert alert-error">Backend unreachable at localhost:8000.</div>
+    <div class="alert alert-info">New category "Language Learning" created.</div>
+  </div>
+</div>
+
+<!-- ════ Dashboard Mockup ════ -->
+<div class="mockup-section">
+  <div class="section-label">Dashboard — Daily View Mockup</div>
+
+  <div class="dashboard">
+    <div class="dash-main">
+      <div class="dash-heading">Monday, April 7</div>
+      <div class="dash-subheading">6h 42m tracked &middot; 23 sessions &middot; 5 programs</div>
+
+      <!-- Timeline -->
+      <div class="timeline">
+        <div class="timeline-hour">
+          <div class="timeline-label">09:00</div>
+          <div class="timeline-bar-row">
+            <div class="timeline-block" style="width: 78%; background: var(--cat-productivity);"><span class="tip">VS Code 47m</span></div>
+            <div class="timeline-block" style="width: 22%; background: var(--cat-learning);"><span class="tip">Anki 13m</span></div>
+          </div>
+        </div>
+        <div class="timeline-hour">
+          <div class="timeline-label">10:00</div>
+          <div class="timeline-bar-row">
+            <div class="timeline-block" style="width: 42%; background: var(--cat-productivity);"><span class="tip">VS Code 25m</span></div>
+            <div class="timeline-block" style="width: 33%; background: var(--cat-communication);"><span class="tip">Discord 20m</span></div>
+            <div class="timeline-block" style="width: 25%; background: var(--cat-entertainment);"><span class="tip">YouTube 15m</span></div>
+          </div>
+        </div>
+        <div class="timeline-hour">
+          <div class="timeline-label">11:00</div>
+          <div class="timeline-bar-row">
+            <div class="timeline-block" style="width: 90%; background: var(--cat-productivity);"><span class="tip">VS Code 54m</span></div>
+            <div class="timeline-block" style="width: 10%; background: var(--cat-idle);"><span class="tip">Idle 6m</span></div>
+          </div>
+        </div>
+        <div class="timeline-hour">
+          <div class="timeline-label">12:00</div>
+          <div class="timeline-bar-row">
+            <div class="timeline-block" style="width: 50%; background: var(--cat-entertainment);"><span class="tip">Netflix 30m</span></div>
+            <div class="timeline-block" style="width: 50%; background: var(--cat-idle);"><span class="tip">Idle 30m</span></div>
+          </div>
+        </div>
+        <div class="timeline-hour">
+          <div class="timeline-label">13:00</div>
+          <div class="timeline-bar-row">
+            <div class="timeline-block" style="width: 15%; background: var(--cat-learning);"><span class="tip">Anki 9m</span></div>
+            <div class="timeline-block" style="width: 85%; background: var(--cat-productivity);"><span class="tip">VS Code 51m</span></div>
+          </div>
+        </div>
+        <div class="timeline-hour">
+          <div class="timeline-label">14:00</div>
+          <div class="timeline-bar-row">
+            <div class="timeline-block" style="width: 100%; background: var(--cat-productivity);"><span class="tip">VS Code 1h 24m</span></div>
+          </div>
+        </div>
+        <div class="timeline-hour">
+          <div class="timeline-label">15:00</div>
+          <div class="timeline-bar-row">
+            <div class="timeline-block" style="width: 40%; background: var(--cat-productivity);"><span class="tip">VS Code 24m</span></div>
+            <div class="timeline-block" style="width: 30%; background: var(--cat-learning);"><span class="tip">Duolingo 18m</span></div>
+            <div class="timeline-block" style="width: 30%; background: var(--cat-communication);"><span class="tip">Chrome 18m</span></div>
+          </div>
+        </div>
+        <div class="timeline-hour">
+          <div class="timeline-label">16:00</div>
+          <div class="timeline-bar-row">
+            <div class="timeline-block" style="width: 60%; background: var(--cat-productivity);"><span class="tip">VS Code 36m</span></div>
+            <div class="timeline-block" style="width: 25%; background: var(--cat-entertainment);"><span class="tip">Spotify 15m</span></div>
+            <div class="timeline-block" style="width: 15%; background: var(--cat-idle);"><span class="tip">Idle 9m</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stat-row">
+        <div class="stat-box">
+          <div class="stat-label">Productivity</div>
+          <div class="stat-value" style="color: var(--cat-productivity);">4h 12m</div>
+          <div class="stat-delta">+18% vs avg</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Entertainment</div>
+          <div class="stat-value" style="color: var(--cat-entertainment);">1h 08m</div>
+          <div class="stat-delta down">+23% vs avg</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Learning</div>
+          <div class="stat-value" style="color: var(--cat-learning);">0h 52m</div>
+          <div class="stat-delta">+5% vs avg</div>
+        </div>
+      </div>
+
+      <!-- Rhythm strip -->
+      <div class="rhythm-section">
+        <div class="section-label" style="margin-top: 32px;">Activity Density</div>
+        <div class="rhythm-strip">
+          <div class="rhythm-bar" style="height: 10%;"></div>
+          <div class="rhythm-bar" style="height: 5%;"></div>
+          <div class="rhythm-bar" style="height: 0%;"></div>
+          <div class="rhythm-bar" style="height: 0%;"></div>
+          <div class="rhythm-bar" style="height: 0%;"></div>
+          <div class="rhythm-bar" style="height: 0%;"></div>
+          <div class="rhythm-bar" style="height: 0%;"></div>
+          <div class="rhythm-bar" style="height: 0%;"></div>
+          <div class="rhythm-bar" style="height: 0%;"></div>
+          <div class="rhythm-bar" style="height: 85%;"></div>
+          <div class="rhythm-bar" style="height: 95%;"></div>
+          <div class="rhythm-bar" style="height: 90%;"></div>
+          <div class="rhythm-bar" style="height: 40%;"></div>
+          <div class="rhythm-bar" style="height: 75%;"></div>
+          <div class="rhythm-bar" style="height: 100%;"></div>
+          <div class="rhythm-bar" style="height: 95%;"></div>
+          <div class="rhythm-bar" style="height: 70%;"></div>
+          <div class="rhythm-bar" style="height: 30%;"></div>
+          <div class="rhythm-bar" style="height: 10%;"></div>
+          <div class="rhythm-bar" style="height: 0%;"></div>
+          <div class="rhythm-bar" style="height: 0%;"></div>
+          <div class="rhythm-bar" style="height: 0%;"></div>
+          <div class="rhythm-bar" style="height: 0%;"></div>
+          <div class="rhythm-bar" style="height: 0%;"></div>
+        </div>
+        <div class="rhythm-labels">
+          <span class="rhythm-label">00:00</span>
+          <span class="rhythm-label">06:00</span>
+          <span class="rhythm-label">12:00</span>
+          <span class="rhythm-label">18:00</span>
+          <span class="rhythm-label">23:00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Rail -->
+    <div class="dash-rail">
+      <div class="rail-title">Categories</div>
+      <div class="rail-item">
+        <div class="rail-item-left">
+          <div class="rail-dot" style="background: var(--cat-productivity);"></div>
+          <div class="rail-cat-name">Productivity</div>
+        </div>
+        <div class="rail-item-right">
+          <div class="rail-time" style="color: var(--cat-productivity);">4:12</div>
+          <div class="rail-pct">62.8%</div>
+        </div>
+      </div>
+      <div class="rail-item">
+        <div class="rail-item-left">
+          <div class="rail-dot" style="background: var(--cat-entertainment);"></div>
+          <div class="rail-cat-name">Entertainment</div>
+        </div>
+        <div class="rail-item-right">
+          <div class="rail-time" style="color: var(--cat-entertainment);">1:08</div>
+          <div class="rail-pct">16.9%</div>
+        </div>
+      </div>
+      <div class="rail-item">
+        <div class="rail-item-left">
+          <div class="rail-dot" style="background: var(--cat-learning);"></div>
+          <div class="rail-cat-name">Learning</div>
+        </div>
+        <div class="rail-item-right">
+          <div class="rail-time" style="color: var(--cat-learning);">0:52</div>
+          <div class="rail-pct">12.9%</div>
+        </div>
+      </div>
+      <div class="rail-item">
+        <div class="rail-item-left">
+          <div class="rail-dot" style="background: var(--cat-communication);"></div>
+          <div class="rail-cat-name">Comms</div>
+        </div>
+        <div class="rail-item-right">
+          <div class="rail-time" style="color: var(--cat-communication);">0:18</div>
+          <div class="rail-pct">4.5%</div>
+        </div>
+      </div>
+      <div class="rail-item">
+        <div class="rail-item-left">
+          <div class="rail-dot" style="background: var(--cat-idle);"></div>
+          <div class="rail-cat-name">Idle</div>
+        </div>
+        <div class="rail-item-right">
+          <div class="rail-time" style="color: var(--cat-idle);">0:12</div>
+          <div class="rail-pct">3.0%</div>
+        </div>
+      </div>
+
+      <div class="rail-title" style="margin-top: 32px;">Top Programs</div>
+      <div class="program-row">
+        <div class="program-name"><span class="program-cat-dot" style="background: var(--cat-productivity);"></span>VS Code</div>
+        <div class="program-time">3:17</div>
+        <div class="program-bar-wrap"><div class="program-bar" style="width: 100%; background: var(--cat-productivity);"></div></div>
+      </div>
+      <div class="program-row">
+        <div class="program-name"><span class="program-cat-dot" style="background: var(--cat-entertainment);"></span>Chrome</div>
+        <div class="program-time">1:03</div>
+        <div class="program-bar-wrap"><div class="program-bar" style="width: 32%; background: var(--cat-entertainment);"></div></div>
+      </div>
+      <div class="program-row">
+        <div class="program-name"><span class="program-cat-dot" style="background: var(--cat-learning);"></span>Anki</div>
+        <div class="program-time">0:40</div>
+        <div class="program-bar-wrap"><div class="program-bar" style="width: 20%; background: var(--cat-learning);"></div></div>
+      </div>
+      <div class="program-row">
+        <div class="program-name"><span class="program-cat-dot" style="background: var(--cat-communication);"></span>Discord</div>
+        <div class="program-time">0:20</div>
+        <div class="program-bar-wrap"><div class="program-bar" style="width: 10%; background: var(--cat-communication);"></div></div>
+      </div>
+      <div class="program-row">
+        <div class="program-name"><span class="program-cat-dot" style="background: var(--cat-entertainment);"></span>Spotify</div>
+        <div class="program-time">0:15</div>
+        <div class="program-bar-wrap"><div class="program-bar" style="width: 8%; background: var(--cat-entertainment);"></div></div>
+      </div>
+      <div class="program-row">
+        <div class="program-name"><span class="program-cat-dot" style="background: var(--cat-learning);"></span>Duolingo</div>
+        <div class="program-time">0:18</div>
+        <div class="program-bar-wrap"><div class="program-bar" style="width: 9%; background: var(--cat-learning);"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ Footer ════ -->
+<div class="preview-footer">
+  <p>DeskSense Design System &middot; Generated by /design-consultation &middot; April 2026</p>
+</div>
+
+</body>
+</html>
