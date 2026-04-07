@@ -2,7 +2,7 @@
 
 it's a program that tracks which programs I use on Windows and Ubuntu. how do I spend my time?
 
-# Setup
+## Setup for the activityTracker server
 
 - make a virtual environment
 - enter the venv
@@ -33,4 +33,6 @@ LOCAL_TIME_OFFSET_DST
 - install pywin32 (not inclueded in requirements.txt so far)
 
 (.desk) PS C:\Users\roly\Code\desksense\activitytracker> python src/activitytracker/server.py
+
+## Setup for the peripherals
 

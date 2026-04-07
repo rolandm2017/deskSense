@@ -105,7 +105,7 @@ The program does not have documented shared contracts as of yet, but endpoints a
 
 # Database setup
 
-// todo
+The database connection is established in activitytracker\src\activitytracker\db\database.py.
 
 # Data model
 
