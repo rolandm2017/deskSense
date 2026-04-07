@@ -11,10 +11,12 @@ from unittest.mock import AsyncMock, MagicMock, Mock
 
 import asyncio
 from sqlalchemy import create_engine, text
+from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from activitytracker.db.models import Base
+from tests.helper.truncation import truncate_all_tables_via_engine
 
 # Force Windows to use the SelectEventLoop instead of ProactorEventLoop
 # This needs to happen before any asyncio code runs
@@ -134,36 +136,58 @@ load_dotenv()
 ASYNC_TEST_DB_URL = ASYNC_TEST_DB_URL = os.getenv("ASYNC_TEST_DB_URL")
 
 
-@pytest_asyncio.fixture(scope="function")
-async def global_test_engine():
-    """Create a single engine shared across all tests"""
-    # Connect to default postgres db for setup
-    if ASYNC_TEST_DB_URL is None:
-        raise ValueError("ASYNC_TEST_DB_URL environment variable is not set")
+@pytest.fixture(scope="session")
+def postgres_test_db():
+    """Create the PostgreSQL test database once for the whole test session."""
+    if SYNC_TEST_DB_URL is None:
+        raise ValueError("SYNC_TEST_DB_URL environment variable is not set")
 
-    default_url = ASYNC_TEST_DB_URL.rsplit("/", 1)[0] + "/postgres"
-    admin_engine = create_async_engine(
-        default_url, isolation_level="AUTOCOMMIT", pool_pre_ping=True, echo=False
-    )
+    sync_test_db_url = make_url(SYNC_TEST_DB_URL)
+    test_db_name = sync_test_db_url.database
+    default_url = sync_test_db_url.set(database="postgres")
+    admin_engine = create_engine(default_url, isolation_level="AUTOCOMMIT")
 
-    # Clear and recreate test db
-    async with admin_engine.begin() as conn:
-        await conn.execute(
+    with admin_engine.connect() as conn:
+        conn.execute(
             text(
                 """
             SELECT pg_terminate_backend(pid)
             FROM pg_stat_activity
-            WHERE datname = 'dsTestDb'
+            WHERE datname = :db_name
             AND pid <> pg_backend_pid()
         """
-            )
+            ),
+            {"db_name": test_db_name},
         )
-        await conn.execute(text("DROP DATABASE IF EXISTS dsTestDb"))
-        await conn.execute(text("CREATE DATABASE dsTestDb"))
+        conn.execute(text(f"DROP DATABASE IF EXISTS {test_db_name}"))
+        conn.execute(text(f"CREATE DATABASE {test_db_name}"))
 
-    await admin_engine.dispose()
+    admin_engine.dispose()
 
-    # Create a single engine for all tests
+    try:
+        yield
+    finally:
+        admin_engine = create_engine(default_url, isolation_level="AUTOCOMMIT")
+        with admin_engine.connect() as conn:
+            conn.execute(
+                text(
+                    """
+                SELECT pg_terminate_backend(pid)
+                FROM pg_stat_activity
+                WHERE datname = :db_name
+                AND pid <> pg_backend_pid()
+            """
+                ),
+                {"db_name": test_db_name},
+            )
+            conn.execute(text(f"DROP DATABASE IF EXISTS {test_db_name}"))
+        admin_engine.dispose()
+
+
+@pytest_asyncio.fixture(scope="session")
+async def global_test_engine(postgres_test_db):
+    """Create a single async engine shared across the whole test session."""
+
     test_engine = create_async_engine(
         ASYNC_TEST_DB_URL,
         echo=False,
@@ -175,23 +199,16 @@ async def global_test_engine():
     )
 
     try:
+        async with test_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
         yield test_engine
     finally:
-        # Proper cleanup at the end of all tests
         await test_engine.dispose()
-        # Force garbage collection
-        # import gc
-        # gc.collect()
 
 
 @pytest_asyncio.fixture(scope="function")
-async def async_engine_and_asm(global_test_engine):
-    """Set up database for each test with isolation"""
-    # Create fresh tables for this test
-    async with global_test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    # Create a fresh session maker for each test
+async def async_engine_and_asm(global_test_engine, postgres_db_isolation):
+    """Provide the shared async engine plus a fresh session maker for this test."""
     async_session_maker = async_sessionmaker(
         global_test_engine,
         class_=AsyncSession,
@@ -201,10 +218,6 @@ async def async_engine_and_asm(global_test_engine):
     )
 
     yield global_test_engine, async_session_maker
-
-    # Clean up tables but not the engine
-    async with global_test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -281,72 +294,37 @@ def db_session_in_mem():
         engine.dispose()
 
 
-@pytest.fixture(scope="function")
-def sync_engine():
-    """Create a synchronous PostgreSQL engine for testing"""
-    # Create engine that connects to default postgres database
+@pytest.fixture(scope="session")
+def sync_engine(postgres_test_db):
+    """Create a synchronous PostgreSQL engine shared across the test session."""
     if SYNC_TEST_DB_URL is None:
         raise ValueError("SYNC_TEST_DB_URL was None")
 
-    # Extract the default postgres database URL
-    default_url = SYNC_TEST_DB_URL.rsplit("/", 1)[0] + "/postgres"
-    admin_engine = create_engine(default_url, isolation_level="AUTOCOMMIT")
-
-    with admin_engine.connect() as conn:
-        # Terminate existing connections more safely
-        conn.execute(
-            text(
-                """
-            SELECT pg_terminate_backend(pid)
-            FROM pg_stat_activity
-            WHERE datname = 'dsTestDb'
-            AND pid <> pg_backend_pid()
-        """
-            )
-        )
-
-        # Drop and recreate database
-        conn.execute(text("DROP DATABASE IF EXISTS dsTestDb"))
-        conn.execute(text("CREATE DATABASE dsTestDb"))
-
-    admin_engine.dispose()
-
-    # Create engine for test database
     test_engine = create_engine(
-        # pool_pre_ping resolves a bug
         SYNC_TEST_DB_URL,
         isolation_level="AUTOCOMMIT",
         pool_pre_ping=True,
     )
 
     # Create all tables
-    with test_engine.begin() as conn:
-        Base.metadata.create_all(conn)
+    Base.metadata.create_all(test_engine)
 
     try:
         yield test_engine
     finally:
         test_engine.dispose()
 
-        # Clean up by dropping test database
-        admin_engine = create_engine(default_url, isolation_level="AUTOCOMMIT")
-        with admin_engine.connect() as conn:
-            conn.execute(
-                text(
-                    """
-                SELECT pg_terminate_backend(pid)
-                FROM pg_stat_activity
-                WHERE datname = 'dsTestDb'
-                AND pid <> pg_backend_pid()
-            """
-                )
-            )
-            conn.execute(text("DROP DATABASE IF EXISTS dsTestDb"))
-        admin_engine.dispose()
+
+@pytest.fixture(scope="function")
+def postgres_db_isolation(sync_engine):
+    """Keep Postgres-backed tests isolated without recreating the database."""
+    truncate_all_tables_via_engine(sync_engine)
+    yield
+    truncate_all_tables_via_engine(sync_engine)
 
 
 @pytest.fixture(scope="function")
-def regular_session_maker(sync_engine):
+def regular_session_maker(sync_engine, postgres_db_isolation):
     """Create a synchronous session maker."""
     from sqlalchemy.orm import sessionmaker
 

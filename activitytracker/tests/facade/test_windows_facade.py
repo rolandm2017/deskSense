@@ -54,6 +54,7 @@ class TestProgramFacadeIntegration:
         """Test window listener with mocked window changes."""
         with ExitStack() as stack:
             mock_get_window = stack.enter_context(patch("win32gui.GetForegroundWindow"))
+            stack.enter_context(patch("time.sleep"))
 
             # Different for each iteration
             window_handles = [100, 200, 300, 400]

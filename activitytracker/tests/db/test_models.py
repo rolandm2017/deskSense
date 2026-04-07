@@ -1,46 +1,16 @@
 import pytest
 from datetime import datetime, timezone
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.orm import Session
 from typing import cast
 
-from activitytracker.db.models import TimelineEntryObj, Base
+from activitytracker.db.models import TimelineEntryObj
 from activitytracker.object.enums import ChartEventType
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-
-
-# Use a test database URL
-SYNC_TEST_DATABASE_URL = os.getenv("SYNC_TEST_DB_URL")
-
-if not isinstance(SYNC_TEST_DATABASE_URL, str):
-    raise ValueError("Failed to load database URL")
-
-print(SYNC_TEST_DATABASE_URL[:6])
-# Create sync engine
-test_engine = create_engine(SYNC_TEST_DATABASE_URL, echo=False)
-
-# Create sync session maker
-Session = sessionmaker(
-    bind=test_engine,
-)
-
-
-@pytest.fixture(autouse=True)
-def setup_database():
-    """Create tables before each test and drop them after."""
-    Base.metadata.create_all(test_engine)
-    yield
-    Base.metadata.drop_all(test_engine)
 
 
 @pytest.fixture
-def db_session():
-    """Create a fresh sqlalchemy session for each test."""
-    session = Session()
+def db_session(regular_session_maker):
+    """Create a fresh SQLAlchemy session using the shared test harness."""
+    session: Session = regular_session_maker()
     try:
         yield session
     finally:
