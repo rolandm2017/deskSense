@@ -108,3 +108,14 @@ Key routing rules:
 - Architecture review → invoke plan-eng-review
 - Save progress, checkpoint, resume → invoke checkpoint
 - Code quality, health check → invoke health
+
+
+## Guidance for Claude agents
+
+When fixing a bug, please follow this procedure:
+
+1. Identify the root cause of the bug.
+2. Create a test demonstrating the bug in its failure state. That is, when the fix is made, the test should start to pass. So your goal is to write a test that fails, demonstrating the bug.
+3. Wait for me to show you the results of the test. You can then implement the fix if the test failed about how you expect.
+
+In this way, the codebase slowly grows protection from regressions.
