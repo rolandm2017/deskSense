@@ -126,7 +126,7 @@ class TestStateMachine:
         assert isinstance(response2, ProgramSession)
         assert response2.window_title == session1.window_title
         print(t1.strftime("%M:%S"), "\n", t2.strftime("%M:%S"))
-        assert response2.start_time == t1
+        assert response2.start_time.dt == t1
 
         asm.set_new_session(third)
         response3 = asm.get_concluded_session()
@@ -134,7 +134,7 @@ class TestStateMachine:
         assert response3 is not None
         assert isinstance(response3, ChromeSession)
         assert response3.domain == second.domain
-        assert response3.start_time == t2
+        assert response3.start_time.dt == t2
 
         asm.set_new_session(fourth)
         response4 = asm.get_concluded_session()
@@ -142,7 +142,7 @@ class TestStateMachine:
         assert response4 is not None
         assert isinstance(response4, ChromeSession)
         assert response4.domain == third.domain
-        assert response4.start_time == t3
+        assert response4.start_time.dt == t3
 
         asm.set_new_session(fifth)
         response5 = asm.get_concluded_session()
@@ -150,14 +150,14 @@ class TestStateMachine:
         assert response5 is not None
         assert isinstance(response5, ProgramSession)
         assert response5.window_title == fourth.window_title
-        assert response5.start_time == t4
+        assert response5.start_time.dt == t4
 
         # Verify that the internal stuff is as expected for the unfinished section
         assert asm.current_state is not None
         assert asm.prior_state is not None
         assert isinstance(asm.prior_state, InternalState)
         assert asm.prior_state.session.window_title == fourth.window_title
-        assert asm.prior_state.session.start_time == t4
+        assert asm.prior_state.session.start_time.dt == t4
 
         assert asm.current_state.session.window_title == fifth.window_title
         assert asm.current_state.session.start_time == fifth.start_time

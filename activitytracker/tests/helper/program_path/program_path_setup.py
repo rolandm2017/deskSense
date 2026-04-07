@@ -21,8 +21,8 @@ def make_preexisting_summary(session, id_for_session, summary_starting_hours):
         exe_path_as_id=session.exe_path,
         program_name=session.window_title,
         hours_spent=summary_starting_hours,
-        gathering_date=get_start_of_day_from_datetime(session.start_time),
-        gathering_date_local=get_start_of_day_from_datetime(session.start_time).replace(
+        gathering_date=get_start_of_day_from_datetime(session.start_time.dt),
+        gathering_date_local=get_start_of_day_from_datetime(session.start_time.dt).replace(
             tzinfo=None
         ),
     )

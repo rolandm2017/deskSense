@@ -102,8 +102,8 @@ def test_find_session(prepare_daos, mock_session_data):
     program_dao.select_where_time_equals = pr_select_where_time_equals_spy
     chrome_dao.select_where_time_equals = ch_select_where_time_equals_spy
 
-    pr_time_as_utc = convert_to_utc(program_session.start_time)
-    ch_time_as_utc = convert_to_utc(chrome_session.start_time)
+    pr_time_as_utc = convert_to_utc(program_session.start_time.dt)
+    ch_time_as_utc = convert_to_utc(chrome_session.start_time.dt)
 
     # ### Act
     _ = program_dao.find_session(program_session)

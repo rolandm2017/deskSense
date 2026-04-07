@@ -34,8 +34,8 @@ class MouseDao(AsyncUtilityDaoMixin, BaseQueueingDao):
 
     async def create_from_window(self, window: MouseMoveWindow):
         mouse_move = MouseMove(
-            start_time=window.start_time.dt,
-            end_time=window.end_time.dt,
+            start_time=window.start_time,
+            end_time=window.end_time,
         )
         await self.queue_item(mouse_move, MouseMove, "create_from_window")
 
