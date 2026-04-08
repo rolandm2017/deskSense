@@ -253,6 +253,15 @@ class FakeProgramSummaryDao(_BaseFakeSummaryDao[DailyProgramSummary]):
         )
         self.add_new_item(summary)
 
+    def read_day(self, day):
+        today_start = get_start_of_day_from_datetime(day.dt)
+        tomorrow_start = today_start + timedelta(days=1)
+        return [
+            s
+            for s in self.summaries
+            if s.gathering_date >= today_start and s.gathering_date < tomorrow_start
+        ]
+
     def find_todays_entry_for_program(self, session: ProgramSession):
         day_start = get_start_of_day_from_datetime(session.start_time.dt)
         for summary in self.summaries:
@@ -288,6 +297,15 @@ class FakeChromeSummaryDao(_BaseFakeSummaryDao[DailyDomainSummary]):
             gathering_date_local=day_start.replace(tzinfo=None),
         )
         self.add_new_item(summary)
+
+    def read_day(self, day):
+        today_start = get_start_of_day_from_datetime(day.dt)
+        tomorrow_start = today_start + timedelta(days=1)
+        return [
+            s
+            for s in self.summaries
+            if s.gathering_date >= today_start and s.gathering_date < tomorrow_start
+        ]
 
     def find_todays_entry_for_domain(self, session: ChromeSession):
         day_start = get_start_of_day_from_datetime(session.start_time.dt)

@@ -7,27 +7,30 @@ def _all_table_names():
     return [table.name for table in Base.metadata.sorted_tables]
 
 
-def _existing_public_table_names(bind):
-    inspector = inspect(bind)
-    return set(inspector.get_table_names(schema="public"))
+_cached_truncation_sql = None
 
 
 def _truncate_existing_tables(executor, bind):
-    table_names = _all_table_names()
-    if not table_names:
-        return False
+    global _cached_truncation_sql
 
-    existing_table_names = _existing_public_table_names(bind)
-    truncation_targets = [
-        f'public."{table_name}"'
-        for table_name in table_names
-        if table_name in existing_table_names
-    ]
-    if not truncation_targets:
-        return False
+    if _cached_truncation_sql is None:
+        table_names = _all_table_names()
+        if not table_names:
+            return False
 
-    joined_names = ", ".join(truncation_targets)
-    executor(text(f"TRUNCATE {joined_names} RESTART IDENTITY CASCADE"))
+        inspector = inspect(bind)
+        existing_table_names = set(inspector.get_table_names(schema="public"))
+        truncation_targets = [
+            f'public."{table_name}"'
+            for table_name in table_names
+            if table_name in existing_table_names
+        ]
+        if not truncation_targets:
+            return False
+
+        _cached_truncation_sql = f"TRUNCATE {', '.join(truncation_targets)} RESTART IDENTITY CASCADE"
+
+    executor(text(_cached_truncation_sql))
     return True
 
 

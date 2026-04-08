@@ -1,4 +1,4 @@
-# tests/integration/test_weekly_breakdown.py
+# tests/tz_handling/test_weekly_breakdown.py
 
 """
 The file is testing this:
@@ -9,33 +9,22 @@ But without the hassle of running the server to make a GET request.
 The point of the test is to verify precise accuracy with the outcome of adding
 sessions into the db. The data should match exactly, and everything should be understood.
 
+Previously Postgres-backed; now uses in-memory fake DAOs for speed.
+The tests exercise DashboardService.get_weekly_productivity_overview business logic,
+not storage semantics.
 """
-import pytest_asyncio
 
 import pytest
 
-pytestmark = pytest.mark.postgres_contract
-
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
-import pytz
 from datetime import datetime, timedelta
 
 from typing import List
 
-from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
-from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from activitytracker.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
-from activitytracker.db.models import Base, DailyDomainSummary, DailyProgramSummary
 from activitytracker.object.classes import (
     CompletedChromeSession,
     CompletedProgramSession,
 )
 from activitytracker.services.dashboard_service import DashboardService
-from activitytracker.util.const import SECONDS_PER_HOUR
 from activitytracker.util.time_wrappers import UserLocalTime
 
 from ..data.weekly_breakdown_chrome import (
@@ -49,7 +38,6 @@ from ..data.weekly_breakdown_chrome import (
     feb_chrome_count,
     march_2_chrome_count,
     march_3_chrome_count,
-    unique_domains,
 )
 from ..data.weekly_breakdown_programs import (
     duplicate_programs_march_2,
@@ -67,432 +55,203 @@ from ..data.weekly_breakdown_programs import (
     programs_feb_26,
     programs_march_2nd,
     programs_march_3rd,
-    unique_programs,
     weekly_breakdown_tz,
 )
-from ..helper.truncation import truncate_summaries_and_logs_tables_via_session
-from ..mocks.mock_clock import MockClock
-
-# FIXME: Turtle slow test: use in memory db?
+from ..mocks.fake_persistence import FakeChromeSummaryDao, FakeProgramSummaryDao
 
 
-@pytest_asyncio.fixture
-async def setup_parts(regular_session_maker, async_engine_and_asm):
-    """
-    Fixture that initializes a DashboardService instance for testing.
-    This connects to the test db, unless there is an unforseen problem.
-    """
-    _, asm = async_engine_and_asm
+def _populate_program_summaries(dao, sessions, must_be_from_month):
+    for session in sessions:
+        assert isinstance(session, CompletedProgramSession)
+        assert isinstance(session.end_time, UserLocalTime)
+        assert must_be_from_month == session.end_time.dt.month
+        assert "TEST" in session.window_title
 
-    session_maker_async: async_sessionmaker = asm
-
-    # Get all required DAOs
-    timeline_dao = TimelineEntryDao(session_maker_async)
-    program_logging_dao = ProgramLoggingDao(regular_session_maker)
-    chrome_logging_dao = ChromeLoggingDao(regular_session_maker)
-    program_summary_dao = ProgramSummaryDao(program_logging_dao, regular_session_maker)
-    chrome_summary_dao = ChromeSummaryDao(chrome_logging_dao, regular_session_maker)
-
-    # Create and return the dashboard service
-    service = DashboardService(
-        timeline_dao=timeline_dao,
-        program_summary_dao=program_summary_dao,
-        program_logging_dao=program_logging_dao,
-        chrome_summary_dao=chrome_summary_dao,
-        chrome_logging_dao=chrome_logging_dao,
-    )
-
-    yield service, program_summary_dao, chrome_summary_dao, regular_session_maker
-    # Clean up if needed
-    # If your DAOs have close methods, you could call them here
-
-
-def setup_program_writes_for_group(
-    group_of_test_data, program_summary_dao, must_be_from_month
-):
-    """"""
-    for dummy_program_session in group_of_test_data:
-        assert isinstance(dummy_program_session, CompletedProgramSession)
-        assert isinstance(
-            dummy_program_session.end_time, UserLocalTime
-        ), "Setup conditions not met"
-        assert must_be_from_month == dummy_program_session.end_time.dt.month
-
-        if "TEST" not in dummy_program_session.window_title:
-            raise ValueError("Test setup requires 'TEST' string in all window titles")
-
-        # TODO: method to find if the program already exists for a given date
-        session_from_today = program_summary_dao.find_todays_entry_for_program(
-            dummy_program_session
-        )
-        if session_from_today:
-            # A program exists in the db already, so, extend its time
-            program_summary_dao.push_window_ahead_ten_sec(dummy_program_session)
+        existing = dao.find_todays_entry_for_program(session)
+        if existing:
+            dao.push_window_ahead_ten_sec(session)
         else:
-            program_summary_dao.start_session(dummy_program_session)
+            dao.start_session(session)
 
 
-def setup_chrome_writes_for_group(
-    group_of_test_data, chrome_summary_dao, must_be_from_month
-):
-    for dummy_chrome_session in group_of_test_data:
-        assert isinstance(dummy_chrome_session, CompletedChromeSession)
-        assert must_be_from_month == dummy_chrome_session.end_time.dt.month
+def _populate_chrome_summaries(dao, sessions, must_be_from_month):
+    for session in sessions:
+        assert isinstance(session, CompletedChromeSession)
+        assert must_be_from_month == session.end_time.dt.month
 
-        session_from_today = chrome_summary_dao.find_todays_entry_for_domain(
-            dummy_chrome_session
-        )
-        if session_from_today:
-            print(f"Already added: ", dummy_chrome_session.domain)
-            chrome_summary_dao.push_window_ahead_ten_sec(dummy_chrome_session)
+        existing = dao.find_todays_entry_for_domain(session)
+        if existing:
+            dao.push_window_ahead_ten_sec(session)
         else:
-            chrome_summary_dao.start_session(dummy_chrome_session)
-
-        # chrome_summary_dao.create_if_new_else_update(session, right_now_arg)
+            dao.start_session(session)
 
 
-@pytest_asyncio.fixture
-async def setup_with_populated_db(setup_parts):
+@pytest.fixture
+def populated_service():
+    """Build a DashboardService backed by in-memory fake DAOs."""
+    program_summary_dao = FakeProgramSummaryDao()
+    chrome_summary_dao = FakeChromeSummaryDao()
 
-    # Write test data and populate the test db. DO NOT use the real db. You will mess it up.
-    # Write test data and populate the test db. DO NOT use the real db. You will mess it up.
-    # Write test data and populate the test db. DO NOT use the real db. You will mess it up.
-    # Write test data and populate the test db. DO NOT use the real db. You will mess it up.
-    service, program_summary_dao, chrome_summary_dao, session_maker = setup_parts
+    # February data
+    feb_programs = programs_feb_23() + programs_feb_24() + programs_feb_26()
+    feb_chrome = chrome_feb_23() + chrome_feb_24() + chrome_feb_26()
+    _populate_program_summaries(program_summary_dao, feb_programs, 2)
+    _populate_chrome_summaries(chrome_summary_dao, feb_chrome, 2)
 
-    truncate_summaries_and_logs_tables_via_session(session_maker)
-
-    test_data_feb_programs = programs_feb_23() + programs_feb_24() + programs_feb_26()
-
-    test_data_feb_chrome = chrome_feb_23() + chrome_feb_24() + chrome_feb_26()
-
-    test_data_march_programs = (
+    # March data
+    march_programs = (
         programs_march_2nd()
         + programs_march_3rd()
         + duplicate_programs_march_2()
         + duplicate_programs_march_3rd()
     )
-
-    test_data_march_chrome = (
+    march_chrome = (
         chrome_march_2nd()
         + chrome_march_3rd()
         + duplicates_chrome_march_2()
         + duplicates_chrome_march_3rd()
     )
+    _populate_program_summaries(program_summary_dao, march_programs, 3)
+    _populate_chrome_summaries(chrome_summary_dao, march_chrome, 3)
 
-    #
-    #
-    # starting sessions for the programs and domains from February
-    #
-    # ## February!! February!
-    # ## February!! February!
-    # ## February!! February!
-    #
+    service = DashboardService(
+        timeline_dao=None,
+        program_summary_dao=program_summary_dao,
+        program_logging_dao=None,
+        chrome_summary_dao=chrome_summary_dao,
+        chrome_logging_dao=None,
+    )
 
-    february = 2
-    print("Populating Feb programs")
-    setup_program_writes_for_group(test_data_feb_programs, program_summary_dao, february)
-
-    print("Populating Feb Chrome")
-    for event in test_data_feb_chrome:
-        print(event, "196ru")
-    setup_chrome_writes_for_group(test_data_feb_chrome, chrome_summary_dao, february)
-
-    assert all(
-        isinstance(s, CompletedProgramSession) for s in test_data_feb_programs
-    ), "There was a bug in setup"
-    assert all(
-        isinstance(s, CompletedChromeSession) for s in test_data_feb_chrome
-    ), "There was a bug in setup"
-
-    programs_sum = timedelta()
-    chrome_sum = timedelta()
-    for session in test_data_feb_programs:
-        programs_sum = programs_sum + session.duration
-    for session in test_data_feb_chrome:
-        if session.duration:
-            chrome_sum = chrome_sum + session.duration
-
-    #
-    # ## #    March    # ## ## ##     March   ## ## ## ##     March    ## ## ##
-    #
-    # starting sessions for the programs and domains from March
-    #
-    #
-    march = 3
-    print("Populating March programs")
-    setup_program_writes_for_group(test_data_march_programs, program_summary_dao, march)
-
-    print("Populating March Chrome")
-    setup_chrome_writes_for_group(test_data_march_chrome, chrome_summary_dao, march)
-
-    test_programs_and_domains = {
-        "feb_programs": test_data_feb_programs,
-        "feb_chrome": test_data_feb_chrome,
-        "march_programs": test_data_march_programs,
-        "march_chrome": test_data_march_chrome,
+    yield service, program_summary_dao, chrome_summary_dao, {
+        "feb_programs": feb_programs,
+        "feb_chrome": feb_chrome,
+        "march_programs": march_programs,
+        "march_chrome": march_chrome,
     }
 
-    yield service, program_summary_dao, chrome_summary_dao, test_programs_and_domains
 
+def test_read_all(populated_service):
+    """Verify that population put the right counts into the fake DAOs."""
+    _, program_summary_dao, chrome_summary_dao, test_data = populated_service
 
-@pytest.mark.asyncio
-async def test_read_all(setup_with_populated_db):
-    """This test is mostly testing setup conditions for other tests."""
-    _, program_summary_dao, chrome_summary_dao, test_programs_and_domains = (
-        setup_with_populated_db
-    )
+    all_programs = program_summary_dao.read_all()
 
-    feb_vals_from_db = []
-    march_2_vals_from_db = []
-    march_3rd_vals_from_db = []
+    just_retrieved_names = [x.program_name for x in all_programs]
+    for dummy in test_data["feb_programs"] + test_data["march_programs"]:
+        assert dummy.window_title in just_retrieved_names, "A program was missing"
 
-    all_programs_for_verification = program_summary_dao.read_all()
-
-    # FIXME: another date conversion issue. it APPEARS to be written on 03-01 even though
-    # it was wrote on march 2 or 3. Because PST -> UTC or vice versa causes days to change
-    print(len(all_programs_for_verification), "vvv")
-
-    just_retrieved_program_names_from_db = [
-        x.program_name for x in all_programs_for_verification
+    # Sort by date and verify counts
+    feb_vals = [p for p in all_programs if p.gathering_date.month == 2]
+    march_2_vals = [
+        p
+        for p in all_programs
+        if p.gathering_date.month == 3 and p.gathering_date.day == 2
+    ]
+    march_3_vals = [
+        p
+        for p in all_programs
+        if p.gathering_date.month == 3 and p.gathering_date.day == 3
     ]
 
-    print("just_retrieved_program_names:", just_retrieved_program_names_from_db)
+    assert len(feb_vals) == feb_program_count
+    assert len(march_2_vals) == march_2_program_count
+    assert len(march_3_vals) == march_3_program_count
 
-    test_programs = (
-        test_programs_and_domains["feb_programs"]
-        + test_programs_and_domains["march_programs"]
-    )
+    # Verify uniqueness within a single day
+    for day_vals in (march_2_vals, march_3_vals):
+        exe_paths = [x.exe_path_as_id for x in day_vals]
+        assert len(set(exe_paths)) == len(exe_paths), "Duplicate exe paths in a single day"
 
-    for dummy_data in test_programs:
-        assert (
-            dummy_data.window_title in just_retrieved_program_names_from_db
-        ), "A program was missing"
+    total_unique = feb_program_count + march_2_program_count + march_3_program_count
+    assert len(all_programs) == total_unique
 
-    march_1 = 1  # because of postgres
-    march_2 = 2  # because of postgres
+    # Chrome section
+    all_domains = chrome_summary_dao.read_all()
+    feb_chrome_vals = [d for d in all_domains if d.gathering_date.month == 2]
+    march_2_chrome = [
+        d
+        for d in all_domains
+        if d.gathering_date.month == 3 and d.gathering_date.day == 2
+    ]
+    march_3_chrome = [
+        d
+        for d in all_domains
+        if d.gathering_date.month == 3 and d.gathering_date.day == 3
+    ]
 
-    def sort_programs_by_date():
-        for v in all_programs_for_verification:
-            if v.gathering_date.month == 2:
-                feb_vals_from_db.append(v)
-            # FIXME: Test that the gathering_date_local reflects the written material
-            elif v.gathering_date.month == 3 and v.gathering_date.day == march_1:
-                march_2_vals_from_db.append(v)
-            elif v.gathering_date.month == 3 and v.gathering_date.day == march_2:
-                march_3rd_vals_from_db.append(v)
-
-    sort_programs_by_date()
-
-    # -- Compare to the per-day retrievals:
-
-    # MISSING:
-
-    # ProgramSession(window_title='SpotifyTEST', detail='Background music while working',
-    #         start_time=UserLocalTime(2025-03-02 12:49:00+00:00),
-    #         end_time=UserLocalTime(2025-03-02 13:30:00+00:00), duration=0:41:00, productive=False)
-
-    print("\n\n\nDEBUG: Timestamps for feb_vals_from_db:")
-    for v in feb_vals_from_db:
-        print(
-            f"Program: {v.program_name}, Date: {v.gathering_date}, TZ Info: {v.gathering_date.tzinfo}"
-        )
-
-    print("\nDEBUG: Timestamps for march_2_vals_from_db:")
-    for v in march_2_vals_from_db:
-        print(
-            f"Program: {v.program_name}, Date: {v.gathering_date}, TZ Info: {v.gathering_date.tzinfo}"
-        )
-
-    print("\nDEBUG: Timestamps for march_3rd_vals_from_db:")
-    for v in march_3rd_vals_from_db:
-        print(
-            f"Program: {v.program_name}, Date: {v.gathering_date}, TZ Info: {v.gathering_date.tzinfo}"
-        )
-
-    # for k in test_programs_and_domains["feb_programs"]:
-    #     print(k, "\n")
-
-    print("## from the db")
-    # for k in march_3rd_vals_from_db:
-    #     print(k, "\n")
-
-    def assert_day_has_only_unique_strings(days_vals):
-        """Function says 'So they're all, like, uniques.'
-        Only makes sense if you run it on a single day.
-        """
-
-        exe_paths_from_db_entries = [x.exe_path_as_id for x in days_vals]
-        assert len(set(exe_paths_from_db_entries)) == len(
-            exe_paths_from_db_entries
-        ), "Array contains duplicate strings"
-
-    # FIXME: In the above func, vsCode is in there twice for feb_vals_from_db
-
-    # feb_23_read_by_day = program_summary_dao.read_day(UserLocalTime(feb_23_2025)),
-    # feb_24_read_by_day = program_summary_dao.read_day(UserLocalTime(feb_24_2025)),
-    # feb_26_read_by_day = program_summary_dao.read_day(UserLocalTime(feb_26_2025))
-
-    assert (
-        len(feb_vals_from_db) == feb_program_count
-    ), "Count did not match expected, February"
-
-    # NOTE that "assert_has_only_unique_strings(feb_vals_from_db)" is nonsense!
-    # The feb vals span multiple days, so of course there are duplicates.
-
-    march_2_entries = program_summary_dao.read_day(UserLocalTime(march_2_2025))
-
-    assert (
-        len(march_2_vals_from_db) == march_2_program_count
-    ), "Count did not match expected, for March 2"
-    assert_day_has_only_unique_strings(march_2_vals_from_db)
-
-    march_3_entries = program_summary_dao.read_day(UserLocalTime(march_3_2025))
-
-    assert (
-        len(march_3rd_vals_from_db) == march_3_program_count
-    ), "Count did not match expected, for March 3rd"
-    assert_day_has_only_unique_strings(march_3rd_vals_from_db)
-
-    # Do a simple check that the total programs retrieved
-    # matches the number of programs entered
-    # NOTE: So, a program is being recorded into the same place it was before
-    # i.e., Code.exe shows up 3 times, it gets added to the same row. Working as intended
-    total_count_of_unique_programs = (
-        feb_program_count + march_2_program_count + march_3_program_count
-    )
-
-    assert (
-        len(all_programs_for_verification) == total_count_of_unique_programs
-    ), "A program must have not been added, or 'all' means something differnt"
-
-    """
-    --
-    -- Chrome section
-    -- 
-    """
-
-    feb_vals_chrome = []
-
-    chrome_march2_vals = []
-    chrome_march_3rd_vals = []
-
-    all_domains_for_verify = chrome_summary_dao.read_all()
-
-    print(len(all_domains_for_verify), "vvv")
-
-    def sort_by_date():
-        for v in all_domains_for_verify:
-            if v.gathering_date.month == 2:
-                feb_vals_chrome.append(v)
-            # FIXME: Test that the gathering_date_local reflects the written material
-
-            elif v.gathering_date.month == 3 and v.gathering_date.day == march_1:
-                chrome_march2_vals.append(v)
-            elif v.gathering_date.month == 3 and v.gathering_date.day == march_2:
-                chrome_march_3rd_vals.append(v)
-
-    sort_by_date()
-
-    assert len(feb_vals_chrome) == feb_chrome_count
-    assert len(chrome_march2_vals) == march_2_chrome_count, "A Chrome entry was missing"
-    assert len(chrome_march_3rd_vals) == march_3_chrome_count, "A Chrome entry was missing"
+    assert len(feb_chrome_vals) == feb_chrome_count
+    assert len(march_2_chrome) == march_2_chrome_count
+    assert len(march_3_chrome) == march_3_chrome_count
 
 
-@pytest.mark.asyncio
-async def test_reading_individual_days(setup_with_populated_db):
-    _, program_summary_dao, chrome_summary_dao, _ = setup_with_populated_db
+def test_reading_individual_days(populated_service):
+    _, program_summary_dao, chrome_summary_dao, _ = populated_service
 
-    test_day_3 = UserLocalTime(march_3_2025 + timedelta(days=1))
+    march_2_ult = UserLocalTime(march_2_2025 + timedelta(minutes=43))
 
-    march_2_2025_ult = UserLocalTime(march_2_2025 + timedelta(minutes=43))
+    daily_programs = program_summary_dao.read_day(march_2_ult)
+    daily_chrome = chrome_summary_dao.read_day(march_2_ult)
 
-    # NOTE that this date is in the test data for sure! it's circular.
-
-    daily_program_summaries: List[DailyProgramSummary] = program_summary_dao.read_day(
-        march_2_2025_ult
-    )
-    daily_chrome_summaries: List[DailyDomainSummary] = chrome_summary_dao.read_day(
-        march_2_2025_ult
-    )
-
-    print(len(daily_program_summaries), march_2_program_count)
-    assert len(daily_program_summaries) == march_2_program_count
-    assert len(daily_chrome_summaries) == march_2_chrome_count
-
-    # ### Assert that the expected programs, domains are all in there
-
-    # ### Continue asserting that expected domains, programs are all in there
+    assert len(daily_programs) == march_2_program_count
+    assert len(daily_chrome) == march_2_chrome_count
 
     march_3_modified = UserLocalTime(
         march_3_2025 + timedelta(hours=1, minutes=9, seconds=33)
     )
 
-    daily_program_summaries_2: List[DailyProgramSummary] = program_summary_dao.read_day(
-        march_3_modified
-    )
-    daily_chrome_summaries_2: List[DailyDomainSummary] = chrome_summary_dao.read_day(
-        march_3_modified
-    )
+    daily_programs_2 = program_summary_dao.read_day(march_3_modified)
+    daily_chrome_2 = chrome_summary_dao.read_day(march_3_modified)
+
+    assert len(daily_programs_2) == march_3_program_count
+    assert len(daily_chrome_2) == march_3_chrome_count
 
     assert (
-        len(daily_program_summaries_2) == march_3_program_count
-    ), "A program session didn't load"
-    assert (
-        len(daily_chrome_summaries_2) == march_3_chrome_count
-    ), "A Chrome session didn't load"
-
-    count_of_march_2 = march_2_program_count + march_2_chrome_count
-    count_of_march_3 = march_3_program_count + march_3_chrome_count
-
-    assert len(daily_program_summaries) + len(daily_chrome_summaries) == count_of_march_2
-    assert len(daily_program_summaries_2) + len(daily_chrome_summaries_2) == count_of_march_3
-
-    zero_pop_day_programs: List[DailyProgramSummary] = program_summary_dao.read_day(
-        test_day_3
+        len(daily_programs) + len(daily_chrome)
+        == march_2_program_count + march_2_chrome_count
     )
-    zero_pop_day_chrome: List[DailyDomainSummary] = chrome_summary_dao.read_day(test_day_3)
+    assert (
+        len(daily_programs_2) + len(daily_chrome_2)
+        == march_3_program_count + march_3_chrome_count
+    )
 
-    assert len(zero_pop_day_programs) + len(zero_pop_day_chrome) == 0
+    # A day with no data
+    empty_day = UserLocalTime(march_3_2025 + timedelta(days=1))
+    assert len(program_summary_dao.read_day(empty_day)) == 0
+    assert len(chrome_summary_dao.read_day(empty_day)) == 0
 
 
 @pytest.mark.asyncio
-async def test_week_of_feb_23(setup_with_populated_db):
-    service, _, _, _ = setup_with_populated_db
-    dashboard_service = service
+async def test_week_of_feb_23(populated_service):
+    service, _, _, _ = populated_service
 
-    feb_23_2025_dt = weekly_breakdown_tz.localize(datetime(2025, 2, 23))  # Year, Month, Day
-    # ### ###
-    # # Check the test data to see what's in here
-    # ### ###
-    weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(
+    feb_23_2025_dt = weekly_breakdown_tz.localize(datetime(2025, 2, 23))
+
+    weeks_overview: List[dict] = await service.get_weekly_productivity_overview(
         feb_23_2025_dt
     )
 
-    assert all(isinstance(d, dict) for d in weeks_overview), "Expected types not found"
+    assert all(isinstance(d, dict) for d in weeks_overview)
     assert all(
         "day" in d and "productivity" in d and "leisure" in d for d in weeks_overview
-    ), "Expected keys not found"
+    )
 
-    # Assert that no  day has more than 16 hours of recorded time
     sums = [d["productivity"] + d["leisure"] for d in weeks_overview]
     assert all(x < 16 for x in sums), "Some day had 16 hours or more of time recorded"
 
 
 @pytest.mark.asyncio
-async def test_week_of_march_2(setup_with_populated_db):
-    dashboard_service = setup_with_populated_db[0]
-    march_2_2025_dt = weekly_breakdown_tz.localize(datetime(2025, 3, 2))  # Year, Month, Day
+async def test_week_of_march_2(populated_service):
+    service = populated_service[0]
+    march_2_2025_dt = weekly_breakdown_tz.localize(datetime(2025, 3, 2))
 
-    weeks_overview: List[dict] = await dashboard_service.get_weekly_productivity_overview(
+    weeks_overview: List[dict] = await service.get_weekly_productivity_overview(
         march_2_2025_dt
     )
 
-    assert all(isinstance(d, dict) for d in weeks_overview), "Expected types not found"
+    assert all(isinstance(d, dict) for d in weeks_overview)
     assert all(
         "day" in d and "productivity" in d and "leisure" in d for d in weeks_overview
-    ), "Expected keys not found"
+    )
 
-    # Assert that no  day has more than 24 hours of recorded time
     sums = [d["productivity"] + d["leisure"] for d in weeks_overview]
     assert all(x < 16 for x in sums), "Some day had 16 hours or more of time recorded"

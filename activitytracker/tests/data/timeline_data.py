@@ -1,5 +1,15 @@
-from activitytracker.db.models import TimelineEntryObj
+from dataclasses import dataclass
 from datetime import datetime
+
+
+@dataclass
+class TimelineEntryObj:
+    id: int
+    clientFacingId: str
+    group: str
+    content: str
+    start: datetime
+    end: datetime
 
 # all mouse events
 all_mouse_events = [

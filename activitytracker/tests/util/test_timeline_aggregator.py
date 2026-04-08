@@ -1,9 +1,3 @@
-# test_timeline_aggregator.py
-import pytest
-from time import time
-from typing import List
-from dataclasses import dataclass
-
 from activitytracker.util.timeline_event_aggregator import aggregate_timeline_events
 
 # given these -- directly from the real db

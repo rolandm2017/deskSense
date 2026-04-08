@@ -3,6 +3,7 @@ import copy
 from operator import attrgetter
 from tracemalloc import start
 from urllib.parse import urldefrag
+from collections.abc import Callable
 
 from fastapi import Depends
 from pyee import EventEmitter
@@ -28,6 +29,27 @@ from activitytracker.util.errors import SuspiciousDurationError
 from activitytracker.util.time_wrappers import UserLocalTime
 
 
+class AsyncioDebounceHandle:
+    """Thin compatibility wrapper around an asyncio task."""
+
+    def __init__(self, task: asyncio.Task):
+        self._task = task
+
+    def cancel(self):
+        self._task.cancel()
+
+    def done(self):
+        return self._task.done()
+
+
+def schedule_debounce_with_asyncio(delay: float, callback: Callable[[], None]):
+    async def _runner():
+        await asyncio.sleep(delay)
+        callback()
+
+    return AsyncioDebounceHandle(asyncio.create_task(_runner()))
+
+
 class TabQueue:
     """
     On May 19 this class is about three, four months old.
@@ -40,7 +62,13 @@ class TabQueue:
     transient ones long enough for it to matter. So why record it?
     """
 
-    def __init__(self, log_tab_event, debounce_delay=2.0, transience_time_in_ms=300):
+    def __init__(
+        self,
+        log_tab_event,
+        debounce_delay=2.0,
+        transience_time_in_ms=300,
+        debounce_scheduler=None,
+    ):
         self.last_entry = None
         self.message_queue: list[TabChangeEventWithLtz] = []
         self.ordered_messages: list[TabChangeEventWithLtz] = []
@@ -49,6 +77,7 @@ class TabQueue:
         self.transience_time_in_ms = transience_time_in_ms
         self.debounce_timer = None
         self.log_tab_event = log_tab_event
+        self.debounce_scheduler = debounce_scheduler or schedule_debounce_with_asyncio
 
     def add_to_arrival_queue(self, tab_change_event: TabChangeEventWithLtz):
 
@@ -69,17 +98,13 @@ class TabQueue:
             print("Canceling debounce")
             self.debounce_timer.cancel()
 
-        self.debounce_timer = asyncio.create_task(self.debounced_process())
+        self.debounce_timer = self.debounce_scheduler(
+            self.debounce_delay, self.start_processing_msgs
+        )
 
     def append_to_queue(self, tab_event):
         """Here to enhance testability"""
         self.message_queue.append(tab_event)
-
-    async def debounced_process(self):
-        await asyncio.sleep(self.debounce_delay)
-        print("in debounced process after sleep!")
-        # print("[debug] Starting processing")
-        self.start_processing_msgs()
 
     def start_processing_msgs(self):
         self.order_message_queue()
@@ -129,6 +154,7 @@ class ChromeService:
         arbiter: ActivityArbiter,
         debounce_delay=0.5,
         transience_msa=300,
+        debounce_scheduler=None,
     ):
         print("╠════════╣")
         print("║ ****** ║ Starting Chrome Service")
@@ -140,7 +166,12 @@ class ChromeService:
         self.elapsed_alt_tab = None
         # self.summary_dao = summary_dao
 
-        self.tab_queue = TabQueue(self.log_tab_event, debounce_delay, transience_msa)
+        self.tab_queue = TabQueue(
+            self.log_tab_event,
+            debounce_delay,
+            transience_msa,
+            debounce_scheduler=debounce_scheduler,
+        )
         self.arbiter = arbiter  # Replace direct arbiter calls
 
         self.event_emitter = EventEmitter()

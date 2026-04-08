@@ -3,9 +3,7 @@ import os
 
 import pytest
 import unittest.mock as mock
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
-
-import asyncio
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytz
 from datetime import datetime, timedelta
@@ -84,9 +82,43 @@ from typing import cast
 from activitytracker.util.clock import UserFacingClock
 
 
+class ManualDebounceHandle:
+    def __init__(self, callback):
+        self.callback = callback
+        self.cancelled = False
+        self.completed = False
+
+    def cancel(self):
+        self.cancelled = True
+        self.completed = True
+
+    def done(self):
+        return self.completed
+
+    def trigger(self):
+        if self.cancelled or self.completed:
+            return
+        self.completed = True
+        self.callback()
+
+
+class ManualDebounceScheduler:
+    def __init__(self):
+        self.handles: list[ManualDebounceHandle] = []
+
+    def __call__(self, _delay, callback):
+        handle = ManualDebounceHandle(callback)
+        self.handles.append(handle)
+        return handle
+
+    def trigger_latest(self):
+        self.handles[-1].trigger()
+
+
 @pytest.fixture
 def chrome_service_fixture_with_arbiter(db_session_in_mem):
     # Initialize ChromeService with the mocked DAOs
+    scheduler = ManualDebounceScheduler()
 
     clock = SystemClock()
     threaded_container = MockEngineContainer([], 0.1)
@@ -101,7 +133,14 @@ def chrome_service_fixture_with_arbiter(db_session_in_mem):
 
     arbiter.add_recorder_listener(mock_program_listener)
 
-    chrome_service = ChromeService(clock, arbiter, shorter_debounce, transience_for_test)
+    chrome_service = ChromeService(
+        clock,
+        arbiter,
+        shorter_debounce,
+        transience_for_test,
+        debounce_scheduler=scheduler,
+    )
+    chrome_service.test_scheduler = scheduler
 
     # Return the initialized ChromeService instance
     return chrome_service
@@ -118,24 +157,24 @@ def chrome_service_with_mock():
     # Create a custom ChromeService that uses our mock
 
     class TestChromeService(ChromeService):
-        def __init__(self, *args, **kwargs):
+        def __init__(self, scheduler, *args, **kwargs):
             super().__init__(*args, **kwargs)
             # Replace the TabQueue with one that uses our mock
-            self.tab_queue = TabQueue(mock_log_tab_event, shorter_debounce)
+            self.tab_queue = TabQueue(
+                mock_log_tab_event,
+                shorter_debounce,
+                debounce_scheduler=scheduler,
+            )
 
+    scheduler = ManualDebounceScheduler()
     # Create the test service
-    service = TestChromeService(AsyncMock(), mock_dao)
+    service = TestChromeService(scheduler, AsyncMock(), mock_dao)
 
     # Return both the service and the mock so we can make assertions
-    return service, mock_log_tab_event
+    return service, mock_log_tab_event, scheduler
 
 
-@pytest.mark.asyncio
-async def test_add_arrival_to_queue(
-    reconstructed_tab_changes, chrome_service_fixture_with_arbiter
-):
-    # NOTE: This test BREAKS if you remove async/await!
-
+def test_add_arrival_to_queue(reconstructed_tab_changes, chrome_service_fixture_with_arbiter):
     events_in_test = 8
     # Sort before starting
     # Sort the reconstructed events by start_time_with_tz
@@ -192,8 +231,7 @@ async def test_add_arrival_to_queue(
             assert remove_transient_tabs_spy.called
             assert empty_queue_as_sessions_spy.called
 
-        # Wait for debounce to complete (if it hasn't already)
-        await asyncio.sleep(shorter_debounce * 2.0)
+        chrome_service_fixture_with_arbiter.test_scheduler.trigger_latest()
 
         # Cancel any pending timers
         if (
@@ -216,35 +254,19 @@ async def test_add_arrival_to_queue(
         assert log_tab_event_spy.call_count <= events_in_test
 
 
-@pytest.mark.asyncio
-async def test_debounce_process(reconstructed_tab_changes, db_session_in_mem):
-    # NOTE: This test BREAKS if you remove async/await!
-
-    # You must set everything back up here, because it uses a specific ms delay for debounce
-
+def test_debounce_process(reconstructed_tab_changes):
+    scheduler = ManualDebounceScheduler()
+    processed_events = []
     very_short_debounce = 0.25
-    local_transience_ms = 20  # get a transience threshold under the deboucne
-
-    clock = SystemClock()
-    threaded_container = MockEngineContainer([], 0.1)
-
-    system_status_dao = SystemStatusDao(cast(UserFacingClock, clock), 10, db_session_in_mem)
-
-    arbiter = ActivityArbiter(clock, system_status_dao, threaded_container)
-
-    # Create mock listeners with side effects to record calls
-    mock_program_listener = MagicMock()
-    mock_program_listener.on_state_changed = None  # Isn't used
-
-    arbiter.add_recorder_listener(mock_program_listener)
-
-    chrome_service = ChromeService(clock, arbiter, very_short_debounce, local_transience_ms)
-
-    # Arrange spies
-
-    log_tab_event_spy = Mock(side_effect=chrome_service.tab_queue.log_tab_event)
-    chrome_service.tab_queue.log_tab_event = log_tab_event_spy
-
+    local_transience_ms = 20
+    tab_queue = TabQueue(
+        processed_events.append,
+        very_short_debounce,
+        local_transience_ms,
+        debounce_scheduler=scheduler,
+    )
+    log_tab_event_spy = Mock(side_effect=tab_queue.log_tab_event)
+    tab_queue.log_tab_event = log_tab_event_spy
     events_in_test = 8
 
     # Sort before starting
@@ -269,22 +291,17 @@ async def test_debounce_process(reconstructed_tab_changes, db_session_in_mem):
         assert (next_stamp - curr).total_seconds() < very_short_debounce
 
     with mock.patch.object(
-        chrome_service.tab_queue,
+        tab_queue,
         "start_processing_msgs",
-        wraps=chrome_service.tab_queue.start_processing_msgs,
+        wraps=tab_queue.start_processing_msgs,
     ) as debounce_start_processing_msgs_spy:
 
-        assert (
-            len(chrome_service.tab_queue.message_queue) == 0
-        ), "Start circumstances defied requirements"
+        assert len(tab_queue.message_queue) == 0, "Start circumstances defied requirements"
         for i, event in enumerate(test_events):
+            tab_queue.add_to_arrival_queue(event)
+            assert len(tab_queue.message_queue) == i + 1
 
-            chrome_service.tab_queue.add_to_arrival_queue(event)
-            assert len(chrome_service.tab_queue.message_queue) == i + 1
-
-            # Wait for the debounce timer to fire
-        # Make sure to wait longer than your debounce delay
-        await asyncio.sleep(very_short_debounce * 2)
+        scheduler.trigger_latest()
 
         # Check if debounced_process was called
         assert debounce_start_processing_msgs_spy.called, "debounced_process was not called"
@@ -293,20 +310,13 @@ async def test_debounce_process(reconstructed_tab_changes, db_session_in_mem):
         ), f"Expected debounced_process to be called once, but it was called {debounce_start_processing_msgs_spy.call_count} times"
 
         # Clean up any pending timers
-        if (
-            chrome_service.tab_queue.debounce_timer
-            and not chrome_service.tab_queue.debounce_timer.done()
-        ):
-            chrome_service.tab_queue.debounce_timer.cancel()
-
-        assert len(chrome_service.tab_queue.message_queue) == 0
+        assert len(tab_queue.message_queue) == 0
         # You can test with very short duration tabs too
         assert log_tab_event_spy.call_count == events_in_test
 
 
-@pytest.mark.asyncio
-async def test_queue_with_debounce(reconstructed_tab_changes, chrome_service_with_mock):
-    chrome_svc, mock_log_tab_event = chrome_service_with_mock
+def test_queue_with_debounce(reconstructed_tab_changes, chrome_service_with_mock):
+    chrome_svc, mock_log_tab_event, scheduler = chrome_service_with_mock
     print("\n")
 
     num_in_first_batch = 4
@@ -326,22 +336,10 @@ async def test_queue_with_debounce(reconstructed_tab_changes, chrome_service_wit
 
     assert len(chrome_svc.tab_queue.message_queue) == num_in_first_batch
 
-    # Wait for debounce to complete
-    pause_for_debounce = 0.28
-    assert (
-        pause_for_debounce > shorter_debounce
-    ), "Test is nonsense if the pausee isn't > the delay"
-    await asyncio.sleep(pause_for_debounce)
+    scheduler.trigger_latest()
 
     # Verify the mock was called the expected number of times
     assert mock_log_tab_event.call_count == num_in_first_batch
-
-    # Clean up any pending task
-    if (
-        chrome_svc.tab_queue.debounce_timer
-        and not chrome_svc.tab_queue.debounce_timer.done()
-    ):
-        chrome_svc.tab_queue.debounce_timer.cancel()
 
     for event in group2:
         # Act
@@ -349,18 +347,10 @@ async def test_queue_with_debounce(reconstructed_tab_changes, chrome_service_wit
 
     assert len(chrome_svc.tab_queue.message_queue) == num_in_second_batch
 
-    # Wait for debounce to complete
-    await asyncio.sleep(pause_for_debounce)
+    scheduler.trigger_latest()
 
     # Verify the mock was called the expected number of times
     assert mock_log_tab_event.call_count == num_in_second_batch + num_in_first_batch
-
-    # Clean up any pending task
-    if (
-        chrome_svc.tab_queue.debounce_timer
-        and not chrome_svc.tab_queue.debounce_timer.done()
-    ):
-        chrome_svc.tab_queue.debounce_timer.cancel()
 
 
 def is_chronological(array: list[TabChangeEventWithLtz]):

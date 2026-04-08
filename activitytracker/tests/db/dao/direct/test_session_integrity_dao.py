@@ -1,20 +1,14 @@
-import psutil
 import pytest
-import pytest_asyncio
-
-import asyncio
 
 import pytz
-from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, Mock, MagicMock
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy import select, text, func
+from datetime import datetime, timedelta
+from unittest.mock import Mock
+from sqlalchemy.orm import sessionmaker
 
 from dotenv import load_dotenv
 import os
 
-# Import models and DAOs
-from activitytracker.db.models import Base, SystemStatus, ProgramActivityLog, DomainActivityLog
+from activitytracker.db.models import ProgramActivityLog, DomainActivityLog
 from activitytracker.db.dao.direct.session_integrity_dao import SessionIntegrityDao
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
@@ -25,22 +19,12 @@ from ....helper.truncation import truncate_logs_tables_via_engine
 # Load environment variables from .env file
 load_dotenv()
 
-
-process = psutil.Process()
-open_files = process.open_files()
-num_open_files = len(open_files)
-print(f"Num of open files: {num_open_files}")
-
-
-# Get the test database connection string
-ASYNC_TEST_DB_URL = os.getenv("ASYNC_TEST_DB_URL")
 SYNC_TEST_DB_URL = os.getenv("SYNC_TEST_DB_URL")
-
-if ASYNC_TEST_DB_URL is None:
-    raise ValueError("ASYNC_TEST_DB_URL environment variable is not set")
 
 if SYNC_TEST_DB_URL is None:
     raise ValueError("SYNC_TEST_DB_URL environment variable is not set")
+
+pytestmark = pytest.mark.postgres_contract
 
 # FIXME: Test is slow as a turtle
 # # TODO: make these tests extremely minimal. Test with 2-4 writes involved MAX. per orphan/phantom
@@ -77,308 +61,184 @@ def test_power_events():
     }
 
 
-@pytest_asyncio.fixture(scope="function")
-async def test_program_logs(plain_asm, test_power_events):
-    """Create test program summary logs with various scenarios"""
-    events = test_power_events
-
-    async with plain_asm() as session:
-        shutdown_time = events["shutdown_time"]
-        startup_time = events["startup_time"]
-        base_time = events["base_time"]
-
-        # Orphan type 1: started before shutdown, never ended
-        # Removed: Cannot have a "Never ended" as end_time is not Nullable
-
-        # orphan_1 = ProgramActivityLog(
-        #     program_name="Notepad",
-        #     hours_spent=1.0,
-        #     start_time=shutdown_time - timedelta(minutes=30),
-        #     end_time=None,  # Never ended
-        #     gathering_date=get_start_of_day_from_datetime(base_time),
-        #     created_at=base_time
-        # )
-        # Orphan type 2: started before shutdown, ended after startup (impossible)
-        orphan_2 = ProgramActivityLog(
-            exe_path_as_id="C:/ProgramFiles/Outlook.exe",
-            process_name="Outlook.exe",
-            program_name="Outlook",
-            hours_spent=12.0,  # Impossibly long session
-            start_time=shutdown_time - timedelta(minutes=45),
-            start_time_local=shutdown_time.replace(tzinfo=None) - timedelta(minutes=45),
-            end_time=startup_time + timedelta(minutes=15),
-            end_time_local=startup_time.replace(tzinfo=None) + timedelta(minutes=15),
-            gathering_date=get_start_of_day_from_datetime(base_time),
-            gathering_date_local=get_start_of_day_from_datetime(base_time).replace(
-                tzinfo=None
-            ),
-            created_at=base_time,
-        )
-        # Phantom: impossibly started during system off time
-        phantom_1 = ProgramActivityLog(
-            exe_path_as_id="C:/ProgramFiles/Firefox.exe",
-            process_name="Firefox.exe",
-            program_name="Firefox",
-            hours_spent=0.5,
-            # Started after shutdown
-            start_time=shutdown_time + timedelta(hours=2),
-            # Ended before startup
-            end_time=startup_time - timedelta(hours=2),
-            start_time_local=shutdown_time.replace(tzinfo=None),
-            end_time_local=startup_time.replace(tzinfo=None),
-            gathering_date=get_start_of_day_from_datetime(base_time),
-            gathering_date_local=get_start_of_day_from_datetime(base_time).replace(
-                tzinfo=None
-            ),
-            created_at=base_time,
-        )
-
-        # Create test data
-        program_logs = [
-            # Normal session: started and ended before shutdown
-            ProgramActivityLog(
-                exe_path_as_id="C:/ProgramFiles/PyCharm.exe",
-                process_name="Pycharm.exe",
-                program_name="PyCharm",
-                hours_spent=2.0,
-                start_time=shutdown_time - timedelta(hours=3),
-                end_time=shutdown_time - timedelta(hours=1),
-                start_time_local=shutdown_time.replace(tzinfo=None) - timedelta(hours=3),
-                end_time_local=shutdown_time.replace(tzinfo=None) - timedelta(hours=1),
-                gathering_date=get_start_of_day_from_datetime(base_time),
-                gathering_date_local=get_start_of_day_from_datetime(base_time).replace(
-                    tzinfo=None
-                ),
-                created_at=base_time,
-            ),
-            orphan_2,
-            phantom_1,
-            # Normal session after startup
-            ProgramActivityLog(
-                exe_path_as_id="C:/ProgramFiles/Chrome.exe",
-                process_name="Chrome.exe",
-                program_name="Chrome",
-                hours_spent=1.5,
-                start_time=startup_time + timedelta(minutes=5),
-                end_time=startup_time + timedelta(hours=1, minutes=35),
-                start_time_local=startup_time.replace(tzinfo=None),
-                end_time_local=startup_time.replace(tzinfo=None)
-                + timedelta(hours=1, minutes=35),
-                gathering_date=get_start_of_day_from_datetime(base_time + timedelta(days=1)),
-                gathering_date_local=get_start_of_day_from_datetime(
-                    base_time + timedelta(days=1)
-                ).replace(tzinfo=None),
-                created_at=base_time + timedelta(days=1),
-            ),
-        ]
-
-        # Add all logs to the session
-        for log in program_logs:
-            session.add(log)
-
-        await session.commit()
-
-        return program_logs
-
-
-@pytest_asyncio.fixture(scope="function")
-async def test_domain_logs(plain_asm, test_power_events):
-    """Create test domain summary logs with various scenarios"""
-    events = test_power_events
-
-    async with plain_asm() as session:
-        shutdown_time = events["shutdown_time"]
-        startup_time = events["startup_time"]
-        base_time = events["base_time"]
-
-        # Orphan type 1: started before shutdown, never ended
-        # Removed: Cannot have a "Never ended" as end_time is not Nullable
-        # orphan_1 = DomainActivityLog(
-        #     domain_name="stackoverflow.com",
-        #     hours_spent=0.5,
-        #     start_time=shutdown_time - timedelta(minutes=40),
-        #     end_time=None,  # Never ended
-        #     gathering_date=get_start_of_day_from_datetime(base_time),
-        #     created_at=base_time
-        # Orphan type 2: started before shutdown, ended after startup (impossible)
-        # Orphan type 2: started before shutdown, ended after startup (impossible)
-        orphan_2 = DomainActivityLog(
-            domain_name="youtube.com",
-            hours_spent=10.0,  # Impossibly long session
-            start_time=shutdown_time - timedelta(minutes=20),
-            start_time_local=(shutdown_time - timedelta(minutes=20)).replace(tzinfo=None),
-            end_time=startup_time + timedelta(minutes=10),
-            end_time_local=(startup_time + timedelta(minutes=10)).replace(tzinfo=None),
-            gathering_date=get_start_of_day_from_datetime(base_time),
-            gathering_date_local=get_start_of_day_from_datetime(base_time).replace(
-                tzinfo=None
-            ),
-            created_at=base_time,
-        )
-        # Phantom: impossibly started during system off time
-        phantom_1 = DomainActivityLog(
-            domain_name="reddit.com",
-            hours_spent=0.3,
-            # Started after shutdown
-            start_time=shutdown_time + timedelta(hours=3),
-            start_time_local=(shutdown_time + timedelta(hours=3)).replace(tzinfo=None),
-            # Ended before startup
-            end_time=startup_time - timedelta(hours=1),
-            end_time_local=(startup_time - timedelta(hours=1)).replace(tzinfo=None),
-            gathering_date=get_start_of_day_from_datetime(base_time),
-            gathering_date_local=get_start_of_day_from_datetime(base_time).replace(
-                tzinfo=None
-            ),
-            created_at=base_time,
-        )
-
-        # Create test data
-        domain_logs = [
-            # Normal session: started and ended before shutdown
-            DomainActivityLog(
-                domain_name="github.com",
-                hours_spent=1.0,
-                start_time=shutdown_time - timedelta(hours=2),
-                start_time_local=(shutdown_time - timedelta(hours=2)).replace(tzinfo=None),
-                end_time=shutdown_time - timedelta(hours=1),
-                end_time_local=(shutdown_time - timedelta(hours=1)).replace(tzinfo=None),
-                gathering_date=get_start_of_day_from_datetime(base_time),
-                gathering_date_local=get_start_of_day_from_datetime(base_time).replace(
-                    tzinfo=None
-                ),
-                created_at=base_time,
-            ),
-            orphan_2,
-            phantom_1,
-            # Normal session after startup
-            DomainActivityLog(
-                domain_name="google.com",
-                hours_spent=0.8,
-                start_time=startup_time + timedelta(minutes=10),
-                start_time_local=(startup_time + timedelta(minutes=10)).replace(tzinfo=None),
-                end_time=startup_time + timedelta(minutes=58),
-                end_time_local=(startup_time + timedelta(minutes=58)).replace(tzinfo=None),
-                gathering_date=get_start_of_day_from_datetime(base_time + timedelta(days=1)),
-                gathering_date_local=get_start_of_day_from_datetime(
-                    base_time + timedelta(days=1)
-                ).replace(tzinfo=None),
-                created_at=base_time + timedelta(days=1),
-            ),
-        ]
-
-        # Add all logs to the session
-        for log in domain_logs:
-            session.add(log)
-
-        await session.commit()
-
-        return domain_logs
-
-
-@pytest_asyncio.fixture(scope="function")
-def test_dao_instances(regular_session_maker, plain_asm):
-    """Create the necessary DAO instances for session integrity testing"""
-    # Create the DAOs
-    program_logging_dao = ProgramLoggingDao(regular_session_maker)
-    chrome_logging_dao = ChromeLoggingDao(regular_session_maker)
-
-    # Create the session integrity dao
-    session_integrity_dao = SessionIntegrityDao(
-        program_logging_dao=program_logging_dao,
-        chrome_logging_dao=chrome_logging_dao,
-        session_maker=plain_asm,
+def build_program_log(name, process_name, exe_path, start_time, end_time, gathering_date):
+    return ProgramActivityLog(
+        exe_path_as_id=exe_path,
+        process_name=process_name,
+        program_name=name,
+        hours_spent=abs((end_time - start_time).total_seconds()) / 3600,
+        start_time=start_time,
+        end_time=end_time,
+        start_time_local=start_time.replace(tzinfo=None),
+        end_time_local=end_time.replace(tzinfo=None),
+        gathering_date=gathering_date,
+        gathering_date_local=gathering_date.replace(tzinfo=None),
+        created_at=start_time,
     )
 
-    yield {
-        "program_logging_dao": program_logging_dao,
-        "chrome_logging_dao": chrome_logging_dao,
-        "session_integrity_dao": session_integrity_dao,
-    }
 
-    # session_integrity_dao.cleanup()
+def build_domain_log(domain_name, start_time, end_time, gathering_date):
+    return DomainActivityLog(
+        domain_name=domain_name,
+        hours_spent=abs((end_time - start_time).total_seconds()) / 3600,
+        start_time=start_time,
+        end_time=end_time,
+        start_time_local=start_time.replace(tzinfo=None),
+        end_time_local=end_time.replace(tzinfo=None),
+        gathering_date=gathering_date,
+        gathering_date_local=gathering_date.replace(tzinfo=None),
+        created_at=start_time,
+    )
 
 
-@pytest_asyncio.fixture(scope="function")
-async def full_test_environment(
-    sync_engine, test_power_events, test_program_logs, test_domain_logs, test_dao_instances
-):
-    """
-    Combines all fixtures to provide a complete test environment
-    """
-    # Store the awaited engine, not the coroutine
+@pytest.fixture(scope="function")
+def session_integrity_session_maker(sync_engine):
+    truncate_logs_tables_via_engine(sync_engine)
+    maker = sessionmaker(sync_engine, expire_on_commit=False)
+    yield maker
 
-    return {
-        "engine": sync_engine,
-        "power_events": test_power_events,
-        "program_logs": test_program_logs,
-        "domain_logs": test_domain_logs,
-        "daos": test_dao_instances,
-    }
+
+@pytest.fixture(scope="function")
+def session_integrity_dao(session_integrity_session_maker):
+    program_logging_dao = ProgramLoggingDao(session_integrity_session_maker)
+    chrome_logging_dao = ChromeLoggingDao(session_integrity_session_maker)
+    return SessionIntegrityDao(
+        program_logging_dao=program_logging_dao,
+        chrome_logging_dao=chrome_logging_dao,
+        session_maker=Mock(),
+    )
+
+
+@pytest.fixture(scope="function")
+def orphan_dataset(session_integrity_session_maker, test_power_events):
+    events = test_power_events
+    shutdown_time = events["shutdown_time"]
+    startup_time = events["startup_time"]
+    base_time = events["base_time"]
+    gathering_date = get_start_of_day_from_datetime(base_time)
+
+    with session_integrity_session_maker() as session:
+        session.add(
+            build_program_log(
+                "PyCharm",
+                "Pycharm.exe",
+                "C:/ProgramFiles/PyCharm.exe",
+                shutdown_time - timedelta(hours=2),
+                shutdown_time - timedelta(hours=1),
+                gathering_date,
+            )
+        )
+        session.add(
+            build_program_log(
+                "Outlook",
+                "Outlook.exe",
+                "C:/ProgramFiles/Outlook.exe",
+                shutdown_time - timedelta(minutes=45),
+                startup_time + timedelta(minutes=15),
+                gathering_date,
+            )
+        )
+        session.add(
+            build_domain_log(
+                "github.com",
+                shutdown_time - timedelta(hours=2),
+                shutdown_time - timedelta(hours=1),
+                gathering_date,
+            )
+        )
+        session.add(
+            build_domain_log(
+                "youtube.com",
+                shutdown_time - timedelta(minutes=20),
+                startup_time + timedelta(minutes=10),
+                gathering_date,
+            )
+        )
+        session.commit()
+
+
+@pytest.fixture(scope="function")
+def phantom_dataset(session_integrity_session_maker, test_power_events):
+    events = test_power_events
+    shutdown_time = events["shutdown_time"]
+    startup_time = events["startup_time"]
+    base_time = events["base_time"]
+    gathering_date = get_start_of_day_from_datetime(base_time)
+
+    with session_integrity_session_maker() as session:
+        session.add(
+            build_program_log(
+                "Chrome",
+                "Chrome.exe",
+                "C:/ProgramFiles/Chrome.exe",
+                startup_time + timedelta(minutes=5),
+                startup_time + timedelta(minutes=35),
+                gathering_date,
+            )
+        )
+        session.add(
+            build_program_log(
+                "Firefox",
+                "Firefox.exe",
+                "C:/ProgramFiles/Firefox.exe",
+                shutdown_time + timedelta(hours=2),
+                startup_time - timedelta(hours=2),
+                gathering_date,
+            )
+        )
+        session.add(
+            build_domain_log(
+                "google.com",
+                startup_time + timedelta(minutes=10),
+                startup_time + timedelta(minutes=58),
+                gathering_date,
+            )
+        )
+        session.add(
+            build_domain_log(
+                "reddit.com",
+                shutdown_time + timedelta(hours=3),
+                startup_time - timedelta(hours=1),
+                gathering_date,
+            )
+        )
+        session.commit()
 
 
 # Create a function that directly cleans up tables - this is simpler and more reliable
 
 
 # Modify your test functions to call the cleanup explicitly
-@pytest.mark.asyncio
-async def test_find_orphans(full_test_environment):
+def test_find_orphans(test_power_events, orphan_dataset, session_integrity_dao):
     """Test that orphaned sessions are correctly identified"""
-    env = full_test_environment
+    shutdown_time = test_power_events["shutdown_time"]
+    startup_time = test_power_events["startup_time"]
 
-    # Get values from the environment
-    engine = env["engine"]
-    shutdown_time = env["power_events"]["shutdown_time"]
-    startup_time = env["power_events"]["startup_time"]
-    session_integrity_dao = env["daos"]["session_integrity_dao"]
+    program_orphans, domain_orphans = session_integrity_dao.find_orphans(
+        shutdown_time, startup_time
+    )
 
-    try:
-        # Find orphans
-        program_orphans, domain_orphans = session_integrity_dao.find_orphans(
-            shutdown_time, startup_time
-        )
-
-        # Assertions
-        assert isinstance(program_orphans, list)
-        assert isinstance(domain_orphans, list)
-
-        # Was 2 but one was removed because end_time is nonnullable
-        assert len(program_orphans) == 1
-        # Was 2 but one was removed because end_time is nonnullable
-        assert len(domain_orphans) == 1
-        assert any(log.program_name == "Outlook" for log in program_orphans)
-        assert any(log.domain_name == "youtube.com" for log in domain_orphans)
-
-    finally:
-        # Clean up after test, regardless of whether it passed or failed
-        truncate_logs_tables_via_engine(engine)
+    assert isinstance(program_orphans, list)
+    assert isinstance(domain_orphans, list)
+    assert len(program_orphans) == 1
+    assert len(domain_orphans) == 1
+    assert any(log.program_name == "Outlook" for log in program_orphans)
+    assert any(log.domain_name == "youtube.com" for log in domain_orphans)
 
 
-@pytest.mark.asyncio
-async def test_find_phantoms(full_test_environment):
+def test_find_phantoms(test_power_events, phantom_dataset, session_integrity_dao):
     """Test that phantom sessions are correctly identified"""
-    env = full_test_environment
+    shutdown_time = test_power_events["shutdown_time"]
+    startup_time = test_power_events["startup_time"]
 
-    # Get values from the environment
-    engine = env["engine"]
-    shutdown_time = env["power_events"]["shutdown_time"]
-    startup_time = env["power_events"]["startup_time"]
-    session_integrity_dao = env["daos"]["session_integrity_dao"]
+    program_phantoms, domain_phantoms = session_integrity_dao.find_phantoms(
+        shutdown_time, startup_time
+    )
 
-    try:
-        # Find phantoms
-        program_phantoms, domain_phantoms = session_integrity_dao.find_phantoms(
-            shutdown_time, startup_time
-        )
-
-        # Assertions
-        assert len(program_phantoms) == 1
-        assert len(domain_phantoms) == 1
-        assert program_phantoms[0].program_name == "Firefox"
-        assert domain_phantoms[0].domain_name == "reddit.com"
-
-    finally:
-        # Clean up after test, regardless of whether it passed or failed
-        truncate_logs_tables_via_engine(engine)
+    assert len(program_phantoms) == 1
+    assert len(domain_phantoms) == 1
+    assert program_phantoms[0].program_name == "Firefox"
+    assert domain_phantoms[0].domain_name == "reddit.com"
 
 
 # @pytest.mark.asyncio
