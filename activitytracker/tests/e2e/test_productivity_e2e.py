@@ -360,7 +360,7 @@ async def test_program_tracker_to_arbiter(
 @pytest.mark.asyncio
 # @pytest.mark.skip
 # @pytest.mark.skip("working on below test")
-async def test_chrome_svc_to_arbiter_path(regular_session_maker):
+async def test_chrome_svc_to_arbiter_path():
     chrome_events_for_test = chrome_data
 
     # chrome_dao = ChromeDao(plain_asm)
@@ -374,9 +374,7 @@ async def test_chrome_svc_to_arbiter_path(regular_session_maker):
 
     container = MockEngineContainer([])
 
-    sys_status_dao = SystemStatusDao(
-        cast(UserFacingClock, irrelevant_clock), 10, regular_session_maker
-    )
+    sys_status_dao = FakeSystemStatusDao()
 
     activity_arbiter = ActivityArbiter(irrelevant_clock, sys_status_dao, container)
 
@@ -433,9 +431,6 @@ async def test_chrome_svc_to_arbiter_path(regular_session_maker):
         # FIXME:            AttributeError: 'datetime.datetime' object has no attribute 'dt'
         # Act
         chrome_service.log_tab_event(updated_tab_change_event)
-    queue_debounce_timer_wait = 1.0  # seconds
-    await asyncio.sleep(queue_debounce_timer_wait)
-
     one_left_in_chrome_svc = 1
     # assert chrome_dao_create_spy.call_count == len(
     #     chrome_events_for_test) - one_left_in_chrome_svc

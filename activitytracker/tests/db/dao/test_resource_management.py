@@ -2,16 +2,19 @@ import pytest
 
 import pytest_asyncio
 import asyncio
-from unittest.mock import AsyncMock, Mock, patch, MagicMock
+from unittest.mock import AsyncMock, Mock
 import psutil
 import gc
-import weakref
 
 from activitytracker.db.dao.base_dao import BaseQueueingDao
 from activitytracker.db.models import TimelineEntryObj
 
 
 class TestResourceManagement:
+    @staticmethod
+    async def _wait_for_event(event: asyncio.Event, timeout: float = 0.2):
+        await asyncio.wait_for(event.wait(), timeout=timeout)
+
     @pytest_asyncio.fixture
     async def mock_session_maker(self):
         """Create a mock session maker and session for testing"""
@@ -41,7 +44,7 @@ class TestResourceManagement:
     async def dao(self, mock_session_maker):
         """Create a DAO instance with the mock session maker"""
         maker, _ = mock_session_maker
-        dao = BaseQueueingDao(maker, batch_size=5, flush_interval=0.1)
+        dao = BaseQueueingDao(maker, batch_size=5, flush_interval=0.001)
         yield dao
         await dao.cleanup()  # Ensure cleanup happens after the test
 
@@ -50,14 +53,11 @@ class TestResourceManagement:
         """Test that queue processing completes after all items are processed"""
         _, session = mock_session_maker
 
-        # Store task completion status
-        task_completed = False
+        task_completed = asyncio.Event()
         original_callback = dao._task_done_callback
 
-        # Patch the task done callback to track completion
         def patched_callback(task):
-            nonlocal task_completed
-            task_completed = True
+            task_completed.set()
             original_callback(task)
 
         dao._task_done_callback = patched_callback
@@ -76,15 +76,10 @@ class TestResourceManagement:
         assert dao._queue_task is not None
         assert dao.processing is True
 
-        # Wait for the task to complete (all items processed)
-        # This includes a timeout to prevent the test from hanging
-        for _ in range(50):  # Try for 5 seconds maximum
-            if task_completed:
-                break
-            await asyncio.sleep(0.1)
+        await self._wait_for_event(task_completed)
 
         # Assert that the task completed and processing state is correct
-        assert task_completed, "Task completion callback was not called"
+        assert task_completed.is_set(), "Task completion callback was not called"
         assert dao.processing is False, "Processing flag not reset after completion"
         assert dao.queue.empty(), "Queue should be empty after processing"
         assert session.add_all.called, "Items were not saved to the database"
@@ -130,9 +125,6 @@ class TestResourceManagement:
         for _ in range(10):
             await dao.queue_item(TimelineEntryObj())
 
-        # Wait for processing to complete
-        await asyncio.sleep(0.2)  # Give it time to process
-
         # Explicitly clean up
         await dao.cleanup()
 
@@ -150,14 +142,11 @@ class TestResourceManagement:
     @pytest.mark.asyncio
     async def test_concurrent_queue_operations(self, dao):
         """Test that the queue can handle concurrent operations correctly"""
-        # Store task completion status
-        task_completed = False
+        task_completed = asyncio.Event()
         original_callback = dao._task_done_callback
 
-        # Patch the task done callback to track completion
         def patched_callback(task):
-            nonlocal task_completed
-            task_completed = True
+            task_completed.set()
             original_callback(task)
 
         dao._task_done_callback = patched_callback
@@ -172,38 +161,40 @@ class TestResourceManagement:
         # Queue more items while the first batch is processing
         for _ in range(10):
             await dao.queue_item(TimelineEntryObj())
-            # Add a small delay to simulate concurrent operations
-            await asyncio.sleep(0.05)
 
             # Verify the task wasn't recreated mid-processing
-            if not task_completed and dao._queue_task is not None:
+            if not task_completed.is_set() and dao._queue_task is not None:
                 assert (
                     dao._queue_task is initial_task
                 ), "Task was recreated during concurrent operations"
 
-        # Wait for processing to complete
-        for _ in range(30):  # Try for 3 seconds maximum
-            if task_completed:
-                break
-            await asyncio.sleep(0.1)
+        await self._wait_for_event(task_completed)
 
         # Assert that processing completed successfully
-        assert task_completed, "Task completion callback was not called"
+        assert task_completed.is_set(), "Task completion callback was not called"
         assert dao.queue.empty(), "Queue should be empty after processing"
 
     @pytest.mark.asyncio
     async def test_exception_handling_in_process_queue(self, dao, mock_session_maker):
         """Test that exceptions in process_queue are properly handled"""
         _, session = mock_session_maker
+        processing_attempted = asyncio.Event()
+        post_error_processing_attempted = asyncio.Event()
+        original_add_all = session.add_all
 
         # Set up session.add_all to raise an exception
-        session.add_all.side_effect = Exception("Test exception")
+        def failing_add_all(items):
+            processing_attempted.set()
+            raise Exception("Test exception")
+
+        session.add_all.side_effect = failing_add_all
 
         # Queue an item to trigger processing
         await dao.queue_item(TimelineEntryObj())
 
-        # Wait for a reasonable time for processing to complete
-        await asyncio.sleep(0.5)
+        await self._wait_for_event(processing_attempted)
+        if dao._queue_task is not None:
+            await asyncio.wait_for(dao._queue_task, timeout=0.2)
 
         # Core assertion: The process should not be in processing state
         # after an exception occurs
@@ -215,7 +206,12 @@ class TestResourceManagement:
 
         # Ensure the queue is not blocked
         # Try adding another item and make sure it doesn't hang
+        def succeeding_add_all(items):
+            post_error_processing_attempted.set()
+            return original_add_all(items)
+
         session.add_all.side_effect = None  # Remove the exception for this test
+        session.add_all.side_effect = succeeding_add_all
 
         # Reset mock to count new calls
         session.add_all.reset_mock()
@@ -223,8 +219,9 @@ class TestResourceManagement:
         # Queue a new item
         await dao.queue_item(TimelineEntryObj())
 
-        # Wait for processing
-        await asyncio.sleep(0.5)
+        await self._wait_for_event(post_error_processing_attempted)
+        if dao._queue_task is not None:
+            await asyncio.wait_for(dao._queue_task, timeout=0.2)
 
         # Check that the new processing occurred
         assert (
@@ -259,7 +256,7 @@ class TestResourceManagement:
                 await super().cleanup()
 
         # Use the DAO in a context manager
-        async with TestDAO(maker, batch_size=5, flush_interval=0.1) as dao:
+        async with TestDAO(maker, batch_size=5, flush_interval=0.001) as dao:
             # Queue some items
             for _ in range(5):
                 await dao.queue_item(TimelineEntryObj())
