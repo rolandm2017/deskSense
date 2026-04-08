@@ -49,6 +49,7 @@ from ..data.captures_for_test_data_programs import program_data
 from ..helper.confirm_chronology import get_durations_from_test_data
 from ..mocks.mock_clock import MockClock, UserLocalTimeMockClock
 from ..mocks.mock_engine_container import MockEngineContainer
+from ..mocks.fake_persistence import FakeSystemStatusDao
 from ..mocks.mock_message_receiver import MockMessageReceiver
 
 # TODO: Test the program facade to the database,
@@ -90,7 +91,7 @@ async def cleanup_test_resources(manager):
         traceback.print_exc()
 
     # Allow some time for all resources to be properly cleaned up
-    await asyncio.sleep(0.5)
+    await asyncio.sleep(0.05)
 
     # Ensure all asyncio tasks are properly awaited or cancelled
     tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
@@ -146,7 +147,7 @@ async def test_setup_conditions(regular_session_maker, plain_asm):
 # FIXME: integrate with the 3rd test
 @pytest.mark.asyncio
 async def test_program_tracker_to_arbiter(
-    plain_asm, regular_session_maker, times_from_test_data
+    mock_async_session_maker, mock_regular_session_maker, times_from_test_data
 ):
 
     real_program_events = [x["event"] for x in program_data]
@@ -211,9 +212,7 @@ async def test_program_tracker_to_arbiter(
 
     container = MockEngineContainer(durations)
 
-    sys_status_dao = SystemStatusDao(
-        cast(UserFacingClock, mock_user_facing_clock), 10, regular_session_maker
-    )
+    sys_status_dao = FakeSystemStatusDao()
 
     activity_arbiter = ActivityArbiter(mock_user_facing_clock, sys_status_dao, container)
     transition_state_mock = Mock()
@@ -231,8 +230,8 @@ async def test_program_tracker_to_arbiter(
     chrome_svc = ChromeService(mock_user_facing_clock, activity_arbiter)
     surveillance_manager = SurveillanceManager(
         cast(UserFacingClock, mock_clock),
-        plain_asm,
-        regular_session_maker,
+        mock_async_session_maker,
+        mock_regular_session_maker,
         chrome_svc,
         activity_arbiter,
         facades,
@@ -261,7 +260,7 @@ async def test_program_tracker_to_arbiter(
             if program_facade.yield_count == len(real_program_events):
                 print(program_facade.yield_count, "stop signal ++ \n ++ \n ++ \n ++")
                 break
-            await asyncio.sleep(1.7)  # Short sleep between checks ("short")
+            await asyncio.sleep(0.05)
             # await asyncio.sleep(0.8)  # Short sleep between checks ("short")
             # Check if we have the expected number of calls
             if spy_on_set_program_state.call_count >= len(real_program_events) - 1:

@@ -11,6 +11,8 @@ import pytest
 import pytest_asyncio
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
+pytestmark = pytest.mark.postgres_contract
+
 from sqlalchemy.sql.selectable import Select
 
 

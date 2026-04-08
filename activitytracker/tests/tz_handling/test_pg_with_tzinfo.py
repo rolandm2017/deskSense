@@ -8,6 +8,8 @@ It's not enough to just know that: It must also be known exactly.
 import pytest_asyncio
 import pytest
 
+pytestmark = pytest.mark.postgres_contract
+
 from sqlalchemy import text
 
 import pytz

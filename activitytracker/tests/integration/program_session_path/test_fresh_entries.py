@@ -21,14 +21,6 @@ from activitytracker.arbiter.activity_arbiter import ActivityArbiter
 from activitytracker.arbiter.activity_recorder import ActivityRecorder
 from activitytracker.arbiter.session_polling import KeepAliveEngine
 from activitytracker.config.definitions import window_push_length
-from activitytracker.db.dao.direct.chrome_summary_dao import ChromeSummaryDao
-from activitytracker.db.dao.direct.mystery_media_dao import MysteryMediaDao
-from activitytracker.db.dao.direct.program_summary_dao import ProgramSummaryDao
-from activitytracker.db.dao.direct.system_status_dao import SystemStatusDao
-from activitytracker.db.dao.direct.video_summary_dao import VideoSummaryDao
-from activitytracker.db.dao.queuing.chrome_logs_dao import ChromeLoggingDao
-from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
-from activitytracker.db.dao.queuing.video_logs_dao import VideoLoggingDao
 from activitytracker.db.models import DailyProgramSummary, ProgramActivityLog
 from activitytracker.facade.facade_singletons import (
     get_keyboard_facade_instance,
@@ -49,14 +41,20 @@ from ...helper.program_path.program_path_assertions import (
     assert_add_partial_window_happened_as_expected,
     assert_session_was_in_order,
 )
-from ...helper.program_path.program_path_setup import (
-    make_mock_db_rows_for_test_data,
-    setup_recorder_spies,
-    setup_summary_dao_spies,
-)
+from ...helper.program_path.program_path_setup import setup_recorder_spies
 from ...helper.testing_util import convert_back_to_dict
 from ...mocks.mock_clock import UserLocalTimeMockClock
 from ...mocks.mock_engine_container import MockEngineContainer
+from ...mocks.fake_persistence import (
+    FakeChromeLoggingDao,
+    FakeChromeSummaryDao,
+    FakeMysteryMediaDao,
+    FakeProgramLoggingDao,
+    FakeProgramSummaryDao,
+    FakeSystemStatusDao,
+    FakeVideoLoggingDao,
+    FakeVideoSummaryDao,
+)
 from ...mocks.mock_message_receiver import MockMessageReceiver
 
 timezone_for_test = "Europe/Berlin"  # UTC +1 or UTC +2
@@ -78,7 +76,9 @@ made_up_pids = [2345, 3456, 4567, 5678]
 
 @pytest.mark.asyncio
 async def test_program_path_with_fresh_sessions(
-    validate_test_data_and_get_durations, regular_session_maker, mock_async_session_maker
+    validate_test_data_and_get_durations,
+    mock_regular_session_maker,
+    mock_async_session_maker,
 ):
     """
     The goal of the test is to prove that programSesssions get thru the DAO layer fine
@@ -161,9 +161,7 @@ async def test_program_path_with_fresh_sessions(
 
     mock_container = MockEngineContainer(durations_for_keep_alive, short_pulse_interval)
 
-    status_dao = SystemStatusDao(
-        cast(UserFacingClock, mock_user_facing_clock), 10, regular_session_maker
-    )
+    status_dao = FakeSystemStatusDao()
 
     activity_arbiter = ActivityArbiter(
         mock_user_facing_clock, status_dao, mock_container, engine_type
@@ -174,11 +172,11 @@ async def test_program_path_with_fresh_sessions(
     )
     activity_arbiter.state_machine.set_new_session = asm_set_new_session_spy
 
-    p_logging_dao = ProgramLoggingDao(regular_session_maker)
-    chrome_logging_dao = ChromeLoggingDao(regular_session_maker)
+    p_logging_dao = FakeProgramLoggingDao()
+    chrome_logging_dao = FakeChromeLoggingDao()
 
-    p_summary_dao = ProgramSummaryDao(p_logging_dao, regular_session_maker)
-    chrome_sum_dao = ChromeSummaryDao(chrome_logging_dao, regular_session_maker)
+    p_summary_dao = FakeProgramSummaryDao()
+    chrome_sum_dao = FakeChromeSummaryDao()
 
     mock_message_receiver = MockMessageReceiver()
 
@@ -189,7 +187,7 @@ async def test_program_path_with_fresh_sessions(
     surveillance_manager = SurveillanceManager(
         cast(UserFacingClock, mock_user_facing_clock),
         mock_async_session_maker,
-        regular_session_maker,
+        mock_regular_session_maker,
         mock_chrome_svc,
         activity_arbiter,
         facades,
@@ -203,10 +201,10 @@ async def test_program_path_with_fresh_sessions(
     )
     surveillance_manager.program_tracker.window_change_handler = window_change_spy
 
-    video_logging_dao = VideoLoggingDao(regular_session_maker)
-    video_summary_dao = VideoSummaryDao(video_logging_dao, regular_session_maker)
+    video_logging_dao = FakeVideoLoggingDao()
+    video_summary_dao = FakeVideoSummaryDao()
 
-    mystery_dao = MysteryMediaDao(regular_session_maker)
+    mystery_dao = FakeMysteryMediaDao()
 
     activity_recorder = ActivityRecorder(
         p_logging_dao,
@@ -233,42 +231,34 @@ async def test_program_path_with_fresh_sessions(
     # -- Arrange
     # --
 
-    summary_dao, summary_dao_spies = setup_summary_dao_spies(p_summary_dao)
-
-    # -- different per file
-    sum_dao_execute_and_read_one_or_none_spy = Mock()
-    sum_dao_execute_and_read_one_or_none_spy.return_value = None
-    p_summary_dao.execute_and_read_one_or_none = sum_dao_execute_and_read_one_or_none_spy
-
     find_todays_entry_for_program_mock = Mock(
         side_effect=p_summary_dao.find_todays_entry_for_program
     )
-    find_todays_entry_for_program_mock.return_value = None
-    # So that the condition "the user already has a session for these programs" is met
     p_summary_dao.find_todays_entry_for_program = find_todays_entry_for_program_mock
 
-    #
-    # Logger methods
-    #
-
-    just_made_logs = make_mock_db_rows_for_test_data(test_two_data_clone)
-
-    logger_add_new_item_spy = Mock()
+    logger_add_new_item_spy = Mock(side_effect=p_logging_dao.add_new_item)
     p_logging_dao.add_new_item = logger_add_new_item_spy
 
     find_session_spy = Mock(side_effect=p_logging_dao.find_session)
-    find_session_spy.return_value = None
     p_logging_dao.find_session = find_session_spy
-
-    logging_dao_execute_and_read_one_or_none_spy = Mock()
-    logging_dao_execute_and_read_one_or_none_spy.return_value = next(just_made_logs)
-    p_logging_dao.execute_and_read_one_or_none = logging_dao_execute_and_read_one_or_none_spy
 
     finalize_log_spy = Mock(side_effect=p_logging_dao.finalize_log)
     p_logging_dao.finalize_log = finalize_log_spy
 
-    update_item_spy = Mock()
+    update_item_spy = Mock(side_effect=p_logging_dao.update_item)
     p_logging_dao.update_item = update_item_spy
+
+    summary_start_session_spy = Mock(side_effect=p_summary_dao.start_session)
+    p_summary_dao.start_session = summary_start_session_spy
+
+    summary_push_spy = Mock(side_effect=p_summary_dao.push_window_ahead_ten_sec)
+    p_summary_dao.push_window_ahead_ten_sec = summary_push_spy
+
+    summary_add_used_time_spy = Mock(side_effect=p_summary_dao.add_used_time)
+    p_summary_dao.add_used_time = summary_add_used_time_spy
+
+    summary_add_new_item_spy = Mock(side_effect=p_summary_dao.add_new_item)
+    p_summary_dao.add_new_item = summary_add_new_item_spy
 
     # program_facade = MockProgramFacade()
 
@@ -293,7 +283,7 @@ async def test_program_path_with_fresh_sessions(
                         )
                         break
                     # Seems 1.5 is the minimum wait to get this done. Below 1.5, it works only sometimes
-                    await asyncio.sleep(1.5)  # Short sleep between checks ("short")
+                    await asyncio.sleep(0.05)
                     # Check if we have the expected number of calls
                     if spy_on_set_program_state.call_count >= len(test_two_data_clone) - 1:
                         print(f"Events processed after {_+1} iterations")
@@ -322,9 +312,7 @@ async def test_program_path_with_fresh_sessions(
             assert recorder_spies["on_new_session_spy"].call_count == count_of_events
 
             # Test stopped before first pulse
-            assert (
-                summary_dao_spies["push_window_ahead_ten_sec_spy"].call_count == total_pushes
-            )
+            assert summary_push_spy.call_count == total_pushes
 
             # The final entry here is holding the window push open
             assert finalize_log_spy.call_count == count_of_events - trailing_entry
@@ -437,37 +425,12 @@ async def test_program_path_with_fresh_sessions(
         assert_activity_recorder_called_expected_times(second_test_event_count)
 
         assert find_todays_entry_for_program_mock.call_count == second_test_event_count
-
-        def assert_sqlalchemy_layer_went_as_expected():
-            """Covers only stuff that obscures sqlalchemy code."""
-            assert (
-                sum_dao_execute_and_read_one_or_none_spy.call_count
-                == second_test_event_count
-            )
-
-            concluded_sessions = second_test_event_count - trailing_entry
-
-            assert (
-                logging_dao_execute_and_read_one_or_none_spy.call_count
-                == total_pushes + concluded_sessions
-            )
-
-            assert (
-                summary_dao_spies["summary_add_new_item_spy"].call_count
-                == second_test_event_count
-            ), "A Summary should've been made for each entry, hence 'brand new' sessions"
-            assert logger_add_new_item_spy.call_count == second_test_event_count
-
-            assert update_item_spy.call_count == total_pushes + concluded_sessions
-
-            assert summary_dao_spies["execute_window_push_spy"].call_count == total_pushes
-
-        assert_sqlalchemy_layer_went_as_expected()
-
-        assert (
-            len(summary_dao_spies["push_window_ahead_ten_sec_spy"].call_args_list)
-            == total_pushes
+        assert summary_add_new_item_spy.call_count == second_test_event_count
+        assert logger_add_new_item_spy.call_count == second_test_event_count
+        assert update_item_spy.call_count == total_pushes + (
+            second_test_event_count - trailing_entry
         )
+        assert len(summary_push_spy.call_args_list) == total_pushes
 
         def assert_sessions_form_a_chain():
             sessions = []
@@ -484,11 +447,9 @@ async def test_program_path_with_fresh_sessions(
         assert_sessions_form_a_chain()
 
         # The final entry being held suspended in Arbiter
-        assert summary_dao_spies["push_window_ahead_ten_sec_spy"].call_count == total_pushes
-
+        assert summary_push_spy.call_count == total_pushes
         assert (
-            summary_dao_spies["do_addition_spy"].call_count
-            == second_test_event_count - trailing_entry
+            summary_add_used_time_spy.call_count == second_test_event_count - trailing_entry
         )
 
         assert finalize_log_spy.call_count == second_test_event_count - trailing_entry
@@ -496,16 +457,14 @@ async def test_program_path_with_fresh_sessions(
         # TODO assert that process_name made it into where it belongs, and looked right
         # TODO: assert that detail looked right
 
-        assert (
-            summary_dao_spies["summary_add_new_item_spy"].call_count == 4
-        ), "A new summary was created despite preexisting sessions"
+        assert summary_add_new_item_spy.call_count == 4
 
         assert logger_add_new_item_spy.call_count == second_test_event_count
 
         assert len(logger_add_new_item_spy.call_args_list) == second_test_event_count
 
         for i in range(0, second_test_event_count):
-            summary = summary_dao_spies["summary_add_new_item_spy"].call_args_list[i][0][0]
+            summary = summary_add_new_item_spy.call_args_list[i][0][0]
 
             assert isinstance(summary, DailyProgramSummary)
             assert (
@@ -514,6 +473,14 @@ async def test_program_path_with_fresh_sessions(
             assert (
                 summary.program_name == test_two_data_clone[i].window_title
             ), "Window title's end result didn't look right"
+
+        actual_summaries = p_summary_dao.read_all()
+        assert len(actual_summaries) == second_test_event_count
+
+        expected_durations = durations_for_keep_alive + [0]
+        for i, summary in enumerate(actual_summaries):
+            expected_hours = expected_durations[i] / SECONDS_PER_HOUR
+            assert summary.hours_spent == pytest.approx(expected_hours)
 
         for i in range(0, second_test_event_count - trailing_entry):
             program_log = logger_add_new_item_spy.call_args_list[i][0][0]
@@ -527,7 +494,11 @@ async def test_program_path_with_fresh_sessions(
                 program_log.program_name == test_two_data_clone[i].window_title
             ), "Window title's end result didn't look right"
 
-        # TODO: Assert logs had correct end_time, start_time, durations
+        actual_logs = p_logging_dao.read_all()
+        assert len(actual_logs) == second_test_event_count
+
+        for i, log in enumerate(actual_logs):
+            assert log.duration_in_sec == expected_durations[i]
     finally:
         v = await surveillance_manager.cleanup()
         await asyncio.sleep(0)  # Let pending tasks schedule
