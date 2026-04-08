@@ -1,72 +1,116 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
+  --ds-bg: #18191b;
+  --ds-surface: #222528;
+  --ds-surface-2: #2c3033;
+  --ds-text: #e8e4db;
+  --ds-text-muted: #8a8478;
+  --ds-accent: #c7f36b;
+  --ds-accent-deep: #8dae32;
+  --ds-rule: #3a3f3e;
+  --ds-productivity: #c7f36b;
+  --ds-entertainment: #f28a2e;
+  --ds-learning: #7dd3c7;
+  --ds-communication: #e9687a;
+  --ds-idle: #6b6560;
+  --font-display: "Instrument Serif", serif;
+  --font-body: "DM Sans", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  color: var(--ds-text);
+  background-color: var(--ds-bg);
+  font-family: var(--font-body);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
+/* TODO: Load Google Fonts through the eventual Tauri app shell instead of CSS import. */
 
-body {
-  margin: 0;
-  display: flex;
-  /* place-items: center; */
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+@layer base {
+  * {
+    @apply box-border;
   }
-  a:hover {
-    color: #747bff;
+
+  html {
+    @apply min-h-full;
   }
-  button {
-    background-color: #f9f9f9;
+
+  body {
+    @apply m-0 min-h-screen min-w-[1200px];
+    background: var(--ds-bg);
+    color: var(--ds-text);
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+}
+
+@layer components {
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .font-body {
+    font-family: var(--font-body);
+  }
+
+  .font-mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .showcase-band-enter {
+    animation: fade-up 350ms ease-out both;
+  }
+
+  .showcase-tooltip {
+    @apply pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-10 hidden -translate-x-1/2 whitespace-nowrap border px-3 py-2;
+    background: var(--ds-surface-2);
+    border-color: var(--ds-rule);
+  }
+
+  .showcase-tooltip-trigger:hover .showcase-tooltip {
+    display: block;
+  }
+
+  .showcase-rail-card {
+    @apply border-t pt-5;
+    border-color: var(--ds-rule);
+  }
+
+  .showcase-grid-line {
+    stroke: var(--ds-rule);
+    stroke-dasharray: 4 4;
+    stroke-width: 1;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
