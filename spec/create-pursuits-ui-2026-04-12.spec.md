@@ -1,7 +1,7 @@
 # Pursuits Setup UI Spec
 
 Date: 2026-04-12  
-Status: Approved design scope for hardcoded UI prototype
+Status: Implemented — ready for /code-review
 
 ## 1. Goal
 Build a **hardcoded frontend UI** where users can:
@@ -144,3 +144,41 @@ Examples:
   - `POST/DELETE pursuit members`
   - `GET /api/pursuits/untagged`
 - Add robust empty/error/loading states for live data.
+
+## Implementation notes (filled in by /developer)
+
+**Date implemented:** 2026-04-12
+**Commit(s):** uncommitted
+
+**Spec coverage**
+- Showcase route `/showcase/pursuits-setup` -> `dashboard/src/features/charts-showcase/index.tsx:25`
+- Showcase navigation entry -> `dashboard/src/features/charts-showcase/components/ShowcaseViewNav.tsx:37`
+- Hardcoded Pursuit and candidate mock arrays -> `dashboard/src/features/charts-showcase/data/mockPursuitsSetupData.ts:3`
+- Candidate table with last-30-days framing, search, assigned toggle, current pursuit, and time-desc sorting -> `dashboard/src/features/charts-showcase/pages/PursuitsSetupPage.tsx:83`
+- Mixed program/domain selection and selected-item summary -> `dashboard/src/features/charts-showcase/pages/PursuitsSetupPage.tsx:107`
+- Existing Pursuit assignment selector -> `dashboard/src/features/charts-showcase/pages/PursuitsSetupPage.tsx:287`
+- Inline Pursuit creation form -> `dashboard/src/features/charts-showcase/pages/PursuitsSetupPage.tsx:304`
+- Existing Pursuit edit controls -> `dashboard/src/features/charts-showcase/pages/PursuitsSetupPage.tsx:366`
+- Add vs move preview with explicit move confirmation before apply -> `dashboard/src/features/charts-showcase/pages/PursuitsSetupPage.tsx:443`
+- Selected assigned-row unassign action -> `dashboard/src/features/charts-showcase/pages/PursuitsSetupPage.tsx:484`
+
+**Tests added**
+- `dashboard/src/features/charts-showcase/pages/PursuitsSetupPage.test.tsx::filters candidates by search and hides assigned rows by default` — proves the default unassigned-only view and name search.
+- `dashboard/src/features/charts-showcase/pages/PursuitsSetupPage.test.tsx::supports mixed program and domain selection with add preview` — proves mixed-type multi-select and add preview.
+- `dashboard/src/features/charts-showcase/pages/PursuitsSetupPage.test.tsx::requires explicit confirmation before moving assigned items` — proves moves are previewed and gated by explicit confirmation.
+- `dashboard/src/features/charts-showcase/pages/PursuitsSetupPage.test.tsx::creates and edits pursuits with local state` — proves inline create and edit controls update local state.
+- `dashboard/src/features/charts-showcase/pages/PursuitsSetupPage.test.tsx::unassigns selected assigned rows with local state` — proves member removal is represented by a local unassign action.
+
+**Deviations from spec**
+- none
+
+**Deferred / noticed but not done**
+- Full production validation/error/loading states remain deferred per spec.
+- Live `/api/pursuits*` wiring remains deferred per spec.
+- `video_channel` candidates remain deferred per spec.
+- Existing dashboard-wide lint errors outside this diff remain unresolved.
+
+**For the reviewer**
+- The prototype is intentionally local-state only; no API client or persistence path was introduced.
+- The edit form updates local Pursuit definitions directly as fields change, including selector option labels.
+- Full dashboard lint is currently blocked by pre-existing unrelated errors; targeted ESLint on the touched showcase files passes.
