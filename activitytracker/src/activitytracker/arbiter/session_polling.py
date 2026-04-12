@@ -51,6 +51,13 @@ class KeepAliveEngine:
         self.amount_used = 0
         self.zero_remainder = 0
 
+    @staticmethod
+    def compute_pulses(duration_in_seconds: int, window_size: int = 10) -> tuple[int, int]:
+        """Given a session duration, return (full_pulse_count, remainder_seconds)."""
+        full_pulses = duration_in_seconds // window_size
+        remainder = duration_in_seconds % window_size
+        return full_pulses, remainder
+
     def iterate_loop(self):
         # TODO: Change so that it relies on datetime.now() having 10 sec elapsed.
         self.amount_used += 1  # not

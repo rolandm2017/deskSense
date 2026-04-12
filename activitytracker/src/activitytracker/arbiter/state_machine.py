@@ -27,38 +27,36 @@ class StateMachine:
         """
         self.user_facing_clock = user_facing_clock
         self.current_state: InternalState | None = None
-        self.prior_state: InternalState | None = None
         self.state_listeners = []
         self.logger = ConsoleLogger()
 
     def set_new_session(
         self,
         next_session: ProgramSession | ChromeSession,
-    ):
+    ) -> CompletedProgramSession | CompletedChromeSession | None:
         # FIXME: Isn't this JUST handing off one session to the other now?
         # FIXME: Existing just to do, "end_time - start_time" and such
         next_session = snapshot_obj_for_tests(next_session)
-        if self.current_state:
-            updated_state = InternalState(None, None, next_session)
-            # Need: self.current_state.session. Nothin' else
-            self._conclude_session(self.current_state, next_session.start_time)
-            self.prior_state = self.current_state
-            self.current_state = updated_state
-
-        else:
+        if self.current_state is None:
             # No current state yet, this is initialization:
             updated_state = InternalState(None, None, next_session)
             self.current_state = updated_state
+            return None
 
-    def _conclude_session(
+        concluded = self._build_concluded(self.current_state, next_session.start_time)
+        self.current_state = InternalState(None, None, next_session)
+        return concluded
+
+    def _build_concluded(
         self,
         state: InternalState,
         incoming_session_start: UserLocalTime,
-    ):
+    ) -> CompletedProgramSession | CompletedChromeSession | None:
+        """Conclude the current session. Returns the completed session or None."""
         if not isinstance(incoming_session_start, UserLocalTime):
             raise ValueError("Expected a UserLocalTime")
         if self.is_initialization_session(state.session):
-            return
+            return None
 
         duration = incoming_session_start.dt - state.session.start_time.dt
         # FIXME: "concluding session:  9:42:51.327057" after overnight sleep
@@ -81,18 +79,16 @@ class StateMachine:
         # TODO: Make toCompleted throw err if end time before start time
         completed = session_copy.to_completed(incoming_session_start)
         completed.duration = duration
+        return completed
 
-        state.session = completed
-
-    def get_concluded_session(
+    def _conclude_session(
         self,
-    ) -> CompletedProgramSession | CompletedChromeSession | None:
-        """Assumes the prior state is the updated transformation from set_new_session"""
-        on_initialization = self.prior_state is None
-        if on_initialization:
-            return None
-        assert self.prior_state is not None
-        return self.prior_state.session
+        state: InternalState,
+        incoming_session_start: UserLocalTime,
+    ):
+        completed = self._build_concluded(state, incoming_session_start)
+        if completed is not None:
+            state.session = completed
 
     def conclude_without_replacement_at_time(self, given_time: UserLocalTime):
         if self.current_state is None:

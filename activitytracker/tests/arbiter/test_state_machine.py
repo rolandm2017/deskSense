@@ -6,7 +6,6 @@ import time
 from datetime import datetime, timedelta
 
 from activitytracker.arbiter.state_machine import StateMachine
-from activitytracker.object.arbiter_classes import InternalState
 from activitytracker.object.classes import ChromeSession, ProgramSession
 from activitytracker.util.clock import SystemClock
 from activitytracker.util.time_wrappers import UserLocalTime
@@ -15,6 +14,68 @@ from ..mocks.mock_clock import MockClock
 
 
 class TestStateMachine:
+    def test_state_machine_concludes_with_correct_duration(self):
+        t1 = datetime.now().astimezone()
+        t2 = t1 + timedelta(seconds=4)
+        clock = MockClock([t2])
+
+        state_machine = StateMachine(clock)
+        session_a = ProgramSession(
+            "some/exe/path.exe",
+            "path.exe",
+            "Visual Studio Code",
+            "myfile.py",
+            UserLocalTime(t1),
+        )
+        session_b = ChromeSession(
+            "Claude.ai",
+            "How to Cook Chicken Well in Thirty Minutes",
+            UserLocalTime(t2),
+        )
+
+        result = state_machine.set_new_session(session_a)
+        assert result is None
+
+        result = state_machine.set_new_session(session_b)
+        assert result is not None
+        assert result.start_time == session_a.start_time
+        assert result.duration == session_b.start_time.dt - session_a.start_time.dt
+
+    def test_state_machine_three_sessions_form_chain(self):
+        t1 = datetime.now().astimezone()
+        t2 = t1 + timedelta(seconds=4)
+        t3 = t2 + timedelta(seconds=6)
+        clock = MockClock([t2, t3])
+
+        state_machine = StateMachine(clock)
+        session_a = ProgramSession(
+            "some/exe/path.exe",
+            "path.exe",
+            "Visual Studio Code",
+            "myfile.py",
+            UserLocalTime(t1),
+        )
+        session_b = ChromeSession(
+            "Claude.ai",
+            "How to Cook Chicken Well in Thirty Minutes",
+            UserLocalTime(t2),
+        )
+        session_c = ProgramSession(
+            "some/other/path.exe",
+            "other.exe",
+            "Terminal",
+            "~/Documents",
+            UserLocalTime(t3),
+        )
+
+        state_machine.set_new_session(session_a)
+        concluded_a = state_machine.set_new_session(session_b)
+        concluded_b = state_machine.set_new_session(session_c)
+
+        assert concluded_a is not None
+        assert concluded_b is not None
+        assert concluded_a.end_time == concluded_b.start_time
+
     def test_load_first_state(self):
 
         t1 = datetime.now().astimezone()
@@ -30,7 +91,6 @@ class TestStateMachine:
 
         # test setup
         assert asm.current_state is None
-        assert asm.prior_state is None
 
         latest_write_at_first_session = UserLocalTime(now)
 
@@ -51,20 +111,19 @@ class TestStateMachine:
         )
 
         # Act
-        asm.set_new_session(first_session)
-        response = asm.get_concluded_session()
+        response = asm.set_new_session(first_session)
 
         # None because there IS no prior state to conclude by startign a new session
         assert response is None
 
         # Act
-        asm.set_new_session(second)
-        response = asm.get_concluded_session()
+        response = asm.set_new_session(second)
 
         assert response is not None
         assert isinstance(response, ProgramSession)
         assert response.window_title == first_session.window_title
         assert response.start_time == first_session.start_time
+        assert response.duration == second.start_time.dt - first_session.start_time.dt
 
     def test_handle_series(self):
 
@@ -114,13 +173,11 @@ class TestStateMachine:
             UserLocalTime(t5),
         )
 
-        asm.set_new_session(session1)
-        response1 = asm.get_concluded_session()
+        response1 = asm.set_new_session(session1)
 
         assert response1 is None
 
-        asm.set_new_session(second)
-        response2 = asm.get_concluded_session()
+        response2 = asm.set_new_session(second)
 
         assert response2 is not None
         assert isinstance(response2, ProgramSession)
@@ -128,24 +185,21 @@ class TestStateMachine:
         print(t1.strftime("%M:%S"), "\n", t2.strftime("%M:%S"))
         assert response2.start_time.dt == t1
 
-        asm.set_new_session(third)
-        response3 = asm.get_concluded_session()
+        response3 = asm.set_new_session(third)
 
         assert response3 is not None
         assert isinstance(response3, ChromeSession)
         assert response3.domain == second.domain
         assert response3.start_time.dt == t2
 
-        asm.set_new_session(fourth)
-        response4 = asm.get_concluded_session()
+        response4 = asm.set_new_session(fourth)
 
         assert response4 is not None
         assert isinstance(response4, ChromeSession)
         assert response4.domain == third.domain
         assert response4.start_time.dt == t3
 
-        asm.set_new_session(fifth)
-        response5 = asm.get_concluded_session()
+        response5 = asm.set_new_session(fifth)
 
         assert response5 is not None
         assert isinstance(response5, ProgramSession)
@@ -154,11 +208,6 @@ class TestStateMachine:
 
         # Verify that the internal stuff is as expected for the unfinished section
         assert asm.current_state is not None
-        assert asm.prior_state is not None
-        assert isinstance(asm.prior_state, InternalState)
-        assert asm.prior_state.session.window_title == fourth.window_title
-        assert asm.prior_state.session.start_time.dt == t4
-
         assert asm.current_state.session.window_title == fifth.window_title
         assert asm.current_state.session.start_time == fifth.start_time
 
