@@ -6,7 +6,6 @@ import time
 from datetime import datetime, timedelta
 
 from activitytracker.arbiter.state_machine import StateMachine
-from activitytracker.object.arbiter_classes import InternalState
 from activitytracker.object.classes import ChromeSession, ProgramSession
 from activitytracker.util.clock import SystemClock
 from activitytracker.util.time_wrappers import UserLocalTime
@@ -92,7 +91,6 @@ class TestStateMachine:
 
         # test setup
         assert asm.current_state is None
-        assert asm.prior_state is None
 
         latest_write_at_first_session = UserLocalTime(now)
 
@@ -210,11 +208,6 @@ class TestStateMachine:
 
         # Verify that the internal stuff is as expected for the unfinished section
         assert asm.current_state is not None
-        assert asm.prior_state is not None
-        assert isinstance(asm.prior_state, InternalState)
-        assert asm.prior_state.session.window_title == fourth.window_title
-        assert asm.prior_state.session.start_time.dt == t4
-
         assert asm.current_state.session.window_title == fifth.window_title
         assert asm.current_state.session.start_time == fifth.start_time
 

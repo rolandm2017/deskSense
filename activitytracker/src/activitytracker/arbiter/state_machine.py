@@ -27,7 +27,6 @@ class StateMachine:
         """
         self.user_facing_clock = user_facing_clock
         self.current_state: InternalState | None = None
-        self.prior_state: InternalState | None = None
         self.state_listeners = []
         self.logger = ConsoleLogger()
 
@@ -45,9 +44,6 @@ class StateMachine:
             return None
 
         concluded = self._build_concluded(self.current_state, next_session.start_time)
-        self.prior_state = self.current_state
-        if concluded is not None:
-            self.prior_state.session = concluded
         self.current_state = InternalState(None, None, next_session)
         return concluded
 
@@ -93,16 +89,6 @@ class StateMachine:
         completed = self._build_concluded(state, incoming_session_start)
         if completed is not None:
             state.session = completed
-
-    def get_concluded_session(
-        self,
-    ) -> CompletedProgramSession | CompletedChromeSession | None:
-        """Deprecated: use the return value from set_new_session instead."""
-        on_initialization = self.prior_state is None
-        if on_initialization:
-            return None
-        assert self.prior_state is not None
-        return self.prior_state.session
 
     def conclude_without_replacement_at_time(self, given_time: UserLocalTime):
         if self.current_state is None:
