@@ -142,7 +142,7 @@ Key routing rules:
 - Code quality, health check → invoke health
 
 
-## Guidance for Claude agents
+## Bugfix guidance for agents
 
 When fixing a bug, please follow this procedure:
 
@@ -151,3 +151,4 @@ When fixing a bug, please follow this procedure:
 3. Wait for me to show you the results of the test. You can then implement the fix if the test failed about how you expect.
 
 In this way, the codebase slowly grows protection from regressions.
+
