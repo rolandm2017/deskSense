@@ -2,6 +2,10 @@
 
 It's a time tracker for desktop. One machine only. The goal is to enable self-management. Let the user audit what they actually did.
 
+## Some timeline context re: app development
+
+I worked on this app for about five months, around Spring 2025. I quit developing it around May. I have picked development back up in April of 2026. Thus I have an eleven month gap of forgetfulness to overcome. I no longer remember the system in great detail, and numerous rationales for design decisions are lost.
+
 ## Environment
 
 This project is developed in WSL but runs on Windows 11. You cannot run `npm install`, `npm run test`, or `pytest` directly from WSL - ask the user to run these commands.
