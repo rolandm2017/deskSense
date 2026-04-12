@@ -382,3 +382,53 @@ Not product decisions — flagged for the engineering plan phase:
 - Whether the Pursuit Timeline endpoint returns "sub-blocks" for Uncategorized
   segments so the frontend can render grey-shaded internals, or whether that
   styling data comes from a separate call. Affects payload size.
+
+---
+
+## TODO Tracker (Added 2026-04-12)
+
+Open items that need explicit decisions before endpoint implementation is
+considered stable:
+
+- TODO: Day/week boundary migration plan.
+  Current production behavior is still Sunday+midnight in multiple places.
+  Define how historical data and comparisons migrate to Monday+4am.
+
+- TODO: Canonical `idle` vs `uncategorized` semantics.
+  Decide whether `idle` remains a category in the new dashboard model or is
+  fully replaced by system-owned Uncategorized behavior.
+
+- TODO: Pursuit data model + schema.
+  Specify tables/fields/constraints/indexes for pursuits and memberships,
+  including one-member-to-one-pursuit enforcement and delete behavior.
+
+- TODO: Write the attribution pipeline in plain English.
+  Document raw logs -> session boundaries -> pursuit attribution ->
+  category totals -> endpoint payload flow so endpoint ownership is clear.
+
+- TODO: Context-switch threshold constant and config ownership.
+  Choose final threshold value, add it to backend config, and note exactly
+  which event stream computes `contextSwitchesPerHour`.
+
+- TODO: Frontend adapter contract for showcase components.
+  Define mapping from backend timestamps/seconds to component props
+  (`startHour`, `endHour`, labels, durations, and category keys).
+
+- TODO: Endpoint coexistence/cutover plan.
+  Document which existing `/api/dashboard/*` endpoints are reused, which are
+  replaced, and expected deprecation window.
+
+- TODO: Error and empty-state response contract.
+  Define status codes and payload shape for: invalid date/week params,
+  timezone mismatch, missing pursuit, conflict on member assignment, and
+  no-data windows.
+
+- TODO: Performance budgets and payload-size limits.
+  Add target p95 latency and rough payload size ceilings per endpoint
+  (daily overview/timeline/top-programs and weekly rollups).
+
+- TODO: Endpoint test acceptance criteria.
+  List minimum integration tests required before wiring each endpoint to UI.
+
+- Resolved here: weekly and daily endpoints will use query params.
+  This spec already follows that (`?date=...`, `?week=...`, `?weeks=...`).

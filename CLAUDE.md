@@ -11,14 +11,42 @@ Three components:
 - **chrome/** — TypeScript Chrome extension. Reports tab activity (domain, duration) to the backend. Also tracks Netflix/YouTube video watching.
 - **dashboard/** — React + TypeScript frontend (Vite). Displays daily/weekly usage charts using d3 and vis-timeline.
 
+## Product context
+
+Before making product-shaped decisions, read in order:
+1. `PRODUCT.md` — what the app is, who it's for, core vocabulary
+   (Activity, Summary, Pursuit, Category, Uncategorized, Idle).
+2. `docs/product-decision-log.md` — ADRs with reasoning behind accepted
+   product decisions. Treat as authoritative.
+3. `spec/endpoints.md` — current endpoint contract (draft).
+4. `spec/todo.md` — deferred decisions and unbuilt areas (auth, licensing,
+   user scoping, error contracts).
+
+## API stability map
+
+- **Deprecated (expect to be replaced):** most routes under
+  `/api/dashboard/*` in `server.py`. The dashboard redesign (see
+  `spec/endpoints.md`) is replacing them with `/api/daily/*` and
+  `/api/weekly/*`. Don't build new work on the old routes and don't
+  refactor them — they're on their way out. Breaking endpoint changes are
+  allowed during this phase. Preferred strategy is reuse-with-alteration
+  where practical. Target deprecation window: by end of April 2026.
+- **Stable:** peripheral tracking endpoints (keyboard/mouse reports
+  under `/api/report/*`). These work well and are expected to stay.
+- **In flux:** Chrome extension ingest endpoints (`/api/chrome/*`,
+  `/api/chrome/video/*`) — shape may shift as video attribution
+  matures, but the purpose is stable.
+
 ## Dev Environment Constraints
 
 - Agents run in WSL but npm packages are installed for Windows
 - **Agents cannot run npm tests or builds** — they will fail under WSL
 - `npm install` must be done outside WSL (in Windows)
-- Python tests can be run from WSL
+- Python tests should be run from WSL via `win-pytest`
 
-This project is developed in WSL but runs on Windows 11. You cannot run `npm install`, `npm run test`, or `pytest` directly from WSL - ask the user to run these commands.
+This project is developed in WSL but runs on Windows 11. Do not run
+`npm install`, `npm run test`, or frontend builds from WSL. Use
+`win-pytest` for Python tests.
 
 ## Commands
 
@@ -26,9 +54,9 @@ This project is developed in WSL but runs on Windows 11. You cannot run `npm ins
 ```bash
 cd activitytracker
 pip install -e .                        # install package in editable mode
-pytest                                  # run all tests (pythonpath=src via pytest.ini)
-pytest tests/path/to/test_file.py       # run single test file
-pytest tests/path/to/test_file.py::test_name  # run single test
+win-pytest                              # run all tests (WSL -> Windows bridge)
+win-pytest tests/path/to/test_file.py
+win-pytest tests/path/to/test_file.py::test_name
 ```
 
 ### chrome (TypeScript)
@@ -81,7 +109,11 @@ npm run lint           # eslint
 
 ## Testing Pitfalls
 
-The Activity Arbiter integration tests are complex and fragile. They require long chains of intermediate assertions to trace state machine logic. See `activitytracker/tests/integration/test_arbiter.py` and `activitytracker/tests/integration/program_session_path/test_fresh_entries.py` for examples. Tread carefully when modifying arbiter behavior.
+The Activity Arbiter integration tests are complex and fragile. They require
+long chains of intermediate assertions to trace state machine logic. See
+`activitytracker/tests/integration/test_arbiter.py` and
+`activitytracker/tests/integration/test_arbiter_after_sleep.py` for examples.
+Tread carefully when modifying arbiter behavior.
 
 ## Design System
 Always read DESIGN.md before making any visual or UI decisions.

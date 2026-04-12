@@ -2,15 +2,26 @@
 
 It's a time tracker for desktop. One machine only. The goal is to enable self-management. Let the user audit what they actually did.
 
+## Product context
+
+For the product stance, target users, and core vocabulary (Activity,
+Summary, Pursuit, Category, Uncategorized, Idle), see `PRODUCT.md`.
+For product decisions and their reasoning, see
+`docs/product-decision-log.md`. For deferred / unbuilt areas (auth,
+license gating, user scoping, error contracts), see `spec/todo.md`. This
+file covers the codebase itself; don't duplicate product content here.
+
 ## Some timeline context re: app development
 
 I worked on this app for about five months, around Spring 2025. I quit developing it around May. I have picked development back up in April of 2026. Thus I have an eleven month gap of forgetfulness to overcome. I no longer remember the system in great detail, and numerous rationales for design decisions are lost.
 
 ## Environment
 
-You are within WSL! Regular pytest and npm test commands will not work.
+You are within WSL.
 
-You should be able to run win-pytest to use pytest from within WSL. win-pytest is a WSL → Windows bridge script for running pytest inside the Windows virtualenv
+Use `win-pytest` to run Python tests from WSL. `win-pytest` is a WSL ->
+Windows bridge script that runs pytest inside the Windows virtualenv.
+Do not run `npm` tests/builds from WSL.
 
 I also recently added: 
 
@@ -101,6 +112,15 @@ Here is how the server communicates with the dashboard client.
 
 activitytracker/src/activitytracker/server.py
 
+NOTE: most routes currently in `server.py` under `/api/dashboard/*` are
+done for. The dashboard redesign replaces them with `/api/daily/*` and
+`/api/weekly/*` (see `spec/endpoints.md`). Don't build new work on the
+old routes. The peripheral report routes (`/api/report/*`) and the
+Chrome ingest routes are staying.
+Breaking endpoint changes are allowed during this transition. Preferred
+strategy is reuse-with-alteration where practical. Target: deprecate most
+`/api/dashboard/*` routes by end of April 2026.
+
 
 **How tracking of time spent per program or domain occurs**
 
@@ -109,6 +129,12 @@ activitytracker/src/activitytracker/arbiter/activity_arbiter.py
 activitytracker/src/activitytracker/arbiter/state_machine.py
 
 Activity Arbiter's transition_state method is the big deal here. The Arbiter controls a "pulse" (a polling activity) adding time to the current activity.
+
+The arbiter's session log is continuous and non-overlapping by
+construction — at most one Activity is active at a time, and the pulse
+guarantees coverage of every tracked second. Endpoints that need a
+"what was happening at time T" view (e.g. the Pursuit Timeline) can
+read this log directly without gap-stitching logic.
 
 **How Chrome tab activity gets recorded**
 
@@ -154,6 +180,11 @@ dashboard\src\pages\Weekly.tsx shows the weekly view.
 3. "User opens dashboard" -> frontend calls FastAPI endpoints -> queries DB for time ranges -> returns aggregated
   sessions
 
+TODO: document the full source-of-truth attribution pipeline in plain
+English (ingest -> arbiter/session boundaries -> pursuit attribution ->
+category rollups -> endpoint payloads). This is currently underdefined and
+should become a standing architecture section.
+
 # How the Chrome extension talks to the backend
 
 API requests are made by the extension and received by the server.py file in activitytracker/src. 
@@ -166,15 +197,48 @@ The database connection is established in activitytracker\src\activitytracker\db
 
 # Data model
 
-There are models that record the individual session of using a program, be it for a ten minute window or a five second window. There is another model that then summarizes how much time was used total that day, per program. This also applies to domains and video content.
+## Three-tier hierarchy
 
-There is some naming confusion currently. Fixing it is my #1 to do.
+DeskSense has three conceptual tiers. Keep them distinct when reasoning
+about a change. Vocabulary definitions live in `PRODUCT.md`; this
+section maps them to code.
 
-A **ActivityLogBase** exists to record an individual session or activity. 
+1. **Activity** — individual session records. One foreground window
+   interval, one domain visit, one video watch. `ActivityLogBase` and
+   its children (currently still named SummaryLogBase in some places —
+   ongoing rename). Raw truth produced by the arbiter and the Chrome
+   extension.
+2. **Summary** — per-day rollups of Activities, per program / domain /
+   video. `DailyProgramSummary`, `DailyDomainSummary`,
+   `DailyVideoSummary` all extend `DailySummaryBase` (hours spent on a
+   given day as a float). Fast to query; what most dashboard endpoints
+   read. The DailySummary names are staying.
+3. **Pursuit** — user-defined grouping of Activities tracked under one
+   umbrella (see `PRODUCT.md` for the full definition). A Pursuit's
+   members are (source_type, identifier) pairs: `program`, `domain`, or
+   `video_channel`. Program, domain, and video Activities all feed
+   into Pursuits. New table — being designed. See `spec/endpoints.md`
+   and ADR-003 / ADR-004.
 
-**DailySummaryBase** is a base class covering hours spent and the data data was gathered, summarized into one float representation of hours spent. This Base extends into a DailyProgramSummary, DailyDomainSummary, DailyVideoSummary. There, the extension exists to specify which website or program was being used, for how long. The DailyVideoSummary covers a question of media categorization. 
+## Peripheral data (parallel to the hierarchy)
 
-In my move to fix the naming confusion, the DailySummary models will keep their names. SummaryLogBase and its child classes will be renamed as Activities.
+Used for idle detection and activity-density visualizations, not
+Pursuit attribution:
+
+- **TimelineEntryObj** — precomputes mouse and keyboard usage.
+  Compresses thousands of events down to a hundred or so.
+- **MouseMove** — individual sessions of mouse movement.
+- **TypingSessions** — instances of continuous typing. Both may be
+  very short. Data originates in the peripheral trackers.
+- **PrecomputedTimelineEntry** — merges graph units in advance so the
+  server sends ~1/20th as many entries to the client.
+- **SystemStatus** — tracks when the machine is on/off via polling.
+
+## Naming confusion
+
+Fixing the Activity / Summary naming is the #1 to-do. The DailySummary
+models keep their names; SummaryLogBase and its child classes are
+being renamed to Activities.
 
 A **TimelineEntryObj** exists to precompute mouse and keyboard usage. Compresses thousands of events down to a hundred or so. 
 
@@ -189,7 +253,8 @@ The **SystemStatus** table helps the program track when the machine is actually 
 - Intended to run on Windows and Linux. 
 - npm install must be done outside of WSL
 - Agents must assume they are in WSL
-- Agents cannot run tests themselves; it'll just break because the npm packages are for Windows.
+- Python tests can be run from WSL via `win-pytest`
+- Frontend tests/builds should be run from Windows, not WSL
 
 # Invariants
 
@@ -205,7 +270,7 @@ It's difficult to prove that the Activity Arbiter works properly. A full integra
 
 To see how complex testing can be, consider: activitytracker\tests\integration\test_arbiter.py
 
-Another peek at how complex testing can be: activitytracker\tests\integration\program_session_path\test_fresh_entries.py
+Another peek at sensitive flows: activitytracker\tests\integration\test_arbiter_after_sleep.py
 
 So in short, the path thru the activity tracker is sensitive and prone to breakage.
 
@@ -234,6 +299,10 @@ Prefer to write testable code. Take all the low hanging fruit. Pure functions ar
 # The state of my tests
 
 As of Feb 28 2026, I've had tests that are well well maintained for several ongoing months. Think that 99% of test cases pass. Hence you can trust a test to document how the code works.
+
+Testing philosophy: tests all the way down, within reason. Very high-level
+E2E is often out of scope; confidence should come from well-chosen
+integration tests plus contract tests.
 
 ## Guidance for Codex and Claude Code agents
 
