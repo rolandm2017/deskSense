@@ -24,12 +24,10 @@ This file tracks which frontend features need to start reading actual backend da
 ## Data Wiring Priorities
 
 1. Daily header and daily stat band.
-   These are the simplest visible wins. They need a date range query for the selected day and deriv
-         ed totals from existing daily summaries.
+   These are the simplest visible wins. They need a date range query for the selected day and derived totals from existing daily summaries.
 
 2. Daily activity timeline.
-   This is the most important chart because it expresses the core product promise: what the user ac
-         tually did over the day. It should use backend-owned timing decisions, not frontend reconstruction
+   This is the most important chart because it expresses the core product promise: what the user actually did over the day. It should use backend-owned timing decisions, not frontend reconstruction
          from unrelated summaries.
 
 3. Daily category breakdown.
@@ -41,25 +39,20 @@ This file tracks which frontend features need to start reading actual backend da
          summary endpoint before the more detailed daily timeline is perfect.
 
 5. Weekly stat band.
-   This depends on weekly totals and previous-week comparison. It should be wired near the weekly s
-         tacked chart because the same response can probably serve both.
+   This depends on weekly totals and previous-week comparison. It should be wired near the weekly stacked chart because the same response can probably serve both.
 
 6. Top programs swim lanes.
-   This needs a deliberate contract. The mock now treats these as user-meaningful groups, not merel
-         y executable names. Decide whether the backend returns raw programs, grouped programs, or explicit
+   This needs a deliberate contract. The mock now treats these as user-meaningful groups, not merely executable names. Decide whether the backend returns raw programs, grouped programs, or explicit
          “activity clusters.”
 
 7. Project list and project scoreboard.
-   These require project/category mapping and goal metadata. If project goals do not exist in the b
-         ackend yet, keep the UI hardcoded until the data model is clearer.
+   These require project/category mapping and goal metadata. If project goals do not exist in the backend yet, keep the UI hardcoded until the data model is clearer.
 
 8. Weekly trend chart.
-   This needs a multi-week endpoint or a loop over weekly summary endpoints. Prefer a dedicated agg
-         regated endpoint so the dashboard does not become slow.
+   This needs a multi-week endpoint or a loop over weekly summary endpoints. Prefer a dedicated aggregated endpoint so the dashboard does not become slow.
 
 9. Right rail.
-   The rail can stay partly static longest. Eventually it should read from derived insights: peak f
-         ocus window, largest idle gap, strongest category, project deltas, and notable trend changes.
+   The rail can stay partly static longest. Eventually it should read from derived insights: peak focus window, largest idle gap, strongest category, project deltas, and notable trend changes.
 
 ## Likely API Contracts Needed
 
@@ -91,8 +84,7 @@ Needed fields per block:
 - `sourceType`, such as program, domain, video, idle, or peripheral-derived
 - optional `projectName`
 
-Important constraint: the frontend should not independently decide whether time is productive, idle
-         , entertainment, or learning. The backend arbiter/category layer should own that.
+Important constraint: the frontend should not independently decide whether time is productive, idle, entertainment, or learning. The backend arbiter/category layer should own that.
 
 ### Top Program Or Activity Lanes
 
@@ -112,8 +104,7 @@ Needed fields per block:
 - `label`
 - `category`
 
-Open question: should these lanes represent raw programs, domains, project groups, or backend-defin
-         ed clusters?
+Open question: should these lanes represent raw programs, domains, project groups, or backend-defined clusters?
 
 ### Weekly Overview
 
@@ -146,21 +137,16 @@ Needed fields:
 - optional `deltaSeconds`
 - optional `period`
 
-Open question: should project goal metadata live in the backend database, a local config file, or f
-         rontend-only settings until the product model settles?
+Open question: should project goal metadata live in the backend database, a local config file, or frontend-only settings until the product model settles?
 
 ## Frontend Refactor Notes
 
-- Keep the showcase components presentational. They should accept typed props and should not fetch
-         directly.
-- Add route/page containers later that fetch data and adapt API responses into the presentational c
-         omponent props.
+- Keep the showcase components presentational. They should accept typed props and should not fetch directly.
+- Add route/page containers later that fetch data and adapt API responses into the presentational component props.
 - Keep mock data available for visual regression and design iteration.
-- Preserve the route-backed daily/weekly structure because future date and range params should live
-          in the URL.
+- Preserve the route-backed daily/weekly structure because future date and range params should live in the URL.
 - Preserve the entrance animations when swapping from mock data to fetched data.
-- Avoid reconstructing high-resolution activity meaning in the frontend. The backend owns timing lo
-         gic and classification decisions.
+- Avoid reconstructing high-resolution activity meaning in the frontend. The backend owns timing logic and classification decisions.
 
 ## Suggested First Implementation Slice
 
@@ -168,10 +154,8 @@ Start with a real-data daily overview slice:
 
 1. Add or identify an endpoint for the selected day overview.
 2. Create a frontend API function that returns a typed daily overview object.
-3. Build a small container around the showcase daily page that replaces only the daily header and s
-         tat band with real values.
+3. Build a small container around the showcase daily page that replaces only the daily header and stat band with real values.
 4. Leave the detailed charts mocked until the overview path is stable.
 5. Then wire the daily activity timeline from a backend-owned timeline endpoint.
 
-This keeps the first migration small while proving the route, loading, date selection, and formatti
-         ng path.
+This keeps the first migration small while proving the route, loading, date selection, and formatting path.
