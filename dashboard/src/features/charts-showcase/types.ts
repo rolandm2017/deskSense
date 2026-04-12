@@ -5,6 +5,14 @@ export type ShowcaseCategory =
   | "entertainment"
   | "idle";
 
+export type PursuitCategory =
+  | "productivity"
+  | "learning"
+  | "communication"
+  | "entertainment";
+
+export type PursuitCandidateSourceType = "program" | "domain";
+
 export interface ShowcaseCategoryMeta {
   key: ShowcaseCategory;
   label: string;
@@ -99,4 +107,20 @@ export interface RailNote {
 export interface RailSection {
   title: string;
   notes: RailNote[];
+}
+
+export interface PursuitCandidateRow {
+  sourceType: PursuitCandidateSourceType;
+  identifier: string;
+  displayName: string;
+  last30dSeconds: number;
+  currentPursuitId: string | null;
+}
+
+export interface PursuitDefinition {
+  pursuitId: string;
+  name: string;
+  category: PursuitCategory;
+  color: string;
+  weeklyGoalSeconds: number | null;
 }
