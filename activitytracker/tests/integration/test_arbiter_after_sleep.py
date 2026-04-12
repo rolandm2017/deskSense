@@ -88,9 +88,9 @@ def activity_arbiter_and_setup(db_session_in_mem):
     arbiter.initialize_loop = initialize_loop_spy
 
     conclude_at_time_spy = Mock(
-        side_effect=arbiter.state_machine.conclude_without_replacement_at_time
+        side_effect=arbiter.active_session_state.conclude_without_replacement_at_time
     )
-    arbiter.state_machine.conclude_without_replacement_at_time = conclude_at_time_spy
+    arbiter.active_session_state.conclude_without_replacement_at_time = conclude_at_time_spy
 
     spies = {
         "flush_and_reset_spy": flush_and_reset_spy,

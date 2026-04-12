@@ -352,7 +352,7 @@ def test_activity_arbiter(activity_arbiter_and_setup):
     # with it's position in copied_test_data, while also accounting for zero index.
     # So as of this comment, the final test_session is number 14, meaning index 13, i.e. the final one.
     assert (
-        arbiter.state_machine.current_state.session.start_time
+        arbiter.active_session_state.current_state.session.start_time
         == copied_test_data[len(copied_test_data) - 1].start_time
     )
 
