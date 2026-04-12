@@ -144,6 +144,8 @@ Key routing rules:
 
 ## Bugfix guidance for agents
 
+Note that the following instruction only applies to tasks that are specifically about bug fixes. The rule doesn't apply to bugs you encounter while doing developmentw ork.
+
 When fixing a bug, please follow this procedure:
 
 1. Identify the root cause of the bug.
@@ -152,3 +154,4 @@ When fixing a bug, please follow this procedure:
 
 In this way, the codebase slowly grows protection from regressions.
 
+Again you don't need to follow this rule in the middle of a longer development task. Only follow the rule when I start the chat saying something like, "Hey, let's fix a bug"

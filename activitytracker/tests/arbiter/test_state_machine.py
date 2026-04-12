@@ -5,7 +5,7 @@ import pytest
 import time
 from datetime import datetime, timedelta
 
-from activitytracker.arbiter.state_machine import StateMachine
+from activitytracker.arbiter.active_session_state import ActiveSessionState
 from activitytracker.object.classes import ChromeSession, ProgramSession
 from activitytracker.util.clock import SystemClock
 from activitytracker.util.time_wrappers import UserLocalTime
@@ -19,7 +19,7 @@ class TestStateMachine:
         t2 = t1 + timedelta(seconds=4)
         clock = MockClock([t2])
 
-        state_machine = StateMachine(clock)
+        state_machine = ActiveSessionState(clock)
         session_a = ProgramSession(
             "some/exe/path.exe",
             "path.exe",
@@ -47,7 +47,7 @@ class TestStateMachine:
         t3 = t2 + timedelta(seconds=6)
         clock = MockClock([t2, t3])
 
-        state_machine = StateMachine(clock)
+        state_machine = ActiveSessionState(clock)
         session_a = ProgramSession(
             "some/exe/path.exe",
             "path.exe",
@@ -85,7 +85,7 @@ class TestStateMachine:
         times = [t2, t3]
         clock = MockClock(times)
 
-        asm = StateMachine(clock)
+        asm = ActiveSessionState(clock)
         now = t1
         slightly_later = t2
 
@@ -136,7 +136,7 @@ class TestStateMachine:
 
         clock = MockClock(times)
 
-        asm = StateMachine(clock)
+        asm = ActiveSessionState(clock)
 
         s1_latest = UserLocalTime(t1)
         session1 = ProgramSession(
@@ -218,7 +218,7 @@ class TestStateMachine:
 
         clock = MockClock(times)
 
-        state_machine = StateMachine(clock)
+        state_machine = ActiveSessionState(clock)
 
         given_conclude_time = UserLocalTime(t2)
 

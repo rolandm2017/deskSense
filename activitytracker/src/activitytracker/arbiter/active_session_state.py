@@ -18,12 +18,13 @@ from activitytracker.util.program_tools import window_is_chrome
 from activitytracker.util.time_wrappers import UserLocalTime
 
 
-class StateMachine:
+class ActiveSessionState:
     def __init__(self, user_facing_clock):
         """
-        Is a finite state machine.
+        Container for the currently active session. Concludes the prior
+        session when a new one replaces it.
 
-        One instance per user. Meaning, state from User A has no reason to interact with User B's state.
+        One instance per user.
         """
         self.user_facing_clock = user_facing_clock
         self.current_state: InternalState | None = None

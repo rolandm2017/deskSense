@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from activitytracker.arbiter.state_machine import StateMachine
+from activitytracker.arbiter.active_session_state import ActiveSessionState
 from activitytracker.util.time_wrappers import UserLocalTime
 
 from ...data.arbiter_events import test_sessions
@@ -15,7 +15,7 @@ def _copy_first_n_sessions(n):
 def test_set_new_session_initialization_returns_none():
     session_a = _copy_first_n_sessions(1)[0]
     clock = MockClock([session_a.start_time.dt])
-    state_machine = StateMachine(clock)
+    state_machine = ActiveSessionState(clock)
 
     result = state_machine.set_new_session(session_a)
 
@@ -26,7 +26,7 @@ def test_set_new_session_initialization_returns_none():
 def test_set_new_session_returns_concluded_with_duration():
     session_a, session_b = _copy_first_n_sessions(2)
     clock = MockClock([session_a.start_time.dt, session_b.start_time.dt])
-    state_machine = StateMachine(clock)
+    state_machine = ActiveSessionState(clock)
 
     state_machine.set_new_session(session_a)
     concluded = state_machine.set_new_session(session_b)
@@ -42,7 +42,7 @@ def test_three_sessions_form_chain():
     clock = MockClock(
         [session_a.start_time.dt, session_b.start_time.dt, session_c.start_time.dt]
     )
-    state_machine = StateMachine(clock)
+    state_machine = ActiveSessionState(clock)
 
     state_machine.set_new_session(session_a)
     concluded_a = state_machine.set_new_session(session_b)
@@ -57,7 +57,7 @@ def test_conclude_without_replacement_at_time_resets_state():
     session_a = _copy_first_n_sessions(1)[0]
     end_time = UserLocalTime(session_a.start_time.dt + timedelta(seconds=13))
     clock = MockClock([session_a.start_time.dt, end_time.dt])
-    state_machine = StateMachine(clock)
+    state_machine = ActiveSessionState(clock)
 
     state_machine.set_new_session(session_a)
     concluded = state_machine.conclude_without_replacement_at_time(end_time)

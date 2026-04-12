@@ -18,7 +18,13 @@
       "Bash(grep:*)",
       "WebFetch(domain:api.forvo.com)",
       "WebFetch(domain:github.com)",
-      "Bash(~/bin/win-pytest:*)"
+      "Bash(~/bin/win-pytest:*)",
+      "Bash(win-pytest tests/arbiter/test_pulse_controller.py)",
+      "Bash(win-pytest tests/arbiter tests/unit/arbiter tests/integration/test_arbiter.py tests/integration/test_arbiter_after_sleep.py tests/integration/test_pipeline_smoke.py tests/service/test_chrome_service.py)",
+      "Bash(win-pytest)",
+      "Bash(win-pytest tests/arbiter/test_activity_notifier.py tests/arbiter/test_sleep_gap_handler.py)",
+      "Bash(win-pytest tests/arbiter tests/unit/arbiter tests/integration/test_arbiter.py tests/integration/test_arbiter_after_sleep.py tests/integration/test_pipeline_smoke.py)",
+      "Bash(win-pytest tests/util/test_task_registry.py)"
     ],
     "deny": [
       "Read(**/.env*)",

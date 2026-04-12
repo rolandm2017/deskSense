@@ -19,6 +19,8 @@ from activitytracker.db.dao.queuing.mouse_dao import MouseDao
 from activitytracker.db.dao.queuing.program_logs_dao import ProgramLoggingDao
 from activitytracker.db.dao.queuing.timeline_entry_dao import TimelineEntryDao
 from activitytracker.facade.receive_messages import MessageReceiver
+from activitytracker.peripheral_event_router import PeripheralEventRouter
+from activitytracker.tracker_runtime import TrackerRuntime
 from activitytracker.trackers.keyboard_tracker import KeyboardTrackerCore
 from activitytracker.trackers.mouse_tracker import MouseTrackerCore
 from activitytracker.trackers.program_tracker import ProgramTrackerCore
@@ -27,7 +29,7 @@ from activitytracker.util.console_logger import ConsoleLogger
 from activitytracker.util.copy_util import snapshot_obj_for_tests
 from activitytracker.util.detect_os import OperatingSystemInfo
 from activitytracker.util.periodic_task import AsyncPeriodicTask
-from activitytracker.util.threaded_tracker import ThreadedTracker
+from activitytracker.util.task_registry import TaskRegistry
 
 
 class FacadeInjector:
@@ -71,6 +73,7 @@ class SurveillanceManager:
         program_facade = facades.program_facade(current_os)
 
         self.loop = asyncio.get_event_loop()
+        self.tasks = TaskRegistry(self.loop)
 
         program_summary_logger = ProgramLoggingDao(self.regular_session)
         chrome_summary_logger = ChromeLoggingDao(self.regular_session)
@@ -102,6 +105,12 @@ class SurveillanceManager:
         )
 
         self.timeline_dao = TimelineEntryDao(self.async_session_maker)
+        self.peripheral_event_router = PeripheralEventRouter(
+            self.timeline_dao,
+            self.keyboard_dao,
+            self.mouse_dao,
+            self.tasks,
+        )
 
         # Register handlers for different event types
         self.message_receiver.register_handler(
@@ -110,18 +119,24 @@ class SurveillanceManager:
         self.message_receiver.register_handler("mouse", mouse_facade.handle_mouse_message)
 
         self.keyboard_tracker = KeyboardTrackerCore(
-            keyboard_facade, self.handle_keyboard_ready_for_db
+            keyboard_facade,
+            self.peripheral_event_router.handle_keyboard_ready_for_db,
         )
-        self.mouse_tracker = MouseTrackerCore(mouse_facade, self.handle_mouse_ready_for_db)
+        self.mouse_tracker = MouseTrackerCore(
+            mouse_facade,
+            self.peripheral_event_router.handle_mouse_ready_for_db,
+        )
         self.operate_facades()
         # Program tracker
         self.program_tracker = ProgramTrackerCore(
             clock, program_facade, self.handle_window_change
         )
 
-        self.keyboard_thread = ThreadedTracker(self.keyboard_tracker)
-        self.mouse_thread = ThreadedTracker(self.mouse_tracker)
-        self.program_thread = ThreadedTracker(self.program_tracker)
+        self.tracker_runtime = TrackerRuntime(
+            self.keyboard_tracker,
+            self.mouse_tracker,
+            self.program_tracker,
+        )
 
         self.cancelled_tasks = 0
 
@@ -130,9 +145,7 @@ class SurveillanceManager:
     def start_trackers(self):
         self.is_running = True
         print("Running trackers")
-        self.keyboard_thread.start()
-        self.mouse_thread.start()
-        self.program_thread.start()
+        self.tracker_runtime.start()
 
     def print_sys_status_info(self):
         latest_status = self.system_status_dao.read_latest()
@@ -166,14 +179,6 @@ class SurveillanceManager:
             # self.loop.create_task(self.session_integrity_dao.audit_sessions(
             #     latest_shutdown_time, latest_startup_time))
 
-    def handle_keyboard_ready_for_db(self, event):
-        self.loop.create_task(self.timeline_dao.create_from_keyboard_aggregate(event))
-        self.loop.create_task(self.keyboard_dao.create(event))
-
-    def handle_mouse_ready_for_db(self, event):
-        self.loop.create_task(self.timeline_dao.create_from_mouse_move_window(event))
-        self.loop.create_task(self.mouse_dao.create_from_window(event))
-
     def handle_window_change(self, event):
         # Deep copy to enable testing of object state before/after this line
         copy_of_event = snapshot_obj_for_tests(event)
@@ -188,99 +193,18 @@ class SurveillanceManager:
             traceback.print_exc()
 
     async def cancel_pending_tasks(self):
-        """Safely cancel all pending tasks created by this manager."""
-        debug_prints = False
+        """Cancel the tasks this manager created via its TaskRegistry."""
         if not self.is_test:
             await self.program_online_polling.stop()
-        # Get all tasks from the event loop except the current one
-        current_task = asyncio.current_task()
-        all_tasks = [task for task in asyncio.all_tasks() if task is not current_task]
-
-        # Print detailed information about all tasks
-        if debug_prints:
-            print(f"Found {len(all_tasks)} total asyncio tasks")
-
-        # Look for uvicorn related tasks specifically
-        uvicorn_tasks = []
-        manager_tasks = []
-        other_tasks = []
-
-        for task in all_tasks:
-            task_name = task.get_name()
-            task_status = "DONE" if task.done() else "PENDING"
-
-            # Try to get the frame information
-            task_frame = None
-            try:
-                stack = task.get_stack()
-                task_frame = stack[0] if stack else None
-                frame_info = (
-                    f"File: {task_frame.f_code.co_filename}, Line: {task_frame.f_lineno}"
-                    if task_frame
-                    else "Unknown"
-                )
-            except Exception:
-                frame_info = "Not available"
-
-            if debug_prints:
-                print(f"Task: {task_name} | Status: {task_status} | Source: {frame_info}")
-
-            # Separate tasks by category for better handling
-            if "uvicorn" in frame_info.lower() or "starlette" in frame_info.lower():
-                uvicorn_tasks.append(task)
-            elif any(
-                indicator in task_name.lower()
-                for indicator in [
-                    "mouse",
-                    "keyboard",
-                    "program",
-                    "timeline",
-                    "chrome",
-                    "dao",
-                    "messagereceiver",
-                ]
-            ):
-                manager_tasks.append(task)
-            else:
-                other_tasks.append(task)
-
-        # Only cancel our manager tasks, not FastAPI framework tasks
-        cancelled_count = 0
-        if manager_tasks:
-            if debug_prints:
-                print(f"\nCancelling {len(manager_tasks)} manager-related tasks:")
-            for task in manager_tasks:
-                if not task.done():
-                    stack = task.get_stack()
-                    task_frame = stack[0] if stack else None
-                    frame_info = (
-                        f"File: {task_frame.f_code.co_filename}, Line: {task_frame.f_lineno}"
-                        if task_frame
-                        else "Unknown"
-                    )
-                    if debug_prints:
-                        print(f"Cancelling task: '{task.get_name()}' from '{frame_info}'")
-                    task.cancel()
-                    cancelled_count += 1
-
-        # Log but don't cancel uvicorn tasks
-        if uvicorn_tasks:
-            print(f"\nFound {len(uvicorn_tasks)} uvicorn/starlette tasks (not cancelling):")
-            for task in uvicorn_tasks:
-                print(f"  - {task.get_name()}")
-
-        # Try to safely wait for manager tasks to complete
-        if manager_tasks:
-            try:
-                # Wait for all tasks to complete with a timeout
-                await asyncio.wait_for(
-                    asyncio.gather(*manager_tasks, return_exceptions=True), timeout=3.0
-                )
-            except asyncio.TimeoutError:
-                print("Some tasks didn't complete within timeout")
-
+        cancelled_count = await self.tasks.cancel_all(timeout=3.0)
+        await self.cleanup_queued_daos()
         print(f"Cancelled {cancelled_count} tasks")
         return cancelled_count
+
+    async def cleanup_queued_daos(self):
+        """Flush and stop DAOs that own internal queue-processing tasks."""
+        for dao in (self.timeline_dao, self.keyboard_dao, self.mouse_dao):
+            await dao.cleanup()
 
     async def cleanup(self):
         """Clean up resources before exit."""
@@ -288,9 +212,7 @@ class SurveillanceManager:
 
         # First stop the threads - this should be safe from exceptions
         try:
-            self.keyboard_thread.stop()
-            self.mouse_thread.stop()
-            self.program_thread.stop()
+            self.tracker_runtime.stop()
             # Stop the asyncio loop
             await self.program_online_polling.stop()
         except Exception as e:
