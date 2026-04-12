@@ -38,6 +38,18 @@ def fast_sleep(_):
     pass
 
 
+def test_compute_pulses_65_seconds():
+    assert KeepAliveEngine.compute_pulses(65) == (6, 5)
+
+
+def test_compute_pulses_exact_boundary():
+    assert KeepAliveEngine.compute_pulses(30) == (3, 0)
+
+
+def test_compute_pulses_sub_window():
+    assert KeepAliveEngine.compute_pulses(7) == (0, 7)
+
+
 def test_window_addition_math():
     """ """
     dao_mock = Mock()

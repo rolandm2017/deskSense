@@ -8,7 +8,20 @@ I worked on this app for about five months, around Spring 2025. I quit developin
 
 ## Environment
 
-This project is developed in WSL but runs on Windows 11. You cannot run `npm install`, `npm run test`, or `pytest` directly from WSL - ask the user to run these commands.
+You are within WSL! Regular pytest and npm test commands will not work.
+
+You should be able to run win-pytest to use pytest from within WSL. win-pytest is a WSL → Windows bridge script for running pytest inside the Windows virtualenv
+
+I also recently added: 
+
+`alias git='/mnt/c/Program\ Files/Git/bin/git.exe'` 
+
+So that agents can use Windows 11 git from within WSL. This avoids having to do stuff like
+```bash
+Ran git --git-dir=/mnt/c/Users/roly/Code/desksense/.git/worktrees/dsTests --work-tree=/mnt/c/
+  │ users/roly/code/dstests diff --check -- activitytracker/src/activitytracker/arbiter/
+  │ activity_arbiter.py activitytracker/src/activitytracker/arbiter/session_polling.py
+```
 
 # How to run the program
 

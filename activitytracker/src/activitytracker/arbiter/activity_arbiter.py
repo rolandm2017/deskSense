@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 from activitytracker.object.classes import (
@@ -13,6 +14,13 @@ from activitytracker.util.copy_util import snapshot_obj_for_tests
 
 from .session_polling import KeepAliveEngine, ThreadedEngineContainer
 from .state_machine import StateMachine
+
+
+@dataclass
+class TransitionOutcome:
+    new_session: ProgramSession | ChromeSession
+    concluded_session: CompletedProgramSession | CompletedChromeSession | None
+    was_initialization: bool
 
 
 class ActivityArbiter:
@@ -76,6 +84,13 @@ class ActivityArbiter:
     def set_tab_state(self, tab: ChromeSession):
         self.transition_state(tab)
 
+    def _advance_state(
+        self, new_session: ChromeSession | ProgramSession
+    ) -> TransitionOutcome:
+        was_initialization = self.state_machine.current_state is None
+        concluded = self.state_machine.set_new_session(new_session)
+        return TransitionOutcome(new_session, concluded, was_initialization)
+
     def transition_state(self, new_session: ChromeSession | ProgramSession):
         """
         If newly_active = Chrome, start a session for the current tab.
@@ -106,7 +121,9 @@ class ActivityArbiter:
 
         self.notify_display_update(new_session)
 
-        if self.state_machine.current_state:
+        outcome = self._advance_state(new_session)
+
+        if not outcome.was_initialization:
             if self.current_pulse is None:
                 raise ValueError("First loop failed in Activity Arbiter")
 
@@ -147,9 +164,6 @@ class ActivityArbiter:
                     self.logger.log_yellow(
                         f"[warn] latest status write was {time_since_latest_write:2f} min ago"
                     )
-            self.state_machine.set_new_session(new_session)
-
-            concluded_session = self.state_machine.get_concluded_session()
             self.notify_of_new_session(new_session)
 
             self.current_pulse.stop()  # stop the old one from prev loop
@@ -160,16 +174,18 @@ class ActivityArbiter:
             # print("Starting pulse in regular loop")
             self.current_pulse.start()
 
-            if self.state_machine.is_initialization_session(concluded_session):
+            if (
+                outcome.concluded_session is None
+                or self.state_machine.is_initialization_session(outcome.concluded_session)
+            ):
                 return  # It's just null state
             # -- Put outgoing state into the DAO
-            self.notify_summary_dao(concluded_session)
+            self.notify_summary_dao(outcome.concluded_session)
         else:
             self.logger.log_white("in arbiter init")
             self.initialize_loop(new_session)
 
             self.notify_of_new_session(new_session)
-            self.state_machine.set_new_session(new_session)
 
             new_keep_alive_engine = self.engine_class(new_session, self.activity_recorder)
 

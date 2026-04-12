@@ -70,3 +70,9 @@ class MockEngineContainer(ThreadedEngineContainer):
         if self.engine is None:
             raise MissingEngineError()
         self.engine.conclude()
+
+
+class DeterministicPulseContainer(MockEngineContainer):
+    """
+    Alias with a descriptive name for tests that drive known pulse durations.
+    """

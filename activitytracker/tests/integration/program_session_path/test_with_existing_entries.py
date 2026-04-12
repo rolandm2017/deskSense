@@ -402,9 +402,9 @@ async def test_program_path_with_existing_sessions(
                 actual_start = spy_from_mock.call_args_list[i][0][1]
                 assert isinstance(actual_dict, dict)
                 expected = test_data_clone[i]
-                print("Loop: ", i)
-                print("Expected:", expected)
-                print("Actual:", actual_dict)
+                # print("Loop: ", i)
+                # print("Expected:", expected)
+                # print("Actual:", actual_dict)
                 assert actual_dict["exe_path"] == expected.exe_path
                 assert actual_dict["process_name"] == expected.process_name
                 assert actual_start == expected.start_time
