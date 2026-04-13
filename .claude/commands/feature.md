@@ -32,9 +32,8 @@ Use the `/grill-me` skill to drive this. Each round should surface things the us
 5. **Data model and contracts** — new tables/columns, API shapes, message formats between activitytracker / chrome / dashboard
 6. **Invariant check** — does anything in this feature want to violate a CLAUDE.md invariant? (client doing timing, high-res data leaving the server, dashboard writing data, etc.) If yes, resolve before writing the spec.
 7. **Explore the codebase together** — do targeted reads of the files this feature will touch or sit next to. Report back in 3–6 bullets: what already exists, which abstractions look reusable, where the natural seams are. Do not read exhaustively; you're mapping the territory, not implementing.
-8. **Architecture decision (with the user)** — given what the exploration surfaced, discuss out loud: extend an existing class/service or build a sibling? Where does the new code live? What's the data flow across activitytracker ↔ chrome ↔ dashboard? What must *not* cross which boundary? Surface non-obvious constraints (e.g. "IDs that look like implementation details must not leak to the client") and name them explicitly so they land in the spec as hard rules, not implied ones. The user stays in the driver's seat — propose, don't decide.
-9. **Testability** — how will we prove it works? What's the failing test that would demonstrate the feature is missing?
-10. **Developer experience** — where does this code live, what's the smallest surface area, what existing abstractions should it reuse?
+8. **Testability** — how will we prove it works? What's the failing test that would demonstrate the feature is missing?
+9. **Developer experience** — where does this code live, what's the smallest surface area, what existing abstractions should it reuse?
 
 Ask **one focused cluster of questions per turn**, not a wall. Prefer concrete examples ("when user has 0 entries on Monday, what does the chart show?") over abstract ones. If the user's answer is vague, push back — vague answers become developer-agent guesses, which become bugs.
 
@@ -73,13 +72,7 @@ Concrete, step by step. Real values where possible.
 ## Behavior spec
 Enumerated rules the implementation must satisfy. One rule per bullet. Prefer "must" / "must not" phrasing. Cover edge cases surfaced in the interview.
 
-## Architecture & constraints
-The decisions reached in the architecture round. Treat each bullet as a hard rule the developer agent must honor, not a suggestion.
-- Where the new code lives (file paths, which class/service it extends or sits beside, and why)
-- Data flow across activitytracker ↔ chrome ↔ dashboard (who owns what, who calls whom)
-- Boundary rules — things that must NOT cross a given seam (e.g. "internal IDs stay server-side; client receives abstract labels only")
-- Existing abstractions to reuse, and the reason they're the right fit
-- Anything the developer agent might otherwise re-derive incorrectly — spell it out here
+
 
 ## Data & contracts
 - DB changes (tables, columns, migrations)
