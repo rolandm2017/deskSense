@@ -38,6 +38,7 @@ from activitytracker.db.models import (
     DailyProgramSummary,
     ProgramActivityLog,
 )
+from activitytracker.features.charts_showcase.routes import router as charts_showcase_router
 from activitytracker.facade.facade_singletons import (
     get_keyboard_facade_instance,
     get_mouse_facade_instance,
@@ -203,6 +204,7 @@ app.add_middleware(
 
 app.include_router(report_router)
 app.include_router(video_router)
+app.include_router(charts_showcase_router)
 
 
 class HealthResponse(BaseModel):

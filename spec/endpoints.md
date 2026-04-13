@@ -92,6 +92,110 @@ Shapes from: ADR-003, ADR-005, ADR-006, ADR-010.
 
 ---
 
+### `GET /api/daily/active-idle?date=YYYY-MM-DD`
+Active-vs-idle lane for the Activity Overview screen.
+
+Response:
+```json
+{
+  "date": "2026-04-12",
+  "range": {
+    "start": "2026-04-12T04:00:00",
+    "end": "2026-04-13T04:00:00"
+  },
+  "totals": {
+    "activeSeconds": 5567,
+    "idleSeconds": 2006,
+    "trackedSeconds": 7573
+  },
+  "blocks": [
+    {
+      "start": "2026-04-12T08:42:17",
+      "end": "2026-04-12T10:15:04",
+      "state": "active",
+      "durationSeconds": 5567
+    },
+    {
+      "start": "2026-04-12T10:15:04",
+      "end": "2026-04-12T10:48:30",
+      "state": "idle",
+      "durationSeconds": 2006
+    }
+  ]
+}
+```
+Notes:
+- Powers only the Activity Overview "Active vs Idle" lane, not the stat band.
+- `blocks` are sorted, non-overlapping, and clipped to the 4am-to-4am daily range.
+- `state` is only `"active"` or `"idle"`.
+- `totals` are derived from the returned blocks. If a later implementation
+  needs to show machine-off / untracked gaps, add a distinct field or endpoint
+  instead of folding that time into Idle.
+- The frontend renders these blocks as-is. Idle thresholding and any block
+  merging are backend-owned.
+
+Shapes from: ADR-008, ADR-010.
+
+---
+
+### `GET /api/daily/top-activities?date=YYYY-MM-DD&limit=12`
+Top-N raw activity sources for the Activity Overview swim lanes.
+
+Response:
+```json
+{
+  "date": "2026-04-12",
+  "range": {
+    "start": "2026-04-12T04:00:00",
+    "end": "2026-04-13T04:00:00"
+  },
+  "limit": 12,
+  "mergeGapSeconds": 300,
+  "lanes": [
+    {
+      "rank": 1,
+      "sourceType": "program",
+      "identifier": "Code.exe",
+      "displayName": "VS Code",
+      "totalSeconds": 14400,
+      "pursuit": {
+        "pursuitId": "p_desksense",
+        "name": "DeskSense Development",
+        "category": "productivity",
+        "color": "#C7F36B"
+      },
+      "parentSource": null,
+      "blocks": [
+        {
+          "start": "2026-04-12T08:42:17",
+          "end": "2026-04-12T12:30:00",
+          "durationSeconds": 13663,
+          "label": "DeskSense - main.ts"
+        }
+      ]
+    }
+  ]
+}
+```
+Notes:
+- `sourceType` is one of `"program"`, `"domain"`, `"video"`, or
+  `"video_channel"`.
+- `lanes` are sorted by `totalSeconds` descending, then by `displayName` for
+  deterministic ties. `rank` is assigned after sorting and limiting.
+- `blocks` are sorted and clipped to the 4am-to-4am daily range.
+- `mergeGapSeconds` documents the backend smoothing applied to this visual.
+  Per ADR-008, same-source sessions separated by gaps of <= 5 minutes are
+  merged for this endpoint only. The raw session log is not rewritten.
+- `pursuit` supplies category/color when attribution exists. Uncategorized
+  uses the stable `"uncategorized"` sentinel with `category: null` and
+  `color: null`.
+- `parentSource` allows nested cases such as YouTube under Chrome without
+  forcing the frontend to infer the relationship.
+
+Shapes from: ADR-003, ADR-005, ADR-006, ADR-008, ADR-010.
+
+---
+
 ### `GET /api/daily/top-programs?date=YYYY-MM-DD&limit=3`
 Swim lanes for the top-N raw programs/domains that day.
 
