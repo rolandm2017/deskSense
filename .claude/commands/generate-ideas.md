@@ -14,7 +14,7 @@ This is builder-mode, not YC-pitch mode. The goal is delight, shipping, and find
 
 ## Session flow
 
-Run these phases in order. Ask questions **one at a time** via AskUserQuestion. Skip any question the user has already answered in their opening prompt.
+Run these phases in order. Ask questions **one at a time**. Skip any question the user has already answered in their opening prompt.
 
 ### Phase 1 — Seed
 
@@ -51,8 +51,8 @@ Run these four lenses. Pick the 2-3 most generative for the idea at hand — don
 
 Pick one of these four modes based on where the conversation landed. State the mode explicitly.
 
-- **EXPANSION** — the idea feels small; push up. Propose 2-3 expansions as opt-in AskUserQuestions.
-- **SELECTIVE** — the core is right; surface 3-5 delight adds as individual cherry-pick questions.
+- **EXPANSION** — the idea feels small; push up. Propose 2-3 expansions as opt-in questions, one at a time.
+- **SELECTIVE** — the core is right; surface 3-5 delight adds as individual cherry-pick questions, one at a time.
 - **HOLD** — the scope is dialed in; move to Phase 5.
 - **REDUCTION** — the idea sprawled; cut to the smallest shippable thing.
 
@@ -62,7 +62,7 @@ Every scope change is an explicit opt-in. Don't silently add or remove.
 
 Write the result to `docs/ideas/{YYYY-MM-DD}-{slug}.md` using the template below. One file per session. This is the artifact — the thing I'd hand to a future-me or a developer agent.
 
-```markdown
+````markdown
 ---
 date: {YYYY-MM-DD}
 status: draft
@@ -90,7 +90,7 @@ mode: {EXPANSION | SELECTIVE | HOLD | REDUCTION}
 
 ## Three-month dream state
 ```
-TODAY          ->   THIS IDEA          ->   MID-JULY 2026
+TODAY          ->   THIS IDEA          ->   {TODAY + 3 months}
 {current}           {delta}                 {shipped target}
 ```
 
@@ -110,7 +110,7 @@ TODAY          ->   THIS IDEA          ->   MID-JULY 2026
 
 ## Next step
 {One concrete action. Not "validate with users." Something like "sketch the timeline view in Figma" or "prototype the arbiter hook in a branch."}
-```
+````
 
 ## Rules
 
