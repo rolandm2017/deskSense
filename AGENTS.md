@@ -122,6 +122,8 @@ Chrome ingest routes are staying.
 Breaking endpoint changes are allowed during this transition. Preferred
 strategy is reuse-with-alteration where practical. Target: deprecate most
 `/api/dashboard/*` routes by end of April 2026.
+For the current route inventory and proposed extraction split, see
+`docs/dashboard-api-route-audit-2026-04-13.md`.
 
 
 **How tracking of time spent per program or domain occurs**
