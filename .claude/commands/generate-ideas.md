@@ -1,3 +1,13 @@
+---
+name: generate-ideas
+description: Collaborative ideation for features design — interview the user, pressure-test the idea, and emit a docs/ideas file for input into a feature.
+argument-hint: [short feature name or description | blank to start from scratch]
+---
+
+Idea seed: **$ARGUMENTS**
+
+The session will revolve around whatever is input as the seed.
+
 # /generate-ideas — per-idea brainstorming session
 
 Help me generate **one solid new idea** for DeskSense per session. Read `PRODUCT.md` and skim code samples first so your suggestions are grounded in what actually exists.
