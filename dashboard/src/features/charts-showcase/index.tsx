@@ -7,6 +7,7 @@ import {
 } from "./data/mockShowcaseData";
 import ShowcaseDailyPage from "./pages/ShowcaseDailyPage";
 import PursuitsSetupPage from "./pages/PursuitsSetupPage";
+import ShowcaseActivityOverviewPage from "./pages/ShowcaseActivityOverviewPage";
 import ShowcaseWeeklyPage from "./pages/ShowcaseWeeklyPage";
 
 export const showcaseRoutes = (
@@ -22,6 +23,7 @@ export const showcaseRoutes = (
     <Route index element={<Navigate to="/showcase/daily" replace />} />
     <Route path="daily" element={<ShowcaseDailyPage />} />
     <Route path="weekly" element={<ShowcaseWeeklyPage />} />
+    <Route path="activity" element={<ShowcaseActivityOverviewPage />} />
     <Route path="pursuits-setup" element={<PursuitsSetupPage />} />
   </Route>
 );

@@ -70,6 +70,35 @@ export interface DailyViewData {
   projects: ProjectGoal[];
 }
 
+export interface ActivityPresenceBlock {
+  startHour: number;
+  endHour: number;
+  active: boolean;
+}
+
+export interface ActivityOverviewSession {
+  startHour: number;
+  endHour: number;
+  detail: string;
+}
+
+export interface ActivityOverviewProgram {
+  name: string;
+  category: ShowcaseCategory;
+  parentApp?: string;
+  sessions: ActivityOverviewSession[];
+}
+
+export interface ActivityOverviewData {
+  title: string;
+  firstActivity: string;
+  lastActivity: string;
+  programsTracked: string;
+  stats: ShowcaseStat[];
+  presence: ActivityPresenceBlock[];
+  programs: ActivityOverviewProgram[];
+}
+
 export interface WeeklyDayBreakdown {
   day: string;
   total: number;

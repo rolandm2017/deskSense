@@ -27,6 +27,16 @@ function ShowcaseViewNav() {
         This Week
       </NavLink>
       <NavLink
+        to="/showcase/activity"
+        className={({ isActive }) =>
+          `${baseClassName} ${
+            isActive ? "text-[var(--ds-accent)] after:absolute after:bottom-[-1px] after:left-0 after:right-0 after:h-px after:bg-[var(--ds-accent)]" : "text-[var(--ds-text-muted)] hover:text-[var(--ds-text)]"
+          }`
+        }
+      >
+        Activity
+      </NavLink>
+      <NavLink
         to="/showcase/pursuits-setup"
         className={({ isActive }) =>
           `${baseClassName} ${

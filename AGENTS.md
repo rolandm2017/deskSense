@@ -11,6 +11,8 @@ For product decisions and their reasoning, see
 license gating, user scoping, error contracts), see `spec/todo.md`. This
 file covers the codebase itself; don't duplicate product content here.
 
+Agents should always read PRODUCT.md to start.
+
 ## Some timeline context re: app development
 
 I worked on this app for about five months, around Spring 2025. I quit developing it around May. I have picked development back up in April of 2026. Thus I have an eleven month gap of forgetfulness to overcome. I no longer remember the system in great detail, and numerous rationales for design decisions are lost.

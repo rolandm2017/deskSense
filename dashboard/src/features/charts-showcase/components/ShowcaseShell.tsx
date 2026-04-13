@@ -16,6 +16,7 @@ function ShowcaseShell({
 }: ShowcaseShellProps) {
   const location = useLocation();
   const weeklyActive = location.pathname.includes("/weekly");
+  const activityActive = location.pathname.includes("/activity");
   const pursuitSetupActive = location.pathname.includes("/pursuits-setup");
   const railSections = weeklyActive ? weeklyRailSections : dailyRailSections;
 
@@ -27,12 +28,16 @@ function ShowcaseShell({
           <Outlet />
         </div>
         <ShowcaseRightRail
-          heading={pursuitSetupActive ? "Setup" : weeklyActive ? "This Week" : "Today"}
+          heading={
+            pursuitSetupActive ? "Setup" : weeklyActive ? "This Week" : activityActive ? "Activity" : "Today"
+          }
           subheading={
             pursuitSetupActive
               ? "Hardcoded pursuit triage prototype. No backend calls or persistence."
               : weeklyActive
               ? "Shared rail, route-backed views, and static readings for the weekly poster."
+              : activityActive
+              ? "Hardcoded activity overview port. Static values for visual conversion before live data wiring."
               : "Static showcase mode. Hardcoded values for visual conversion before live data wiring."
           }
           sections={railSections}
