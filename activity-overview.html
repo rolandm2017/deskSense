@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeskSense — Activity Timeline</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #18191B;
+    --surface: #222528;
+    --surface-2: #2C3033;
+    --text: #E8E4DB;
+    --text-muted: #8A8478;
+    --accent: #C7F36B;
+    --accent-deep: #8DAE32;
+    --rule: #3A3F3E;
+    --cat-productivity: #C7F36B;
+    --cat-entertainment: #F28A2E;
+    --cat-learning: #7DD3C7;
+    --cat-communication: #E9687A;
+    --cat-idle: #6B6560;
+    --font-display: 'Instrument Serif', serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 32px;
+  }
+
+  /* ── NAV TABS ── */
+  .view-nav {
+    display: flex;
+    gap: 0;
+    margin-bottom: 48px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .view-nav button {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    padding: 12px 24px;
+    cursor: pointer;
+    position: relative;
+    transition: color 150ms ease-out;
+  }
+  .view-nav button:hover { color: var(--text); }
+  .view-nav button.active {
+    color: var(--accent);
+  }
+  .view-nav button.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  /* ── HEADER ── */
+  .day-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }
+  .day-title {
+    font-family: var(--font-display);
+    font-size: 42px;
+    color: var(--text);
+    line-height: 1;
+  }
+  .day-meta {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: right;
+    line-height: 1.7;
+  }
+
+  /* ── STAT BAND ── */
+  .stat-band {
+    display: flex;
+    gap: 0;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 48px;
+  }
+  .stat-cell {
+    flex: 1;
+    padding: 24px 0;
+    border-right: 1px solid var(--rule);
+  }
+  .stat-cell:last-child { border-right: none; }
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .stat-value {
+    font-family: var(--font-display);
+    font-size: 30px;
+    color: var(--text);
+    line-height: 1;
+  }
+  .stat-value .unit {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-left: 4px;
+    vertical-align: baseline;
+  }
+  .stat-value.accent { color: var(--accent); }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  /* ── TIME AXIS ── */
+  .time-axis {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    padding-left: 160px;
+    padding-right: 56px;
+  }
+  .time-axis span {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    width: 28px;
+    text-align: center;
+  }
+
+  /* ── NOW MARKER ── */
+  .now-marker {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--accent);
+    z-index: 5;
+    pointer-events: none;
+  }
+  .now-marker::before {
+    content: 'NOW';
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+  }
+
+  /* ── PRESENCE LANE (active/idle) ── */
+  .presence-container {
+    position: relative;
+    margin-bottom: 32px;
+  }
+  .presence-lane {
+    display: grid;
+    grid-template-columns: 160px 1fr 56px;
+    align-items: center;
+    gap: 0;
+  }
+  .presence-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding-right: 12px;
+  }
+  .presence-track {
+    position: relative;
+    height: 28px;
+    background: var(--surface);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+  .presence-block {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    min-width: 1px;
+    transition: opacity 150ms ease-out;
+  }
+  .presence-block:hover { opacity: 0.75; }
+  .presence-block .tt {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    padding: 6px 10px;
+    border-radius: 2px;
+    white-space: nowrap;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .presence-block:hover .tt { display: block; }
+  .presence-stat {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    padding-left: 12px;
+  }
+
+  /* ── DIVIDER ── */
+  .lane-divider {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin-bottom: 24px;
+  }
+
+  /* ── ACTIVITY SWIM LANES ── */
+  .activity-lanes-container {
+    position: relative;
+  }
+  .swim-lane {
+    display: grid;
+    grid-template-columns: 160px 1fr 56px;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 4px;
+  }
+  .swim-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-right: 12px;
+    min-width: 0;
+  }
+  .swim-rank {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    width: 18px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+  .swim-icon {
+    width: 14px;
+    height: 14px;
+    border-radius: 1px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--bg);
+  }
+  .swim-name {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .swim-track {
+    position: relative;
+    height: 22px;
+    background: var(--surface);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+  .swim-block {
+    position: absolute;
+    top: 2px;
+    height: 18px;
+    border-radius: 1px;
+    min-width: 2px;
+    transition: opacity 150ms ease-out;
+    cursor: default;
+  }
+  .swim-block:hover { opacity: 0.75; }
+  .swim-block .tt {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    padding: 6px 10px;
+    border-radius: 2px;
+    white-space: nowrap;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .swim-block:hover .tt { display: block; }
+  .tt-name {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .tt-time {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+  .swim-total {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    padding-left: 12px;
+  }
+
+  /* Linked-app indicator dot */
+  .linked-dot {
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    border-radius: 0;
+    margin-left: 4px;
+    vertical-align: middle;
+    opacity: 0.6;
+  }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex;
+    gap: 20px;
+    margin-top: 32px;
+    margin-bottom: 48px;
+    padding-top: 16px;
+    border-top: 1px solid var(--rule);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legend-sq {
+    width: 6px;
+    height: 6px;
+  }
+  .legend-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* ── ANIM ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .page > * {
+    animation: fadeUp 350ms ease-out both;
+  }
+  .page > *:nth-child(1) { animation-delay: 0ms; }
+  .page > *:nth-child(2) { animation-delay: 60ms; }
+  .page > *:nth-child(3) { animation-delay: 120ms; }
+  .page > *:nth-child(4) { animation-delay: 180ms; }
+  .page > *:nth-child(5) { animation-delay: 240ms; }
+  .page > *:nth-child(6) { animation-delay: 300ms; }
+  .page > *:nth-child(7) { animation-delay: 360ms; }
+  .page > *:nth-child(8) { animation-delay: 420ms; }
+  .page > *:nth-child(9) { animation-delay: 480ms; }
+  .page > *:nth-child(10) { animation-delay: 540ms; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- NAV -->
+  <nav class="view-nav">
+    <button data-view="daily">Today</button>
+    <button data-view="weekly">This Week</button>
+    <button class="active" data-view="activity">Activity</button>
+  </nav>
+
+  <!-- HEADER -->
+  <div class="day-header">
+    <div class="day-title">Monday, April 7</div>
+    <div class="day-meta">
+      First activity 07:42<br>
+      Last activity 23:18<br>
+      12 programs tracked
+    </div>
+  </div>
+
+  <!-- STAT BAND -->
+  <div class="stat-band">
+    <div class="stat-cell">
+      <div class="stat-label">Active Time</div>
+      <div class="stat-value">9<span class="unit">h</span> 34<span class="unit">m</span></div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">Idle Time</div>
+      <div class="stat-value">2<span class="unit">h</span> 48<span class="unit">m</span></div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">Longest Session</div>
+      <div class="stat-value">2<span class="unit">h</span> 12<span class="unit">m</span></div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">Unique Programs</div>
+      <div class="stat-value">12</div>
+    </div>
+  </div>
+
+  <!-- TIME AXIS -->
+  <div class="time-axis" id="timeAxis"></div>
+
+  <!-- PRESENCE LANE -->
+  <div class="section-label">Active vs Idle</div>
+  <div class="presence-container" id="presenceContainer">
+    <div class="presence-lane">
+      <div class="presence-label">Presence</div>
+      <div class="presence-track" id="presenceTrack"></div>
+      <div class="presence-stat" id="presenceStat"></div>
+    </div>
+  </div>
+
+  <!-- DIVIDER -->
+  <hr class="lane-divider">
+
+  <!-- ACTIVITY LANES -->
+  <div class="section-label">Top 12 Activities</div>
+  <div class="activity-lanes-container" id="activityLanes"></div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-sq" style="background:var(--cat-productivity)"></div><span class="legend-label">Productive</span></div>
+    <div class="legend-item"><div class="legend-sq" style="background:var(--cat-learning)"></div><span class="legend-label">Learning</span></div>
+    <div class="legend-item"><div class="legend-sq" style="background:var(--cat-communication)"></div><span class="legend-label">Comms</span></div>
+    <div class="legend-item"><div class="legend-sq" style="background:var(--cat-entertainment)"></div><span class="legend-label">Entertainment</span></div>
+    <div class="legend-item"><div class="legend-sq" style="background:var(--cat-idle)"></div><span class="legend-label">Idle</span></div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════
+const DAY_START = 4;  // 4am
+const DAY_END = 28;   // 4am next day (28 = 24 + 4)
+const SPAN = DAY_END - DAY_START; // 24 hours
+
+const CATS = {
+  productivity:  { color: '#C7F36B', label: 'Productivity' },
+  learning:      { color: '#7DD3C7', label: 'Learning' },
+  communication: { color: '#E9687A', label: 'Communication' },
+  entertainment: { color: '#F28A2E', label: 'Entertainment' },
+  idle:          { color: '#6B6560', label: 'Idle' },
+};
+
+// ═══════════════════════════════════════════
+// MOCK DATA
+// ═══════════════════════════════════════════
+
+// Presence data: [startHour, endHour, isActive]
+// Hours use 24h+ format (e.g. 25 = 1am next day)
+const PRESENCE = [
+  [7.70, 10.50, true],
+  [10.50, 10.83, false],
+  [10.83, 12.85, true],
+  [12.85, 13.17, false],
+  [13.17, 17.60, true],
+  [17.60, 18.00, false],
+  [18.00, 21.33, true],
+  [21.33, 21.50, false],
+  [21.50, 23.30, true],
+];
+
+// Activity data per program
+// Each program: { name, cat, parentApp (optional), sessions: [[start, end, detail], ...] }
+const PROGRAMS = [
+  {
+    name: 'VS Code',
+    cat: 'productivity',
+    sessions: [
+      [7.70, 8.10, 'DeskSense — main.ts'],
+      [8.33, 10.50, 'DeskSense — renderer.ts'],
+      [10.83, 12.20, 'DeskSense — chart.ts'],
+      [14.50, 16.83, 'Client Project — api.py'],
+      [17.10, 17.60, 'Client Project — tests.py'],
+      [21.50, 23.00, 'DeskSense — timeline.ts'],
+    ]
+  },
+  {
+    name: 'Chrome',
+    cat: 'productivity',
+    sessions: [
+      [8.10, 8.33, 'Stack Overflow — async patterns'],
+      [13.17, 13.50, 'MDN Web Docs'],
+      [14.00, 14.50, 'Bunpro — Grammar N3'],
+      [19.20, 20.83, 'Khan Academy — Linear Algebra'],
+      [23.00, 23.17, 'GitHub — pull requests'],
+    ]
+  },
+  {
+    name: 'Terminal',
+    cat: 'productivity',
+    sessions: [
+      [7.83, 8.00, 'npm run dev'],
+      [8.50, 8.67, 'git push'],
+      [10.83, 11.00, 'docker compose up'],
+      [14.67, 14.83, 'pytest'],
+      [16.83, 17.00, 'ssh deploy'],
+      [21.67, 21.83, 'npm run build'],
+    ]
+  },
+  {
+    name: 'Gmail',
+    cat: 'communication',
+    sessions: [
+      [8.10, 8.30, 'Inbox — client correspondence'],
+      [17.00, 17.10, 'Inbox — invoicing'],
+    ]
+  },
+  {
+    name: 'Slack',
+    cat: 'communication',
+    sessions: [
+      [11.00, 11.17, '#dev — standup'],
+      [16.83, 17.10, '#general — EOD updates'],
+    ]
+  },
+  {
+    name: 'Discord',
+    cat: 'communication',
+    sessions: [
+      [23.00, 23.30, 'Server — dev community'],
+    ]
+  },
+  {
+    name: 'YouTube',
+    cat: 'entertainment',
+    parentApp: 'Chrome',
+    sessions: [
+      [12.20, 12.85, '3Blue1Brown — Essence of LA'],
+    ]
+  },
+  {
+    name: 'VLC Player',
+    cat: 'entertainment',
+    sessions: [
+      [12.50, 12.85, 'lecture-recording-04.mkv'],
+    ]
+  },
+  {
+    name: 'Anki',
+    cat: 'learning',
+    sessions: [
+      [13.17, 14.00, 'Japanese Core 2000 — Review'],
+    ]
+  },
+  {
+    name: 'Factorio',
+    cat: 'entertainment',
+    sessions: [
+      [18.00, 19.20, 'Nauvis — iron smelting'],
+    ]
+  },
+  {
+    name: 'Obsidian',
+    cat: 'productivity',
+    sessions: [
+      [11.17, 11.33, 'Daily note — April 7'],
+      [20.83, 21.00, 'Math notes — eigenvalues'],
+    ]
+  },
+  {
+    name: 'File Explorer',
+    cat: 'productivity',
+    sessions: [
+      [11.33, 11.42, 'Downloads folder'],
+      [21.00, 21.08, 'Projects directory'],
+    ]
+  },
+];
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+
+function toPercent(hour) {
+  return ((hour - DAY_START) / SPAN) * 100;
+}
+
+function fmtTime(h) {
+  const hNorm = h >= 24 ? h - 24 : h;
+  const hh = Math.floor(hNorm);
+  const mm = String(Math.round((hNorm - hh) * 60)).padStart(2, '0');
+  const ampm = hh >= 12 ? 'p' : 'a';
+  const h12 = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh;
+  return `${h12}:${mm}${ampm}`;
+}
+
+function fmtDuration(hours) {
+  if (hours >= 1) {
+    const hh = Math.floor(hours);
+    const mm = Math.round((hours - hh) * 60);
+    return mm > 0 ? `${hh}h ${mm}m` : `${hh}h`;
+  }
+  return `${Math.round(hours * 60)}m`;
+}
+
+function totalHours(sessions) {
+  return sessions.reduce((sum, s) => sum + (s[1] - s[0]), 0);
+}
+
+// ═══════════════════════════════════════════
+// RENDER: TIME AXIS
+// ═══════════════════════════════════════════
+(function renderTimeAxis() {
+  const el = document.getElementById('timeAxis');
+  const labels = [];
+  for (let h = DAY_START; h < DAY_END; h++) {
+    const hNorm = h >= 24 ? h - 24 : h;
+    let label;
+    if (hNorm === 0) label = '12a';
+    else if (hNorm === 12) label = '12p';
+    else if (hNorm < 12) label = hNorm + 'a';
+    else label = (hNorm - 12) + 'p';
+    labels.push(`<span>${label}</span>`);
+  }
+  el.innerHTML = labels.join('');
+})();
+
+// ═══════════════════════════════════════════
+// RENDER: PRESENCE LANE
+// ═══════════════════════════════════════════
+(function renderPresence() {
+  const track = document.getElementById('presenceTrack');
+  let activeTotal = 0;
+
+  PRESENCE.forEach(([s, e, isActive]) => {
+    const left = toPercent(s);
+    const width = toPercent(e) - left;
+    const dur = e - s;
+    if (isActive) activeTotal += dur;
+
+    const block = document.createElement('div');
+    block.className = 'presence-block';
+    block.style.left = left + '%';
+    block.style.width = width + '%';
+    block.style.background = isActive ? '#C7F36B' : '#6B6560';
+    block.style.opacity = isActive ? '0.5' : '0.25';
+
+    block.innerHTML = `<div class="tt">
+      <div class="tt-name" style="font-family:var(--font-body);font-size:12px;color:var(--text);margin-bottom:2px">${isActive ? 'Active' : 'Idle'}</div>
+      <div class="tt-time" style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">${fmtTime(s)} – ${fmtTime(e)} · ${fmtDuration(dur)}</div>
+    </div>`;
+    track.appendChild(block);
+  });
+
+  document.getElementById('presenceStat').textContent = fmtDuration(activeTotal);
+})();
+
+// ═══════════════════════════════════════════
+// RENDER: ACTIVITY LANES
+// ═══════════════════════════════════════════
+(function renderActivityLanes() {
+  const container = document.getElementById('activityLanes');
+
+  // Sort programs by total time, descending
+  const sorted = [...PROGRAMS]
+    .map(p => ({ ...p, total: totalHours(p.sessions) }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 12);
+
+  sorted.forEach((prog, idx) => {
+    const lane = document.createElement('div');
+    lane.className = 'swim-lane';
+
+    const color = CATS[prog.cat].color;
+
+    lane.innerHTML = `
+      <div class="swim-label">
+        <span class="swim-rank">${idx + 1}</span>
+        <div class="swim-icon" style="background:${color}">${prog.name.charAt(0)}</div>
+        <span class="swim-name" title="${prog.name}">${prog.name}${prog.parentApp ? '<span class="linked-dot" style="background:' + CATS.productivity.color + '" title="via ' + prog.parentApp + '"></span>' : ''}</span>
+      </div>
+      <div class="swim-track" data-idx="${idx}"></div>
+      <div class="swim-total">${fmtDuration(prog.total)}</div>
+    `;
+    container.appendChild(lane);
+
+    const track = lane.querySelector('.swim-track');
+
+    prog.sessions.forEach(([s, e, detail]) => {
+      const left = toPercent(s);
+      const width = Math.max(toPercent(e) - left, 0.15);
+      const dur = e - s;
+
+      const block = document.createElement('div');
+      block.className = 'swim-block';
+      block.style.left = left + '%';
+      block.style.width = width + '%';
+      block.style.background = color;
+
+      block.innerHTML = `<div class="tt">
+        <div class="tt-name">${prog.name}${detail ? ' — ' + detail : ''}</div>
+        <div class="tt-time">${fmtTime(s)} – ${fmtTime(e)} · ${fmtDuration(dur)}</div>
+      </div>`;
+      track.appendChild(block);
+    });
+  });
+})();
+</script>
+</body>
+</html>

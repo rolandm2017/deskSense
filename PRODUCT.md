@@ -12,10 +12,13 @@ and self-manage their own time, not bill anyone else for it.
 - Knowledge workers auditing distraction.
 - Someone self-managing during deep-work.
 - A learner checking whether they've done "enough" this week.
+- Language learners tracking their language immersion.
 
 The originating use case: the author wanting to know "how much time am I
 wasting vs. using well?" and to replace manual tracking of second-language
 immersion.
+
+The developer is also a language learner himself, part of the final category.
 
 **Not for:** freelancer invoicing or client billing. That's Toggl's lane.
 Features like per-client rates, exportable invoices, and rounding-to-

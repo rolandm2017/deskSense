@@ -2,7 +2,7 @@
 
 Help me generate **one solid new idea** for DeskSense per session. Read `PRODUCT.md` and skim code samples first so your suggestions are grounded in what actually exists.
 
-This is builder-mode, not YC-pitch mode. The goal is delight, shipping, and finding the coolest version of an idea I'd actually build this quarter. No "name the person who'd pay" interrogation. No waitlist / revenue / demand-test questioning.
+This is a builder-mode exploration of my product, not YC-pitch mode. The goal is delight, shipping, and finding the coolest version of an idea I'd actually build this quarter. No "name the person who'd pay" interrogation. No waitlist / revenue / demand-test questioning.
 
 ## Posture
 
