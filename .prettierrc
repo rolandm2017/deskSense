@@ -1,0 +1,45 @@
+{
+  "useTabs": false,
+  "tabWidth": 4,
+  "singleQuote": false,
+  "trailingComma": "none",
+  "printWidth": 120,
+
+  "overrides": [
+    {
+      "files": "gui/**/*",
+      "options": {
+        "plugins": [
+          "prettier-plugin-svelte",
+          "@trivago/prettier-plugin-sort-imports"
+        ],
+        "importOrder": [
+          "^(svelte|svelte/.*)$",
+          "^wavesurfer",
+          "",
+          "^@shared/",
+          "^\\$lib/",
+          "^[./](?!.*\\.svelte$).*",
+          ".*\\.svelte$"
+        ],
+        "importOrderSeparation": true,
+        "importOrderSortSpecifiers": true
+      }
+    },
+    {
+      "files": "gui/**/*.svelte",
+      "options": {
+        "parser": "svelte"
+      }
+    },
+    {
+      "files": "bridge/**/*",
+      "options": {
+        "plugins": ["@trivago/prettier-plugin-sort-imports"],
+        "importOrder": ["<THIRD_PARTY_MODULES>", "^@shared/", "^[./]"],
+        "importOrderSeparation": true,
+        "importOrderSortSpecifiers": true
+      }
+    }
+  ]
+}

@@ -26,7 +26,7 @@ State in one line what you understood the seed to be, then begin the interview.
 Use the `/grill-me` skill to drive this. Each round should surface things the user hasn't said yet, not restate what they have. Prioritize questions in roughly this order:
 
 1. **What problem is this solving, for whom, and what happens if we don't build it?** (kills vanity features early)
-2. **In scope vs. explicitly out of scope** — force the user to name things the feature will *not* do
+2. **In scope vs. explicitly out of scope** — force the user to name things the feature will _not_ do
 3. **The happy path** as a concrete user story, end to end
 4. **Edge cases and failure modes** — empty states, concurrent writes, offline, stale data, permission denied, the Arbiter being mid-transition, etc. Tailor to the component touched.
 5. **Data model and contracts** — new tables/columns, API shapes, message formats between activitytracker / chrome / dashboard
@@ -35,7 +35,7 @@ Use the `/grill-me` skill to drive this. Each round should surface things the us
 8. **Testability** — how will we prove it works? What's the failing test that would demonstrate the feature is missing?
 9. **Developer experience** — where does this code live, what's the smallest surface area, what existing abstractions should it reuse?
 
-Ask **one focused cluster of questions per turn**, not a wall. Prefer concrete examples ("when user has 0 entries on Monday, what does the chart show?") over abstract ones. If the user's answer is vague, push back — vague answers become developer-agent guesses, which become bugs.
+Ask **one focused cluster of questions per turn**, not a wall. Prefer concrete examples ("when user has 0 entries on Monday, what does the chart show?") over abstract ones. If the user's answer is vague, push back — vague answers become developer-agent guesses, which become bugs. Split compound questions. Be careful not to conflate answers.
 
 ## 3. Pressure-test before writing
 
@@ -58,40 +58,48 @@ Create `spec/<kebab-name>-<yyyy-mm-dd>.md`. Use today's date from the environmen
 **Components touched:** activitytracker | chrome | dashboard (list only what applies)
 
 ## Problem
+
 2–6 sentences. Who has the pain, what the pain is, why now.
 
 ## Goals
+
 - Bulleted, outcome-shaped ("user can X", not "add Y function")
 
 ## Non-goals
+
 - Explicit list of things this feature will NOT do. This is load-bearing — it prevents scope creep in the developer agent.
 
 ## User story (happy path)
+
 Concrete, step by step. Real values where possible.
 
 ## Behavior spec
+
 Enumerated rules the implementation must satisfy. One rule per bullet. Prefer "must" / "must not" phrasing. Cover edge cases surfaced in the interview.
 
-
-
 ## Data & contracts
+
 - DB changes (tables, columns, migrations)
 - API endpoints (method, path, request, response, error codes)
 - Cross-component messages (chrome → backend payloads, etc.)
-Only include sections that apply.
+  Only include sections that apply.
 
 ## Invariants to preserve
+
 Cite the relevant CLAUDE.md invariants and say how this feature respects them.
 
 ## Test plan
+
 - Failing test(s) to write first (per project rule). Name the file path and the behavior each test proves.
 - Any integration / e2e coverage needed.
 - What CANNOT be tested by the agent (UI under WSL) — call it out so /qa picks it up.
 
 ## Open questions / developer-agent latitude
+
 Things intentionally left to the developer agent's judgment, with constraints on acceptable choices. Keep this list short — most things should be decided in the spec.
 
 ## Out-of-scope follow-ups
+
 Nice-to-haves surfaced in the interview that we're deferring.
 ```
 
