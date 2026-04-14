@@ -162,6 +162,36 @@ class TestTimelineEntryDao:
             ), "create_precomputed_day must return a non-empty list"
             assert result == day_result
 
+    @pytest.mark.asyncio
+    async def test_read_day_mice_accepts_user_local_time_from_user_facing_clock(self, dao):
+        clock = MagicMock()
+        today = UserLocalTime(test_time)
+        clock.now.return_value = today
+
+        expected_events = [Mock(spec=TimelineEntryObj)]
+        dao.read_day = AsyncMock(return_value=expected_events)
+
+        result = await dao.read_day_mice(today, clock)
+
+        assert result == expected_events
+        dao.read_day.assert_called_once_with(today, ChartEventType.MOUSE)
+
+    @pytest.mark.asyncio
+    async def test_read_day_keyboard_accepts_user_local_time_from_user_facing_clock(
+        self, dao
+    ):
+        clock = MagicMock()
+        today = UserLocalTime(test_time)
+        clock.now.return_value = today
+
+        expected_events = [Mock(spec=TimelineEntryObj)]
+        dao.read_day = AsyncMock(return_value=expected_events)
+
+        result = await dao.read_day_keyboard(today, clock)
+
+        assert result == expected_events
+        dao.read_day.assert_called_once_with(today, ChartEventType.KEYBOARD)
+
     # # FIXME: need more tests for the branches of read_day_peripheral
 
     @pytest.mark.asyncio

@@ -35,7 +35,7 @@ class TestMouseDao:
     @pytest.mark.asyncio
     async def test_create_from_window(self, dao):
         start_time = UserLocalTime(now_tokyo)
-        end_time = start_time.dt + timedelta(minutes=1)
+        end_time = UserLocalTime(start_time.dt + timedelta(minutes=1))
         window = MouseMoveWindow(start_time, end_time)
 
         original_queue_item = dao.queue_item
@@ -48,8 +48,8 @@ class TestMouseDao:
 
         queued_item = queue_item_spy.call_args[0][0]
         assert isinstance(queued_item, MouseMove)
-        assert cast(datetime, queued_item.start_time) == start_time
-        assert cast(datetime, queued_item.end_time) == end_time
+        assert cast(datetime, queued_item.start_time) == start_time.dt
+        assert cast(datetime, queued_item.end_time) == end_time.dt
 
     @pytest.mark.asyncio
     async def test_read_all(self, dao):

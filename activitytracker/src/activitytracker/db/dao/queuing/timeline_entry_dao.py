@@ -15,6 +15,12 @@ from activitytracker.util.timeline_event_aggregator import aggregate_timeline_ev
 from activitytracker.util.time_wrappers import UserLocalTime
 
 
+def _date_from_user_local_time_or_datetime(value):
+    if isinstance(value, UserLocalTime):
+        return value.dt.date()
+    return value.date()
+
+
 class TimelineEntryDao(BaseQueueingDao):
     def __init__(
         self, async_session_maker: async_sessionmaker, batch_size=100, flush_interval=1
@@ -139,8 +145,8 @@ class TimelineEntryDao(BaseQueueingDao):
     async def read_day_mice(
         self, users_systems_day: UserLocalTime, user_facing_clock
     ) -> List[TimelineEntryObj]:
-        today = user_facing_clock.now().date()
-        is_today = today == users_systems_day.date()
+        today = _date_from_user_local_time_or_datetime(user_facing_clock.now())
+        is_today = today == _date_from_user_local_time_or_datetime(users_systems_day)
 
         if is_today:
             # Precomputed day can't exist yet
@@ -161,8 +167,8 @@ class TimelineEntryDao(BaseQueueingDao):
     async def read_day_keyboard(
         self, users_systems_day: UserLocalTime, user_facing_clock
     ) -> List[TimelineEntryObj]:
-        today = user_facing_clock.now().date()
-        is_today = today == users_systems_day.date()
+        today = _date_from_user_local_time_or_datetime(user_facing_clock.now())
+        is_today = today == _date_from_user_local_time_or_datetime(users_systems_day)
         if is_today:
             # Precomputed day can't exist yet
             return await self.read_day(users_systems_day, ChartEventType.KEYBOARD)

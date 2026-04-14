@@ -8,6 +8,7 @@ dependencies = [
     "aiosqlite>=0.22.1",
     "asyncpg>=0.31.0",
     "fastapi>=0.135.3",
+    "keyboard>=0.13.5",
     "psutil>=7.2.2",
     "psycopg2>=2.9.11",
     "pydantic>=2.12.5",
