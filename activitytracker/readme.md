@@ -38,6 +38,8 @@ OR for hot reload:
 
 `(.desk) PS C:\Users\roly\Code\desksense\activitytracker> uvicorn src.activitytracker.server:app --reload`
 
+**Note** that `uv pip install -e . --force-reinstall` may be needed for the activitytracker package
+
 ## Setup for the peripherals
 
 Just run `python src/activitytracker/run_peripherals.py`
